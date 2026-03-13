@@ -10,12 +10,14 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     const url = new URL(req.url);
     const status = url.searchParams.get('status');
-    let q = supabase.from('todos').select('*').eq('project_id', params.projectId);
+    const type = url.searchParams.get('type');
+    let q = supabase.from('commissioning').select('*').eq('project_id', params.projectId);
     if (status) q = q.eq('status', status);
+    if (type) q = q.eq('system_type', type);
     const { data, error } = await q.order('created_at', { ascending: false });
     if (error) throw error;
-    return NextResponse.json({ todos: data ?? [] });
-  } catch { return NextResponse.json({ todos: [] }); }
+    return NextResponse.json({ items: data ?? [] });
+  } catch { return NextResponse.json({ items: [] }); }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {
@@ -24,17 +26,20 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const supabase = createServerClient();
     const body = await req.json();
-    const { data, error } = await supabase.from('todos').insert({
+    const { data, error } = await supabase.from('commissioning').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
-      title: body.title, description: body.description || null,
-      assigned_to: body.assigned_to || null, assigned_to_id: body.assigned_to_id || null,
-      due_date: body.due_date || null, priority: body.priority || 'medium',
-      status: body.status || 'open', category: body.category || 'general',
-      linked_module: body.linked_module || null, linked_id: body.linked_id || null,
-      notes: body.notes || null, created_by: user.id,
+      system_name: body.system_name, system_type: body.system_type || 'mechanical',
+      location: body.location || null, phase: body.phase || 'pre_functional',
+      status: body.status || 'not_started', assigned_to: body.assigned_to || null,
+      scheduled_date: body.scheduled_date || null, checklist: body.checklist || [],
+      test_results: body.test_results || [], issues: body.issues || [],
+      equipment_tag: body.equipment_tag || null, manufacturer: body.manufacturer || null,
+      model_number: body.model_number || null, serial_number: body.serial_number || null,
+      warranty_start: body.warranty_start || null, warranty_end: body.warranty_end || null,
+      notes: body.notes || null, photos: body.photos || [], created_by: user.id,
     }).select().single();
     if (error) throw error;
-    return NextResponse.json({ todo: data }, { status: 201 });
+    return NextResponse.json({ item: data }, { status: 201 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Failed';
     return NextResponse.json({ error: msg }, { status: 500 });
