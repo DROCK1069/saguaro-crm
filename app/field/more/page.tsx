@@ -116,7 +116,11 @@ function MorePage(){
     {href:`/field/notifications${projectId?`?projectId=${projectId}`:''}`,icon:'message',label:'Notification Center',desc:'Activity feed & alerts',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/favorites${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Favorites & Recents',desc:'Pinned items & recent activity',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
     {href:`/field/activity${projectId?`?projectId=${projectId}`:''}`,icon:'calendar',label:'Activity Log',desc:'Audit trail — who changed what',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
-    {href:`/field/floor-plan${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'Floor Plan Pins',desc:'Tap drawings to pin locations & items',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
+    {href:`/field/bim-viewer${projectId?`?projectId=${projectId}`:''}`,icon:'box',label:'BIM 3D Viewer',desc:'Upload IFC models, tap elements for specs',color:PURPLE,bg:'rgba(139,92,246,.1)',border:'rgba(139,92,246,.25)'},
+    {href:`/field/laser${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'Laser Measure',desc:'BLE connect to Leica/Bosch, log measurements',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
+    {href:`/field/drone${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Drone Analysis',desc:'Upload drone photos, AI progress detection',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
+    {href:`/field/ar-overlay${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'AR Overlay',desc:'Camera + blueprint dimensions overlay',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/floor-plan${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'Floor Plan Pins',desc:'Tap drawings to pin locations, rooms & heatmap',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
     {href:`/field/room-progress${projectId?`?projectId=${projectId}`:''}`,icon:'chart',label:'Room Progress',desc:'Track completion by room & trade',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
     {href:`/field/crew-map${projectId?`?projectId=${projectId}`:''}`,icon:'pin',label:'Crew Map',desc:'Live GPS locations of all crew',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
     {href:`/field/deliveries${projectId?`?projectId=${projectId}`:''}`,icon:'truck',label:'Delivery Tracking',desc:'Track deliveries with ETA & arrival',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
@@ -166,6 +170,7 @@ function MorePage(){
             { title: '💰 Financial', items: PAGE_LINKS.filter(l => ['/field/change-orders','/field/contracts','/field/invoices','/field/budget','/field/bids','/field/purchase-orders','/field/tm-tickets','/field/timesheets'].some(p => l.href.startsWith(p))) },
             { title: '⚠️ Safety', items: PAGE_LINKS.filter(l => ['/field/safety','/field/incidents','/field/permits'].some(p => l.href.startsWith(p))) },
             { title: '👥 People & Comms', items: PAGE_LINKS.filter(l => ['/field/contacts','/field/chat','/field/directory','/field/rfis'].some(p => l.href.startsWith(p))) },
+            { title: '🏗️ Spatial Intelligence', items: PAGE_LINKS.filter(l => ['/field/bim-viewer','/field/laser','/field/drone','/field/ar-overlay','/field/floor-plan','/field/room-progress','/field/crew-map'].some(p => l.href.startsWith(p))) },
             { title: '🔧 Tools', items: PAGE_LINKS.filter(l => ['/field/sage','/field/qr','/field/search','/field/notifications','/field/favorites','/field/activity','/field/todos'].some(p => l.href.startsWith(p))) },
           ].filter(cat => cat.items.length > 0).map(cat => (
             <div key={cat.title} style={{marginBottom:16}}>
