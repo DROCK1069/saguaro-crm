@@ -55,3 +55,27 @@ export function getClientIP(req: Request): string {
   if (real) return real;
   return '0.0.0.0';
 }
+/**
+ * AI-specific rate limiter - 20 req/min per IP.
+ * Usage: const limited = aiLimiter.check(req); if (limited) return limited;
+ */
+export const aiLimiter = {
+  check(req: Request): Response | null {
+    const ip = getClientIP(req);
+    const { allowed, remaining, resetIn } = checkRateLimit(`ai:${ip}`, 20, 60_000);
+    if (allowed) return null;
+    return new Response(
+      JSON.stringify({ error: 'Too many requests. Please wait a moment.' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(Math.ceil(resetIn / 1000)),
+          'X-RateLimit-Limit': '20',
+          'X-RateLimit-Remaining': String(remaining),
+        },
+      }
+    );
+  },
+};
+
