@@ -46,12 +46,12 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      name, manufacturer, device_type, template_text,
-      variables, description, category,
+      name, manufacturer, device_type, template_content,
+      variables, category,
     } = body;
 
     if (!name) return badRequest('name is required');
-    if (!template_text) return badRequest('template_text is required');
+    if (!template_content) return badRequest('template_content is required');
     if (!manufacturer) return badRequest('manufacturer is required');
     if (!device_type) return badRequest('device_type is required');
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     // Extract variable placeholders from template: {{variable_name}}
     const detectedVars = [...new Set(
-      (template_text.match(/\{\{(\w+)\}\}/g) || []).map((m: string) => m.replace(/\{\{|\}\}/g, ''))
+      (template_content.match(/\{\{(\w+)\}\}/g) || []).map((m: string) => m.replace(/\{\{|\}\}/g, ''))
     )];
 
     const { data, error } = await db
@@ -69,11 +69,9 @@ export async function POST(req: NextRequest) {
         name,
         manufacturer,
         device_type,
-        template_text,
+        template_content,
         variables: variables || detectedVars,
-        description: description || '',
         category: category || 'general',
-        created_by: user.id,
       })
       .select()
       .single();

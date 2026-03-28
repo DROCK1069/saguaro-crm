@@ -159,17 +159,14 @@ export async function POST(req: NextRequest) {
 
       photoRecords.push({
         id: photoId,
-        job_id: jobId,
-        project_id: projectId,
+        drone_job_id: jobId,
         tenant_id: user.tenantId,
         file_name: photo.name,
         storage_path: storagePath,
-        public_url: publicUrl,
+        file_url: publicUrl,
         file_size: photo.size,
-        file_type: photo.type,
-        latitude: gps?.lat || null,
-        longitude: gps?.lng || null,
-        has_gps: !!gps,
+        gps_lat: gps?.lat || null,
+        gps_lng: gps?.lng || null,
       });
 
       uploadedCount++;

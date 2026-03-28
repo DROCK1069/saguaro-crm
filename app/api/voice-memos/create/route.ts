@@ -70,9 +70,7 @@ export async function POST(req: NextRequest) {
         created_by: user.id,
         item_type: itemType,
         item_id: itemId,
-        title: title || audioFile.name,
-        file_url: urlData?.publicUrl || fileName,
-        file_path: fileName,
+        audio_url: urlData?.publicUrl || fileName,
         duration_seconds: null,
         transcription,
       })

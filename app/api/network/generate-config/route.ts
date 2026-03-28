@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (tmplErr || !template) return notFound('Config template not found');
 
     // Render the template by replacing {{variable}} placeholders
-    let renderedConfig = template.template_text;
+    let renderedConfig = template.template_content;
     const usedVars: Record<string, string> = {};
     const missingVars: string[] = [];
 
@@ -65,12 +65,10 @@ export async function POST(req: NextRequest) {
         network_project_id: network_project_id || null,
         template_id,
         device_id: device_id || null,
-        name: name || `${template.name} - ${new Date().toLocaleDateString()}`,
-        rendered_config: renderedConfig,
+        config_content: renderedConfig,
         variables_used: usedVars,
-        manufacturer: template.manufacturer,
-        device_type: template.device_type,
-        generated_by: user.id,
+        applied_by: user.id,
+        notes: name || `${template.name} - ${new Date().toLocaleDateString()}`,
       })
       .select()
       .single();

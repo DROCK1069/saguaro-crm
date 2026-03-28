@@ -182,7 +182,6 @@ Be conversational, use contractions, and never sound robotic. Keep responses con
               await db.from('sage_conversations').update({
                 messages: updatedMessages,
                 messages_count: updatedMessages.length,
-                message_count: updatedMessages.length,
                 last_message_at: new Date().toISOString(),
                 detected_tone: detectedTone,
                 tone_history: updatedToneHistory,

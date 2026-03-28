@@ -136,7 +136,7 @@ export async function GET(
         const { data: photos, error: photosErr } = await supabase
           .from('drone_photos')
           .select('*')
-          .eq('job_id', jobId)
+          .eq('drone_job_id', jobId)
           .eq('tenant_id', user.tenantId)
           .order('created_at', { ascending: true })
           .limit(8); // Analyze up to 8 photos
@@ -197,11 +197,10 @@ export async function GET(
             const photoBuffer = await blob.arrayBuffer();
             const base64 = Buffer.from(photoBuffer).toString('base64');
 
-            // Determine media type
-            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-            const mediaType = validTypes.includes(photo.file_type)
-              ? photo.file_type
-              : 'image/jpeg';
+            // Determine media type from file extension
+            const ext = (photo.file_name || '').split('.').pop()?.toLowerCase();
+            const extToMime: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
+            const mediaType = extToMime[ext || ''] || 'image/jpeg';
 
             // Send to Claude Vision
             let accumulated = '';
@@ -216,7 +215,7 @@ export async function GET(
                     type: 'image',
                     source: {
                       type: 'base64',
-                      media_type: mediaType,
+                      media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
                       data: base64,
                     },
                   },
@@ -263,7 +262,6 @@ export async function GET(
                 .from('drone_photos')
                 .update({
                   ai_analysis: parsed,
-                  analyzed_at: new Date().toISOString(),
                 })
                 .eq('id', photo.id)
                 .eq('tenant_id', user.tenantId);

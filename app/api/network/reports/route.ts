@@ -53,7 +53,7 @@ async function buildReportData(
 
       const { data: devices } = await db
         .from('network_devices')
-        .select('name, device_type, ip_address, mac_address, vlan_id, location')
+        .select('hostname, device_type, ip_address, mac_address, vlan_id, location')
         .eq('network_project_id', networkProjectId)
         .order('ip_address', { ascending: true });
 
@@ -89,7 +89,7 @@ async function buildReportData(
         .from('network_devices')
         .select('*')
         .eq('network_project_id', networkProjectId)
-        .order('name', { ascending: true });
+        .order('hostname', { ascending: true });
 
       const deviceIds = (devices || []).map((d: any) => d.id);
       let ports: any[] = [];

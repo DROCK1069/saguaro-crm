@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       .from('network_devices')
       .select('*')
       .eq('network_project_id', networkProjectId)
-      .order('name', { ascending: true });
+      .order('hostname', { ascending: true });
 
     if (deviceType) {
       query = query.eq('device_type', deviceType);
@@ -59,13 +59,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      network_project_id, name, device_type, manufacturer, model,
+      network_project_id, hostname, device_type, manufacturer, model,
       ip_address, mac_address, location, vlan_id, port_count,
-      poe_capable, managed, stack_member, firmware_version, notes,
+      poe, managed, firmware_version, notes,
     } = body;
 
     if (!network_project_id) return badRequest('network_project_id is required');
-    if (!name) return badRequest('name is required');
+    if (!hostname) return badRequest('hostname is required');
     if (!device_type) return badRequest('device_type is required');
 
     const db = createServerClient();
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       .insert({
         network_project_id,
         tenant_id: user.tenantId,
-        name,
+        hostname,
         device_type,
         manufacturer: manufacturer || '',
         model: model || '',
@@ -94,9 +94,8 @@ export async function POST(req: NextRequest) {
         location: location || '',
         vlan_id: vlan_id || null,
         port_count: port_count || 0,
-        poe_capable: poe_capable ?? false,
+        poe: poe ?? false,
         managed: managed ?? true,
-        stack_member: stack_member || null,
         firmware_version: firmware_version || '',
         notes: notes || '',
         status: 'planned',
