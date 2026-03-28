@@ -37,7 +37,7 @@ export default function SubPortalLogin() {
       } else {
         setFound(data);
         setTimeout(() => {
-          window.location.href = `/portals/subcontractor/${data.token}`;
+          window.location.href = `/portals/sub/${data.token}`;
         }, 1500);
       }
     } catch {
@@ -115,7 +115,7 @@ export default function SubPortalLogin() {
               <div style={{ height: '100%', background: BLUE, borderRadius: 4, animation: 'progress 1.4s linear forwards' }} />
             </div>
             <style>{`@keyframes progress { from { width: 0% } to { width: 100% } }`}</style>
-            <a href={`/portals/subcontractor/${found.token}`} style={{ display: 'inline-block', marginTop: 12, fontSize: 12, color: BLUE, textDecoration: 'none' }}>
+            <a href={`/portals/sub/${found.token}`} style={{ display: 'inline-block', marginTop: 12, fontSize: 12, color: BLUE, textDecoration: 'none' }}>
               Click here if not redirected →
             </a>
           </div>

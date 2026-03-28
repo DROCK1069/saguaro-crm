@@ -1,29 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
-
-async function getPortalSession(req: NextRequest) {
-  const token =
-    req.nextUrl.searchParams.get('token') ||
-    req.headers.get('x-portal-token');
-  if (!token) return null;
-
-  const db = createServerClient();
-  const { data: session } = await db
-    .from('portal_client_sessions')
-    .select('*')
-    .eq('token', token)
-    .eq('status', 'active')
-    .single();
-
-  return session;
-}
+import { getPortalSession, PORTAL_PERMS } from '@/lib/portal-auth';
 
 /** GET — list documents visible to client, grouped by category */
 export async function GET(req: NextRequest) {
   try {
-    const session = await getPortalSession(req);
+    // Try view_documents first, fall back to view_project
+    let session = await getPortalSession(req, PORTAL_PERMS.VIEW_DOCUMENTS);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      session = await getPortalSession(req, PORTAL_PERMS.VIEW_PROJECT);
+    }
+    if (!session) {
+      return NextResponse.json({ error: 'Access denied — insufficient permissions' }, { status: 403 });
     }
 
     const db = createServerClient();

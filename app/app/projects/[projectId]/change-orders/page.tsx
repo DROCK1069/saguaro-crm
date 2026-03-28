@@ -66,8 +66,8 @@ function AIRiskPanel({ result, onClose }: { result: AIRiskResult; onClose: () =>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>Flags / Concerns</div>
             <ul style={{margin:0,padding:0,listStyle:'none',display:'flex',flexDirection:'column',gap:5}}>
-              {result.flags.map((f,i) => (
-                <li key={i} style={{display:'flex',gap:7,alignItems:'flex-start',fontSize:12,color:'#f87171'}}>
+              {result.flags.map((f) => (
+                <li key={f} style={{display:'flex',gap:7,alignItems:'flex-start',fontSize:12,color:'#f87171'}}>
                   <span style={{marginTop:1,flexShrink:0}}>⚠</span>
                   <span>{f}</span>
                 </li>
@@ -80,8 +80,8 @@ function AIRiskPanel({ result, onClose }: { result: AIRiskResult; onClose: () =>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>Recommendations</div>
             <ul style={{margin:0,padding:0,listStyle:'none',display:'flex',flexDirection:'column',gap:5}}>
-              {result.recommendations.map((r,i) => (
-                <li key={i} style={{display:'flex',gap:7,alignItems:'flex-start',fontSize:12,color:'#86efac'}}>
+              {result.recommendations.map((r) => (
+                <li key={r} style={{display:'flex',gap:7,alignItems:'flex-start',fontSize:12,color:'#86efac'}}>
                   <span style={{marginTop:1,flexShrink:0}}>✓</span>
                   <span>{r}</span>
                 </li>
@@ -117,6 +117,10 @@ export default function ChangeOrdersPage() {
   const [riskResult,setRiskResult] = useState<AIRiskResult|null>(null);
   const [riskLoading,setRiskLoading] = useState(false);
   const [riskError,setRiskError] = useState('');
+  const [coMenuId, setCoMenuId] = useState<string|null>(null);
+  const [coEditId, setCoEditId] = useState<string|null>(null);
+  const [coEditVal, setCoEditVal] = useState('');
+  const [coCopiedId, setCoCopiedId] = useState<string|null>(null);
 
   useEffect(()=>{ const t=toast?setTimeout(()=>setToast(null),4000):null; return ()=>{ if(t) clearTimeout(t); }; },[toast]);
 
@@ -221,6 +225,32 @@ export default function ChangeOrdersPage() {
     }finally{
       setApprovingId(null);
     }
+  }
+
+  function openCoMenu(id: string) { setCoMenuId(id); setCoEditId(null); }
+
+  async function handleEditCO(id: string) {
+    const amount = parseFloat(coEditVal);
+    if (isNaN(amount)) return;
+    setCos(prev => prev.map(c => c.id === id ? { ...c, cost_impact: amount } : c));
+    setCoEditId(null);
+    try { await fetch(`/api/change-orders/${id}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cost_impact: amount }) }); setToast({ msg: 'Cost impact updated', type: 'success' }); } catch { setToast({ msg: 'Updated locally', type: 'success' }); }
+  }
+
+  function handleCopyCO(id: string, amount: number) {
+    navigator.clipboard.writeText(fmt(amount)).catch(() => {});
+    setCoCopiedId(id); setTimeout(() => setCoCopiedId(null), 2000);
+    setCoMenuId(null);
+  }
+
+  async function handleDeleteCO(id: string) {
+    setCos(prev => prev.filter(c => c.id !== id));
+    setCoMenuId(null);
+    try {
+      const r = await fetch(`/api/change-orders/${id}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error('Delete failed');
+      setToast({msg:'Change order deleted',type:'success'});
+    } catch { setToast({msg:'Failed to delete',type:'error'}); }
   }
 
   // Running totals
@@ -396,8 +426,36 @@ export default function ChangeOrdersPage() {
                           {co.status||'pending'}
                         </span>
                       </td>
-                      <td style={{padding:'12px 14px',color:cost>0?ORANGE:cost<0?RED:DIM,fontWeight:700}}>
-                        {cost>=0?'+':''}{fmt(cost)}
+                      <td style={{padding:'12px 14px',position:'relative' as const}}>
+                        {coEditId===co.id ? (
+                          <div style={{display:'flex',alignItems:'center',gap:4}}>
+                            <input value={coEditVal} onChange={e=>setCoEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditCO(co.id);if(e.key==='Escape')setCoEditId(null);}} style={{width:100,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
+                            <button onClick={()=>handleEditCO(co.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:5,color:'#0d1117',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                            <button onClick={()=>setCoEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
+                          </div>
+                        ) : (
+                          <div style={{display:'flex',alignItems:'center',gap:4}}>
+                            <span style={{color:cost>0?ORANGE:cost<0?RED:DIM,fontWeight:700}}>{cost>=0?'+':''}{fmt(cost)}</span>
+                            {coCopiedId===co.id&&<span style={{fontSize:10,color:'#3dd68c',fontWeight:600}}>Copied!</span>}
+                            <button onClick={()=>openCoMenu(co.id)} style={{background:'none',border:'none',color:DIM,cursor:'pointer',fontSize:10,padding:'2px 4px',lineHeight:1,opacity:0.6}} onMouseEnter={e=>(e.currentTarget.style.opacity='1')} onMouseLeave={e=>(e.currentTarget.style.opacity='0.6')}>&#9662;</button>
+                            {coMenuId===co.id&&(
+                              <div style={{position:'absolute',top:36,right:14,background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,padding:4,zIndex:100,minWidth:150,boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>
+                                {[
+                                  {label:'Edit Amount',icon:'\u270F\uFE0F',action:()=>{setCoMenuId(null);setCoEditId(co.id);setCoEditVal(String(co.cost_impact||0));}},
+                                  {label:'Copy Amount',icon:'\uD83D\uDCCB',action:()=>handleCopyCO(co.id,co.cost_impact||0)},
+                                ].map(item=>(
+                                  <div key={item.label} onClick={item.action} style={{padding:'7px 12px',fontSize:12,color:TEXT,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background=DARK)} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                                    <span style={{fontSize:14}}>{item.icon}</span>{item.label}
+                                  </div>
+                                ))}
+                                <div style={{height:1,background:BORDER,margin:'4px 0'}}/>
+                                <div onClick={()=>{if(confirm('Delete this change order?'))handleDeleteCO(co.id);}} style={{padding:'7px 12px',fontSize:12,color:RED,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(192,48,48,.08)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                                  <span style={{fontSize:14}}>🗑️</span>Delete
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td style={{padding:'12px 14px',color:(co.schedule_impact||0)>0?ORANGE:DIM}}>
                         {(co.schedule_impact||0)>0 ? `+${co.schedule_impact} days` : '—'}
@@ -445,6 +503,7 @@ export default function ChangeOrdersPage() {
                   );
                 })}
               </tbody>
+              {coMenuId&&<div style={{position:'fixed',inset:0,zIndex:50}} onClick={()=>setCoMenuId(null)}/>}
             </table>
           </div>
         )}

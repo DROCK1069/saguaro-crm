@@ -107,16 +107,28 @@ export default function CommandPalette({ onScoreBid }: Props) {
     setFocused(prev => Math.min(prev, Math.max(filtered.length - 1, 0)));
   }, [filtered.length]);
 
-  // Global Cmd+K / Ctrl+K
+  // Global keyboard shortcuts: Cmd+K (palette), Cmd+N (new project), Cmd+Shift+P (project switch), Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setOpen(o => !o); }
+      const mod = e.metaKey || e.ctrlKey;
+      // Cmd+K — toggle command palette
+      if (mod && e.key === 'k') { e.preventDefault(); setOpen(o => !o); return; }
+      // Cmd+N — new project
+      if (mod && e.key === 'n' && !e.shiftKey) { e.preventDefault(); router.push('/app/projects/new'); return; }
+      // Cmd+Shift+P — project switcher (opens palette with "project" pre-filled)
+      if (mod && e.shiftKey && e.key === 'P') { e.preventDefault(); setQuery('project'); setOpen(true); return; }
+      // Escape — close any open modal/panel/drawer
+      if (e.key === 'Escape' && !open) {
+        // Dispatch a global close event for modals/drawers to listen to
+        window.dispatchEvent(new CustomEvent('saguaro:close-all'));
+        return;
+      }
     }
     function onCustomOpen() { setOpen(true); }
     window.addEventListener('keydown', onKey);
     window.addEventListener('open-command-palette', onCustomOpen);
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('open-command-palette', onCustomOpen); };
-  }, []);
+  }, [open, router]);
 
   // Auto-focus input when opened
   useEffect(() => {

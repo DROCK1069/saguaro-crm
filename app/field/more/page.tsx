@@ -150,16 +150,28 @@ function MorePage(){
 
       {panel===null&&(
         <>
-          <p style={sLbl}>Field Modules</p>
-          <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:18}}>
-            {PAGE_LINKS.map(l=>(
-              <a key={l.href} href={l.href} style={{background:l.bg,border:`1px solid ${l.border}`,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,textDecoration:'none'}}>
-                <div style={{width:44,height:44,borderRadius:12,background:`rgba(${hr(l.color)},.15)`,border:`1px solid rgba(${hr(l.color)},.3)`,display:'flex',alignItems:'center',justifyContent:'center',color:l.color,flexShrink:0}}>{ICONS[l.icon]}</div>
-                <div><p style={{margin:0,fontSize:15,fontWeight:700,color:l.color}}>{l.label}</p><p style={{margin:'2px 0 0',fontSize:12,color:DIM}}>{l.desc}</p></div>
-                <span style={{marginLeft:'auto',color:DIM,fontSize:18}}>›</span>
-              </a>
-            ))}
-          </div>
+          {/* Categorized modules like Procore */}
+          {[
+            { title: '📋 Daily Operations', items: PAGE_LINKS.filter(l => ['/field/clock','/field/schedule','/field/equipment','/field/delivery','/field/meetings'].some(p => l.href.startsWith(p))) },
+            { title: '🏗 Quality & Punch', items: PAGE_LINKS.filter(l => ['/field/punch','/field/inspect','/field/observations','/field/commissioning','/field/closeout','/field/coordination','/field/waste'].some(p => l.href.startsWith(p))) },
+            { title: '📄 Documents & Plans', items: PAGE_LINKS.filter(l => ['/field/drawings','/field/docs','/field/specs','/field/submittals','/field/correspondence','/field/forms'].some(p => l.href.startsWith(p))) },
+            { title: '💰 Financial', items: PAGE_LINKS.filter(l => ['/field/change-orders','/field/contracts','/field/invoices','/field/budget','/field/bids','/field/purchase-orders','/field/tm-tickets','/field/timesheets'].some(p => l.href.startsWith(p))) },
+            { title: '⚠️ Safety', items: PAGE_LINKS.filter(l => ['/field/safety','/field/incidents','/field/permits'].some(p => l.href.startsWith(p))) },
+            { title: '👥 People & Comms', items: PAGE_LINKS.filter(l => ['/field/contacts','/field/chat','/field/directory','/field/rfis'].some(p => l.href.startsWith(p))) },
+            { title: '🔧 Tools', items: PAGE_LINKS.filter(l => ['/field/sage','/field/qr','/field/search','/field/notifications','/field/favorites','/field/activity','/field/todos'].some(p => l.href.startsWith(p))) },
+          ].filter(cat => cat.items.length > 0).map(cat => (
+            <div key={cat.title} style={{marginBottom:16}}>
+              <p style={{...sLbl, fontSize:13, fontWeight:800, marginBottom:8}}>{cat.title}</p>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                {cat.items.map(l=>(
+                  <a key={l.href} href={l.href} style={{background:l.bg,border:`1px solid ${l.border}`,borderRadius:10,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
+                    <div style={{width:32,height:32,borderRadius:8,background:`rgba(${hr(l.color)},.15)`,border:`1px solid rgba(${hr(l.color)},.3)`,display:'flex',alignItems:'center',justifyContent:'center',color:l.color,flexShrink:0}}>{ICONS[l.icon]}</div>
+                    <div style={{minWidth:0}}><p style={{margin:0,fontSize:12,fontWeight:700,color:l.color,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.label}</p></div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ))}
           <p style={sLbl}>Quick Submit</p>
           <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:18}}>
             {QUICK.map(t=>(

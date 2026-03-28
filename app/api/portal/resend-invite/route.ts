@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
 
     // Get GC company name
     const { data: profile } = await db
-      .from('user_profiles')
+      .from('profiles')
       .select('full_name, company_name')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
     const gcCompanyName = (profile as { company_name?: string; full_name?: string } | null)?.company_name
       || (profile as { company_name?: string; full_name?: string } | null)?.full_name

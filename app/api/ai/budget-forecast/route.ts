@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
 
   // Fetch budget lines and project
   const [{ data: lines }, { data: project }, { data: cos }] = await Promise.all([
-    db.from('budget_lines').select('cost_code, description, original_budget, committed_cost, actual_cost, forecast_cost').eq('project_id', projectId).eq('tenant_id', tenantId).limit(50),
+    db.from('budget_lines').select('cost_code, description, original_budget, committed, actual, projected').eq('project_id', projectId).eq('tenant_id', tenantId).limit(50),
     db.from('projects').select('name, start_date, end_date, contract_amount').eq('id', projectId).eq('tenant_id', tenantId).single(),
-    db.from('change_orders').select('cost_impact, status').eq('project_id', projectId).eq('tenant_id', tenantId),
+    db.from('change_orders').select('amount, status').eq('project_id', projectId).eq('tenant_id', tenantId),
   ]);
 
   const budgetLines = (lines || []) as any[];
@@ -25,17 +25,17 @@ export async function POST(req: NextRequest) {
   const changeOrders = (cos || []) as any[];
 
   const totalBudget = budgetLines.reduce((s: number, l: any) => s + (l.original_budget || 0), 0);
-  const totalActual = budgetLines.reduce((s: number, l: any) => s + (l.actual_cost || 0), 0);
-  const totalCommitted = budgetLines.reduce((s: number, l: any) => s + (l.committed_cost || 0), 0);
-  const approvedCOTotal = changeOrders.filter((c: any) => c.status === 'approved').reduce((s: number, c: any) => s + (c.cost_impact || 0), 0);
-  const pendingCOTotal = changeOrders.filter((c: any) => c.status === 'pending').reduce((s: number, c: any) => s + (c.cost_impact || 0), 0);
+  const totalActual = budgetLines.reduce((s: number, l: any) => s + (l.actual || 0), 0);
+  const totalCommitted = budgetLines.reduce((s: number, l: any) => s + (l.committed || 0), 0);
+  const approvedCOTotal = changeOrders.filter((c: any) => c.status === 'approved').reduce((s: number, c: any) => s + (c.amount || 0), 0);
+  const pendingCOTotal = changeOrders.filter((c: any) => c.status === 'pending').reduce((s: number, c: any) => s + (c.amount || 0), 0);
 
   const linesSummary = budgetLines.slice(0, 15).map((l: any) => ({
     code: l.cost_code,
     desc: l.description,
     budget: l.original_budget,
-    actual: l.actual_cost,
-    pct: l.original_budget > 0 ? Math.round((l.actual_cost / l.original_budget) * 100) : 0,
+    actual: l.actual,
+    pct: l.original_budget > 0 ? Math.round((l.actual / l.original_budget) * 100) : 0,
   }));
 
   const prompt = `You are a construction cost expert. Analyze this project's budget performance and forecast likely final cost.

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'projectId, drawing_number, and title are required' }, { status: 400 });
     }
     const db = createServerClient();
-    const { data, error } = await db.from('project_drawings').insert({
+    const { data, error } = await db.from('drawings').insert({
       tenant_id: user.tenantId,
       project_id: body.projectId,
       drawing_number: body.drawing_number || body.drawingNumber || '',

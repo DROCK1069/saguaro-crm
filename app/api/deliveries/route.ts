@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     // Deliveries stored in punch_list_items with trade='delivery'
     let query = supabase
-      .from('punch_list_items')
+      .from('punch_list')
       .select('*')
       .eq('trade', 'delivery')
       .eq('tenant_id', user.tenantId)

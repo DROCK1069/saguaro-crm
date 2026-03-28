@@ -81,28 +81,35 @@ export async function POST(req: NextRequest) {
     if (insertError) throw insertError;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
-    const portalUrl = `${appUrl}/portals/subcontractor/${token}`;
+    const portalUrl = `${appUrl}/portals/sub/${token}`;
 
     // Get GC company name for the email
     const { data: profile } = await db
-      .from('user_profiles')
+      .from('profiles')
       .select('full_name, company_name')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
     const gcCompanyName = (profile as { company_name?: string; full_name?: string } | null)?.company_name
       || (profile as { company_name?: string; full_name?: string } | null)?.full_name
       || 'Your General Contractor';
 
-    // Fire invite email — non-blocking
-    if (email) {
-      sendSubPortalInvite({
-        to: email.toLowerCase().trim(),
-        contactName: contactName || '',
-        companyName: companyName || email,
-        gcCompanyName,
-        projectName: project.name,
-        portalUrl,
-      }).catch(err => console.warn('[portal/sub/create] email send failed (non-fatal):', err));
+    // Fire invite email — track actual send result
+    let emailSent = false;
+    if (process.env.RESEND_API_KEY && email) {
+      try {
+        await sendSubPortalInvite({
+          to: email.toLowerCase().trim(),
+          contactName: contactName || '',
+          companyName: companyName || email,
+          gcCompanyName,
+          projectName: project.name,
+          portalUrl,
+        });
+        emailSent = true;
+      } catch (err) {
+        console.warn('[portal/sub/create] email send failed:', err);
+        emailSent = false;
+      }
     }
 
     return NextResponse.json({
@@ -111,7 +118,8 @@ export async function POST(req: NextRequest) {
       projectName: project.name,
       companyName: companyName || null,
       contactName: contactName || null,
-      emailSent: !!(process.env.RESEND_API_KEY && email),
+      emailSent,
+      emailWarning: !emailSent ? 'Email could not be sent. Share the portal link manually.' : undefined,
     });
   } catch (err: unknown) {
     const msg = 'Internal server error';

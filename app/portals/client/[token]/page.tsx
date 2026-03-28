@@ -181,7 +181,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'ai', label: 'AI Summary', icon: '🤖' },
 ];
 
-const DOC_CATEGORIES = ['All', 'Contracts', 'Drawings', 'Specs', 'Permits', 'Reports', 'Photos', 'Other'];
+const DOC_CATEGORIES = ['All', 'Contracts', 'Drawings', 'Specs', 'Submittals', 'Permits', 'Lien Waivers', 'Reports', 'Photos', 'Other'];
 
 /* ══════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -245,6 +245,11 @@ export default function ClientPortalPage() {
   const [generatingAi, setGeneratingAi] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
 
+  /* ── Change Request state ────────────────────────────────────── */
+  const [showChangeRequest, setShowChangeRequest] = useState(false);
+  const [changeRequestForm, setChangeRequestForm] = useState({ title: '', description: '', estimated_amount: '' });
+  const [submittingChangeRequest, setSubmittingChangeRequest] = useState(false);
+
   /* ── Global feedback ──────────────────────────────────────────── */
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
@@ -271,12 +276,54 @@ export default function ClientPortalPage() {
         if (!r.ok) throw new Error('Failed to load portal');
         return r.json();
       })
-      .then((d: DashboardData) => {
-        setProject(d.project);
+      .then((d: any) => {
+        // Map API response shape to component state
+        // API returns: { project, budget, phases, recentPhotos, changeOrders, weather }
+        const p = d.project || {};
+        const b = d.budget || {};
+        setProject({
+          id: p.id || '',
+          name: p.name || 'Project',
+          address: p.address || '',
+          city: p.city || '',
+          state: p.state || '',
+          client_name: p.client_name || d.session?.client_name || '',
+          company_name: p.company_name || '',
+          percent_complete: b.percent_complete ?? p.percent_complete ?? 0,
+          start_date: p.start_date || '',
+          end_date: p.end_date || '',
+          original_contract: b.contract_amount ?? p.contract_amount ?? 0,
+          committed_cost: b.budget ?? p.budget ?? 0,
+          spent_to_date: b.spent ?? p.spent ?? 0,
+          total_budget: b.budget ?? p.budget ?? 0,
+          payments_made: b.payments_made ?? 0,
+          open_items: b.open_items ?? 0,
+        });
         setPhases(d.phases || []);
-        setPhotos((d.photos || []).slice(0, 12));
-        setCoSummary(d.change_orders || { pending: 0, approved: 0, rejected: 0 });
-        setWeather(d.weather || null);
+        setPhotos((d.recentPhotos || d.photos || []).slice(0, 12));
+        // Map changeOrders array into summary counts
+        const cos = d.changeOrders || d.change_orders || [];
+        if (Array.isArray(cos)) {
+          setCoSummary({
+            pending: cos.filter((c: any) => c.status === 'pending' || c.status === 'draft').length,
+            approved: cos.filter((c: any) => c.status === 'approved').length,
+            rejected: cos.filter((c: any) => c.status === 'rejected').length,
+          });
+        } else {
+          setCoSummary(cos);
+        }
+        // Map weather
+        const w = d.weather;
+        if (w?.current) {
+          setWeather({
+            city: w.city || p.city || '',
+            temp: w.current.temp ?? 0,
+            conditions: w.current.condition || '',
+            icon: w.current.icon || '',
+          });
+        } else if (w) {
+          setWeather(w);
+        }
       })
       .catch((e) => setDashError(e.message))
       .finally(() => setDashLoading(false));
@@ -287,11 +334,24 @@ export default function ClientPortalPage() {
     if (!token) return;
     if (activeTab === 'approvals' && approvals.length === 0 && !approvalsLoading) {
       setApprovalsLoading(true);
-      fetch(`/api/portal/client/approvals?token=${token}`, { headers: { 'x-portal-token': token } })
-        .then((r) => r.json())
-        .then((d) => {
-          setApprovals(d.pending || []);
-          setApprovalHistory(d.history || []);
+      Promise.all([
+        fetch(`/api/portal/client/approvals?token=${token}`, { headers: { 'x-portal-token': token } }).then((r) => r.json()),
+        fetch(`/api/portal/client/approvals?token=${token}&status=approved`, { headers: { 'x-portal-token': token } }).then((r) => r.json()).catch(() => ({ approvals: [] })),
+        fetch(`/api/portal/client/approvals?token=${token}&status=rejected`, { headers: { 'x-portal-token': token } }).then((r) => r.json()).catch(() => ({ approvals: [] })),
+      ])
+        .then(([pending, approved, rejected]) => {
+          setApprovals(pending.approvals || []);
+          // Build history from approved/rejected items
+          const hist = [...(approved.approvals || []), ...(rejected.approvals || [])]
+            .sort((a: any, b: any) => new Date(b.responded_at || b.updated_at || '').getTime() - new Date(a.responded_at || a.updated_at || '').getTime())
+            .map((h: any) => ({
+              id: h.id,
+              item_title: h.title || h.description || '',
+              action: h.status as 'approved' | 'rejected',
+              date: h.responded_at || h.updated_at || h.created_at || '',
+              notes: h.response_notes || '',
+            }));
+          setApprovalHistory(hist);
         })
         .catch(() => showToast('Failed to load approvals', 'error'))
         .finally(() => setApprovalsLoading(false));
@@ -337,7 +397,7 @@ export default function ClientPortalPage() {
     }
     if (activeTab === 'ai' && aiSummaries.length === 0 && !aiLoading) {
       setAiLoading(true);
-      fetch(`/api/portal/client/ai-summary?token=${token}`, { headers: { 'x-portal-token': token } })
+      fetch(`/api/portal/client/summary?token=${token}`, { headers: { 'x-portal-token': token } })
         .then((r) => r.json())
         .then((d) => setAiSummaries(d.summaries || []))
         .catch(() => showToast('Failed to load AI summaries', 'error'))
@@ -353,6 +413,67 @@ export default function ClientPortalPage() {
     }
   }, [messages, activeTab]);
 
+  /* Auto-poll messages every 15 seconds when messages tab is active */
+  useEffect(() => {
+    if (!token || activeTab !== 'messages') return;
+    const interval = setInterval(() => {
+      fetch(`/api/portal/client/messages?token=${token}`, { headers: { 'x-portal-token': token } })
+        .then((r) => r.json())
+        .then((d) => setMessages(d.messages || []))
+        .catch(() => {/* silent refresh failure */});
+    }, 15_000);
+    return () => clearInterval(interval);
+  }, [activeTab, token]);
+
+  /* Auto-poll approvals every 30 seconds when approvals tab is active */
+  useEffect(() => {
+    if (!token || activeTab !== 'approvals') return;
+    const interval = setInterval(() => {
+      fetch(`/api/portal/client/approvals?token=${token}`, { headers: { 'x-portal-token': token } })
+        .then((r) => r.json())
+        .then((d) => {
+          setApprovals(d.approvals || []);
+        })
+        .catch(() => {/* silent refresh failure */});
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [activeTab, token]);
+
+  /* Auto-poll dashboard every 60 seconds when dashboard tab is active */
+  useEffect(() => {
+    if (!token || activeTab !== 'dashboard') return;
+    const interval = setInterval(() => {
+      fetch(`/api/portal/client/dashboard?token=${token}`, { headers: { 'x-portal-token': token } })
+        .then((r) => {
+          if (!r.ok) return;
+          return r.json();
+        })
+        .then((d: any) => {
+          if (!d) return;
+          const p = d.project || {};
+          const b = d.budget || {};
+          setProject((prev) => prev ? {
+            ...prev,
+            percent_complete: b.percent_complete ?? p.percent_complete ?? prev.percent_complete,
+            spent_to_date: b.spent ?? prev.spent_to_date,
+            committed_cost: b.budget ?? prev.committed_cost,
+          } : prev);
+          setPhases(d.phases || []);
+          setPhotos((d.recentPhotos || d.photos || []).slice(0, 12));
+          const cos = d.changeOrders || d.change_orders || [];
+          if (Array.isArray(cos)) {
+            setCoSummary({
+              pending: cos.filter((c: any) => c.status === 'pending' || c.status === 'draft').length,
+              approved: cos.filter((c: any) => c.status === 'approved').length,
+              rejected: cos.filter((c: any) => c.status === 'rejected').length,
+            });
+          }
+        })
+        .catch(() => {/* silent refresh failure */});
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [activeTab, token]);
+
   /* ══════════════════════════════════════════════════════════════════
      ACTION HANDLERS
      ══════════════════════════════════════════════════════════════════ */
@@ -363,15 +484,14 @@ export default function ClientPortalPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-portal-token': token },
         body: JSON.stringify({
-          token,
           approval_id: id,
-          action,
+          decision: action,
           notes: approvalNotes[id] || '',
-          signature: signatureData,
+          signature_data: signatureData,
         }),
       });
       const d = await res.json();
-      if (d.success) {
+      if (d.approval) {
         setApprovals((prev) => prev.map((a) => (a.id === id ? { ...a, status: action } : a)));
         setApprovalHistory((prev) => [
           { id: Date.now().toString(), item_title: approvals.find((a) => a.id === id)?.title || '', action, date: new Date().toISOString(), notes: approvalNotes[id] || '' },
@@ -487,13 +607,13 @@ export default function ClientPortalPage() {
   const generateAiSummary = async () => {
     setGeneratingAi(true);
     try {
-      const res = await fetch(`/api/portal/client/ai-summary`, {
+      const res = await fetch(`/api/portal/client/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-portal-token': token },
-        body: JSON.stringify({ token, action: 'generate' }),
+        body: JSON.stringify({ token }),
       });
       const d = await res.json();
-      if (d.success && d.summary) {
+      if (d.summary) {
         setAiSummaries((prev) => [d.summary, ...prev]);
         showToast('Summary generated');
       } else {
@@ -508,7 +628,7 @@ export default function ClientPortalPage() {
   const emailSummary = async (summaryId: string) => {
     setEmailSending(true);
     try {
-      const res = await fetch(`/api/portal/client/ai-summary`, {
+      const res = await fetch(`/api/portal/client/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-portal-token': token },
         body: JSON.stringify({ token, action: 'email', summary_id: summaryId }),
@@ -539,6 +659,38 @@ export default function ClientPortalPage() {
     } catch {
       showToast('Network error', 'error');
     }
+  };
+
+  const submitChangeRequest = async () => {
+    if (!changeRequestForm.title.trim() || !changeRequestForm.description.trim()) {
+      showToast('Please fill in title and description', 'error');
+      return;
+    }
+    setSubmittingChangeRequest(true);
+    try {
+      const res = await fetch(`/api/portal/client/approvals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-portal-token': token },
+        body: JSON.stringify({
+          type: 'change_request',
+          title: changeRequestForm.title,
+          description: changeRequestForm.description,
+          estimated_amount: parseFloat(changeRequestForm.estimated_amount) || 0,
+        }),
+      });
+      const d = await res.json();
+      if (!d.error) {
+        setChangeRequestForm({ title: '', description: '', estimated_amount: '' });
+        setShowChangeRequest(false);
+        showToast('Change request submitted successfully');
+        setCoSummary((prev) => ({ ...prev, pending: prev.pending + 1 }));
+      } else {
+        showToast(d.error || 'Failed to submit change request', 'error');
+      }
+    } catch {
+      showToast('Network error', 'error');
+    }
+    setSubmittingChangeRequest(false);
   };
 
   /* ── Signature canvas handlers ────────────────────────────────── */
@@ -962,7 +1114,15 @@ export default function ClientPortalPage() {
 
           {/* Change Order Summary */}
           <div style={{ ...cardStyle }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 16 }}>Change Order Summary</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>Change Order Summary</div>
+              <button
+                style={{ ...btnOutline, padding: '8px 14px', fontSize: 12 }}
+                onClick={() => setShowChangeRequest(true)}
+              >
+                + Request Change
+              </button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, textAlign: 'center' }}>
               <div style={{ background: `${AMBER}15`, borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 28, fontWeight: 800, color: AMBER }}>{coSummary.pending}</div>
@@ -1497,7 +1657,7 @@ export default function ClientPortalPage() {
                     width: 44, height: 44, borderRadius: 8, background: `${BLUE}20`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
                   }}>
-                    {doc.category === 'Drawings' ? '📐' : doc.category === 'Contracts' ? '📄' : doc.category === 'Specs' ? '📋' : doc.category === 'Permits' ? '🏛️' : doc.category === 'Photos' ? '📷' : '📁'}
+                    {doc.category === 'Drawings' ? '📐' : doc.category === 'Contracts' ? '📄' : doc.category === 'Specs' ? '📋' : doc.category === 'Submittals' ? '📑' : doc.category === 'Permits' ? '🏛️' : doc.category === 'Lien Waivers' ? '📝' : doc.category === 'Photos' ? '📷' : '📁'}
                   </div>
                   <div style={{ flex: 1, overflow: 'hidden' }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title}</div>
@@ -1974,6 +2134,73 @@ export default function ClientPortalPage() {
           {renderTabContent()}
         </div>
       </main>
+
+      {/* ── Change Request Modal ──────────────────────────────── */}
+      {showChangeRequest && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,.6)', zIndex: 300,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24,
+        }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowChangeRequest(false); }}
+        >
+          <div style={{ ...cardStyle, maxWidth: 520, width: '100%', animation: 'slideUp .3s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: TEXT }}>Request a Change</div>
+              <button
+                style={{ background: 'transparent', border: 'none', color: DIM, fontSize: 20, cursor: 'pointer' }}
+                onClick={() => setShowChangeRequest(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <div style={{ fontSize: 13, color: DIM, marginBottom: 20, lineHeight: 1.6 }}>
+              Submit a change request to your contractor. This creates a draft change order for review.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Title *</label>
+                <input
+                  style={inputStyle}
+                  placeholder="e.g., Add recessed lighting in kitchen"
+                  value={changeRequestForm.title}
+                  onChange={(e) => setChangeRequestForm({ ...changeRequestForm, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Description *</label>
+                <textarea
+                  style={textareaStyle}
+                  placeholder="Describe the change you'd like to make..."
+                  value={changeRequestForm.description}
+                  onChange={(e) => setChangeRequestForm({ ...changeRequestForm, description: e.target.value })}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Estimated Budget Impact ($)</label>
+                <input
+                  type="number"
+                  style={inputStyle}
+                  placeholder="0.00 (optional)"
+                  value={changeRequestForm.estimated_amount}
+                  onChange={(e) => setChangeRequestForm({ ...changeRequestForm, estimated_amount: e.target.value })}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button style={btnOutline} onClick={() => setShowChangeRequest(false)}>Cancel</button>
+                <button
+                  style={{ ...btnPrimary, opacity: submittingChangeRequest ? 0.6 : 1 }}
+                  disabled={submittingChangeRequest}
+                  onClick={submitChangeRequest}
+                >
+                  {submittingChangeRequest ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Toast Notification ──────────────────────────────────── */}
       {toast && (

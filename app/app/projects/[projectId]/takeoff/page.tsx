@@ -86,6 +86,10 @@ export default function TakeoffPage() {
   const [progress, setProgress] = useState<ProgressState>({ step: 0, message: '', pct: 0 });
   const [result, setResult] = useState<TakeoffResult | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [overheadPct, setOverheadPct] = useState(10);
+  const [profitPct, setProfitPct] = useState(10);
+  const [contingencyPct, setContingencyPct] = useState(10);
 
   // Load latest completed takeoff on mount
   useEffect(() => {
@@ -191,18 +195,34 @@ export default function TakeoffPage() {
       const { data: newTakeoff } = await createRes.json();
       setTakeoffId(newTakeoff.id);
 
-      // 2. Upload file
+      // 2. Upload file with XHR progress tracking
       setProgress({ step: 2, message: 'Uploading blueprint...', pct: 10 });
+      setUploadPct(0);
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const uploadRes = await fetch(`/api/takeoff/${newTakeoff.id}/upload`, {
-        method: 'POST',
-        body: formData,
+      const uploadResult = await new Promise<{ success: boolean; error?: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/takeoff/${newTakeoff.id}/upload`);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            setUploadPct(pct);
+            setProgress({ step: 2, message: `Uploading blueprint... ${pct}%`, pct: 10 + Math.round(pct * 0.05) });
+          }
+        };
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) resolve({ success: true });
+            else resolve({ success: false, error: data.error || 'Upload failed' });
+          } catch { resolve({ success: false, error: 'Upload failed' }); }
+        };
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(formData);
       });
-      if (!uploadRes.ok) {
-        const e = await uploadRes.json();
-        throw new Error(e.error || 'Upload failed');
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Upload failed');
       }
 
       // 3. Connect SSE analysis stream
@@ -403,6 +423,134 @@ export default function TakeoffPage() {
     }
   };
 
+  // ── Generate Budget from Takeoff ──
+  const handleCreateBudget = async () => {
+    if (!result) return;
+    setGenerating('budget');
+    try {
+      const subtotal = result.totalMaterialCost + result.totalLaborCost;
+      const overhead = Math.round(subtotal * (overheadPct / 100));
+      const profit = Math.round(subtotal * (profitPct / 100));
+      const contingency = Math.round(subtotal * (contingencyPct / 100));
+      const total = subtotal + overhead + profit + contingency;
+
+      const res = await fetch('/api/budgets/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          name: `${result.projectName || 'Project'} — Takeoff Budget`,
+          originalTotal: total,
+          revisedTotal: total,
+          overheadPct,
+          profitPct,
+          contingencyPct,
+          lineItems: result.items.map(i => ({
+            costCode: i.csiCode,
+            csiDivision: i.csiDivision,
+            description: i.description,
+            category: 'material',
+            unit: i.unit,
+            quantity: i.quantity,
+            unitCost: i.unitCost,
+            originalAmount: i.totalCost,
+            revisedAmount: i.totalCost,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error || 'Failed to create budget');
+      }
+      showToast(`Budget created — ${result.items.length} line items, total ${fmt$(total)}`, 'success');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to create budget', 'error');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  // ── Generate Lien Waiver Templates ──
+  const handleGenerateLienWaivers = async () => {
+    if (!result) return;
+    setGenerating('lien-waivers');
+    try {
+      const divisions = [...new Set(result.items.map(i => i.csiCode?.slice(0, 2)))].filter(Boolean);
+      let created = 0;
+
+      for (const div of divisions) {
+        const divItems = result.items.filter(i => i.csiCode?.startsWith(div));
+        const divTotal = divItems.reduce((sum, i) => sum + i.totalCost, 0);
+        const divName = CSI_DIVISION_NAMES[div] || `Division ${div}`;
+
+        const res = await fetch('/api/lien-waivers/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            claimantName: divName,
+            waiverType: 'conditional_partial',
+            amount: divTotal,
+            throughDate: new Date().toISOString().split('T')[0],
+            state: 'AZ',
+          }),
+        });
+        if (res.ok) created++;
+      }
+
+      showToast(`${created} lien waiver template${created !== 1 ? 's' : ''} created`, 'success');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to generate lien waivers', 'error');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  // ── Generate All Documents (Budget + Bid Packages + SOV + Lien Waivers) ──
+  const handleGenerateAll = async () => {
+    if (!result) return;
+    setGenerating('all');
+    try {
+      // 1. Create budget
+      setProgress({ step: 1, message: 'Creating project budget...', pct: 10 });
+      await handleCreateBudget();
+
+      // 2. Create bid packages
+      setProgress({ step: 2, message: 'Generating bid packages...', pct: 30 });
+      await handleGenerateBidPackages();
+
+      // 3. Create SOV
+      setProgress({ step: 3, message: 'Building schedule of values...', pct: 55 });
+      await handleGenerateSOV();
+
+      // 4. Create lien waiver templates
+      setProgress({ step: 4, message: 'Generating lien waiver templates...', pct: 75 });
+      await handleGenerateLienWaivers();
+
+      setProgress({ step: 5, message: 'Complete!', pct: 100 });
+      showToast('All documents generated — budget, bid packages, SOV, lien waivers', 'success');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Document generation failed', 'error');
+    } finally {
+      setGenerating(null);
+      setProgress({ step: 0, message: '', pct: 0 });
+    }
+  };
+
+  // Computed cost values with adjustable markups
+  const computedCosts = (() => {
+    if (!result) return null;
+    const matCost = result.totalMaterialCost;
+    const labCost = result.totalLaborCost;
+    const subtotal = matCost + labCost;
+    const overhead = Math.round(subtotal * (overheadPct / 100));
+    const profit = Math.round(subtotal * (profitPct / 100));
+    const contingency = Math.round(subtotal * (contingencyPct / 100));
+    const totalJobCost = subtotal + overhead + profit + contingency;
+    const costPerSF = result.estimatedSF > 0 ? totalJobCost / result.estimatedSF : 0;
+    return { matCost, labCost, subtotal, overhead, profit, contingency, totalJobCost, costPerSF };
+  })();
+
   // Group items by CSI division
   const groupedItems = result
     ? result.items.reduce<Record<string, TakeoffItem[]>>((acc, item) => {
@@ -529,13 +677,13 @@ export default function TakeoffPage() {
   // ── STATE B: ANALYZING ───────────────────────────────────────────────────────
   if (state === 'analyzing') {
     const steps = [
-      'Loading blueprint',
-      'Sending to AI',
-      'Reading dimensions',
+      'Creating takeoff record',
+      `Uploading blueprint${uploadPct > 0 && uploadPct < 100 ? ` (${uploadPct}%)` : ''}`,
+      'Preparing for AI',
+      'AI reading blueprint',
       'Identifying materials',
       'Calculating quantities',
       'Applying pricing',
-      'Organizing by CSI',
       'Saving results',
     ];
 
@@ -636,36 +784,55 @@ export default function TakeoffPage() {
         </div>
       </div>
 
-      {/* Cost breakdown cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
-        {(() => {
-          const matCost  = result?.totalMaterialCost || 0;
-          const labCost  = result?.totalLaborCost    || 0;
-          const contPct  = result?.contingency ?? 10;
-          const jobCost  = result?.totalProjectCost  || 0; // mat + lab + contingency
-          const sellPrice = Math.round(jobCost * 1.15);
-          const grossMargin = sellPrice - jobCost;
-          return [
-            { label: 'Material Cost',              value: matCost,     color: GOLD       },
-            { label: 'Labor Cost',                 value: labCost,     color: '#60A5FA'  },
-            { label: `Contingency (${contPct}%)`,  value: Math.round((matCost + labCost) * (contPct / 100)), color: '#A78BFA' },
-            { label: 'Sell Price (+15%)',           value: sellPrice,   color: '#22C55E'  },
-            { label: 'Gross Margin',               value: grossMargin, color: '#34D399'  },
-          ];
-        })().map((card) => (
-          <div key={card.label} style={{
-            background: SURFACE, border: `1px solid ${BORDER}`,
-            borderRadius: 10, padding: '14px 16px',
-          }}>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-              {card.label}
-            </div>
-            <div style={{ color: card.color, fontWeight: 700, fontSize: 20 }}>
-              {fmt$(card.value)}
-            </div>
+      {/* Cost breakdown + adjustable markups */}
+      {computedCosts && (
+        <div style={{ marginBottom: 20 }}>
+          {/* Cost cards row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
+            {[
+              { label: 'Material Cost', value: computedCosts.matCost, color: GOLD },
+              { label: 'Labor Cost', value: computedCosts.labCost, color: '#60A5FA' },
+              { label: 'Subtotal', value: computedCosts.subtotal, color: '#fff' },
+              { label: 'Total Job Cost', value: computedCosts.totalJobCost, color: '#22C55E' },
+            ].map((card) => (
+              <div key={card.label} style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{card.label}</div>
+                <div style={{ color: card.color, fontWeight: 700, fontSize: 20 }}>{fmt$(card.value)}</div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+          {/* Markup sliders */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {[
+              { label: 'Overhead', pct: overheadPct, setPct: setOverheadPct, value: computedCosts.overhead, color: '#F97316' },
+              { label: 'Profit', pct: profitPct, setPct: setProfitPct, value: computedCosts.profit, color: '#22C55E' },
+              { label: 'Contingency', pct: contingencyPct, setPct: setContingencyPct, value: computedCosts.contingency, color: '#A78BFA' },
+            ].map((ctrl) => (
+              <div key={ctrl.label} style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ctrl.label}</span>
+                  <span style={{ color: ctrl.color, fontWeight: 700, fontSize: 16 }}>{ctrl.pct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={25}
+                  value={ctrl.pct}
+                  onChange={(e) => ctrl.setPct(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: ctrl.color, cursor: 'pointer' }}
+                />
+                <div style={{ color: ctrl.color, fontWeight: 600, fontSize: 14, marginTop: 4, textAlign: 'right' }}>{fmt$(ctrl.value)}</div>
+              </div>
+            ))}
+          </div>
+          {/* Cost per SF */}
+          {computedCosts.costPerSF > 0 && (
+            <div style={{ marginTop: 8, textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+              Cost/SF: <span style={{ color: GOLD, fontWeight: 600 }}>${computedCosts.costPerSF.toFixed(2)}</span> · {fmtN(result?.estimatedSF || 0)} SF
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Building visualization */}
       {result && (result.estimatedSF > 0 || result.itemCount > 0) && (() => {
@@ -933,89 +1100,71 @@ export default function TakeoffPage() {
         </div>
       )}
 
-      {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button
-          onClick={handleSageAutoDocs}
-          disabled={!!generating}
-          style={{
-            padding: '11px 24px',
-            background: generating === 'sage'
-              ? 'rgba(212,160,23,0.3)'
-              : `linear-gradient(135deg, ${GOLD}, #C8960F)`,
-            border: 'none', borderRadius: 8,
-            color: '#000', fontWeight: 800, fontSize: 13,
-            cursor: generating ? 'wait' : 'pointer',
-            letterSpacing: '0.03em',
-            opacity: (generating && generating !== 'sage') ? 0.5 : 1,
-          }}
-        >
-          {generating === 'sage' ? 'Sage is building...' : '⚡ Sage: Build All Documents'}
-        </button>
-        <button
-          onClick={handleGenerateBidPackages}
-          disabled={!!generating}
-          style={{
-            padding: '11px 22px',
-            background: 'rgba(255,255,255,0.07)',
-            border: `1px solid rgba(255,255,255,0.15)`,
-            borderRadius: 8, color: '#fff',
-            fontWeight: 600, fontSize: 13,
-            cursor: generating ? 'wait' : 'pointer',
-            opacity: (generating && generating !== 'bid-packages') ? 0.5 : 1,
-          }}
-        >
-          {generating === 'bid-packages' ? 'Creating...' : '📦 Generate Bid Packages'}
-        </button>
-        <button
-          onClick={handleGenerateSOV}
-          disabled={!!generating}
-          style={{
-            padding: '11px 22px',
-            background: 'rgba(255,255,255,0.07)',
-            border: `1px solid rgba(255,255,255,0.15)`,
-            borderRadius: 8, color: '#fff',
-            fontWeight: 600, fontSize: 13,
-            cursor: generating ? 'wait' : 'pointer',
-            opacity: (generating && generating !== 'sov') ? 0.5 : 1,
-          }}
-        >
-          {generating === 'sov' ? 'Creating...' : '📋 Auto-Generate SOV'}
-        </button>
-        <button
-          onClick={exportXLS}
-          disabled={!!generating}
-          style={{
-            padding: '11px 22px',
-            background: 'rgba(34,197,94,0.12)',
-            border: `1px solid rgba(34,197,94,0.3)`,
-            borderRadius: 8, color: '#22C55E',
-            fontWeight: 600, fontSize: 13,
-            cursor: generating ? 'wait' : 'pointer',
-            opacity: (generating && generating !== 'xls') ? 0.5 : 1,
-          }}
-        >
-          {generating === 'xls' ? 'Generating...' : '📊 Export to Excel'}
-        </button>
-        <button
-          onClick={() => {
-            if (confirm('Start a new takeoff? Your previous results are saved in the database.')) {
-              setState('upload');
-              setSelectedFile(null);
-              setResult(null);
-              setTakeoffId(null);
-            }
-          }}
-          style={{
-            padding: '11px 22px',
-            background: 'transparent', border: 'none',
-            color: 'rgba(255,255,255,0.4)',
-            fontWeight: 500, fontSize: 13,
-            cursor: 'pointer', marginLeft: 'auto',
-          }}
-        >
-          + New Analysis
-        </button>
+      {/* Generate All progress */}
+      {generating === 'all' && progress.pct > 0 && (
+        <div style={{
+          background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+          borderRadius: 10, padding: '12px 18px', marginBottom: 16,
+          display: 'flex', alignItems: 'center', gap: 14,
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: '#22C55E', fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
+              Building all project documents...
+            </div>
+            <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${progress.pct}%`, background: 'linear-gradient(90deg, #22C55E, #34D399)', borderRadius: 4, transition: 'width 0.5s ease' }} />
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 5 }}>{progress.message}</div>
+          </div>
+          <div style={{ color: '#22C55E', fontWeight: 700, fontSize: 16 }}>{progress.pct}%</div>
+        </div>
+      )}
+
+      {/* Action buttons — two rows */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Primary actions */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={handleGenerateAll} disabled={!!generating}
+            style={{ padding: '12px 28px', background: `linear-gradient(135deg, #22C55E, #16A34A)`, border: 'none', borderRadius: 8, color: '#fff', fontWeight: 800, fontSize: 14, cursor: generating ? 'wait' : 'pointer', letterSpacing: '0.03em', opacity: generating ? 0.6 : 1 }}>
+            {generating === 'all' ? 'Building...' : '🚀 Generate All Documents'}
+          </button>
+          <button onClick={handleSageAutoDocs} disabled={!!generating}
+            style={{ padding: '11px 24px', background: generating === 'sage' ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg, ${GOLD}, #C8960F)`, border: 'none', borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'sage') ? 0.5 : 1 }}>
+            {generating === 'sage' ? 'Sage building...' : '⚡ Sage AI Documents'}
+          </button>
+          <button onClick={exportXLS} disabled={!!generating}
+            style={{ padding: '11px 22px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: '#22C55E', fontWeight: 600, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'xls') ? 0.5 : 1 }}>
+            {generating === 'xls' ? 'Generating...' : '📊 Export Excel'}
+          </button>
+        </div>
+        {/* Secondary actions */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={handleGenerateBidPackages} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'bid-packages') ? 0.5 : 1 }}>
+            {generating === 'bid-packages' ? 'Creating...' : '📦 Bid Packages'}
+          </button>
+          <button onClick={handleGenerateSOV} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'sov') ? 0.5 : 1 }}>
+            {generating === 'sov' ? 'Creating...' : '📋 SOV'}
+          </button>
+          <button onClick={handleCreateBudget} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'budget') ? 0.5 : 1 }}>
+            {generating === 'budget' ? 'Creating...' : '💰 Budget'}
+          </button>
+          <button onClick={handleGenerateLienWaivers} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'lien-waivers') ? 0.5 : 1 }}>
+            {generating === 'lien-waivers' ? 'Creating...' : '📝 Lien Waivers'}
+          </button>
+          <button
+            onClick={() => {
+              if (confirm('Start a new takeoff? Previous results are saved.')) {
+                setState('upload'); setSelectedFile(null); setResult(null); setTakeoffId(null);
+              }
+            }}
+            style={{ padding: '9px 18px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontWeight: 500, fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>
+            + New Analysis
+          </button>
+        </div>
       </div>
     </div>
   );

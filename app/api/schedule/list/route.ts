@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const db = createServerClient();
     let query = db
-      .from('project_tasks')
+      .from('schedule_tasks')
       .select('*')
       .eq('tenant_id', user.tenantId)
       .order('start_date', { ascending: true }).limit(1000);

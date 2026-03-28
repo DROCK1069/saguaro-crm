@@ -84,7 +84,7 @@ NOTE: All tables are already filtered by tenant_id and project_id server-side â€
 
 Available Supabase tables and their queryable columns:
 - projects: id, name, status('active'|'completed'|'bidding'), contract_amount, address, start_date, end_date, created_at
-- pay_applications: id, project_id, app_number, application_number, period_to, status('draft'|'submitted'|'approved'|'paid'), contract_sum, total_completed_and_stored, current_payment_due, retainage_amount, created_at
+- pay_applications: id, project_id, app_number, app_number, period_to, status('draft'|'submitted'|'approved'|'paid'), contract_sum, total_completed_stored, current_payment_due, total_retainage, created_at
 - rfis: id, project_id, rfi_number, subject, title, status('open'|'answered'|'closed'), due_date, response_due_date, cost_impact, schedule_impact, created_at
 - change_orders: id, project_id, co_number, title, status('pending'|'approved'|'rejected'), cost_impact, schedule_impact, created_at
 - lien_waivers: id, project_id, subcontractor_id, waiver_type, amount, status('pending'|'signed'|'received'), through_date, signed_at, created_at

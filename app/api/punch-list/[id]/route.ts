@@ -8,7 +8,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const db = createServerClient();
     const { data, error } = await db
-      .from('punch_list_items')
+      .from('punch_list')
       .select('*')
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
@@ -36,7 +36,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       fields.completed_at = new Date().toISOString();
     }
     const { error } = await db
-      .from('punch_list_items')
+      .from('punch_list')
       .update(fields)
       .eq('id', id)
       .eq('tenant_id', user.tenantId);
@@ -54,7 +54,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const db = createServerClient();
     const { error } = await db
-      .from('punch_list_items')
+      .from('punch_list')
       .delete()
       .eq('id', id)
       .eq('tenant_id', user.tenantId);

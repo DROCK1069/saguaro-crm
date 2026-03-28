@@ -53,6 +53,10 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
   const [isIosWeb, setIsIosWeb] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [pushMsg, setPushMsg] = useState<{ title: string; body: string } | null>(null);
+  const [projectName, setProjectName] = useState('');
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [activeProjectId, setActiveProjectId] = useState('');
   const native = isNative();
 
   // ── Capacitor + PWA boot ───────────────────────────────────────
@@ -77,6 +81,33 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
     return () => clearTimeout(splashTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Load active project for header ───────────────────────────
+  useEffect(() => {
+    fetch('/api/projects/list').then(r => r.ok ? r.json() : null).then(d => {
+      const list = d?.projects || d?.data || [];
+      if (list.length > 0) {
+        setProjects(list);
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('sag_active_project') : null;
+        const active = stored ? list.find((p: { id: string }) => p.id === stored) || list[0] : list[0];
+        setActiveProjectId(active.id);
+        setProjectName(active.name || 'Project');
+        localStorage.setItem('sag_active_project', active.id);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const switchProject = (id: string) => {
+    const proj = projects.find(p => p.id === id);
+    if (proj) {
+      setActiveProjectId(proj.id);
+      setProjectName(proj.name);
+      localStorage.setItem('sag_active_project', proj.id);
+      setShowProjectPicker(false);
+      // Reload page to refresh data for new project
+      window.location.reload();
+    }
+  };
 
   // ── Push notifications (native) ───────────────────────────────
   useEffect(() => {
@@ -198,39 +229,63 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', background: DARK, color: TEXT, fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', maxWidth: 480, margin: '0 auto' }}>
 
-      {/* ── Status bar ── */}
-      <div style={{ background: '#060C15', padding: '10px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, position: 'sticky', top: 0, zIndex: 50, paddingTop: `max(${native && isIOS() ? '44px' : '10px'}, env(safe-area-inset-top))` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon-96x96.png" alt="Saguaro" width={30} height={30} style={{ borderRadius: 8, border: '1px solid rgba(212,160,23,.2)' }} />
-          <div style={{ lineHeight: 1.1 }}>
-            <span style={{ fontWeight: 900, fontSize: 14, color: GOLD, letterSpacing: 1 }}>SAGUARO</span>
-            <span style={{ fontWeight: 400, fontSize: 10, color: DIM, display: 'block', letterSpacing: 2, textTransform: 'uppercase' }}>Field</span>
+      {/* ── Header with project switcher ── */}
+      <div style={{ background: '#060C15', position: 'sticky', top: 0, zIndex: 50, borderBottom: `1px solid ${BORDER}`, paddingTop: `max(${native && isIOS() ? '44px' : '6px'}, env(safe-area-inset-top))` }}>
+        {/* Top row: Logo + Status */}
+        <div style={{ padding: '6px 14px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/icon-96x96.png" alt="Saguaro" width={26} height={26} style={{ borderRadius: 6, border: '1px solid rgba(212,160,23,.2)' }} />
+            <span style={{ fontWeight: 900, fontSize: 13, color: GOLD, letterSpacing: 1 }}>SAGUARO</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {queueCount > 0 && (
+              <button onClick={triggerSync} disabled={syncing || !online}
+                style={{ background: online ? 'rgba(212,160,23,.12)' : 'rgba(239,68,68,.12)', border: `1px solid ${online ? 'rgba(212,160,23,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 16, padding: '2px 8px', color: online ? GOLD : RED, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+                <span style={{ display: 'inline-block', animation: syncing ? 'spin 1s linear infinite' : undefined }}>↻</span>
+                {queueCount}
+              </button>
+            )}
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: online ? GREEN : RED, boxShadow: `0 0 4px ${online ? GREEN : RED}` }} />
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Native badge */}
-          {native && (
-            <span style={{ background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.25)', borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 700, color: GOLD, letterSpacing: 0.5 }}>
-              {isIOS() ? 'iOS' : 'Android'}
+        {/* Project switcher row */}
+        <div style={{ padding: '0 14px 6px', position: 'relative' }}>
+          <button onClick={() => { setShowProjectPicker(!showProjectPicker); hapticLight().catch(() => {}); }}
+            style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 6, width: '100%', cursor: 'pointer', color: TEXT }}>
+            <span style={{ fontSize: 13 }}>🏗</span>
+            <span style={{ flex: 1, textAlign: 'left', fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {projectName || 'Select Project'}
             </span>
+            <span style={{ fontSize: 10, color: DIM, transform: showProjectPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+          </button>
+          {/* Project dropdown */}
+          {showProjectPicker && projects.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 14, right: 14, background: '#0F1E30', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 100, maxHeight: 240, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.6)' }}>
+              {projects.map(p => (
+                <button key={p.id} onClick={() => switchProject(p.id)}
+                  style={{ width: '100%', padding: '10px 14px', background: p.id === activeProjectId ? 'rgba(212,160,23,.1)' : 'transparent', border: 'none', borderBottom: `1px solid rgba(255,255,255,.04)`, color: p.id === activeProjectId ? GOLD : TEXT, fontSize: 13, fontWeight: p.id === activeProjectId ? 700 : 400, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {p.id === activeProjectId && <span style={{ fontSize: 10 }}>✓</span>}
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                </button>
+              ))}
+            </div>
           )}
-          {queueCount > 0 && (
-            <button
-              onClick={triggerSync}
-              disabled={syncing || !online}
-              style={{ background: online ? 'rgba(212,160,23,.15)' : 'rgba(239,68,68,.15)', border: `1px solid ${online ? 'rgba(212,160,23,.35)' : 'rgba(239,68,68,.35)'}`, borderRadius: 20, padding: '3px 10px', color: online ? GOLD : RED, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, cursor: online ? 'pointer' : 'default' }}
-            >
-              <span style={{ display: 'inline-block', animation: syncing ? 'spin 1s linear infinite' : undefined }}>↻</span>
-              {queueCount} queued
-            </button>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: online ? GREEN : RED, boxShadow: `0 0 5px ${online ? GREEN : RED}` }} />
-            <span style={{ fontSize: 11, color: DIM }}>{online ? 'Live' : 'Offline'}</span>
-          </div>
         </div>
+        {/* Breadcrumb row — shows current page name */}
+        {pathname !== '/field' && (
+          <div style={{ padding: '0 14px 5px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: DIM }}>
+            <button onClick={() => router.push('/field')} style={{ background: 'none', border: 'none', color: GOLD, fontSize: 11, cursor: 'pointer', padding: 0, fontWeight: 600 }}>Home</button>
+            <span style={{ color: 'rgba(255,255,255,.2)' }}>›</span>
+            <span style={{ fontWeight: 600, color: TEXT, textTransform: 'capitalize' }}>
+              {pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ')}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Click-away for project picker */}
+      {showProjectPicker && <div onClick={() => setShowProjectPicker(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />}
 
       {/* ── Inline push notification banner (native foreground) ── */}
       {pushMsg && (

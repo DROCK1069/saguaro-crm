@@ -8,6 +8,9 @@ export default function LoginPage(){
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [focused, setFocused] = useState<string|null>(null);
 
   React.useEffect(() => {
     // Handle implicit flow: Supabase puts tokens in the URL hash fragment.
@@ -55,7 +58,7 @@ export default function LoginPage(){
       const res = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email, password: form.password }),
+        body: JSON.stringify({ email: form.email, password: form.password, remember }),
       });
       const data = await res.json();
 
@@ -74,11 +77,25 @@ export default function LoginPage(){
     setLoading(false);
   }
 
-  const inputStyle = {width:'100%',padding:'11px 14px',background:'rgba(255,255,255,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box' as const,transition:'border-color .15s'};
-  const labelStyle = {display:'block' as const,fontSize:11,fontWeight:700 as const,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6};
+  const inputStyle = (field: string): React.CSSProperties => ({
+    width:'100%',
+    padding:'12px 14px',
+    paddingRight: field === 'password' ? 44 : 14,
+    background:'rgba(255,255,255,.04)',
+    border:`1.5px solid ${focused === field ? GOLD : BORDER}`,
+    borderRadius:8,
+    color:TEXT,
+    fontSize:14,
+    outline:'none',
+    boxSizing:'border-box',
+    transition:'border-color .2s, box-shadow .2s',
+    boxShadow: focused === field ? `0 0 0 3px rgba(212,160,23,.12)` : 'none',
+  });
+  const labelStyle: React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
 
   return (
     <div style={{minHeight:'100vh',background:DARK,display:'flex',flexDirection:'column'}}>
+      {/* Top nav */}
       <nav style={{padding:'0 24px',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`}}>
         <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10}}>
           <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{height:36,width:'auto',objectFit:'contain',borderRadius:4}} />
@@ -90,17 +107,20 @@ export default function LoginPage(){
         <a href="/signup" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>No account? <span style={{color:GOLD}}>Start free trial →</span></a>
       </nav>
 
+      {/* Main content */}
       <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'32px 24px'}}>
-        <div style={{width:'100%',maxWidth:400}}>
-          <div style={{textAlign:'center' as const,marginBottom:28}}>
+        <div style={{width:'100%',maxWidth:420}}>
+          {/* Header */}
+          <div style={{textAlign:'center',marginBottom:28}}>
             <div style={{display:'flex',justifyContent:'center',marginBottom:16}}>
               <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{height:56,width:'auto',objectFit:'contain',borderRadius:6}} />
             </div>
-            <h1 style={{fontSize:24,fontWeight:800,margin:'0 0 8px',color:TEXT}}>Welcome back</h1>
+            <h1 style={{fontSize:26,fontWeight:800,margin:'0 0 6px',color:TEXT}}>Welcome back</h1>
             <p style={{color:DIM,fontSize:14,margin:0}}>Sign in to your Saguaro account</p>
           </div>
 
-          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:32}}>
+          {/* Card */}
+          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:'32px 28px',boxShadow:'0 8px 32px rgba(0,0,0,.25)'}}>
             {info&&(
               <div style={{background:'rgba(34,197,94,.1)',border:'1px solid rgba(34,197,94,.3)',borderRadius:8,padding:'10px 14px',marginBottom:20,fontSize:13,color:'#22c55e',display:'flex',alignItems:'flex-start',gap:8}}>
                 <span>✅</span><span>{info}</span>
@@ -112,34 +132,127 @@ export default function LoginPage(){
               </div>
             )}
 
-            <form onSubmit={handleLogin} style={{display:'flex',flexDirection:'column' as const,gap:14}}>
+            <form onSubmit={handleLogin} style={{display:'flex',flexDirection:'column',gap:16}}>
+              {/* Email */}
               <div>
-                <label style={labelStyle}>Email</label>
-                <input type="email" placeholder="you@company.com" value={form.email}
+                <label htmlFor="login-email" style={labelStyle}>Email Address</label>
+                <input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={form.email}
                   onChange={e=>setForm(p=>({...p,email:e.target.value}))}
-                  autoComplete="email" required style={inputStyle}/>
+                  onFocus={()=>setFocused('email')}
+                  onBlur={()=>setFocused(null)}
+                  autoComplete="username"
+                  required
+                  style={inputStyle('email')}
+                />
               </div>
+
+              {/* Password */}
               <div>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
-                  <label style={{...labelStyle,marginBottom:0}}>Password</label>
+                  <label htmlFor="login-password" style={{...labelStyle,marginBottom:0}}>Password</label>
                   <a href="/forgot-password" style={{fontSize:11,color:GOLD,textDecoration:'none',fontWeight:600}}>Forgot password?</a>
                 </div>
-                <input type="password" placeholder="••••••••" value={form.password}
-                  onChange={e=>setForm(p=>({...p,password:e.target.value}))}
-                  autoComplete="current-password" required style={inputStyle}/>
+                <div style={{position:'relative'}}>
+                  <input
+                    id="login-password"
+                    name="password"
+                    type={showPwd ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={e=>setForm(p=>({...p,password:e.target.value}))}
+                    onFocus={()=>setFocused('password')}
+                    onBlur={()=>setFocused(null)}
+                    autoComplete="current-password"
+                    required
+                    style={inputStyle('password')}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={()=>setShowPwd(p=>!p)}
+                    style={{
+                      position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
+                      background:'none',border:'none',color:DIM,cursor:'pointer',
+                      fontSize:16,padding:'4px 6px',lineHeight:1,
+                      transition:'color .15s',
+                    }}
+                    onMouseEnter={e=>(e.currentTarget.style.color=TEXT)}
+                    onMouseLeave={e=>(e.currentTarget.style.color=DIM)}
+                    aria-label={showPwd ? 'Hide password' : 'Show password'}
+                  >
+                    {showPwd ? '🙈' : '👁'}
+                  </button>
+                </div>
               </div>
+
+              {/* Remember me */}
+              <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',userSelect:'none'}}>
+                <div
+                  onClick={()=>setRemember(p=>!p)}
+                  style={{
+                    width:16,height:16,borderRadius:4,
+                    border:`1.5px solid ${remember ? GOLD : BORDER}`,
+                    background: remember ? GOLD : 'transparent',
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    transition:'all .15s',cursor:'pointer',flexShrink:0,
+                  }}
+                >
+                  {remember && <span style={{color:'#0d1117',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>}
+                </div>
+                <span style={{fontSize:12,color:DIM,fontWeight:500}}>Remember me on this device</span>
+              </label>
+
+              {/* Submit */}
               <button type="submit" disabled={loading}
-                style={{marginTop:8,padding:'13px 0',background:loading?'rgba(212,160,23,.5)':`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:9,color:'#0d1117',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer',transition:'opacity .15s'}}>
+                style={{
+                  marginTop:4,padding:'14px 0',
+                  background:loading?'rgba(212,160,23,.5)':`linear-gradient(135deg,${GOLD},#F0C040)`,
+                  border:'none',borderRadius:9,color:'#0d1117',fontSize:15,fontWeight:800,
+                  cursor:loading?'not-allowed':'pointer',transition:'all .2s',
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:8,
+                  boxShadow: loading ? 'none' : '0 4px 16px rgba(212,160,23,.25)',
+                }}
+              >
+                {loading && (
+                  <span style={{
+                    display:'inline-block',width:16,height:16,
+                    border:'2px solid rgba(13,17,23,.3)',borderTopColor:'#0d1117',
+                    borderRadius:'50%',animation:'spin .6s linear infinite',
+                  }}/>
+                )}
                 {loading?'Signing in…':'Sign In →'}
               </button>
             </form>
 
-            <div style={{marginTop:20,textAlign:'center' as const,fontSize:12,color:DIM}}>
+            {/* Hint */}
+            <div style={{marginTop:12,textAlign:'center',fontSize:11,color:'rgba(143,163,192,.5)'}}>
+              Press Enter to sign in
+            </div>
+
+            <div style={{marginTop:16,textAlign:'center',fontSize:12,color:DIM}}>
               Don't have an account? <a href="/signup" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Start free trial</a>
             </div>
           </div>
+
+          {/* Trust badges */}
+          <div style={{marginTop:20,textAlign:'center',display:'flex',justifyContent:'center',gap:20,flexWrap:'wrap'}}>
+            {['256-bit SSL','SOC 2','99.9% Uptime'].map(badge => (
+              <span key={badge} style={{fontSize:10,color:'rgba(143,163,192,.4)',fontWeight:600,letterSpacing:.5,textTransform:'uppercase'}}>
+                🔒 {badge}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }

@@ -10,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     const allowed = ['title','description','assigned_to','due_date','priority','status','category','completed_at','completed_by','notes'];
     for (const k of allowed) if (body[k] !== undefined) updates[k] = body[k];
-    const { data, error } = await supabase.from('todos').update(updates).eq('id', params.id).eq('project_id', params.projectId).select().single();
+    const { data, error } = await supabase.from('project_todos').update(updates).eq('id', params.id).eq('project_id', params.projectId).select().single();
     if (error) throw error;
     return NextResponse.json({ todo: data });
   } catch (e: unknown) {
@@ -24,7 +24,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { projectId
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const supabase = createServerClient();
-    const { error } = await supabase.from('todos').delete().eq('id', params.id).eq('project_id', params.projectId);
+    const { error } = await supabase.from('project_todos').delete().eq('id', params.id).eq('project_id', params.projectId);
     if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }); }

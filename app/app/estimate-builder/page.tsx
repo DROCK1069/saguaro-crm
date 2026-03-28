@@ -249,6 +249,14 @@ export default function EstimateBuilderPage() {
   // Add-item modal
   const [addingToDivision, setAddingToDivision] = useState<string | null>(null);
 
+  // Money action dropdown state
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState('');
+  const [adjustId, setAdjustId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   /* ─── Initialize ────────────────────────────────────────────────── */
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -386,6 +394,41 @@ export default function EstimateBuilderPage() {
       alert(`Estimate exported as ${format.toUpperCase()} successfully. (Simulation)`);
     }, 1500);
   }, []);
+
+  /* ─── Money Action Dropdown Helpers ──────────────────────────────── */
+  function openLineMenu(id: string) { setMenuId(id); setEditId(null); setAdjustId(null); setDeleteId(null); }
+
+  function handleEditLine(divCode: string, itemId: string) {
+    const amount = parseFloat(editVal);
+    if (isNaN(amount) || amount < 0) return;
+    // Reverse-engineer unitCost from total: total = qty * unitCost * (1 + markup/100)
+    const div = divisions.find(d => d.code === divCode);
+    const item = div?.items.find(i => i.id === itemId);
+    if (!item || item.quantity === 0) return;
+    const newUnitCost = amount / (item.quantity * (1 + item.markupPct / 100));
+    updateLineItem(divCode, itemId, 'unitCost', Math.round(newUnitCost * 100) / 100);
+    setEditId(null);
+  }
+
+  function handleAdjustLine(divCode: string, itemId: string, pctAdj: number) {
+    const div = divisions.find(d => d.code === divCode);
+    const item = div?.items.find(i => i.id === itemId);
+    if (!item) return;
+    const newUnitCost = Math.round(item.unitCost * (1 + pctAdj / 100) * 100) / 100;
+    updateLineItem(divCode, itemId, 'unitCost', newUnitCost);
+    setAdjustId(null);
+  }
+
+  function handleCopyLine(id: string, amount: number) {
+    navigator.clipboard.writeText(fmt(amount)).catch(() => {});
+    setCopiedId(id); setTimeout(() => setCopiedId(null), 2000);
+    setMenuId(null);
+  }
+
+  function handleDeleteLine(divCode: string, itemId: string) {
+    removeLineItem(divCode, itemId);
+    setDeleteId(null);
+  }
 
   /* ─── Styles ────────────────────────────────────────────────────── */
   const pageStyle: React.CSSProperties = { minHeight: '100vh', background: BG, color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '24px 32px' };
@@ -574,7 +617,51 @@ export default function EstimateBuilderPage() {
                             </td>
                             <td style={tdStyle}><input style={{ ...inputStyle, width: 90 }} type="number" step="0.01" value={item.unitCost} onChange={e => updateLineItem(div.code, item.id, 'unitCost', parseFloat(e.target.value) || 0)} /></td>
                             <td style={tdStyle}><input style={{ ...inputStyle, width: 65 }} type="number" step="0.1" value={item.markupPct} onChange={e => updateLineItem(div.code, item.id, 'markupPct', parseFloat(e.target.value) || 0)} /></td>
-                            <td style={{ ...tdStyle, fontWeight: 600, color: GOLD }}>{fmt(lineTotal(item))}</td>
+                            <td style={{ ...tdStyle, fontWeight: 600, color: GOLD, position: 'relative' as const }}>
+                              {deleteId === item.id ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontSize: 11, color: RED, fontWeight: 600 }}>Delete?</span>
+                                  <button onClick={() => handleDeleteLine(div.code, item.id)} style={{ padding: '3px 8px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 5, color: RED, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Yes</button>
+                                  <button onClick={() => setDeleteId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                                </div>
+                              ) : editId === item.id ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditLine(div.code, item.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 100, padding: '4px 8px', background: BG, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
+                                  <button onClick={() => handleEditLine(div.code, item.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 5, color: '#0d1117', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                                  <button onClick={() => setEditId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                                </div>
+                              ) : adjustId === item.id ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                  {[-10, -5, 5, 10].map(p => (
+                                    <button key={p} onClick={() => handleAdjustLine(div.code, item.id, p)} style={{ padding: '3px 7px', background: p > 0 ? 'rgba(61,214,140,.1)' : 'rgba(239,68,68,.1)', border: `1px solid ${p > 0 ? 'rgba(61,214,140,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 5, color: p > 0 ? GREEN : RED, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>{p > 0 ? '+' : ''}{p}%</button>
+                                  ))}
+                                  <button onClick={() => setAdjustId(null)} style={{ padding: '3px 6px', background: 'none', border: 'none', color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span>{fmt(lineTotal(item))}</span>
+                                  {copiedId === item.id && <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>Copied!</span>}
+                                  <button onClick={() => openLineMenu(item.id)} style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 10, padding: '2px 4px', lineHeight: 1, opacity: 0.6 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}>&#9662;</button>
+                                  {menuId === item.id && (
+                                    <div style={{ position: 'absolute', top: 36, right: 14, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 4, zIndex: 100, minWidth: 150, boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
+                                      {[
+                                        { label: 'Edit Amount', icon: '\u270F\uFE0F', action: () => { setMenuId(null); setEditId(item.id); setEditVal(String(Math.round(lineTotal(item) * 100) / 100)); } },
+                                        { label: 'Adjust %', icon: '\uD83D\uDCCA', action: () => { setMenuId(null); setAdjustId(item.id); } },
+                                        { label: 'Copy Amount', icon: '\uD83D\uDCCB', action: () => handleCopyLine(item.id, lineTotal(item)) },
+                                      ].map(mi => (
+                                        <div key={mi.label} onClick={mi.action} style={{ padding: '7px 12px', fontSize: 12, color: TEXT, cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }} onMouseEnter={e => (e.currentTarget.style.background = BG)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                          <span style={{ fontSize: 14 }}>{mi.icon}</span>{mi.label}
+                                        </div>
+                                      ))}
+                                      <div style={{ height: 1, background: BORDER, margin: '4px 0' }} />
+                                      <div onClick={() => { setMenuId(null); setDeleteId(item.id); }} style={{ padding: '7px 12px', fontSize: 12, color: RED, cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,.08)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                        <span style={{ fontSize: 14 }}>{'\uD83D\uDDD1\uFE0F'}</span>Delete Line
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
                             {showCostBreakdown && <>
                               <td style={tdStyle}><input style={{ ...inputStyle, width: 70 }} type="number" step="0.01" value={item.costBreakdown.labor} onChange={e => updateCostBreakdown(div.code, item.id, 'labor', parseFloat(e.target.value) || 0)} /></td>
                               <td style={tdStyle}><input style={{ ...inputStyle, width: 70 }} type="number" step="0.01" value={item.costBreakdown.material} onChange={e => updateCostBreakdown(div.code, item.id, 'material', parseFloat(e.target.value) || 0)} /></td>
@@ -588,6 +675,7 @@ export default function EstimateBuilderPage() {
                     </table>
                   </div>
                 )}
+                {menuId && <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={() => setMenuId(null)} />}
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                   <button style={btnSmStyle(GOLD)} onClick={() => addLineItem(div.code)}><span style={{ color: '#000', fontWeight: 700 }}>+ Add Line Item</span></button>
                   <button style={btnSmStyle(BLUE)} onClick={() => setAddingToDivision(div.code)}><span style={{ color: TEXT }}>Apply Assembly</span></button>

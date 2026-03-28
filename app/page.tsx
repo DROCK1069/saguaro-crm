@@ -6,12 +6,9 @@ const GOLD='#F59E0B', DARK='#0d1117', RAISED='#0F172A', BORDER='#1E3A5F', DIM='#
 const NAV_LINKS = [
   { label: 'Features',  href: '/#features' },
   { label: 'Field App', href: '/field-app' },
-  { label: 'Get the App', href: '/get-the-app' },
-  { label: 'How It Works', href: '/#demo' },
   { label: 'Pricing',   href: '/pricing' },
   { label: 'Compare',   href: '/compare/procore' },
-  { label: 'ROI Calculator', href: '/roi-calculator' },
-  { label: 'Switch from Procore', href: '/switch-from-procore' },
+  { label: 'ROI',       href: '/roi-calculator' },
 ];
 
 const FEATURES: { icon: React.ReactNode; title: string; desc: string; pill: string }[] = [
@@ -425,13 +422,13 @@ export default function HomePage() {
                 </div>
 
                 {/* Headline */}
-                <h1 className="hero-animate" style={{ fontSize: 'clamp(36px, 3.8vw, 56px)', fontWeight: 900, margin: '0 0 14px', lineHeight: 1.06, letterSpacing: '-0.03em', textAlign: 'left' }}>
+                <h1 className="hero-animate" style={{ fontSize: 'clamp(28px, 3vw, 42px)', fontWeight: 800, margin: '0 0 14px', lineHeight: 1.1, letterSpacing: '-0.02em', textAlign: 'left' }}>
                   The Smarter CRM<br />
                   <span style={{ background: `linear-gradient(135deg, ${GOLD} 0%, #F5D060 50%, #C8960F 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Built for General Contractors</span>
                 </h1>
 
                 {/* Subheadline */}
-                <p className="hero-animate-delay" style={{ fontSize: 17, color: 'rgba(255,255,255,0.85)', maxWidth: 480, margin: '0 0 16px', lineHeight: 1.58, textAlign: 'left' }}>
+                <p className="hero-animate-delay" style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', maxWidth: 480, margin: '0 0 16px', lineHeight: 1.6, textAlign: 'left' }}>
                   Upload any blueprint PDF. Sage AI reads every dimension, calculates all materials, and generates a full bid estimate in 41 seconds. No manual measuring. No spreadsheets. No Procore.
                 </p>
 
@@ -448,7 +445,7 @@ export default function HomePage() {
 
                 {/* CTA row */}
                 <div className="hero-cta-row hero-animate-delay" style={{ display: 'flex', gap: 12, justifyContent: 'flex-start', flexWrap: 'wrap', marginBottom: 14 }}>
-                  <a href="/sandbox" className="cta-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '16px 38px', background: `linear-gradient(135deg,#F59E0B,#EF4444)`, border: 'none', borderRadius: 8, color: '#fff', fontSize: 16, fontWeight: 900, letterSpacing: '0.02em', textDecoration: 'none', boxShadow: `0 8px 40px rgba(245,158,11,0.55), 0 2px 8px rgba(0,0,0,0.4)` }}>
+                  <a href="/sandbox" className="cta-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 28px', background: `linear-gradient(135deg,#F59E0B,#EF4444)`, border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 700, letterSpacing: '0.02em', textDecoration: 'none', boxShadow: `0 6px 28px rgba(245,158,11,0.45), 0 2px 6px rgba(0,0,0,0.3)` }}>
                     ⚡ Try AI Takeoff Free →
                   </a>
                   <a href="/signup" className="cta-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '16px 22px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 8, color: 'rgba(255,255,255,0.92)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
@@ -629,7 +626,7 @@ export default function HomePage() {
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: GREEN, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Zero learning curve</div>
-              <h2 style={{ fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: TEXT, margin: '0 0 14px', letterSpacing: -0.5 }}>Up and running in under 5 minutes</h2>
+              <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, color: TEXT, margin: '0 0 14px', letterSpacing: -0.5 }}>Up and running in under 5 minutes</h2>
               <p style={{ fontSize: 16, color: DIM, maxWidth: 520, margin: '0 auto', lineHeight: 1.65 }}>
                 Saguaro is a web platform — nothing to download. Sign up, log in from any browser, and your whole team is live.
               </p>
@@ -665,7 +662,7 @@ export default function HomePage() {
           <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', maxWidth: 1100, margin: '0 auto', padding: '36px 48px', textAlign: 'center' }}>
             {STATS.map((s, i) => (
               <div key={s.label} style={{ borderRight: i < STATS.length - 1 ? '1px solid rgba(245,158,11,0.2)' : 'none', padding: '0 24px' }}>
-                <div style={{ fontSize: 42, fontWeight: 900, color: GOLD, lineHeight: 1, letterSpacing: '-0.02em' }}>{s.value}</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: GOLD, lineHeight: 1, letterSpacing: '-0.02em' }}>{s.value}</div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 6, lineHeight: 1.4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
               </div>
             ))}
@@ -777,7 +774,7 @@ export default function HomePage() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>Mobile Field App</span>
               </div>
 
-              <h2 style={{ fontSize: 'clamp(24px, 3vw, 38px)', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 14px', lineHeight: 1.08 }}>
+              <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 14px', lineHeight: 1.08 }}>
                 Your crew's office<br />
                 <span style={{ background: `linear-gradient(135deg, ${GOLD} 0%, #F5D060 50%, #C8960F 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>is their phone</span>
               </h2>
@@ -878,7 +875,7 @@ export default function HomePage() {
         <section id="demo" style={{ padding: '56px 48px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>How It Works</div>
-            <h2 style={{ fontSize: 'clamp(26px, 3vw, 40px)', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 12px' }}>From Blueprint to Paid — in One Platform</h2>
+            <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 12px' }}>From Blueprint to Paid — in One Platform</h2>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', maxWidth: 560, margin: '0 auto 28px' }}>Upload any PDF blueprint. Sage reads every dimension, calculates all materials, and drives the entire project lifecycle.</p>
             <a href="/sandbox" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 36px', background: `linear-gradient(135deg,#F59E0B,#EF4444)`, borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 900, letterSpacing: '0.04em', textDecoration: 'none', boxShadow: '0 6px 32px rgba(245,158,11,0.45)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><rect x={2} y={2} width={20} height={20} rx={2}/><path d="M2 9h20M9 2v20"/></svg>
@@ -917,7 +914,7 @@ export default function HomePage() {
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Everything You Need</div>
-            <h2 style={{ fontSize: 'clamp(26px, 3vw, 40px)', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 12px' }}>One platform. Every project document.</h2>
+            <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 12px' }}>One platform. Every project document.</h2>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', maxWidth: 540, margin: '0 auto' }}>No more switching between 6 different tools. Saguaro handles the full construction document lifecycle.</p>
           </div>
           <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
@@ -941,7 +938,7 @@ export default function HomePage() {
         <section style={{ borderTop: '1px solid rgba(30,58,95,0.8)', borderBottom: '1px solid rgba(30,58,95,0.8)', background: 'linear-gradient(180deg, #0a1628 0%, #0d1f3c 50%, #0a1628 100%)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 48px' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <h2 style={{ fontSize: 'clamp(26px, 3vw, 40px)', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 10px' }}>Built by GCs, for GCs</h2>
+              <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 10px' }}>Built by GCs, for GCs</h2>
               <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.72)', margin: 0 }}>Real feedback from contractors who switched from legacy software</p>
             </div>
             <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
@@ -975,17 +972,17 @@ export default function HomePage() {
         <section style={{ padding: '80px 48px', textAlign: 'center', background: 'linear-gradient(180deg, #0d1117 0%, #0a1628 100%)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(245,158,11,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', maxWidth: 720, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 48px)', fontWeight: 900, letterSpacing: '-0.02em', margin: '0 0 16px', lineHeight: 1.05 }}>
+          <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 16px', lineHeight: 1.05 }}>
             Ready to run smarter projects?
           </h2>
           <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.78)', margin: '0 0 32px', lineHeight: 1.65 }}>
             Start your 30-day free trial. No credit card required. Full access to every feature from day one.
           </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/signup" style={{ padding: '15px 36px', background: `linear-gradient(135deg,#F59E0B,#EF4444)`, border: 'none', borderRadius: 9, color: '#fff', fontSize: 15, fontWeight: 900, letterSpacing: '0.04em', textDecoration: 'none', boxShadow: '0 8px 40px rgba(245,158,11,0.5)' }}>
+            <a href="/signup" style={{ padding: '12px 28px', background: `linear-gradient(135deg,#F59E0B,#EF4444)`, border: 'none', borderRadius: 9, color: '#fff', fontSize: 14, fontWeight: 700, letterSpacing: '0.03em', textDecoration: 'none', boxShadow: '0 6px 28px rgba(245,158,11,0.4)' }}>
               Start Free Trial →
             </a>
-            <button onClick={() => setContactModal(true)} style={{ padding: '15px 28px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 9, color: 'rgba(255,255,255,0.92)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+            <button onClick={() => setContactModal(true)} style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 9, color: 'rgba(255,255,255,0.92)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               Talk to Sales
             </button>
           </div>

@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 
 const GOLD   = '#D4A017';
 const RAISED = '#0D1D2E';
@@ -99,6 +100,43 @@ function PurchaseOrdersInner() {
 
   /* Receiving */
   const [receiveQtys, setReceiveQtys] = useState<Record<string, number>>({});
+
+  /* Money action sheet */
+  const [actionSheet, setActionSheet] = useState<{ poId: string; label: string; amount: number } | null>(null);
+  const [sheetMode, setSheetMode] = useState<'menu' | 'edit' | 'adjust'>('menu');
+  const [editVal, setEditVal] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  function openMoneySheet(poId: string, label: string, amount: number) {
+    setActionSheet({ poId, label, amount });
+    setSheetMode('menu');
+  }
+  function closeActionSheet() { setActionSheet(null); setSheetMode('menu'); }
+
+  async function handleEditPO(amount: number) {
+    if (!actionSheet) return;
+    setOrders(prev => prev.map(o => o.id === actionSheet.poId ? { ...o, amount } : o));
+    closeActionSheet();
+    try { await fetch(`/api/purchase-orders/${actionSheet.poId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount }) }); } catch {}
+  }
+  async function handleAdjustPO(pct: number) {
+    if (!actionSheet) return;
+    const newAmt = Math.round(actionSheet.amount * (1 + pct / 100) * 100) / 100;
+    setOrders(prev => prev.map(o => o.id === actionSheet.poId ? { ...o, amount: newAmt } : o));
+    closeActionSheet();
+    try { await fetch(`/api/purchase-orders/${actionSheet.poId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: newAmt }) }); } catch {}
+  }
+  function handleCopyPO(amount: number, id: string) {
+    navigator.clipboard.writeText(fmt(amount)).catch(() => {});
+    setCopiedId(id); setTimeout(() => setCopiedId(null), 2000);
+    closeActionSheet();
+  }
+  async function handleDeletePO(id: string) {
+    setOrders(prev => prev.filter(o => o.id !== id));
+    setDeleteConfirm(null);
+    try { await fetch(`/api/purchase-orders/${id}/delete`, { method: 'DELETE' }); } catch {}
+  }
 
   /* ── Fetch ── */
   useEffect(() => {
@@ -424,7 +462,14 @@ function PurchaseOrdersInner() {
                 <span style={{ fontWeight: 700, color: TEXT, fontSize: 15 }}>PO #{po.po_number}</span>
                 <Badge status={po.status} />
               </div>
-              <span style={{ fontWeight: 700, color: GOLD, fontSize: 16 }}>{fmt(po.amount)}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontWeight: 700, color: copiedId === po.id ? GREEN : GOLD, fontSize: 16 }}>{fmt(po.amount)}</span>
+                {copiedId === po.id && <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>Copied!</span>}
+                <button
+                  onClick={(e) => { e.stopPropagation(); openMoneySheet(po.id, `PO ${po.po_number} — ${po.vendor_name}`, po.amount); }}
+                  style={{ background: 'none', border: 'none', color: DIM, fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+                >&#9662;</button>
+              </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: DIM, fontSize: 13 }}>{po.vendor_name}</span>
@@ -629,7 +674,14 @@ function PurchaseOrdersInner() {
           </div>
           <div>
             <span style={labelStyle}>Amount</span>
-            <span style={{ color: GOLD, fontSize: 18, fontWeight: 700 }}>{fmt(po.amount)}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ color: copiedId === po.id ? GREEN : GOLD, fontSize: 18, fontWeight: 700 }}>{fmt(po.amount)}</span>
+              {copiedId === po.id && <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>Copied!</span>}
+              <button
+                onClick={() => openMoneySheet(po.id, `PO ${po.po_number} — ${po.vendor_name}`, po.amount)}
+                style={{ background: 'none', border: 'none', color: DIM, fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+              >&#9662;</button>
+            </span>
           </div>
           <div>
             <span style={labelStyle}>Received Value</span>
@@ -821,6 +873,65 @@ function PurchaseOrdersInner() {
       {view === 'create' && renderCreate()}
       {view === 'detail' && renderDetail()}
       {view === 'receive' && renderReceive()}
+
+      {/* ── Money Action BottomSheet ── */}
+      {actionSheet && (
+        <BottomSheet open={!!actionSheet} onClose={closeActionSheet} title={actionSheet.label}>
+          <div style={{ padding: '16px 20px 24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: DIM, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Current Amount</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{fmt(actionSheet.amount)}</div>
+            </div>
+            {sheetMode === 'menu' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  { label: 'Edit Amount', icon: '\u270F\uFE0F', action: () => { setSheetMode('edit'); setEditVal(String(actionSheet.amount)); } },
+                  { label: 'Adjust %', icon: '\uD83D\uDCCA', action: () => setSheetMode('adjust') },
+                  { label: 'Copy Amount', icon: '\uD83D\uDCCB', action: () => handleCopyPO(actionSheet.amount, actionSheet.poId) },
+                ].map(item => (
+                  <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                    <span style={{ fontSize: 18 }}>{item.icon}</span>{item.label}
+                  </button>
+                ))}
+                <button onClick={() => { closeActionSheet(); setDeleteConfirm(actionSheet.poId); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(239,68,68,.08)', border: `1px solid rgba(239,68,68,.2)`, borderRadius: 10, color: RED, fontSize: 14, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <span style={{ fontSize: 18 }}>{'\uD83D\uDDD1\uFE0F'}</span>Void PO
+                </button>
+              </div>
+            )}
+            {sheetMode === 'edit' && (
+              <div>
+                <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus style={{ width: '100%', padding: '12px', background: RAISED, border: `1px solid ${GOLD}`, borderRadius: 8, color: TEXT, fontSize: 16, textAlign: 'center', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditPO(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 8, color: '#0d1117', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '12px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            )}
+            {sheetMode === 'adjust' && (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                  {[-10, -5, 5, 10].map(p => (
+                    <button key={p} onClick={() => handleAdjustPO(p)} style={{ padding: '12px', background: p > 0 ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)', border: `1px solid ${p > 0 ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 8, color: p > 0 ? GREEN : RED, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>{p > 0 ? '+' : ''}{p}%</button>
+                  ))}
+                </div>
+                <button onClick={() => setSheetMode('menu')} style={{ width: '100%', padding: '10px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+              </div>
+            )}
+          </div>
+        </BottomSheet>
+      )}
+      {deleteConfirm && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setDeleteConfirm(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 24, maxWidth: 340, width: '100%' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Void Purchase Order?</div>
+            <div style={{ fontSize: 13, color: DIM, marginBottom: 16 }}>This will mark the PO as void. This action cannot be undone.</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => handleDeletePO(deleteConfirm)} style={{ flex: 1, padding: '10px', background: 'rgba(239,68,68,.15)', border: `1px solid rgba(239,68,68,.3)`, borderRadius: 8, color: RED, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Void PO</button>
+              <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, padding: '10px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

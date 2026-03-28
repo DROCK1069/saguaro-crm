@@ -334,7 +334,7 @@ export async function GET(
 
         // ── 8. Expand items & save to DB ─────────────────────────────────
         const allRawItems = parsed.i || [];
-        const items = allRawItems
+        let items = allRawItems
           .map((item: CompactItem, idx: number) => {
             const qty      = Math.max(0, Number(item.q) || 0);
             const unitCost = Math.max(0, Number(item.r) || 0);
@@ -347,8 +347,11 @@ export async function GET(
               ? claudeTot
               : computed;
             // Normalize CSI code: ensure proper format XX XX XX
-            const rawCode = String(item.cd || '').trim();
-            const csiCode = rawCode || '00 00 00';
+            const rawCode = String(item.cd || '').trim().replace(/[^\d\s]/g, '');
+            const digits = rawCode.replace(/\s+/g, '').padEnd(6, '0').slice(0, 6);
+            const csiCode = digits.length >= 6
+              ? `${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 6)}`
+              : rawCode || '00 00 00';
             return {
               takeoff_id:  takeoffId,
               csi_code:    csiCode,
@@ -369,10 +372,32 @@ export async function GET(
         console.log(`[analyze] items: ${allRawItems.length} raw → ${items.length} valid after filtering`);
 
         if (items.length === 0 && allRawItems.length > 0) {
-          console.error('[analyze] All items filtered out. Raw count:', allRawItems.length, 'Sample:', JSON.stringify(allRawItems[0]));
-          send('error', { message: 'AI returned items but all had zero quantity or zero cost. Try a higher-resolution blueprint or a clearer PDF.' });
-          await supabase.from('takeoffs').update({ status: 'failed' }).eq('id', takeoffId);
-          return done();
+          // Fallback: salvage items by setting minimum qty=1, rate=$1 where missing
+          console.warn('[analyze] All items filtered out — attempting salvage. Raw count:', allRawItems.length);
+          const salvaged = allRawItems
+            .map((item: CompactItem, idx: number) => ({
+              takeoff_id:  takeoffId,
+              csi_code:    String(item.cd || '00 00 00').trim(),
+              csi_name:    String(item.nm || '').trim() || 'General',
+              description: String(item.d  || '').trim() || 'See specifications',
+              quantity:    Math.max(1, Number(item.q) || 1),
+              unit:        String(item.u  || 'LS').trim().toUpperCase(),
+              unit_cost:   Math.max(0.01, Number(item.r) || 0),
+              total_cost:  Math.max(0.01, (Number(item.q) || 1) * Math.max(0.01, Number(item.r) || 0)),
+              labor_hours: Math.max(0, Number(item.h) || 0),
+              notes:       'AI confidence low — verify quantities',
+              sort_order:  idx,
+            }))
+            .filter((it) => it.description.length > 0);
+
+          if (salvaged.length > 0) {
+            console.log(`[analyze] Salvaged ${salvaged.length} items with fallback quantities`);
+            items = salvaged;
+          } else {
+            send('error', { message: 'AI returned items but could not extract usable data. Try a higher-resolution blueprint or a clearer PDF.' });
+            await supabase.from('takeoffs').update({ status: 'failed' }).eq('id', takeoffId);
+            return done();
+          }
         }
         if (items.length === 0) {
           send('error', { message: 'No materials extracted from this blueprint. Try a clearer image or a PDF with visible dimensions.' });
@@ -412,12 +437,17 @@ export async function GET(
         }
 
         // ── 9. Update takeoff summary — use validated totals, not raw AI fields ─
+        // Validate confidence (0-100) and building area (positive, reasonable)
+        const confidence = Math.max(0, Math.min(100, Math.round(Number(parsed.c) || 0)));
+        const buildingArea = Math.max(0, Math.min(10_000_000, Math.round(Number(parsed.sf) || 0)));
+        const floorCount = Math.max(1, Math.min(200, Math.round(Number(parsed.fl) || 1)));
+
         const { error: updateErr } = await supabase.from('takeoffs').update({
           status:                'complete',
-          building_area:         parsed.sf  || 0,
-          floor_count:           parsed.fl  || 1,
+          building_area:         buildingArea,
+          floor_count:           floorCount,
           total_cost:            realProjectTotal,
-          confidence:            parsed.c   || 0,
+          confidence:            confidence,
           project_name_detected: parsed.n   || '',
           building_type:         parsed.t   || '',
           summary:               parsed.s   || '',
@@ -450,8 +480,8 @@ export async function GET(
           takeoffId,
           projectName:       parsed.n   || '',
           buildingType:      parsed.t   || '',
-          estimatedSF:       parsed.sf  || 0,
-          confidence:        parsed.c   || 0,
+          estimatedSF:       buildingArea,
+          confidence:        confidence,
           summary:           parsed.s   || '',
           items:             expandedItems,
           totalMaterialCost: realMaterialTotal,

@@ -14,7 +14,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (body[k] !== undefined) fields[k] = body[k];
     }
     const { error } = await db
-      .from('project_tasks')
+      .from('schedule_tasks')
       .update(fields)
       .eq('id', id)
       .eq('tenant_id', user.tenantId);
@@ -32,7 +32,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const db = createServerClient();
     const { error } = await db
-      .from('project_tasks')
+      .from('schedule_tasks')
       .delete()
       .eq('id', id)
       .eq('tenant_id', user.tenantId);

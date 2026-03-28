@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import { checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 /** Authenticate a portal session via token */
 async function getPortalSession(req: NextRequest) {
@@ -22,6 +23,16 @@ async function getPortalSession(req: NextRequest) {
 /** POST — validate token, return session + project info */
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 requests per minute per IP
+    const ip = getClientIP(req);
+    const { allowed, resetIn } = checkRateLimit(`client-auth:${ip}`, 10, 60_000);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(resetIn / 1000)) } }
+      );
+    }
+
     const body = await req.json();
     const token = body.token;
     if (!token) {

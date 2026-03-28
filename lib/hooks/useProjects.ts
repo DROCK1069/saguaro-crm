@@ -20,7 +20,7 @@ export function useProjects() {
   const { data, error, isLoading, mutate: revalidate } = useSWR<{ projects: Project[] }>(
     '/api/projects/list',
     fetcher,
-    { refreshInterval: 30_000, revalidateOnFocus: true }
+    { refreshInterval: 60_000, revalidateOnFocus: true, dedupingInterval: 10_000 }
   );
 
   return {

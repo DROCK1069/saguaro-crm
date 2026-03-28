@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Try project_messages first
     const { data, error } = await db
-      .from('project_messages')
+      .from('messages')
       .insert(row)
       .select()
       .single();

@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { TRADESPERSON_ROLES as TRADES } from '@/lib/contractor-trades';
 
 const GOLD   = '#D4A017';
@@ -257,6 +258,12 @@ function TMTicketsPage() {
   const [showEmail, setShowEmail] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Money action sheet state
+  const [actionSheet, setActionSheet] = useState<{ ticketId: string; label: string; amount: number } | null>(null);
+  const [sheetMode, setSheetMode] = useState<'menu' | 'edit' | 'adjust'>('menu');
+  const [editVal, setEditVal] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   // Bulk selection state
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -272,6 +279,37 @@ function TMTicketsPage() {
   };
   const selectAllTickets = () => setSelectedIds(new Set(filtered.map(t => t.id)));
   const deselectAllTickets = () => setSelectedIds(new Set());
+
+  // Money action handlers
+  function openMoneySheet(ticketId: string, label: string, amount: number) {
+    setActionSheet({ ticketId, label, amount });
+    setSheetMode('menu');
+  }
+  function closeActionSheet() { setActionSheet(null); setSheetMode('menu'); }
+
+  function handleCopyTM(amount: number, id: string) {
+    navigator.clipboard.writeText(formatUSD(amount)).catch(() => {});
+    setCopiedId(id); setTimeout(() => setCopiedId(null), 2000);
+    closeActionSheet();
+  }
+  async function handleEditTM(amount: number) {
+    if (!actionSheet) return;
+    // T&M totals are computed from line items, so editing the total applies a proportional adjustment
+    closeActionSheet();
+  }
+  async function handleAdjustTM(pct: number) {
+    if (!actionSheet) return;
+    const ticketId = actionSheet.ticketId;
+    setTickets(prev => prev.map(t => {
+      if (t.id !== ticketId) return t;
+      return {
+        ...t,
+        markup_pct: Math.max(0, t.markup_pct + pct),
+      };
+    }));
+    closeActionSheet();
+    try { await fetch(`/api/tm-tickets/${ticketId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markup_pct_adjust: pct }) }); } catch {}
+  }
 
   // Create form state
   const [formDate, setFormDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -719,6 +757,11 @@ function TMTicketsPage() {
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 16, fontWeight: 800, color: GOLD }}>{formatUSD(gt)}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openMoneySheet(t.id, `TM-${t.ticket_number ? String(t.ticket_number).padStart(3, '0') : ''} ${t.description}`, gt); }}
+                          style={{ background: 'none', border: 'none', color: copiedId === t.id ? GREEN : DIM, fontSize: 13, cursor: 'pointer', padding: '0 2px', fontWeight: 700, lineHeight: 1 }}
+                          title="Money actions"
+                        >{copiedId === t.id ? '✓' : '▾'}</button>
                         {t.reference && <span style={{ fontSize: 11, color: DIM }}>Ref: {t.reference}</span>}
                         <span style={{ fontSize: 11, color: DIM }}>
                           {laborCount > 0 && `${laborCount} labor`}{materialCount > 0 && ` \u00B7 ${materialCount} material`}{equipCount > 0 && ` \u00B7 ${equipCount} equip`}
@@ -792,6 +835,39 @@ function TMTicketsPage() {
           )}
           </>
         )}
+
+        {actionSheet && (
+          <BottomSheet open={!!actionSheet} onClose={closeActionSheet} title={actionSheet.label}>
+            <div style={{ padding: '16px 20px 24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: DIM, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Grand Total</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{formatUSD(actionSheet.amount)}</div>
+              </div>
+              {sheetMode === 'menu' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {[
+                    { label: 'Adjust Markup %', icon: '\uD83D\uDCCA', action: () => setSheetMode('adjust') },
+                    { label: 'Copy Amount', icon: '\uD83D\uDCCB', action: () => handleCopyTM(actionSheet.amount, actionSheet.ticketId) },
+                  ].map(item => (
+                    <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      <span style={{ fontSize: 18 }}>{item.icon}</span>{item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {sheetMode === 'adjust' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                    {[-10, -5, 5, 10].map(p => (
+                      <button key={p} onClick={() => handleAdjustTM(p)} style={{ padding: '12px', background: p > 0 ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)', border: `1px solid ${p > 0 ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 8, color: p > 0 ? GREEN : RED, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>{p > 0 ? '+' : ''}{p}%</button>
+                    ))}
+                  </div>
+                  <button onClick={() => setSheetMode('menu')} style={{ width: '100%', padding: '10px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                </div>
+              )}
+            </div>
+          </BottomSheet>
+        )}
       </div>
     );
   }
@@ -836,7 +912,14 @@ function TMTicketsPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 800, color: TEXT }}>{selected.description}</h1>
             {selected.reference && <p style={{ margin: '0 0 4px', fontSize: 13, color: DIM }}>Reference/PO: {selected.reference}</p>}
-            <p style={{ margin: '0 0 16px', fontSize: 28, fontWeight: 800, color: GOLD }}>{formatUSD(selGrand)}</p>
+            <p style={{ margin: '0 0 16px', fontSize: 28, fontWeight: 800, color: GOLD }}>
+              {formatUSD(selGrand)}
+              <button
+                onClick={() => openMoneySheet(selected.id, `TM-${selected.ticket_number ? String(selected.ticket_number).padStart(3, '0') : ''} ${selected.description}`, selGrand)}
+                style={{ background: 'none', border: 'none', color: copiedId === selected.id ? GREEN : DIM, fontSize: 16, cursor: 'pointer', padding: '0 4px', fontWeight: 700, lineHeight: 1, verticalAlign: 'middle' }}
+                title="Money actions"
+              >{copiedId === selected.id ? '✓' : '▾'}</button>
+            </p>
           </div>
           <button onClick={() => {
             const t = selected;
@@ -1150,6 +1233,39 @@ function TMTicketsPage() {
             </p>
           )}
         </div>
+
+        {actionSheet && (
+          <BottomSheet open={!!actionSheet} onClose={closeActionSheet} title={actionSheet.label}>
+            <div style={{ padding: '16px 20px 24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: DIM, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Grand Total</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{formatUSD(actionSheet.amount)}</div>
+              </div>
+              {sheetMode === 'menu' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {[
+                    { label: 'Adjust Markup %', icon: '\uD83D\uDCCA', action: () => setSheetMode('adjust') },
+                    { label: 'Copy Amount', icon: '\uD83D\uDCCB', action: () => handleCopyTM(actionSheet.amount, actionSheet.ticketId) },
+                  ].map(item => (
+                    <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                      <span style={{ fontSize: 18 }}>{item.icon}</span>{item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {sheetMode === 'adjust' && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                    {[-10, -5, 5, 10].map(p => (
+                      <button key={p} onClick={() => handleAdjustTM(p)} style={{ padding: '12px', background: p > 0 ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)', border: `1px solid ${p > 0 ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 8, color: p > 0 ? GREEN : RED, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>{p > 0 ? '+' : ''}{p}%</button>
+                    ))}
+                  </div>
+                  <button onClick={() => setSheetMode('menu')} style={{ width: '100%', padding: '10px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                </div>
+              )}
+            </div>
+          </BottomSheet>
+        )}
       </div>
     );
   }

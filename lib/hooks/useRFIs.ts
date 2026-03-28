@@ -19,7 +19,7 @@ export function useRFIs(projectId?: string) {
   const { data, error, isLoading, mutate: revalidate } = useSWR<{ rfis: RFI[] }>(
     url,
     fetcher,
-    { refreshInterval: 30_000 }
+    { refreshInterval: 60_000, dedupingInterval: 10_000 }
   );
 
   const openRFIs = (data?.rfis ?? []).filter((r) => r.status !== 'closed');

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const db = createServerClient();
     let query = db
-      .from('punch_list_items')
+      .from('punch_list')
       .select('*')
       .eq('tenant_id', user.tenantId)
       .order('created_at', { ascending: false }).limit(1000);

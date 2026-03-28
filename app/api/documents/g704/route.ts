@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const p = project as any;
 
     // Get punch list items
-    const { data: punchList } = await db.from('punch_list_items').select('description').eq('project_id', body.projectId).eq('status', 'open').limit(10);
+    const { data: punchList } = await db.from('punch_list').select('description').eq('project_id', body.projectId).eq('status', 'open').limit(10);
 
     const pdfBytes = await generateG704({
       projectName: p?.name || body.projectName,

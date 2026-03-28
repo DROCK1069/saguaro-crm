@@ -19,17 +19,17 @@ export async function POST(req: NextRequest) {
     // Get next application number
     const { data: lastApp } = await db
       .from('pay_applications')
-      .select('application_number')
+      .select('app_number')
       .eq('project_id', projectId)
-      .order('application_number', { ascending: false })
+      .order('app_number', { ascending: false })
       .limit(1)
       .single();
-    const appNumber = ((lastApp as any)?.application_number || 0) + 1;
+    const appNumber = ((lastApp as any)?.app_number || 0) + 1;
 
     const { data: payApp, error } = await db.from('pay_applications').insert({
       tenant_id: user.tenantId,
       project_id: projectId,
-      application_number: appNumber,
+      app_number: appNumber,
       period_from: body.periodFrom,
       period_to: body.periodTo,
       status: body.status || 'draft',

@@ -15,7 +15,7 @@ export async function GET(
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     const { data, error } = await supabase
-      .from('punch_list_items')
+      .from('punch_list')
       .select('*')
       .eq('project_id', projectId)
       .neq('trade', 'delivery')   // exclude delivery logs stored in same table

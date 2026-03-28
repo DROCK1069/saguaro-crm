@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 
 const GOLD   = '#D4A017';
 const RAISED = '#0D1D2E';
@@ -119,6 +120,12 @@ function ContractsPage() {
   const [selected, setSelected] = useState<Contract | null>(null);
   const [online, setOnline] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  /* Money Action States */
+  const [actionSheet, setActionSheet] = useState<{ contractId: string; label: string; amount: number; field: string } | null>(null);
+  const [sheetMode, setSheetMode] = useState<'menu' | 'edit' | 'adjust'>('menu');
+  const [editVal, setEditVal] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   /* Filters & Sort */
   const [typeTab, setTypeTab] = useState<TypeTab>('all');
@@ -310,6 +317,35 @@ function ContractsPage() {
     window.print();
   }
 
+  function openMoneySheet(contractId: string, label: string, amount: number, field: string = 'revised_amount') {
+    setActionSheet({ contractId, label, amount, field });
+    setSheetMode('menu');
+  }
+  function closeActionSheet() { setActionSheet(null); setSheetMode('menu'); }
+
+  async function handleEditContract(amount: number) {
+    if (!actionSheet) return;
+    const field = actionSheet.field;
+    setContracts(prev => prev.map(c => c.id === actionSheet.contractId ? { ...c, [field]: amount } : c));
+    if (selected && selected.id === actionSheet.contractId) setSelected({ ...selected, [field]: amount });
+    closeActionSheet();
+    try { await fetch(`/api/contracts/${actionSheet.contractId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: amount }) }); } catch {}
+  }
+  async function handleAdjustContract(pct: number) {
+    if (!actionSheet) return;
+    const newAmt = Math.round(actionSheet.amount * (1 + pct / 100) * 100) / 100;
+    const field = actionSheet.field;
+    setContracts(prev => prev.map(c => c.id === actionSheet.contractId ? { ...c, [field]: newAmt } : c));
+    if (selected && selected.id === actionSheet.contractId) setSelected({ ...selected, [field]: newAmt });
+    closeActionSheet();
+    try { await fetch(`/api/contracts/${actionSheet.contractId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: newAmt }) }); } catch {}
+  }
+  function handleCopyContract(amount: number, id: string) {
+    navigator.clipboard.writeText(formatUSD(amount)).catch(() => {});
+    setCopiedId(id); setTimeout(() => setCopiedId(null), 2000);
+    closeActionSheet();
+  }
+
   /* ── Render: Summary Dashboard ───────────────────────── */
 
   function renderDashboard() {
@@ -460,7 +496,11 @@ function ContractsPage() {
                       <div style={{ color: DIM, fontSize: 13 }}>{c.vendor_name}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                      <div style={{ fontWeight: 800, fontSize: 16, color: GOLD }}>{formatUSDShort(c.revised_amount)}</div>
+                      <div style={{ fontWeight: 800, fontSize: 16, color: copiedId === c.id ? GREEN : GOLD, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        {formatUSDShort(c.revised_amount)}
+                        {copiedId === c.id && <span style={{ fontSize: 9, color: GREEN }}>&#10003;</span>}
+                        <button onClick={(e) => { e.stopPropagation(); openMoneySheet(c.id, `${c.contract_number} — ${c.vendor_name}`, c.revised_amount); }} style={{ background: 'none', border: 'none', color: DIM, fontSize: 16, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>&#9662;</button>
+                      </div>
                       <div style={{ color: DIM, fontSize: 11 }}>{formatPct(pct)} invoiced</div>
                     </div>
                   </div>
@@ -522,17 +562,22 @@ function ContractsPage() {
           <div style={{ ...card }}>
             <div style={{ color: GOLD, fontWeight: 700, fontSize: 14, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Financial Summary</div>
             {[
-              { label: 'Original Amount', value: c.original_amount, color: TEXT },
-              { label: 'Approved Changes', value: c.approved_changes, color: c.approved_changes >= 0 ? GREEN : RED },
-              { label: 'Revised Amount', value: c.revised_amount, color: GOLD },
-              { label: 'Invoiced Amount', value: c.invoiced_amount, color: BLUE },
-              { label: 'Paid Amount', value: c.paid_amount, color: GREEN },
-              { label: 'Balance Remaining', value: balance, color: balance >= 0 ? TEXT : RED },
-              { label: `Retainage Held (${c.retainage_pct}%)`, value: retainageHeld, color: AMBER },
+              { label: 'Original Amount', value: c.original_amount, color: TEXT, field: 'original_amount' },
+              { label: 'Approved Changes', value: c.approved_changes, color: c.approved_changes >= 0 ? GREEN : RED, field: 'approved_changes' },
+              { label: 'Revised Amount', value: c.revised_amount, color: GOLD, field: '' },
+              { label: 'Invoiced Amount', value: c.invoiced_amount, color: BLUE, field: '' },
+              { label: 'Paid Amount', value: c.paid_amount, color: GREEN, field: '' },
+              { label: 'Balance Remaining', value: balance, color: balance >= 0 ? TEXT : RED, field: '' },
+              { label: `Retainage Held (${c.retainage_pct}%)`, value: retainageHeld, color: AMBER, field: '' },
             ].map(row => (
               <div key={row.label} style={{ ...rowFlex, padding: '8px 0', borderBottom: `1px solid ${BORDER}` }}>
                 <span style={{ color: DIM, fontSize: 13 }}>{row.label}</span>
-                <span style={{ color: row.color, fontWeight: 700, fontSize: 14 }}>{formatUSD(row.value)}</span>
+                <span style={{ color: row.color, fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  {formatUSD(row.value)}
+                  {row.field && (
+                    <button onClick={() => openMoneySheet(c.id, `${c.contract_number} — ${row.label}`, row.value, row.field)} style={{ background: 'none', border: 'none', color: DIM, fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>&#9662;</button>
+                  )}
+                </span>
               </div>
             ))}
             <div style={{ marginTop: 12 }}>
@@ -854,11 +899,59 @@ function ContractsPage() {
     );
   }
 
+  /* ── Render: Money Action BottomSheet ────────────────── */
+
+  function renderActionSheet() {
+    if (!actionSheet) return null;
+    return (
+      <BottomSheet open={!!actionSheet} onClose={closeActionSheet} title={actionSheet.label}>
+        <div style={{ padding: '16px 20px 24px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: DIM, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Current Amount</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{formatUSD(actionSheet.amount)}</div>
+          </div>
+          {sheetMode === 'menu' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[
+                { label: 'Edit Amount', icon: '\u270F\uFE0F', action: () => { setSheetMode('edit'); setEditVal(String(actionSheet.amount)); } },
+                { label: 'Adjust %', icon: '\uD83D\uDCCA', action: () => setSheetMode('adjust') },
+                { label: 'Copy Amount', icon: '\uD83D\uDCCB', action: () => handleCopyContract(actionSheet.amount, actionSheet.contractId) },
+              ].map(item => (
+                <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+                  <span style={{ fontSize: 18 }}>{item.icon}</span>{item.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {sheetMode === 'edit' && (
+            <div>
+              <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus style={{ width: '100%', padding: '12px', background: RAISED, border: `1px solid ${GOLD}`, borderRadius: 8, color: TEXT, fontSize: 16, textAlign: 'center', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditContract(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 8, color: '#0d1117', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
+                <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '12px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
+              </div>
+            </div>
+          )}
+          {sheetMode === 'adjust' && (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                {[-10, -5, 5, 10].map(p => (
+                  <button key={p} onClick={() => handleAdjustContract(p)} style={{ padding: '12px', background: p > 0 ? 'rgba(34,197,94,.1)' : 'rgba(239,68,68,.1)', border: `1px solid ${p > 0 ? 'rgba(34,197,94,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 8, color: p > 0 ? GREEN : RED, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>{p > 0 ? '+' : ''}{p}%</button>
+                ))}
+              </div>
+              <button onClick={() => setSheetMode('menu')} style={{ width: '100%', padding: '10px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+            </div>
+          )}
+        </div>
+      </BottomSheet>
+    );
+  }
+
   /* ── Main Render ─────────────────────────────────────── */
 
-  if (view === 'create') return renderCreate();
-  if (view === 'detail') return renderDetail();
-  return renderList();
+  if (view === 'create') return <>{renderCreate()}{renderActionSheet()}</>;
+  if (view === 'detail') return <>{renderDetail()}{renderActionSheet()}</>;
+  return <>{renderList()}{renderActionSheet()}</>;
 }
 
 /* ── Default Export with Suspense ───────────────────────── */

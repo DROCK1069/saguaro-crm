@@ -1,29 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
-
-async function getPortalSession(req: NextRequest) {
-  const token =
-    req.nextUrl.searchParams.get('token') ||
-    req.headers.get('x-portal-token');
-  if (!token) return null;
-
-  const db = createServerClient();
-  const { data: session } = await db
-    .from('portal_client_sessions')
-    .select('*')
-    .eq('token', token)
-    .eq('status', 'active')
-    .single();
-
-  return session;
-}
+import { getPortalSession, PORTAL_PERMS } from '@/lib/portal-auth';
 
 /** GET — list payment history */
 export async function GET(req: NextRequest) {
   try {
-    const session = await getPortalSession(req);
+    const session = await getPortalSession(req, PORTAL_PERMS.VIEW_FINANCIALS);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Access denied — insufficient permissions' }, { status: 403 });
     }
 
     const db = createServerClient();
@@ -57,9 +41,9 @@ export async function GET(req: NextRequest) {
 /** POST — initiate a payment */
 export async function POST(req: NextRequest) {
   try {
-    const session = await getPortalSession(req);
+    const session = await getPortalSession(req, PORTAL_PERMS.VIEW_FINANCIALS);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Access denied — insufficient permissions' }, { status: 403 });
     }
 
     const body = await req.json();

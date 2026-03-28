@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import { checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
+
+const GENERIC_MESSAGE = 'If an active portal exists for this email, a login link has been sent. Please check your inbox.';
 
 /** POST /api/portal/sub/lookup — find a sub portal session by email */
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 requests per minute per IP
+    const ip = getClientIP(req);
+    const { allowed, resetIn } = checkRateLimit(`sub-lookup:${ip}`, 5, 60_000);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a minute.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(resetIn / 1000)) } }
+      );
+    }
+
     const { email } = await req.json();
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
@@ -31,8 +44,8 @@ export async function POST(req: NextRequest) {
 
       if (!sub) {
         return NextResponse.json(
-          { error: 'No active portal access found for this email. Please contact the general contractor who invited you.' },
-          { status: 404 }
+          { error: GENERIC_MESSAGE },
+          { status: 200 }
         );
       }
 
@@ -47,8 +60,8 @@ export async function POST(req: NextRequest) {
 
       if (!subSessions || subSessions.length === 0) {
         return NextResponse.json(
-          { error: 'No active portal access found for this email. Please contact the general contractor who invited you.' },
-          { status: 404 }
+          { error: GENERIC_MESSAGE },
+          { status: 200 }
         );
       }
 
@@ -77,16 +90,16 @@ export async function POST(req: NextRequest) {
     const matchedSub = subs?.find(s => s.email?.toLowerCase() === email.toLowerCase().trim());
     if (!matchedSub) {
       return NextResponse.json(
-        { error: 'No active portal access found for this email. Please contact the general contractor who invited you.' },
-        { status: 404 }
+        { error: GENERIC_MESSAGE },
+        { status: 200 }
       );
     }
 
     const matchedSession = sessions.find(s => s.sub_id === matchedSub.id);
     if (!matchedSession) {
       return NextResponse.json(
-        { error: 'No active portal access found for this email.' },
-        { status: 404 }
+        { error: GENERIC_MESSAGE },
+        { status: 200 }
       );
     }
 

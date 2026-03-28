@@ -10,7 +10,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     const url = new URL(req.url);
     const status = url.searchParams.get('status');
-    let q = supabase.from('todos').select('*').eq('project_id', params.projectId);
+    let q = supabase.from('project_todos').select('*').eq('project_id', params.projectId);
     if (status) q = q.eq('status', status);
     const { data, error } = await q.order('created_at', { ascending: false });
     if (error) throw error;
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const supabase = createServerClient();
     const body = await req.json();
-    const { data, error } = await supabase.from('todos').insert({
+    const { data, error } = await supabase.from('project_todos').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
       title: body.title, description: body.description || null,
       assigned_to: body.assigned_to || null, assigned_to_id: body.assigned_to_id || null,

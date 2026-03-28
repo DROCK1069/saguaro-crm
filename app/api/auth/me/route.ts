@@ -9,13 +9,23 @@ export async function GET(req: NextRequest) {
 
   const db = createServerClient();
   const { data: profile } = await db
-    .from('user_profiles')
-    .select('full_name')
-    .eq('user_id', user.id)
+    .from('profiles')
+    .select('full_name, phone, role, title, company, avatar_url, tenant_id')
+    .eq('id', user.id)
     .single();
 
-  const fullName = (profile as any)?.full_name;
-  const name = fullName || user.email.split('@')[0];
+  const p = profile as any;
+  const name = p?.full_name || user.email.split('@')[0];
 
-  return NextResponse.json({ id: user.id, email: user.email, name });
+  return NextResponse.json({
+    id: user.id,
+    email: user.email,
+    name,
+    tenantId: user.tenantId,
+    phone: p?.phone || null,
+    role: p?.role || 'member',
+    title: p?.title || null,
+    company: p?.company || null,
+    avatarUrl: p?.avatar_url || null,
+  });
 }

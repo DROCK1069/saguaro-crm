@@ -1,29 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
-
-async function getPortalSession(req: NextRequest) {
-  const token =
-    req.nextUrl.searchParams.get('token') ||
-    req.headers.get('x-portal-token');
-  if (!token) return null;
-
-  const db = createServerClient();
-  const { data: session } = await db
-    .from('portal_client_sessions')
-    .select('*')
-    .eq('token', token)
-    .eq('status', 'active')
-    .single();
-
-  return session;
-}
+import { getPortalSession, PORTAL_PERMS } from '@/lib/portal-auth';
 
 /** GET — list AI summaries for project */
 export async function GET(req: NextRequest) {
   try {
-    const session = await getPortalSession(req);
+    const session = await getPortalSession(req, PORTAL_PERMS.VIEW_PROJECT);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Access denied — insufficient permissions' }, { status: 403 });
     }
 
     const db = createServerClient();
@@ -45,9 +29,9 @@ export async function GET(req: NextRequest) {
 /** POST — generate a new summary from daily logs */
 export async function POST(req: NextRequest) {
   try {
-    const session = await getPortalSession(req);
+    const session = await getPortalSession(req, PORTAL_PERMS.VIEW_PROJECT);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Access denied — insufficient permissions' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -106,7 +90,35 @@ export async function POST(req: NextRequest) {
           date: l.log_date,
           note: l.milestones || l.highlights,
         })),
+      ai_narrative: '',
     };
+
+    // Generate AI narrative summary via Claude
+    if (process.env.ANTHROPIC_API_KEY && logEntries.length > 0) {
+      try {
+        const { default: Anthropic } = await import('@anthropic-ai/sdk');
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+        const logContext = logEntries.slice(0, 20).map((l: any) =>
+          `${l.log_date}: ${l.work_description || l.notes || 'No notes'}${l.weather ? ` (Weather: ${l.weather})` : ''}${l.weather_delay ? ' [WEATHER DELAY]' : ''}`
+        ).join('\n');
+
+        const msg = await client.messages.create({
+          model: 'claude-haiku-4-20250514',
+          max_tokens: 600,
+          system: 'You are a construction project manager writing a weekly progress summary for a building owner. Be concise, professional, and factual. Use bullet points for key items. Mention weather delays, milestones, and any concerns.',
+          messages: [{
+            role: 'user',
+            content: `Write a brief owner-facing project summary for this period.\n\nDaily logs:\n${logContext}\n\nStats: ${totalLogs} work days, ${weatherDays} weather delays, avg ${structuredSummary.stats.avg_workforce} workers/day.\n\nWrite 3-5 bullet points summarizing progress, any concerns, and next steps.`
+          }],
+        });
+
+        const aiText = msg.content?.[0]?.type === 'text' ? msg.content[0].text : '';
+        structuredSummary.ai_narrative = aiText;
+      } catch (err) {
+        console.warn('[portal/summary] AI generation failed (non-fatal):', err);
+      }
+    }
 
     // Store the generated summary
     const { data: saved, error: saveError } = await db

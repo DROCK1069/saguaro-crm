@@ -34,10 +34,30 @@ export async function POST(
     const body = await req.json();
     const { action, note } = body;
     const db = createServerClient();
+
+    // Check if this pay app has already been reviewed (prevent token reuse)
+    const { data: existing } = await db
+      .from('pay_applications')
+      .select('status, owner_approved_at')
+      .eq('owner_approval_token', token)
+      .single();
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Pay application not found' }, { status: 404 });
+    }
+
+    if (existing.owner_approved_at) {
+      return NextResponse.json({ error: 'This pay application has already been reviewed.' }, { status: 409 });
+    }
+
     const newStatus = action === 'approved' ? 'certified' : 'draft';
     const { error } = await db
       .from('pay_applications')
-      .update({ status: newStatus, owner_notes: note, owner_approved_at: action === 'approved' ? new Date().toISOString() : null })
+      .update({
+        status: newStatus,
+        owner_notes: note,
+        owner_approved_at: new Date().toISOString(),
+      })
       .eq('owner_approval_token', token);
     if (error) throw error;
     return NextResponse.json({ success: true });

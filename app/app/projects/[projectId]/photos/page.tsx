@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import PhotoEditor from '../../../../../components/PhotoEditor';
 
 const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -66,6 +67,7 @@ export default function PhotosPage(){
   const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
   const [search,setSearch]=useState('');
   const [filterAlbum,setFilterAlbum]=useState('All');
+  const [editingPhoto, setEditingPhoto] = useState<{id:string;url:string}|null>(null);
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -190,6 +192,35 @@ export default function PhotosPage(){
         </div>
       )}
 
+      {/* Photo Editor Modal */}
+      {editingPhoto && (
+        <PhotoEditor
+          src={editingPhoto.url}
+          photoId={editingPhoto.id}
+          onClose={() => setEditingPhoto(null)}
+          onSave={async (blob, id) => {
+            try {
+              const formData = new FormData();
+              formData.append('file', blob, 'edited.jpg');
+              const headers = await getAuthHeaders();
+              const r = await fetch(`/api/photos/${id}/upload`, { method: 'POST', headers, body: formData });
+              if (r.ok) { showToast('Photo saved'); load(); }
+              else showToast('Save failed', 'error');
+            } catch { showToast('Save failed', 'error'); }
+            setEditingPhoto(null);
+          }}
+          onDelete={async (id) => {
+            try {
+              const headers = await getAuthHeaders();
+              await fetch(`/api/photos/${id}`, { method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' } });
+              setPhotos(prev => prev.filter(p => p.id !== id));
+              showToast('Photo deleted');
+            } catch { showToast('Delete failed', 'error'); }
+            setEditingPhoto(null);
+          }}
+        />
+      )}
+
       {/* Main */}
       <div style={{flex:1,overflow:'auto',minWidth:0}}>
         {/* Header */}
@@ -277,7 +308,7 @@ export default function PhotosPage(){
                   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
                     {albumPhotos.map((photo:any)=>(
                       <PhotoCard key={photo.id} photo={photo} selected={selected?.id===photo.id&&mode==='view'}
-                        onClick={()=>viewPhoto(photo)} albumColor={ALBUM_COLORS[photo.album]||DIM}/>
+                        onClick={()=>viewPhoto(photo)} albumColor={ALBUM_COLORS[photo.album]||DIM} onEdit={(id,url)=>setEditingPhoto({id,url})}/>
                     ))}
                   </div>
                 </div>
@@ -290,7 +321,7 @@ export default function PhotosPage(){
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
               {filtered.map((photo:any)=>(
                 <PhotoCard key={photo.id} photo={photo} selected={selected?.id===photo.id&&mode==='view'}
-                  onClick={()=>viewPhoto(photo)} albumColor={ALBUM_COLORS[photo.album]||DIM}/>
+                  onClick={()=>viewPhoto(photo)} albumColor={ALBUM_COLORS[photo.album]||DIM} onEdit={(id,url)=>setEditingPhoto({id,url})}/>
               ))}
             </div>
           )}
@@ -468,8 +499,8 @@ export default function PhotosPage(){
   );
 }
 
-function PhotoCard({photo,selected,onClick,albumColor}:{
-  photo:any;selected:boolean;onClick:()=>void;albumColor:string;
+function PhotoCard({photo,selected,onClick,albumColor,onEdit}:{
+  photo:any;selected:boolean;onClick:()=>void;albumColor:string;onEdit?:(id:string,url:string)=>void;
 }){
   const BORDER_C='#263347';
   const RAISED_C='#1f2c3e';
@@ -512,6 +543,12 @@ function PhotoCard({photo,selected,onClick,albumColor}:{
           <div style={{fontSize:11,color:DIM_C,marginTop:5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
             {photo.location}
           </div>
+        )}
+        {photo.url && onEdit && (
+          <button onClick={(e)=>{e.stopPropagation();onEdit(photo.id,photo.url);}}
+            style={{marginTop:8,width:'100%',padding:'6px',background:'rgba(212,160,23,.08)',border:`1px solid rgba(212,160,23,.2)`,borderRadius:6,color:'#D4A017',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
+            ✏️ Edit / Crop / Rotate
+          </button>
         )}
       </div>
     </div>

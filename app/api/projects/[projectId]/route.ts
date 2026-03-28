@@ -21,15 +21,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
       { data: alerts },
     ] = await Promise.all([
       db.from('projects').select('*').eq('id', projectId).eq('tenant_id', user.tenantId).single(),
-      db.from('subcontractors').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }),
-      db.from('pay_applications').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('application_number', { ascending: false }),
+      db.from('contracts').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }),
+      db.from('pay_applications').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('app_number', { ascending: false }),
       db.from('change_orders').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }),
       db.from('rfis').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }),
-      db.from('project_team').select('*').eq('project_id', projectId),
+      db.from('project_team').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId),
       db.from('budget_lines').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('cost_code', { ascending: true }),
-      db.from('punch_list_items').select('id, status').eq('project_id', projectId).eq('tenant_id', user.tenantId),
-      db.from('schedule_phases').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('planned_start', { ascending: true }),
-      db.from('autopilot_alerts').select('id, alert_type, severity, message, status, created_at').eq('project_id', projectId).eq('tenant_id', user.tenantId).eq('status', 'open').order('created_at', { ascending: false }).limit(10),
+      db.from('punch_list').select('id, status').eq('project_id', projectId).eq('tenant_id', user.tenantId),
+      db.from('schedule_phases').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('start_date', { ascending: true }),
+      db.from('autopilot_alerts').select('id, alert_type, severity, body, status, created_at').eq('project_id', projectId).eq('tenant_id', user.tenantId).eq('status', 'active').order('created_at', { ascending: false }).limit(10),
     ]);
 
     if (!project) {
@@ -43,15 +43,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     const p = project as any;
 
     const approvedCOs = cos.filter((c: any) => c.status === 'approved');
-    const contractSumToDate = (p.contract_amount || 0) + approvedCOs.reduce((s: number, co: any) => s + (co.cost_impact || 0), 0);
-    const totalBilledToDate = apps.length > 0 ? (apps[0].total_completed_and_stored || 0) : 0;
+    const contractSumToDate = (p.contract_amount || 0) + approvedCOs.reduce((s: number, co: any) => s + (co.amount || 0), 0);
+    const totalBilledToDate = apps.length > 0 ? (apps[0].total_completed_stored || 0) : 0;
 
     // Budget health aggregates
     const budgetHealth = {
       originalBudget: lines.reduce((s: number, l: any) => s + (l.original_budget || 0), 0),
-      committedCost: lines.reduce((s: number, l: any) => s + (l.committed_cost || 0), 0),
-      actualCost: lines.reduce((s: number, l: any) => s + (l.actual_cost || 0), 0),
-      forecastCost: lines.reduce((s: number, l: any) => s + (l.forecast_cost || l.original_budget || 0), 0),
+      committedCost: lines.reduce((s: number, l: any) => s + (l.committed || 0), 0),
+      actualCost: lines.reduce((s: number, l: any) => s + (l.actual || 0), 0),
+      forecastCost: lines.reduce((s: number, l: any) => s + (l.projected || l.original_budget || 0), 0),
       lineCount: lines.length,
     };
 
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
       budgetHealth,
       punchSummary,
       schedulePhases: schedulePhases || [],
-      alerts: (alerts || []).map((a: any) => ({ ...a, title: a.alert_type || a.title })),
+      alerts: (alerts || []).map((a: any) => ({ ...a, title: a.alert_type, message: a.body })),
     });
   } catch {
     return NextResponse.json({ error: 'Failed to load project' }, { status: 500 });

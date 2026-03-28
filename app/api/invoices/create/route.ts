@@ -4,20 +4,42 @@ import { createServerClient, getUser } from '@/lib/supabase-server';
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  let body: Record<string, unknown> = {};
+
   try {
-    body = await req.json().catch(() => ({}));
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data, error } = await supabase.from('invoices').insert(body).select().single();
+    const body = await req.json().catch(() => ({}));
+
+    if (!body.project_id || !body.vendor_name) {
+      return NextResponse.json({ error: 'project_id and vendor_name are required' }, { status: 400 });
+    }
+
+    const db = createServerClient();
+
+    const { data, error } = await db
+      .from('invoices')
+      .insert({
+        tenant_id: user.tenantId,
+        created_by: user.id,
+        project_id: body.project_id,
+        vendor_name: body.vendor_name,
+        invoice_number: body.invoice_number || null,
+        vendor_email: body.vendor_email || null,
+        description: body.description || null,
+        category: body.category || null,
+        cost_code: body.cost_code || null,
+        amount: body.amount || null,
+        tax: body.tax || null,
+        total: body.total || null,
+        due_date: body.due_date || null,
+        status: body.status || null,
+        notes: body.notes || null,
+      })
+      .select()
+      .single();
+
     if (error) throw error;
-    return NextResponse.json({ success: true, invoice: data });
-  } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[invoices/create] error:', msg);
-    return NextResponse.json({ error: `Failed to create invoice: ${msg}` }, { status: 500 });
+
+    return NextResponse.json({ invoice: data });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

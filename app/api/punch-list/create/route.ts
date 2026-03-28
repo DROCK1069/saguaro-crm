@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     };
 
     const { data, error } = await db
-      .from('punch_list_items')
+      .from('punch_list')
       .insert(row)
       .select()
       .single();

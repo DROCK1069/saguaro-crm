@@ -166,6 +166,13 @@ export default function CertifiedPayrollPage() {
   const [exportingFormat, setExportingFormat] = useState<string | null>(null);
   const [multiProjectView, setMultiProjectView] = useState(false);
 
+  // Money action dropdown state
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState('');
+  const [adjustId, setAdjustId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   // New worker form state
   const [newWorker, setNewWorker] = useState<Partial<WorkerEntry>>({
     name: '', trade: '', classification: '', baseRate: 0, fringeBenefit: 0, deductions: 0, isApprentice: false,
@@ -291,6 +298,35 @@ export default function CertifiedPayrollPage() {
       setNewWorker(prev => ({ ...prev, baseRate: rate.baseRate, fringeBenefit: rate.fringeBenefit }));
     }
   }, []);
+
+  // Money action dropdown handlers
+  function openGrossMenu(id: string) { setMenuId(id); setEditId(null); setAdjustId(null); }
+
+  function handleEditRate(workerId: string) {
+    const newRate = parseFloat(editVal);
+    if (isNaN(newRate) || newRate < 0 || !activePeriod) return;
+    setPeriods(prev => prev.map(p => p.id !== activePeriod.id ? p : {
+      ...p, workers: p.workers.map(w => w.id === workerId ? { ...w, baseRate: newRate } : w),
+    }));
+    setEditId(null);
+  }
+
+  function handleAdjustRate(workerId: string, pct: number) {
+    if (!activePeriod) return;
+    const worker = activePeriod.workers.find(w => w.id === workerId);
+    if (!worker) return;
+    const newRate = Math.round(worker.baseRate * (1 + pct / 100) * 100) / 100;
+    setPeriods(prev => prev.map(p => p.id !== activePeriod.id ? p : {
+      ...p, workers: p.workers.map(w => w.id === workerId ? { ...w, baseRate: newRate } : w),
+    }));
+    setAdjustId(null);
+  }
+
+  function handleCopyGross(workerId: string, amount: number) {
+    navigator.clipboard.writeText('$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2 })).catch(() => {});
+    setCopiedId(workerId); setTimeout(() => setCopiedId(null), 2000);
+    setMenuId(null);
+  }
 
   const uniqueTrades = useMemo(() => [...new Set(DAVIS_BACON_RATES.map(r => r.trade))], []);
 
@@ -546,6 +582,7 @@ export default function CertifiedPayrollPage() {
                   )}
                 </div>
               ) : (
+                <>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 1100 }}>
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
@@ -588,7 +625,41 @@ export default function CertifiedPayrollPage() {
                           <td style={{ padding: '10px 6px', textAlign: 'center', color: t.totalOT > 0 ? AMBER : `${DIM}44` }}>{t.totalOT || '-'}</td>
                           <td style={{ padding: '10px 6px', textAlign: 'center', color: t.totalDT > 0 ? RED : `${DIM}44` }}>{t.totalDT || '-'}</td>
                           <td style={{ padding: '10px 6px', color: TEXT, whiteSpace: 'nowrap' }}>${worker.baseRate.toFixed(2)}</td>
-                          <td style={{ padding: '10px 6px', color: GREEN, fontWeight: 600, whiteSpace: 'nowrap' }}>${t.grossPay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td style={{ padding: '10px 6px', position: 'relative' as const, whiteSpace: 'nowrap' }}>
+                            {editId === worker.id ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" step="0.01" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditRate(worker.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 90, padding: '4px 8px', background: BG, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
+                                <button onClick={() => handleEditRate(worker.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 5, color: '#0d1117', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                                <button onClick={() => setEditId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                              </div>
+                            ) : adjustId === worker.id ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                {[-10, -5, 5, 10].map(p => (
+                                  <button key={p} onClick={() => handleAdjustRate(worker.id, p)} style={{ padding: '3px 7px', background: p > 0 ? 'rgba(61,214,140,.1)' : 'rgba(239,68,68,.1)', border: `1px solid ${p > 0 ? 'rgba(61,214,140,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 5, color: p > 0 ? GREEN : RED, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>{p > 0 ? '+' : ''}{p}%</button>
+                                ))}
+                                <button onClick={() => setAdjustId(null)} style={{ padding: '3px 6px', background: 'none', border: 'none', color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ color: GREEN, fontWeight: 600 }}>${t.grossPay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                {copiedId === worker.id && <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>Copied!</span>}
+                                <button onClick={e => { e.stopPropagation(); openGrossMenu(worker.id); }} style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 10, padding: '2px 4px', lineHeight: 1, opacity: 0.6 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}>&#9662;</button>
+                                {menuId === worker.id && (
+                                  <div style={{ position: 'absolute', top: 36, right: 0, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 4, zIndex: 100, minWidth: 150, boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
+                                    {[
+                                      { label: 'Edit Rate', icon: '\u270F\uFE0F', action: () => { setMenuId(null); setEditId(worker.id); setEditVal(String(worker.baseRate)); } },
+                                      { label: 'Adjust %', icon: '\uD83D\uDCCA', action: () => { setMenuId(null); setAdjustId(worker.id); } },
+                                      { label: 'Copy Amount', icon: '\uD83D\uDCCB', action: () => handleCopyGross(worker.id, t.grossPay) },
+                                    ].map(item => (
+                                      <div key={item.label} onClick={item.action} style={{ padding: '7px 12px', fontSize: 12, color: TEXT, cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }} onMouseEnter={e => (e.currentTarget.style.background = BG)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                        <span style={{ fontSize: 14 }}>{item.icon}</span>{item.label}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
                           <td style={{ padding: '10px 6px', color: AMBER, whiteSpace: 'nowrap' }}>${t.fringeTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                           <td style={{ padding: '10px 6px', color: RED, whiteSpace: 'nowrap' }}>${worker.deductions.toFixed(2)}</td>
                           <td style={{ padding: '10px 6px', color: GOLD, fontWeight: 600, whiteSpace: 'nowrap' }}>${t.netPay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
@@ -634,6 +705,8 @@ export default function CertifiedPayrollPage() {
                     </tr>
                   </tfoot>
                 </table>
+                {menuId && <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={() => setMenuId(null)} />}
+                </>
               )}
             </div>
 

@@ -2131,7 +2131,7 @@ export async function POST(req: NextRequest) {
         .in('status', ['open', 'pending_response', 'submitted'])
         .order('due_date', { ascending: true })
         .limit(10),
-      db.from('user_profiles')
+      db.from('profiles')
         .select('full_name, company_name')
         .eq('user_id', user.id)
         .maybeSingle(),

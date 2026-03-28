@@ -11,6 +11,13 @@ import NotificationBell from '../../components/NotificationBell';
 import CommandPalette from '../../components/CommandPalette';
 import SaguaroChatWidget from '../../components/SaguaroChatWidget';
 import SubscriptionWall from '../../components/SubscriptionWall';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import GlobalShortcuts from '../../components/GlobalShortcuts';
+import ProjectSwitcher from '../../components/ProjectSwitcher';
+import PageTransition from '../../components/PageTransition';
+import ThemeToggle from '../../components/ThemeToggle';
+import PresenceIndicator from '../../components/PresenceIndicator';
+import WhiteLabelProvider from '../../components/WhiteLabelProvider';
 
 const GOLD   = '#D4A017';
 const DARK   = '#0d1117';
@@ -44,52 +51,59 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [userInitials, setUserInitials] = useState('?');
   const [sageUserId, setSageUserId] = useState<string | null>(null);
   const [sageProjects, setSageProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [showProjectSwitcher, setShowProjectSwitcher] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch user info for avatar
+  // Single init effect: refresh session, fetch user info + projects in parallel
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => {
-        if (!r.ok) return null;
-        return r.json();
-      })
-      .then(d => {
-        if (!d) return;
-        if (d.id) setSageUserId(d.id);
-        if (d.name) {
-          const parts = d.name.trim().split(/\s+/);
+    let cancelled = false;
+
+    async function init() {
+      // 1. Refresh session first — if 401, redirect immediately
+      try {
+        const refreshRes = await fetch('/api/auth/refresh');
+        if (refreshRes.status === 401) {
+          window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+          return;
+        }
+      } catch {
+        // Network error — continue anyway, auth/me will catch it
+      }
+
+      // 2. Fetch user info + project list in parallel (non-blocking)
+      const [meRes, projRes] = await Promise.allSettled([
+        fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
+        fetch('/api/projects?limit=15&fields=id,name').then(r => r.ok ? r.json() : null),
+      ]);
+
+      if (cancelled) return;
+
+      // Process user info
+      const me = meRes.status === 'fulfilled' ? meRes.value : null;
+      if (me) {
+        if (me.id) setSageUserId(me.id);
+        if (me.name) {
+          const parts = me.name.trim().split(/\s+/);
           const initials = parts.length >= 2
             ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-            : d.name.slice(0, 2).toUpperCase();
+            : me.name.slice(0, 2).toUpperCase();
           setUserInitials(initials);
-        } else if (d.email) {
-          setUserInitials(d.email[0].toUpperCase());
+        } else if (me.email) {
+          setUserInitials(me.email[0].toUpperCase());
         }
-      })
-      .catch(() => {});
-  }, []);
+      }
 
-  // Fetch project list for Sage context
-  useEffect(() => {
-    fetch('/api/projects?limit=15&fields=id,name')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d && Array.isArray(d.projects)) setSageProjects(d.projects);
-        else if (d && Array.isArray(d)) setSageProjects(d);
-      })
-      .catch(() => {});
-  }, []);
+      // Process project list
+      const proj = projRes.status === 'fulfilled' ? projRes.value : null;
+      if (proj) {
+        if (Array.isArray(proj.projects)) setSageProjects(proj.projects);
+        else if (Array.isArray(proj)) setSageProjects(proj);
+      }
+    }
 
-  // Auto-refresh session token on mount
-  useEffect(() => {
-    fetch('/api/auth/refresh')
-      .then(r => {
-        if (r.status === 401) {
-          window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
-        }
-      })
-      .catch(() => {});
+    init();
+    return () => { cancelled = true; };
   }, []);
 
   // Auto-scroll to bottom when messages update
@@ -208,6 +222,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div style={{ flex: 1 }} />
 
+        {/* Presence indicator */}
+        <PresenceIndicator />
+
+        {/* Theme toggle */}
+        <ThemeToggle />
+
         {/* ⌘K Command Palette hint — hidden on mobile */}
         <button
           onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
@@ -238,9 +258,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {userInitials}
           </div>
           {showUserMenu && (
+            <>
+            {/* Invisible backdrop to close on outside click */}
+            <div onClick={() => setShowUserMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
             <div
               style={{ position: 'absolute', top: 40, right: 0, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, minWidth: 160, boxShadow: '0 8px 32px rgba(0,0,0,.5)', zIndex: 300, overflow: 'hidden' }}
-              onMouseLeave={() => setShowUserMenu(false)}
             >
               <button
                 onClick={handleLogout}
@@ -250,6 +272,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 Sign Out
               </button>
             </div>
+            </>
           )}
         </div>
 
@@ -404,10 +427,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {/* ── Global Keyboard Shortcuts ─────────────────────────────────── */}
+      <GlobalShortcuts onProjectSwitch={() => setShowProjectSwitcher(true)} />
+
+      {/* ── Project Switcher Modal ─────────────────────────────────────── */}
+      <ProjectSwitcher open={showProjectSwitcher} onClose={() => setShowProjectSwitcher(false)} />
+
       {/* ── Main Content (offset for fixed nav) ─────────────────────────── */}
       <main style={{ paddingTop: 56 }}>
         <Breadcrumb pathname={pathname} />
-        <SubscriptionWall>{children}</SubscriptionWall>
+        <ErrorBoundary><SubscriptionWall><PageTransition>{children}</PageTransition></SubscriptionWall></ErrorBoundary>
       </main>
 
       {/* ── Sage CRM Chat Widget ─────────────────────────────────────────── */}

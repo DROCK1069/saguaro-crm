@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     // Get GC company name for the email
     const { data: profile } = await db
-      .from('user_profiles')
+      .from('profiles')
       .select('full_name, company_name')
       .eq('user_id', user.id)
       .maybeSingle();
@@ -88,21 +88,31 @@ export async function POST(req: NextRequest) {
       || (profile as { company_name?: string; full_name?: string } | null)?.full_name
       || 'Your General Contractor';
 
-    // Fire invite email — non-blocking, never fails the request
-    sendClientPortalInvite({
-      to: clientEmail.toLowerCase().trim(),
-      clientName: clientName.trim(),
-      gcCompanyName,
-      projectName: project.name,
-      portalUrl,
-      expiresAt: expiresAt,
-    }).catch(err => console.warn('[portal/client/create] email send failed (non-fatal):', err));
+    // Fire invite email — track actual send result
+    let emailSent = false;
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await sendClientPortalInvite({
+          to: clientEmail.toLowerCase().trim(),
+          clientName: clientName.trim(),
+          gcCompanyName,
+          projectName: project.name,
+          portalUrl,
+          expiresAt: expiresAt,
+        });
+        emailSent = true;
+      } catch (err) {
+        console.warn('[portal/client/create] email send failed:', err);
+        emailSent = false;
+      }
+    }
 
     return NextResponse.json({
       session,
       portalUrl,
       projectName: project.name,
-      emailSent: !!process.env.RESEND_API_KEY,
+      emailSent,
+      emailWarning: !emailSent ? 'Email could not be sent. Share the portal link manually.' : undefined,
     });
   } catch (err: unknown) {
     const msg = 'Internal server error';

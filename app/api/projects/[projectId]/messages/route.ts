@@ -15,7 +15,7 @@ export async function GET(
 
     // Try project_messages first
     const { data, error } = await db
-      .from('project_messages')
+      .from('messages')
       .select('*')
       .eq('tenant_id', user.tenantId)
       .eq('project_id', projectId)
@@ -75,7 +75,7 @@ export async function POST(
 
     // Try project_messages first
     const { data, error } = await db
-      .from('project_messages')
+      .from('messages')
       .insert(row)
       .select()
       .single();

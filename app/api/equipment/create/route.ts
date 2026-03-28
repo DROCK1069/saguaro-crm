@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   try {
     const db = createServerClient();
     const { data, error } = await db
-      .from('equipment_logs')
+      .from('equipment_log')
       .insert(row)
       .select()
       .single();

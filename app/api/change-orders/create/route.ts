@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       description: body.description,
       reason: body.reason,
       status: 'pending',
-      cost_impact: body.costImpact || 0,
+      amount: body.costImpact || body.amount || 0,
       schedule_impact: body.scheduleImpact || 0,
       submitted_by: user.id,
     }).select().single();

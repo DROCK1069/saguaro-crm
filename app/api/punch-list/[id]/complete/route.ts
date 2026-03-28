@@ -21,7 +21,7 @@ export async function PATCH(
       updateData.completed_at = new Date().toISOString();
     }
     const { error } = await supabase
-      .from('punch_list_items')
+      .from('punch_list')
       .update(updateData)
       .eq('id', id)
       .eq('tenant_id', user.tenantId);

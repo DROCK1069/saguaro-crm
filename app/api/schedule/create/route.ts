@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'name and projectId are required' }, { status: 400 });
     }
     const db = createServerClient();
-    const { data, error } = await db.from('project_tasks').insert({
+    const { data, error } = await db.from('schedule_tasks').insert({
       tenant_id: user.tenantId,
       project_id: body.projectId,
       name: body.name,

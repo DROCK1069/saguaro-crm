@@ -47,9 +47,9 @@ function isJWT(s: string): boolean {
 async function getTenant(userId: string): Promise<string> {
   const admin = createServerClient();
   const { data } = await admin
-    .from('user_profiles')
+    .from('profiles')
     .select('tenant_id')
-    .eq('user_id', userId)
+    .eq('id', userId)
     .single();
   return (data as any)?.tenant_id || userId;
 }

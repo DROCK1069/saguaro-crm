@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Create tenant + user_profile using service role key (bypasses RLS)
+  // Update the auto-created profile with company info (trigger already created it)
   if (data.user?.id) {
     try {
       const adminClient = createClient(
@@ -62,25 +62,18 @@ export async function POST(req: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { auth: { persistSession: false } }
       );
-      const slug = company.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 50);
-      const { data: tenant } = await adminClient
-        .from('tenants')
-        .insert({ name: company, slug: `${slug}-${Date.now()}`, plan: 'trial' })
-        .select()
-        .single();
-      if (tenant) {
-        await adminClient.from('user_profiles').insert({
-          tenant_id: tenant.id,
-          user_id: data.user.id,
-          email: email.toLowerCase().trim(),
-          full_name: body.name || '',
-          role: 'admin',
-          phone: phone || '',
-          title: role || 'General Contractor',
-        });
-      }
+      await adminClient.from('profiles').upsert({
+        id: data.user.id,
+        tenant_id: data.user.id,
+        email: email.toLowerCase().trim(),
+        full_name: body.name || email.split('@')[0],
+        role: 'admin',
+        phone: phone || '',
+        title: role || 'General Contractor',
+        company: company,
+      }, { onConflict: 'id' });
     } catch (err) {
-      console.error('[signup] tenant creation error:', err);
+      console.error('[signup] profile update error:', err);
     }
   }
 

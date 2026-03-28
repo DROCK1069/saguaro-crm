@@ -105,6 +105,66 @@ select option:hover {
   z-index: 9999 !important;
 }
 
+/* ── Professional CRM typography — compact, information-dense ── */
+/* Tighten all headings: max 20px, normal weight 600-700 */
+h1 { font-size: 18px !important; font-weight: 700 !important; letter-spacing: -0.01em; line-height: 1.3; }
+h2 { font-size: 15px !important; font-weight: 700 !important; letter-spacing: -0.01em; line-height: 1.3; }
+h3 { font-size: 14px !important; font-weight: 600 !important; line-height: 1.3; }
+h4, h5, h6 { font-size: 13px !important; font-weight: 600 !important; line-height: 1.3; }
+
+/* Body text: 13px base, not 14-16px */
+p, span, div, li, td, th, label, a {
+  font-weight: inherit;
+}
+
+/* Inputs: compact 13px */
+input, textarea, select {
+  font-size: 13px !important;
+}
+
+/* Buttons: compact, professional */
+button {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+/* Tables: tight professional rows */
+table { font-size: 13px; border-collapse: collapse; }
+th { font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 0.06em; }
+td { font-size: 13px !important; padding: 8px 12px; }
+
+/* Cards: reduce padding bloat */
+[style*="borderRadius"][style*="padding"] {
+  /* Handled by inline — this is a hint for dev */
+}
+
+/* Labels: small caps style */
+label {
+  font-size: 11px !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8fa3c0;
+}
+
+/* Badge/chip styling */
+[style*="borderRadius: 20"] {
+  font-size: 11px !important;
+}
+
+/* Professional font stack — Inter-like system fonts */
+body, button, input, textarea, select {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Reduce visual weight of heavy font-weight: 800-900 */
+[style*="fontWeight: 900"], [style*="fontWeight: 800"] {
+  font-weight: 700 !important;
+}
+
 /* ── Responsive breakpoints ── */
 @media (max-width: 768px) {
   html { font-size: 13px; }

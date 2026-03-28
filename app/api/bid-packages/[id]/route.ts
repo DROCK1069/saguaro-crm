@@ -16,21 +16,59 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!pkg) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ bidPackage: pkg, items: items || [], invites: invites || [], submissions: submissions || [] });
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const body = await req.json();
     const db = createServerClient();
-    const { data, error } = await db.from('bid_packages').update(body).eq('id', id).eq('tenant_id', user.tenantId).select().single();
+    const allowed = [
+      'name', 'trade', 'description', 'scope_of_work', 'scope_summary', 'scope_narrative',
+      'due_date', 'pre_bid_date', 'status', 'budget_estimate', 'notes',
+      'bid_instructions', 'is_public_project', 'requires_bond', 'insurance_requirements',
+      'csi_codes',
+    ];
+    const fields: Record<string, unknown> = {};
+    for (const k of allowed) {
+      if (body[k] !== undefined) fields[k] = body[k];
+    }
+    const { data, error } = await db
+      .from('bid_packages')
+      .update(fields)
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId)
+      .select()
+      .single();
     if (error) throw error;
-    return NextResponse.json({ bidPackage: data });
+    return NextResponse.json({ success: true, bidPackage: data });
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  return PATCH(req, context);
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const db = createServerClient();
+    const { error } = await db
+      .from('bid_packages')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId);
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

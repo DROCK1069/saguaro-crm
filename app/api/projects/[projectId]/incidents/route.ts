@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     const url = new URL(req.url);
     const status = url.searchParams.get('status');
     const type = url.searchParams.get('type');
-    let q = supabase.from('incidents').select('*').eq('project_id', params.projectId);
+    let q = supabase.from('safety_incidents').select('*').eq('project_id', params.projectId);
     if (status) q = q.eq('status', status);
     if (type) q = q.eq('incident_type', type);
     const { data, error } = await q.order('incident_date', { ascending: false });
@@ -26,9 +26,9 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const supabase = createServerClient();
     const body = await req.json();
-    const count = await supabase.from('incidents').select('id', { count: 'exact', head: true }).eq('project_id', params.projectId);
+    const count = await supabase.from('safety_incidents').select('id', { count: 'exact', head: true }).eq('project_id', params.projectId);
     const num = (count.count || 0) + 1;
-    const { data, error } = await supabase.from('incidents').insert({
+    const { data, error } = await supabase.from('safety_incidents').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
       incident_number: `INC-${String(num).padStart(4, '0')}`,
       title: body.title, incident_type: body.incident_type || 'injury',

@@ -27,7 +27,7 @@ export function useDashboardStats() {
   const { data, error, isLoading, mutate } = useSWR<{ stats: DashStats }>(
     '/api/dashboard/stats',
     fetcher,
-    { refreshInterval: 15_000, revalidateOnFocus: true }
+    { refreshInterval: 60_000, revalidateOnFocus: true, dedupingInterval: 10_000 }
   );
 
   return {

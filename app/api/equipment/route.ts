@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const db = createServerClient();
     let query = db
-      .from('equipment_logs')
+      .from('equipment_log')
       .select('*')
       .eq('tenant_id', user.tenantId)
       .order('work_date', { ascending: false });

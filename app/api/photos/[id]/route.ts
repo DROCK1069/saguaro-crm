@@ -10,7 +10,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const allowed = ['title','description','album','location','taken_at','tags','taken_by'];
     const fields: Record<string, any> = {};
     for (const k of allowed) { if (body[k] !== undefined) fields[k] = body[k]; }
-    const { error } = await db.from('project_photos').update(fields).eq('id', id).eq('tenant_id', user.tenantId);
+    const { error } = await db.from('photos').update(fields).eq('id', id).eq('tenant_id', user.tenantId);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch {
@@ -23,7 +23,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const db = createServerClient();
-    const { error } = await db.from('project_photos').delete().eq('id', id).eq('tenant_id', user.tenantId);
+    const { error } = await db.from('photos').delete().eq('id', id).eq('tenant_id', user.tenantId);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch {

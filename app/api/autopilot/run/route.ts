@@ -123,20 +123,20 @@ export async function POST(req: NextRequest) {
       results.push(`${staleCOs.length} stale change order(s)`);
     }
 
-    // 5. Budget overrun detection — lines where actual_cost >= 90% of original_budget
+    // 5. Budget overrun detection — lines where actual >= 90% of original_budget
     let budgetQuery = db
       .from('budget_lines')
-      .select('id, cost_code, description, original_budget, actual_cost, project_id')
+      .select('id, cost_code, description, original_budget, actual, project_id')
       .eq('tenant_id', tenantId)
       .gt('original_budget', 0)
       .limit(100);
     if (projectId) budgetQuery = budgetQuery.eq('project_id', projectId);
 
     const { data: budgetLines } = await budgetQuery;
-    const overrunLines = (budgetLines || []).filter((l: any) => (l.actual_cost || 0) / l.original_budget >= 0.9);
+    const overrunLines = (budgetLines || []).filter((l: any) => (l.actual || 0) / l.original_budget >= 0.9);
     if (overrunLines.length > 0) {
       for (const line of overrunLines as any[]) {
-        const pct = Math.round((line.actual_cost / line.original_budget) * 100);
+        const pct = Math.round((line.actual / line.original_budget) * 100);
         newAlerts.push({
           tenant_id: tenantId,
           project_id: line.project_id,

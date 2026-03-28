@@ -223,6 +223,12 @@ export default function RFIsPage() {
                           </Btn>
                         )}
                         {rfi.status === 'answered' && <span style={{ fontSize: 11, color: T.green, fontWeight: 700 }}>Answered</span>}
+                        <button onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!confirm('Delete this RFI?')) return;
+                          setRfis(prev => prev.filter(r => r.id !== rfi.id));
+                          try { await fetch(`/api/rfis/${rfi.id}`, { method: 'DELETE' }); } catch { /* optimistic */ }
+                        }} style={{background:'none',border:'none',color:'rgba(239,68,68,.5)',cursor:'pointer',fontSize:12,padding:'2px 6px',marginLeft:4}} title="Delete RFI">🗑️</button>
                       </div>,
                     ];
                   })}
