@@ -144,3 +144,4 @@ bundle-report.html
 .Rproj.user
 .Rhistory
 .claude/settings.local.json
+.env.local

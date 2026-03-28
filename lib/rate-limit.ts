@@ -55,3 +55,50 @@ export function getClientIP(req: Request): string {
   if (real) return real;
   return '0.0.0.0';
 }
+
+/**
+ * Pre-configured rate limiter for AI routes (30 requests per minute).
+ * Returns a 429 Response if limit exceeded, or null if allowed.
+ */
+export const aiLimiter = {
+  check(req: Request): Response | null {
+    const ip = getClientIP(req);
+    const { allowed, resetIn } = checkRateLimit(`ai:${ip}`, 30, 60_000);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again shortly.' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(Math.ceil(resetIn / 1000)),
+          },
+        }
+      );
+    }
+    return null;
+  },
+};
+
+/**
+ * Pre-configured rate limiter for auth routes (10 requests per minute).
+ */
+export const authLimiter = {
+  check(req: Request): Response | null {
+    const ip = getClientIP(req);
+    const { allowed, resetIn } = checkRateLimit(`auth:${ip}`, 10, 60_000);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Too many attempts. Please wait and try again.' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(Math.ceil(resetIn / 1000)),
+          },
+        }
+      );
+    }
+    return null;
+  },
+};
