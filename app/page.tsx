@@ -1,6 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { Blueprint, Robot, CurrencyDollar, DeviceMobile, PaintBrush, WifiHigh, Cube, Drone, Buildings, Hammer, HouseSimple, Building, ShieldCheck, ChartLine, User, UsersThree, PenNib, Handshake, BookOpen, Calculator, Scales, Wrench, Trophy, CaretDown, List, X } from '@phosphor-icons/react';
 
 /* ── palette ── */
 const BG = '#0F1419';
@@ -28,14 +29,7 @@ const CheckIcon = () => <svg viewBox="0 0 20 20" width={18} height={18} fill={GR
 const XIcon = () => <svg viewBox="0 0 20 20" width={18} height={18} fill="#EF4444"><circle cx={10} cy={10} r={10} opacity={0.15} /><path d="M7 7l6 6M13 7l-6 6" stroke="#EF4444" strokeWidth={2} strokeLinecap="round" /></svg>;
 const PartialIcon = () => <svg viewBox="0 0 20 20" width={18} height={18} fill={GOLD}><circle cx={10} cy={10} r={10} opacity={0.15} /><path d="M6 10h8" stroke={GOLD} strokeWidth={2} strokeLinecap="round" /></svg>;
 
-/* ── nav links ── */
-const NAV_LINKS = [
-  { label: 'Features', href: '/#features' },
-  { label: 'Field App', href: '/field-app' },
-  { label: 'Pricing', href: '/#pricing' },
-  { label: 'Compare', href: '/#compare' },
-  { label: 'AI Design', href: '/design' },
-];
+/* ── nav links (legacy — replaced by dropdown menus) ── */
 
 /* ── features data ── */
 const FEATURES = [
@@ -128,14 +122,7 @@ const PLANS = [
    =========================== */
 export default function LandingPage() {
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  /* close mobile menu on resize */
-  useEffect(() => {
-    const handler = () => { if (window.innerWidth > 768) setMenuOpen(false); };
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
+  /* menuOpen state removed — dropdowns handle their own state via IIFE */
 
   return (
     <div data-landing style={{ background: BG, color: TEXT, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh', overflowX: 'hidden' as const }}>
@@ -149,45 +136,159 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* ══════════ 2. NAV ══════════ */}
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 24px', maxWidth: 1200, margin: '0 auto', position: 'relative' as const }}>
-        <Link href="/" style={{ fontWeight: 800, fontSize: 20, letterSpacing: 2, color: TEXT, textDecoration: 'none' }}>SAGUARO</Link>
+      {/* ══════════ 2. NAV WITH DROPDOWNS ══════════ */}
+      {(() => {
+        const [openMenu, setOpenMenu] = useState<string | null>(null);
+        const [mobileOpen, setMobileOpen] = useState(false);
+        const navRef = useRef<HTMLDivElement>(null);
 
-        {/* desktop links */}
-        <div style={{ display: 'flex', gap: 28, alignItems: 'center' }} className="nav-desktop">
-          {NAV_LINKS.map(l => (
-            <Link key={l.label} href={l.href} style={{ color: DIM, textDecoration: 'none', fontSize: 13, fontWeight: 500, transition: 'color .15s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = TEXT)}
-              onMouseLeave={e => (e.currentTarget.style.color = DIM)}>
-              {l.label}
-            </Link>
-          ))}
-        </div>
+        // Close on click outside
+        useEffect(() => {
+          const handler = (e: MouseEvent) => {
+            if (navRef.current && !navRef.current.contains(e.target as Node)) {
+              setOpenMenu(null);
+            }
+          };
+          document.addEventListener('mousedown', handler);
+          return () => document.removeEventListener('mousedown', handler);
+        }, []);
 
-        {/* desktop CTAs */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }} className="nav-desktop">
-          <Link href="/login" style={{ color: TEXT, textDecoration: 'none', fontSize: 13, fontWeight: 500, padding: '7px 16px', border: `1px solid rgba(255,255,255,0.15)`, borderRadius: 8 }}>Log In</Link>
-          <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontSize: 13, fontWeight: 700, padding: '7px 20px', borderRadius: 8 }}>Start Free</Link>
-        </div>
+        const menus = {
+          products: {
+            label: 'Products',
+            items: [
+              { icon: <Blueprint size={22} weight="duotone" color="#D4A017" />, title: 'AI Blueprint Takeoff', desc: 'Upload plans, get instant estimates', href: '/app' },
+              { icon: <Robot size={22} weight="duotone" color="#D4A017" />, title: 'Sage AI Assistant', desc: 'Your AI construction advisor', href: '/app' },
+              { icon: <CurrencyDollar size={22} weight="duotone" color="#D4A017" />, title: 'Financial Suite', desc: 'Pay apps, invoices, change orders', href: '/app' },
+              { icon: <DeviceMobile size={22} weight="duotone" color="#D4A017" />, title: 'Field App', desc: 'Mobile-first job site tools', href: '/field' },
+              { icon: <PaintBrush size={22} weight="duotone" color="#D4A017" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
+              { icon: <WifiHigh size={22} weight="duotone" color="#D4A017" />, title: 'Low Voltage / IT', desc: 'Network design & configuration', href: '/app' },
+              { icon: <Cube size={22} weight="duotone" color="#D4A017" />, title: 'BIM 3D Viewer', desc: 'Upload IFC models, tap for specs', href: '/field/bim-viewer' },
+              { icon: <Drone size={22} weight="duotone" color="#D4A017" />, title: 'Drone Analysis', desc: 'AI-powered site progress', href: '/field/drone' },
+            ],
+          },
+          solutions: {
+            label: 'Solutions',
+            items: [
+              { icon: <Buildings size={22} weight="duotone" color="#D4A017" />, title: 'General Contractors', desc: 'Full project management suite', href: '/app' },
+              { icon: <Hammer size={22} weight="duotone" color="#D4A017" />, title: 'Specialty Contractors', desc: 'Subs, trades, field crews', href: '/app' },
+              { icon: <HouseSimple size={22} weight="duotone" color="#D4A017" />, title: 'Home Builders', desc: 'Residential construction', href: '/design' },
+              { icon: <Building size={22} weight="duotone" color="#D4A017" />, title: 'Commercial Developers', desc: 'Multi-project portfolio', href: '/app' },
+              { icon: <ShieldCheck size={22} weight="duotone" color="#D4A017" />, title: 'Compliance & Safety', desc: 'OSHA, insurance, lien tracking', href: '/app' },
+              { icon: <ChartLine size={22} weight="duotone" color="#D4A017" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/app' },
+            ],
+          },
+          portals: {
+            label: 'Portals',
+            items: [
+              { icon: <User size={22} weight="duotone" color="#D4A017" />, title: 'Owner / Client Portal', desc: 'Live project visibility for owners', href: '/portals/client' },
+              { icon: <UsersThree size={22} weight="duotone" color="#D4A017" />, title: 'Subcontractor Portal', desc: 'Self-service docs & pay apps', href: '/portals/sub' },
+              { icon: <PenNib size={22} weight="duotone" color="#D4A017" />, title: 'E-Signature Portal', desc: 'Sign documents in-browser', href: '/portals/sign' },
+              { icon: <Handshake size={22} weight="duotone" color="#D4A017" />, title: 'Integrations', desc: 'QuickBooks, Sage, Stripe', href: '/app/integrations' },
+            ],
+          },
+          resources: {
+            label: 'Resources',
+            items: [
+              { icon: <BookOpen size={22} weight="duotone" color="#D4A017" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
+              { icon: <Calculator size={22} weight="duotone" color="#D4A017" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/design/roi' },
+              { icon: <Scales size={22} weight="duotone" color="#D4A017" />, title: 'Compare Platforms', desc: 'Saguaro vs Procore vs Buildertrend', href: '/#compare' },
+              { icon: <Wrench size={22} weight="duotone" color="#D4A017" />, title: 'Prevailing Wage Calc', desc: 'Davis-Bacon rates by state/trade', href: '/app/compliance/prevailing-wage' },
+              { icon: <Trophy size={22} weight="duotone" color="#D4A017" />, title: 'Leaderboard', desc: 'Gamification & team performance', href: '/field/leaderboard' },
+            ],
+          },
+        };
 
-        {/* mobile hamburger */}
-        <button className="nav-mobile-btn" onClick={() => setMenuOpen(!menuOpen)} style={{ display: 'none', background: 'none', border: 'none', color: TEXT, fontSize: 24, cursor: 'pointer' }} aria-label="Menu">
-          {menuOpen ? '\u2715' : '\u2630'}
-        </button>
+        return (
+          <nav ref={navRef} style={{
+            position: 'sticky', top: 0, zIndex: 100,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            borderBottom: '1px solid rgba(212,160,23,0.12)',
+            padding: '0 max(24px, 4vw)', height: 56,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            {/* Logo */}
+            <a href="/" style={{ color: '#D4A017', fontWeight: 800, fontSize: 18, letterSpacing: '0.12em', textDecoration: 'none' }}>SAGUARO</a>
 
-        {/* mobile dropdown */}
-        {menuOpen && (
-          <div style={{ position: 'absolute' as const, top: '100%', left: 0, right: 0, background: CARD, borderBottom: `1px solid rgba(255,255,255,0.06)`, padding: 16, display: 'flex', flexDirection: 'column' as const, gap: 12, zIndex: 50 }}>
-            {NAV_LINKS.map(l => (
-              <Link key={l.label} href={l.href} onClick={() => setMenuOpen(false)} style={{ color: DIM, textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>{l.label}</Link>
-            ))}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, display: 'flex', gap: 10 }}>
-              <Link href="/login" style={{ color: TEXT, textDecoration: 'none', fontSize: 13, padding: '8px 16px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, flex: 1, textAlign: 'center' as const }}>Log In</Link>
-              <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 8, flex: 1, textAlign: 'center' as const }}>Start Free</Link>
+            {/* Desktop menu */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
+              {Object.entries(menus).map(([key, menu]) => (
+                <div key={key} style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setOpenMenu(openMenu === key ? null : key)}
+                    onMouseEnter={() => setOpenMenu(key)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: openMenu === key ? '#D4A017' : '#F5F5F7',
+                      fontSize: 13, fontWeight: 500, padding: '8px 14px',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      transition: 'color 0.15s ease',
+                    }}
+                  >
+                    {menu.label}
+                    <CaretDown size={12} weight="bold" style={{ transform: openMenu === key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+                  </button>
+
+                  {/* Dropdown panel */}
+                  {openMenu === key && (
+                    <div
+                      onMouseLeave={() => setOpenMenu(null)}
+                      style={{
+                        position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+                        width: 420, marginTop: 8,
+                        background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
+                        border: '1px solid rgba(212,160,23,0.15)',
+                        borderRadius: 16, padding: '8px',
+                        boxShadow: '0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04)',
+                        animation: 'navDropFadeIn 0.15s ease',
+                      }}
+                    >
+                      {menu.items.map((item, i) => (
+                        <a key={i} href={item.href} style={{
+                          display: 'flex', alignItems: 'center', gap: 14,
+                          padding: '12px 16px', borderRadius: 10,
+                          textDecoration: 'none', transition: 'all 0.15s ease',
+                          borderLeft: '3px solid transparent',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,160,23,0.06)'; e.currentTarget.style.borderLeftColor = '#D4A017'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
+                        >
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {item.icon}
+                          </div>
+                          <div>
+                            <div style={{ color: '#F5F5F7', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
+                            <div style={{ color: '#86868B', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Pricing link */}
+              <a href="/#pricing" style={{ color: '#F5F5F7', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
             </div>
-          </div>
-        )}
-      </nav>
+
+            {/* Right side CTAs */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <a href="/login" style={{ color: '#86868B', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</a>
+              <a href="/login" style={{
+                background: 'linear-gradient(135deg, #D4A017, #C8960F)',
+                color: '#000', fontSize: 13, fontWeight: 700,
+                padding: '8px 20px', borderRadius: 8, textDecoration: 'none',
+                boxShadow: '0 0 20px rgba(212,160,23,0.2)',
+              }}>Start Free</a>
+
+              {/* Mobile hamburger */}
+              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#F5F5F7', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
+                {mobileOpen ? <X size={24} /> : <List size={24} />}
+              </button>
+            </div>
+          </nav>
+        );
+      })()}
 
       {/* ══════════ 3. HERO ══════════ */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
@@ -495,11 +596,15 @@ export default function LandingPage() {
 
       {/* ══════════ RESPONSIVE CSS ══════════ */}
       <style>{`
-        .nav-desktop { display: flex !important; }
-        .nav-mobile-btn { display: none !important; }
+        @keyframes navDropFadeIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .desktop-nav { display: flex !important; }
+        .mobile-menu-btn { display: none !important; }
         @media (max-width: 768px) {
-          .nav-desktop { display: none !important; }
-          .nav-mobile-btn { display: block !important; }
+          .desktop-nav { display: none !important; }
+          .mobile-menu-btn { display: block !important; }
           .hero-grid { grid-template-columns: 1fr !important; }
           .hero-mockup { display: none !important; }
           .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
