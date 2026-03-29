@@ -269,7 +269,7 @@ export default function DesignStudioPage() {
   const outlineBtn: React.CSSProperties = { padding: '14px 36px', background: 'transparent', border: `2px solid ${GOLD}`, color: GOLD, borderRadius: 12, fontWeight: 700, fontSize: 16, cursor: 'pointer', transition: 'all .15s' };
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ background: '#F8F6F3', color: '#1A1A1A', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Arizona desert gradient background ── */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '100vh', zIndex: 0, pointerEvents: 'none',
@@ -330,25 +330,25 @@ export default function DesignStudioPage() {
             </div>
           </div>
 
-          {/* CSS-only before/after mockup */}
+          {/* Before/after photo mockup */}
           <div style={{ position: 'relative', height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {/* Before card */}
             <div style={{
               position: 'absolute', left: 0, top: 20, width: '65%', height: '85%', borderRadius: 20,
-              background: 'linear-gradient(135deg, #D1D5DB 0%, #E5E7EB 40%, #D6D3D1 100%)',
+              overflow: 'hidden',
               boxShadow: '0 8px 40px rgba(0,0,0,0.12)', zIndex: 1,
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: 20,
             }}>
-              <span style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>BEFORE</span>
+              <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80" alt="Plain living room before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
+              <span style={{ position: 'absolute', bottom: 20, left: 20, background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>BEFORE</span>
             </div>
             {/* After card */}
             <div style={{
               position: 'absolute', right: 0, top: 0, width: '65%', height: '85%', borderRadius: 20,
-              background: `linear-gradient(135deg, #FDE68A 0%, ${GOLD} 40%, #92400E 100%)`,
+              overflow: 'hidden',
               boxShadow: '0 12px 48px rgba(200,150,15,0.25)', zIndex: 2,
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 20,
             }}>
-              <span style={{ background: `${GOLD}`, color: '#000', padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>AFTER</span>
+              <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&q=80" alt="Modern styled living room after renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
+              <span style={{ position: 'absolute', bottom: 20, right: 20, background: `${GOLD}`, color: '#000', padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>AFTER</span>
             </div>
             {/* Slider line */}
             <div style={{
@@ -429,17 +429,19 @@ export default function DesignStudioPage() {
           <p style={sectionSub}>Real results from our AI design engine</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             {[
-              { name: 'Kitchen', style: 'Modern Minimalist', before: 'linear-gradient(135deg, #9CA3AF, #D1D5DB)', after: 'linear-gradient(135deg, #F59E0B, #D97706, #92400E)' },
-              { name: 'Living Room', style: 'Scandinavian', before: 'linear-gradient(135deg, #D6D3D1, #E7E5E4)', after: 'linear-gradient(135deg, #64748B, #475569, #334155)' },
-              { name: 'Exterior', style: 'Desert Modern', before: 'linear-gradient(135deg, #D2B48C, #C4B5A0)', after: 'linear-gradient(135deg, #22C55E, #16A34A, #065F46)' },
+              { name: 'Kitchen', style: 'Modern Minimalist', beforeImg: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=80', afterImg: 'https://images.unsplash.com/photo-1556909172-54557c7e4fb7?w=400&q=80' },
+              { name: 'Living Room', style: 'Scandinavian', beforeImg: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80', afterImg: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=400&q=80' },
+              { name: 'Exterior', style: 'Desert Modern', beforeImg: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=80', afterImg: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80' },
             ].map((item, i) => (
               <div key={i} style={{ ...card, overflow: 'hidden' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: 200 }}>
-                  <div style={{ background: item.before, display: 'flex', alignItems: 'flex-end', padding: 12 }}>
-                    <span style={{ background: 'rgba(0,0,0,0.5)', color: '#fff', padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>Before</span>
+                  <div style={{ position: 'relative', overflow: 'hidden' }}>
+                    <img src={item.beforeImg} alt={`${item.name} before renovation`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.5)', color: '#fff', padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>Before</span>
                   </div>
-                  <div style={{ background: item.after, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 12 }}>
-                    <span style={{ background: `${GOLD}DD`, color: '#000', padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>After</span>
+                  <div style={{ position: 'relative', overflow: 'hidden' }}>
+                    <img src={item.afterImg} alt={`${item.name} after renovation`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', bottom: 12, right: 12, background: `${GOLD}DD`, color: '#000', padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>After</span>
                   </div>
                 </div>
                 <div style={{ padding: '16px 20px' }}>
@@ -483,19 +485,25 @@ export default function DesignStudioPage() {
           <p style={sectionSub}>Built for construction professionals, loved by homeowners</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {[
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>, title: 'Photorealistic AI', desc: 'SDXL + ControlNet generates real-looking rooms, not cartoons' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>, title: 'Instant Cost Estimate', desc: 'Know renovation costs before calling a contractor' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><circle cx="13.5" cy="6.5" r=".5" fill={GOLD}/><circle cx="17.5" cy="10.5" r=".5" fill={GOLD}/><circle cx="8.5" cy="7.5" r=".5" fill={GOLD}/><circle cx="6.5" cy="12" r=".5" fill={GOLD}/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>, title: '18 Design Styles', desc: 'Modern to Mediterranean, Farmhouse to Art Deco' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M2 20h20"/><path d="M5 20V8l7-5 7 5v12"/><path d="M9 20v-5h6v5"/></svg>, title: 'Construction-Ready', desc: 'Designs link directly to material takeoffs and contractor bids' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, title: 'Exterior + Interior', desc: 'Redesign kitchens, bathrooms, yards, facades \u2014 any space' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>, title: 'Smart Upsells', desc: 'AI suggests upgrades based on your location and lifestyle' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>, title: 'Photorealistic AI', desc: 'SDXL + ControlNet generates real-looking rooms, not cartoons', bgImg: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=300&q=80' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>, title: 'Instant Cost Estimate', desc: 'Know renovation costs before calling a contractor', bgImg: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=300&q=80' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><circle cx="13.5" cy="6.5" r=".5" fill={GOLD}/><circle cx="17.5" cy="10.5" r=".5" fill={GOLD}/><circle cx="8.5" cy="7.5" r=".5" fill={GOLD}/><circle cx="6.5" cy="12" r=".5" fill={GOLD}/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>, title: '18 Design Styles', desc: 'Modern to Mediterranean, Farmhouse to Art Deco', bgImg: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=300&q=80' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M2 20h20"/><path d="M5 20V8l7-5 7 5v12"/><path d="M9 20v-5h6v5"/></svg>, title: 'Construction-Ready', desc: 'Designs link directly to material takeoffs and contractor bids', bgImg: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&q=80' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, title: 'Exterior + Interior', desc: 'Redesign kitchens, bathrooms, yards, facades -- any space', bgImg: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=300&q=80' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>, title: 'Smart Upsells', desc: 'AI suggests upgrades based on your location and lifestyle', bgImg: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=300&q=80' },
             ].map((f, i) => (
-              <div key={i} style={{ ...card, padding: '32px 28px' }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(200,150,15,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                  {f.icon}
+              <div key={i} style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
+                <div style={{ position: 'relative', height: 140, overflow: 'hidden' }}>
+                  <img src={f.bgImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.85) 100%)' }} />
+                  <div style={{ position: 'absolute', bottom: 12, left: 20, width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+                    {f.icon}
+                  </div>
                 </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: DIM, lineHeight: 1.6 }}>{f.desc}</p>
+                <div style={{ padding: '20px 28px 28px' }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
+                  <p style={{ fontSize: 14, color: DIM, lineHeight: 1.6 }}>{f.desc}</p>
+                </div>
               </div>
             ))}
           </div>

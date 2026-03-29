@@ -11,11 +11,12 @@ const TEXT = '#F0F4FF';
 const DIM = '#8B9DB8';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(26,31,46,0.7)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
-  border: '1px solid rgba(255,255,255,0.06)',
+  background: 'rgba(26,31,46,0.65)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: 16,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
 };
 
 /* ── icons (inline SVG) ── */
@@ -189,7 +190,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ══════════ 3. HERO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }} className="hero-grid">
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', background: 'radial-gradient(ellipse at 70% 50%, rgba(212,160,23,0.04) 0%, transparent 60%)' }} className="hero-grid">
         {/* left */}
         <div>
           <span style={{ display: 'inline-block', background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.25)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, padding: '5px 12px', borderRadius: 20, marginBottom: 16, textTransform: 'uppercase' as const }}>AI-POWERED CONSTRUCTION CRM</span>
@@ -213,7 +214,7 @@ export default function LandingPage() {
             <span style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: DIM, marginLeft: 8 }}>app.saguaro.build/takeoff</span>
           </div>
           {/* mockup content */}
-          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(26,31,46,0.9) 100%)` }}>
+          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(26,31,46,0.95) 50%, rgba(15,20,25,0.98) 100%)` }}>
             {/* toolbar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>AI Takeoff Results</span>
@@ -258,9 +259,9 @@ export default function LandingPage() {
             { val: '4.2 hrs', lbl: 'Avg. Time Saved' },
             { val: '8,900+', lbl: 'Blueprints Analyzed' },
           ].map(s => (
-            <div key={s.lbl} style={{ ...glass, padding: '16px 20px', textAlign: 'center' as const }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: GOLD }}>{s.val}</div>
-              <div style={{ fontSize: 11, color: DIM, marginTop: 4 }}>{s.lbl}</div>
+            <div key={s.lbl} style={{ ...glass, padding: '20px 24px', textAlign: 'center' as const }}>
+              <div style={{ fontSize: 32, fontWeight: 700, color: '#D4A017', letterSpacing: '-0.02em' }}>{s.val}</div>
+              <div style={{ fontSize: 12, color: DIM, marginTop: 6, fontWeight: 500 }}>{s.lbl}</div>
             </div>
           ))}
         </div>
@@ -272,9 +273,9 @@ export default function LandingPage() {
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="feature-grid">
           {FEATURES.map(f => (
-            <div key={f.title} style={{ ...glass, padding: '24px 22px', transition: 'border-color .2s' }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(212,160,23,0.25)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}>
+            <div key={f.title} style={{ ...glass, padding: '24px 22px', transition: 'all 0.3s ease', cursor: 'default' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,23,0.25)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'; }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
                 <Icon d={f.icon} />
               </div>
@@ -340,7 +341,7 @@ export default function LandingPage() {
       <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
         <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, marginBottom: 6 }}>Why GCs Switch from Procore</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 28 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
-        <div style={{ ...glass, overflow: 'hidden' }}>
+        <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
           {/* header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
@@ -373,12 +374,17 @@ export default function LandingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
           {PLANS.map(plan => (
             <div key={plan.name} style={{
-              ...glass,
+              background: 'rgba(255,255,255,0.05)',
+              backdropFilter: 'blur(40px)',
+              WebkitBackdropFilter: 'blur(40px)',
+              border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 16,
               padding: '28px 24px',
               position: 'relative' as const,
-              ...(plan.highlighted ? { border: `1px solid rgba(212,160,23,0.35)`, boxShadow: '0 0 40px rgba(212,160,23,0.08)' } : {}),
+              boxShadow: plan.highlighted ? '0 0 60px rgba(212,160,23,0.12), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)' : '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
               display: 'flex',
               flexDirection: 'column' as const,
+              transition: 'all 0.3s ease',
             }}>
               {plan.highlighted && (
                 <span style={{ position: 'absolute' as const, top: -11, left: '50%', transform: 'translateX(-50%)', background: GOLD, color: '#000', fontSize: 10, fontWeight: 800, padding: '3px 14px', borderRadius: 10, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>Most Popular</span>
@@ -418,7 +424,7 @@ export default function LandingPage() {
 
       {/* ══════════ 8. TESTIMONIAL ══════════ */}
       <section style={{ maxWidth: 700, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }}>
-        <div style={{ ...glass, padding: '36px 32px' }}>
+        <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
           <div style={{ width: 52, height: 52, borderRadius: '50%', background: `linear-gradient(135deg, ${GOLD}, rgba(212,160,23,0.6))`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 18, fontWeight: 800, color: '#000' }}>MT</div>
           <blockquote style={{ fontSize: 16, color: TEXT, lineHeight: 1.6, fontStyle: 'italic' as const, margin: '0 0 16px', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
           <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px' }}>Marcus Torres</p>
@@ -427,10 +433,10 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 9. CTA SECTION ══════════ */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }}>
+      <section style={{ maxWidth: 700, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>Ready to Build Smarter?</h2>
         <p style={{ color: DIM, fontSize: 15, marginBottom: 28 }}>Join 200+ general contractors who switched to Saguaro and never looked back.</p>
-        <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.25)' }}>Start Your Free Trial</Link>
+        <Link href="/signup" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.3), 0 12px 40px rgba(212,160,23,0.15)', transition: 'all 0.3s ease' }}>Start Your Free Trial</Link>
         <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>No credit card required. 14-day free trial.</p>
       </section>
 
