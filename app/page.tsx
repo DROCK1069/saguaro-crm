@@ -190,9 +190,10 @@ export default function LandingPage() {
       </nav>
 
       {/* ══════════ 3. HERO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', background: 'radial-gradient(ellipse at 70% 50%, rgba(212,160,23,0.04) 0%, transparent 60%)' }} className="hero-grid">
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.92) 40%, rgba(0,0,0,0.3) 100%)', zIndex: 0 }} />
         {/* left */}
-        <div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
           <span style={{ display: 'inline-block', background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.25)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, padding: '5px 12px', borderRadius: 20, marginBottom: 16, textTransform: 'uppercase' as const }}>AI-POWERED CONSTRUCTION CRM</span>
           <h1 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, margin: '0 0 14px', color: TEXT }}>The Smarter CRM Built<br />for General Contractors</h1>
           <p style={{ color: DIM, fontSize: 15, lineHeight: 1.6, margin: '0 0 24px', maxWidth: 440 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
@@ -205,7 +206,7 @@ export default function LandingPage() {
         </div>
 
         {/* right — takeoff mockup */}
-        <div style={{ ...glass, padding: 0, overflow: 'hidden' }} className="hero-mockup">
+        <div style={{ ...glass, padding: 0, overflow: 'hidden', position: 'relative', zIndex: 1 }} className="hero-mockup">
           {/* browser chrome */}
           <div style={{ background: 'rgba(15,20,25,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
@@ -267,23 +268,50 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Integration logos */}
+      <div style={{ padding: '32px 0', overflow: 'hidden', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ textAlign: 'center' as const, color: '#86868B', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 20 }}>
+          Integrates with tools you already use
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 60, flexWrap: 'wrap' as const, opacity: 0.5 }}>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/QuickBooks_Logo.svg/320px-QuickBooks_Logo.svg.png" alt="QuickBooks" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/320px-Stripe_Logo%2C_revised_2016.svg.png" alt="Stripe" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/DocuSign_Logo.svg/320px-DocuSign_Logo.svg.png" alt="DocuSign" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Autodesk_Logo.svg/320px-Autodesk_Logo.svg.png" alt="Autodesk" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
+        </div>
+      </div>
+
       {/* ══════════ 4. FEATURE GRID ══════════ */}
       <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px' }}>
         <h2 style={{ textAlign: 'center' as const, fontSize: 26, fontWeight: 800, marginBottom: 6 }}>Everything You Need. Nothing You Don&apos;t.</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="feature-grid">
-          {FEATURES.map(f => (
-            <div key={f.title} style={{ ...glass, padding: '24px 22px', transition: 'all 0.3s ease', cursor: 'default' }}
+          {FEATURES.map(f => {
+            const cardImg = f.title.includes('Blueprint') || f.title.includes('Takeoff') ? 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&q=80'
+              : f.title.includes('Sage') || f.title.includes('AI Assistant') ? 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=80'
+              : f.title.includes('Financial') ? 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&q=80'
+              : f.title.includes('Field') || f.title.includes('Mobile') ? 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80'
+              : f.title.includes('Portal') ? 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&q=80'
+              : 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80';
+            return (
+            <div key={f.title} style={{ ...glass, padding: 0, overflow: 'hidden', transition: 'all 0.3s ease', cursor: 'default' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,23,0.25)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'; }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
-                <Icon d={f.icon} />
+              <div style={{ height: 160, overflow: 'hidden', borderRadius: '16px 16px 0 0', position: 'relative' as const }}>
+                <img src={cardImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, #000)' }} />
               </div>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, color: TEXT }}>{f.title}</h3>
-              <p style={{ fontSize: 13, color: DIM, lineHeight: 1.5, margin: '0 0 12px' }}>{f.desc}</p>
-              <span style={{ fontSize: 12, color: GOLD, fontWeight: 600, cursor: 'pointer' }}>Learn more &rarr;</span>
+              <div style={{ padding: '24px 22px' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
+                  <Icon d={f.icon} />
+                </div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, color: TEXT }}>{f.title}</h3>
+                <p style={{ fontSize: 13, color: DIM, lineHeight: 1.5, margin: '0 0 12px' }}>{f.desc}</p>
+                <span style={{ fontSize: 12, color: GOLD, fontWeight: 600, cursor: 'pointer' }}>Learn more &rarr;</span>
+              </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -302,30 +330,17 @@ export default function LandingPage() {
           <div style={{ background: `linear-gradient(135deg, rgba(15,20,25,0.9), rgba(26,31,46,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
             <div style={{ display: 'flex', gap: 12, width: '100%' }}>
               {/* before */}
-              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ background: 'rgba(255,255,255,0.04)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: DIM, textTransform: 'uppercase' as const }}>Before</div>
-                <div style={{ height: 140, background: `linear-gradient(135deg, #2a2520, #1a1510)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 60 40" width={80} height={53} fill="none" stroke={DIM} strokeWidth={0.8}>
-                    <rect x={5} y={8} width={50} height={28} rx={1} />
-                    <rect x={10} y={14} width={14} height={18} rx={0.5} />
-                    <rect x={28} y={14} width={22} height={8} rx={0.5} />
-                    <rect x={28} y={25} width={22} height={7} rx={0.5} />
-                    <line x1={5} y1={36} x2={55} y2={36} />
-                  </svg>
+              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' as const }}>
+                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.5)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: DIM, textTransform: 'uppercase' as const, zIndex: 1 }}>Before</div>
+                <div style={{ height: 160 }}>
+                  <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80" alt="Before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
                 </div>
               </div>
               {/* after */}
-              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: `1px solid rgba(212,160,23,0.2)` }}>
-                <div style={{ background: 'rgba(212,160,23,0.08)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: GOLD, textTransform: 'uppercase' as const }}>After &mdash; AI Generated</div>
-                <div style={{ height: 140, background: `linear-gradient(135deg, #1a2520, #0f1a15)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 60 40" width={80} height={53} fill="none">
-                    <rect x={5} y={8} width={50} height={28} rx={2} stroke={GOLD} strokeWidth={0.8} />
-                    <rect x={10} y={14} width={14} height={18} rx={1} fill="rgba(212,160,23,0.15)" stroke={GOLD} strokeWidth={0.5} />
-                    <rect x={28} y={14} width={22} height={8} rx={1} fill="rgba(34,197,94,0.1)" stroke={GREEN} strokeWidth={0.5} />
-                    <rect x={28} y={25} width={22} height={7} rx={1} fill="rgba(212,160,23,0.08)" stroke={GOLD} strokeWidth={0.5} />
-                    <line x1={5} y1={36} x2={55} y2={36} stroke={GOLD} strokeWidth={0.5} />
-                    <circle cx={48} cy={12} r={3} fill={GOLD} opacity={0.3} />
-                  </svg>
+              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: `1px solid rgba(212,160,23,0.2)`, position: 'relative' as const }}>
+                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: 'rgba(212,160,23,0.15)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: GOLD, textTransform: 'uppercase' as const, zIndex: 1 }}>After &mdash; AI Generated</div>
+                <div style={{ height: 160 }}>
+                  <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80" alt="After renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
                 </div>
               </div>
             </div>
@@ -346,8 +361,8 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
             <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 700, color: GOLD, textAlign: 'center' as const }}>Saguaro</div>
-            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const }}>Procore</div>
-            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const }}>Buildertrend</div>
+            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Procore_Technologies_logo.svg/2560px-Procore_Technologies_logo.svg.png" alt="Procore" style={{ height: 20, filter: 'grayscale(1) brightness(0.7)' }} /></div>
+            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, opacity: 0.6 }}>Buildertrend</div>
           </div>
           {/* rows */}
           {COMPARISON_ROWS.map((r, i) => (
@@ -425,7 +440,7 @@ export default function LandingPage() {
       {/* ══════════ 8. TESTIMONIAL ══════════ */}
       <section style={{ maxWidth: 700, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }}>
         <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
-          <div style={{ width: 52, height: 52, borderRadius: '50%', background: `linear-gradient(135deg, ${GOLD}, rgba(212,160,23,0.6))`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 18, fontWeight: 800, color: '#000' }}>MT</div>
+          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=80" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #D4A017', display: 'block', margin: '0 auto 16px' }} />
           <blockquote style={{ fontSize: 16, color: TEXT, lineHeight: 1.6, fontStyle: 'italic' as const, margin: '0 0 16px', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
           <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px' }}>Marcus Torres</p>
           <p style={{ color: DIM, fontSize: 12, margin: 0 }}>VP of Operations &mdash; Sonoran Builders, Phoenix AZ</p>
