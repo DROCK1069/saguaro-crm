@@ -408,40 +408,60 @@ export default function ROICalculatorPage() {
                 </span>
               </button>
 
+              {/* Dropdown list — use native select for reliability */}
+              <select
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                style={{
+                  display: dropdownOpen ? 'none' : 'none',
+                  position: 'absolute', opacity: 0, pointerEvents: 'none',
+                }}
+              >
+                {Object.entries(STATES).map(([code, s]) => (
+                  <option key={code} value={code}>{s.name}</option>
+                ))}
+              </select>
+
               {/* Dropdown list */}
               {dropdownOpen && (
                 <div style={{
                   position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  zIndex: 50,
-                  marginTop: 4,
-                  background: 'rgba(20,20,20,0.96)',
+                  top: 'calc(100% + 4px)',
+                  left: 24,
+                  right: 24,
+                  zIndex: 9999,
+                  background: 'rgba(15,15,15,0.98)',
                   backdropFilter: 'blur(40px)',
                   WebkitBackdropFilter: 'blur(40px)',
-                  border: '1px solid rgba(212,160,23,0.15)',
+                  border: '1px solid rgba(212,160,23,0.2)',
                   borderRadius: 12,
-                  maxHeight: 320,
+                  maxHeight: 400,
                   overflowY: 'auto' as const,
-                  boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 20px rgba(212,160,23,0.08)',
+                  padding: '4px 0',
                 }}>
                   {Object.entries(STATES).map(([code, s]) => (
                     <div
                       key={code}
-                      className="roi-dropdown-item"
                       onClick={() => { setState(code); setDropdownOpen(false); }}
                       style={{
+                        padding: '12px 18px',
                         color: code === state ? GOLD : TEXT,
                         fontWeight: code === state ? 700 : 400,
-                        fontSize: 14,
+                        fontSize: 15,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
+                        cursor: 'pointer',
+                        borderLeft: code === state ? `3px solid ${GOLD}` : '3px solid transparent',
+                        background: code === state ? 'rgba(212,160,23,0.08)' : 'transparent',
+                        transition: 'all 0.15s ease',
                       }}
+                      onMouseEnter={(e) => { if (code !== state) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                      onMouseLeave={(e) => { if (code !== state) e.currentTarget.style.background = 'transparent'; }}
                     >
                       <span>{s.name}</span>
-                      <span style={{ fontSize: 12, color: DIM }}>{code}</span>
+                      <span style={{ fontSize: 12, color: DIM, fontFamily: 'monospace' }}>{code}</span>
                     </div>
                   ))}
                 </div>
