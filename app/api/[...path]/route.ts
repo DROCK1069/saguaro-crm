@@ -43,7 +43,7 @@ async function getUserFromRequest(req: NextRequest): Promise<{ id: string; tenan
     if (error || !user) return null;
 
     const { data: profile } = await supabaseAdmin
-      .from('user_profiles')
+      .from('profiles')
       .select('tenant_id')
       .eq('user_id', user.id)
       .maybeSingle();

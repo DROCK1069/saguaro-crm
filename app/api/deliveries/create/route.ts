@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Deliveries stored in punch_list_items with trade='delivery'
+    // Deliveries stored in punch_list with trade='delivery'
     const row = {
       tenant_id:   user.tenantId,
       project_id:  body.projectId || body.project_id,

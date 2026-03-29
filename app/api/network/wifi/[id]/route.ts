@@ -17,7 +17,7 @@ export async function GET(
     const db = createServerClient();
 
     const { data, error } = await db
-      .from('network_wifi_networks')
+      .from('wifi_networks')
       .select('*')
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
@@ -49,7 +49,7 @@ export async function PATCH(
     const { id: _id, tenant_id: _tid, network_project_id: _npid, created_at: _ca, ...updates } = body;
 
     const { data, error } = await db
-      .from('network_wifi_networks')
+      .from('wifi_networks')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
@@ -80,7 +80,7 @@ export async function DELETE(
     const db = createServerClient();
 
     const { error } = await db
-      .from('network_wifi_networks')
+      .from('wifi_networks')
       .delete()
       .eq('id', id)
       .eq('tenant_id', user.tenantId);

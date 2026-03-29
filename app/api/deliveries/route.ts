@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Deliveries stored in punch_list_items with trade='delivery'
+    // Deliveries stored in punch_list with trade='delivery'
     let query = supabase
       .from('punch_list')
       .select('*')

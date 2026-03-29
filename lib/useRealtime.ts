@@ -90,7 +90,7 @@ export function useRealtimePunchList(
   useChannel(
     projectId,
     `punch:${projectId}`,
-    'punch_list_items',
+    'punch_list',
     'public',
     '*',
     projectId ? `project_id=eq.${projectId}` : undefined,

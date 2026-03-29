@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const db = createServerClient();
     let query = db
-      .from('leaderboard')
+      .from('leaderboards')
       .select('*, profiles(full_name, email, avatar_url)')
       .eq('tenant_id', user.tenantId)
       .eq('category', category)
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     const userEntry = leaderboard.find((e: any) => e.is_current_user);
     if (!userEntry) {
       let userQuery = db
-        .from('leaderboard')
+        .from('leaderboards')
         .select('points')
         .eq('tenant_id', user.tenantId)
         .eq('category', category)
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       const { data: userData } = await userQuery.single();
       if (userData) {
         let rankQuery = db
-          .from('leaderboard')
+          .from('leaderboards')
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', user.tenantId)
           .eq('category', category)

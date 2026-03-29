@@ -99,7 +99,7 @@ Return as JSON: {
 
     // Save the generated talk
     const { data: saved, error: saveError } = await db
-      .from('toolbox_talks')
+      .from('safety_talks')
       .insert({
         tenant_id: user.tenantId,
         project_id,

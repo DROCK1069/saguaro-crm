@@ -65,7 +65,7 @@ async function buildReportData(
 
     case 'cable_schedule': {
       const { data: cables } = await db
-        .from('network_cable_runs')
+        .from('cable_runs')
         .select('*')
         .eq('network_project_id', networkProjectId)
         .order('cable_id', { ascending: true });
@@ -125,9 +125,9 @@ async function buildReportData(
       const [vlansRes, devicesRes, cablesRes, firewallRes, wifiRes] = await Promise.all([
         db.from('network_vlans').select('*').eq('network_project_id', networkProjectId),
         db.from('network_devices').select('*').eq('network_project_id', networkProjectId),
-        db.from('network_cable_runs').select('*').eq('network_project_id', networkProjectId),
-        db.from('network_firewall_rules').select('*').eq('network_project_id', networkProjectId),
-        db.from('network_wifi_networks').select('*').eq('network_project_id', networkProjectId),
+        db.from('cable_runs').select('*').eq('network_project_id', networkProjectId),
+        db.from('firewall_rules').select('*').eq('network_project_id', networkProjectId),
+        db.from('wifi_networks').select('*').eq('network_project_id', networkProjectId),
       ]);
 
       const devices = devicesRes.data || [];

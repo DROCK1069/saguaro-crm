@@ -17,7 +17,7 @@ export async function GET(
     const db = createServerClient();
 
     const { data, error } = await db
-      .from('network_cable_runs')
+      .from('cable_runs')
       .select('*')
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
@@ -61,7 +61,7 @@ export async function PATCH(
     }
 
     const { data, error } = await db
-      .from('network_cable_runs')
+      .from('cable_runs')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
@@ -92,7 +92,7 @@ export async function DELETE(
     const db = createServerClient();
 
     const { error } = await db
-      .from('network_cable_runs')
+      .from('cable_runs')
       .delete()
       .eq('id', id)
       .eq('tenant_id', user.tenantId);

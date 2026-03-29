@@ -30,9 +30,9 @@ export async function GET(
     const [devicesRes, vlansRes, cablesRes, firewallRes, wifiRes] = await Promise.all([
       db.from('network_devices').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
       db.from('network_vlans').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
-      db.from('network_cable_runs').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
-      db.from('network_firewall_rules').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
-      db.from('network_wifi_networks').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
+      db.from('cable_runs').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
+      db.from('firewall_rules').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
+      db.from('wifi_networks').select('id', { count: 'exact', head: true }).eq('network_project_id', id),
     ]);
 
     return ok({

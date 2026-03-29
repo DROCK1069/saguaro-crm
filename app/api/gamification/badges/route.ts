@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const db = createServerClient();
     let query = db
       .from('user_badges')
-      .select('*, badge_definitions(name, description, icon, category, points)')
+      .select('*, badges(name, description, icon, category, points)')
       .eq('tenant_id', user.tenantId)
       .eq('user_id', userId)
       .order('awarded_at', { ascending: false });
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // Verify badge definition exists
     const { data: badgeDef, error: defError } = await db
-      .from('badge_definitions')
+      .from('badges')
       .select('id, name, points')
       .eq('id', badge_id)
       .single();
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         awarded_by: user.id,
         awarded_at: new Date().toISOString(),
       })
-      .select('*, badge_definitions(name, description, icon, category, points)')
+      .select('*, badges(name, description, icon, category, points)')
       .single();
 
     if (error) {

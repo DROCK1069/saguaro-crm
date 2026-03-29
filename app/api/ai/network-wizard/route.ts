@@ -331,7 +331,7 @@ Requirements:
             description: r.description || '',
             enabled: true,
           }));
-          const { error: fErr } = await supabase.from('network_firewall_rules').insert(fwRows);
+          const { error: fErr } = await supabase.from('firewall_rules').insert(fwRows);
           if (fErr) console.error('[network-wizard] firewall insert error:', fErr.message);
         }
 
@@ -348,7 +348,7 @@ Requirements:
             description: w.description || '',
             enabled: true,
           }));
-          const { error: wErr } = await supabase.from('network_wifi_networks').insert(wifiRows);
+          const { error: wErr } = await supabase.from('wifi_networks').insert(wifiRows);
           if (wErr) console.error('[network-wizard] wifi insert error:', wErr.message);
         }
 
@@ -368,7 +368,7 @@ Requirements:
             notes: `Estimated ${c.estimated_runs || 0} runs — ${c.purpose || ''}`,
             status: 'planned',
           }));
-          const { error: cErr } = await supabase.from('network_cable_runs').insert(cableRows);
+          const { error: cErr } = await supabase.from('cable_runs').insert(cableRows);
           if (cErr) console.error('[network-wizard] cables insert error:', cErr.message);
         }
 

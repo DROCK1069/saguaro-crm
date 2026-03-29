@@ -21,7 +21,7 @@ import { createServerClient, getUser } from '@/lib/supabase-server';
 const TABLES_WITH_PROJECT_ID = new Set([
   'pay_applications', 'rfis', 'change_orders', 'lien_waivers',
   'subcontractors', 'insurance_certificates', 'budget_lines',
-  'daily_logs', 'punch_list_items', 'takeoffs', 'timesheets',
+  'daily_logs', 'punch_list', 'takeoffs', 'timesheets',
   'bid_packages', 'incidents', 'schedule_phases',
 ]);
 
@@ -29,7 +29,7 @@ const TABLES_WITH_PROJECT_ID = new Set([
 const TABLES_WITH_TENANT_ID = new Set([
   'projects', 'pay_applications', 'rfis', 'change_orders', 'lien_waivers',
   'subcontractors', 'insurance_certificates', 'budget_lines',
-  'daily_logs', 'punch_list_items', 'takeoffs', 'timesheets',
+  'daily_logs', 'punch_list', 'takeoffs', 'timesheets',
   'bid_packages', 'incidents', 'schedule_phases', 'notifications',
 ]);
 
@@ -92,7 +92,7 @@ Available Supabase tables and their queryable columns:
 - insurance_certificates: id, project_id, subcontractor_id, policy_type, carrier, policy_number, expiry_date, coverage_amount, status('active'|'expired'), created_at
 - budget_lines: id, project_id, cost_code, description, original_budget, committed_cost, actual_cost, forecast_cost, created_at
 - daily_logs: id, project_id, log_date, weather, crew_count, work_performed, delays, created_at
-- punch_list_items: id, project_id, location, description, trade, status('open'|'in_progress'|'complete'), priority('low'|'medium'|'high'), due_date, created_at
+- punch_list: id, project_id, location, description, trade, status('open'|'in_progress'|'complete'), priority('low'|'medium'|'high'), due_date, created_at
 - takeoffs: id, project_id, name, status, total_cost, material_cost, labor_cost, building_area, analyzed_at, created_at
 - timesheets: id, project_id, employee_name, week_ending, hours_regular, hours_overtime, status, created_at
 - bid_packages: id, project_id, name, trade, status('open'|'awarded'|'closed'), due_date, requires_bond, created_at

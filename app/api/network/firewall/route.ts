@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     if (!project) return badRequest('Network project not found');
 
     const { data, error } = await db
-      .from('network_firewall_rules')
+      .from('firewall_rules')
       .select('*')
       .eq('network_project_id', networkProjectId)
       .order('rule_number', { ascending: true });
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     if (!project) return badRequest('Network project not found');
 
     const { data, error } = await db
-      .from('network_firewall_rules')
+      .from('firewall_rules')
       .insert({
         network_project_id,
         tenant_id: user.tenantId,

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     if (!project) return badRequest('Network project not found');
 
     const { data, error } = await db
-      .from('network_cable_runs')
+      .from('cable_runs')
       .select('*')
       .eq('network_project_id', networkProjectId)
       .order('cable_id', { ascending: true });
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (!project) return badRequest('Network project not found');
 
     const { data, error } = await db
-      .from('network_cable_runs')
+      .from('cable_runs')
       .insert({
         network_project_id,
         tenant_id: user.tenantId,

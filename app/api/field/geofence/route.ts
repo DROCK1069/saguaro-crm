@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       try {
         const clockAction = event_type === 'enter' ? 'clock_in' : 'clock_out';
         const { data: clockData, error: clockError } = await db
-          .from('time_entries')
+          .from('clock_punches')
           .insert({
             tenant_id: user.tenantId,
             project_id,
