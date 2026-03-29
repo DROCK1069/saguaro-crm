@@ -1,15 +1,10 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 
 /* ─── Palette ─── */
-const BG = '#0F1419', CARD = '#1A1F2E', GOLD = '#D4A017', GREEN = '#22C55E';
-const BORDER = '#2A3040', TEXT = '#F0F4FF', DIM = '#8B9DB8', DARK = '#141922';
+const GOLD = '#D4A017', GREEN = '#22C55E';
+const TEXT = '#F5F5F7', DIM = '#86868B';
 const RED = '#EF4444', BLUE = '#3B82F6';
-
-const glass: React.CSSProperties = {
-  background: `${CARD}CC`, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-  border: `1px solid ${BORDER}`, borderRadius: 16,
-};
 
 /* ─── State Data ─── */
 type StateData = {
@@ -92,10 +87,50 @@ const UPGRADES: Upgrade[] = [
   { id: 'waterheater', name: 'Smart Water Heater', icon: '🚿', cost_low: 1200, cost_high: 3000, base_savings: 360, multiplier_key: 'gas' },
 ];
 
+/* ─── Icon colors per upgrade (replaces emojis) ─── */
+const ICON_COLORS: Record<string, string> = {
+  thermostat: '#EF4444',
+  lighting: '#FBBF24',
+  solar: '#F97316',
+  battery: '#22C55E',
+  ev: '#3B82F6',
+  irrigation: '#06B6D4',
+  heatpump: '#A855F7',
+  insulation: '#78716C',
+  waterheater: '#0EA5E9',
+};
+
+/* ─── Animated counter hook ─── */
+function useAnimatedNumber(target: number, duration = 600) {
+  const [display, setDisplay] = useState(0);
+  const rafRef = useRef<number>(0);
+  const startRef = useRef({ value: 0, time: 0 });
+
+  useEffect(() => {
+    const start = startRef.current.value;
+    const startTime = performance.now();
+    startRef.current = { value: target, time: startTime };
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(start + (target - start) * eased));
+      if (progress < 1) rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target, duration]);
+
+  return display;
+}
+
 export default function ROICalculatorPage() {
   const [state, setState] = useState('AZ');
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [solarKw, setSolarKw] = useState(8);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const sd = STATES[state];
 
@@ -150,183 +185,558 @@ export default function ROICalculatorPage() {
   const maxChart = Math.max(...chartBars.map(b => Math.max(b.savings, b.cost)), 1);
   const fmt = (n: number) => '$' + Math.abs(n).toLocaleString();
 
+  const animatedAnnual = useAnimatedNumber(calculations.totalAnnual);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggleUpgrade = useCallback((id: string) => {
+    setSelected(p => ({ ...p, [id]: !p[id] }));
+  }, []);
+
+  /* Average US home energy cost for comparison */
+  const avgHomeEnergy = 2400;
+  const smartHomeCost = Math.max(avgHomeEnergy - calculations.totalAnnual, 0);
+
   return (
-    <div style={{ minHeight: '100vh', background: BG, color: TEXT }}>
-      {/* Header */}
+    <div style={{ minHeight: '100vh', background: '#000000', color: TEXT }}>
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .roi-toggle {
+          position: relative;
+          width: 44px;
+          height: 24px;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          transition: background 0.3s ease;
+          flex-shrink: 0;
+          padding: 0;
+        }
+        .roi-toggle::after {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #fff;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .roi-toggle.active::after {
+          transform: translateX(20px);
+          box-shadow: 0 1px 6px rgba(212,160,23,0.4);
+        }
+        .roi-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 6px;
+          border-radius: 3px;
+          background: rgba(255,255,255,0.1);
+          outline: none;
+        }
+        .roi-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: ${GOLD};
+          cursor: pointer;
+          box-shadow: 0 0 10px rgba(212,160,23,0.4);
+        }
+        .roi-slider::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: ${GOLD};
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 0 10px rgba(212,160,23,0.4);
+        }
+        .roi-dropdown-item {
+          padding: 12px 16px;
+          cursor: pointer;
+          transition: background 0.15s ease;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .roi-dropdown-item:hover {
+          background: rgba(212,160,23,0.1);
+        }
+        .roi-dropdown-item:last-child {
+          border-bottom: none;
+        }
+        .roi-cta-btn {
+          position: relative;
+          overflow: hidden;
+        }
+        .roi-cta-btn::before {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%;
+          width: 100%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          transition: left 0.5s ease;
+        }
+        .roi-cta-btn:hover::before {
+          left: 100%;
+        }
+        @media (max-width: 900px) {
+          .roi-layout {
+            grid-template-columns: 1fr !important;
+          }
+          .roi-sticky {
+            position: relative !important;
+            top: 0 !important;
+          }
+        }
+      `}</style>
+
+      {/* ─── Hero Section ─── */}
       <section style={{
-        textAlign: 'center', padding: '80px 20px 40px',
-        background: `linear-gradient(180deg, ${DARK} 0%, ${BG} 100%)`,
+        textAlign: 'center',
+        padding: '100px 20px 60px',
+        background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,160,23,0.12) 0%, transparent 70%)',
+        animation: 'fadeInUp 0.8s ease-out',
       }}>
-        <h1 style={{ fontSize: 'clamp(26px, 5vw, 44px)', fontWeight: 800, marginBottom: 12 }}>
-          Smart Home <span style={{ color: GOLD }}>ROI Calculator</span>
+        <h1 style={{
+          fontSize: 'clamp(32px, 5vw, 56px)',
+          fontWeight: 800,
+          marginBottom: 16,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+        }}>
+          Smart Home{' '}
+          <span style={{
+            background: `linear-gradient(135deg, ${GOLD}, #F5D060)`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>ROI</span>{' '}
+          Calculator
         </h1>
-        <p style={{ fontSize: 17, color: DIM, maxWidth: 600, margin: '0 auto' }}>
-          See exactly how much you can save with smart upgrades in your state.
+        <p style={{
+          fontSize: 'clamp(16px, 2vw, 20px)',
+          color: DIM,
+          maxWidth: 600,
+          margin: '0 auto',
+          lineHeight: 1.6,
+        }}>
+          See exactly how much you save — personalized to your state&#39;s utility rates
         </p>
       </section>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px 80px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(300px, 380px)', gap: 24, alignItems: 'start' }}>
-          {/* Left: Controls */}
-          <div>
-            {/* State Selector */}
-            <div style={{ ...glass, padding: 20, marginBottom: 20 }}>
-              <label style={{ fontSize: 14, fontWeight: 700, display: 'block', marginBottom: 8 }}>
+      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '0 20px 40px' }}>
+        <div className="roi-layout" style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 400px',
+          gap: 28,
+          alignItems: 'start',
+        }}>
+          {/* ─── Left Column: Controls ─── */}
+          <div style={{ animation: 'fadeInUp 0.8s ease-out 0.1s both' }}>
+
+            {/* ─── State Selector ─── */}
+            <div ref={dropdownRef} style={{
+              position: 'relative',
+              background: 'rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(40px)',
+              WebkitBackdropFilter: 'blur(40px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+            }}>
+              <label style={{
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: DIM,
+                display: 'block',
+                marginBottom: 12,
+              }}>
                 Your State
               </label>
-              <select value={state} onChange={e => setState(e.target.value)} style={{
-                width: '100%', padding: '12px 16px', background: BG,
-                border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT,
-                fontSize: 15, outline: 'none', cursor: 'pointer',
-              }}>
-                {Object.entries(STATES).map(([code, s]) => (
-                  <option key={code} value={code}>{s.name}</option>
+
+              {/* Custom dropdown trigger */}
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                style={{
+                  width: '100%',
+                  padding: '14px 18px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${dropdownOpen ? GOLD : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 12,
+                  color: TEXT,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'border-color 0.2s ease',
+                  outline: 'none',
+                }}
+              >
+                <span>{sd.name}</span>
+                <span style={{
+                  fontSize: 12,
+                  color: DIM,
+                  transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0)',
+                  transition: 'transform 0.2s ease',
+                  display: 'inline-block',
+                }}>
+                  &#9660;
+                </span>
+              </button>
+
+              {/* Dropdown list */}
+              {dropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  zIndex: 50,
+                  marginTop: 4,
+                  background: 'rgba(20,20,20,0.98)',
+                  backdropFilter: 'blur(40px)',
+                  WebkitBackdropFilter: 'blur(40px)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 12,
+                  maxHeight: 320,
+                  overflowY: 'auto',
+                  boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+                }}>
+                  {Object.entries(STATES).map(([code, s]) => (
+                    <div
+                      key={code}
+                      className="roi-dropdown-item"
+                      onClick={() => { setState(code); setDropdownOpen(false); }}
+                      style={{
+                        color: code === state ? GOLD : TEXT,
+                        fontWeight: code === state ? 700 : 400,
+                        fontSize: 14,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span>{s.name}</span>
+                      <span style={{ fontSize: 12, color: DIM }}>{code}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* State info badges */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Electricity', value: `$${sd.electricity_rate}/kWh` },
+                  { label: 'Solar', value: `${sd.solar_hours}h/day` },
+                  { label: 'Climate', value: sd.climate },
+                ].map(badge => (
+                  <span key={badge.label} style={{
+                    fontSize: 12,
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    background: 'rgba(212,160,23,0.08)',
+                    border: '1px solid rgba(212,160,23,0.15)',
+                    color: DIM,
+                    display: 'inline-flex',
+                    gap: 4,
+                  }}>
+                    {badge.label}:{' '}
+                    <strong style={{ color: GOLD, fontWeight: 600 }}>{badge.value}</strong>
+                  </span>
                 ))}
-              </select>
-              <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 12, color: DIM }}>
-                  Electricity: <strong style={{ color: GOLD }}>${sd.electricity_rate}/kWh</strong>
-                </span>
-                <span style={{ fontSize: 12, color: DIM }}>
-                  Solar Hours: <strong style={{ color: GOLD }}>{sd.solar_hours}h/day</strong>
-                </span>
-                <span style={{ fontSize: 12, color: DIM }}>
-                  Climate: <strong style={{ color: GOLD }}>{sd.climate}</strong>
-                </span>
               </div>
             </div>
 
-            {/* Upgrade Checklist */}
-            <div style={{ ...glass, padding: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Select Upgrades</h3>
-              {UPGRADES.map(u => {
-                const isOn = !!selected[u.id];
-                let costLow = u.cost_low, costHigh = u.cost_high;
-                let savings = u.base_savings;
-                if (u.id === 'solar' && isOn) {
-                  costLow = u.cost_low * solarKw;
-                  costHigh = u.cost_high * solarKw;
-                  savings = u.base_savings * solarKw;
-                }
-                savings = Math.round(savings * multipliers[u.multiplier_key]);
-                return (
-                  <div key={u.id} style={{
-                    padding: '12px 14px', borderRadius: 12, marginBottom: 8,
-                    background: isOn ? `${GOLD}10` : 'transparent',
-                    border: `1px solid ${isOn ? GOLD + '40' : BORDER}`,
-                    transition: 'all .2s',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <button onClick={() => setSelected(p => ({ ...p, [u.id]: !p[u.id] }))} style={{
-                        width: 24, height: 24, borderRadius: 6,
-                        border: `2px solid ${isOn ? GOLD : BORDER}`,
-                        background: isOn ? GOLD : 'transparent',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: '#000', fontSize: 14, fontWeight: 800,
-                      }}>
-                        {isOn ? '✓' : ''}
-                      </button>
-                      <span style={{ fontSize: 20 }}>{u.icon}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>{u.name}</div>
-                        <div style={{ fontSize: 12, color: DIM }}>
-                          ${costLow.toLocaleString()} - ${costHigh.toLocaleString()}
+            {/* ─── Upgrade Cards ─── */}
+            <div style={{
+              background: 'rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(40px)',
+              WebkitBackdropFilter: 'blur(40px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 16,
+              padding: 24,
+            }}>
+              <h3 style={{
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: DIM,
+                marginBottom: 18,
+              }}>Select Upgrades</h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {UPGRADES.map(u => {
+                  const isOn = !!selected[u.id];
+                  let costLow = u.cost_low, costHigh = u.cost_high;
+                  let savings = u.base_savings;
+                  if (u.id === 'solar' && isOn) {
+                    costLow = u.cost_low * solarKw;
+                    costHigh = u.cost_high * solarKw;
+                    savings = u.base_savings * solarKw;
+                  }
+                  savings = Math.round(savings * multipliers[u.multiplier_key]);
+                  const iconColor = ICON_COLORS[u.id] || GOLD;
+                  const firstLetter = u.name.charAt(0);
+
+                  return (
+                    <div key={u.id} style={{
+                      padding: '14px 16px',
+                      borderRadius: 14,
+                      background: isOn
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(255,255,255,0.02)',
+                      backdropFilter: isOn ? 'blur(40px)' : 'none',
+                      WebkitBackdropFilter: isOn ? 'blur(40px)' : 'none',
+                      borderLeft: isOn ? `3px solid ${GOLD}` : '3px solid transparent',
+                      border: isOn
+                        ? `1px solid rgba(212,160,23,0.2)`
+                        : '1px solid rgba(255,255,255,0.05)',
+                      borderLeftWidth: 3,
+                      borderLeftColor: isOn ? GOLD : 'transparent',
+                      transition: 'all 0.3s ease',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        {/* Icon circle */}
+                        <div style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 10,
+                          background: `${iconColor}18`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 16,
+                          fontWeight: 800,
+                          color: iconColor,
+                          flexShrink: 0,
+                          border: `1px solid ${iconColor}30`,
+                        }}>
+                          {firstLetter}
                         </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: isOn ? GREEN : DIM }}>
-                          {isOn ? `$${savings}/yr` : '—'}
+
+                        {/* Text */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: TEXT }}>{u.name}</div>
+                          <div style={{ fontSize: 12, color: DIM, marginTop: 2 }}>
+                            ${costLow.toLocaleString()} - ${costHigh.toLocaleString()}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    {u.has_slider && isOn && (
-                      <div style={{ marginTop: 10, paddingLeft: 36 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DIM, marginBottom: 4 }}>
-                          <span>{u.slider_label}</span>
-                          <span style={{ color: GOLD, fontWeight: 700 }}>{solarKw} kW</span>
+
+                        {/* Savings */}
+                        <div style={{ textAlign: 'right', marginRight: 12, flexShrink: 0 }}>
+                          <div style={{
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: isOn ? GREEN : DIM,
+                            transition: 'color 0.2s ease',
+                          }}>
+                            {isOn ? `$${savings}/yr` : '--'}
+                          </div>
                         </div>
-                        <input type="range" min={u.slider_min} max={u.slider_max} value={solarKw}
-                          onChange={e => setSolarKw(+e.target.value)}
-                          style={{ width: '100%', accentColor: GOLD }}
+
+                        {/* Toggle switch */}
+                        <button
+                          className={`roi-toggle${isOn ? ' active' : ''}`}
+                          onClick={() => toggleUpgrade(u.id)}
+                          style={{
+                            background: isOn
+                              ? `linear-gradient(135deg, ${GOLD}, #B8860B)`
+                              : 'rgba(255,255,255,0.1)',
+                          }}
+                          aria-label={`Toggle ${u.name}`}
                         />
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+
+                      {/* Solar slider */}
+                      {u.has_slider && isOn && (
+                        <div style={{ marginTop: 14, paddingLeft: 52 }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: 12,
+                            color: DIM,
+                            marginBottom: 8,
+                          }}>
+                            <span>{u.slider_label}</span>
+                            <span style={{ color: GOLD, fontWeight: 700 }}>{solarKw} kW</span>
+                          </div>
+                          <input
+                            type="range"
+                            className="roi-slider"
+                            min={u.slider_min}
+                            max={u.slider_max}
+                            value={solarKw}
+                            onChange={e => setSolarKw(+e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Right: Results Panel */}
-          <div style={{ position: 'sticky', top: 20 }}>
-            <div style={{ ...glass, padding: 24, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, textAlign: 'center' }}>
+          {/* ─── Right Column: Results Panel (sticky) ─── */}
+          <div className="roi-sticky" style={{
+            position: 'sticky',
+            top: 80,
+            animation: 'fadeInUp 0.8s ease-out 0.2s both',
+          }}>
+            <div style={{
+              background: 'rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(40px)',
+              WebkitBackdropFilter: 'blur(40px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 20,
+              padding: 28,
+              marginBottom: 20,
+            }}>
+              <h3 style={{
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: DIM,
+                marginBottom: 24,
+                textAlign: 'center',
+              }}>
                 Your Savings Summary
               </h3>
 
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{ fontSize: 12, color: DIM, marginBottom: 4 }}>Annual Savings</div>
-                <div style={{ fontSize: 40, fontWeight: 800, color: GREEN }}>
-                  {fmt(calculations.totalAnnual)}
+              {/* Annual savings with animated counter */}
+              <div style={{ textAlign: 'center', marginBottom: 28 }}>
+                <div style={{ fontSize: 12, color: DIM, marginBottom: 6 }}>Annual Savings</div>
+                <div style={{
+                  fontSize: 48,
+                  fontWeight: 800,
+                  background: calculations.totalAnnual > 0
+                    ? `linear-gradient(135deg, ${GREEN}, #4ADE80)`
+                    : `linear-gradient(135deg, ${DIM}, ${DIM})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.02em',
+                }}>
+                  ${animatedAnnual.toLocaleString()}
                 </div>
-                <div style={{ fontSize: 14, color: DIM }}>
+                <div style={{ fontSize: 14, color: DIM, marginTop: 4 }}>
                   {fmt(calculations.monthlySavings)}/month
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-                <div style={{ background: `${BG}80`, borderRadius: 10, padding: 14, textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: DIM, marginBottom: 4 }}>Total Cost</div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>
-                    {calculations.totalCostLow > 0
+              {/* Stat cards grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
+                {[
+                  {
+                    label: 'Total Cost',
+                    value: calculations.totalCostLow > 0
                       ? `${fmt(calculations.totalCostLow)} - ${fmt(calculations.totalCostHigh)}`
-                      : '$0'
-                    }
+                      : '$0',
+                    color: TEXT,
+                    size: 13,
+                  },
+                  {
+                    label: 'ROI (Payoff)',
+                    value: calculations.roiYears > 0 ? `${calculations.roiYears} yrs` : '--',
+                    color: GOLD,
+                    size: 20,
+                  },
+                  {
+                    label: '10-Year Net',
+                    value: calculations.tenYearNet !== 0
+                      ? `${calculations.tenYearNet >= 0 ? '+' : '-'}${fmt(calculations.tenYearNet)}`
+                      : '--',
+                    color: calculations.tenYearNet >= 0 ? GREEN : RED,
+                    size: 16,
+                  },
+                  {
+                    label: 'Home Value +',
+                    value: calculations.homeValueIncrease > 0 ? `+${fmt(calculations.homeValueIncrease)}` : '--',
+                    color: BLUE,
+                    size: 16,
+                  },
+                ].map(card => (
+                  <div key={card.label} style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    borderRadius: 12,
+                    padding: 14,
+                    textAlign: 'center',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <div style={{ fontSize: 11, color: DIM, marginBottom: 4 }}>{card.label}</div>
+                    <div style={{ fontSize: card.size, fontWeight: 800, color: card.color }}>
+                      {card.value}
+                    </div>
                   </div>
-                </div>
-                <div style={{ background: `${BG}80`, borderRadius: 10, padding: 14, textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: DIM, marginBottom: 4 }}>ROI (Payoff)</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: GOLD }}>
-                    {calculations.roiYears > 0 ? `${calculations.roiYears} yrs` : '—'}
-                  </div>
-                </div>
-                <div style={{ background: `${BG}80`, borderRadius: 10, padding: 14, textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: DIM, marginBottom: 4 }}>10-Year Net</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: calculations.tenYearNet >= 0 ? GREEN : RED }}>
-                    {calculations.tenYearNet >= 0 ? '+' : '-'}{fmt(calculations.tenYearNet)}
-                  </div>
-                </div>
-                <div style={{ background: `${BG}80`, borderRadius: 10, padding: 14, textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: DIM, marginBottom: 4 }}>Home Value +</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: BLUE }}>
-                    {calculations.homeValueIncrease > 0 ? `+${fmt(calculations.homeValueIncrease)}` : '—'}
-                  </div>
-                </div>
+                ))}
               </div>
 
-              {/* Bar Chart */}
+              {/* ─── Bar Chart ─── */}
               {calculations.totalAnnual > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 12, color: DIM, marginBottom: 10, textAlign: 'center' }}>
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontSize: 11, color: DIM, marginBottom: 12, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Cumulative Savings vs. Investment Cost
                   </div>
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 140 }}>
+                  <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 150 }}>
                     {chartBars.map(bar => {
-                      const savH = (bar.savings / maxChart) * 130;
-                      const costH = (bar.cost / maxChart) * 130;
+                      const savH = (bar.savings / maxChart) * 140;
+                      const costH = (bar.cost / maxChart) * 140;
                       const breakEven = bar.savings >= bar.cost;
                       return (
-                        <div key={bar.year} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                          <div style={{ position: 'relative', width: '100%', display: 'flex', gap: 1, justifyContent: 'center' }}>
+                        <div key={bar.year} style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 3,
+                        }}>
+                          <div style={{
+                            position: 'relative',
+                            width: '100%',
+                            display: 'flex',
+                            gap: 1,
+                            justifyContent: 'center',
+                          }}>
                             <div style={{
-                              width: '45%', height: savH, borderRadius: '4px 4px 0 0',
-                              background: breakEven ? GREEN : `${GREEN}80`,
-                              transition: 'height .5s ease',
+                              width: '44%',
+                              height: savH,
+                              borderRadius: '6px 6px 0 0',
+                              background: breakEven
+                                ? `linear-gradient(180deg, ${GOLD} 0%, rgba(212,160,23,0.6) 100%)`
+                                : `linear-gradient(180deg, ${GOLD}90 0%, rgba(212,160,23,0.3) 100%)`,
+                              transition: 'height 0.5s ease',
                             }} />
                             <div style={{
-                              width: '45%', height: costH, borderRadius: '4px 4px 0 0',
-                              background: `${RED}60`,
-                              transition: 'height .5s ease',
+                              width: '44%',
+                              height: costH,
+                              borderRadius: '6px 6px 0 0',
+                              background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
+                              transition: 'height 0.5s ease',
                             }} />
                           </div>
                           <div style={{ fontSize: 10, color: DIM }}>{bar.year}</div>
@@ -334,24 +744,46 @@ export default function ROICalculatorPage() {
                       );
                     })}
                   </div>
-                  <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 8 }}>
-                    <span style={{ fontSize: 11, color: DIM }}>
-                      <span style={{ display: 'inline-block', width: 10, height: 10, background: GREEN, borderRadius: 2, marginRight: 4 }} />
+                  <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10 }}>
+                    <span style={{ fontSize: 11, color: DIM, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{
+                        display: 'inline-block',
+                        width: 10,
+                        height: 10,
+                        background: `linear-gradient(135deg, ${GOLD}, rgba(212,160,23,0.6))`,
+                        borderRadius: 2,
+                      }} />
                       Savings
                     </span>
-                    <span style={{ fontSize: 11, color: DIM }}>
-                      <span style={{ display: 'inline-block', width: 10, height: 10, background: `${RED}60`, borderRadius: 2, marginRight: 4 }} />
+                    <span style={{ fontSize: 11, color: DIM, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{
+                        display: 'inline-block',
+                        width: 10,
+                        height: 10,
+                        background: 'rgba(255,255,255,0.15)',
+                        borderRadius: 2,
+                      }} />
                       Cost
                     </span>
                   </div>
                 </div>
               )}
 
+              {/* ─── CTA Button ─── */}
               <a href="/design/discover" style={{ textDecoration: 'none', display: 'block' }}>
-                <button style={{
-                  width: '100%', padding: '14px', background: `linear-gradient(135deg, ${GOLD}, #B8860B)`,
-                  color: '#000', border: 'none', borderRadius: 12, fontWeight: 700,
-                  fontSize: 15, cursor: 'pointer',
+                <button className="roi-cta-btn" style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: `linear-gradient(135deg, ${GOLD}, #B8860B)`,
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 14,
+                  fontWeight: 700,
+                  fontSize: 15,
+                  cursor: 'pointer',
+                  letterSpacing: '0.01em',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  boxShadow: '0 4px 20px rgba(212,160,23,0.3)',
                 }}>
                   Get a Custom Quote
                 </button>
@@ -359,16 +791,142 @@ export default function ROICalculatorPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Responsive override for mobile */}
-      <style>{`
-        @media (max-width: 768px) {
-          div[style*="grid-template-columns: minmax(0, 1fr) minmax(300px"] {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
+        {/* ─── How You Compare Section ─── */}
+        <section style={{
+          marginTop: 40,
+          background: 'rgba(255,255,255,0.04)',
+          backdropFilter: 'blur(40px)',
+          WebkitBackdropFilter: 'blur(40px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 20,
+          padding: 32,
+          animation: 'fadeInUp 0.8s ease-out 0.3s both',
+        }}>
+          <h3 style={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: DIM,
+            marginBottom: 8,
+          }}>How You Compare</h3>
+          <p style={{ fontSize: 22, fontWeight: 700, marginBottom: 28, color: TEXT }}>
+            Average Home vs.{' '}
+            <span style={{ color: GOLD }}>Smart Home</span>
+          </p>
+
+          {/* Average home bar */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 13, color: DIM }}>Average Home Energy Cost</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>${avgHomeEnergy.toLocaleString()}/yr</span>
+            </div>
+            <div style={{
+              width: '100%',
+              height: 14,
+              borderRadius: 7,
+              background: 'rgba(255,255,255,0.06)',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: 7,
+                background: 'linear-gradient(90deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))',
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </div>
+
+          {/* Smart home bar */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 13, color: DIM }}>Your Smart Home Cost</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: GREEN }}>${smartHomeCost.toLocaleString()}/yr</span>
+            </div>
+            <div style={{
+              width: '100%',
+              height: 14,
+              borderRadius: 7,
+              background: 'rgba(255,255,255,0.06)',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                width: `${avgHomeEnergy > 0 ? Math.max((smartHomeCost / avgHomeEnergy) * 100, 2) : 100}%`,
+                height: '100%',
+                borderRadius: 7,
+                background: `linear-gradient(90deg, ${GOLD}, rgba(212,160,23,0.5))`,
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </div>
+
+          {calculations.totalAnnual > 0 && (
+            <div style={{
+              marginTop: 20,
+              padding: '14px 20px',
+              background: 'rgba(212,160,23,0.06)',
+              border: '1px solid rgba(212,160,23,0.12)',
+              borderRadius: 12,
+              textAlign: 'center',
+            }}>
+              <span style={{ fontSize: 14, color: DIM }}>You save </span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: GOLD }}>
+                {Math.round((calculations.totalAnnual / avgHomeEnergy) * 100)}%
+              </span>
+              <span style={{ fontSize: 14, color: DIM }}> on annual energy costs</span>
+            </div>
+          )}
+        </section>
+
+        {/* ─── Bottom CTA Section ─── */}
+        <section style={{
+          marginTop: 40,
+          marginBottom: 40,
+          textAlign: 'center',
+          padding: '60px 20px',
+          background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(212,160,23,0.08) 0%, transparent 70%)',
+          borderRadius: 24,
+          border: '1px solid rgba(255,255,255,0.05)',
+          animation: 'fadeInUp 0.8s ease-out 0.4s both',
+        }}>
+          <h2 style={{
+            fontSize: 'clamp(24px, 4vw, 36px)',
+            fontWeight: 800,
+            marginBottom: 12,
+            letterSpacing: '-0.02em',
+          }}>
+            Ready to Build Your{' '}
+            <span style={{
+              background: `linear-gradient(135deg, ${GOLD}, #F5D060)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>Smart Home</span>?
+          </h2>
+          <p style={{ fontSize: 16, color: DIM, maxWidth: 500, margin: '0 auto 28px', lineHeight: 1.6 }}>
+            Get a personalized design plan with exact pricing for your home and location.
+          </p>
+          <a href="/design/discover" style={{ textDecoration: 'none' }}>
+            <button className="roi-cta-btn" style={{
+              padding: '16px 48px',
+              background: `linear-gradient(135deg, ${GOLD}, #B8860B)`,
+              color: '#000',
+              border: 'none',
+              borderRadius: 14,
+              fontWeight: 700,
+              fontSize: 16,
+              cursor: 'pointer',
+              letterSpacing: '0.01em',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              boxShadow: '0 4px 24px rgba(212,160,23,0.3)',
+            }}>
+              Start Your Design
+            </button>
+          </a>
+        </section>
+      </div>
     </div>
   );
 }
