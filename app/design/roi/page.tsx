@@ -274,10 +274,10 @@ export default function ROICalculatorPage() {
           padding: 12px 16px;
           cursor: pointer;
           transition: background 0.15s ease;
-          border-bottom: 1px solid rgba(255,255,255,0.85);
+          border-bottom: 1px solid rgba(0,0,0,0.06);
         }
         .roi-dropdown-item:hover {
-          background: rgba(212,160,23,0.1);
+          background: rgba(200,150,15,0.08);
         }
         .roi-dropdown-item:last-child {
           border-bottom: none;
@@ -417,14 +417,12 @@ export default function ROICalculatorPage() {
                   right: 0,
                   zIndex: 50,
                   marginTop: 4,
-                  background: 'rgba(20,20,20,0.98)',
-                  backdropFilter: 'blur(40px)',
-                  WebkitBackdropFilter: 'blur(40px)',
-                  border: '1px solid rgba(0,0,0,0.08)',
+                  background: '#FFFFFF',
+                  border: '1px solid rgba(0,0,0,0.12)',
                   borderRadius: 12,
                   maxHeight: 320,
-                  overflowY: 'auto',
-                  boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+                  overflowY: 'auto' as const,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
                 }}>
                   {Object.entries(STATES).map(([code, s]) => (
                     <div
