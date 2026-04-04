@@ -28,7 +28,7 @@ export async function GET(
 
     // Fetch port assignments for this device
     const { data: ports } = await db
-      .from('network_port_assignments')
+      .from('network_ports')
       .select('*')
       .eq('device_id', id)
       .order('port_number', { ascending: true });

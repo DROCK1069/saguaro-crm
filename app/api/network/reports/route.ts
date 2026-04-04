@@ -95,7 +95,7 @@ async function buildReportData(
       let ports: any[] = [];
       if (deviceIds.length > 0) {
         const { data: portData } = await db
-          .from('network_port_assignments')
+          .from('network_ports')
           .select('*')
           .in('device_id', deviceIds)
           .order('port_number', { ascending: true });

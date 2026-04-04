@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     if (!device) return badRequest('Device not found');
 
     const { data, error } = await db
-      .from('network_port_assignments')
+      .from('network_ports')
       .select('*')
       .eq('device_id', deviceId)
       .order('port_number', { ascending: true });
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     if (!device) return badRequest('Device not found');
 
     const { data, error } = await db
-      .from('network_port_assignments')
+      .from('network_ports')
       .insert({
         device_id,
         network_project_id: device.network_project_id,
@@ -129,7 +129,7 @@ export async function PATCH(req: NextRequest) {
       const { id, device_id: _did, tenant_id: _tid, network_project_id: _npid, created_at: _ca, ...updates } = port;
 
       const { data, error } = await db
-        .from('network_port_assignments')
+        .from('network_ports')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id)
         .eq('tenant_id', user.tenantId)
