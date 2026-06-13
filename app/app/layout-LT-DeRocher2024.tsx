@@ -7,9 +7,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import NotificationBell from '../../components/NotificationBell';
 import CommandPalette from '../../components/CommandPalette';
-import SaguaroChatWidget from '../../components/SaguaroChatWidget';
 import SubscriptionWall from '../../components/SubscriptionWall';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import GlobalShortcuts from '../../components/GlobalShortcuts';
@@ -20,7 +18,14 @@ import PresenceIndicator from '../../components/PresenceIndicator';
 import WhiteLabelProvider from '../../components/WhiteLabelProvider';
 import AppSidebar from '../../components/AppSidebar';
 import AppTopBar from '../../components/AppTopBar';
-import { colors, font, sidebar as sidebarTokens, z } from '../../lib/design-tokens';
+import SageCommandPalette from '../../components/SageCommandPalette';
+import OfflineBanner from '../../components/OfflineBanner';
+import { PWAInstallPrompt } from '../components/PWAInstallPrompt';
+import { TrialBanner } from './components/TrialBanner';
+import { StatusBar } from './components/StatusBar';
+import { ToastContainer } from './components/Toast';
+import { ToastProvider } from '../../components/ui/Toast';
+import { colors, font, sidebar as sidebarTokens, z, keyframes } from '../../lib/design-tokens';
 
 interface ChatMsg { role: 'user' | 'assistant'; content: string; }
 
@@ -46,8 +51,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userInitials, setUserInitials] = useState('?');
-  const [sageUserId, setSageUserId] = useState<string | null>(null);
-  const [sageProjects, setSageProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [userEmail, setUserEmail] = useState('');
   const [showProjectSwitcher, setShowProjectSwitcher] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,18 +87,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
           return;
         }
-      } catch {}
+      } catch (e: unknown) {
+        console.warn('[layout] auth refresh failed:', e);
+      }
 
-      const [meRes, projRes] = await Promise.allSettled([
-        fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
-        fetch('/api/projects?limit=15&fields=id,name').then(r => r.ok ? r.json() : null),
-      ]);
+      const meRes = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null);
 
       if (cancelled) return;
 
-      const me = meRes.status === 'fulfilled' ? meRes.value : null;
+      const me = meRes;
       if (me) {
-        if (me.id) setSageUserId(me.id);
+        if (me.email) setUserEmail(me.email);
         if (me.name) {
           const parts = me.name.trim().split(/\s+/);
           const initials = parts.length >= 2
@@ -104,12 +107,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         } else if (me.email) {
           setUserInitials(me.email[0].toUpperCase());
         }
-      }
-
-      const proj = projRes.status === 'fulfilled' ? projRes.value : null;
-      if (proj) {
-        if (Array.isArray(proj.projects)) setSageProjects(proj.projects);
-        else if (Array.isArray(proj)) setSageProjects(proj);
       }
     }
 
@@ -127,12 +124,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (aiOpen) setTimeout(() => inputRef.current?.focus(), 100);
   }, [aiOpen]);
 
+  // Listen for open-sage events from child pages (e.g. bid packages)
+  useEffect(() => {
+    function handleOpenSage(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      setAiOpen(true);
+      if (detail?.message) {
+        setAiMsg(detail.message);
+        setTimeout(() => inputRef.current?.focus(), 150);
+      }
+    }
+    window.addEventListener('open-sage', handleOpenSage);
+    return () => window.removeEventListener('open-sage', handleOpenSage);
+  }, []);
+
   async function handleLogout() {
-    // 1. Clear the server-side httpOnly session cookies.
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    // 2. CRITICAL: also destroy the browser Supabase session in localStorage.
-    //    Without this, the persisted session silently logs you — or the next
-    //    person on a shared device — right back into the app.
     try {
       for (const k of Object.keys(localStorage)) {
         if (k.startsWith('sb-') || k.toLowerCase().includes('supabase')) {
@@ -141,7 +148,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
       sessionStorage.clear();
     } catch { /* storage unavailable — ignore */ }
-    // 3. Hard replace so no in-memory client state survives the redirect.
     window.location.replace('/login');
   }
 
@@ -188,10 +194,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.dark, color: colors.text, fontFamily: font.family }}>
+    <ToastProvider>
+    <div style={{ minHeight: '100vh', background: colors.pageBg, color: colors.text, fontFamily: font.family }}>
+      <OfflineBanner />
+      <PWAInstallPrompt />
 
       {/* ── Responsive + AI panel styles ──────────────────────────────── */}
       <style>{`
+        ${keyframes}
         @media (max-width: 768px) {
           .sidebar-desktop { display: none !important; }
           .sidebar-mobile-overlay { display: block !important; }
@@ -216,6 +226,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           onToggle={toggleSidebar}
           onLogout={handleLogout}
           userInitials={userInitials}
+          userEmail={userEmail}
         />
       </div>
 
@@ -224,7 +235,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="sidebar-mobile-overlay" style={{ display: 'none' }}>
           <div
             onClick={() => setMobileSidebarOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: z.sidebar - 1 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.1)', zIndex: z.sidebar - 1 }}
           />
           <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: z.sidebar }}>
             <AppSidebar
@@ -232,6 +243,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onToggle={() => setMobileSidebarOpen(false)}
               onLogout={handleLogout}
               userInitials={userInitials}
+              userEmail={userEmail}
             />
           </div>
         </div>
@@ -257,8 +269,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             position: 'fixed', bottom: 20, right: 20, zIndex: z.modal,
             width: 'min(540px, calc(100vw - 24px))',
             height: 'min(680px, calc(100vh - 80px))',
-            background: colors.raised, border: `1px solid ${colors.border}`,
-            borderRadius: 14, boxShadow: '0 24px 80px rgba(0,0,0,.7)',
+            background: colors.white, border: `1px solid ${colors.border}`,
+            borderRadius: 14, boxShadow: '0 24px 80px rgba(0,0,0,.15)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}
         >
@@ -382,6 +394,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           transition: 'margin-left .2s ease',
         }}
       >
+        <TrialBanner />
+        <StatusBar />
         <ErrorBoundary>
           <SubscriptionWall>
             <PageTransition>{children}</PageTransition>
@@ -389,19 +403,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </ErrorBoundary>
       </main>
 
-      {/* ── Sage CRM Chat Widget ──────────────────────────────────────── */}
-      <SaguaroChatWidget variant="crm" userId={sageUserId} projectList={sageProjects} />
-
       {/* ── Command Palette ────────────────────────────────────────────── */}
       <CommandPalette onScoreBid={() => setShowScoreModal(true)} />
+
+      {/* ── Sage Command Palette (global, ⌘K) ──────────────────────────── */}
+      <SageCommandPalette />
 
       {/* ── Bid Score Modal ────────────────────────────────────────────── */}
       {showScoreModal && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={e => { if (e.target === e.currentTarget) setShowScoreModal(false); }}
         >
-          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: '0 30px 80px rgba(0,0,0,.6)', overflow: 'hidden' }}>
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: '0 30px 80px rgba(0,0,0,.1)', overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 16, color: colors.text, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -427,6 +441,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
+      <ToastContainer />
     </div>
+    </ToastProvider>
   );
 }
