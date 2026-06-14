@@ -35,8 +35,7 @@ export async function GET(req: NextRequest) {
       .from('portal_sub_bid_invitations')
       .select(
         `*,
-         bid_package:bid_package_id(id, title, description, due_date, status),
-         nda_signed`
+         bid_package:bid_package_id(id, title, description, due_date, status)`
       )
       .eq('sub_id', session.sub_id)
       .eq('tenant_id', session.tenant_id)
@@ -98,30 +97,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Handle NDA signing if requested
-    if (sign_nda) {
-      await db
-        .from('portal_sub_bid_invitations')
-        .update({
-          nda_signed: true,
-          nda_signed_at: new Date().toISOString(),
-          nda_signer_name: nda_signer_name || null,
-        })
-        .eq('id', bid_invitation_id)
-        .eq('tenant_id', session.tenant_id);
-    }
+    // NDA signing is not persistable: portal_sub_bid_invitations has no
+    // nda_signed / nda_signed_at / nda_signer_name column (and no jsonb to fold
+    // into), so the NDA flag is accepted but not written. (sign_nda /
+    // nda_signer_name remain part of the request contract.)
+    void sign_nda;
+    void nda_signer_name;
 
-    // Create the bid response
+    // Create the bid response.
+    // Live portal_sub_bid_responses columns: invitation_id, amount, scope_notes,
+    // exclusions, inclusions, attachments, submitted_at. There is no sub_id /
+    // project_id / tenant_id / status column. bid_invitation_id -> invitation_id,
+    // total_amount -> amount, notes -> scope_notes.
     const { data: bidResponse, error: bidError } = await db
       .from('portal_sub_bid_responses')
       .insert({
-        bid_invitation_id,
-        sub_id: session.sub_id,
-        project_id: session.project_id,
-        tenant_id: session.tenant_id,
-        total_amount: total_amount || 0,
-        notes: notes || null,
-        status: 'submitted',
+        invitation_id: bid_invitation_id,
+        amount: total_amount || 0,
+        scope_notes: notes || null,
         submitted_at: new Date().toISOString(),
       })
       .select()
@@ -129,15 +122,17 @@ export async function POST(req: NextRequest) {
 
     if (bidError) throw bidError;
 
-    // Insert line items if provided
+    // Insert line items if provided.
+    // Live portal_sub_bid_line_items columns: response_id, description, quantity,
+    // unit, unit_cost, total. There is no tenant_id column. bid_response_id ->
+    // response_id, unit_price -> unit_cost.
     if (line_items && Array.isArray(line_items) && line_items.length > 0) {
       const lineItemRows = line_items.map((item: any) => ({
-        bid_response_id: bidResponse.id,
-        tenant_id: session.tenant_id,
+        response_id: bidResponse.id,
         description: item.description,
         quantity: item.quantity || 1,
         unit: item.unit || 'LS',
-        unit_price: item.unit_price || 0,
+        unit_cost: item.unit_price || 0,
         total: item.total || (item.quantity || 1) * (item.unit_price || 0),
       }));
 

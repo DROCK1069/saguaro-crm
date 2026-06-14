@@ -51,11 +51,11 @@ export async function POST(req: NextRequest) {
               const db = createServerClient();
               const { data, error } = await db.from('floor_plan_pins').insert({
                       tenant_id: user.tenantId, project_id: projectId, drawing_id: drawingId,
-                      pin_type: pinType, x_pct: xPct, y_pct: yPct, x_percent: xPct, y_percent: yPct,
-                      label, note, photo_url: photoUrl,
-                      linked_item_type: body.linked_item_type || null,
-                      linked_item_id:   body.linked_item_id   || null,
-                      resolved: false, created_by: user.id,
+                      pin_type: pinType, pin_x: xPct, pin_y: yPct,
+                      label,
+                      item_type: body.linked_item_type || null,
+                      item_id:   body.linked_item_id   || null,
+                      created_by: user.id,
               }).select().single();
               if (error) return NextResponse.json({ error: error.message }, { status: 500 });
               return NextResponse.json({ pin: data }, { status: 201 });
@@ -67,14 +67,11 @@ export async function PATCH(req: NextRequest) {
           const user = await getUser(req);
           if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
           const body = await req.json();
-          const { id, resolved, label, note, pin_type, photo_url } = body;
+          const { id, label, pin_type } = body;
           if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
-          const updates: Record<string, any> = { updated_at: new Date().toISOString() };
-          if (resolved  !== undefined) updates.resolved  = resolved;
+          const updates: Record<string, any> = {};
           if (label     !== undefined) updates.label     = label;
-          if (note      !== undefined) updates.note      = note;
           if (pin_type  !== undefined) updates.pin_type  = pin_type;
-          if (photo_url !== undefined) updates.photo_url = photo_url;
           const db = createServerClient();
           const { data, error } = await db.from('floor_plan_pins').update(updates)
             .eq('id', id).eq('tenant_id', user.tenantId).select().single();

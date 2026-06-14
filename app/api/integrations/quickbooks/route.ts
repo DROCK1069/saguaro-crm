@@ -33,11 +33,11 @@ export async function GET(req: NextRequest) {
     // Check if we have a stored token
     const { data } = await getSupabase()
       .from('integrations')
-      .select('id, meta')
+      .select('id, settings')
       .eq('provider', 'quickbooks')
       .maybeSingle();
-    const connected = !!data?.meta?.access_token;
-    const expiresAt = data?.meta?.expires_at ?? null;
+    const connected = !!data?.settings?.access_token;
+    const expiresAt = data?.settings?.expires_at ?? null;
     return NextResponse.json({ connected, expiresAt, sandbox: QB_SANDBOX });
   }
 
@@ -45,13 +45,13 @@ export async function GET(req: NextRequest) {
     // Return what would be synced without actually syncing
     const { data: invoices } = await getSupabase()
       .from('pay_applications')
-      .select('id, app_number, net_amount_due, status, project_id')
+      .select('id, app_number, net_payment_due, status, project_id')
       .in('status', ['approved', 'submitted'])
       .limit(20);
 
     const { data: vendors } = await getSupabase()
       .from('subcontractors')
-      .select('id, name, contract_amount')
+      .select('id, company_name')
       .limit(20);
 
     return NextResponse.json({
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
     await getSupabase().from('integrations').upsert({
       provider: 'quickbooks',
-      meta: {
+      settings: {
         access_token:  tokens.access_token,
         refresh_token: tokens.refresh_token,
         expires_at:    expiresAt,
@@ -117,22 +117,22 @@ export async function POST(req: NextRequest) {
     // Push approved pay apps as invoices to QuickBooks
     const { data: integration } = await getSupabase()
       .from('integrations')
-      .select('meta')
+      .select('settings')
       .eq('provider', 'quickbooks')
       .maybeSingle();
 
-    if (!integration?.meta?.access_token) {
+    if (!integration?.settings?.access_token) {
       return NextResponse.json({ error: 'QuickBooks not connected' }, { status: 401 });
     }
 
-    const realmId     = integration.meta.realm_id as string;
-    const accessToken = integration.meta.access_token as string;
+    const realmId     = integration.settings.realm_id as string;
+    const accessToken = integration.settings.access_token as string;
 
     const { data: payApps } = await getSupabase()
       .from('pay_applications')
-      .select('id, app_number, net_amount_due, project_id, projects(name)')
+      .select('id, app_number, net_payment_due, project_id, projects(name)')
       .eq('status', 'approved')
-      .is('qb_synced_at', null)
+      .is('qbo_invoice_id', null)
       .limit(50);
 
     let synced = 0;
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
       // Create invoice in QB
       const invoicePayload = {
         Line: [{
-          Amount: pa.net_amount_due,
+          Amount: pa.net_payment_due,
           DetailType: 'SalesItemLineDetail',
           SalesItemLineDetail: {
             ItemRef: { value: '1', name: 'Services' },
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
         const qbData = await res.json() as { Invoice?: { Id: string } };
         await getSupabase()
           .from('pay_applications')
-          .update({ qb_synced_at: new Date().toISOString(), qb_invoice_id: qbData.Invoice?.Id })
+          .update({ qbo_invoice_id: qbData.Invoice?.Id })
           .eq('id', pa.id);
         synced++;
       } else {

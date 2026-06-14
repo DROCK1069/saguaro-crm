@@ -48,19 +48,29 @@ export async function POST(
       return NextResponse.json({ error: 'description is required' }, { status: 400 });
     }
 
-    const optionalFields = [
-      'sheet_id', 'assembly_id', 'cost_code_id', 'csi_code', 'category',
-      'measurement_type', 'quantity', 'unit', 'unit_cost', 'material_cost',
-      'labor_cost', 'equipment_cost', 'total_cost', 'markup_pct', 'sell_price',
-      'color', 'notes', 'sort_order', 'group_name',
+    // Fields that map directly to real columns on takeoff_line_items
+    const directFields = [
+      'csi_code', 'csi_division', 'csi_description', 'category',
+      'quantity', 'unit', 'notes', 'sort_order',
     ];
+    // Generic cost aliases -> real column names (per codebase export-route convention:
+    // unit_cost==unit_material_cost, material_cost==total_material, etc.)
+    const costAliasMap: Record<string, string> = {
+      unit_cost: 'unit_material_cost',
+      material_cost: 'total_material',
+      labor_cost: 'total_labor',
+      equipment_cost: 'total_equipment',
+    };
     const record: Record<string, any> = {
       description,
-      takeoff_project_id: id,
+      takeoff_id: id,
       tenant_id: user.tenantId,
     };
-    for (const k of optionalFields) {
+    for (const k of directFields) {
       if (body[k] !== undefined) record[k] = body[k];
+    }
+    for (const [alias, col] of Object.entries(costAliasMap)) {
+      if (body[alias] !== undefined) record[col] = body[alias];
     }
 
     const db = createServerClient();

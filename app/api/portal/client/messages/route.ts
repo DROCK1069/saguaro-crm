@@ -24,13 +24,14 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    // Count unread messages for the client
+    // Count unread messages for the client. Read state is tracked by read_at
+    // (null = unread); there is no boolean read column.
     const { count: unreadCount } = await db
       .from('portal_messages')
       .select('*', { count: 'exact', head: true })
       .eq('project_id', session.project_id)
       .eq('tenant_id', session.tenant_id)
-      .eq('read', false)
+      .is('read_at', null)
       .neq('sender_type', 'client');
 
     return NextResponse.json({
@@ -58,17 +59,20 @@ export async function POST(req: NextRequest) {
     }
 
     const db = createServerClient();
+    // Live portal_messages columns: tenant_id, project_id, session_id,
+    // sender_name, sender_type, content, read_at, attachments (jsonb),
+    // created_at. sender_session_id -> session_id; there is no boolean read
+    // column (unread = read_at null).
     const { data: message, error } = await db
       .from('portal_messages')
       .insert({
         project_id: session.project_id,
         tenant_id: session.tenant_id,
+        session_id: session.id,
         sender_type: 'client',
         sender_name: session.client_name || session.client_email,
-        sender_session_id: session.id,
         content: content.trim(),
         attachments: attachments || null,
-        read: false,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -95,11 +99,13 @@ export async function PATCH(req: NextRequest) {
 
     const db = createServerClient();
 
+    // Read state is tracked by read_at (null = unread); there is no boolean
+    // read column.
     if (message_ids && Array.isArray(message_ids) && message_ids.length > 0) {
       // Mark specific messages as read
       const { error } = await db
         .from('portal_messages')
-        .update({ read: true, read_at: new Date().toISOString() })
+        .update({ read_at: new Date().toISOString() })
         .in('id', message_ids)
         .eq('project_id', session.project_id)
         .eq('tenant_id', session.tenant_id);
@@ -109,10 +115,10 @@ export async function PATCH(req: NextRequest) {
       // Mark all non-client messages as read
       const { error } = await db
         .from('portal_messages')
-        .update({ read: true, read_at: new Date().toISOString() })
+        .update({ read_at: new Date().toISOString() })
         .eq('project_id', session.project_id)
         .eq('tenant_id', session.tenant_id)
-        .eq('read', false)
+        .is('read_at', null)
         .neq('sender_type', 'client');
 
       if (error) throw error;

@@ -119,14 +119,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Live selections columns relevant here: status, selected_by, selected_at,
+    // notes, selected_amount. There is no chosen_option or client_notes column;
+    // the chosen option and any client note are combined into notes.
+    const combinedNotes = [
+      chosen_option ? `Chosen: ${chosen_option}` : null,
+      notes || null,
+    ].filter(Boolean).join(' — ');
+
     const { data: updated, error: updateError } = await db
       .from('selections')
       .update({
         status: 'selected',
-        chosen_option,
         selected_by: session.client_name || session.client_email,
         selected_at: new Date().toISOString(),
-        client_notes: notes || null,
+        notes: combinedNotes || null,
       })
       .eq('id', selection_id)
       .select()

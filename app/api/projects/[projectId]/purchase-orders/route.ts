@@ -27,10 +27,10 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const { data, error } = await supabase.from('purchase_orders').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
       po_number: body.po_number || null, vendor_name: body.vendor_name,
-      vendor_email: body.vendor_email || null, amount: body.amount || 0,
-      status: body.status || 'draft', issued_date: body.issued_date || null,
-      required_date: body.required_date || null, description: body.description || null,
-      line_items: body.line_items || [], file_url: body.file_url || null,
+      vendor_email: body.vendor_email || null, total: body.amount || 0,
+      status: body.status || 'draft', delivery_date: body.required_date || body.issued_date || null,
+      description: body.description || null,
+      line_items: body.line_items || [], pdf_url: body.file_url || null,
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ purchase_order: data }, { status: 201 });

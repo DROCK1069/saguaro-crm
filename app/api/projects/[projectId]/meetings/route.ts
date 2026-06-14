@@ -24,10 +24,21 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const body = await req.json();
     const supabase = createServerClient();
-    const record = {
+    // meetings real columns: title, meeting_type, status, meeting_date, start_time,
+    // end_time, location, agenda(text), notes, created_by(uuid)... The field page
+    // sends a full Meeting object (type/date/time/general_notes plus array fields
+    // attendees/agenda/recurring/series_id). Map scalars; the array fields have no
+    // jsonb home on this table (agenda column is text, not jsonb) so they are dropped.
+    const record: Record<string, unknown> = {
       project_id: params.projectId,
-      ...body,
-      created_by: user.email,
+      tenant_id: user.tenantId,
+      title: body.title ?? null,
+      meeting_type: body.meeting_type ?? body.type ?? null,
+      location: body.location ?? null,
+      meeting_date: body.meeting_date ?? body.date ?? null,
+      start_time: body.start_time ?? body.time ?? null,
+      notes: body.notes ?? body.general_notes ?? null,
+      created_by: user.id,
       status: body.status || 'scheduled',
       created_at: new Date().toISOString(),
     };

@@ -55,22 +55,19 @@ export async function POST(req: NextRequest) {
     // Create budget line items
     if (lineItems.length > 0 && budget) {
       const rows = lineItems.map((item: Record<string, unknown>, idx: number) => ({
-        budget_id: budget.id,
+        // budget_line_items links to a budget via project_id (no budget_id column).
+        project_id: projectId,
         tenant_id: tenantId,
         cost_code: item.costCode || `${String(idx + 1).padStart(4, '0')}`,
         csi_division: item.csiDivision || '',
-        description: item.description || '',
-        category: item.category || 'material',
-        unit: item.unit || 'LS',
-        quantity: item.quantity || 1,
-        unit_cost: item.unitCost || 0,
-        original_amount: item.originalAmount || 0,
-        revised_amount: item.revisedAmount || item.originalAmount || 0,
-        committed: 0,
-        actual: 0,
-        projected: item.originalAmount || 0,
+        csi_description: item.description || '',
+        original_budget: item.originalAmount || 0,
+        current_budget: item.revisedAmount || item.originalAmount || 0,
+        committed_cost: 0,
+        cost_to_date: 0,
+        estimated_final_cost: item.originalAmount || 0,
         variance: item.originalAmount || 0,
-        percent_complete: 0,
+        sort_order: idx + 1,
       }));
 
       // Insert in batches of 50

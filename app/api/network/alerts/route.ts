@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       network_project_id, alert_type, severity, title,
-      message, device_id, related_entity_type, related_entity_id,
+      message, device_id,
     } = body;
 
     if (!network_project_id) return badRequest('network_project_id is required');
@@ -75,13 +75,10 @@ export async function POST(req: NextRequest) {
         alert_type,
         severity: severity || 'info',
         title,
-        message: message || '',
+        description: message || '',
         device_id: device_id || null,
-        related_entity_type: related_entity_type || null,
-        related_entity_id: related_entity_id || null,
         resolved: false,
         acknowledged: false,
-        created_by: user.id,
       })
       .select()
       .single();
@@ -110,20 +107,16 @@ export async function PATCH(req: NextRequest) {
 
     const db = createServerClient();
 
-    const updates: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
+    const updates: Record<string, unknown> = {};
 
     if (acknowledged !== undefined) {
       updates.acknowledged = acknowledged;
-      if (acknowledged) updates.acknowledged_at = new Date().toISOString();
       updates.acknowledged_by = user.id;
     }
 
     if (resolved !== undefined) {
       updates.resolved = resolved;
       if (resolved) updates.resolved_at = new Date().toISOString();
-      updates.resolved_by = user.id;
     }
 
     const { data, error } = await db

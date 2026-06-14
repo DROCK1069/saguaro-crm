@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       csi_codes: body.csi_codes || body.csiCodes || [],
       is_public_project: body.is_public_project || body.isPublicProject || false,
       requires_bond: body.requires_bond || body.requiresBond || false,
-      insurance_requirements: body.insurance_requirements || body.insuranceRequirements || {},
+      insurance_requirements: body.insurance_requirements || body.insuranceRequirements || null,
     }).select().single();
     if (error) throw error;
 

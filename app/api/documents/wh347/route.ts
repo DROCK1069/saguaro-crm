@@ -28,11 +28,11 @@ export async function POST(req: NextRequest) {
       week_ending: body.weekEnding,
       payroll_number: body.payrollNumber || 1,
       status: 'submitted',
-      employees: body.employees || [],
+      entries: body.employees || [],
       total_gross: (body.employees || []).reduce((s: number, e: any) => s + (e.grossEarnings || 0), 0),
       total_net: (body.employees || []).reduce((s: number, e: any) => s + (e.netPay || 0), 0),
       pdf_url: pdfUrl,
-      submitted_date: new Date().toISOString().split('T')[0],
+      submitted_at: new Date().toISOString(),
     });
 
     return NextResponse.json({ pdfUrl, success: true });

@@ -24,10 +24,22 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const body = await req.json();
     const supabase = createServerClient();
-    const record = {
+    // correspondence real columns map: type->correspondence_type, to->to_names(jsonb),
+    // cc->cc_names(jsonb). The field page also sends priority/request_read_receipt/
+    // reference_links/direction which have no column and no appropriate jsonb bucket
+    // (to_names/cc_names/attachments are typed), so they are dropped to avoid a 500.
+    const record: Record<string, unknown> = {
       project_id: params.projectId,
-      ...body,
+      tenant_id: user.tenantId,
+      subject: body.subject ?? null,
+      body: body.body ?? null,
+      correspondence_type: body.correspondence_type ?? body.type ?? null,
+      to_names: body.to_names ?? body.to ?? [],
+      cc_names: body.cc_names ?? body.cc ?? [],
       from_email: user.email,
+      from_name: body.from_name ?? null,
+      ...(body.sent_at ? { sent_at: body.sent_at } : {}),
+      created_by: user.id,
       status: body.status || 'draft',
       created_at: new Date().toISOString(),
     };

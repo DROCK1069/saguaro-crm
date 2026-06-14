@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       .select('*')
       .eq('project_id', projectId)
       .eq('tenant_id', user.tenantId)
-      .order('expected_date', { ascending: true });
+      .order('eta', { ascending: true });
 
     if (status) query = query.eq('status', status);
 
@@ -67,15 +67,12 @@ export async function POST(req: NextRequest) {
       .insert({
         tenant_id: user.tenantId,
         project_id,
-        supplier,
         description,
         tracking_number: tracking_number || null,
-        carrier: carrier || null,
-        expected_date: expected_date || null,
-        cost_code_id: cost_code_id || null,
+        carrier_name: carrier || null,
+        eta: expected_date || null,
         notes: notes || null,
         status: 'scheduled',
-        created_by: user.id,
       })
       .select()
       .single();

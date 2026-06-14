@@ -88,13 +88,19 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-    };
-    if (percent_complete !== undefined) updateData.percent_complete = percent_complete;
-    if (checklist !== undefined) updateData.checklist = checklist;
+    // Live portal_sub_tasks columns: id, tenant_id, project_id, sub_id, title,
+    // description, due_date, status, completed_at, created_at.
+    // percent_complete / checklist / notes / updated_at do not exist and there is
+    // no jsonb column to fold them into, so only status is persisted. When a task
+    // is marked complete, stamp completed_at.
+    const updateData: Record<string, any> = {};
     if (status !== undefined) updateData.status = status;
-    if (notes !== undefined) updateData.notes = notes;
+    if (status === 'completed' || status === 'complete') {
+      updateData.completed_at = new Date().toISOString();
+    }
+    if (percent_complete === 100 && updateData.completed_at === undefined) {
+      updateData.completed_at = new Date().toISOString();
+    }
 
     const { data: updated, error } = await db
       .from('portal_sub_tasks')

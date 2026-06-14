@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
     const now = new Date();
     const annotated = (docs || []).map((doc: any) => {
       let expiration_status = 'valid';
-      if (doc.expires_at) {
-        const expDate = new Date(doc.expires_at);
+      if (doc.expiry_date) {
+        const expDate = new Date(doc.expiry_date);
         const daysUntilExpiry = Math.ceil(
           (expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
         );
@@ -99,22 +99,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Live portal_sub_compliance_docs columns: tenant_id, sub_id, doc_type,
+    // file_url, expiry_date, status, verified_at, created_at. There is no
+    // project_id / file_name / policy_number / carrier / coverage_amount / notes
+    // / uploaded_at column (and no jsonb to fold them into), so they are dropped.
+    // expires_at -> expiry_date.
     const { data: doc, error } = await db
       .from('portal_sub_compliance_docs')
       .insert({
         sub_id: session.sub_id,
-        project_id: session.project_id,
         tenant_id: session.tenant_id,
         doc_type,
-        file_name,
         file_url: file_url || null,
-        expires_at: expires_at || null,
-        policy_number: policy_number || null,
-        carrier: carrier || null,
-        coverage_amount: coverage_amount || null,
-        notes: notes || null,
+        expiry_date: expires_at || null,
         status: 'pending_review',
-        uploaded_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
       })
       .select()

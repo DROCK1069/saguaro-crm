@@ -54,17 +54,27 @@ export async function POST(req: NextRequest) {
     }
 
     const db = createServerClient();
+
+    // Live portal_payments columns: tenant_id, project_id, session_id, amount,
+    // payment_type, status, due_date, paid_at, invoice_url, notes, created_at.
+    // payment_method -> payment_type, description -> notes. There is no
+    // invoice_id / initiated_by column: invoice_id is folded into notes and the
+    // initiator is recorded via session_id.
+    const combinedNotes = [
+      description || null,
+      invoice_id ? `Invoice: ${invoice_id}` : null,
+    ].filter(Boolean).join(' — ');
+
     const { data: payment, error } = await db
       .from('portal_payments')
       .insert({
         project_id: session.project_id,
         tenant_id: session.tenant_id,
+        session_id: session.id,
         amount,
-        payment_method: payment_method || null,
-        invoice_id: invoice_id || null,
-        description: description || null,
+        payment_type: payment_method || null,
+        notes: combinedNotes || null,
         status: 'pending',
-        initiated_by: session.client_name || session.client_email,
         created_at: new Date().toISOString(),
       })
       .select()

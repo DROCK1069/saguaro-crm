@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       .select('*')
       .eq('sub_id', session.sub_id)
       .eq('tenant_id', session.tenant_id)
-      .order('rated_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
     // Check preferred status
     const { data: subRecord } = await db
       .from('subcontractors')
-      .select('preferred_status, overall_rating')
+      .select('rating')
       .eq('id', session.sub_id)
       .eq('tenant_id', session.tenant_id)
       .single();
@@ -93,8 +93,8 @@ export async function GET(req: NextRequest) {
         overall: overallAverage,
       },
       total_reviews: cards.length,
-      preferred_status: subRecord?.preferred_status || false,
-      overall_rating: subRecord?.overall_rating || overallAverage,
+      preferred_status: (subRecord?.rating ?? overallAverage ?? 0) >= 4.0,
+      overall_rating: subRecord?.rating || overallAverage,
     });
   } catch (err) {
     return NextResponse.json(
@@ -141,6 +141,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Live portal_sub_scorecards columns: quality_score, safety_score,
+    // schedule_score, communication_score, overall_score, notes, reviewed_by.
+    // There is no cleanup_score column (and no jsonb to fold it into), so it is
+    // dropped. comments -> notes, rated_by -> reviewed_by. overall_score is
+    // computed from the provided dimensions.
+    const providedScores = [quality_score, schedule_score, safety_score, communication_score, cleanup_score]
+      .map((v) => (v === undefined || v === null ? null : Number(v)))
+      .filter((v): v is number => v !== null && !Number.isNaN(v));
+    const overallScore =
+      providedScores.length > 0
+        ? Math.round((providedScores.reduce((a, b) => a + b, 0) / providedScores.length) * 10) / 10
+        : null;
+
     const { data: scorecard, error } = await db
       .from('portal_sub_scorecards')
       .insert({
@@ -151,10 +164,9 @@ export async function POST(req: NextRequest) {
         schedule_score: schedule_score || null,
         safety_score: safety_score || null,
         communication_score: communication_score || null,
-        cleanup_score: cleanup_score || null,
-        comments: comments || null,
-        rated_by: rated_by || null,
-        rated_at: new Date().toISOString(),
+        overall_score: overallScore,
+        notes: comments || null,
+        reviewed_by: rated_by || null,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -162,16 +174,17 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    // Update overall rating on subcontractor record
+    // Update overall rating on subcontractor record. The subcontractors table
+    // exposes `rating` (not overall_rating) and has no preferred_status column.
     const { data: allCards } = await db
       .from('portal_sub_scorecards')
-      .select('quality_score, schedule_score, safety_score, communication_score, cleanup_score')
+      .select('quality_score, schedule_score, safety_score, communication_score, overall_score')
       .eq('sub_id', session.sub_id)
       .eq('tenant_id', session.tenant_id);
 
     if (allCards && allCards.length > 0) {
       const allVals = allCards.flatMap((c: any) =>
-        [c.quality_score, c.schedule_score, c.safety_score, c.communication_score, c.cleanup_score]
+        [c.quality_score, c.schedule_score, c.safety_score, c.communication_score]
           .filter((v: any) => v !== null && v !== undefined)
       );
       if (allVals.length > 0) {
@@ -183,8 +196,7 @@ export async function POST(req: NextRequest) {
         await db
           .from('subcontractors')
           .update({
-            overall_rating: newOverall,
-            preferred_status: newOverall >= 4.0,
+            rating: newOverall,
           })
           .eq('id', session.sub_id)
           .eq('tenant_id', session.tenant_id);

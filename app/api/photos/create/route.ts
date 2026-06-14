@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
       title: body.title || '',
       description: body.description || '',
       album: body.album || 'General',
-      location: body.location || '',
       taken_at: body.taken_at || new Date().toISOString(),
       url: body.url || '',
       tags: body.tags || [],

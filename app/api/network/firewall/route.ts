@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const {
       network_project_id, rule_number, name, action, direction,
       protocol, source_ip, source_port, destination_ip, destination_port,
-      vlan_id, description, enabled, log_enabled,
+      description, enabled, log_enabled,
     } = body;
 
     if (!network_project_id) return badRequest('network_project_id is required');
@@ -81,14 +81,13 @@ export async function POST(req: NextRequest) {
         action,
         direction: direction || 'inbound',
         protocol: protocol || 'any',
-        source_ip: source_ip || 'any',
+        source_network: source_ip || 'any',
         source_port: source_port || 'any',
-        destination_ip: destination_ip || 'any',
+        destination_network: destination_ip || 'any',
         destination_port: destination_port || 'any',
-        vlan_id: vlan_id || null,
         description: description || '',
         enabled: enabled ?? true,
-        log_enabled: log_enabled ?? false,
+        logging: log_enabled ?? false,
       })
       .select()
       .single();

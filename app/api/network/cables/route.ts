@@ -52,10 +52,10 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      network_project_id, cable_id, cable_type, category,
-      from_location, from_device_id, from_port,
-      to_location, to_device_id, to_port,
-      length_ft, pathway, notes, status,
+      network_project_id, cable_id, cable_type,
+      from_location, from_device_id,
+      to_location, to_device_id,
+      length_ft, pathway, notes,
     } = body;
 
     if (!network_project_id) return badRequest('network_project_id is required');
@@ -79,22 +79,17 @@ export async function POST(req: NextRequest) {
       .insert({
         network_project_id,
         tenant_id: user.tenantId,
-        cable_id,
+        cable_label: cable_id,
         cable_type,
-        category: category || 'Cat6',
         from_location: from_location || '',
         from_device_id: from_device_id || null,
-        from_port: from_port || null,
         to_location: to_location || '',
         to_device_id: to_device_id || null,
-        to_port: to_port || null,
         length_ft: length_ft || 0,
         pathway: pathway || '',
         notes: notes || '',
-        status: status || 'planned',
         tested: false,
         test_result: null,
-        tested_at: null,
       })
       .select()
       .single();

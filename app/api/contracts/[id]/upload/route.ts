@@ -14,11 +14,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { data, error } = await db.from('contract_documents').insert({
       tenant_id: user.tenantId,
       contract_id: id,
-      file_name: body.file_name,
+      title: body.file_name,
       file_url: body.file_url,
-      file_type: body.file_type || '',
-      file_size: body.file_size || 0,
-      storage_path: body.storage_path || '',
+      doc_type: body.file_type || null,
       uploaded_by: user.id,
     }).select().single();
     if (error) throw error;

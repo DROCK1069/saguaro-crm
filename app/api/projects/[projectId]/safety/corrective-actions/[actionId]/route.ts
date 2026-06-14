@@ -9,20 +9,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
     const body = await req.json();
     const { status, assigned_to, due_date, verification_date, verified_by } = body;
 
+    // safety_corrective_actions has no verification_date/verified_by columns. The
+    // table models resolution via resolved_at + resolution, so verification maps
+    // onto those: verification_date -> resolved_at, verifier -> resolution text.
     const updates: Record<string, unknown> = {};
     if (status !== undefined) updates.status = status;
     if (assigned_to !== undefined) updates.assigned_to = assigned_to;
     if (due_date !== undefined) updates.due_date = due_date;
-    if (verification_date !== undefined) updates.verification_date = verification_date;
-    if (verified_by !== undefined) updates.verified_by = verified_by;
 
-    // If status is 'verified', auto-fill verification fields
-    if (status === 'verified' && !verification_date) {
-      updates.verification_date = new Date().toISOString().split('T')[0];
-    }
-    if (status === 'verified' && !verified_by) {
-      updates.verified_by = user.email;
-    }
+    const effVerifDate =
+      verification_date !== undefined
+        ? verification_date
+        : (status === 'verified' ? new Date().toISOString() : undefined);
+    const effVerifBy =
+      verified_by !== undefined
+        ? verified_by
+        : (status === 'verified' ? user.email : undefined);
+    if (effVerifDate !== undefined) updates.resolved_at = effVerifDate;
+    if (effVerifBy !== undefined) updates.resolution = `Verified by ${effVerifBy}`;
 
     updates.updated_at = new Date().toISOString();
 

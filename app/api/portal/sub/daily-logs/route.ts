@@ -95,6 +95,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Live portal_sub_daily_logs columns: log_date, crew_count, work_performed,
+    // hours, materials_used, delays, notes, status, created_at. hours_worked ->
+    // hours, work_completed -> work_performed. work_planned / weather /
+    // safety_incidents / photos / gps_clock_in / gps_clock_out have no column (all
+    // remaining columns are plain text with no jsonb to fold into), so the ones
+    // without a home are appended into notes to avoid silent data loss.
+    const extraNotes = [
+      work_planned ? `Planned: ${work_planned}` : null,
+      weather ? `Weather: ${weather}` : null,
+      safety_incidents ? `Safety: ${safety_incidents}` : null,
+      notes || null,
+    ].filter(Boolean).join('\n');
+
     const { data: log, error } = await db
       .from('portal_sub_daily_logs')
       .insert({
@@ -103,16 +116,10 @@ export async function POST(req: NextRequest) {
         tenant_id: session.tenant_id,
         log_date,
         crew_count: crew_count || 0,
-        hours_worked: hours_worked || 0,
-        work_completed: work_completed || null,
-        work_planned: work_planned || null,
-        weather: weather || null,
+        hours: hours_worked || 0,
+        work_performed: work_completed || null,
         delays: delays || null,
-        safety_incidents: safety_incidents || null,
-        photos: photos || [],
-        gps_clock_in: gps_clock_in || null,
-        gps_clock_out: gps_clock_out || null,
-        notes: notes || null,
+        notes: extraNotes || null,
         status: 'submitted',
         created_at: new Date().toISOString(),
       })
@@ -178,17 +185,24 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Build safe update payload
-    const allowed = [
-      'crew_count', 'hours_worked', 'work_completed', 'work_planned',
-      'weather', 'delays', 'safety_incidents', 'photos',
-      'gps_clock_in', 'gps_clock_out', 'notes',
-    ];
-    const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString(),
+    // Build safe update payload. Only real portal_sub_daily_logs columns are
+    // written; incoming body keys are mapped to their live column names.
+    // There is no updated_at column, and work_planned / weather /
+    // safety_incidents / photos / gps_* have no column, so they are ignored.
+    const fieldMap: Record<string, string> = {
+      crew_count: 'crew_count',
+      hours_worked: 'hours',
+      hours: 'hours',
+      work_completed: 'work_performed',
+      work_performed: 'work_performed',
+      materials_used: 'materials_used',
+      delays: 'delays',
+      notes: 'notes',
+      status: 'status',
     };
-    for (const key of allowed) {
-      if (updates[key] !== undefined) updateData[key] = updates[key];
+    const updateData: Record<string, any> = {};
+    for (const [bodyKey, column] of Object.entries(fieldMap)) {
+      if (updates[bodyKey] !== undefined) updateData[column] = updates[bodyKey];
     }
 
     const { data: updated, error } = await db

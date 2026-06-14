@@ -96,14 +96,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Live portal_punch_items columns: title, description, location, status,
+    // priority, photo_urls, reported_by, completed_at, updated_at. There is no
+    // signed_off_by / signed_off_at / signature_data / signoff_notes column (and
+    // no jsonb to fold them into), so only the status transition is persisted and
+    // completed_at/updated_at are stamped. NOTE: client sign-off identity,
+    // signature image, and sign-off notes are not stored — see flagged item.
     const { data: updated, error: updateError } = await db
       .from('portal_punch_items')
       .update({
         status: 'signed_off',
-        signed_off_by: session.client_name || session.client_email,
-        signed_off_at: new Date().toISOString(),
-        signature_data: signature_data || null,
-        signoff_notes: notes || null,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', item_id)
       .select()

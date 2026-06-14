@@ -19,9 +19,8 @@ export async function POST(req: NextRequest) {
     x_pct: Number(body.x_pct) || 0,
     y_pct: Number(body.y_pct) || 0,
     title: body.title || '',
-    note: body.note || body.notes || '',
-    category: body.category || 'Other',
-    created_by_email: user.email || '',
+    notes: body.note || body.notes || '',
+    pin_type: body.category || 'Other',
   };
 
   try {

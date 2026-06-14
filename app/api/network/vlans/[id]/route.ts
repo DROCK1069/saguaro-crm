@@ -50,7 +50,7 @@ export async function PATCH(
 
     const { data, error } = await db
       .from('network_vlans')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(updates)
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
       .select()

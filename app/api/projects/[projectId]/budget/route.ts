@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
+// Real columns on public.budget_lines that callers may set. Anything outside
+// this set is dropped so the insert/update never references a non-existent
+// column (which would 500). id/tenant_id/project_id/timestamps are handled
+// separately and excluded from client-supplied writes.
+const BUDGET_LINE_COLUMNS = [
+  'cost_code', 'description', 'division', 'category',
+  'original_budget', 'approved_changes', 'revised_budget',
+  'committed', 'actual', 'projected', 'variance',
+  'percent_complete', 'notes', 'sort_order', 'ai_generated',
+] as const;
+
+function pickBudgetColumns(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of BUDGET_LINE_COLUMNS) {
+    if (body[k] !== undefined) out[k] = body[k];
+  }
+  return out;
+}
+
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -46,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     if (projectError || !project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
-    const record = { ...body, project_id: params.projectId };
+    const record = { ...pickBudgetColumns(body), tenant_id: user.tenantId, project_id: params.projectId };
     const { data, error } = await supabase.from('budget_lines').insert(record).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, line: data });
@@ -73,7 +92,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
     if (projectError || !project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
-    const { id, ...updates } = body;
+    const { id } = body;
+    const updates = pickBudgetColumns(body);
     const { error } = await supabase
       .from('budget_lines')
       .update(updates)

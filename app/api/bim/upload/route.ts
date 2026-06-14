@@ -87,12 +87,11 @@ export async function POST(req: NextRequest) {
         id: modelId,
         project_id: projectId,
         tenant_id: user.tenantId,
-        file_name: file.name,
+        name: file.name,
         file_type: ext,
         file_size: file.size,
         storage_path: storagePath,
         status: 'pending',
-        uploaded_by: user.id,
       })
       .select()
       .single();

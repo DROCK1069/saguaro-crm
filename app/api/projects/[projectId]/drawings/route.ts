@@ -41,11 +41,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
   const row = {
     project_id: projectId,
     tenant_id: user.tenantId,
-    sheet: body.sheet || '',
+    sheet_number: body.sheet || '',
     name: body.name || '',
-    description: body.description || '',
-    file_url: body.file_url || '',
-    thumbnail_url: body.thumbnail_url || null,
+    notes: body.description || '',
+    url: body.file_url || '',
   };
 
   const { data, error } = await db.from('drawings').insert(row).select().single();

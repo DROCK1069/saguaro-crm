@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       network_project_id, ssid, security_type, password,
-      vlan_id, band, channel_width, hidden, guest_network,
+      vlan_id, band, hidden,
       bandwidth_limit_mbps, client_isolation, description, enabled,
     } = body;
 
@@ -80,12 +80,10 @@ export async function POST(req: NextRequest) {
         password: password || null,
         vlan_id: vlan_id || null,
         band: band || '2.4/5GHz',
-        channel_width: channel_width || '20/40MHz',
         hidden: hidden ?? false,
-        guest_network: guest_network ?? false,
         bandwidth_limit_mbps: bandwidth_limit_mbps || null,
         client_isolation: client_isolation ?? false,
-        description: description || '',
+        notes: description || '',
         enabled: enabled ?? true,
       })
       .select()

@@ -19,23 +19,39 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const supabase = createServerClient();
     const body = await req.json();
     if (body._type === 'submission') {
+      // prequalification_submissions has no project/vendor/max_score columns; the
+      // form reference lives in template_id and the subcontractor in sub_id. Vendor
+      // identity, project context and max_score are folded into the answers jsonb.
       const { data, error } = await supabase.from('prequalification_submissions').insert({
-        tenant_id: user.tenantId, form_id: body.form_id, project_id: params.projectId || null,
-        subcontractor_id: body.subcontractor_id || null, vendor_name: body.vendor_name,
-        vendor_email: body.vendor_email || null, answers: body.answers || {},
-        documents: body.documents || [], score: body.score || 0, max_score: body.max_score || 100,
+        tenant_id: user.tenantId, template_id: body.form_id || null,
+        sub_id: body.subcontractor_id || null,
+        answers: {
+          ...(body.answers || {}),
+          project_id: params.projectId || null,
+          vendor_name: body.vendor_name ?? null,
+          vendor_email: body.vendor_email ?? null,
+          max_score: body.max_score ?? 100,
+        },
+        documents: body.documents || [], score: body.score || 0,
         status: body.status || 'pending',
       }).select().single();
       if (error) throw error;
       return NextResponse.json({ submission: data }, { status: 201 });
     }
+    // prequalification_forms keeps free-form template config in the form_data jsonb;
+    // there are no top-level name/questions/scoring columns and no created_by column.
     const { data, error } = await supabase.from('prequalification_forms').insert({
       tenant_id: user.tenantId, project_id: params.projectId || null,
-      name: body.name, description: body.description || null,
-      questions: body.questions || [], scoring_criteria: body.scoring_criteria || [],
-      required_documents: body.required_documents || [],
-      auto_qualify_threshold: body.auto_qualify_threshold || 70,
-      status: body.status || 'active', created_by: user.id,
+      form_data: {
+        name: body.name ?? null,
+        description: body.description ?? null,
+        questions: body.questions || [],
+        scoring_criteria: body.scoring_criteria || [],
+        required_documents: body.required_documents || [],
+        auto_qualify_threshold: body.auto_qualify_threshold ?? 70,
+        created_by: user.id,
+      },
+      status: body.status || 'active',
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ form: data }, { status: 201 });

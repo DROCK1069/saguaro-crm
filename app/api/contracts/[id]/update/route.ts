@@ -8,14 +8,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const body = await req.json();
     const db = createServerClient();
-    const allowed = [
-      'title', 'contract_number', 'status', 'type', 'value', 'start_date',
-      'end_date', 'description', 'vendor_id', 'project_id', 'notes',
-      'retainage_percent', 'signed_date',
-    ];
+    // Map incoming aliases to real `contracts` columns; drop fields with no column.
+    const fieldMap: Record<string, string> = {
+      title: 'title',
+      contract_number: 'contract_number',
+      status: 'status',
+      type: 'contract_type',
+      contract_type: 'contract_type',
+      value: 'amount',
+      amount: 'amount',
+      start_date: 'start_date',
+      end_date: 'end_date',
+      description: 'scope_of_work',
+      scope_of_work: 'scope_of_work',
+      project_id: 'project_id',
+      notes: 'notes',
+      retainage_percent: 'retainage_pct',
+      retainage_pct: 'retainage_pct',
+      signed_date: 'executed_date',
+      executed_date: 'executed_date',
+    };
     const fields: Record<string, any> = {};
-    for (const k of allowed) {
-      if (body[k] !== undefined) fields[k] = body[k];
+    for (const k of Object.keys(fieldMap)) {
+      if (body[k] !== undefined) fields[fieldMap[k]] = body[k];
     }
     const { error } = await db
       .from('contracts')

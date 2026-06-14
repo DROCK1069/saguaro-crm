@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
           let query = db.from('room_progress').select('*')
             .eq('project_id', projectId).eq('tenant_id', user.tenantId)
             .order('room_name', { ascending: true });
-          if (floorId)   query = query.eq('floor_id', floorId);
+          if (floorId)   query = query.eq('floor', floorId);
           if (drawingId) query = query.eq('drawing_id', drawingId);
           const { data, error } = await query;
           if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -47,13 +47,12 @@ export async function POST(req: NextRequest) {
                   project_id,
                   drawing_id:      drawing_id      || null,
                   room_name,
-                  floor_id:        floor_id        || null,
-                  polygon_points:  polygon_points  || null,
-                  trade:           trade           || null,
+                  floor:           floor_id        || null,
+                  boundary_points: polygon_points  || null,
+                  trades_active:   trade           ? [trade] : null,
                   status:          status          || 'not_started',
                   percent_complete: percent_complete ?? 0,
                   notes:           notes           || null,
-                  color:           color           || null,
                   updated_by:      user.id,
           }).select().single();
           if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -72,9 +71,8 @@ export async function PUT(req: NextRequest) {
           if (status           !== undefined) updates.status           = status;
                 if (percent_complete !== undefined) updates.percent_complete = percent_complete;
           if (notes            !== undefined) updates.notes            = notes;
-          if (trade            !== undefined) updates.trade            = trade;
-          if (polygon_points   !== undefined) updates.polygon_points   = polygon_points;
-          if (color            !== undefined) updates.color            = color;
+          if (trade            !== undefined) updates.trades_active     = trade ? [trade] : null;
+          if (polygon_points   !== undefined) updates.boundary_points   = polygon_points;
           if (drawing_id       !== undefined) updates.drawing_id       = drawing_id;
           const db = createServerClient();
           const { data, error } = await db.from('room_progress').update(updates)

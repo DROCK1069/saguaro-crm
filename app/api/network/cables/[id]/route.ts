@@ -49,20 +49,20 @@ export async function PATCH(
 
     const { id: _id, tenant_id: _tid, network_project_id: _npid, created_at: _ca, ...updates } = body;
 
-    // If marking as tested, record timestamp
-    if (updates.tested === true && !updates.tested_at) {
-      updates.tested_at = new Date().toISOString();
+    // If marking as tested, record the test date (cable_runs has a `test_date` date column).
+    if (updates.tested === true && !updates.test_date) {
+      updates.test_date = new Date().toISOString().slice(0, 10);
     }
 
     // If test_result is being set, auto-set tested to true
     if (updates.test_result && updates.tested === undefined) {
       updates.tested = true;
-      if (!updates.tested_at) updates.tested_at = new Date().toISOString();
+      if (!updates.test_date) updates.test_date = new Date().toISOString().slice(0, 10);
     }
 
     const { data, error } = await db
       .from('cable_runs')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(updates)
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
       .select()

@@ -59,14 +59,16 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
 
     const supabase = createServerClient();
 
+    // safety_corrective_actions has no incident_id/created_by columns; the source
+    // reference column is inspection_id, and there is no created_by column.
     const record = {
       project_id: params.projectId,
+      tenant_id: user.tenantId,
       description,
       assigned_to: assigned_to || null,
       due_date: due_date || null,
       status: 'open',
-      incident_id: incident_id || null,
-      created_by: user.email,
+      inspection_id: incident_id || null,
       created_at: new Date().toISOString(),
     };
 
@@ -79,16 +81,17 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
 
     if (error) {
       // Fall back to safety_incidents with type discriminator
+      // safety_incidents uses corrective_actions (plural) and incident_date; it has
+      // no assigned_to/due_date columns, so those are omitted from the fallback.
       const fallbackRecord = {
         project_id: params.projectId,
+        tenant_id: user.tenantId,
         type: 'corrective_action',
         description,
-        corrective_action: description,
+        corrective_actions: description,
         severity: 'N/A',
-        date: due_date || new Date().toISOString().split('T')[0],
+        incident_date: due_date || new Date().toISOString().split('T')[0],
         status: 'open',
-        assigned_to: assigned_to || null,
-        due_date: due_date || null,
         created_at: new Date().toISOString(),
       };
 

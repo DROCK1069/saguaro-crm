@@ -35,10 +35,11 @@ export async function POST(
     const { action, note } = body;
     const db = createServerClient();
 
-    // Check if this pay app has already been reviewed (prevent token reuse)
+    // Check if this pay app has already been reviewed (prevent token reuse).
+    // Live column is approved_at (not owner_approved_at).
     const { data: existing } = await db
       .from('pay_applications')
-      .select('status, owner_approved_at')
+      .select('status, approved_at')
       .eq('owner_approval_token', token)
       .single();
 
@@ -46,17 +47,21 @@ export async function POST(
       return NextResponse.json({ error: 'Pay application not found' }, { status: 404 });
     }
 
-    if (existing.owner_approved_at) {
+    if (existing.approved_at) {
       return NextResponse.json({ error: 'This pay application has already been reviewed.' }, { status: 409 });
     }
 
     const newStatus = action === 'approved' ? 'certified' : 'draft';
+    // Live pay_applications columns: status, approval_notes, approved_at.
+    // owner_notes -> approval_notes, owner_approved_at -> approved_at.
+    // NOTE: pay_applications has no owner_approval_token column, so the .eq()
+    // lookup below cannot resolve a row in the live schema — see flagged item.
     const { error } = await db
       .from('pay_applications')
       .update({
         status: newStatus,
-        owner_notes: note,
-        owner_approved_at: new Date().toISOString(),
+        approval_notes: note,
+        approved_at: new Date().toISOString(),
       })
       .eq('owner_approval_token', token);
     if (error) throw error;
