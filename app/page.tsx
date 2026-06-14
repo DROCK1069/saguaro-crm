@@ -37,31 +37,37 @@ const FEATURES = [
     icon: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z|M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z',
     title: 'AI Blueprint Takeoff',
     desc: 'Upload any PDF blueprint. Sage reads dimensions, calculates materials, and generates a full bid estimate in under 60 seconds.',
+    href: '/roi-calculator',
   },
   {
     icon: 'M12 2a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z',
     title: 'Sage AI Assistant',
     desc: 'Ask Sage anything about your projects. Get instant answers on budgets, schedules, and compliance across every active job.',
+    href: '/signup',
   },
   {
     icon: 'M12 1v22|M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
     title: 'Financial Suite',
     desc: 'AIA G702/G703 pay apps, invoicing, lien waivers for all 50 states, and certified payroll — generated automatically.',
+    href: '/#pricing',
   },
   {
     icon: 'M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z|M12 18h.01',
     title: 'Field Mobile App',
     desc: 'Native-speed PWA for daily logs, photos, GPS clock-in, punch lists, and inspections. Works offline on any device.',
+    href: '/get-the-app',
   },
   {
     icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2|M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z|M23 21v-2a4 4 0 0 0-3-3.87|M16 3.13a4 4 0 0 1 0 7.75',
     title: 'Client & Sub Portals',
     desc: 'Branded owner portal for approvals and sub portal for bids, W-9s, and insurance. White-label your business.',
+    href: '/signup',
   },
   {
     icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z|M9 22V12h6v10',
     title: 'Smart Building & Low Volt',
     desc: 'IoT device management, structured cabling, and AV scheduling for technology-forward builds and smart home installs.',
+    href: '/signup',
   },
 ];
 
@@ -307,7 +313,7 @@ export default function LandingPage() {
         </div>
 
         {/* right — takeoff mockup */}
-        <div style={{ ...glass, padding: 0, overflow: 'hidden', position: 'relative', zIndex: 1 }} className="hero-mockup">
+        <div id="demo" style={{ ...glass, padding: 0, overflow: 'hidden', position: 'relative', zIndex: 1, scrollMarginTop: 72 }} className="hero-mockup">
           {/* browser chrome */}
           <div style={{ background: 'rgba(15,20,25,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
@@ -408,7 +414,7 @@ export default function LandingPage() {
                 </div>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, color: TEXT }}>{f.title}</h3>
                 <p style={{ fontSize: 13, color: DIM, lineHeight: 1.5, margin: '0 0 12px' }}>{f.desc}</p>
-                <span style={{ fontSize: 12, color: GOLD, fontWeight: 600, cursor: 'pointer' }}>Learn more &rarr;</span>
+                <Link href={f.href} style={{ fontSize: 12, color: GOLD, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}>Learn more &rarr;</Link>
               </div>
             </div>
             );
@@ -583,8 +589,8 @@ export default function LandingPage() {
           {/* legal */}
           <div>
             <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, color: TEXT, marginBottom: 14 }}>Legal</h4>
-            {['Privacy Policy', 'Terms of Service', 'Security'].map(l => (
-              <div key={l}><Link href={`/${l.toLowerCase().replace(/ /g, '-')}`} style={{ color: DIM, textDecoration: 'none', fontSize: 13, lineHeight: 2 }}>{l}</Link></div>
+            {[{ label: 'Privacy Policy', href: '/privacy' }, { label: 'Terms of Service', href: '/terms' }, { label: 'Security', href: '/security' }].map(l => (
+              <div key={l.label}><Link href={l.href} style={{ color: DIM, textDecoration: 'none', fontSize: 13, lineHeight: 2 }}>{l.label}</Link></div>
             ))}
           </div>
         </div>
