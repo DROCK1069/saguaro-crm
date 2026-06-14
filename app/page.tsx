@@ -157,25 +157,25 @@ export default function LandingPage() {
           products: {
             label: 'Products',
             items: [
-              { icon: <Blueprint size={22} weight="duotone" color="#D4A017" />, title: 'AI Blueprint Takeoff', desc: 'Upload plans, get instant estimates', href: '/app' },
-              { icon: <Robot size={22} weight="duotone" color="#D4A017" />, title: 'Sage AI Assistant', desc: 'Your AI construction advisor', href: '/app' },
-              { icon: <CurrencyDollar size={22} weight="duotone" color="#D4A017" />, title: 'Financial Suite', desc: 'Pay apps, invoices, change orders', href: '/app' },
-              { icon: <DeviceMobile size={22} weight="duotone" color="#D4A017" />, title: 'Field App', desc: 'Mobile-first job site tools', href: '/field' },
+              { icon: <Blueprint size={22} weight="duotone" color="#D4A017" />, title: 'AI Blueprint Takeoff', desc: 'Upload plans, get instant estimates', href: '/#features' },
+              { icon: <Robot size={22} weight="duotone" color="#D4A017" />, title: 'Sage AI Assistant', desc: 'Your AI construction advisor', href: '/#features' },
+              { icon: <CurrencyDollar size={22} weight="duotone" color="#D4A017" />, title: 'Financial Suite', desc: 'Pay apps, invoices, change orders', href: '/#features' },
+              { icon: <DeviceMobile size={22} weight="duotone" color="#D4A017" />, title: 'Field App', desc: 'Mobile-first job site tools', href: '/field-app' },
               { icon: <PaintBrush size={22} weight="duotone" color="#D4A017" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
-              { icon: <WifiHigh size={22} weight="duotone" color="#D4A017" />, title: 'Low Voltage / IT', desc: 'Network design & configuration', href: '/app' },
-              { icon: <Cube size={22} weight="duotone" color="#D4A017" />, title: 'BIM 3D Viewer', desc: 'Upload IFC models, tap for specs', href: '/field/bim-viewer' },
-              { icon: <Drone size={22} weight="duotone" color="#D4A017" />, title: 'Drone Analysis', desc: 'AI-powered site progress', href: '/field/drone' },
+              { icon: <WifiHigh size={22} weight="duotone" color="#D4A017" />, title: 'Low Voltage / IT', desc: 'Network design & configuration', href: '/#features' },
+              { icon: <Cube size={22} weight="duotone" color="#D4A017" />, title: 'BIM 3D Viewer', desc: 'Upload IFC models, tap for specs', href: '/field-app' },
+              { icon: <Drone size={22} weight="duotone" color="#D4A017" />, title: 'Drone Analysis', desc: 'AI-powered site progress', href: '/field-app' },
             ],
           },
           solutions: {
             label: 'Solutions',
             items: [
-              { icon: <Buildings size={22} weight="duotone" color="#D4A017" />, title: 'General Contractors', desc: 'Full project management suite', href: '/app' },
-              { icon: <Hammer size={22} weight="duotone" color="#D4A017" />, title: 'Specialty Contractors', desc: 'Subs, trades, field crews', href: '/app' },
-              { icon: <HouseSimple size={22} weight="duotone" color="#D4A017" />, title: 'Home Builders', desc: 'Residential construction', href: '/design' },
-              { icon: <Building size={22} weight="duotone" color="#D4A017" />, title: 'Commercial Developers', desc: 'Multi-project portfolio', href: '/app' },
-              { icon: <ShieldCheck size={22} weight="duotone" color="#D4A017" />, title: 'Compliance & Safety', desc: 'OSHA, insurance, lien tracking', href: '/app' },
-              { icon: <ChartLine size={22} weight="duotone" color="#D4A017" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/app' },
+              { icon: <Buildings size={22} weight="duotone" color="#D4A017" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
+              { icon: <Hammer size={22} weight="duotone" color="#D4A017" />, title: 'Specialty Contractors', desc: 'Subs, trades, field crews', href: '/industry/specialty-subcontractors' },
+              { icon: <HouseSimple size={22} weight="duotone" color="#D4A017" />, title: 'Home Builders', desc: 'Residential construction', href: '/industry/residential-remodelers' },
+              { icon: <Building size={22} weight="duotone" color="#D4A017" />, title: 'Commercial Developers', desc: 'Multi-project portfolio', href: '/industry/commercial-contractors' },
+              { icon: <ShieldCheck size={22} weight="duotone" color="#D4A017" />, title: 'Compliance & Safety', desc: 'OSHA, insurance, lien tracking', href: '/#features' },
+              { icon: <ChartLine size={22} weight="duotone" color="#D4A017" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
             ],
           },
           portals: {
@@ -184,7 +184,7 @@ export default function LandingPage() {
               { icon: <User size={22} weight="duotone" color="#D4A017" />, title: 'Owner / Client Portal', desc: 'Live project visibility for owners', href: '/portals/client' },
               { icon: <UsersThree size={22} weight="duotone" color="#D4A017" />, title: 'Subcontractor Portal', desc: 'Self-service docs & pay apps', href: '/portals/sub' },
               { icon: <PenNib size={22} weight="duotone" color="#D4A017" />, title: 'E-Signature Portal', desc: 'Sign documents in-browser', href: '/portals/sign' },
-              { icon: <Handshake size={22} weight="duotone" color="#D4A017" />, title: 'Integrations', desc: 'QuickBooks, Sage, Stripe', href: '/app/integrations' },
+              { icon: <Handshake size={22} weight="duotone" color="#D4A017" />, title: 'Integrations', desc: 'QuickBooks, Sage, Stripe', href: '/#features' },
             ],
           },
           resources: {
@@ -193,7 +193,7 @@ export default function LandingPage() {
               { icon: <BookOpen size={22} weight="duotone" color="#D4A017" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
               { icon: <Calculator size={22} weight="duotone" color="#D4A017" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/design/roi' },
               { icon: <Scales size={22} weight="duotone" color="#D4A017" />, title: 'Compare Platforms', desc: 'Saguaro vs Procore vs Buildertrend', href: '/#compare' },
-              { icon: <Wrench size={22} weight="duotone" color="#D4A017" />, title: 'Prevailing Wage Calc', desc: 'Davis-Bacon rates by state/trade', href: '/app/compliance/prevailing-wage' },
+              { icon: <Wrench size={22} weight="duotone" color="#D4A017" />, title: 'Prevailing Wage Calc', desc: 'Davis-Bacon rates by state/trade', href: '/roi-calculator' },
               { icon: <Trophy size={22} weight="duotone" color="#D4A017" />, title: 'Leaderboard', desc: 'Gamification & team performance', href: '/field/leaderboard' },
             ],
           },
@@ -274,7 +274,7 @@ export default function LandingPage() {
             {/* Right side CTAs */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <a href="/login" style={{ color: '#86868B', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</a>
-              <a href="/login" style={{
+              <a href="/signup" style={{
                 background: 'linear-gradient(135deg, #D4A017, #C8960F)',
                 color: '#000', fontSize: 13, fontWeight: 700,
                 padding: '8px 20px', borderRadius: 8, textDecoration: 'none',
