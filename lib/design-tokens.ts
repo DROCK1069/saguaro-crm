@@ -12,24 +12,26 @@ export const colors = {
   goldHover:  'rgba(212,160,23,.18)',
   goldActive: 'rgba(212,160,23,.25)',
 
-  dark:       '#0d1117',
-  darkAlt:    '#0a0e14',
-  raised:     '#161b22',
-  raisedAlt:  '#1c2333',
-  surface:    '#1f2c3e',
+  // Neutral near-black ramp — reconciled with app/globals.css :root tokens
+  // (page base #0B0B0F) so the chrome no longer reads as a bluish slab.
+  dark:       '#131318',
+  darkAlt:    '#0B0B0F',
+  raised:     '#1A1A21',
+  raisedAlt:  '#212129',
+  surface:    '#242430',
 
-  border:     '#263347',
-  borderDim:  'rgba(38,51,71,.5)',
+  border:     'rgba(255,255,255,0.10)',
+  borderDim:  'rgba(255,255,255,0.06)',
 
-  text:       '#e8edf8',
-  textMuted:  '#8fa3c0',
-  textDim:    '#546a8a',
-  textFaint:  '#3a4f6a',
+  text:       '#F5F5F7',
+  textMuted:  '#A1A1AA',
+  textDim:    '#71717A',
+  textFaint:  '#52525B',
 
   green:      '#22c55e',
   red:        '#ef4444',
   orange:     '#f59e0b',
-  blue:       '#3b82f6',
+  blue:       '#6366F1',
 
   white:      '#ffffff',
   black:      '#000000',

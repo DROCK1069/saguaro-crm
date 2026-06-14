@@ -20,10 +20,10 @@ const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false });
 const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false });
 
 const GOLD   = '#D4A017';
-const DARK   = '#000000';
-const RAISED = '#0A0A0A';
-const BORDER = 'rgba(255,255,255,0.05)';
-const DIM    = '#86868B';
+const DARK   = '#0B0B0F';
+const RAISED = '#16161C';
+const BORDER = 'rgba(255,255,255,0.08)';
+const DIM    = '#A1A1AA';
 const TEXT   = '#F5F5F7';
 const GREEN  = '#1a8a4a';
 const RED    = '#c03030';
@@ -58,19 +58,17 @@ function KPI({
     <div
       onClick={onClick}
       style={{
-        background: 'rgba(255,255,255,0.02)', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: 0,
+        background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14,
         padding: '18px 20px', cursor: onClick || href ? 'pointer' : 'default',
-        transition: 'border-color .15s',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.4)',
+        transition: 'border-color .18s, box-shadow .18s, transform .12s',
       }}
-      onMouseEnter={e => { if (onClick || href) (e.currentTarget as HTMLDivElement).style.borderColor = GOLD; }}
-      onMouseLeave={e => { if (onClick || href) (e.currentTarget as HTMLDivElement).style.borderColor = BORDER; }}
+      onMouseEnter={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = 'rgba(255,255,255,0.16)'; t.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; t.style.transform = 'translateY(-2px)'; } }}
+      onMouseLeave={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = BORDER; t.style.boxShadow = '0 1px 2px rgba(0,0,0,0.4)'; t.style.transform = 'translateY(0)'; } }}
     >
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: DIM, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: color ?? TEXT, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: DIM, marginTop: 4 }}>{sub}</div>}
-      {(onClick || href) && (
-        <div style={{ fontSize: 10, color: GOLD, marginTop: 6, letterSpacing: .5 }}>DRILL DOWN →</div>
-      )}
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: DIM, marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 700, color: color ?? TEXT, lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: DIM, marginTop: 6 }}>{sub}</div>}
     </div>
   );
   if (href) return <Link href={href} style={{ textDecoration: 'none' }}>{inner}</Link>;
