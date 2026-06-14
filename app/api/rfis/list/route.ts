@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     const rfis = (data || []).map((r: any) => ({
       ...r,
-      is_overdue: r.status === 'open' && r.due_date && r.due_date < today,
+      is_overdue: r.status !== 'answered' && r.status !== 'closed' && !!r.due_date && r.due_date < today,
     }));
     return NextResponse.json({ rfis, source: 'live' });
   } catch {

@@ -8,13 +8,25 @@ export async function POST(req: NextRequest) {
 
   try {
     const formData = await req.formData();
-    const file = formData.get('file') as File | null;
-    const image = formData.get('image') as File | null;
-    const upload = file || image;
+    const upload = (formData.get('file') ?? formData.get('image') ?? formData.get('photo')) as File | null;
     const projectId = (formData.get('projectId') as string) || '';
     const category  = (formData.get('category')  as string) || 'Progress';
     const caption   = (formData.get('caption')   as string) || '';
     const filename  = upload?.name || `photo-${Date.now()}.jpg`;
+
+    // Optional GPS, posted as a 'lat,lng' string.
+    let locationLat: number | null = null;
+    let locationLng: number | null = null;
+    const location = (formData.get('location') as string) || '';
+    if (location) {
+      const [latStr, lngStr] = location.split(',');
+      const lat = Number(latStr);
+      const lng = Number(lngStr);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        locationLat = lat;
+        locationLng = lng;
+      }
+    }
 
     if (!upload) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -64,6 +76,8 @@ export async function POST(req: NextRequest) {
         taken_at: new Date().toISOString(),
         file_size: upload.size,
         mime_type: upload.type || 'image/jpeg',
+        location_lat: locationLat,
+        location_lng: locationLng,
       })
       .select()
       .single();

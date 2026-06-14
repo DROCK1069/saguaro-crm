@@ -15,25 +15,54 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = createServerClient();
-    const { data: p, error } = await db
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .eq('tenant_id', user.tenantId)
-      .single();
+    const [projectRes, payAppsRes, changeOrdersRes] = await Promise.all([
+      db
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .eq('tenant_id', user.tenantId)
+        .single(),
+      db
+        .from('pay_applications')
+        .select('current_payment_due, total_retainage')
+        .eq('project_id', projectId)
+        .eq('tenant_id', user.tenantId),
+      db
+        .from('change_orders')
+        .select('amount')
+        .eq('project_id', projectId)
+        .eq('tenant_id', user.tenantId)
+        .eq('status', 'approved'),
+    ]);
+    const { data: p, error } = projectRes;
     if (error) throw error;
     if (!p) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
     const num = (v: unknown) => Number(v) || 0;
-    const original_contract = num(p.original_contract_value ?? p.original_contract ?? p.contract_value ?? p.contract_amount);
-    const approved_cos = num(p.approved_change_orders ?? p.net_change_by_co);
-    const revised_contract = num(p.revised_contract_value) || (original_contract + approved_cos);
-    const billed_to_date = num(p.billed_to_date ?? p.total_billed);
-    const retainage_held = num(p.retainage_held ?? p.total_retainage);
-    const balance_to_finish = p.balance_to_finish != null ? num(p.balance_to_finish) : revised_contract - billed_to_date;
+
+    // Recompute money from child tables; fall back to the projects roll-up
+    // columns only when a child aggregate is null (no child rows at all).
+    const sumOrNull = (rows: Record<string, unknown>[] | null, key: string): number | null => {
+      if (!rows || rows.length === 0) return null;
+      return rows.reduce((acc, r) => acc + num(r[key]), 0);
+    };
+
+    const payApps = payAppsRes.error ? null : payAppsRes.data;
+    const changeOrders = changeOrdersRes.error ? null : changeOrdersRes.data;
+
+    const billedFromChildren = sumOrNull(payApps, 'current_payment_due');
+    const retainageFromChildren = sumOrNull(payApps, 'total_retainage');
+    const cosFromChildren = sumOrNull(changeOrders, 'amount');
+
+    const original_contract = num(p.original_contract_value ?? p.contract_value ?? p.original_contract ?? p.contract_amount);
+    const approved_cos = cosFromChildren != null ? cosFromChildren : num(p.approved_change_orders ?? p.net_change_by_co);
+    const billed_to_date = billedFromChildren != null ? billedFromChildren : num(p.billed_to_date ?? p.total_billed);
+    const retainage_held = retainageFromChildren != null ? retainageFromChildren : num(p.retainage_held ?? p.total_retainage);
+    const revised_contract = original_contract + approved_cos;
+    const balance_to_finish = revised_contract - billed_to_date;
     const percent_billed = revised_contract > 0
       ? Math.round((billed_to_date / revised_contract) * 100)
-      : num(p.percent_complete);
+      : 0;
 
     return NextResponse.json({
       summary: {

@@ -17,10 +17,14 @@ export async function GET(req: NextRequest) {
       .or(`tenant_id.eq.${user.tenantId},is_global.eq.true`)
       .order('sort_order', { ascending: true });
     if (error) throw error;
-    const templates = (data || []).map((t: Record<string, any>) => ({
-      ...t,
-      checklist_items: t.checklist_items ?? t.items ?? t.fields ?? [],
-    }));
+    const templates = (data || []).map((t: Record<string, any>) => {
+      const ci =
+        (Array.isArray(t.checklist_items) && t.checklist_items.length ? t.checklist_items : null) ??
+        (Array.isArray(t.items) && t.items.length ? t.items : null) ??
+        t.fields ??
+        [];
+      return { ...t, checklist_items: ci };
+    });
     return NextResponse.json({ templates });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

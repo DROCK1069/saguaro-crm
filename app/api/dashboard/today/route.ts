@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Expiring insurance
-    const { data: certs } = await db.from('insurance_certificates').select('*, subcontractors(company_name), projects(name, id)').eq('tenant_id', tenantId).lte('expiry_date', in30).gte('expiry_date', today).eq('status', 'active').limit(3);
+    const { data: certs } = await db.from('subcontractor_insurance').select('*, subcontractors(company_name), projects(name, id)').eq('tenant_id', tenantId).lte('expiry_date', in30).gte('expiry_date', today).eq('status', 'active').limit(3);
     (certs || []).forEach((cert: any) => {
       const days = Math.ceil((new Date(cert.expiry_date).getTime() - Date.now()) / 86400000);
       actions.push({

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       db.from('pay_applications').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ['submitted', 'approved']),
       db.from('projects').select('contract_value').eq('tenant_id', tenantId).eq('status', 'active'),
       db.from('rfis').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'open'),
-      db.from('insurance_certificates').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).lte('expiry_date', new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]),
+      db.from('subcontractor_insurance').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).lte('expiry_date', new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]),
     ]);
 
     const totalContractValue = (projects || []).reduce((s: number, p: any) => s + (p.contract_value || 0), 0);
