@@ -36,8 +36,11 @@ export async function GET(_req: NextRequest) {
       return count || 0;
     }),
     guard(async () => {
-      const { count } = await db.from('punch_list_items').select('id', { count: 'exact', head: true })
-        .eq('tenant_id', t).lt('due_date', today).neq('status', 'complete');
+      // The punch table is `punch_list` (every other route uses it); `punch_list_items`
+      // is an empty/legacy table so the old query always returned 0. The done-status is
+      // `completed` (not `complete`), so exclude that to count only still-open overdue items.
+      const { count } = await db.from('punch_list').select('id', { count: 'exact', head: true })
+        .eq('tenant_id', t).lt('due_date', today).neq('status', 'completed');
       return count || 0;
     }),
   ]);
