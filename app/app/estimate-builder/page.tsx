@@ -102,6 +102,12 @@ interface BidDayAdjustment {
   applied: boolean;
 }
 
+interface TakeoffProjectRef {
+  id: string;
+  name: string;
+  projectName?: string;
+}
+
 /* ─── Constants ─────────────────────────────────────────────────────── */
 const UNITS: UnitType[] = ['EA','SF','LF','CY','SY','TON','HR','LS','GAL','LB','MBF','CF'];
 
@@ -199,6 +205,35 @@ function emptyLineItem(): LineItem {
   return { id: uid(), description: '', quantity: 0, unit: 'EA', unitCost: 0, markupPct: 0, costBreakdown: { labor: 0, material: 0, equipment: 0, subcontractor: 0 } };
 }
 
+const num = (v: unknown): number => {
+  const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
+  return isNaN(n) ? 0 : n;
+};
+
+// Coerce free-text takeoff units onto the page's strict UnitType union (fallback EA).
+function normalizeUnit(u: unknown): UnitType {
+  const up = String(u ?? '').trim().toUpperCase();
+  return (UNITS as string[]).includes(up) ? (up as UnitType) : 'EA';
+}
+
+// RFC-4180-style CSV field escaping.
+function csvCell(v: unknown): string {
+  const s = v == null ? '' : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function triggerDownload(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 function lineTotal(item: LineItem): number {
   return item.quantity * item.unitCost * (1 + item.markupPct / 100);
 }
@@ -241,6 +276,15 @@ export default function EstimateBuilderPage() {
 
   // Bid Day
   const [bidAdjustments, setBidAdjustments] = useState<BidDayAdjustment[]>([]);
+
+  // Takeoff import / persistence
+  const [takeoffPicker, setTakeoffPicker] = useState(false);
+  const [takeoffList, setTakeoffList] = useState<TakeoffProjectRef[]>([]);
+  const [takeoffListLoading, setTakeoffListLoading] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  // Set once line items have been pulled from a real takeoff project; enables real Save.
+  const [linkedTakeoffId, setLinkedTakeoffId] = useState<string | null>(null);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   // Division filter / search
   const [divisionFilter, setDivisionFilter] = useState('');
@@ -331,28 +375,90 @@ export default function EstimateBuilderPage() {
     setDivisions(prev => prev.map(d => d.code === asm.division ? { ...d, items: [...d.items, ...newItems], expanded: true } : d));
   }, []);
 
-  const importFromTakeoff = useCallback(() => {
+  // Open the takeoff picker and load the real list of takeoff projects for this tenant.
+  const openTakeoffPicker = useCallback(() => {
+    setTakeoffPicker(true);
+    setImportError(null);
+    setTakeoffListLoading(true);
+    fetch('/api/takeoff-projects/list')
+      .then(async r => {
+        if (!r.ok) throw new Error(`List request failed (${r.status})`);
+        return r.json();
+      })
+      .then(d => {
+        const rows: any[] = d.takeoffProjects || d.takeoff_projects || (Array.isArray(d) ? d : []);
+        setTakeoffList(rows.map(r => ({
+          id: String(r.id),
+          name: String(r.name || 'Untitled Takeoff'),
+          projectName: r.projects?.name || r.project_name || undefined,
+        })));
+      })
+      .catch((e: unknown) => setImportError(e instanceof Error ? e.message : 'Failed to load takeoff projects.'))
+      .finally(() => setTakeoffListLoading(false));
+  }, []);
+
+  // Fetch real line items for the chosen takeoff project and merge them into divisions,
+  // mapping takeoff_line_items columns -> the builder's LineItem / CSI division structure.
+  const importFromTakeoff = useCallback(async (takeoffId: string) => {
     setSaving(true);
-    setTimeout(() => {
-      const simulated: { divCode: string; items: LineItem[] }[] = [
-        { divCode: '03', items: [
-          { id: uid(), description: 'Foundation concrete (from takeoff)', quantity: 245, unit: 'CY', unitCost: 185, markupPct: 5, costBreakdown: { labor: 45, material: 110, equipment: 20, subcontractor: 10 } },
-          { id: uid(), description: 'Slab on grade 6" (from takeoff)', quantity: 8500, unit: 'SF', unitCost: 8.25, markupPct: 5, costBreakdown: { labor: 2.50, material: 4.25, equipment: 1.00, subcontractor: 0.50 } },
-        ]},
-        { divCode: '05', items: [
-          { id: uid(), description: 'Structural steel W-shapes (from takeoff)', quantity: 85, unit: 'TON', unitCost: 4200, markupPct: 8, costBreakdown: { labor: 1200, material: 2400, equipment: 400, subcontractor: 200 } },
-        ]},
-        { divCode: '26', items: [
-          { id: uid(), description: 'Electrical rough-in (from takeoff)', quantity: 1, unit: 'LS', unitCost: 125000, markupPct: 10, costBreakdown: { labor: 55000, material: 45000, equipment: 5000, subcontractor: 20000 } },
-        ]},
-      ];
-      setDivisions(prev => prev.map(d => {
-        const match = simulated.find(s => s.divCode === d.code);
-        if (!match) return d;
-        return { ...d, items: [...d.items, ...match.items], expanded: true };
-      }));
+    setImportError(null);
+    try {
+      const r = await fetch(`/api/takeoff-projects/${takeoffId}/line-items`);
+      if (!r.ok) throw new Error(`Line items request failed (${r.status})`);
+      const d = await r.json();
+      const rows: any[] = d.lineItems || d.line_items || (Array.isArray(d) ? d : []);
+
+      // Group incoming rows by CSI division (first 2 chars of csi_division / csi_code).
+      const grouped = new Map<string, LineItem[]>();
+      for (const row of rows) {
+        const rawDiv = String(row.csi_division ?? row.csi_code ?? '').trim();
+        const divCode = (rawDiv.match(/\d{2}/)?.[0]) || '01';
+        const labor = num(row.unit_labor_cost);
+        const material = num(row.unit_material_cost);
+        const equipment = num(row.unit_equipment_cost);
+        const subcontractor = num(row.unit_sub_cost);
+        // Prefer an explicit per-unit total; otherwise sum the cost-category unit costs.
+        const unitCost = material + labor + equipment + subcontractor || num(row.unit_cost);
+        const item: LineItem = {
+          id: uid(),
+          description: String(row.description ?? row.csi_description ?? 'Imported item'),
+          quantity: num(row.adjusted_quantity) || num(row.quantity),
+          unit: normalizeUnit(row.unit),
+          unitCost: Math.round(unitCost * 100) / 100,
+          markupPct: num(row.metadata?.markup_pct),
+          costBreakdown: { labor, material, equipment, subcontractor },
+        };
+        const arr = grouped.get(divCode) || [];
+        arr.push(item);
+        grouped.set(divCode, arr);
+      }
+
+      if (grouped.size === 0) {
+        setImportError('That takeoff has no line items to import.');
+        return;
+      }
+
+      setDivisions(prev => {
+        const next = prev.map(d => {
+          const incoming = grouped.get(d.code);
+          if (!incoming) return d;
+          return { ...d, items: [...d.items, ...incoming], expanded: true };
+        });
+        // Surface any divisions not present in the standard CSI list (defensive).
+        for (const [code, items] of grouped) {
+          if (!next.some(d => d.code === code)) {
+            next.push({ code, name: `Division ${code}`, items, expanded: true });
+          }
+        }
+        return next;
+      });
+      setLinkedTakeoffId(takeoffId);
+      setTakeoffPicker(false);
+    } catch (e: unknown) {
+      setImportError(e instanceof Error ? e.message : 'Failed to import takeoff line items.');
+    } finally {
       setSaving(false);
-    }, 1200);
+    }
   }, []);
 
   const saveVersion = useCallback(() => {
@@ -387,13 +493,95 @@ export default function EstimateBuilderPage() {
     setMarkup({ ...t.markup });
   }, []);
 
-  const simulateExport = useCallback((format: ExportFormat) => {
-    setExportingAs(format);
-    setTimeout(() => {
+  // Build a real CSV of every line item + the markup/summary block and download it.
+  const exportCsv = useCallback(() => {
+    setExportingAs('excel');
+    try {
+      const header = ['Division Code', 'Division Name', 'Description', 'Quantity', 'Unit', 'Unit Cost', 'Markup %', 'Labor/Unit', 'Material/Unit', 'Equip/Unit', 'Sub/Unit', 'Line Total'];
+      const lines: string[] = [header.map(csvCell).join(',')];
+      for (const d of divisions) {
+        for (const i of d.items) {
+          lines.push([
+            d.code, d.name, i.description, i.quantity, i.unit,
+            i.unitCost, i.markupPct,
+            i.costBreakdown.labor, i.costBreakdown.material, i.costBreakdown.equipment, i.costBreakdown.subcontractor,
+            (Math.round(lineTotal(i) * 100) / 100),
+          ].map(csvCell).join(','));
+        }
+      }
+      // Summary block
+      lines.push('');
+      const summary: [string, number][] = [
+        ['Direct Cost Subtotal', subtotal],
+        [`Overhead (${markup.overheadPct}%)`, overheadAmt],
+        [`Profit (${markup.profitPct}%)`, profitAmt],
+        [`Contingency (${markup.contingencyPct}%)`, contingencyAmt],
+        [`Bond (${markup.bondPct}%)`, bondAmt],
+        ['Alternates', includedAlternates],
+        ['Allowances', allowanceTotal],
+        ['Bid Day Adjustments', bidDayNet],
+        [`Tax (${markup.taxPct}%)`, taxAmt],
+        ['Grand Total', grandTotal],
+      ];
+      for (const [label, value] of summary) {
+        lines.push([label, '', '', '', '', '', '', '', '', '', '', Math.round(value * 100) / 100].map(csvCell).join(','));
+      }
+      const safeName = (estimateName || 'estimate').replace(/[^a-z0-9-_]+/gi, '-').toLowerCase();
+      const stamp = new Date().toISOString().slice(0, 10);
+      triggerDownload('﻿' + lines.join('\r\n'), `${safeName}-${stamp}.csv`, 'text/csv;charset=utf-8;');
+    } finally {
       setExportingAs(null);
-      alert(`Estimate exported as ${format.toUpperCase()} successfully. (Simulation)`);
-    }, 1500);
+    }
+  }, [divisions, markup, estimateName, subtotal, overheadAmt, profitAmt, contingencyAmt, bondAmt, includedAlternates, allowanceTotal, bidDayNet, taxAmt, grandTotal]);
+
+  // Real PDF path: open the browser's native print dialog (Save as PDF) on a print-styled view.
+  const exportPdf = useCallback(() => {
+    setExportingAs('pdf');
+    try {
+      window.print();
+    } finally {
+      setExportingAs(null);
+    }
   }, []);
+
+  // Persist the current line items to the linked takeoff project via the real POST route.
+  // Only enabled once items have been imported from (and thus linked to) a takeoff project.
+  const saveToTakeoff = useCallback(async () => {
+    if (!linkedTakeoffId) return;
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      const items = divisions.flatMap(d => d.items.filter(i => i.description.trim()).map((i, idx) => ({ div: d.code, idx, item: i })));
+      let okCount = 0;
+      for (const { div, idx, item } of items) {
+        const res = await fetch(`/api/takeoff-projects/${linkedTakeoffId}/line-items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            description: item.description,
+            csi_division: div,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_cost: item.unitCost,
+            material_cost: item.costBreakdown.material,
+            labor_cost: item.costBreakdown.labor,
+            equipment_cost: item.costBreakdown.equipment,
+            markup_pct: item.markupPct,
+            sort_order: idx,
+          }),
+        });
+        if (res.ok) okCount++;
+      }
+      setSaveMsg(okCount === items.length
+        ? `Saved ${okCount} line item${okCount === 1 ? '' : 's'} to takeoff.`
+        : `Saved ${okCount} of ${items.length} line items (some failed).`);
+    } catch {
+      setSaveMsg('Save failed - could not reach the server.');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveMsg(null), 5000);
+    }
+  }, [linkedTakeoffId, divisions]);
 
   /* ─── Money Action Dropdown Helpers ──────────────────────────────── */
   function openLineMenu(id: string) { setMenuId(id); setEditId(null); setAdjustId(null); setDeleteId(null); }
@@ -539,11 +727,19 @@ export default function EstimateBuilderPage() {
             <input type="checkbox" checked={showCostBreakdown} onChange={e => setShowCostBreakdown(e.target.checked)} /> Show Cost Breakdown
           </label>
           <div style={{ flex: 1 }} />
-          <button style={btnStyle(BLUE, '#fff')} onClick={importFromTakeoff} disabled={saving}>{saving ? 'Importing...' : 'Import from Takeoff'}</button>
+          <button style={btnStyle(BLUE, '#fff')} onClick={openTakeoffPicker} disabled={saving}>{saving ? 'Working...' : 'Import from Takeoff'}</button>
+          {linkedTakeoffId ? (
+            <button style={btnStyle(GREEN, '#fff')} onClick={saveToTakeoff} disabled={saving} title="Persist line items to the linked takeoff project">Save to Takeoff</button>
+          ) : (
+            <button style={{ ...btnStyle(BORDER, DIM), cursor: 'not-allowed' }} disabled title="Import from a takeoff first to enable server persistence">Save to Takeoff</button>
+          )}
           <button style={btnStyle(GREEN, '#fff')} onClick={saveVersion}>Save Version (v{versions.length + 1})</button>
-          <button style={btnStyle()} onClick={() => simulateExport('pdf')} disabled={!!exportingAs}>{exportingAs === 'pdf' ? 'Exporting...' : 'Export PDF'}</button>
-          <button style={btnStyle(BORDER, TEXT)} onClick={() => simulateExport('excel')} disabled={!!exportingAs}>{exportingAs === 'excel' ? 'Exporting...' : 'Export Excel'}</button>
+          <button style={btnStyle()} onClick={exportPdf} disabled={!!exportingAs}>{exportingAs === 'pdf' ? 'Opening...' : 'Export PDF'}</button>
+          <button style={btnStyle(BORDER, TEXT)} onClick={exportCsv} disabled={!!exportingAs}>{exportingAs === 'excel' ? 'Exporting...' : 'Export CSV'}</button>
         </div>
+        {saveMsg && (
+          <div style={{ ...cardStyle, marginTop: -8, padding: '10px 16px', borderColor: GREEN, color: GREEN, fontSize: 13 }}>{saveMsg}</div>
+        )}
 
         {/* Markup Configuration */}
         <div style={{ ...cardStyle }}>
@@ -702,6 +898,30 @@ export default function EstimateBuilderPage() {
                 </div>
               ))}
               <button style={{ ...btnSmStyle(BORDER), marginTop: 8 }} onClick={() => { setAddingToDivision(null); setAssemblySearch(''); }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {/* Takeoff Import Picker Modal */}
+        {takeoffPicker && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999 }} onClick={() => !saving && setTakeoffPicker(false)}>
+            <div style={{ ...cardStyle, width: 560, maxHeight: '70vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: GOLD }}>Import from Takeoff</div>
+              <div style={{ color: DIM, fontSize: 12, marginBottom: 12 }}>Select a takeoff project to pull its line items into this estimate.</div>
+              {importError && <div style={{ color: RED, fontSize: 13, marginBottom: 12, padding: '8px 12px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 6 }}>{importError}</div>}
+              {takeoffListLoading && <div style={{ color: DIM, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>Loading takeoff projects...</div>}
+              {!takeoffListLoading && takeoffList.length === 0 && !importError && (
+                <div style={{ color: DIM, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>No takeoff projects found for your account.</div>
+              )}
+              {!takeoffListLoading && takeoffList.map(tp => (
+                <div key={tp.id} style={{ padding: '10px 12px', border: `1px solid ${BORDER}`, borderRadius: 6, marginBottom: 8, cursor: saving ? 'default' : 'pointer', background: BG, opacity: saving ? 0.6 : 1 }}
+                  onClick={() => { if (!saving) importFromTakeoff(tp.id); }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{tp.name}</div>
+                  {tp.projectName && <div style={{ color: DIM, fontSize: 12, marginTop: 2 }}>Project: {tp.projectName}</div>}
+                </div>
+              ))}
+              <button style={{ ...btnSmStyle(BORDER), marginTop: 8 }} onClick={() => setTakeoffPicker(false)} disabled={saving}>{saving ? 'Importing...' : 'Cancel'}</button>
             </div>
           </div>
         )}

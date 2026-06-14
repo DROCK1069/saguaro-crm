@@ -41,7 +41,7 @@ const inp:React.CSSProperties={
 const EMPTY_FORM={
   submittal_number:'',title:'',spec_section:'',trade:'',
   status:'pending',ball_in_court:'Contractor',
-  submitted_date:'',required_date:'',revision:0,notes:'',
+  submitted_at:'',due_date:'',revision_number:0,notes:'',
 };
 
 function Pill({label,color}:{label:string;color:string}){
@@ -124,9 +124,9 @@ export default function SubmittalsPage(){
       trade:sub.trade||'',
       status:sub.status||'pending',
       ball_in_court:sub.ball_in_court||'Contractor',
-      submitted_date:sub.submitted_date?sub.submitted_date.substring(0,10):'',
-      required_date:sub.required_date?sub.required_date.substring(0,10):'',
-      revision:sub.revision??0,
+      submitted_at:sub.submitted_at?sub.submitted_at.substring(0,10):'',
+      due_date:sub.due_date?sub.due_date.substring(0,10):'',
+      revision_number:sub.revision_number??0,
       notes:sub.notes||'',
     });
     setSelected(sub);setMode('edit');
@@ -141,9 +141,9 @@ export default function SubmittalsPage(){
       const h=await getAuthHeaders();
       const payload={
         ...form,
-        revision:Number(form.revision)||0,
-        submitted_date:form.submitted_date||null,
-        required_date:form.required_date||null,
+        revision_number:Number(form.revision_number)||0,
+        submitted_at:form.submitted_at||null,
+        due_date:form.due_date||null,
       };
       if(mode==='create'){
         const r=await fetch('/api/submittals/create',{
@@ -183,7 +183,7 @@ export default function SubmittalsPage(){
   const pending=submittals.filter(s=>s.status==='pending').length;
   const underReview=submittals.filter(s=>s.status==='under_review').length;
   const overdue=submittals.filter(s=>
-    s.required_date&&s.required_date.substring(0,10)<today&&s.status!=='approved'&&s.status!=='rejected'
+    s.due_date&&s.due_date.substring(0,10)<today&&s.status!=='approved'&&s.status!=='rejected'
   ).length;
 
   const filtered=submittals.filter(s=>{
@@ -198,7 +198,7 @@ export default function SubmittalsPage(){
   });
 
   function isOverdue(s:any){
-    return s.required_date&&s.required_date.substring(0,10)<today&&s.status!=='approved'&&s.status!=='rejected';
+    return s.due_date&&s.due_date.substring(0,10)<today&&s.status!=='approved'&&s.status!=='rejected';
   }
 
   return(
@@ -338,11 +338,11 @@ export default function SubmittalsPage(){
                         </td>
                         <td style={{padding:'11px 14px',whiteSpace:'nowrap',
                           color:od?RED:DIM,fontWeight:od?700:400}}>
-                          {s.required_date?fmtDate(s.required_date.substring(0,10)):'—'}
+                          {s.due_date?fmtDate(s.due_date.substring(0,10)):'—'}
                           {od&&<span style={{fontSize:10,marginLeft:4}}>(overdue)</span>}
                         </td>
                         <td style={{padding:'11px 14px',color:DIM,textAlign:'center'}}>
-                          R{s.revision??0}
+                          R{s.revision_number??0}
                         </td>
                       </tr>
                     );
@@ -400,8 +400,8 @@ export default function SubmittalsPage(){
                   </div>
                   <div>
                     <FieldLabel label="Revision"/>
-                    <input type="number" min={0} value={form.revision}
-                      onChange={e=>setForm(f=>({...f,revision:e.target.value}))}
+                    <input type="number" min={0} value={form.revision_number}
+                      onChange={e=>setForm(f=>({...f,revision_number:e.target.value}))}
                       style={inp}/>
                   </div>
                 </div>
@@ -444,14 +444,14 @@ export default function SubmittalsPage(){
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <div>
                     <FieldLabel label="Submitted Date"/>
-                    <input type="date" value={form.submitted_date}
-                      onChange={e=>setForm(f=>({...f,submitted_date:e.target.value}))}
+                    <input type="date" value={form.submitted_at}
+                      onChange={e=>setForm(f=>({...f,submitted_at:e.target.value}))}
                       style={inp}/>
                   </div>
                   <div>
                     <FieldLabel label="Required Date"/>
-                    <input type="date" value={form.required_date}
-                      onChange={e=>setForm(f=>({...f,required_date:e.target.value}))}
+                    <input type="date" value={form.due_date}
+                      onChange={e=>setForm(f=>({...f,due_date:e.target.value}))}
                       style={inp}/>
                   </div>
                 </div>
@@ -483,7 +483,7 @@ export default function SubmittalsPage(){
                 {/* Header card */}
                 <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:16}}>
                   <div style={{fontSize:12,color:GOLD,fontWeight:700,marginBottom:4}}>
-                    {selected.submittal_number||'—'} &bull; R{selected.revision??0}
+                    {selected.submittal_number||'—'} &bull; R{selected.revision_number??0}
                   </div>
                   <div style={{fontSize:16,fontWeight:800,color:TEXT,marginBottom:10}}>
                     {selected.title}
@@ -528,8 +528,8 @@ export default function SubmittalsPage(){
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                   <InfoCard label="Spec Section" value={selected.spec_section}/>
                   <InfoCard label="Trade" value={selected.trade}/>
-                  <InfoCard label="Submitted Date" value={fmtDate(selected.submitted_date)}/>
-                  <InfoCard label="Required Date" value={fmtDate(selected.required_date)}/>
+                  <InfoCard label="Submitted Date" value={selected.submitted_at?fmtDate(selected.submitted_at.substring(0,10)):null}/>
+                  <InfoCard label="Required Date" value={selected.due_date?fmtDate(selected.due_date.substring(0,10)):null}/>
                 </div>
 
                 {selected.notes&&(

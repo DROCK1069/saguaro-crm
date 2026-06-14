@@ -5,7 +5,7 @@
  */
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   MagnifyingGlass,
   Bell,
@@ -56,6 +56,7 @@ export default function AppTopBar({
   userInitials: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const sidebarWidth = sidebarCollapsed ? sidebarTokens.widthCollapsed : sidebarTokens.width;
 
@@ -223,7 +224,7 @@ export default function AppTopBar({
 
       {/* Notifications */}
       <button
-        onClick={() => window.dispatchEvent(new Event('toggle-notifications'))}
+        onClick={() => router.push('/app/notifications')}
         style={{
           display: 'flex',
           alignItems: 'center',

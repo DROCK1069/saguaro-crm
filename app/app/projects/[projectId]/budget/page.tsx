@@ -149,22 +149,41 @@ export default function BudgetPage() {
     } catch { showToast('Deleted locally.'); }
   }
 
+  function csvCell(v: unknown): string {
+    const s = v == null ? '' : String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
   async function exportReport() {
     setExporting(true);
     try {
       const r = await fetch('/api/reports/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'job_cost_summary', projectId }),
+        body: JSON.stringify({ reportType: 'job-cost', projectId }),
       });
       const d = await r.json();
-      if (d.url || d.pdfUrl) {
-        window.open(d.url || d.pdfUrl, '_blank');
-      } else {
-        showToast('Report queued. Check Reports when ready.');
+      const columns: string[] = Array.isArray(d.columns) ? d.columns : [];
+      const rows: unknown[][] = Array.isArray(d.rows) ? d.rows : [];
+      if (!columns.length || !rows.length) {
+        showToast(d.message || d.error || 'No budget data to export.', false);
+        return;
       }
+      const csv = [columns, ...rows]
+        .map(row => (Array.isArray(row) ? row : [row]).map(csvCell).join(','))
+        .join('\r\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `job-cost-summary-${projectId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('Exported');
     } catch {
-      showToast('Export request sent. Check Reports.', true);
+      showToast('Export failed.', false);
     } finally {
       setExporting(false);
     }

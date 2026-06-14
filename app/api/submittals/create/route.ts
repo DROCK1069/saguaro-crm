@@ -27,7 +27,10 @@ export async function POST(req: NextRequest) {
       trade: body.trade || null,
       status: body.status || 'pending',
       priority: body.priority || null,
-      due_date: body.due_date || body.dueDate || null,
+      ball_in_court: body.ball_in_court || 'Contractor',
+      due_date: body.required_date || body.due_date || body.dueDate || null,
+      submitted_at: body.submitted_date || null,
+      revision_number: body.revision ?? 0,
       notes: body.notes || null,
     }).select().single();
     if (error) throw error;
