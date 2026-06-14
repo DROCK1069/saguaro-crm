@@ -5,6 +5,7 @@
  */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import type { Database } from './database.types';
 
 const _URL     = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const _ANON    = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -22,20 +23,20 @@ const URL: string     = _URL;
 const ANON: string    = _ANON;
 const SERVICE: string = _SERVICE;
 
-let _serviceClient: SupabaseClient | null = null;
+let _serviceClient: SupabaseClient<Database> | null = null;
 
-/** Service-role client — bypasses RLS. Server only. */
-export function createServerClient(): SupabaseClient {
+/** Service-role client — bypasses RLS. Server only. Typed against the live DB schema. */
+export function createServerClient(): SupabaseClient<Database> {
   if (_serviceClient) return _serviceClient;
-  _serviceClient = createClient(URL, SERVICE, {
+  _serviceClient = createClient<Database>(URL, SERVICE, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   return _serviceClient;
 }
 
 /** Browser-safe anon client */
-export function createBrowserClient(): SupabaseClient {
-  return createClient(URL, ANON);
+export function createBrowserClient(): SupabaseClient<Database> {
+  return createClient<Database>(URL, ANON);
 }
 
 /** Returns true if string looks like a JWT (3 base64url segments). */

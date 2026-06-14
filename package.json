@@ -28,7 +28,8 @@
     "seed:sandbox": "npx tsx -e \"import('./sandbox-manager').then(m => m.SandboxManager)\"",
     "db:push": "supabase db push",
     "db:pull": "supabase db pull",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --project-id jddfvugsaosvgllbkzch > lib/database.types.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",
