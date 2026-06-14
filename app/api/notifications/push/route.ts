@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     title: body.title || '',
     body: body.body || body.message || '',
     type: body.type || 'general',
-    url: body.url || null,
+    link: body.url || null,
     is_read: false,
   };
 

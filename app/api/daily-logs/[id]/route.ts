@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json();
     const db = createServerClient();
     const allowed = [
-      'log_date','weather','temperature_high','temperature_low','crew_count',
+      'log_date','weather','high_temp','low_temp','crew_count',
       'work_performed','delays','safety_notes','materials_delivered','visitors','notes',
     ];
     const fields: Record<string, any> = {};

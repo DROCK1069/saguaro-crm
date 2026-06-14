@@ -223,11 +223,11 @@ export async function POST(
         await supabase
           .from('bim_elements')
           .delete()
-          .eq('model_id', modelId)
+          .eq('bim_model_id', modelId)
           .eq('tenant_id', user.tenantId);
 
         const elements = parsed.elements.map((el: any, idx: number) => ({
-          model_id: modelId,
+          bim_model_id: modelId,
           tenant_id: user.tenantId,
           project_id: model.project_id,
           element_type: String(el.element_type || 'other').toLowerCase(),

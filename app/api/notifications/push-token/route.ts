@@ -20,14 +20,12 @@ export async function POST(req: NextRequest) {
 
     const db = createServerClient();
 
-    // Upsert: one row per user+token combo. Update platform + last_seen on conflict.
+    // Upsert: one row per user+token combo. Update platform on conflict.
     const { error } = await db.from('push_tokens').upsert(
       {
         user_id: user.id,
-        tenant_id: user.tenantId,
         token,
         platform: platform ?? 'unknown',
-        last_seen: new Date().toISOString(),
       },
       { onConflict: 'user_id,token' },
     );

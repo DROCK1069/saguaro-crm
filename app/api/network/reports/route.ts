@@ -68,7 +68,7 @@ async function buildReportData(
         .from('cable_runs')
         .select('*')
         .eq('network_project_id', networkProjectId)
-        .order('cable_id', { ascending: true });
+        .order('cable_label', { ascending: true });
 
       const totalCables = cables?.length || 0;
       const testedCount = cables?.filter((c: any) => c.tested).length || 0;

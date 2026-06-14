@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     // Fetch recent incidents or observations for context
     const { data: recentObs } = await db
       .from('observations')
-      .select('title, category, severity, status')
+      .select('title, observation_type, severity, status')
       .eq('project_id', project_id)
       .eq('tenant_id', user.tenantId)
       .order('created_at', { ascending: false })

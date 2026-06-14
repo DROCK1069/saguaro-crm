@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (body._type === 'assignment') {
       const { data, error } = await supabase.from('user_role_assignments').insert({
         tenant_id: user.tenantId, user_id: body.user_id, project_id: body.project_id || null,
-        role_id: body.role_id, granted_by: user.id,
+        role_id: body.role_id,
       }).select().single();
       if (error) throw error;
       return NextResponse.json({ assignment: data }, { status: 201 });

@@ -262,7 +262,7 @@ export default function CustomersPage() {
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD }}>Actions</h3>
                 <div style={{ display: 'grid', gap: 10 }}>
                   <button onClick={() => {
-                    fetch('/api/projects', {
+                    fetch('/api/projects/create', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ customer_id: c.id, name: `${c.name} Project` }),

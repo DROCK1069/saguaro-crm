@@ -7,7 +7,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
   try {
     const supabase = createServerClient();
     const { data: forms } = await supabase.from('prequalification_forms').select('*').eq('tenant_id', user.tenantId).order('created_at', { ascending: false });
-    const { data: submissions } = await supabase.from('prequalification_submissions').select('*').eq('tenant_id', user.tenantId).order('submitted_at', { ascending: false });
+    const { data: submissions } = await supabase.from('prequalification_submissions').select('*').eq('tenant_id', user.tenantId).order('created_at', { ascending: false });
     return NextResponse.json({ forms: forms ?? [], submissions: submissions ?? [] });
   } catch { return NextResponse.json({ forms: [], submissions: [] }); }
 }

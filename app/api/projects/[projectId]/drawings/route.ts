@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
       .from('drawings')
       .select('*')
       .eq('project_id', projectId)
-      .order('sheet', { ascending: true });
+      .order('sheet_number', { ascending: true });
     if (error) throw error;
     return NextResponse.json({ drawings: data ?? [] });
   } catch {

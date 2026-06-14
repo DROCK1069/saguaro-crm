@@ -246,10 +246,10 @@ export default function WarrantyClaimsPage() {
   /* update status */
   async function updateStatus(claim: WarrantyClaim, newStatus: string) {
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims`, {
+      await fetch(`/api/projects/${selectedProject}/warranty-claims/${claim.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: claim.id, status: newStatus, completed_date: newStatus === 'completed' ? today : claim.completed_date }),
+        body: JSON.stringify({ status: newStatus, completed_date: newStatus === 'completed' ? today : claim.completed_date }),
       });
       setClaims(prev => prev.map(c => c.id === claim.id ? { ...c, status: newStatus, completed_date: newStatus === 'completed' ? today : c.completed_date } : c));
       if (detailClaim?.id === claim.id) setDetailClaim(prev => prev ? { ...prev, status: newStatus, completed_date: newStatus === 'completed' ? today : prev.completed_date } : prev);
@@ -261,10 +261,10 @@ export default function WarrantyClaimsPage() {
   async function handleDispatch() {
     if (!dispatchClaim) return;
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims`, {
+      await fetch(`/api/projects/${selectedProject}/warranty-claims/${dispatchClaim.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: dispatchClaim.id, ...dispatchForm, status: dispatchForm.scheduled_date ? 'scheduled' : dispatchClaim.status }),
+        body: JSON.stringify({ ...dispatchForm, status: dispatchForm.scheduled_date ? 'scheduled' : dispatchClaim.status }),
       });
       setClaims(prev => prev.map(c => c.id === dispatchClaim.id ? { ...c, ...dispatchForm, status: dispatchForm.scheduled_date ? 'scheduled' : c.status } : c));
       flash('Contractor dispatched.');
@@ -278,10 +278,10 @@ export default function WarrantyClaimsPage() {
     const entry: CommEntry = { id: `cm-${Date.now()}`, date: new Date().toISOString(), from: 'Staff', message: commMsg };
     const updated = { ...detailClaim, communication_log: [...(detailClaim.communication_log || []), entry] };
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims`, {
+      await fetch(`/api/projects/${selectedProject}/warranty-claims/${detailClaim.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: detailClaim.id, communication_log: updated.communication_log }),
+        body: JSON.stringify({ communication_log: updated.communication_log }),
       });
     } catch { /* optimistic */ }
     setDetailClaim(updated);
@@ -292,10 +292,10 @@ export default function WarrantyClaimsPage() {
   /* update resolution + cost on detail */
   async function saveResolution(claim: WarrantyClaim, resolution: string, cost: number) {
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims`, {
+      await fetch(`/api/projects/${selectedProject}/warranty-claims/${claim.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: claim.id, resolution, cost }),
+        body: JSON.stringify({ resolution, cost }),
       });
       setClaims(prev => prev.map(c => c.id === claim.id ? { ...c, resolution, cost } : c));
       setDetailClaim(prev => prev ? { ...prev, resolution, cost } : prev);

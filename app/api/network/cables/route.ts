@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       .from('cable_runs')
       .select('*')
       .eq('network_project_id', networkProjectId)
-      .order('cable_id', { ascending: true });
+      .order('cable_label', { ascending: true });
 
     if (error) throw error;
 

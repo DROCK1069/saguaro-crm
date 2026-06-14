@@ -7,9 +7,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     const db = createServerClient();
-    const allowed = ['drawing_number','title','discipline','revision','revision_date','status','url','notes'];
+    // Map inbound API keys to real `drawings` columns
+    // (sheet_number<-drawing_number, name<-title, version<-revision).
+    const fieldMap: Record<string, string> = {
+      drawing_number: 'sheet_number',
+      title: 'name',
+      discipline: 'discipline',
+      revision: 'version',
+      revision_date: 'revision_date',
+      status: 'status',
+      url: 'url',
+      notes: 'notes',
+    };
     const fields: Record<string, any> = {};
-    for (const k of allowed) { if (body[k] !== undefined) fields[k] = body[k]; }
+    for (const k of Object.keys(fieldMap)) { if (body[k] !== undefined) fields[fieldMap[k]] = body[k]; }
     const { error } = await db.from('drawings').update(fields).eq('id', id).eq('tenant_id', user.tenantId);
     if (error) throw error;
     return NextResponse.json({ success: true });

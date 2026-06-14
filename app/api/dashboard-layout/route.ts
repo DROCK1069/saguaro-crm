@@ -20,7 +20,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { data, error } = await supabase.from('dashboard_layouts').upsert({
       tenant_id: user.tenantId, user_id: user.id,
-      layout_name: body.layout_name || 'default', widgets: body.widgets || [],
+      layout_data: {
+        name: body.layout_name || 'default',
+        widgets: body.widgets || [],
+      },
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' }).select().single();
     if (error) throw error;

@@ -19,12 +19,19 @@ export async function POST(req: NextRequest) {
     const supabase = createServerClient();
     const body = await req.json();
     const { data, error } = await supabase.from('report_templates').insert({
-      tenant_id: user.tenantId, name: body.name, description: body.description || null,
-      report_type: body.report_type, modules: body.modules || [], filters: body.filters || {},
-      columns: body.columns || [], chart_config: body.chart_config || {},
-      schedule_frequency: body.schedule_frequency || null,
-      schedule_recipients: body.schedule_recipients || [],
-      is_default: body.is_default || false, created_by: user.id,
+      tenant_id: user.tenantId, name: body.name,
+      report_type: body.report_type,
+      is_default: body.is_default || false,
+      template_data: {
+        description: body.description || null,
+        modules: body.modules || [],
+        filters: body.filters || {},
+        columns: body.columns || [],
+        chart_config: body.chart_config || {},
+        schedule_frequency: body.schedule_frequency || null,
+        schedule_recipients: body.schedule_recipients || [],
+        created_by: user.id,
+      },
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ report: data }, { status: 201 });

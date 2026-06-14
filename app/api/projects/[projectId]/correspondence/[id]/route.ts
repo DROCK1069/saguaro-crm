@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       .from('correspondence_read_receipts')
       .upsert({
         correspondence_id: params.id,
-        read_by: user.email,
+        recipient_email: user.email,
         read_at: new Date().toISOString(),
       });
     if (error) return NextResponse.json({ success: true });
