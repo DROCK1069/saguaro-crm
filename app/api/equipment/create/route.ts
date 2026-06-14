@@ -17,10 +17,11 @@ export async function POST(req: NextRequest) {
     project_id: body.project_id || body.projectId || null,
     equipment_name: body.equipment_name || body.equipmentName || '',
     operator: body.operator || '',
-    hours_used: Number(body.hours_used || body.hoursUsed) || 0,
+    hours: Number(body.hours || body.hours_used || body.hoursUsed) || 0,
     condition: body.condition || 'Good',
     notes: body.notes || '',
-    work_date:
+    log_date:
+      body.log_date ||
       body.work_date ||
       body.workDate ||
       new Date().toISOString().split('T')[0],

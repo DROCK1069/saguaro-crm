@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase-server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
@@ -11,13 +11,16 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
     const image = formData.get('image') as File | null;
     const upload = file || image;
-    const projectId = (formData.get('projectId') as string) || 'unknown';
+    const projectId = (formData.get('projectId') as string) || '';
     const category  = (formData.get('category')  as string) || 'Progress';
     const caption   = (formData.get('caption')   as string) || '';
     const filename  = upload?.name || `photo-${Date.now()}.jpg`;
 
     if (!upload) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+    if (!projectId) {
+      return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
     const supabase = createClient(
@@ -42,18 +45,37 @@ export async function POST(req: NextRequest) {
       .getPublicUrl(storagePath);
 
     const url = urlData?.publicUrl || null;
-    const photoId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    if (!url) {
+      return NextResponse.json({ error: 'Failed to resolve public URL' }, { status: 500 });
+    }
 
-    return NextResponse.json({
-      success: true,
-      photo: {
-        id: photoId,
+    // Persist a row so the photo shows up in photos/list (reads from `photos`).
+    const db = createServerClient();
+    const { data: photo, error: insertError } = await db
+      .from('photos')
+      .insert({
+        tenant_id: user.tenantId,
+        project_id: projectId,
         url,
         filename,
         category,
         caption,
-        created_at: new Date().toISOString(),
-      },
+        taken_by: user.email || '',
+        taken_at: new Date().toISOString(),
+        file_size: upload.size,
+        mime_type: upload.type || 'image/jpeg',
+      })
+      .select()
+      .single();
+
+    if (insertError || !photo) {
+      console.error('[photos/upload] insert error:', insertError?.message);
+      return NextResponse.json({ error: insertError?.message || 'Failed to save photo' }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      photo,
     });
   } catch (err: unknown) {
     const msg = 'Internal server error';
