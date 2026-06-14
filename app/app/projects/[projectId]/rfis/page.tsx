@@ -2,6 +2,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { PageWrap, SectionHeader, StatCard, Badge, Btn, Card, CardHeader, CardBody, Table, T } from '@/components/ui/shell';
+import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/EmptyState';
+import { Question, WarningCircle } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
 interface RFI {
@@ -62,10 +65,10 @@ export default function RFIsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const totalCount = rfis.length;
-  const openCount = rfis.filter(r => r.status === 'open').length;
-  const answeredCount = rfis.filter(r => r.status === 'answered').length;
-  const overdueCount = rfis.filter(r => r.is_overdue).length;
+  const totalCount = rfis?.length ?? 0;
+  const openCount = rfis?.filter(r => r.status === 'open').length ?? 0;
+  const answeredCount = rfis?.filter(r => r.status === 'answered').length ?? 0;
+  const overdueCount = rfis?.filter(r => r.is_overdue).length ?? 0;
 
   function daysOpen(rfi: RFI): number {
     const created = new Date(rfi.created_at || Date.now());
@@ -138,18 +141,40 @@ export default function RFIsPage() {
         />
       </div>
 
-      {/* Stat Cards */}
+      {/* Stat Cards — skeletons while loading, greyed/suppressed on error, real values otherwise */}
       <div style={{ padding: '0 24px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-        <StatCard icon="📋" label="Total RFIs" value={String(totalCount)} />
-        <StatCard icon="📂" label="Open" value={String(openCount)} />
-        <StatCard icon="✅" label="Answered" value={String(answeredCount)} />
-        <StatCard icon="⏰" label="Overdue" value={String(overdueCount)} sub={overdueCount > 0 ? 'Needs attention' : undefined} />
+        {loading ? (
+          <>
+            <SkeletonKPI />
+            <SkeletonKPI />
+            <SkeletonKPI />
+            <SkeletonKPI />
+          </>
+        ) : error ? (
+          <div style={{ gridColumn: '1 / -1', opacity: 0.55 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              <StatCard icon="📋" label="Total RFIs" value="—" />
+              <StatCard icon="📂" label="Open" value="—" />
+              <StatCard icon="✅" label="Answered" value="—" />
+              <StatCard icon="⏰" label="Overdue" value="—" />
+            </div>
+          </div>
+        ) : (
+          <>
+            <StatCard icon="📋" label="Total RFIs" value={String(totalCount ?? 0)} />
+            <StatCard icon="📂" label="Open" value={String(openCount ?? 0)} />
+            <StatCard icon="✅" label="Answered" value={String(answeredCount ?? 0)} />
+            <StatCard icon="⏰" label="Overdue" value={String(overdueCount ?? 0)} sub={overdueCount > 0 ? 'Needs attention' : undefined} />
+          </>
+        )}
       </div>
 
       {successMsg && (
         <div style={{ margin: '0 24px 12px', padding: '10px 14px', background: T.greenDim, border: `1px solid rgba(34,197,94,0.4)`, borderRadius: 8, color: T.green, fontSize: 13 }}>{successMsg}</div>
       )}
-      {error && (
+      {/* Inline banner for action errors (form/answer) when data is already on screen;
+          full-load errors are surfaced by the error block in the table below instead. */}
+      {error && !loading && rfis.length > 0 && (
         <div style={{ margin: '0 24px 12px', padding: '10px 14px', background: T.redDim, border: `1px solid rgba(239,68,68,0.4)`, borderRadius: 8, color: T.red, fontSize: 13 }}>{error}</div>
       )}
 
@@ -191,12 +216,32 @@ export default function RFIsPage() {
         <Card>
           <CardBody style={{ padding: 0 }}>
             {loading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: T.muted }}>Loading RFIs...</div>
+              <div>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+              </div>
+            ) : error ? (
+              <div style={{ padding: 24 }}>
+                <EmptyState
+                  icon={<WarningCircle size={32} weight="duotone" />}
+                  title="Couldn't load RFIs"
+                  description={error || 'Something went wrong while loading Requests for Information. Please try again.'}
+                  actionLabel="Retry"
+                  onAction={load}
+                />
+              </div>
             ) : rfis.length === 0 ? (
-              <div style={{ padding: 56, textAlign: 'center' }}>
-                <div style={{ fontWeight: 700, fontSize: 16, color: T.white, marginBottom: 8 }}>No RFIs yet</div>
-                <div style={{ fontSize: 13, color: T.muted, marginBottom: 20 }}>Create your first Request for Information.</div>
-                <Btn onClick={() => setShowForm(true)}>+ Create First RFI</Btn>
+              <div style={{ padding: 24 }}>
+                <EmptyState
+                  icon={<Question size={32} weight="duotone" />}
+                  title="No RFIs yet"
+                  description="Create your first Request for Information when you need clarification on plans, specs, or project details."
+                  actionLabel="Create First RFI"
+                  onAction={() => setShowForm(true)}
+                />
               </div>
             ) : (
               <>

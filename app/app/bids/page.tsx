@@ -2,6 +2,9 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { WarningCircle } from '@phosphor-icons/react';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
 const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#ef4444',GREEN='#3dd68c';
 
@@ -51,7 +54,7 @@ function BidsPageInner() {
   const [toast, setToast] = useState<string|null>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
-  const fmt = (n: number) => '$' + ((n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const fmt = (n: number | null | undefined) => '$' + ((n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
 
   function openMenu(id: string) { setMenuId(id); setEditId(null); setAdjustId(null); setNoteId(null); setDeleteId(null); }
   function closeAll() { setMenuId(null); setEditId(null); setAdjustId(null); setNoteId(null); setDeleteId(null); }
@@ -117,32 +120,54 @@ function BidsPageInner() {
 
   // Pipeline opportunities — fetched from bid_packages in 'bidding' status
   const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [pipelineLoading, setPipelineLoading] = useState(true);
+  const [pipelineError, setPipelineError] = useState(false);
+
+  async function fetchPipeline() {
+    setPipelineLoading(true);
+    setPipelineError(false);
+    try {
+      const r = await fetch('/api/bid-packages/list');
+      if (!r.ok) throw new Error('Failed to load bid packages');
+      const d = await r.json();
+      setOpportunities((d.bidPackages || []).filter((bp: any) => bp.status === 'open' || bp.status === 'bidding').slice(0, 20));
+    } catch {
+      setPipelineError(true);
+    } finally {
+      setPipelineLoading(false);
+    }
+  }
+
   useEffect(() => {
-    fetch('/api/bid-packages/list')
-      .then(r => r.json())
-      .then(d => setOpportunities((d.bidPackages || []).filter((bp: any) => bp.status === 'open' || bp.status === 'bidding').slice(0, 20)))
-      .catch(() => {});
+    fetchPipeline();
   }, []);
+
+  // History error state (loading/empty handled below)
+  const [historyError, setHistoryError] = useState(false);
 
   // Load history when tab switches to history
   useEffect(() => {
-    if (tab === 'history' && historyBids.length === 0) {
+    if (tab === 'history' && historyBids.length === 0 && !historyError) {
       fetchHistory();
     }
   }, [tab]);
 
   async function fetchHistory(outcome?: string) {
     setHistoryLoading(true);
+    setHistoryError(false);
     try {
       const params = new URLSearchParams();
       if (outcome && outcome !== 'all') params.set('outcome', outcome);
       params.set('limit', '50');
       const r = await fetch('/api/bids/history?' + params.toString());
+      if (!r.ok) throw new Error('Failed to load bid history');
       const d = await r.json();
       setHistoryBids(d.bids || []);
       setHistoryStats(d.stats || null);
     } catch {
-      // keep empty
+      setHistoryError(true);
+      setHistoryBids([]);
+      setHistoryStats(null);
     } finally {
       setHistoryLoading(false);
     }
@@ -224,7 +249,27 @@ function BidsPageInner() {
 
       {/* ── Pipeline Tab ──────────────────────────────────────────────────────── */}
       {tab==='pipeline'&&<div>
-        {opportunities.length === 0 ? (
+        {pipelineLoading ? (
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {Array.from({length:6}).map((_,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:16,padding:'14px',border:`1px solid rgba(38,51,71,.5)`,borderRadius:8}}>
+                <Skeleton width="30%" height={14}/>
+                <Skeleton width="15%" height={14}/>
+                <Skeleton width="12%" height={14}/>
+                <Skeleton width="15%" height={14}/>
+                <Skeleton width={64} height={24} borderRadius={5}/>
+              </div>
+            ))}
+          </div>
+        ) : pipelineError ? (
+          <EmptyState
+            icon={<WarningCircle size={32} weight="duotone" />}
+            title="Couldn't load opportunity pipeline"
+            description="We couldn't reach your bid packages. Check your connection and try again."
+            actionLabel="Retry"
+            onAction={fetchPipeline}
+          />
+        ) : opportunities.length === 0 ? (
           <div style={{textAlign:'center' as const,padding:60,color:DIM}}>
             <div style={{fontSize:40,marginBottom:12}}>📊</div>
             <div style={{fontSize:18,fontWeight:700,color:TEXT,marginBottom:8}}>No Open Bid Packages</div>
@@ -266,34 +311,61 @@ function BidsPageInner() {
 
       {/* ── History Tab ───────────────────────────────────────────────────────── */}
       {tab==='history'&&<div>
-        {/* Stats */}
-        {historyStats&&<div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:20}}>
-          {[
-            {l:'Total Bids',v:historyStats.totalBids,c:TEXT},
-            {l:'Won',v:historyStats.wonBids,c:'#3dd68c'},
-            {l:'Lost',v:historyStats.lostBids,c:'#ff7070'},
-            {l:'Win Rate',v:historyStats.winRate+'%',c:historyStats.winRate>=50?'#3dd68c':GOLD},
-            {l:'Avg Margin',v:historyStats.avgMargin.toFixed(1)+'%',c:GOLD},
-          ].map(k=>(
-            <div key={k.l} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'14px 16px'}}>
-              <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,color:DIM,marginBottom:5}}>{k.l}</div>
-              <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
-            </div>
-          ))}
-        </div>}
+        {/* Stats — skeletons while loading, real values once loaded (hidden on error) */}
+        {historyLoading ? (
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:20}}>
+            {Array.from({length:5}).map((_,i)=>(<SkeletonKPI key={i}/>))}
+          </div>
+        ) : (!historyError && historyStats) ? (
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:20}}>
+            {[
+              {l:'Total Bids',v:(historyStats.totalBids ?? 0),c:TEXT},
+              {l:'Won',v:(historyStats.wonBids ?? 0),c:'#3dd68c'},
+              {l:'Lost',v:(historyStats.lostBids ?? 0),c:'#ff7070'},
+              {l:'Win Rate',v:(historyStats.winRate ?? 0)+'%',c:(historyStats.winRate ?? 0)>=50?'#3dd68c':GOLD},
+              {l:'Avg Margin',v:(historyStats.avgMargin ?? 0).toFixed(1)+'%',c:GOLD},
+            ].map(k=>(
+              <div key={k.l} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'14px 16px'}}>
+                <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,color:DIM,marginBottom:5}}>{k.l}</div>
+                <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {/* Filter pills */}
         <div style={{display:'flex',gap:8,marginBottom:16}}>
           {(['all','won','lost','pending'] as const).map(f=>(
             <button key={f} onClick={()=>handleHistoryFilter(f)} style={{padding:'5px 14px',border:`1px solid ${historyFilter===f?GOLD:BORDER}`,borderRadius:20,background:historyFilter===f?'rgba(212,160,23,.12)':'transparent',color:historyFilter===f?GOLD:DIM,fontSize:12,fontWeight:historyFilter===f?700:500,cursor:'pointer',textTransform:'capitalize' as const}}>{f}</button>
           ))}
         </div>
-        {historyLoading&&<div style={{padding:40,textAlign:'center' as const,color:DIM}}>Loading bid history…</div>}
-        {!historyLoading&&historyBids.length===0&&<div style={{padding:60,textAlign:'center' as const,color:DIM}}>
+        {/* LOADING — skeleton rows, never computed zeros */}
+        {historyLoading&&<div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {Array.from({length:6}).map((_,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:16,padding:'14px',border:`1px solid rgba(38,51,71,.5)`,borderRadius:8}}>
+              <Skeleton width="22%" height={14}/>
+              <Skeleton width="12%" height={14}/>
+              <Skeleton width="12%" height={14}/>
+              <Skeleton width="14%" height={14}/>
+              <Skeleton width="10%" height={14}/>
+              <Skeleton width={70} height={20} borderRadius={4}/>
+            </div>
+          ))}
+        </div>}
+        {/* ERROR — distinct from empty, with Retry */}
+        {!historyLoading&&historyError&&<EmptyState
+          icon={<WarningCircle size={32} weight="duotone" />}
+          title="Couldn't load bid history"
+          description="We couldn't reach your bid history. Check your connection and try again."
+          actionLabel="Retry"
+          onAction={()=>fetchHistory(historyFilter==='all'?undefined:historyFilter)}
+        />}
+        {/* EMPTY — genuine zero results on a successful load */}
+        {!historyLoading&&!historyError&&historyBids.length===0&&<div style={{padding:60,textAlign:'center' as const,color:DIM}}>
           <div style={{fontSize:32,marginBottom:12}}>📊</div>
           <div style={{fontSize:16,fontWeight:700,color:TEXT,marginBottom:8}}>No bid history found</div>
-          <button onClick={()=>fetchHistory()} style={{padding:'8px 18px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Retry</button>
+          <button onClick={()=>fetchHistory(historyFilter==='all'?undefined:historyFilter)} style={{padding:'8px 18px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Retry</button>
         </div>}
-        {!historyLoading&&historyBids.length>0&&<table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
+        {!historyLoading&&!historyError&&historyBids.length>0&&<table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
           <thead><tr style={{background:'#0a1117'}}>
             {['Project','Type','Bid Date','Bid Amount','Margin %','Location','Outcome','Awarded To'].map(h=>(
               <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>

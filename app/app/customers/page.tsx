@@ -1,5 +1,8 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { EmptyState } from '../../../components/EmptyState';
+import { SkeletonRow } from '../../../components/ui/Skeleton';
+import { UsersThree, WarningCircle } from '@phosphor-icons/react';
 
 /* ─── Palette ─── */
 const BG = '#0F1419', CARD = '#1A1F2E', GOLD = '#D4A017', GREEN = '#22C55E';
@@ -34,12 +37,13 @@ const SOURCES = ['Website', 'Design Studio', 'Referral', 'Social Media', 'Sage C
 const STATES_LIST = ['AZ', 'CA', 'CO', 'FL', 'GA', 'IL', 'MA', 'MI', 'MN', 'NC', 'NJ', 'NV', 'NY', 'OH', 'OR', 'PA', 'TX', 'VA', 'WA', 'WI'];
 
 /* ─── Helpers ─── */
-const fmt = (n: number) => '$' + (n || 0).toLocaleString();
+const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString();
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSource, setFilterSource] = useState<string>('all');
@@ -47,86 +51,25 @@ export default function CustomersPage() {
   const [selected, setSelected] = useState<Customer | null>(null);
   const [detailTab, setDetailTab] = useState<'overview' | 'discovery' | 'recommendations' | 'designs' | 'materials' | 'conversations'>('overview');
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch('/api/customers/profiles');
-        const data = await res.json();
-        if (data?.customers?.length) {
-          setCustomers(data.customers);
-        } else throw new Error('No data');
-      } catch {
-        // Seed data for development
-        setCustomers([
-          {
-            id: '1', name: 'Sarah Mitchell', email: 'sarah.m@email.com', phone: '(480) 555-0123',
-            state: 'AZ', city: 'Scottsdale', climate_zone: 'Hot & Dry', utility_rate: 0.13,
-            status: 'qualified', lead_score: 82, source: 'Design Studio',
-            created_at: '2026-03-15T10:00:00Z', updated_at: '2026-03-27T14:30:00Z',
-            discovery_answers: { project_type: 'remodel', budget: '50k_100k', priorities: 'energy_savings', timeline: '3_months', smart_interest: 'intermediate' },
-            recommendations: [
-              { id: 'r1', title: 'Smart Climate System', status: 'accepted' },
-              { id: 'r2', title: 'Solar Panel Array', status: 'accepted' },
-              { id: 'r3', title: 'Smart Lighting', status: 'pending' },
-            ],
-            design_sessions: [{ id: 'd1', room: 'Kitchen', style: 'Modern', date: '2026-03-16' }],
-            material_selections: [{ name: 'Quartz Countertop', qty: 30, cost: 2550 }],
-            conversations: [{ date: '2026-03-27', preview: 'Asked about solar panel ROI for Scottsdale climate' }],
-            score_breakdown: { engagement: 90, budget: 85, timeline: 75, fit: 80 },
-          },
-          {
-            id: '2', name: 'James Chen', email: 'jchen@company.com', phone: '(415) 555-0456',
-            state: 'CA', city: 'San Francisco', climate_zone: 'Mediterranean', utility_rate: 0.27,
-            status: 'proposal', lead_score: 91, source: 'Sage Chat',
-            created_at: '2026-03-10T08:00:00Z', updated_at: '2026-03-26T16:00:00Z',
-            discovery_answers: { project_type: 'new_build', budget: '100k_plus', priorities: 'home_value', timeline: 'asap' },
-            recommendations: [
-              { id: 'r4', title: 'Full Smart Home Package', status: 'accepted' },
-              { id: 'r5', title: 'Solar + Battery', status: 'accepted' },
-            ],
-            score_breakdown: { engagement: 95, budget: 100, timeline: 90, fit: 80 },
-          },
-          {
-            id: '3', name: 'Maria Rodriguez', email: 'maria.r@gmail.com', phone: '(512) 555-0789',
-            state: 'TX', city: 'Austin', climate_zone: 'Hot & Dry', utility_rate: 0.12,
-            status: 'lead', lead_score: 54, source: 'Website',
-            created_at: '2026-03-25T12:00:00Z', updated_at: '2026-03-25T12:00:00Z',
-            score_breakdown: { engagement: 40, budget: 60, timeline: 50, fit: 65 },
-          },
-          {
-            id: '4', name: 'Robert Wilson', email: 'rwilson@outlook.com', phone: '(303) 555-0321',
-            state: 'CO', city: 'Denver', climate_zone: 'Mixed', utility_rate: 0.14,
-            status: 'customer', lead_score: 95, source: 'Referral',
-            created_at: '2026-02-01T09:00:00Z', updated_at: '2026-03-20T11:00:00Z',
-            recommendations: [
-              { id: 'r6', title: 'Heat Pump System', status: 'accepted' },
-              { id: 'r7', title: 'Insulation Upgrade', status: 'accepted' },
-              { id: 'r8', title: 'Smart Thermostat', status: 'accepted' },
-            ],
-            score_breakdown: { engagement: 100, budget: 90, timeline: 95, fit: 95 },
-          },
-          {
-            id: '5', name: 'Angela Thompson', email: 'athompson@yahoo.com', phone: '(212) 555-0654',
-            state: 'NY', city: 'Brooklyn', climate_zone: 'Cold', utility_rate: 0.22,
-            status: 'lost', lead_score: 28, source: 'Social Media',
-            created_at: '2026-03-05T07:00:00Z', updated_at: '2026-03-18T09:00:00Z',
-            score_breakdown: { engagement: 15, budget: 30, timeline: 20, fit: 45 },
-          },
-          {
-            id: '6', name: 'David Park', email: 'dpark@techcorp.com', phone: '(702) 555-0987',
-            state: 'NV', city: 'Las Vegas', climate_zone: 'Hot & Dry', utility_rate: 0.12,
-            status: 'qualified', lead_score: 76, source: 'ROI Calculator',
-            created_at: '2026-03-20T14:00:00Z', updated_at: '2026-03-26T10:00:00Z',
-            discovery_answers: { project_type: 'remodel', budget: '25k_50k', priorities: 'comfort', smart_interest: 'beginner' },
-            score_breakdown: { engagement: 70, budget: 65, timeline: 80, fit: 88 },
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetch('/api/customers/profiles');
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      const data = await res.json();
+      setCustomers(Array.isArray(data?.customers) ? data.customers : []);
+    } catch {
+      setError(true);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = useMemo(() => {
     let list = customers;
@@ -441,7 +384,9 @@ export default function CustomersPage() {
             <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
               Customer <span style={{ color: GOLD }}>CRM</span>
             </h1>
-            <p style={{ fontSize: 14, color: DIM }}>{customers.length} total profiles</p>
+            <p style={{ fontSize: 14, color: DIM }}>
+              {loading ? 'Loading profiles…' : error ? 'Unable to load profiles' : `${customers.length} total profiles`}
+            </p>
           </div>
           <button onClick={exportCSV} style={{
             padding: '10px 20px', background: `${GREEN}20`, border: `1px solid ${GREEN}40`,
@@ -498,9 +443,26 @@ export default function CustomersPage() {
         </div>
 
         {/* Table */}
+        {error ? (
+          <EmptyState
+            icon={<WarningCircle size={32} weight="duotone" />}
+            title="Couldn't load customers"
+            description="Something went wrong while loading customer profiles. Check your connection and try again."
+            actionLabel="Retry"
+            onAction={load}
+          />
+        ) : !loading && customers.length === 0 ? (
+          <EmptyState
+            icon={<UsersThree size={32} weight="duotone" />}
+            title="No customers yet"
+            description="Customer profiles will appear here as leads come in through your design studio, Sage chat, and other sources."
+          />
+        ) : (
         <div style={{ ...glass, overflow: 'auto', padding: 0 }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 60, color: DIM }}>Loading customers...</div>
+            <div style={{ padding: 8 }}>
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
+            </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60, color: DIM }}>No customers match your filters.</div>
           ) : (
@@ -551,6 +513,7 @@ export default function CustomersPage() {
             </table>
           )}
         </div>
+        )}
       </div>
     </div>
   );

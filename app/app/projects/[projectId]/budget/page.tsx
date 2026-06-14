@@ -1,11 +1,14 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { WarningCircle, Wallet } from '@phosphor-icons/react';
+import { EmptyState } from '../../../../../components/EmptyState';
+import { Skeleton, SkeletonKPI } from '../../../../../components/ui/Skeleton';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
-const fmt = (n: number) => '$' + (n||0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtPct = (a: number, b: number) => b > 0 ? ((a / b) * 100).toFixed(1) + '%' : '0%';
+const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#c03030';
+const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtPct = (a: number | null | undefined, b: number | null | undefined) => (b ?? 0) > 0 ? (((a ?? 0) / (b as number)) * 100).toFixed(1) + '%' : '0%';
 
 interface BudgetLine {
   id: string;
@@ -31,6 +34,7 @@ export default function BudgetPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [lines, setLines] = useState<BudgetLine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<AddLineForm>({ cost_code: '', description: '', original_budget: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -49,23 +53,22 @@ export default function BudgetPage() {
     setTimeout(() => setToast(null), 4000);
   }
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/projects/${projectId}/budget`);
-        const d = await r.json();
-        if (d.lines?.length) {
-          setLines(d.lines);
-        } else {
-          setLines([]);
-        }
-      } catch {
-        setLines([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const r = await fetch(`/api/projects/${projectId}/budget`);
+      if (!r.ok) throw new Error(`Request failed (${r.status})`);
+      const d = await r.json();
+      setLines(Array.isArray(d.lines) ? d.lines : []);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load budget');
+    } finally {
+      setLoading(false);
+    }
   }, [projectId]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function addLine(e: React.FormEvent) {
     e.preventDefault();
@@ -190,17 +193,19 @@ export default function BudgetPage() {
   }
 
   // KPI calculations
-  const totalOriginal = lines.reduce((s, l) => s + l.original_budget, 0);
-  const totalApprovedCOs = lines.reduce((s, l) => s + l.approved_cos, 0);
-  const totalRevised = lines.reduce((s, l) => s + l.revised_budget, 0);
-  const totalActual = lines.reduce((s, l) => s + l.actual_cost, 0);
-  const totalForecast = lines.reduce((s, l) => s + l.forecast_cost, 0);
+  const totalOriginal = lines.reduce((s, l) => s + (l.original_budget ?? 0), 0);
+  const totalApprovedCOs = lines.reduce((s, l) => s + (l.approved_cos ?? 0), 0);
+  const totalRevised = lines.reduce((s, l) => s + (l.revised_budget ?? 0), 0);
+  const totalActual = lines.reduce((s, l) => s + (l.actual_cost ?? 0), 0);
+  const totalForecast = lines.reduce((s, l) => s + (l.forecast_cost ?? 0), 0);
   const totalVariance = totalRevised - totalForecast;
-  const totalCommitted = lines.reduce((s, l) => s + l.committed_cost, 0);
+  const totalCommitted = lines.reduce((s, l) => s + (l.committed_cost ?? 0), 0);
 
   function rowBg(l: BudgetLine) {
-    if (l.actual_cost > l.revised_budget) return 'rgba(192,48,48,.08)';
-    if (l.revised_budget > 0 && l.actual_cost / l.revised_budget > 0.9) return 'rgba(212,160,23,.06)';
+    const actual = l.actual_cost ?? 0;
+    const revised = l.revised_budget ?? 0;
+    if (actual > revised) return 'rgba(192,48,48,.08)';
+    if (revised > 0 && actual / revised > 0.9) return 'rgba(212,160,23,.06)';
     return 'transparent';
   }
 
@@ -209,7 +214,60 @@ export default function BudgetPage() {
     borderRadius: 6, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box', width: '100%',
   };
 
-  if (loading) return <div style={{ padding: 48, color: DIM, textAlign: 'center', fontSize: 14 }}>Loading budget...</div>;
+  // LOADING — skeletons that mirror the KPI row + table, never computed zeros.
+  if (loading) {
+    return (
+      <div style={{ background: DARK, minHeight: '100%' }}>
+        <div style={{ padding: '18px 24px', borderBottom: `1px solid ${BORDER}`, background: DARK }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: TEXT }}>Budget</h2>
+          <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Job costing by CSI cost code</div>
+        </div>
+        <div style={{ padding: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonKPI key={i} />)}
+          </div>
+          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 18 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: i < 5 ? `1px solid rgba(38,51,71,.5)` : 'none' }}>
+                <Skeleton width={70} height={14} />
+                <Skeleton width="32%" height={14} />
+                <div style={{ flex: 1 }} />
+                <Skeleton width={90} height={14} />
+                <Skeleton width={90} height={14} />
+                <Skeleton width={70} height={14} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ERROR — distinct, actionable block. NEVER render $0 KPIs / "no data" on a
+  // failed load, which on a financial page is indistinguishable from a real
+  // empty project. Reuse the shared EmptyState with a Retry action.
+  if (error) {
+    return (
+      <div style={{ background: DARK, minHeight: '100%' }}>
+        <div style={{ padding: '18px 24px', borderBottom: `1px solid ${BORDER}`, background: DARK }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: TEXT }}>Budget</h2>
+          <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Job costing by CSI cost code</div>
+        </div>
+        <div style={{ padding: 24 }}>
+          <div style={{ background: 'rgba(192,48,48,.12)', border: `1px solid rgba(192,48,48,.3)`, borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: RED, fontSize: 13 }}>
+            {error}
+          </div>
+          <EmptyState
+            icon={<WarningCircle size={32} weight="duotone" />}
+            title="Couldn't load budget"
+            description="Something went wrong while loading the job-cost budget. Your data is safe — this is a loading error, not an empty project."
+            actionLabel="Retry"
+            onAction={load}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: DARK, minHeight: '100%' }}>
@@ -285,7 +343,17 @@ export default function BudgetPage() {
           </form>
         )}
 
-        {/* Budget Table */}
+        {/* EMPTY — genuine zero results (only reaches here when !loading && !error). */}
+        {lines.length === 0 ? (
+          <EmptyState
+            icon={<Wallet size={32} weight="duotone" />}
+            title="No budget lines yet"
+            description="Add your first budget line to start job costing by CSI cost code for this project."
+            actionLabel="Add Budget Line"
+            onAction={() => setShowAddForm(true)}
+          />
+        ) : (
+        /* Budget Table */
         <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -297,15 +365,9 @@ export default function BudgetPage() {
                 </tr>
               </thead>
               <tbody>
-                {lines.length === 0 && (
-                  <tr>
-                    <td colSpan={10} style={{ padding: '48px 24px', textAlign: 'center', color: DIM, fontSize: 13 }}>
-                      No budget lines yet. Add your first budget item.
-                    </td>
-                  </tr>
-                )}
                 {lines.map(l => {
-                  const remaining = l.revised_budget - l.actual_cost;
+                  const remaining = (l.revised_budget ?? 0) - (l.actual_cost ?? 0);
+                  const pct = l.pct_complete ?? 0;
                   const isEditing = editingId === l.id;
                   return (
                     <tr key={l.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)`, background: rowBg(l) }}>
@@ -322,16 +384,16 @@ export default function BudgetPage() {
                           />
                         ) : fmt(l.original_budget)}
                       </td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: l.approved_cos > 0 ? '#4a9de8' : DIM }}>{l.approved_cos > 0 ? '+' + fmt(l.approved_cos) : '—'}</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: (l.approved_cos ?? 0) > 0 ? '#4a9de8' : DIM }}>{(l.approved_cos ?? 0) > 0 ? '+' + fmt(l.approved_cos) : '—'}</td>
                       <td style={{ padding: '11px 14px', textAlign: 'right', color: TEXT, fontWeight: 600 }}>{fmt(l.revised_budget)}</td>
                       <td style={{ padding: '11px 14px', textAlign: 'right', color: '#4a9de8' }}>{fmt(l.committed_cost)}</td>
-                      <td style={{ padding: '11px 14px', textAlign: 'right', color: l.actual_cost > l.revised_budget ? '#ff7070' : l.actual_cost > 0 ? '#f97316' : DIM }}>{fmt(l.actual_cost)}</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'right', color: (l.actual_cost ?? 0) > (l.revised_budget ?? 0) ? '#ff7070' : (l.actual_cost ?? 0) > 0 ? '#f97316' : DIM }}>{fmt(l.actual_cost)}</td>
                       <td style={{ padding: '11px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
                           <div style={{ width: 40, height: 4, background: 'rgba(255,255,255,.08)', borderRadius: 2 }}>
-                            <div style={{ height: '100%', width: `${Math.min(100, l.pct_complete)}%`, background: l.pct_complete >= 100 ? '#3dd68c' : GOLD, borderRadius: 2 }} />
+                            <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: pct >= 100 ? '#3dd68c' : GOLD, borderRadius: 2 }} />
                           </div>
-                          <span style={{ color: l.pct_complete >= 100 ? '#3dd68c' : TEXT, fontWeight: 600, whiteSpace: 'nowrap' }}>{l.pct_complete}%</span>
+                          <span style={{ color: pct >= 100 ? '#3dd68c' : TEXT, fontWeight: 600, whiteSpace: 'nowrap' }}>{pct}%</span>
                         </div>
                       </td>
                       <td style={{ padding: '11px 14px', textAlign: 'right', color: remaining >= 0 ? '#3dd68c' : '#ff7070', fontWeight: 600 }}>{fmt(remaining)}</td>
@@ -398,6 +460,7 @@ export default function BudgetPage() {
             </table>
           </div>
         </div>
+        )}
       </div>
       {menuId && <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={() => setMenuId(null)} />}
     </div>

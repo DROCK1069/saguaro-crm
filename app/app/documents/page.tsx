@@ -1,6 +1,8 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { Skeleton } from '../../../components/ui/Skeleton';
+import { WarningCircle } from '@phosphor-icons/react';
 
 const GOLD = '#D4A017';
 const DARK = '#0d1117';
@@ -9,9 +11,10 @@ const BORDER = '#263347';
 const DIM = '#8fa3c0';
 const TEXT = '#e8edf8';
 const GREEN = '#3dd68c';
+const RED = '#ef4444';
 
-const fmt = (n: number) =>
-  '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = (n: number | null | undefined) =>
+  '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function Badge({ label, color = '#94a3b8', bg = 'rgba(148,163,184,.12)' }: { label: string; color?: string; bg?: string }) {
   return (
@@ -20,6 +23,48 @@ function Badge({ label, color = '#94a3b8', bg = 'rgba(148,163,184,.12)' }: { lab
       borderRadius: 4, background: bg, color,
       textTransform: 'uppercase', letterSpacing: 0.3,
     }}>{label}</span>
+  );
+}
+
+// In-table error row: a clear failure state with a Retry action, visually
+// distinct from the genuine empty state. Used when a list fetch fails or 404s.
+function ErrorRow({ colSpan, message, onRetry }: { colSpan: number; message: string; onRetry: () => void }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} style={{ padding: '40px 16px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <WarningCircle size={32} weight="duotone" color={RED} />
+          <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{message}</div>
+          <button
+            onClick={onRetry}
+            style={{
+              padding: '7px 18px',
+              background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+              border: 'none', borderRadius: 7,
+              color: '#0d1117', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+            }}
+          >Retry</button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// Skeleton placeholder rows shown while a list fetch is in flight — never
+// computed zeros or an empty state during loading.
+function SkeletonRows({ rows = 4, cols }: { rows?: number; cols: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, r) => (
+        <tr key={r} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+          {Array.from({ length: cols }).map((_, c) => (
+            <td key={c} style={{ padding: '12px 16px' }}>
+              <Skeleton height={14} width={c === 0 ? '50%' : '70%'} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
   );
 }
 
@@ -77,31 +122,44 @@ export default function DocumentsPage() {
   const [loadingPayApps, setLoadingPayApps] = useState(true);
   const [loadingLienWaivers, setLoadingLienWaivers] = useState(true);
   const [loadingPayroll, setLoadingPayroll] = useState(true);
+  const [errorPayApps, setErrorPayApps] = useState(false);
+  const [errorLienWaivers, setErrorLienWaivers] = useState(false);
+  const [errorPayroll, setErrorPayroll] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadPayApps = useCallback(() => {
+    setLoadingPayApps(true);
+    setErrorPayApps(false);
     fetch('/api/pay-apps/list')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => setPayApps(d.payApps ?? d.items ?? []))
-      .catch(() => setPayApps([]))
+      .catch(() => setErrorPayApps(true))
       .finally(() => setLoadingPayApps(false));
   }, []);
 
-  useEffect(() => {
+  const loadLienWaivers = useCallback(() => {
+    setLoadingLienWaivers(true);
+    setErrorLienWaivers(false);
     fetch('/api/lien-waivers/list')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => setLienWaivers(d.lienWaivers ?? d.items ?? []))
-      .catch(() => setLienWaivers([]))
+      .catch(() => setErrorLienWaivers(true))
       .finally(() => setLoadingLienWaivers(false));
   }, []);
 
-  useEffect(() => {
+  const loadPayroll = useCallback(() => {
+    setLoadingPayroll(true);
+    setErrorPayroll(false);
     fetch('/api/documents/list?type=payroll')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => setPayroll(d.payroll ?? d.documents ?? d.items ?? []))
-      .catch(() => setPayroll([]))
+      .catch(() => setErrorPayroll(true))
       .finally(() => setLoadingPayroll(false));
   }, []);
+
+  useEffect(() => { loadPayApps(); }, [loadPayApps]);
+  useEffect(() => { loadLienWaivers(); }, [loadLienWaivers]);
+  useEffect(() => { loadPayroll(); }, [loadPayroll]);
 
   useEffect(() => {
     fetch('/api/projects/list')
@@ -225,7 +283,9 @@ export default function DocumentsPage() {
                 </thead>
                 <tbody>
                   {loadingPayApps ? (
-                    <tr><td colSpan={5} style={{ padding: '32px 16px', textAlign: 'center', color: DIM }}>Loading...</td></tr>
+                    <SkeletonRows cols={5} />
+                  ) : errorPayApps ? (
+                    <ErrorRow colSpan={5} message="Couldn't load pay applications" onRetry={loadPayApps} />
                   ) : payApps.length === 0 ? (
                     <tr><td colSpan={5} style={{ padding: '48px 16px', textAlign: 'center', color: DIM, fontSize: 13 }}>No pay applications yet.</td></tr>
                   ) : payApps.map(pa => {
@@ -288,7 +348,9 @@ export default function DocumentsPage() {
                 </thead>
                 <tbody>
                   {loadingLienWaivers ? (
-                    <tr><td colSpan={6} style={{ padding: '32px 16px', textAlign: 'center', color: DIM }}>Loading...</td></tr>
+                    <SkeletonRows cols={6} />
+                  ) : errorLienWaivers ? (
+                    <ErrorRow colSpan={6} message="Couldn't load lien waivers" onRetry={loadLienWaivers} />
                   ) : lienWaivers.length === 0 ? (
                     <tr><td colSpan={6} style={{ padding: '48px 16px', textAlign: 'center', color: DIM, fontSize: 13 }}>No lien waivers yet.</td></tr>
                   ) : lienWaivers.map(lw => {
@@ -431,7 +493,9 @@ export default function DocumentsPage() {
                 </thead>
                 <tbody>
                   {loadingPayroll ? (
-                    <tr><td colSpan={5} style={{ padding: '32px 16px', textAlign: 'center', color: DIM }}>Loading...</td></tr>
+                    <SkeletonRows cols={5} />
+                  ) : errorPayroll ? (
+                    <ErrorRow colSpan={5} message="Couldn't load certified payroll" onRetry={loadPayroll} />
                   ) : payroll.length === 0 ? (
                     <tr><td colSpan={5} style={{ padding: '48px 16px', textAlign: 'center', color: DIM, fontSize: 13 }}>No certified payroll records yet.</td></tr>
                   ) : payroll.map(pr => {

@@ -2,6 +2,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import { EmptyState } from '@/components/EmptyState';
+import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
+import { WarningCircle } from '@phosphor-icons/react';
 
 const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#3b82f6';
@@ -43,7 +46,11 @@ function daysBetween(a:string,b:string){
 
 /* ── Gantt bar chart ────────────────────────────────────────────── */
 function GanttChart({tasks}:{tasks:any[]}){
-  const withDates = tasks.filter(t=>t.start_date&&t.end_date);
+  const withDates = tasks.filter(t=>
+    t.start_date&&t.end_date
+    &&!Number.isNaN(Date.parse(t.start_date))
+    &&!Number.isNaN(Date.parse(t.end_date))
+  );
   if(!withDates.length) return(
     <div style={{padding:40,textAlign:'center',color:DIM,fontSize:13}}>
       Add tasks with start &amp; end dates to see the Gantt chart.
@@ -121,7 +128,7 @@ function GanttChart({tasks}:{tasks:any[]}){
                 <div style={{
                   height:'100%',borderRadius:2,
                   background:color,opacity:.8,
-                  width:`${task.pct_complete||0}%`,
+                  width:`${task.pct_complete??0}%`,
                   transition:'width .3s',
                 }}/>
                 {/* Label on bar */}
@@ -130,7 +137,7 @@ function GanttChart({tasks}:{tasks:any[]}){
                     fontSize:9,fontWeight:700,color:'#fff',
                     lineHeight:'16px',overflow:'hidden',whiteSpace:'nowrap',
                     textOverflow:'ellipsis',textShadow:'0 1px 2px rgba(0,0,0,.6)'}}>
-                    {task.pct_complete}%
+                    {task.pct_complete??0}%
                   </div>
                 )}
               </div>
@@ -254,7 +261,7 @@ export default function SchedulePage(){
   const allEnds=tasks.filter((t:any)=>t.end_date).map((t:any)=>t.end_date);
   const projectEnd=allEnds.length?allEnds.reduce((m,d)=>d>m?d:m):'';
   const daysLeft=projectEnd?Math.max(0,daysBetween(today,projectEnd)):0;
-  const avgPct=tasks.length?Math.round(tasks.reduce((s:number,t:any)=>s+(t.pct_complete||0),0)/tasks.length):0;
+  const avgPct=tasks.length?Math.round(tasks.reduce((s:number,t:any)=>s+(t.pct_complete??0),0)/tasks.length):0;
   const delayedCount=tasks.filter((t:any)=>t.status==='delayed').length;
   const completedCount=tasks.filter((t:any)=>t.status==='completed').length;
 
@@ -299,21 +306,23 @@ export default function SchedulePage(){
         <div style={{padding:24}}>
           {/* KPIs */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:24}}>
-            {[
-              {l:'% Complete',v:`${avgPct}%`,c:GREEN},
-              {l:'Days Remaining',v:daysLeft?String(daysLeft):'—',c:TEXT},
-              {l:'Tasks Complete',v:`${completedCount}/${tasks.length}`,c:GOLD},
-              {l:'Delayed',v:String(delayedCount),c:delayedCount?RED:DIM},
-            ].map(k=>(
-              <div key={k.l} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'16px 18px'}}>
-                <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',color:DIM,marginBottom:6}}>{k.l}</div>
-                <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
-              </div>
-            ))}
+            {loading||loadError
+              ? Array.from({length:4}).map((_,i)=><SkeletonKPI key={i}/>)
+              : [
+                  {l:'% Complete',v:`${avgPct}%`,c:GREEN},
+                  {l:'Days Remaining',v:daysLeft?String(daysLeft):'—',c:TEXT},
+                  {l:'Tasks Complete',v:`${completedCount}/${tasks.length}`,c:GOLD},
+                  {l:'Delayed',v:String(delayedCount),c:delayedCount?RED:DIM},
+                ].map(k=>(
+                  <div key={k.l} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'16px 18px'}}>
+                    <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',color:DIM,marginBottom:6}}>{k.l}</div>
+                    <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
+                  </div>
+                ))}
           </div>
 
           {/* Gantt view */}
-          {viewMode==='gantt'&&(
+          {viewMode==='gantt'&&!loading&&!loadError&&tasks.length>0&&(
             <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,
               padding:20,marginBottom:20,overflowX:'auto'}}>
               <div style={{fontSize:13,fontWeight:700,color:TEXT,marginBottom:14}}>
@@ -322,13 +331,12 @@ export default function SchedulePage(){
                   Today marked with gold line
                 </span>
               </div>
-              {loading?<div style={{padding:30,textAlign:'center',color:DIM}}>Loading…</div>
-                :<GanttChart tasks={filtered.length?filtered:tasks}/>}
+              <GanttChart tasks={filtered.length?filtered:tasks}/>
             </div>
           )}
 
           {/* Filters (list view) */}
-          {viewMode==='list'&&(
+          {viewMode==='list'&&!loading&&!loadError&&tasks.length>0&&(
             <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap'}}>
               <input value={search} onChange={e=>setSearch(e.target.value)}
                 placeholder="Search tasks…"
@@ -349,15 +357,26 @@ export default function SchedulePage(){
             </div>
           )}
 
-          {loading&&<div style={{padding:40,textAlign:'center',color:DIM}}>Loading schedule…</div>}
-
-          {!loading&&loadError&&(
-            <div style={{background:'rgba(192,48,48,.12)',border:'1px solid rgba(192,48,48,.3)',borderRadius:8,padding:'12px 16px',marginBottom:20,color:'#c03030',fontSize:13}}>
-              {loadError}
+          {/* LOADING — skeleton rows, never computed zeros */}
+          {loading&&(
+            <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,overflow:'hidden'}}>
+              {Array.from({length:6}).map((_,i)=><SkeletonRow key={i}/>)}
             </div>
           )}
 
-          {!loading&&tasks.length===0&&(
+          {/* ERROR — clear block with Retry, never fake/empty data */}
+          {!loading&&loadError&&(
+            <EmptyState
+              icon={<WarningCircle size={32} weight="duotone" />}
+              title="Couldn't load schedule"
+              description="We couldn't load the project schedule. Check your connection and try again."
+              actionLabel="Retry"
+              onAction={load}
+            />
+          )}
+
+          {/* EMPTY — genuine zero results on success only */}
+          {!loading&&!loadError&&tasks.length===0&&(
             <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,
               padding:56,textAlign:'center'}}>
               <div style={{fontSize:40,marginBottom:14}}>📅</div>
@@ -374,7 +393,7 @@ export default function SchedulePage(){
           )}
 
           {/* List view */}
-          {!loading&&viewMode==='list'&&filtered.length>0&&(
+          {!loading&&!loadError&&viewMode==='list'&&filtered.length>0&&(
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
                 <thead>
@@ -414,9 +433,9 @@ export default function SchedulePage(){
                           <div style={{display:'flex',alignItems:'center',gap:8}}>
                             <div style={{width:60,height:6,background:'rgba(38,51,71,.8)',borderRadius:3,overflow:'hidden'}}>
                               <div style={{height:'100%',borderRadius:3,background:color,
-                                width:`${task.pct_complete||0}%`}}/>
+                                width:`${task.pct_complete??0}%`}}/>
                             </div>
-                            <span style={{fontSize:12,color,fontWeight:700}}>{task.pct_complete||0}%</span>
+                            <span style={{fontSize:12,color,fontWeight:700}}>{task.pct_complete??0}%</span>
                           </div>
                         </td>
                         <td style={{padding:'11px 14px',color:DIM}}>{task.assigned_to||'—'}</td>
@@ -570,13 +589,13 @@ export default function SchedulePage(){
                     <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
                       <span style={{fontSize:11,color:DIM}}>Progress</span>
                       <span style={{fontSize:12,fontWeight:800,color:STATUS_COLORS[selected.status]||GREEN}}>
-                        {selected.pct_complete||0}%
+                        {selected.pct_complete??0}%
                       </span>
                     </div>
                     <div style={{background:'rgba(38,51,71,.6)',borderRadius:4,height:10,overflow:'hidden'}}>
                       <div style={{height:'100%',borderRadius:4,
                         background:STATUS_COLORS[selected.status]||GREEN,
-                        width:`${selected.pct_complete||0}%`,transition:'width .3s'}}/>
+                        width:`${selected.pct_complete??0}%`,transition:'width .3s'}}/>
                     </div>
                   </div>
                   {/* Quick update buttons */}

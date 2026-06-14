@@ -1,12 +1,15 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { WarningCircle, FolderOpen } from '@phosphor-icons/react';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import EmptyState from '@/components/EmptyState';
+import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
 const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030';
-const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
-const fmtPct = (a:number,b:number) => b>0?((a/b)*100).toFixed(1)+'%':'0%';
+const fmt = (n:number|null|undefined) => '$'+((n ?? 0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
+const fmtPct = (a:number|null|undefined,b:number|null|undefined) => (b ?? 0)>0?(((a ?? 0)/(b as number))*100).toFixed(1)+'%':'0%';
 
 function KPI({label,value,sub}:{label:string,value:string,sub?:string}){
   return <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'16px 18px'}}>
@@ -28,15 +31,34 @@ export default function OverviewPage(){
   const { projectId } = useParams<{projectId:string}>();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanMsg, setScanMsg] = useState('');
 
-  useEffect(()=>{
-    getAuthHeaders().then(auth=>{
-      fetch('/api/projects/'+projectId, { headers: auth })
-        .then(r=>r.json()).then(d=>setData(d)).catch(()=>{}).finally(()=>setLoading(false));
-    });
+  const load = useCallback(async()=>{
+    setLoading(true); setError(''); setNotFound(false);
+    try {
+      const auth = await getAuthHeaders();
+      const r = await fetch('/api/projects/'+projectId, { headers: auth });
+      if (r.status === 404) { setNotFound(true); return; }
+      if (!r.ok) {
+        let msg = '';
+        try { const body = await r.json(); msg = body?.error || body?.message || ''; } catch { /* non-JSON body */ }
+        throw new Error(msg || `Request failed (${r.status})`);
+      }
+      const d = await r.json();
+      if (!d?.project) { setNotFound(true); return; }
+      setData(d);
+    } catch (e:any) {
+      // Network failure or non-2xx — never swallow; surface a clear message.
+      setError(e?.message || 'Network error. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   },[projectId]);
+
+  useEffect(()=>{ load(); },[load]);
 
   async function runAutopilot(){
     setScanning(true); setScanMsg('');
@@ -57,8 +79,54 @@ export default function OverviewPage(){
     finally { setScanning(false); }
   }
 
-  if(loading) return <div style={{padding:48,color:DIM,textAlign:'center',fontSize:14}}>Loading project data...</div>;
-  if(!data?.project) return <div style={{padding:48,color:RED,textAlign:'center'}}>Project not found.</div>;
+  // LOADING — skeleton placeholders, never computed zeros or an empty state.
+  if(loading) return (
+    <div>
+      <div style={{padding:'18px 24px',borderBottom:`1px solid ${BORDER}`,background:DARK}}>
+        <Skeleton width={260} height={22} style={{marginBottom:8}}/>
+        <Skeleton width={180} height={12}/>
+      </div>
+      <div style={{padding:24}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14,marginBottom:24}}>
+          {[0,1,2,3,4].map(i=><SkeletonKPI key={i}/>)}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
+          {[0,1].map(col=>(
+            <div key={col} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:18}}>
+              <Skeleton width="40%" height={14} style={{marginBottom:16}}/>
+              {[0,1,2,3,4,5].map(i=><Skeleton key={i} height={13} style={{marginBottom:12}}/>)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ERROR — fetch threw / network failure / non-2xx (not a 404). Clear block + Retry.
+  if(error) return (
+    <div style={{padding:48,maxWidth:560,margin:'0 auto'}}>
+      <EmptyState
+        icon={<WarningCircle size={32} weight="duotone" color={RED}/>}
+        title="Couldn't load project"
+        description={error}
+        actionLabel="Retry"
+        onAction={load}
+      />
+    </div>
+  );
+
+  // NOT FOUND — true 404 (or success with no project). Distinct from a load error.
+  if(notFound || !data?.project) return (
+    <div style={{padding:48,maxWidth:560,margin:'0 auto'}}>
+      <EmptyState
+        icon={<FolderOpen size={32} weight="duotone" color={DIM}/>}
+        title="Project not found"
+        description="This project doesn't exist or you don't have access to it."
+        actionLabel="Back to Projects"
+        actionHref="/app/projects"
+      />
+    </div>
+  );
 
   const p = data.project;
   const payApps = data.payApps||[];

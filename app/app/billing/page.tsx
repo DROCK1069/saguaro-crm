@@ -1,5 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const GOLD   = '#F59E0B';
 const DARK   = '#0d1117';
@@ -67,18 +69,36 @@ function StatusBadge({ status }: { status: string }) {
 export default function BillingPage() {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [annual, setAnnual] = useState(false);
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/billing/subscription')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { setSub(d); setLoading(false); })
-      .catch(() => setLoading(false));
+  const loadSubscription = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetch('/api/billing/subscription');
+      if (!res.ok) {
+        setError(true);
+        setSub(null);
+        return;
+      }
+      const data = await res.json();
+      setSub(data ?? null);
+    } catch {
+      setError(true);
+      setSub(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadSubscription();
+  }, [loadSubscription]);
 
   const daysLeft = (dateStr: string | null) => {
     if (!dateStr) return null;
@@ -150,7 +170,25 @@ export default function BillingPage() {
 
       {/* Current Plan Card */}
       {loading ? (
-        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 32, marginBottom: 28, textAlign: 'center', color: DIM }}>Loading subscription...</div>
+        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '28px 32px', marginBottom: 28 }}>
+          <Skeleton width={110} height={11} style={{ marginBottom: 12 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <Skeleton width={180} height={26} />
+            <Skeleton width={80} height={22} borderRadius={6} />
+          </div>
+          <Skeleton width={220} height={14} style={{ marginBottom: 20 }} />
+          <Skeleton width="100%" height={6} borderRadius={3} />
+        </div>
+      ) : error ? (
+        <div style={{ marginBottom: 28 }}>
+          <EmptyState
+            icon={<span style={{ fontSize: 32 }} aria-hidden>⚠️</span>}
+            title="Couldn't load your subscription"
+            description="We hit a problem fetching your current plan. Your subscription is safe — please try again."
+            actionLabel="Retry"
+            onAction={loadSubscription}
+          />
+        </div>
       ) : sub ? (
         <div style={{ background: RAISED, border: `1px solid ${sub.status === 'past_due' ? RED : BORDER}`, borderRadius: 14, padding: '28px 32px', marginBottom: 28 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
@@ -253,10 +291,10 @@ export default function BillingPage() {
                   {plan.price_mo > 0 ? (
                     <div style={{ marginBottom: 20 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
-                        <span style={{ fontSize: 40, fontWeight: 900, color: TEXT, lineHeight: 1 }}>${annual ? plan.price_yr : plan.price_mo}</span>
+                        <span style={{ fontSize: 40, fontWeight: 900, color: TEXT, lineHeight: 1 }}>${annual ? (plan.price_yr ?? 0) : (plan.price_mo ?? 0)}</span>
                         <span style={{ fontSize: 13, color: DIM, paddingBottom: 6 }}>/mo</span>
                       </div>
-                      {annual && <div style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>Save ${(plan.price_mo - plan.price_yr) * 12}/yr</div>}
+                      {annual && <div style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>Save ${((plan.price_mo ?? 0) - (plan.price_yr ?? 0)) * 12}/yr</div>}
                     </div>
                   ) : (
                     <div style={{ fontSize: 22, fontWeight: 900, color: TEXT, marginBottom: 20 }}>Contact Sales</div>

@@ -6,7 +6,8 @@ import { useDashboardStats, useTodayItems } from '@/lib/hooks/useDashboard';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useRFIs } from '@/lib/hooks/useRFIs';
 import { useRealtimeDashboard } from '@/lib/useRealtime';
-import { CurrencyDollar, ShieldCheck, ClipboardText, CheckCircle, ChartBar, TrendUp } from '@phosphor-icons/react';
+import { CurrencyDollar, ShieldCheck, ClipboardText, CheckCircle, ChartBar, TrendUp, WarningCircle } from '@phosphor-icons/react';
+import { EmptyState } from '@/components/EmptyState';
 
 // Lazy-load Recharts to avoid SSR issues
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false });
@@ -308,10 +309,10 @@ export default function DashboardPage() {
   const [drillDown, setDrillDown] = useState<DrillDownType>(null);
 
   // SWR-powered data — auto-refreshes in background
-  const { stats, loading: statsLoading, revalidate: revalidateStats } = useDashboardStats();
-  const { items: todayItems, loading: todayLoading } = useTodayItems();
-  const { projects, loading: projectsLoading } = useProjects();
-  const { openRFIs, loading: rfisLoading } = useRFIs();
+  const { stats, loading: statsLoading, error: statsError, revalidate: revalidateStats } = useDashboardStats();
+  const { items: todayItems, loading: todayLoading, error: todayError, revalidate: revalidateToday } = useTodayItems();
+  const { projects, loading: projectsLoading, error: projectsError, revalidate: revalidateProjects } = useProjects();
+  const { openRFIs, loading: rfisLoading, error: rfisError, revalidate: revalidateRFIs } = useRFIs();
 
   // Realtime: any DB change to critical tables auto-invalidates stats
   const handleRealtimeChange = useCallback(() => {
@@ -319,7 +320,7 @@ export default function DashboardPage() {
   }, [revalidateStats]);
   useRealtimeDashboard(handleRealtimeChange);
 
-  const formatCurrency = (n: number) => '$' + n.toLocaleString();
+  const formatCurrency = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString();
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -370,6 +371,17 @@ export default function DashboardPage() {
         </div>
 
         {/* KPI Row — every metric is drillable */}
+        {statsError && !statsLoading ? (
+          <div style={{ marginBottom: 28 }}>
+            <EmptyState
+              icon={<WarningCircle size={32} weight="duotone" color={GOLD} />}
+              title="Couldn't load dashboard stats"
+              description="We hit a problem fetching your portfolio metrics. Your data is safe — try again."
+              actionLabel="Retry"
+              onAction={() => revalidateStats()}
+            />
+          </div>
+        ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 28 }}>
           {statsLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
@@ -403,17 +415,18 @@ export default function DashboardPage() {
               />
               <KPI
                 label="Open RFIs"
-                value={rfisLoading ? '—' : String(openRFIs.length)}
-                sub={openRFIs.some(r => r.due_date && new Date(r.due_date) < new Date()) ? 'some overdue' : 'none overdue'}
-                color={openRFIs.length ? ORANGE : DIM}
+                value={rfisError ? '—' : rfisLoading ? '—' : String(openRFIs.length)}
+                sub={rfisError ? 'unavailable' : openRFIs.some(r => r.due_date && new Date(r.due_date) < new Date()) ? 'some overdue' : 'none overdue'}
+                color={!rfisError && openRFIs.length ? ORANGE : DIM}
                 onClick={() => setDrillDown('rfis')}
               />
             </>
           )}
         </div>
+        )}
 
         {/* ── Charts Section ─────────────────────────────────────────── */}
-        {!statsLoading && !projectsLoading && (
+        {!statsLoading && !statsError && !projectsLoading && !projectsError && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, marginBottom: 28 }}>
 
             {/* Project Budget Chart */}
@@ -509,19 +522,30 @@ export default function DashboardPage() {
               <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Today's Priority Actions</span>
               <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Items requiring your attention</div>
             </div>
-            {!todayLoading && todayItems.filter((i: TodayItem) => i.urgency === 'high').length > 0 && (
+            {!todayLoading && !todayError && todayItems.filter((i: TodayItem) => i.urgency === 'high').length > 0 && (
               <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: 'rgba(192,48,48,.15)', color: RED, border: '1px solid rgba(192,48,48,.3)' }}>
                 {todayItems.filter((i: TodayItem) => i.urgency === 'high').length} urgent
               </span>
             )}
           </div>
           {todayLoading && <><SkeletonRow /><SkeletonRow /><SkeletonRow /></>}
-          {!todayLoading && todayItems.length === 0 && (
+          {!todayLoading && todayError && (
+            <div style={{ padding: 16 }}>
+              <EmptyState
+                icon={<WarningCircle size={32} weight="duotone" color={GOLD} />}
+                title="Couldn't load today's actions"
+                description="We couldn't reach the priority-actions feed. Try again to reload your tasks."
+                actionLabel="Retry"
+                onAction={() => revalidateToday()}
+              />
+            </div>
+          )}
+          {!todayLoading && !todayError && todayItems.length === 0 && (
             <div style={{ padding: '28px 18px', textAlign: 'center', color: DIM, fontSize: 13 }}>
               All caught up — no urgent items right now.
             </div>
           )}
-          {!todayLoading && todayItems.map((item: TodayItem, i: number) => (
+          {!todayLoading && !todayError && todayItems.map((item: TodayItem, i: number) => (
             <TodayActionCard key={i} item={item} />
           ))}
         </div>
@@ -537,7 +561,16 @@ export default function DashboardPage() {
             </div>
             <div style={{ padding: 16 }}>
               {projectsLoading && <><SkeletonRow /><SkeletonRow /></>}
-              {!projectsLoading && projects.length === 0 && (
+              {!projectsLoading && projectsError && (
+                <EmptyState
+                  icon={<WarningCircle size={32} weight="duotone" color={GOLD} />}
+                  title="Couldn't load projects"
+                  description="We couldn't reach your project list. This doesn't mean you have none — try again."
+                  actionLabel="Retry"
+                  onAction={() => revalidateProjects()}
+                />
+              )}
+              {!projectsLoading && !projectsError && projects.length === 0 && (
                 <div style={{ padding: '24px 0', textAlign: 'center' }}>
                   <div style={{ fontSize: 32, marginBottom: 10, display: 'flex', justifyContent: 'center' }}><ClipboardText size={32} weight="duotone" color={DIM} /></div>
                   <div style={{ color: DIM, fontSize: 13, marginBottom: 14 }}>No active projects yet.</div>
@@ -546,7 +579,7 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               )}
-              {!projectsLoading && projects.slice(0, 3).map(proj => (
+              {!projectsLoading && !projectsError && projects.slice(0, 3).map(proj => (
                 <Link key={proj.id} href={`/app/projects/${proj.id}`} style={{ display: 'block', textDecoration: 'none', marginBottom: 10 }}>
                   <div style={{ padding: '14px 16px', background: RAISED_ALT, borderRadius: 10, border: `1px solid ${BORDER_SUBTLE}`, cursor: 'pointer', transition: 'border-color .15s' }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(212,160,23,.5)')}
@@ -578,12 +611,23 @@ export default function DashboardPage() {
               <Link href="/app/projects" style={{ fontSize: 12, fontWeight: 600, color: GOLD, textDecoration: 'none' }}>View Projects →</Link>
             </div>
             {rfisLoading && <><SkeletonRow /><SkeletonRow /></>}
-            {!rfisLoading && openRFIs.length === 0 && (
+            {!rfisLoading && rfisError && (
+              <div style={{ padding: 16 }}>
+                <EmptyState
+                  icon={<WarningCircle size={32} weight="duotone" color={GOLD} />}
+                  title="Couldn't load RFIs"
+                  description="We couldn't reach the RFI feed. Try again to reload open requests for information."
+                  actionLabel="Retry"
+                  onAction={() => revalidateRFIs()}
+                />
+              </div>
+            )}
+            {!rfisLoading && !rfisError && openRFIs.length === 0 && (
               <div style={{ padding: '28px 18px', textAlign: 'center', color: DIM, fontSize: 13 }}>
                 No open RFIs. Add projects to track RFIs here.
               </div>
             )}
-            {!rfisLoading && openRFIs.length > 0 && (
+            {!rfisLoading && !rfisError && openRFIs.length > 0 && (
               <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
