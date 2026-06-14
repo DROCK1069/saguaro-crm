@@ -280,9 +280,37 @@ export default function PrequalificationPage() {
     setEditTemplate(null);
   };
 
-  /* ─── Export simulation ─── */
+  /* ─── Export ─── */
   const handleExport = (format: 'csv' | 'pdf') => {
-    showToast(`Exporting ${filtered.length} submissions as ${format.toUpperCase()}...`);
+    if (format === 'pdf') {
+      // No dedicated PDF route exists; print the current view (browser "Save as PDF").
+      window.print();
+      return;
+    }
+    if (filtered.length === 0) {
+      showToast('No submissions to export');
+      return;
+    }
+    const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const headers = ['Subcontractor', 'Email', 'Trade', 'Status', 'Score %', 'Score', 'Max Score', 'Submitted', 'Expires', 'Docs Uploaded', 'Docs Total', 'Reviewer Notes'];
+    const rows = filtered.map(s => {
+      const pct = s.max_score > 0 ? Math.round((s.total_score / s.max_score) * 100) : 0;
+      const docsOk = s.documents.filter(d => d.uploaded).length;
+      return [
+        s.sub_name, s.sub_email, s.sub_trade, STATUS_LABELS[s.status] || s.status,
+        pct, s.total_score, s.max_score, fmtDate(s.submitted_at), fmtDate(s.expires_at),
+        docsOk, s.documents.length, s.reviewer_notes,
+      ];
+    });
+    const csv = [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prequalification_submissions_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${filtered.length} submission${filtered.length !== 1 ? 's' : ''} as CSV`);
   };
 
   /* ─── Detail sub ─── */
@@ -431,7 +459,7 @@ export default function PrequalificationPage() {
                 <input placeholder="Min Score %" type="number" value={scoreMin} onChange={e => setScoreMin(e.target.value)} style={{ ...inputS, width: 120 }} />
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                   <button style={btnS(BORDER, TEXT)} onClick={() => handleExport('csv')}>Export CSV</button>
-                  <button style={btnS(BORDER, TEXT)} onClick={() => handleExport('pdf')}>Export PDF</button>
+                  <button style={btnS(BORDER, TEXT)} onClick={() => handleExport('pdf')}>Print</button>
                 </div>
               </div>
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { EmptyState } from '../../../components/EmptyState';
 import { SkeletonRow } from '../../../components/ui/Skeleton';
 import { UsersThree, WarningCircle } from '@phosphor-icons/react';
+import { useToast } from '@/components/Toast';
 
 /* ─── Palette ─── */
 const BG = '#0F1419', CARD = '#1A1F2E', GOLD = '#D4A017', GREEN = '#22C55E';
@@ -41,9 +42,11 @@ const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString();
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014';
 
 export default function CustomersPage() {
+  const { showToast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [assigning, setAssigning] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSource, setFilterSource] = useState<string>('all');
@@ -106,6 +109,26 @@ export default function CustomersPage() {
 
   /* ─── Score Color ─── */
   const scoreColor = (s: number) => s >= 80 ? GREEN : s >= 50 ? AMBER : RED;
+
+  /* ─── Assign customer to a new project ─── */
+  const assignToProject = useCallback(async (c: Customer) => {
+    if (assigning) return;
+    setAssigning(true);
+    try {
+      const res = await fetch('/api/projects/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: c.id, name: `${c.name} Project` }),
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      showToast(`Project created for ${c.name}`, 'success');
+      await load();
+    } catch {
+      showToast('Could not create project. Please try again.', 'error');
+    } finally {
+      setAssigning(false);
+    }
+  }, [assigning, load, showToast]);
 
   /* ─── Detail View ─── */
   if (selected) {
@@ -204,18 +227,13 @@ export default function CustomersPage() {
               <div style={{ ...glass, padding: 20 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD }}>Actions</h3>
                 <div style={{ display: 'grid', gap: 10 }}>
-                  <button onClick={() => {
-                    fetch('/api/projects/create', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ customer_id: c.id, name: `${c.name} Project` }),
-                    }).catch(() => {});
-                  }} style={{
+                  <button onClick={() => { assignToProject(c); }} disabled={assigning} style={{
                     padding: '12px 16px', background: `${GOLD}20`, border: `1px solid ${GOLD}40`,
-                    borderRadius: 10, color: GOLD, fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                    borderRadius: 10, color: GOLD, fontWeight: 700, fontSize: 13,
+                    cursor: assigning ? 'wait' : 'pointer', opacity: assigning ? 0.6 : 1,
                     textAlign: 'left',
                   }}>
-                    Assign to Project
+                    {assigning ? 'Assigning…' : 'Assign to Project'}
                   </button>
                   <button onClick={() => {
                     window.open(`mailto:${c.email}`, '_blank');

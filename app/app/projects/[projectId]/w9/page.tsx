@@ -45,8 +45,7 @@ export default function W9Page() {
     try {
       const res = await fetch(`/api/projects/${projectId}`);
       const data = await res.json();
-      const project = data.project || data;
-      const subList = project.subcontractors || project.subs || [];
+      const subList = data.subs || data.subcontractors || [];
       setSubs(subList.map((s: any) => ({
         id: s.id || s.sub_id || `s-${Math.random()}`,
         name: s.name || s.company_name || '',

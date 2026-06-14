@@ -312,6 +312,8 @@ export default function LandingPage() {
           </div>
         </div>
 
+        {/* "How It Works" anchor target — points to the demo mockup region */}
+        <span id="how-it-works" aria-hidden="true" style={{ position: 'absolute' as const, top: 0, scrollMarginTop: 72 }} />
         {/* right — takeoff mockup */}
         <div id="demo" style={{ ...glass, padding: 0, overflow: 'hidden', position: 'relative', zIndex: 1, scrollMarginTop: 72 }} className="hero-mockup">
           {/* browser chrome */}

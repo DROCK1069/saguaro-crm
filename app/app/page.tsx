@@ -267,7 +267,7 @@ function DrillDownPanel({ type, onClose }: { type: DrillDownType; onClose: () =>
   const LINKS: Record<NonNullable<DrillDownType>, { href: string; label: string; desc: string }> = {
     projects: { href: '/app/projects',               label: 'View All Projects',    desc: 'Full project list with status and financials' },
     bids:     { href: '/app/bids',                   label: 'View All Bids',        desc: 'Open bids awaiting award' },
-    payapps:  { href: '/app/pay-applications',       label: 'View Pay Applications', desc: 'Submitted and pending pay apps' },
+    payapps:  { href: '/app/billing',                label: 'View Pay Applications', desc: 'Submitted and pending pay apps' },
     rfis:     { href: '/app/projects',               label: 'View Projects',         desc: 'Open RFIs across all projects' },
   };
   if (!type) return null;

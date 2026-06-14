@@ -228,8 +228,13 @@ export default function SafetyPage() {
         body: JSON.stringify({ projectId }),
       });
       const json = await res.json();
-      if (json.url) window.open(json.url, '_blank');
-      else { setSuccessMsg('JHA generation queued.'); setTimeout(() => setSuccessMsg(''), 4000); }
+      const link = json.pdfUrl || json.url;
+      if (link) {
+        window.open(link, '_blank');
+      } else {
+        setErrorMsg(json.error || 'JHA generation failed -- no document was returned.');
+        setTimeout(() => setErrorMsg(''), 4000);
+      }
     } catch {
       setSuccessMsg('JHA generation requested (demo mode).');
       setTimeout(() => setSuccessMsg(''), 4000);

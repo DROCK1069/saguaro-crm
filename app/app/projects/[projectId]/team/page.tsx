@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useToast } from '@/components/Toast';
 
 const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030',BLUE='#1a5fa8';
 const fmt = (n:number) => '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -27,6 +28,8 @@ function PageHeader({title,sub,actions}:{title:string,sub?:string,actions?:React
 export default function TeamPage(){
   const params = useParams();
   const projectId = params['projectId'] as string;
+  const { showToast } = useToast();
+  const [sendingPortal, setSendingPortal] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [members, setMembers] = useState<{name:string,role:string,email:string,access:string,last:string}[]>([]);
   const [subs, setSubs] = useState<{name:string,role:string,email:string,access:string,last:string}[]>([]);
@@ -73,6 +76,22 @@ export default function TeamPage(){
       }
     } catch { setInviteMsg('Network error. Please try again.'); }
     finally { setInviting(false); }
+  }
+
+  async function handleSendPortalLink(sub: { name: string; email: string }) {
+    if (!sub.email) { showToast('No contact email on file for this subcontractor.', 'error'); return; }
+    setSendingPortal(sub.name);
+    try {
+      const res = await fetch('/api/sub-portal/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: projectId, name: sub.name, company: sub.name, email: sub.email, role: 'Subcontractor' }),
+      });
+      const json = await res.json();
+      if (!res.ok) { showToast(json.error || 'Failed to send portal link.', 'error'); }
+      else { showToast(`Portal link sent to ${sub.email}`, 'success'); }
+    } catch { showToast('Network error. Please try again.', 'error'); }
+    finally { setSendingPortal(null); }
   }
 
   const inputStyle = {width:'100%',padding:'8px 12px',background:'#0d1117',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const};
@@ -135,7 +154,7 @@ export default function TeamPage(){
             <td style={{padding:'11px 12px',color:DIM}}>{s.email}</td>
             <td style={{padding:'11px 12px'}}><Badge label="Sub Portal" color='#a78bfa' bg='rgba(167,139,250,.12)'/></td>
             <td style={{padding:'11px 12px',display:'flex',gap:6}}>
-              <button style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:GOLD,fontSize:11,padding:'3px 8px',cursor:'pointer'}}>Send Portal Link</button>
+              <button onClick={()=>handleSendPortalLink(s)} disabled={sendingPortal===s.name} style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:GOLD,fontSize:11,padding:'3px 8px',cursor:sendingPortal===s.name?'default':'pointer',opacity:sendingPortal===s.name?.6:1}}>{sendingPortal===s.name?'Sending...':'Send Portal Link'}</button>
               <button style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,padding:'3px 8px',cursor:'pointer'}}>⋯</button>
             </td>
           </tr>)}</tbody>

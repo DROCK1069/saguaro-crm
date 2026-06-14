@@ -102,7 +102,7 @@ export default function EstimatePage() {
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <div style={{ fontSize: 18, fontWeight: 700, color: T.white, marginBottom: 8 }}>No takeoff data</div>
                   <div style={{ fontSize: 14, color: T.muted, marginBottom: 24 }}>Run a blueprint analysis first to generate estimate line items.</div>
-                  <a href={`/projects/${projectId}/takeoff`} style={{ textDecoration: 'none' }}>
+                  <a href={`/app/projects/${projectId}/takeoff`} style={{ textDecoration: 'none' }}>
                     <Btn>Go to Takeoff</Btn>
                   </a>
                 </div>

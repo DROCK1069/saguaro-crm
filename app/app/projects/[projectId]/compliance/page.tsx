@@ -56,7 +56,7 @@ export default function CompliancePage() {
       const data = await res.json();
       const project = data.project || data;
       setIsPublicProject(project.is_public || project.prevailing_wage || false);
-      const subList = project.subcontractors || project.subs || [];
+      const subList = data.subs || data.subcontractors || [];
       setSubs(subList.map((s: any) => ({
         id: s.id || s.sub_id,
         name: s.name || s.company_name,
