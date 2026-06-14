@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query;
     if (error) throw error;
     return NextResponse.json({ payApps: data || [], source: 'live' });
-  } catch {
-    return NextResponse.json({ payApps: [], source: 'error' });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ payApps: [], source: 'error', error: message }, { status: 500 });
   }
 }

@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     const db = createServerClient();
-    const allowed = ['description','location','trade','priority','status','due_date','notes','assigned_to'];
+    const allowed = ['title','description','location','trade','priority','status','due_date','notes','assigned_to'];
     const fields: Record<string, any> = {};
     for (const k of allowed) {
       if (body[k] !== undefined) fields[k] = body[k];

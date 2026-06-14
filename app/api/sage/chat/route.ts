@@ -48,19 +48,26 @@ export async function POST(req: NextRequest) {
     });
 
     const lastMessage = body.messages[body.messages.length - 1];
-    await saveMessageWithIntelligence(
-      user.id,
-      user.tenantId,
-      body.sessionId,
-      body.messageIndex,
-      'user',
-      lastMessage.content,
-      {
-        pageContext: body.pageContext,
-        projectId: body.projectId,
-        projectName: body.projectName,
-      }
-    );
+    // Best-effort: persisting the user message must never block the chat stream.
+    // sage_conversations is a session-level jsonb schema, so per-message inserts
+    // can throw; swallow the failure here so the Anthropic SSE stream still proceeds.
+    try {
+      await saveMessageWithIntelligence(
+        user.id,
+        user.tenantId,
+        body.sessionId,
+        body.messageIndex,
+        'user',
+        lastMessage.content,
+        {
+          pageContext: body.pageContext,
+          projectId: body.projectId,
+          projectName: body.projectName,
+        }
+      );
+    } catch (err) {
+      console.error('[sage/chat] saveMessageWithIntelligence (user) failed, continuing:', err);
+    }
 
     const client = new Anthropic();
     const stream = client.messages.stream({

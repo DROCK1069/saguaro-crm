@@ -11,16 +11,28 @@ export async function GET(req: NextRequest) {
   const projectId = searchParams.get('projectId') || searchParams.get('project_id');
   try {
     const db = createServerClient();
-    let q = db.from('toolbox_talks').select('*').eq('tenant_id', user.tenantId).order('talk_date', { ascending: false });
+    // Embed the presenter's profile via the created_by FK so we can resolve a
+    // human-readable name instead of leaking the raw user UUID.
+    let q = db
+      .from('toolbox_talks')
+      .select('*, presenter_profile:profiles!toolbox_talks_created_by_fkey(full_name)')
+      .eq('tenant_id', user.tenantId)
+      .order('talk_date', { ascending: false });
     if (projectId) q = q.eq('project_id', projectId);
     const { data, error } = await q;
     if (error) throw error;
-    // Map to the shape the mobile app expects (conducted_by <- presenter).
-    const talks = (data || []).map((t: Record<string, any>) => ({
-      ...t,
-      conducted_by: t.conducted_by ?? t.presenter ?? '',
-      notes: t.notes ?? t.content ?? '',
-    }));
+    // Map to the shape the mobile app expects (conducted_by <- presenter name).
+    // Prefer the plain-text presenter, then the resolved profile name, then the
+    // raw value so a UUID never surfaces in the UI.
+    const talks = (data || []).map((t: Record<string, any>) => {
+      const { presenter_profile, ...rest } = t;
+      const resolvedName = presenter_profile?.full_name ?? null;
+      return {
+        ...rest,
+        conducted_by: t.presenter || resolvedName || t.conducted_by || t.created_by || '',
+        notes: t.notes ?? t.content ?? '',
+      };
+    });
     return NextResponse.json({ talks });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

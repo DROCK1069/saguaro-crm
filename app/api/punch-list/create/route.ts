@@ -14,10 +14,27 @@ export async function POST(req: NextRequest) {
 
   try {
     const db = createServerClient();
+    const projectId = body.projectId || body.project_id;
+
+    // Assign the next per-project item number (punch_list.item_number).
+    let item_number = 1;
+    try {
+      const { data: last } = await db
+        .from('punch_list')
+        .select('item_number')
+        .eq('tenant_id', user.tenantId)
+        .eq('project_id', projectId)
+        .order('item_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      item_number = (Number((last as Record<string, unknown> | null)?.item_number) || 0) + 1;
+    } catch { /* default to 1 */ }
 
     const row = {
-      project_id:  body.projectId  || body.project_id,
+      project_id:  projectId,
       tenant_id:   user.tenantId,
+      item_number,
+      title:       body.title       || '',
       description: body.description || '',
       location:    body.location    || '',
       trade:       body.trade       || 'General Contractor',
