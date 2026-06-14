@@ -8,17 +8,27 @@ export async function GET(
   const { token } = await params;
   try {
     const db = createServerClient();
-    const { data, error } = await db
+    // Resolve the pay app by its owner-approval token. Fetch project + line
+    // items with separate queries: schedule_of_values.pay_app_id has no FK
+    // constraint, so a PostgREST embed (schedule_of_values(*)) errors out.
+    const { data: pa, error } = await db
       .from('pay_applications')
-      .select('*, projects(*), schedule_of_values(*)')
+      .select('*')
       .eq('owner_approval_token', token)
       .single();
-    if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    const pa = data as any;
+    if (error || !pa) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const [projectRes, sovRes] = await Promise.all([
+      pa.project_id
+        ? db.from('projects').select('*').eq('id', pa.project_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      db.from('schedule_of_values').select('*').eq('pay_app_id', pa.id).order('sort_order', { ascending: true }),
+    ]);
+
     return NextResponse.json({
       payApp: pa,
-      project: pa.projects,
-      lineItems: pa.schedule_of_values || [],
+      project: projectRes.data || null,
+      lineItems: sovRes.data || [],
     });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

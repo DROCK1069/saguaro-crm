@@ -24,9 +24,16 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const db = createServerClient();
+    const ALLOWED_TEMPLATE_COLUMNS = [
+      'name', 'description', 'questions', 'scoring_criteria', 'is_default',
+    ];
+    const insertRow: Record<string, any> = {};
+    for (const k of ALLOWED_TEMPLATE_COLUMNS) {
+      if (body[k] !== undefined) insertRow[k] = body[k];
+    }
     const { data, error } = await db
       .from('prequalification_templates')
-      .insert({ ...body, tenant_id: user.tenantId })
+      .insert({ ...insertRow, tenant_id: user.tenantId })
       .select()
       .single();
     if (error) throw error;

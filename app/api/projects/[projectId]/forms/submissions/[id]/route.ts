@@ -7,9 +7,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
   try {
     const body = await req.json();
     const supabase = createServerClient();
+    const ALLOWED_SUBMISSION_COLUMNS = [
+      'project_id', 'template_id', 'submitted_by', 'data', 'status', 'reviewed_by', 'reviewed_at',
+      'notes', 'responses', 'location',
+    ];
+    const updates: Record<string, any> = {};
+    for (const k of ALLOWED_SUBMISSION_COLUMNS) {
+      if (body[k] !== undefined) updates[k] = body[k];
+    }
     const { data, error } = await supabase
       .from('form_submissions')
-      .update({ ...body, reviewed_by: user.email, updated_at: new Date().toISOString() })
+      .update({ ...updates, reviewed_by: user.email, updated_at: new Date().toISOString() })
       .eq('id', params.id)
       .eq('project_id', params.projectId)
       .select()

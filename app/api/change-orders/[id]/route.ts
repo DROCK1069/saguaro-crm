@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
+const ALLOWED_CO_COLUMNS = [
+  'project_id', 'title', 'description', 'amount', 'status', 'reason', 'submitted_by', 'co_number',
+  'schedule_impact', 'approved_by', 'approved_at', 'rejected_by', 'rejected_at', 'rejection_reason',
+  'submitted_at', 'rejected_reason', 'line_items', 'schedule_impact_days', 'revised_completion_date',
+  'scope_of_change', 'work_included', 'work_excluded', 'pay_application_id', 'original_bid_package_id',
+  'pdf_url', 'pdf_generated_at', 'pdf_version', 'contractor_signature', 'contractor_signed_at',
+  'owner_signature', 'owner_signed_at', 'architect_signature', 'architect_signed_at', 'notes',
+  'change_type', 'original_co_amount', 'markup_overhead_pct', 'markup_profit_pct', 'subtrade_amount',
+  'subtrade_markup_pct', 'materials_amount', 'labor_amount', 'equipment_amount', 'overhead_amount',
+  'profit_amount', 'related_rfi_id', 'related_submittal_id', 'related_bid_package_id', 'billable_to',
+  'contract_reference', 'drawing_revision', 'specification_revision', 'owner_approval_required',
+  'architect_approval_required', 'ai_generated', 'ai_draft_narrative', 'ai_pricing_source',
+  'html_content', 'owner_approval_token', 'owner_approval_notes', 'sent_to_owner_at',
+  'owner_actioned_at', 'owner_email', 'qbo_synced_at', 'updated_at',
+];
+
+function filterCoBody(body: Record<string, any>): Record<string, any> {
+  const updates: Record<string, any> = {};
+  for (const k of ALLOWED_CO_COLUMNS) {
+    if (body[k] !== undefined) updates[k] = body[k];
+  }
+  return updates;
+}
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -20,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     const db = createServerClient();
-    const { data, error } = await db.from('change_orders').update(body).eq('id', id).select().single();
+    const { data, error } = await db.from('change_orders').update(filterCoBody(body)).eq('id', id).select().single();
     if (error) throw error;
     return NextResponse.json({ changeOrder: data });
   } catch {
@@ -35,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const body = await req.json();
     const db = createServerClient();
-    const { data, error } = await db.from('change_orders').update(body).eq('id', id).select().single();
+    const { data, error } = await db.from('change_orders').update(filterCoBody(body)).eq('id', id).select().single();
     if (error) throw error;
     return NextResponse.json({ changeOrder: data });
   } catch {
