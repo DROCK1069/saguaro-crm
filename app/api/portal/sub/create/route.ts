@@ -86,11 +86,11 @@ export async function POST(req: NextRequest) {
     // Get GC company name for the email
     const { data: profile } = await db
       .from('profiles')
-      .select('full_name, company_name')
+      .select('full_name, company')
       .eq('id', user.id)
       .maybeSingle();
-    const gcCompanyName = (profile as { company_name?: string; full_name?: string } | null)?.company_name
-      || (profile as { company_name?: string; full_name?: string } | null)?.full_name
+    const gcCompanyName = (profile as { company?: string; full_name?: string } | null)?.company
+      || (profile as { company?: string; full_name?: string } | null)?.full_name
       || 'Your General Contractor';
 
     // Fire invite email — track actual send result

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       .from('portal_users')
       .select('*')
       .eq('tenant_id', user.tenantId)
-      .eq('type', 'client')
+      .eq('portal_type', 'client')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json({ data });
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const db = createServerClient();
     const { data, error } = await db
       .from('portal_users')
-      .insert({ ...body, tenant_id: user.tenantId, type: 'client' })
+      .insert({ ...body, tenant_id: user.tenantId, portal_type: 'client' })
       .select()
       .single();
     if (error) throw error;

@@ -62,7 +62,7 @@ export async function GET(
         .eq('project_id', projectId)
         .order('created_at', { ascending: false }),
       db.from('contracts')
-        .select('id, company_name, contract_amount, status, retainage_pct, created_at')
+        .select('id, party_company, contract_amount, status, retainage_pct, created_at')
         .eq('project_id', projectId)
         .eq('tenant_id', user.tenantId),
       db.from('change_orders')

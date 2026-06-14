@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       .from('portal_users')
       .select('*')
       .eq('tenant_id', user.tenantId)
-      .eq('type', 'sub')
+      .eq('portal_type', 'sub')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json({ data });

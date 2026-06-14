@@ -2102,7 +2102,7 @@ export async function POST(req: NextRequest) {
       { data: userProfile },
     ] = await Promise.all([
       db.from('projects')
-        .select('id, name, status, contract_amount, start_date, end_date, address, owner_name, percent_complete, retainage_percent')
+        .select('id, name, status, contract_amount, start_date, end_date, address, owner_name, percent_complete, retainage_pct')
         .eq('tenant_id', user.tenantId)
         .order('updated_at', { ascending: false })
         .limit(20),

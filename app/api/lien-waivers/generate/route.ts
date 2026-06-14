@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       tenant_id: user?.tenantId || p?.tenant_id,
       project_id: body.projectId,
       sub_id: body.subId || null,
-      pay_app_id: body.payAppId || null,
+      pay_application_id: body.payAppId || null,
       waiver_type: body.waiverType,
       state: body.state || p?.state || 'AZ',
       amount: body.amount,

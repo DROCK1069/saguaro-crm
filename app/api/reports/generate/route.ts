@@ -85,14 +85,14 @@ export async function POST(req: NextRequest) {
       }
 
       if (reportType === 'lien-waiver-log') {
-        let q = db.from('lien_waivers').select('*, subcontractors!subcontractor_id(name, trade), projects!project_id(name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100);
+        let q = db.from('lien_waivers').select('*, subcontractors!subcontractor_id(company_name, trade), projects!project_id(name)').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100);
         if (projectId) q = q.eq('project_id', projectId);
         const { data: waivers } = await q;
         return NextResponse.json({
           message: `Lien Waiver Log — ${(waivers || []).length} records (${timestamp})`,
           reportType, format, title: config.title, columns: config.columns,
           rows: (waivers || []).map((w: any) => [
-            w.subcontractors?.name ?? 'Unknown',
+            w.subcontractors?.company_name ?? 'Unknown',
             w.subcontractors?.trade ?? '',
             w.waiver_type ?? w.type ?? '',
             w.amount ? `$${w.amount.toLocaleString()}` : '',
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (reportType === 'insurance-compliance') {
-        let q = db.from('insurance_certificates').select('*, subcontractors!subcontractor_id(name, trade), projects!project_id(name)').eq('tenant_id', tenantId).order('expiry_date', { ascending: true }).limit(100);
+        let q = db.from('insurance_certificates').select('*, subcontractors!sub_id(company_name, trade), projects!project_id(name)').eq('tenant_id', tenantId).order('expiry_date', { ascending: true }).limit(100);
         if (projectId) q = q.eq('project_id', projectId);
         const { data: certs } = await q;
         const today = new Date().toISOString().split('T')[0];
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
             const expiring = c.expiry_date && c.expiry_date < new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
             const expired = c.expiry_date && c.expiry_date < today;
             return [
-              c.subcontractors?.name ?? 'Unknown',
+              c.subcontractors?.company_name ?? 'Unknown',
               c.subcontractors?.trade ?? '',
               c.policy_number ?? '',
               c.expiry_date ?? '',

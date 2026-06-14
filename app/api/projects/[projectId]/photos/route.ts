@@ -75,7 +75,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       query = query.lte('created_at', date_to + 'T23:59:59Z');
     }
     if (uploader) {
-      query = query.eq('uploaded_by', uploader);
+      query = query.eq('taken_by', uploader);
     }
 
     // Sort
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       caption,
       latitude: gps_lat ? Number(gps_lat) : null,
       longitude: gps_lng ? Number(gps_lng) : null,
-      uploaded_by: user.email,
+      taken_by: user.email,
       file_size: file.size,
       mime_type: file.type,
       created_at: new Date().toISOString(),

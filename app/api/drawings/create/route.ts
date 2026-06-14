@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
     const { data, error } = await db.from('drawings').insert({
       tenant_id: user.tenantId,
       project_id: body.projectId,
-      drawing_number: body.drawing_number || body.drawingNumber || '',
-      title: body.title || '',
+      sheet_number: body.drawing_number || body.drawingNumber || '',
+      name: body.title || '',
       discipline: body.discipline || 'Architectural',
-      revision: body.revision ?? 0,
+      version: body.revision ?? 0,
       revision_date: body.revision_date || null,
       status: body.status || 'current',
       url: body.url || '',

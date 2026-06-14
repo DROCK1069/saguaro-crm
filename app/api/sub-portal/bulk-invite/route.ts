@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const invites = (body.invites || []).map((invite: any) => ({
       ...invite,
       tenant_id: user.tenantId,
-      type: 'sub',
+      portal_type: 'sub',
     }));
     const { data, error } = await db
       .from('portal_users')

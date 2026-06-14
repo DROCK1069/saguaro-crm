@@ -30,7 +30,7 @@ export async function GET(
     const { count, error: countErr } = await supabase
       .from('bim_elements')
       .select('*', { count: 'exact', head: true })
-      .eq('model_id', id)
+      .eq('bim_model_id', id)
       .eq('tenant_id', user.tenantId);
 
     if (countErr) {

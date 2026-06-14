@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const db = createServerClient();
     const { data, error } = await db
       .from('portal_users')
-      .insert({ ...body, tenant_id: user.tenantId, type: 'sub' })
+      .insert({ ...body, tenant_id: user.tenantId, portal_type: 'sub' })
       .select()
       .single();
     if (error) throw error;

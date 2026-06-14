@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         rejection_reason: body.reason || null,
       })
       .eq('id', id)
-      .select('*, projects(*)')
+      .select('*, projects!fk_change_orders_project(*)')
       .single();
 
     if (error) throw error;

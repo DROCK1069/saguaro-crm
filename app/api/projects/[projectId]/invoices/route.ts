@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       invoice_number: body.invoice_number || null, vendor_name: body.vendor_name,
       amount: body.amount || 0, status: body.status || 'draft',
       due_date: body.due_date || null, description: body.description || null,
-      file_url: body.file_url || null,
+      pdf_url: body.file_url || null,
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ invoice: data }, { status: 201 });

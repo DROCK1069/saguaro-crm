@@ -156,14 +156,14 @@ function ChangeOrdersPage() {
     if (isNaN(amount)) return;
     const co = cos.find(c => c.id === actionSheet.coId);
     if (!co) return;
-    const url = `/api/change-orders/${actionSheet.coId}/approve`;
-    const body = JSON.stringify({ ...co, amount });
+    const url = `/api/change-orders/${actionSheet.coId}/update`;
+    const body = JSON.stringify({ amount });
     try {
-      const r = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body });
+      const r = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
       if (!r.ok) throw new Error();
     } catch {
       if (typeof window !== 'undefined') {
-        try { await enqueue({ url, method: 'PUT', body, contentType: 'application/json', isFormData: false }); } catch { /* */ }
+        try { await enqueue({ url, method: 'PATCH', body, contentType: 'application/json', isFormData: false }); } catch { /* */ }
       }
     }
     setCos(prev => prev.map(c => c.id === actionSheet.coId ? { ...c, amount } : c));
@@ -176,14 +176,14 @@ function ChangeOrdersPage() {
     const newAmt = Math.round(actionSheet.amount * (1 + pct / 100) * 100) / 100;
     const co = cos.find(c => c.id === actionSheet.coId);
     if (!co) return;
-    const url = `/api/change-orders/${actionSheet.coId}/approve`;
-    const body = JSON.stringify({ ...co, amount: newAmt });
+    const url = `/api/change-orders/${actionSheet.coId}/update`;
+    const body = JSON.stringify({ amount: newAmt });
     try {
-      const r = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body });
+      const r = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
       if (!r.ok) throw new Error();
     } catch {
       if (typeof window !== 'undefined') {
-        try { await enqueue({ url, method: 'PUT', body, contentType: 'application/json', isFormData: false }); } catch { /* */ }
+        try { await enqueue({ url, method: 'PATCH', body, contentType: 'application/json', isFormData: false }); } catch { /* */ }
       }
     }
     setCos(prev => prev.map(c => c.id === actionSheet.coId ? { ...c, amount: newAmt } : c));

@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         .select('title, summary, content')
         .eq('tenant_id', user.tenantId)
         .eq('trade', trade)
-        .order('view_count', { ascending: false })
+        .order('views', { ascending: false })
         .limit(3);
 
       if (articles && articles.length > 0) {
