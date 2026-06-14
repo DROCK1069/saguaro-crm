@@ -464,22 +464,19 @@ export default function DashboardPage() {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Active', value: stats?.activeProjects ?? 0 },
-                          { name: 'Open Bids', value: stats?.openBids ?? 0 },
-                          { name: 'Pay Apps', value: stats?.pendingPayApps ?? 0 },
-                          { name: 'RFIs', value: openRFIs?.length ?? 0 },
+                          { name: 'Active', value: stats?.activeProjects ?? 0, fill: GOLD },
+                          { name: 'Open Bids', value: stats?.openBids ?? 0, fill: BLUE },
+                          { name: 'Pay Apps', value: stats?.pendingPayApps ?? 0, fill: ORANGE },
+                          { name: 'RFIs', value: openRFIs?.length ?? 0, fill: RED },
                         ].filter(d => d.value > 0)}
                         cx="50%" cy="50%"
                         innerRadius={45} outerRadius={70}
                         paddingAngle={3}
                         dataKey="value"
                         stroke="none"
-                      >
-                        <Cell fill={GOLD} />
-                        <Cell fill={BLUE} />
-                        <Cell fill={ORANGE} />
-                        <Cell fill={RED} />
-                      </Pie>
+                      />
+                      {/* Per-datum `fill` colors each slice; dynamically-imported <Cell> is
+                          not recognized by recharts so its fill was being ignored (gray donut). */}
                       <Tooltip
                         contentStyle={{ background: RAISED_ALT, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 12, color: TEXT, boxShadow: SHADOW_MD }}
                       />

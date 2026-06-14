@@ -26,12 +26,12 @@ export async function GET(req: NextRequest) {
       db.from('projects').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'active'),
       db.from('bid_packages').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'open'),
       db.from('pay_applications').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ['submitted', 'approved']),
-      db.from('projects').select('contract_amount').eq('tenant_id', tenantId).eq('status', 'active'),
+      db.from('projects').select('contract_value').eq('tenant_id', tenantId).eq('status', 'active'),
       db.from('rfis').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'open'),
       db.from('insurance_certificates').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).lte('expiry_date', new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]),
     ]);
 
-    const totalContractValue = (projects || []).reduce((s: number, p: any) => s + (p.contract_amount || 0), 0);
+    const totalContractValue = (projects || []).reduce((s: number, p: any) => s + (p.contract_value || 0), 0);
 
     return NextResponse.json({
       stats: {
