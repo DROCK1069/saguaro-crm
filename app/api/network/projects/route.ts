@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     if (!user) return unauthorized();
 
     const body = await req.json();
-    const { project_id, name, site_type, building_count, floor_count, square_footage, notes } = body;
+    const { project_id, name, site_type, floor_count, square_footage, notes } = body;
 
     if (!project_id) return badRequest('project_id is required');
     if (!name) return badRequest('name is required');
@@ -69,12 +69,10 @@ export async function POST(req: NextRequest) {
         project_id,
         name,
         site_type: site_type || 'commercial',
-        building_count: building_count || 1,
         floor_count: floor_count || 1,
         square_footage: square_footage || 0,
         notes: notes || '',
         status: 'planning',
-        created_by: user.id,
       })
       .select()
       .single();

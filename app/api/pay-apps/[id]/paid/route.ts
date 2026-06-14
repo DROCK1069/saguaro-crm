@@ -9,7 +9,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const db = createServerClient();
     const { error } = await db
       .from('pay_applications')
-      .update({ status: 'paid', paid_date: new Date().toISOString().split('T')[0] })
+      .update({ status: 'paid', payment_received_at: new Date().toISOString() })
       .eq('id', id)
       .eq('tenant_id', user.tenantId);
     if (error) throw error;

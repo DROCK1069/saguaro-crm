@@ -85,13 +85,15 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient();
 
+    // sage_trigger_events schema: event_type (text), data (jsonb), project_id, tenant_id,
+    // processed/processed_at, created_at. There is no user_id or trigger_type/trigger_data
+    // column — the trigger type maps to event_type and the actor + payload fold into data.
     const { data: triggerRow, error: triggerError } = await supabase
       .from('sage_trigger_events')
       .insert({
-        user_id: user.id,
         tenant_id: user.tenantId,
-        trigger_type: body.triggerType,
-        trigger_data: body.triggerData ?? {},
+        event_type: body.triggerType,
+        data: { ...(body.triggerData ?? {}), user_id: user.id },
         project_id: body.projectId ?? null,
         created_at: new Date().toISOString(),
       })
@@ -104,19 +106,29 @@ export async function POST(req: NextRequest) {
 
     const priority = getPriority(body.triggerType, body.triggerData);
     const message = buildInsightMessage(body.triggerType, body.triggerData);
+    const severity = priority >= 8 ? 'high' : priority >= 6 ? 'medium' : 'low';
 
+    // sage_proactive_insights schema: insight_type, title, body, severity, status,
+    // dismissed_at, action_url, metadata (jsonb). There is no user_id / trigger_type /
+    // message / priority / delivered / dismissed / trigger_event_id column. The numeric
+    // priority, originating user, and trigger linkage fold into metadata; delivered/
+    // dismissed booleans collapse into the status field.
     const { data: insightRow, error: insightError } = await supabase
       .from('sage_proactive_insights')
       .insert({
-        user_id: user.id,
         tenant_id: user.tenantId,
-        trigger_event_id: triggerRow.id,
-        trigger_type: body.triggerType,
-        message,
-        priority,
+        insight_type: body.triggerType,
+        title: body.triggerType,
+        body: message,
+        severity,
+        status: 'pending',
         project_id: body.projectId ?? null,
-        delivered: false,
-        dismissed: false,
+        metadata: {
+          user_id: user.id,
+          trigger_event_id: triggerRow.id,
+          trigger_type: body.triggerType,
+          priority,
+        },
         created_at: new Date().toISOString(),
       })
       .select('id')
@@ -126,9 +138,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
+    // Back-reference the insight on the trigger event. sage_trigger_events has no
+    // insight_id column, so fold the linkage into its data jsonb and mark it processed.
     await supabase
       .from('sage_trigger_events')
-      .update({ insight_id: insightRow.id })
+      .update({
+        processed: true,
+        processed_at: new Date().toISOString(),
+        data: { ...(body.triggerData ?? {}), user_id: user.id, insight_id: insightRow.id },
+      })
       .eq('id', triggerRow.id);
 
     return NextResponse.json({ success: true, insightCreated: true });

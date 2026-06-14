@@ -19,9 +19,6 @@ export async function POST(req: NextRequest) {
       end_date: body.end_date || body.endDate,
       pct_complete: body.pct_complete ?? body.pctComplete ?? 0,
       status: body.status || 'not_started',
-      predecessor: body.predecessor || '',
-      assigned_to: body.assigned_to || '',
-      notes: body.notes || '',
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, task: data });

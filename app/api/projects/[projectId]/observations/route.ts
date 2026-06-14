@@ -24,10 +24,23 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const body = await req.json();
     const supabase = createServerClient();
-    const record = {
+    // observations real columns: title, description, observation_type, severity,
+    // location, photo_urls, assigned_to, status, due_date, created_by(uuid).
+    // The field page sends type/priority/template/photos plus rich fields
+    // (checklist, corrective_action, lat/lng, trade, category) that have no column
+    // and no jsonb home on this table, so they are dropped to avoid a 500.
+    const record: Record<string, unknown> = {
       project_id: params.projectId,
-      ...body,
-      created_by: user.email,
+      tenant_id: user.tenantId,
+      title: body.title ?? body.template ?? null,
+      description: body.description ?? null,
+      observation_type: body.observation_type ?? body.type ?? null,
+      severity: body.severity ?? body.priority ?? null,
+      location: body.location ?? null,
+      photo_urls: body.photo_urls ?? body.photos ?? [],
+      assigned_to: body.assigned_to ?? null,
+      due_date: body.due_date ?? null,
+      created_by: user.id,
       status: body.status || 'open',
       created_at: new Date().toISOString(),
     };

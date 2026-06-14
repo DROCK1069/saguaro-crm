@@ -7,7 +7,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     const db = createServerClient();
-    const allowed = ['title','description','album','location','taken_at','tags','taken_by'];
+    const allowed = ['title','description','album','taken_at','tags','taken_by'];
     const fields: Record<string, any> = {};
     for (const k of allowed) { if (body[k] !== undefined) fields[k] = body[k]; }
     const { error } = await db.from('photos').update(fields).eq('id', id).eq('tenant_id', user.tenantId);

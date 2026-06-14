@@ -82,6 +82,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Live portal_sub_messages columns: sub_id, project_id, tenant_id,
+    // sender_name, sender_type, content, read_at, created_at. There is no
+    // sender_id / attachments column, and read state is tracked via read_at
+    // (null = unread) rather than a boolean read column.
     const { data: message, error } = await db
       .from('portal_sub_messages')
       .insert({
@@ -89,10 +93,7 @@ export async function POST(req: NextRequest) {
         project_id: session.project_id,
         tenant_id: session.tenant_id,
         sender_type: 'sub',
-        sender_id: session.sub_id,
         content: content.trim(),
-        attachments: attachments || [],
-        read: false,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -138,7 +139,6 @@ export async function PATCH(req: NextRequest) {
     const { error } = await db
       .from('portal_sub_messages')
       .update({
-        read: true,
         read_at: new Date().toISOString(),
       })
       .in('id', message_ids)

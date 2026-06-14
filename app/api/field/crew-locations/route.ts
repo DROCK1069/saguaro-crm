@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
           user_id: user.id,
           latitude,
           longitude,
-          accuracy: accuracy || null,
+          accuracy_meters: accuracy || null,
           heading: heading || null,
           speed: speed || null,
           updated_at: new Date().toISOString(),

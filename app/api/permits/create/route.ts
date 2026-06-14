@@ -7,12 +7,30 @@ export async function POST(req: NextRequest) {
   let body: Record<string, unknown> = {};
   try {
     body = await req.json().catch(() => ({}));
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data, error } = await supabase.from('permits').insert(body).select().single();
+    const db = createServerClient();
+
+    // The page POSTs { projectId, status, inspector, permit_type, number,
+    // authority, fee, applied_date, issued_date, expiry_date }. Map the page's
+    // field names onto real permits columns, scope to tenant, and drop fields
+    // with no column (inspector). `number`->permit_number, `authority`->issuing_authority.
+    const insert: Record<string, unknown> = {
+      tenant_id: user.tenantId,
+      project_id: body.project_id ?? body.projectId ?? null,
+      created_by: user.id,
+      status: body.status ?? 'applied',
+    };
+    if (body.permit_type !== undefined) insert.permit_type = body.permit_type;
+    if (body.permit_number !== undefined) insert.permit_number = body.permit_number;
+    else if (body.number !== undefined) insert.permit_number = body.number;
+    if (body.issuing_authority !== undefined) insert.issuing_authority = body.issuing_authority;
+    else if (body.authority !== undefined) insert.issuing_authority = body.authority;
+    if (body.fee !== undefined) insert.fee = body.fee;
+    if (body.applied_date !== undefined && body.applied_date !== '') insert.applied_date = body.applied_date;
+    if (body.issued_date !== undefined && body.issued_date !== '') insert.issued_date = body.issued_date;
+    if (body.expiry_date !== undefined && body.expiry_date !== '') insert.expiry_date = body.expiry_date;
+    if (body.notes !== undefined) insert.notes = body.notes;
+
+    const { data, error } = await db.from('permits').insert(insert).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, permit: data });
   } catch (err: unknown) {

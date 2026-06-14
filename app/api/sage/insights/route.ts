@@ -13,14 +13,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // sage_proactive_insights has no user_id/delivered/dismissed/priority columns:
+    // the owning user and numeric priority live in metadata, and pending vs dismissed
+    // is tracked via status. Scope by tenant + metadata user, surface pending insights.
     const supabase = createServerClient();
     const { data } = await supabase
       .from('sage_proactive_insights')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('delivered', false)
-      .eq('dismissed', false)
-      .order('priority', { ascending: false })
+      .eq('tenant_id', user.tenantId)
+      .eq('metadata->>user_id', user.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
       .limit(10);
 
     return NextResponse.json({ insights: data ?? [] });
@@ -42,12 +45,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'insightId is required' }, { status: 400 });
     }
 
+    // No dismissed/user_id columns: collapse dismissal into status + dismissed_at,
+    // and scope ownership via tenant + metadata user.
     const supabase = createServerClient();
     await supabase
       .from('sage_proactive_insights')
-      .update({ dismissed: body.dismissed })
+      .update({
+        status: body.dismissed ? 'dismissed' : 'pending',
+        dismissed_at: body.dismissed ? new Date().toISOString() : null,
+      })
       .eq('id', body.insightId)
-      .eq('user_id', user.id);
+      .eq('tenant_id', user.tenantId)
+      .eq('metadata->>user_id', user.id);
 
     return NextResponse.json({ success: true });
   } catch {

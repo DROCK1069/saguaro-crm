@@ -7,7 +7,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const db = createServerClient();
     const body = await req.json();
-    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+    const updates: Record<string, any> = {};
     if (body.bid_amount !== undefined) updates.bid_amount = Number(body.bid_amount);
     if (body.margin_pct !== undefined) updates.margin_pct = Number(body.margin_pct);
     if (body.notes !== undefined) updates.notes = body.notes;

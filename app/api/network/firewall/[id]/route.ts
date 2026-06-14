@@ -51,7 +51,7 @@ export async function PATCH(
 
     const { data, error } = await db
       .from('firewall_rules')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(updates)
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
       .select()

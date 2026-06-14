@@ -87,40 +87,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Auto-number: get the latest RFI number for this project + sub
-    const { data: latestRfis } = await db
+    // Auto-number for the response label only. portal_sub_rfis has no rfi_number
+    // column, so the number is derived from the existing row count rather than a
+    // stored value and is not persisted.
+    const { count: existingCount } = await db
       .from('portal_sub_rfis')
-      .select('rfi_number')
+      .select('id', { count: 'exact', head: true })
       .eq('project_id', session.project_id)
       .eq('sub_id', session.sub_id)
-      .eq('tenant_id', session.tenant_id)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .eq('tenant_id', session.tenant_id);
 
-    let nextNum = 1;
-    if (latestRfis && latestRfis.length > 0) {
-      const lastNumber = latestRfis[0].rfi_number;
-      const match = lastNumber?.match(/RFI-SUB-(\d+)/);
-      if (match) {
-        nextNum = parseInt(match[1], 10) + 1;
-      }
-    }
-
+    const nextNum = (existingCount || 0) + 1;
     const rfiNumber = `RFI-SUB-${String(nextNum).padStart(3, '0')}`;
 
+    // Live portal_sub_rfis columns: subject, question, answer, status,
+    // submitted_at, answered_at, created_at. rfi_number / priority /
+    // reference_drawing / reference_spec / attachments have no column (and no
+    // jsonb to fold into) so they are dropped.
     const { data: rfi, error } = await db
       .from('portal_sub_rfis')
       .insert({
         sub_id: session.sub_id,
         project_id: session.project_id,
         tenant_id: session.tenant_id,
-        rfi_number: rfiNumber,
         subject,
         question,
-        priority: priority || 'normal',
-        reference_drawing: reference_drawing || null,
-        reference_spec: reference_spec || null,
-        attachments: attachments || [],
         status: 'open',
         submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString(),

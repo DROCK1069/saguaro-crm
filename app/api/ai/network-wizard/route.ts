@@ -344,8 +344,11 @@ Requirements:
             security_type: w.security_type || 'WPA3-Enterprise',
             band: w.band || '2.4/5GHz',
             hidden: w.hidden ?? false,
-            guest_network: w.guest_network ?? false,
-            description: w.description || '',
+            // wifi_networks has no guest_network column; surface guest intent in notes.
+            notes: [
+              w.description || '',
+              w.guest_network ? 'Guest network' : '',
+            ].filter(Boolean).join(' — ') || null,
             enabled: true,
           }));
           const { error: wErr } = await supabase.from('wifi_networks').insert(wifiRows);
@@ -359,14 +362,13 @@ Requirements:
           const cableRows = parsed.cable_estimate.map((c: any, idx: number) => ({
             network_project_id,
             tenant_id: _tenantId,
-            cable_id: `EST-${String(idx + 1).padStart(3, '0')}`,
-            cable_type: c.cable_type || 'Cat6A',
-            category: c.category || 'Cat6A',
+            // cable_runs uses cable_label (not cable_id) and has no category/status columns.
+            cable_label: `EST-${String(idx + 1).padStart(3, '0')}`,
+            cable_type: c.cable_type || c.category || 'Cat6A',
             from_location: c.from_area || '',
             to_location: c.to_area || '',
             length_ft: c.avg_length_ft || 0,
             notes: `Estimated ${c.estimated_runs || 0} runs — ${c.purpose || ''}`,
-            status: 'planned',
           }));
           const { error: cErr } = await supabase.from('cable_runs').insert(cableRows);
           if (cErr) console.error('[network-wizard] cables insert error:', cErr.message);

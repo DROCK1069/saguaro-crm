@@ -10,24 +10,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'projectId and item are required' }, { status: 400 });
     }
     const db = createServerClient();
-    const { data, error } = await db.from('selections').insert({
+
+    // selections columns: tenant_id, project_id, category, item_name, description,
+    // allowance, selected_amount, variance, status, vendor, lead_time, due_date,
+    // selected_by, selected_at, photo_url, notes. The page sends a richer model
+    // (item->item_name, cost->selected_amount). There is no jsonb column, so the
+    // remaining product attributes (manufacturer/model/color/finish/link) are
+    // folded into the free-text `description` column rather than dropped, and
+    // owner_approved (no column) is dropped.
+    const descParts = [
+      body.manufacturer ? `Manufacturer: ${body.manufacturer}` : '',
+      body.model ? `Model: ${body.model}` : '',
+      body.color ? `Color: ${body.color}` : '',
+      body.finish ? `Finish: ${body.finish}` : '',
+      body.link ? `Link: ${body.link}` : '',
+    ].filter(Boolean);
+
+    const insert: Record<string, unknown> = {
       tenant_id: user.tenantId,
       project_id: body.projectId,
       category: body.category || 'Other',
-      item: body.item || '',
-      manufacturer: body.manufacturer || '',
-      model: body.model || '',
-      color: body.color || '',
-      finish: body.finish || '',
-      cost: Number(body.cost) || 0,
+      item_name: body.item || body.item_name || '',
+      selected_amount: Number(body.cost ?? body.selected_amount) || 0,
       allowance: Number(body.allowance) || 0,
       status: body.status || 'pending',
       selected_by: body.selected_by || body.selectedBy || '',
-      owner_approved: body.owner_approved || false,
       due_date: body.due_date || null,
       notes: body.notes || '',
-      link: body.link || '',
-    }).select().single();
+    };
+    if (descParts.length) insert.description = descParts.join(' | ');
+
+    const { data, error } = await db.from('selections').insert(insert).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, selection: data });
   } catch {

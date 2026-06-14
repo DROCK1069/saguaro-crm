@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       .eq('sub_id', session.sub_id)
       .eq('project_id', session.project_id)
       .eq('tenant_id', session.tenant_id)
-      .order('period_end', { ascending: false });
+      .order('period_to', { ascending: false });
 
     if (error) throw error;
 
@@ -92,21 +92,23 @@ export async function POST(req: NextRequest) {
     const retainageAmount = calcTotal * (retPct / 100);
     const netAmount = calcTotal - retainageAmount;
 
-    // Create the pay app
+    // Create the pay app.
+    // Live portal_sub_pay_apps columns: period_from, period_to, amount, retainage,
+    // net_amount, status, pdf_url, submitted_at. application_number, retainage_percent
+    // and notes have no column (and no jsonb to fold into) so they are dropped.
+    // period_start -> period_from, period_end -> period_to, total_requested -> amount,
+    // retainage_amount -> retainage.
     const { data: payApp, error: payAppError } = await db
       .from('portal_sub_pay_apps')
       .insert({
         sub_id: session.sub_id,
         project_id: session.project_id,
         tenant_id: session.tenant_id,
-        period_start: period_start || null,
-        period_end,
-        application_number: application_number || null,
-        total_requested: total_requested || calcTotal,
-        retainage_percent: retPct,
-        retainage_amount: retainageAmount,
+        period_from: period_start || null,
+        period_to: period_end,
+        amount: total_requested || calcTotal,
+        retainage: retainageAmount,
         net_amount: netAmount,
-        notes: notes || null,
         status: 'submitted',
         submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -116,21 +118,28 @@ export async function POST(req: NextRequest) {
 
     if (payAppError) throw payAppError;
 
-    // Insert line items tied to SOV
-    const lineItemRows = line_items.map((item: any) => ({
-      pay_app_id: payApp.id,
-      tenant_id: session.tenant_id,
-      sov_item_id: item.sov_item_id || null,
-      description: item.description,
-      scheduled_value: item.scheduled_value || 0,
-      previous_completed: item.previous_completed || 0,
-      this_period: item.this_period || 0,
-      amount_requested: item.amount_requested || 0,
-      percent_complete: item.percent_complete || 0,
-      gc_notes: null,
-      gc_approved_amount: null,
-      gc_status: 'pending',
-    }));
+    // Insert line items tied to SOV.
+    // Live portal_sub_pay_app_line_items columns: pay_app_id, description,
+    // scheduled_value, prev_completed, this_period, total_completed,
+    // percent_complete, balance. There is no tenant_id / sov_item_id / amount_requested
+    // / gc_* column. previous_completed -> prev_completed; total_completed and balance
+    // are derived.
+    const lineItemRows = line_items.map((item: any) => {
+      const scheduledValue = item.scheduled_value || 0;
+      const prevCompleted = item.previous_completed || 0;
+      const thisPeriod = item.this_period || item.amount_requested || 0;
+      const totalCompleted = prevCompleted + thisPeriod;
+      return {
+        pay_app_id: payApp.id,
+        description: item.description,
+        scheduled_value: scheduledValue,
+        prev_completed: prevCompleted,
+        this_period: thisPeriod,
+        total_completed: totalCompleted,
+        percent_complete: item.percent_complete || 0,
+        balance: scheduledValue - totalCompleted,
+      };
+    });
 
     const { error: lineError } = await db
       .from('portal_sub_pay_app_line_items')

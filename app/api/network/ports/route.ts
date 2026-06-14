@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      device_id, port_number, port_label, port_type, speed,
-      vlan_id, connected_device_id, connected_port, description,
+      device_id, port_number, port_label, speed,
+      vlan_id, connected_device_id, description,
       poe_enabled, status,
     } = body;
 
@@ -76,15 +76,12 @@ export async function POST(req: NextRequest) {
       .from('network_ports')
       .insert({
         device_id,
-        network_project_id: device.network_project_id,
         tenant_id: user.tenantId,
         port_number,
         port_label: port_label || `Port ${port_number}`,
-        port_type: port_type || 'ethernet',
         speed: speed || '1G',
         vlan_id: vlan_id || null,
         connected_device_id: connected_device_id || null,
-        connected_port: connected_port || null,
         description: description || '',
         poe_enabled: poe_enabled ?? false,
         status: status || 'available',
@@ -130,7 +127,7 @@ export async function PATCH(req: NextRequest) {
 
       const { data, error } = await db
         .from('network_ports')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq('id', id)
         .eq('tenant_id', user.tenantId)
         .select()

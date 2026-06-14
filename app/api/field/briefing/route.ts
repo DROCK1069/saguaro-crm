@@ -109,9 +109,8 @@ Provide a structured briefing with: 1) Weather alert if relevant, 2) Top priorit
         tenant_id: user.tenantId,
         project_id: projectId,
         briefing_date: today,
-        briefing_text: briefingText,
-        context_data: contextData,
-        generated_by: user.id,
+        content: { briefing_text: briefingText, context_data: contextData },
+        user_id: user.id,
       })
       .select()
       .single();

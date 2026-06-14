@@ -161,6 +161,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     // Insert photo record
     const record = {
       project_id: params.projectId,
+      tenant_id: user.tenantId,
       url,
       thumbnail_url: thumbnailUrl,
       filename: file.name,
@@ -184,31 +185,48 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
 
     const photoId = String(photoData?.id || `photo-${timestamp}`);
 
-    // Save tags if provided
+    // Save tags if provided. photo_tags columns are (id, photo_id, tag, created_at) —
+    // no project_id column and no unique index for upsert, so de-dupe then insert.
     if (tags) {
       const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
       if (tagList.length > 0) {
-        const tagRecords = tagList.map(tag => ({
-          project_id: params.projectId,
-          photo_id: photoId,
-          tag,
-          created_at: new Date().toISOString(),
-        }));
-        await supabase.from('photo_tags').upsert(tagRecords, { onConflict: 'photo_id,tag' });
+        const { data: existingTags } = await supabase
+          .from('photo_tags')
+          .select('tag')
+          .eq('photo_id', photoId);
+        const have = new Set((existingTags || []).map((t: { tag: string }) => t.tag));
+        const tagRecords = tagList
+          .filter(tag => !have.has(tag))
+          .map(tag => ({
+            photo_id: photoId,
+            tag,
+            created_at: new Date().toISOString(),
+          }));
+        if (tagRecords.length > 0) {
+          await supabase.from('photo_tags').insert(tagRecords);
+        }
       }
     }
 
-    // Auto-link to entity if provided
+    // Auto-link to entity if provided. photo_entity_links columns are
+    // (id, photo_id, entity_type, entity_id, created_at) — no project_id/photo_url/
+    // linked_by columns and no unique index for upsert, so de-dupe then insert.
     if (entity_type && entity_id) {
-      await supabase.from('photo_entity_links').upsert({
-        project_id: params.projectId,
-        photo_id: photoId,
-        photo_url: url,
-        entity_type,
-        entity_id,
-        linked_by: user.email,
-        created_at: new Date().toISOString(),
-      }, { onConflict: 'photo_id,entity_type,entity_id' });
+      const { data: existingLink } = await supabase
+        .from('photo_entity_links')
+        .select('id')
+        .eq('photo_id', photoId)
+        .eq('entity_type', entity_type)
+        .eq('entity_id', entity_id)
+        .maybeSingle();
+      if (!existingLink) {
+        await supabase.from('photo_entity_links').insert({
+          photo_id: photoId,
+          entity_type,
+          entity_id,
+          created_at: new Date().toISOString(),
+        });
+      }
     }
 
     return NextResponse.json({

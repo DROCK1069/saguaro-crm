@@ -39,9 +39,8 @@ export async function POST(req: NextRequest) {
         event_type,
         latitude: latitude || null,
         longitude: longitude || null,
-        fence_id: fence_id || null,
-        fence_name: fence_name || null,
-        recorded_at: new Date().toISOString(),
+        auto_clocked: !!auto_clock,
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -60,11 +59,9 @@ export async function POST(req: NextRequest) {
           .insert({
             tenant_id: user.tenantId,
             project_id,
-            user_id: user.id,
-            action: clockAction,
-            timestamp: new Date().toISOString(),
-            source: 'geofence',
-            geofence_event_id: event.id,
+            employee_name: user.email || '',
+            punch_type: clockAction,
+            punched_at: new Date().toISOString(),
           })
           .select()
           .single();

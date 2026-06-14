@@ -97,17 +97,33 @@ Return as JSON: {
       toolboxTalk = { title: 'Toolbox Talk', overview: responseText };
     }
 
-    // Save the generated talk
+    // Save the generated talk.
+    // Schema: safety_talks.content is text; structured fields live in jsonb columns
+    // (talking_points, discussion_questions). osha_standard is text. The actor is
+    // conducted_by and the date is conducted_at (timestamptz) — there is no
+    // generated_by / talk_date column.
+    const oshaRefs = Array.isArray(toolboxTalk.osha_references)
+      ? toolboxTalk.osha_references.join('; ')
+      : (toolboxTalk.osha_references || null);
     const { data: saved, error: saveError } = await db
       .from('safety_talks')
       .insert({
         tenant_id: user.tenantId,
         project_id,
         title: toolboxTalk.title || 'Toolbox Talk',
-        content: toolboxTalk,
+        content: toolboxTalk.overview || '',
+        talking_points: {
+          overview: toolboxTalk.overview || '',
+          hazards: toolboxTalk.hazards || [],
+          safe_practices: toolboxTalk.safe_practices || [],
+          required_ppe: toolboxTalk.required_ppe || [],
+          estimated_duration_minutes: toolboxTalk.estimated_duration_minutes ?? null,
+        },
+        discussion_questions: toolboxTalk.discussion_questions || [],
+        osha_standard: oshaRefs,
         trades: activeTrades,
-        generated_by: user.id,
-        talk_date: today.toISOString().split('T')[0],
+        conducted_by: user.id,
+        conducted_at: today.toISOString(),
       })
       .select()
       .single();

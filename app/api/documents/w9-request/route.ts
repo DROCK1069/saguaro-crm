@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { sendW9Request } from '@/lib/email';
+import crypto from 'crypto';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://saguarocontrol.net';
 
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
   const projectId = searchParams.get('projectId');
   try {
     const db = createServerClient();
-    let query = db.from('w9_requests').select('*').eq('tenant_id', user.tenantId).order('sent_at', { ascending: false });
+    let query = db.from('w9_requests').select('*').eq('tenant_id', user.tenantId).order('created_at', { ascending: false });
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
@@ -33,11 +34,10 @@ export async function POST(req: NextRequest) {
     const { data: w9, error } = await db.from('w9_requests').insert({
       tenant_id: user.tenantId,
       project_id: body.projectId,
-      sub_id: body.subId || null,
       vendor_name: body.vendorName,
       vendor_email: body.vendorEmail,
       status: 'pending',
-      sent_at: new Date().toISOString(),
+      token: crypto.randomUUID(),
     }).select().single();
 
     if (error) throw error;

@@ -25,9 +25,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const db = createServerClient();
+    // Whitelist to live portal_users columns to avoid inserting non-existent keys.
+    const row: Record<string, any> = {
+      tenant_id: user.tenantId,
+      portal_type: 'client',
+    };
+    for (const key of ['project_id', 'name', 'email', 'company', 'role', 'status', 'token', 'invited_at', 'permissions']) {
+      if (body[key] !== undefined) row[key] = body[key];
+    }
     const { data, error } = await db
       .from('portal_users')
-      .insert({ ...body, tenant_id: user.tenantId, portal_type: 'client' })
+      .insert(row)
       .select()
       .single();
     if (error) throw error;

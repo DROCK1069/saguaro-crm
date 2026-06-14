@@ -12,19 +12,28 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       return NextResponse.json({ error: 'photo_id, entity_type, and entity_id are required' }, { status: 400 });
     }
     const supabase = createServerClient();
+    // photo_entity_links columns are (id, photo_id, entity_type, entity_id,
+    // created_at). project_id/photo_url/entity_title/linked_by are not columns, and
+    // there is no unique index for upsert, so de-dupe by the natural key then insert.
+    const { data: existing } = await supabase
+      .from('photo_entity_links')
+      .select('*')
+      .eq('photo_id', photo_id)
+      .eq('entity_type', entity_type)
+      .eq('entity_id', entity_id)
+      .maybeSingle();
+    if (existing) {
+      return NextResponse.json({ link: existing });
+    }
     const record = {
-      project_id: params.projectId,
       photo_id,
-      photo_url: photo_url || null,
       entity_type,
       entity_id,
-      entity_title: entity_title || null,
-      linked_by: user.email,
       created_at: new Date().toISOString(),
     };
     const { data, error } = await supabase
       .from('photo_entity_links')
-      .upsert(record, { onConflict: 'photo_id,entity_type,entity_id' })
+      .insert(record)
       .select()
       .single();
     if (error) throw error;
@@ -83,18 +92,17 @@ export async function DELETE(req: NextRequest, { params }: { params: { projectId
 
     const supabase = createServerClient();
 
+    // photo_entity_links has no project_id column, so filter by the link's own keys.
     if (link_id) {
       const { error } = await supabase
         .from('photo_entity_links')
         .delete()
-        .eq('id', link_id)
-        .eq('project_id', params.projectId);
+        .eq('id', link_id);
       if (error) throw error;
     } else if (photo_id && entity_type && entity_id) {
       const { error } = await supabase
         .from('photo_entity_links')
         .delete()
-        .eq('project_id', params.projectId)
         .eq('photo_id', photo_id)
         .eq('entity_type', entity_type)
         .eq('entity_id', entity_id);

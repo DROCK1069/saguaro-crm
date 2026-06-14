@@ -120,16 +120,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Store the generated summary
+    // Store the generated summary.
+    // Live portal_summaries columns: tenant_id, project_id, session_id,
+    // summary_data (jsonb), percent_complete, next_milestone, budget_status,
+    // schedule_status, last_updated, created_at. There is no period_start /
+    // period_end / generated_by column — the period is already inside
+    // structuredSummary.period, and generated_by is folded into summary_data.
     const { data: saved, error: saveError } = await db
       .from('portal_summaries')
       .insert({
         project_id: projectId,
         tenant_id: tenantId,
-        period_start: structuredSummary.period.start,
-        period_end: structuredSummary.period.end,
-        summary_data: structuredSummary,
-        generated_by: 'system',
+        session_id: session.id,
+        summary_data: { ...structuredSummary, generated_by: 'system' },
         created_at: new Date().toISOString(),
       })
       .select()

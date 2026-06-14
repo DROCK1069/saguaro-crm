@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       .from('wifi_ap_placements')
       .select('*')
       .eq('network_project_id', networkProjectId)
-      .order('name', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (error) throw error;
 
@@ -81,26 +81,34 @@ export async function POST(req: NextRequest) {
 
     if (!project) return badRequest('Network project not found');
 
+    // The wifi_ap_placements table has no columns for name/building/height_ft/
+    // connected_switch_id/switch_port, so they are folded into the `notes`
+    // (text) column as JSON alongside any free-text note. mounting_type maps to
+    // `mounting` and power_level maps to `tx_power`.
+    const apMeta = {
+      name,
+      building: building || 'Main',
+      height_ft: height_ft || 10,
+      connected_switch_id: connected_switch_id || null,
+      switch_port: switch_port || null,
+      notes: notes || '',
+    };
+
     const { data, error } = await db
       .from('wifi_ap_placements')
       .insert({
         network_project_id,
         tenant_id: user.tenantId,
-        name,
         device_id: device_id || null,
         floor: floor || '1',
-        building: building || 'Main',
         x_pct: xPct,
         y_pct: yPct,
-        mounting_type: mounting_type || 'ceiling',
-        height_ft: height_ft || 10,
+        mounting: mounting_type || 'ceiling',
         coverage_radius_ft: coverage_radius_ft || 35,
         channel_2g: channel_2g || null,
         channel_5g: channel_5g || null,
-        power_level: power_level || 'auto',
-        connected_switch_id: connected_switch_id || null,
-        switch_port: switch_port || null,
-        notes: notes || '',
+        tx_power: power_level || 'auto',
+        notes: JSON.stringify(apMeta),
       })
       .select()
       .single();

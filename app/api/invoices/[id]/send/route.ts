@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const db = createServerClient();
     const { error } = await db
       .from('invoices')
-      .update({ status: 'Sent', sent_date: new Date().toISOString() })
+      .update({ status: 'Sent' })
       .eq('id', params.id)
       .eq('tenant_id', user.tenantId);
     if (error) throw error;

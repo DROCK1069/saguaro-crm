@@ -25,8 +25,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       completed_at: body.completed_at || null, created_by: body.created_by || null,
     }).select().single();
     if (error) throw error;
-    // Update last_contact_date on the lead
-    await supabase.from('lead_pipeline').update({ last_contact_date: new Date().toISOString().split('T')[0], updated_at: new Date().toISOString() }).eq('id', params.id);
+    // Bump the lead's updated_at to reflect the new activity. (lead_pipeline has
+    // no last_contact_date column, so only updated_at is touched.)
+    await supabase.from('lead_pipeline').update({ updated_at: new Date().toISOString() }).eq('id', params.id);
     return NextResponse.json({ activity: data }, { status: 201 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Failed';

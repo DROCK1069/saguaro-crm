@@ -50,7 +50,7 @@ export async function PATCH(
 
     const { data, error } = await db
       .from('wifi_networks')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(updates)
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
       .select()

@@ -20,18 +20,20 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const supabase = createServerClient();
     const body = await req.json();
-    const count = await supabase.from('warranty_claims').select('id', { count: 'exact', head: true }).eq('project_id', params.projectId);
-    const num = (count.count || 0) + 1;
+    // warranty_claims has no claim_number/category/priority/assigned_trade/
+    // assigned_contractor/scheduled_date/notes/created_by columns. Map the ones with
+    // clear homes (priority->severity, assigned_trade->trade, assigned_contractor->
+    // assigned_to, reported_date->created_at, photos->photo_urls) and drop the rest.
     const { data, error } = await supabase.from('warranty_claims').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
-      claim_number: `WC-${String(num).padStart(4, '0')}`,
       title: body.title, description: body.description,
-      category: body.category || 'general', location: body.location || null,
-      reported_by: body.reported_by || null, reported_date: body.reported_date,
-      priority: body.priority || 'medium', status: body.status || 'submitted',
-      assigned_trade: body.assigned_trade || null, assigned_contractor: body.assigned_contractor || null,
-      scheduled_date: body.scheduled_date || null, warranty_expiry: body.warranty_expiry || null,
-      photos: body.photos || [], notes: body.notes || null, created_by: user.id,
+      location: body.location || null,
+      reported_by: body.reported_by || null,
+      ...(body.reported_date ? { created_at: body.reported_date } : {}),
+      severity: body.priority || 'medium', status: body.status || 'submitted',
+      trade: body.assigned_trade || null, assigned_to: body.assigned_contractor || null,
+      warranty_expiry: body.warranty_expiry || null,
+      photo_urls: body.photos || [],
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ claim: data }, { status: 201 });

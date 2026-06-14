@@ -8,8 +8,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const supabase = createServerClient();
     const body = await req.json();
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    const allowed = ['name','email','phone','company','source','stage','project_type','estimated_value','estimated_start','probability','assigned_to','address','city','state','zip','description','notes','follow_up_date','last_contact_date','lost_reason','tags','custom_fields','converted_project_id'];
+
+    // Only real lead_pipeline columns are updatable.
+    const allowed = ['company_name','contact_name','email','phone','source','stage','project_type','estimated_value','probability','assigned_to','location','notes','next_action','next_action_date','lost_reason','lost_at','won_at'];
     for (const k of allowed) if (body[k] !== undefined) updates[k] = body[k];
+
+    // Map the page's alternate field names onto real columns.
+    if (body.name !== undefined && body.contact_name === undefined) updates.contact_name = body.name;
+    if (body.company !== undefined && body.company_name === undefined) updates.company_name = body.company;
+    if (body.contact_email !== undefined && body.email === undefined) updates.email = body.contact_email;
+    if (body.contact_phone !== undefined && body.phone === undefined) updates.phone = body.contact_phone;
+    if (body.description !== undefined && updates.notes === undefined) updates.notes = body.description;
+    if (body.follow_up_date !== undefined && updates.next_action_date === undefined) updates.next_action_date = body.follow_up_date;
+    // tags, custom_fields, address parts, last_contact_date, converted_project_id,
+    // estimated_start have no column on lead_pipeline and are intentionally dropped.
+
     const { data, error } = await supabase.from('lead_pipeline').update(updates).eq('id', params.id).eq('tenant_id', user.tenantId).select().single();
     if (error) throw error;
     return NextResponse.json({ lead: data });

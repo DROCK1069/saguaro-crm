@@ -70,10 +70,12 @@ export async function POST(req: NextRequest) {
         tenant_id:  user.tenantId,
         project_id: projectId,
         sub_id:     resolvedSubId,
+        sub_company: companyName || null,
+        sub_contact_name: contactName || null,
+        sub_email: email ? email.toLowerCase().trim() : null,
         token,
         status:     'active',
         created_by: user.id,
-        // Store name/email in metadata columns if they exist, otherwise just use sub_id
       })
       .select()
       .single();

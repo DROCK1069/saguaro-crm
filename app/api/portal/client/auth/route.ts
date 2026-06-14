@@ -51,10 +51,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
     }
 
-    // Update last_accessed timestamp
+    // Update last_login timestamp
     await db
       .from('portal_client_sessions')
-      .update({ last_accessed_at: new Date().toISOString() })
+      .update({ last_login_at: new Date().toISOString() })
       .eq('id', session.id);
 
     // Fetch project info

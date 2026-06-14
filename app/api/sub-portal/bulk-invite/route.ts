@@ -7,11 +7,20 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const db = createServerClient();
-    const invites = (body.invites || []).map((invite: any) => ({
-      ...invite,
-      tenant_id: user.tenantId,
-      portal_type: 'sub',
-    }));
+    // Whitelist each invite to live portal_users columns to avoid inserting
+    // non-existent keys (portal_type is a real column; arbitrary invite keys
+    // are not).
+    const cols = ['project_id', 'name', 'email', 'company', 'role', 'status', 'token', 'invited_at', 'permissions'];
+    const invites = (body.invites || []).map((invite: any) => {
+      const row: Record<string, any> = {
+        tenant_id: user.tenantId,
+        portal_type: 'sub',
+      };
+      for (const key of cols) {
+        if (invite[key] !== undefined) row[key] = invite[key];
+      }
+      return row;
+    });
     const { data, error } = await db
       .from('portal_users')
       .insert(invites)

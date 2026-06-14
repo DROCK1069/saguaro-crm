@@ -13,8 +13,7 @@ export async function POST(req: NextRequest) {
 
     const { data: sub, error } = await db.from('subcontractors').insert({
       tenant_id: tenantId,
-      project_id: body.projectId,
-      name: body.name,
+      company_name: body.name || body.companyName,
       email: body.email,
       phone: body.phone,
       address: body.address,
@@ -24,9 +23,8 @@ export async function POST(req: NextRequest) {
       trade: body.trade,
       license_number: body.licenseNumber,
       license_state: body.licenseState,
-      contract_amount: body.contractAmount || 0,
       status: 'active',
-      w9_status: 'pending',
+      w9_on_file: false,
       notes: body.notes,
     }).select().single();
 

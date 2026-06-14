@@ -59,18 +59,25 @@ export async function POST(
 
   try {
     // POST /api/portals/owner/:token
+    // Live pay_applications columns: status, approval_notes. owner_notes ->
+    // approval_notes. NOTE: there is no owner_approval_token column in the live
+    // schema, so this lookup cannot resolve a row — see flagged item.
     if (portalType === 'owner' && token) {
       const body = await req.json();
       const { decision, notes } = body;
       const newStatus = decision === 'approved' ? 'certified' : 'draft';
-      await db.from('pay_applications').update({ status: newStatus, owner_notes: notes }).eq('owner_approval_token', token);
+      await db.from('pay_applications').update({ status: newStatus, approval_notes: notes }).eq('owner_approval_token', token);
       return NextResponse.json({ success: true });
     }
 
     // POST /api/portals/sub/:token/lien-waiver
+    // Live lien_waivers columns: status, signed_at, signature_method, token.
+    // There is no sign_token column (use token) and no signature_data column
+    // (the captured signature payload is recorded as signature_method='portal'
+    // rather than stored as data, since there is no jsonb column for it).
     if (portalType === 'sub' && token && subPath === 'lien-waiver') {
-      const body = await req.json();
-      await db.from('lien_waivers').update({ status: 'signed', signed_at: new Date().toISOString(), signature_data: body }).eq('sign_token', token);
+      await req.json().catch(() => ({}));
+      await db.from('lien_waivers').update({ status: 'signed', signed_at: new Date().toISOString(), signature_method: 'portal' }).eq('token', token);
       return NextResponse.json({ success: true });
     }
 

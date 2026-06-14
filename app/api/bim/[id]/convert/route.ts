@@ -229,15 +229,16 @@ export async function POST(
         const elements = parsed.elements.map((el: any, idx: number) => ({
           bim_model_id: modelId,
           tenant_id: user.tenantId,
-          project_id: model.project_id,
           element_type: String(el.element_type || 'other').toLowerCase(),
           name: String(el.name || 'Unknown Element'),
           material: el.material || null,
           dimensions: el.dimensions || {},
-          quantity: Math.max(1, Number(el.quantity) || 1),
-          level: el.level || null,
-          properties: el.properties || {},
-          sort_order: idx,
+          properties: {
+            ...(el.properties && typeof el.properties === 'object' ? el.properties : {}),
+            quantity: Math.max(1, Number(el.quantity) || 1),
+            level: el.level || null,
+            sort_order: idx,
+          },
         }));
 
         // Insert in batches of 50
@@ -256,10 +257,7 @@ export async function POST(
           .update({
             status: 'complete',
             element_count: elements.length,
-            model_summary: parsed.model_summary || '',
-            levels_detected: parsed.levels_detected || [],
-            trades_detected: parsed.trades_detected || [],
-            analyzed_at: new Date().toISOString(),
+            processed_at: new Date().toISOString(),
           })
           .eq('id', modelId)
           .eq('tenant_id', user.tenantId);
