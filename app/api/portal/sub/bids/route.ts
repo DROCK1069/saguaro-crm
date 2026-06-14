@@ -97,13 +97,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // NDA signing is not persistable: portal_sub_bid_invitations has no
-    // nda_signed / nda_signed_at / nda_signer_name column (and no jsonb to fold
-    // into), so the NDA flag is accepted but not written. (sign_nda /
-    // nda_signer_name remain part of the request contract.)
-    void sign_nda;
-    void nda_signer_name;
-
     // Create the bid response.
     // Live portal_sub_bid_responses columns: invitation_id, amount, scope_notes,
     // exclusions, inclusions, attachments, submitted_at. There is no sub_id /
@@ -143,10 +136,16 @@ export async function POST(req: NextRequest) {
       if (lineError) throw lineError;
     }
 
-    // Update invitation status
+    // Update invitation status, and persist NDA signature when requested.
+    const invitationUpdate: Record<string, any> = { status: 'responded' };
+    if (sign_nda) {
+      invitationUpdate.nda_signed = true;
+      invitationUpdate.nda_signed_at = new Date().toISOString();
+      invitationUpdate.nda_signer_name = nda_signer_name || null;
+    }
     await db
       .from('portal_sub_bid_invitations')
-      .update({ status: 'responded' })
+      .update(invitationUpdate)
       .eq('id', bid_invitation_id)
       .eq('tenant_id', session.tenant_id);
 

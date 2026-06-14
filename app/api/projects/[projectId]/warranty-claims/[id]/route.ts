@@ -8,8 +8,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
     const supabase = createServerClient();
     const body = await req.json();
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    // Pass through real columns directly.
-    const direct = ['title','description','location','status','resolution'];
+    // Pass through real columns directly. communication_log (jsonb) is sent by the
+    // page as the full updated array, so this is a replace.
+    const direct = ['title','description','location','status','resolution','communication_log'];
     for (const k of direct) if (body[k] !== undefined) updates[k] = body[k];
     // Map UI field names to their warranty_claims columns; drop the rest
     // (category/scheduled_date/cost/covered_under_warranty/notes have no column).

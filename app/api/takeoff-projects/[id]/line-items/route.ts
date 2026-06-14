@@ -73,6 +73,16 @@ export async function POST(
       if (body[alias] !== undefined) record[col] = body[alias];
     }
 
+    // Fields with no dedicated column are folded into the metadata jsonb.
+    const metaFields = [
+      'sheet_id', 'assembly_id', 'cost_code_id', 'measurement_type', 'markup_pct',
+    ];
+    const metadata: Record<string, any> = {};
+    for (const k of metaFields) {
+      if (body[k] !== undefined) metadata[k] = body[k];
+    }
+    if (Object.keys(metadata).length > 0) record.metadata = metadata;
+
     const db = createServerClient();
     const { data, error } = await db
       .from('takeoff_line_items')

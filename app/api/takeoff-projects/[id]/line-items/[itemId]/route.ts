@@ -57,7 +57,30 @@ export async function PATCH(
       if (body[alias] !== undefined) fields[col] = body[alias];
     }
 
+    // Fields with no dedicated column are folded into the metadata jsonb.
+    const metaFields = [
+      'sheet_id', 'assembly_id', 'cost_code_id', 'measurement_type', 'markup_pct',
+    ];
+    const metaPatch: Record<string, any> = {};
+    for (const k of metaFields) {
+      if (body[k] !== undefined) metaPatch[k] = body[k];
+    }
+
     const db = createServerClient();
+
+    // Merge incoming metadata keys onto the existing jsonb so unrelated keys are
+    // preserved rather than clobbered.
+    if (Object.keys(metaPatch).length > 0) {
+      const { data: current } = await db
+        .from('takeoff_line_items')
+        .select('metadata')
+        .eq('id', itemId)
+        .eq('takeoff_project_id', id)
+        .eq('tenant_id', user.tenantId)
+        .single();
+      fields.metadata = { ...((current?.metadata as Record<string, any>) || {}), ...metaPatch };
+    }
+
     const { data, error } = await db
       .from('takeoff_line_items')
       .update(fields)

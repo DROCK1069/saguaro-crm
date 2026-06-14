@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { item_id, signature_data, notes } = body;
+    const { item_id, signature_data, notes, signoff_name } = body;
 
     if (!item_id) {
       return NextResponse.json({ error: 'item_id is required' }, { status: 400 });
@@ -96,18 +96,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Live portal_punch_items columns: title, description, location, status,
-    // priority, photo_urls, reported_by, completed_at, updated_at. There is no
-    // signed_off_by / signed_off_at / signature_data / signoff_notes column (and
-    // no jsonb to fold them into), so only the status transition is persisted and
-    // completed_at/updated_at are stamped. NOTE: client sign-off identity,
-    // signature image, and sign-off notes are not stored — see flagged item.
+    // Persist the client sign-off identity, signature image, and notes alongside
+    // the status transition.
     const { data: updated, error: updateError } = await db
       .from('portal_punch_items')
       .update({
         status: 'signed_off',
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        client_signoff_name: signoff_name || session.client_name || null,
+        client_signoff_signature: signature_data || null,
+        client_signoff_notes: notes || null,
       })
       .eq('id', item_id)
       .select()

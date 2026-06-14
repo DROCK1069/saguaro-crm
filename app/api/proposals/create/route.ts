@@ -23,6 +23,11 @@ export async function POST(req: NextRequest) {
     if (body.description !== undefined) insert.description = body.description;
     if (body.amount !== undefined) insert.amount = body.amount;
     if (body.total_amount !== undefined) insert.total_amount = body.total_amount;
+    // proposals has both amount and total_amount; when the form sends a single
+    // amount, mirror it into total_amount so both columns populate.
+    if (body.amount !== undefined && body.total_amount === undefined) {
+      insert.total_amount = body.amount;
+    }
     if (body.client_name !== undefined) insert.client_name = body.client_name;
     if (body.client_email !== undefined) insert.client_email = body.client_email;
     if (body.client_company !== undefined) insert.client_company = body.client_company;

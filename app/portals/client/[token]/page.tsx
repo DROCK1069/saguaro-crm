@@ -1568,7 +1568,7 @@ export default function ClientPortalPage() {
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
           <button
             style={{ ...btnOutline, padding: '10px 14px', flexShrink: 0 }}
-            onClick={() => showToast('File upload coming soon')}
+            onClick={() => showToast('File attachments aren’t available from the client portal yet. Please email your contractor to share files.', 'error')}
             title="Attach file"
           >
             📎
@@ -1733,7 +1733,7 @@ export default function ClientPortalPage() {
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <button
               style={{ ...btnOutline, padding: '10px 16px' }}
-              onClick={() => showToast('Photo upload coming soon')}
+              onClick={() => showToast('Photo uploads aren’t available from the client portal yet. Please email photos to your contractor and they’ll attach them to this claim.', 'error')}
             >
               📷 Attach Photos
             </button>
@@ -2341,8 +2341,8 @@ export default function ClientPortalPage() {
             </div>
             <div style={{ display: 'flex', gap: 16, fontSize: 11, color: DIM }}>
               <span style={{ cursor: 'pointer' }} onClick={() => showToast('Help center coming soon')}>Help</span>
-              <span style={{ cursor: 'pointer' }} onClick={() => showToast('Privacy policy coming soon')}>Privacy</span>
-              <span style={{ cursor: 'pointer' }} onClick={() => showToast('Terms coming soon')}>Terms</span>
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: DIM, textDecoration: 'none', cursor: 'pointer' }}>Privacy</a>
+              <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: DIM, textDecoration: 'none', cursor: 'pointer' }}>Terms</a>
             </div>
           </div>
 

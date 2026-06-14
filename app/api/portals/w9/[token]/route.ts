@@ -29,12 +29,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     const { data: req_ } = await db.from('w9_requests').select('*').eq('token', token).single();
     if (!req_) return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
 
-    // Live w9_requests columns: status, submitted_at, pdf_url. There is no
-    // w9_data column (and no jsonb to fold the submitted form into), so the form
-    // payload is not persisted on the request row — see flagged item.
+    // Persist the submitted W-9 form payload in the w9_data jsonb column.
     const { error } = await db.from('w9_requests').update({
       status: 'submitted',
       submitted_at: new Date().toISOString(),
+      w9_data: body ?? {},
     }).eq('token', token);
 
     if (error) throw error;
