@@ -75,13 +75,14 @@ export default function AppTopBar({
         left: sidebarWidth,
         right: 0,
         height: sidebarTokens.headerHeight,
-        background: 'rgba(13,17,23,.97)',
+        background: 'rgba(11,11,15,.85)',
         borderBottom: `1px solid ${colors.border}`,
-        backdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 20px',
-        gap: 12,
+        padding: '0 16px',
+        gap: 10,
         zIndex: z.topbar,
         transition: 'left .2s ease',
       }}
@@ -92,25 +93,43 @@ export default function AppTopBar({
         className="mobile-hamburger-topbar"
         style={{
           display: 'none',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 36,
+          height: 36,
           background: 'none',
           border: 'none',
           color: colors.textMuted,
           cursor: 'pointer',
-          padding: 4,
+          borderRadius: radius.xl,
+          transition: 'color .15s, background .15s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = colors.text;
+          e.currentTarget.style.background = 'rgba(255,255,255,.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = colors.textMuted;
+          e.currentTarget.style.background = 'none';
         }}
       >
-        <List size={22} />
+        <List size={20} />
       </button>
 
       {/* Breadcrumbs */}
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
         {crumbs.map((c, i) => (
           <React.Fragment key={c.href}>
-            {i > 0 && <CaretRight size={10} style={{ color: colors.textFaint }} />}
+            {i > 0 && <CaretRight size={11} weight="bold" style={{ color: colors.textFaint }} />}
             {c.isLast ? (
-              <span style={{ fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text }}>{c.label}</span>
+              <span style={{ fontSize: font.size.lg, fontWeight: font.weight.semibold, color: colors.text, letterSpacing: '-0.01em' }}>{c.label}</span>
             ) : (
-              <Link href={c.href} style={{ fontSize: font.size.md, color: colors.textMuted, textDecoration: 'none', transition: 'color .15s' }}>
+              <Link
+                href={c.href}
+                style={{ fontSize: font.size.lg, color: colors.textMuted, textDecoration: 'none', transition: 'color .15s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = colors.text)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = colors.textMuted)}
+              >
                 {c.label}
               </Link>
             )}
@@ -127,23 +146,47 @@ export default function AppTopBar({
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '6px 12px',
-          background: 'rgba(255,255,255,.04)',
+          height: 36,
+          padding: '0 10px 0 12px',
+          background: colors.raised,
           border: `1px solid ${colors.border}`,
-          borderRadius: radius.md,
-          color: colors.textDim,
-          fontSize: font.size.sm,
-          fontWeight: font.weight.semibold,
+          borderRadius: radius.xl,
+          color: colors.textMuted,
+          fontSize: font.size.md,
+          fontWeight: font.weight.medium,
           cursor: 'pointer',
-          transition: 'border-color .15s',
-          minWidth: 180,
+          transition: 'border-color .15s, background .15s',
+          minWidth: 220,
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.borderColor = colors.textDim)}
-        onMouseLeave={(e) => (e.currentTarget.style.borderColor = colors.border)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)';
+          e.currentTarget.style.background = colors.raisedAlt;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = colors.border;
+          e.currentTarget.style.background = colors.raised;
+        }}
       >
-        <MagnifyingGlass size={14} />
-        <span>Search...</span>
-        <span style={{ marginLeft: 'auto', fontSize: font.size.xs, opacity: 0.5, fontFamily: font.mono }}>⌘K</span>
+        <MagnifyingGlass size={15} style={{ color: colors.textDim }} />
+        <span>Search</span>
+        <kbd
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            height: 20,
+            padding: '0 6px',
+            fontSize: font.size.xs,
+            fontWeight: font.weight.semibold,
+            fontFamily: font.mono,
+            color: colors.textDim,
+            background: colors.raisedAlt,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radius.md,
+          }}
+        >
+          ⌘K
+        </kbd>
       </button>
 
       {/* Sage AI */}
@@ -152,21 +195,29 @@ export default function AppTopBar({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          padding: '6px 14px',
+          gap: 7,
+          height: 36,
+          padding: '0 14px',
           background: colors.goldDim,
           border: `1px solid ${colors.goldBorder}`,
-          borderRadius: radius.lg,
+          borderRadius: radius.xl,
           color: colors.gold,
           fontSize: font.size.md,
-          fontWeight: font.weight.bold,
+          fontWeight: font.weight.semibold,
+          letterSpacing: '0.01em',
           cursor: 'pointer',
-          transition: 'background .15s',
+          transition: 'background .15s, border-color .15s',
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = colors.goldHover)}
-        onMouseLeave={(e) => (e.currentTarget.style.background = colors.goldDim)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = colors.goldHover;
+          e.currentTarget.style.borderColor = 'rgba(212,160,23,.35)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = colors.goldDim;
+          e.currentTarget.style.borderColor = colors.goldBorder;
+        }}
       >
-        <Star size={14} weight="fill" />
+        <Star size={15} weight="fill" />
         Sage
       </button>
 
@@ -183,13 +234,13 @@ export default function AppTopBar({
           border: 'none',
           color: colors.textMuted,
           cursor: 'pointer',
-          borderRadius: radius.md,
+          borderRadius: radius.xl,
           transition: 'color .15s, background .15s',
           position: 'relative',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = colors.text;
-          e.currentTarget.style.background = 'rgba(255,255,255,.04)';
+          e.currentTarget.style.background = 'rgba(255,255,255,.05)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = colors.textMuted;
@@ -200,26 +251,31 @@ export default function AppTopBar({
       </button>
 
       {/* User avatar + menu */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', marginLeft: 2 }}>
         <button
           onClick={() => setShowUserMenu((v) => !v)}
           style={{
             width: 34,
             height: 34,
             borderRadius: radius.full,
-            background: `linear-gradient(135deg,${colors.gold},#B85C2A)`,
+            background: `linear-gradient(135deg,${colors.goldLight},${colors.gold})`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: font.size.md,
-            fontWeight: font.weight.black,
-            color: colors.dark,
+            fontWeight: font.weight.bold,
+            color: colors.darkAlt,
             cursor: 'pointer',
             border: 'none',
+            boxShadow: showUserMenu ? `0 0 0 2px rgba(212,160,23,.35)` : 'none',
             transition: 'box-shadow .15s',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = shadow.glow)}
-          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
+          onMouseEnter={(e) => {
+            if (!showUserMenu) e.currentTarget.style.boxShadow = `0 0 0 2px rgba(212,160,23,.35)`;
+          }}
+          onMouseLeave={(e) => {
+            if (!showUserMenu) e.currentTarget.style.boxShadow = 'none';
+          }}
         >
           {userInitials}
         </button>
@@ -230,18 +286,37 @@ export default function AppTopBar({
             <div
               style={{
                 position: 'absolute',
-                top: 42,
+                top: 44,
                 right: 0,
-                background: colors.raised,
+                background: colors.raisedAlt,
                 border: `1px solid ${colors.border}`,
-                borderRadius: radius.xl,
-                minWidth: 180,
+                borderRadius: radius['2xl'],
+                minWidth: 196,
                 boxShadow: shadow.lg,
                 zIndex: z.dropdown,
                 overflow: 'hidden',
-                padding: '4px 0',
+                padding: 6,
               }}
             >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '8px 10px 10px',
+                }}
+              >
+                <UserCircle size={28} weight="fill" style={{ color: colors.textDim, flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text, lineHeight: 1.2 }}>
+                    Signed in
+                  </div>
+                  <div style={{ fontSize: font.size.xs, color: colors.textDim, lineHeight: 1.3 }}>
+                    {userInitials}
+                  </div>
+                </div>
+              </div>
+              <div style={{ height: 1, background: colors.borderDim, margin: '2px 0 6px' }} />
               <Link
                 href="/app/settings"
                 onClick={() => setShowUserMenu(false)}
@@ -249,19 +324,19 @@ export default function AppTopBar({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
-                  padding: '10px 16px',
+                  padding: '9px 10px',
+                  borderRadius: radius.lg,
                   color: colors.text,
                   fontSize: font.size.md,
                   fontWeight: font.weight.medium,
                   textDecoration: 'none',
                   transition: 'background .1s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.04)')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.05)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
-                <GearSix size={16} /> Settings
+                <GearSix size={16} style={{ color: colors.textMuted }} /> Settings
               </Link>
-              <div style={{ height: 1, background: colors.border, margin: '4px 0' }} />
               <button
                 onClick={() => { setShowUserMenu(false); onLogout(); }}
                 style={{
@@ -269,7 +344,9 @@ export default function AppTopBar({
                   alignItems: 'center',
                   gap: 10,
                   width: '100%',
-                  padding: '10px 16px',
+                  padding: '9px 10px',
+                  marginTop: 2,
+                  borderRadius: radius.lg,
                   background: 'none',
                   border: 'none',
                   color: colors.red,
@@ -279,7 +356,7 @@ export default function AppTopBar({
                   textAlign: 'left',
                   transition: 'background .1s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,.06)')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,.08)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 <SignOut size={16} /> Sign Out

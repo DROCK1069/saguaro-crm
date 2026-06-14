@@ -21,14 +21,18 @@ const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
 
 const GOLD   = '#D4A017';
 const DARK   = '#0B0B0F';
-const RAISED = '#16161C';
-const BORDER = 'rgba(255,255,255,0.08)';
+const RAISED = '#1A1A21';
+const RAISED_ALT = '#212129';
+const BORDER = 'rgba(255,255,255,0.10)';
+const BORDER_SUBTLE = 'rgba(255,255,255,0.07)';
 const DIM    = '#A1A1AA';
 const TEXT   = '#F5F5F7';
 const GREEN  = '#1a8a4a';
 const RED    = '#c03030';
 const BLUE   = '#1a5fa8';
 const ORANGE = '#B85C2A';
+const SHADOW_SM = '0 1px 2px rgba(0,0,0,.4)';
+const SHADOW_MD = '0 4px 14px rgba(0,0,0,.45)';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 interface ScoreResult {
@@ -103,8 +107,8 @@ function TodayActionCard({ item }: { item: TodayItem }) {
   return (
     <div
       style={{
-        display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
-        borderBottom: `1px solid ${BORDER}`, borderLeft: `4px solid ${meta.borderColor}`,
+        display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px',
+        borderBottom: `1px solid ${BORDER_SUBTLE}`, borderLeft: `3px solid ${meta.borderColor}`,
         background: 'transparent', transition: 'background .15s',
       }}
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.025)')}
@@ -369,7 +373,7 @@ export default function DashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 28 }}>
           {statsLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '18px 20px' }}>
+              <div key={i} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
                 <div className="skeleton-pulse" style={{ height: 10, width: '60%', borderRadius: 4, background: BORDER, marginBottom: 10 }} />
                 <div className="skeleton-pulse" style={{ height: 28, width: '45%', borderRadius: 4, background: BORDER, marginBottom: 6 }} />
                 <div className="skeleton-pulse" style={{ height: 10, width: '70%', borderRadius: 4, background: BORDER }} />
@@ -413,10 +417,12 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, marginBottom: 28 }}>
 
             {/* Project Budget Chart */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '16px 18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <ChartBar size={18} weight="duotone" color={GOLD} />
-                <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>Project Budgets</span>
+            <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(212,160,23,.10)' }}>
+                  <ChartBar size={17} weight="duotone" color={GOLD} />
+                </span>
+                <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Project Budgets</span>
               </div>
               {projects.length > 0 ? (
                 <div style={{ width: '100%', height: 220 }}>
@@ -425,10 +431,11 @@ export default function DashboardPage() {
                       name: p.name?.length > 12 ? p.name.slice(0, 12) + '…' : p.name || 'Unnamed',
                       budget: p.budget ?? p.contract_value ?? 0,
                     }))}>
-                      <XAxis dataKey="name" tick={{ fill: DIM, fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.05)' }} tickLine={false} />
+                      <XAxis dataKey="name" tick={{ fill: DIM, fontSize: 11 }} axisLine={{ stroke: BORDER_SUBTLE }} tickLine={false} />
                       <YAxis tick={{ fill: DIM, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
                       <Tooltip
-                        contentStyle={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12, color: TEXT }}
+                        cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                        contentStyle={{ background: RAISED_ALT, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 12, color: TEXT, boxShadow: SHADOW_MD }}
                         labelStyle={{ color: GOLD, fontWeight: 700 }}
                         formatter={(v: number) => [`$${v.toLocaleString()}`, 'Budget']}
                       />
@@ -444,10 +451,12 @@ export default function DashboardPage() {
             </div>
 
             {/* Portfolio Status Donut */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '16px 18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <TrendUp size={18} weight="duotone" color={GOLD} />
-                <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>Portfolio Status</span>
+            <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(212,160,23,.10)' }}>
+                  <TrendUp size={17} weight="duotone" color={GOLD} />
+                </span>
+                <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Portfolio Status</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                 <div style={{ width: 160, height: 160 }}>
@@ -472,7 +481,7 @@ export default function DashboardPage() {
                         <Cell fill={RED} />
                       </Pie>
                       <Tooltip
-                        contentStyle={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12, color: TEXT }}
+                        contentStyle={{ background: RAISED_ALT, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 12, color: TEXT, boxShadow: SHADOW_MD }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -497,11 +506,11 @@ export default function DashboardPage() {
         )}
 
         {/* Today's Priority Actions */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: 0, overflow: 'hidden', marginBottom: 24 }}>
-          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', marginBottom: 24, boxShadow: SHADOW_SM }}>
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_SUBTLE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>Today's Priority Actions</span>
-              <div style={{ fontSize: 12, color: DIM, marginTop: 2 }}>Items requiring your attention</div>
+              <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Today's Priority Actions</span>
+              <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Items requiring your attention</div>
             </div>
             {!todayLoading && todayItems.filter((i: TodayItem) => i.urgency === 'high').length > 0 && (
               <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: 'rgba(192,48,48,.15)', color: RED, border: '1px solid rgba(192,48,48,.3)' }}>
@@ -524,10 +533,10 @@ export default function DashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 20 }}>
 
           {/* Active Projects */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>Active Projects</span>
-              <Link href="/app/projects" style={{ fontSize: 12, color: GOLD, textDecoration: 'none' }}>All Projects →</Link>
+          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', boxShadow: SHADOW_SM }}>
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_SUBTLE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Active Projects</span>
+              <Link href="/app/projects" style={{ fontSize: 12, fontWeight: 600, color: GOLD, textDecoration: 'none' }}>All Projects →</Link>
             </div>
             <div style={{ padding: 16 }}>
               {projectsLoading && <><SkeletonRow /><SkeletonRow /></>}
@@ -542,9 +551,9 @@ export default function DashboardPage() {
               )}
               {!projectsLoading && projects.slice(0, 3).map(proj => (
                 <Link key={proj.id} href={`/app/projects/${proj.id}`} style={{ display: 'block', textDecoration: 'none', marginBottom: 10 }}>
-                  <div style={{ padding: '14px 16px', background: DARK, borderRadius: 8, border: `1px solid ${BORDER}`, cursor: 'pointer', transition: 'border-color .15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = GOLD)}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}
+                  <div style={{ padding: '14px 16px', background: RAISED_ALT, borderRadius: 10, border: `1px solid ${BORDER_SUBTLE}`, cursor: 'pointer', transition: 'border-color .15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(212,160,23,.5)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER_SUBTLE)}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <div>
@@ -566,10 +575,10 @@ export default function DashboardPage() {
           </div>
 
           {/* Open RFIs */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>Open RFIs</span>
-              <Link href="/app/projects" style={{ fontSize: 12, color: GOLD, textDecoration: 'none' }}>View Projects →</Link>
+          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', boxShadow: SHADOW_SM }}>
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_SUBTLE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Open RFIs</span>
+              <Link href="/app/projects" style={{ fontSize: 12, fontWeight: 600, color: GOLD, textDecoration: 'none' }}>View Projects →</Link>
             </div>
             {rfisLoading && <><SkeletonRow /><SkeletonRow /></>}
             {!rfisLoading && openRFIs.length === 0 && (
@@ -581,9 +590,9 @@ export default function DashboardPage() {
               <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: DARK }}>
+                    <tr style={{ background: RAISED_ALT }}>
                       {['RFI #', 'Subject', 'Status', 'Due'].map(h => (
-                        <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontWeight: 700, color: DIM, fontSize: 11, textTransform: 'uppercase', letterSpacing: .5 }}>{h}</th>
+                        <th key={h} style={{ padding: '9px 16px', textAlign: 'left', fontWeight: 700, color: DIM, fontSize: 11, textTransform: 'uppercase', letterSpacing: .5 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -591,15 +600,15 @@ export default function DashboardPage() {
                     {openRFIs.slice(0, 8).map(rfi => {
                       const overdue = rfi.due_date && new Date(rfi.due_date) < new Date();
                       return (
-                        <tr key={rfi.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                          <td style={{ padding: '10px 14px', color: DIM }}>{rfi.rfi_number}</td>
-                          <td style={{ padding: '10px 14px', color: TEXT, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rfi.subject}</td>
-                          <td style={{ padding: '10px 14px' }}>
+                        <tr key={rfi.id} style={{ borderBottom: `1px solid ${BORDER_SUBTLE}` }}>
+                          <td style={{ padding: '10px 16px', color: DIM }}>{rfi.rfi_number}</td>
+                          <td style={{ padding: '10px 16px', color: TEXT, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rfi.subject}</td>
+                          <td style={{ padding: '10px 16px' }}>
                             <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(184,92,42,.15)', color: ORANGE, border: `1px solid rgba(184,92,42,.3)`, textTransform: 'uppercase' }}>
                               {rfi.status}
                             </span>
                           </td>
-                          <td style={{ padding: '10px 14px', color: overdue ? RED : DIM, fontWeight: overdue ? 700 : 400 }}>
+                          <td style={{ padding: '10px 16px', color: overdue ? RED : DIM, fontWeight: overdue ? 700 : 400 }}>
                             {rfi.due_date ? new Date(rfi.due_date).toLocaleDateString() : '—'}
                           </td>
                         </tr>

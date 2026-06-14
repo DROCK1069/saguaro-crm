@@ -124,7 +124,7 @@ export default function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* ── Table ────────────────────────────────────────────────────── */}
-      <div style={{ borderRadius: radius.lg, border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
+      <div style={{ borderRadius: radius.lg, border: `1px solid ${colors.border}`, background: colors.raised, overflow: 'hidden', boxShadow: shadow.sm }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -138,22 +138,22 @@ export default function DataTable<T extends Record<string, any>>({
                         key={header.id}
                         onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                         style={{
-                          padding: '10px 14px',
+                          padding: '11px 16px',
                           background: colors.darkAlt,
                           borderBottom: `1px solid ${colors.border}`,
                           textAlign: 'left',
-                          fontSize: font.size.xs,
-                          fontWeight: font.weight.bold,
-                          color: colors.textMuted,
+                          fontSize: 11,
+                          fontWeight: font.weight.semibold,
+                          color: colors.textDim,
                           textTransform: 'uppercase',
-                          letterSpacing: 0.8,
+                          letterSpacing: 0.6,
                           cursor: canSort ? 'pointer' : 'default',
                           userSelect: 'none',
                           whiteSpace: 'nowrap',
                           transition: 'color .15s',
                         }}
                         onMouseEnter={(e) => canSort && (e.currentTarget.style.color = colors.text)}
-                        onMouseLeave={(e) => canSort && (e.currentTarget.style.color = colors.textMuted)}
+                        onMouseLeave={(e) => canSort && (e.currentTarget.style.color = colors.textDim)}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           {flexRender(header.column.columnDef.header, header.getContext())}
@@ -176,49 +176,67 @@ export default function DataTable<T extends Record<string, any>>({
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={`skeleton-${i}`}>
                     {columns.map((_, j) => (
-                      <td key={j} style={{ padding: '12px 14px', borderBottom: `1px solid ${colors.borderDim}` }}>
-                        <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                      <td key={j} style={{ padding: '13px 16px', borderBottom: `1px solid ${colors.borderDim}` }}>
+                        <div style={{ height: 12, borderRadius: 5, background: 'rgba(255,255,255,.05)', animation: 'pulse 1.5s ease-in-out infinite' }} />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} style={{ padding: '48px 14px', textAlign: 'center' }}>
-                    <div style={{ color: colors.textDim, fontSize: font.size.md }}>
-                      {emptyIcon && <div style={{ marginBottom: 8, opacity: 0.5 }}>{emptyIcon}</div>}
-                      {emptyMessage}
+                  <td colSpan={columns.length} style={{ padding: '64px 16px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                      {emptyIcon && (
+                        <div
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: 48, height: 48, borderRadius: radius.lg,
+                            background: colors.raisedAlt, border: `1px solid ${colors.borderDim}`,
+                            color: colors.textDim,
+                          }}
+                        >
+                          {emptyIcon}
+                        </div>
+                      )}
+                      <div style={{ color: colors.textMuted, fontSize: font.size.md, fontWeight: font.weight.medium }}>
+                        {emptyMessage}
+                      </div>
                     </div>
                   </td>
                 </tr>
               ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => onRowClick?.(row.original)}
-                    style={{
-                      cursor: onRowClick ? 'pointer' : 'default',
-                      transition: 'background .1s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.02)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        style={{
-                          padding: '10px 14px',
-                          borderBottom: `1px solid ${colors.borderDim}`,
-                          fontSize: font.size.md,
-                          color: colors.text,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))
+                table.getRowModel().rows.map((row, rowIndex) => {
+                  const isLast = rowIndex === table.getRowModel().rows.length - 1;
+                  const zebra = rowIndex % 2 === 1 ? 'rgba(255,255,255,.015)' : 'transparent';
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={() => onRowClick?.(row.original)}
+                      style={{
+                        cursor: onRowClick ? 'pointer' : 'default',
+                        background: zebra,
+                        transition: 'background .12s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.045)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = zebra)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: isLast ? 'none' : `1px solid ${colors.borderDim}`,
+                            fontSize: font.size.md,
+                            color: colors.text,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

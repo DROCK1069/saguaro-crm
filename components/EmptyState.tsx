@@ -1,131 +1,34 @@
 'use client';
 
 import React from 'react';
-
-const GOLD = '#D4A017';
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+import {
+  FolderOpen,
+  Receipt,
+  CurrencyDollar,
+  Question,
+  ArrowsClockwise,
+  ImageSquare,
+  Notebook,
+  Gavel,
+  FileText,
+  Files,
+  Plus,
+  type Icon,
+} from '@phosphor-icons/react';
+import { colors, space, radius, shadow, font } from '../lib/design-tokens';
 
 /* ────────────────────────── Icons ────────────────────────── */
 
-function FolderIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <path
-        d="M6 14C6 11.7909 7.79086 10 10 10H18.3431C19.404 10 20.4214 10.4214 21.1716 11.1716L23.8284 13.8284C24.5786 14.5786 25.596 15 26.6569 15H38C40.2091 15 42 16.7909 42 19V34C42 36.2091 40.2091 38 38 38H10C7.79086 38 6 36.2091 6 34V14Z"
-        stroke={GOLD}
-        strokeWidth="2"
-        fill="none"
-      />
-    </svg>
-  );
-}
-
-function InvoiceIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <rect x="10" y="6" width="28" height="36" rx="3" stroke={GOLD} strokeWidth="2" />
-      <line x1="16" y1="16" x2="32" y2="16" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <line x1="16" y1="22" x2="28" y2="22" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <line x1="16" y1="28" x2="24" y2="28" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <path d="M28 30L30 34L34 28" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PayAppIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <rect x="8" y="10" width="32" height="28" rx="3" stroke={GOLD} strokeWidth="2" />
-      <line x1="8" y1="18" x2="40" y2="18" stroke={GOLD} strokeWidth="2" />
-      <circle cx="24" cy="28" r="4" stroke={GOLD} strokeWidth="2" />
-      <line x1="24" y1="25" x2="24" y2="31" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="22" y1="27" x2="26" y2="27" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function RFIIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <circle cx="24" cy="24" r="16" stroke={GOLD} strokeWidth="2" />
-      <text x="24" y="30" textAnchor="middle" fill={GOLD} fontSize="20" fontWeight="700" fontFamily="sans-serif">
-        ?
-      </text>
-    </svg>
-  );
-}
-
-function ChangeOrderIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <rect x="10" y="8" width="28" height="32" rx="3" stroke={GOLD} strokeWidth="2" />
-      <path d="M18 24H30" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <path d="M26 20L30 24L26 28" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M22 20L18 24L22 28" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PhotoIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <rect x="8" y="10" width="32" height="28" rx="3" stroke={GOLD} strokeWidth="2" />
-      <circle cx="18" cy="20" r="3" stroke={GOLD} strokeWidth="2" />
-      <path d="M8 32L16 24L22 30L30 20L40 32" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function DailyLogIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <rect x="10" y="6" width="28" height="36" rx="3" stroke={GOLD} strokeWidth="2" />
-      <line x1="18" y1="6" x2="18" y2="12" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <line x1="30" y1="6" x2="30" y2="12" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <line x1="10" y1="14" x2="38" y2="14" stroke={GOLD} strokeWidth="2" />
-      <line x1="16" y1="20" x2="32" y2="20" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="16" y1="26" x2="28" y2="26" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="16" y1="32" x2="24" y2="32" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function BidIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <path d="M12 40V12C12 9.79086 13.7909 8 16 8H32C34.2091 8 36 9.79086 36 12V40L24 34L12 40Z" stroke={GOLD} strokeWidth="2" strokeLinejoin="round" />
-      <line x1="18" y1="16" x2="30" y2="16" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <line x1="18" y1="22" x2="26" y2="22" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ContractIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <rect x="10" y="6" width="28" height="36" rx="3" stroke={GOLD} strokeWidth="2" />
-      <line x1="16" y1="14" x2="32" y2="14" stroke={GOLD} strokeWidth="2" strokeLinecap="round" />
-      <line x1="16" y1="20" x2="28" y2="20" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M20 30C22 28 26 28 28 30C30 32 32 34 34 32" stroke={GOLD} strokeWidth="2" strokeLinecap="round" fill="none" />
-    </svg>
-  );
-}
-
-function SubmittalIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <rect x="8" y="10" width="24" height="30" rx="3" stroke={GOLD} strokeWidth="2" />
-      <rect x="16" y="6" width="24" height="30" rx="3" stroke={GOLD} strokeWidth="2" fill={DARK} />
-      <line x1="22" y1="14" x2="34" y2="14" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="22" y1="20" x2="30" y2="20" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M28 24L30 28L34 22" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const FolderIcon: Icon = FolderOpen;
+const InvoiceIcon: Icon = Receipt;
+const PayAppIcon: Icon = CurrencyDollar;
+const RFIIcon: Icon = Question;
+const ChangeOrderIcon: Icon = ArrowsClockwise;
+const PhotoIcon: Icon = ImageSquare;
+const DailyLogIcon: Icon = Notebook;
+const BidIcon: Icon = Gavel;
+const ContractIcon: Icon = FileText;
+const SubmittalIcon: Icon = Files;
 
 /* ────────────────────────── EmptyState ────────────────────────── */
 
@@ -161,21 +64,38 @@ export function EmptyState({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '60px 24px',
+        padding: `${space['5xl']}px ${space.xxl}px`,
         textAlign: 'center',
-        background: `radial-gradient(ellipse at center, ${RAISED}44 0%, transparent 70%)`,
-        borderRadius: 12,
-        border: `1px dashed ${BORDER}`,
+        background: colors.raised,
+        borderRadius: radius['2xl'] + 2,
+        border: `1px solid ${colors.border}`,
+        boxShadow: shadow.sm,
       }}
     >
-      <div style={{ marginBottom: 16, opacity: 0.9 }}>{icon ?? <FolderIcon />}</div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 72,
+          height: 72,
+          marginBottom: space.xl,
+          borderRadius: radius.full,
+          background: colors.goldDim,
+          border: `1px solid ${colors.goldBorder}`,
+          color: colors.gold,
+        }}
+      >
+        {icon ?? <FolderIcon size={32} weight="duotone" />}
+      </div>
 
       <h3
         style={{
-          margin: '0 0 8px',
-          fontSize: 18,
-          fontWeight: 700,
-          color: TEXT,
+          margin: `0 0 ${space.sm}px`,
+          fontSize: font.size['2xl'],
+          fontWeight: font.weight.bold,
+          letterSpacing: '-0.01em',
+          color: colors.text,
         }}
       >
         {title}
@@ -183,11 +103,11 @@ export function EmptyState({
 
       <p
         style={{
-          margin: '0 0 24px',
-          fontSize: 14,
-          color: DIM,
+          margin: `0 0 ${space.xxl}px`,
+          fontSize: font.size.lg,
+          color: colors.textMuted,
           maxWidth: 400,
-          lineHeight: 1.5,
+          lineHeight: 1.55,
         }}
       >
         {description}
@@ -199,24 +119,22 @@ export function EmptyState({
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 8,
-            padding: '10px 22px',
-            background: GOLD,
-            color: DARK,
-            fontSize: 14,
-            fontWeight: 700,
+            gap: space.sm,
+            padding: `10px ${space.xl}px`,
+            background: colors.gold,
+            color: colors.darkAlt,
+            fontSize: font.size.lg,
+            fontWeight: font.weight.bold,
             border: 'none',
-            borderRadius: 8,
+            borderRadius: radius.xl,
             cursor: 'pointer',
+            boxShadow: shadow.sm,
             transition: 'filter 0.15s',
           }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)')}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.08)')}
           onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'none')}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Plus size={16} weight="bold" color={colors.darkAlt} />
           {actionLabel}
         </button>
       )}
@@ -234,7 +152,7 @@ interface VariantProps {
 export function EmptyInvoices({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<InvoiceIcon />}
+      icon={<InvoiceIcon size={32} weight="duotone" />}
       title="No invoices yet"
       description="Create your first invoice to start tracking payments and billing for this project."
       actionLabel="Create Invoice"
@@ -247,7 +165,7 @@ export function EmptyInvoices({ actionHref, onAction }: VariantProps) {
 export function EmptyPayApps({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<PayAppIcon />}
+      icon={<PayAppIcon size={32} weight="duotone" />}
       title="No pay applications"
       description="Submit your first pay application to begin the payment request process with the owner."
       actionLabel="New Pay App"
@@ -260,7 +178,7 @@ export function EmptyPayApps({ actionHref, onAction }: VariantProps) {
 export function EmptyRFIs({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<RFIIcon />}
+      icon={<RFIIcon size={32} weight="duotone" />}
       title="No RFIs submitted"
       description="Create a Request for Information when you need clarification on plans, specs, or project details."
       actionLabel="Create RFI"
@@ -273,7 +191,7 @@ export function EmptyRFIs({ actionHref, onAction }: VariantProps) {
 export function EmptyChangeOrders({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<ChangeOrderIcon />}
+      icon={<ChangeOrderIcon size={32} weight="duotone" />}
       title="No change orders"
       description="Change orders will appear here when scope, cost, or schedule modifications are proposed."
       actionLabel="New Change Order"
@@ -286,7 +204,7 @@ export function EmptyChangeOrders({ actionHref, onAction }: VariantProps) {
 export function EmptyPhotos({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<PhotoIcon />}
+      icon={<PhotoIcon size={32} weight="duotone" />}
       title="No photos uploaded"
       description="Upload progress photos to document the project timeline and share visual updates with stakeholders."
       actionLabel="Upload Photos"
@@ -299,7 +217,7 @@ export function EmptyPhotos({ actionHref, onAction }: VariantProps) {
 export function EmptyDailyLogs({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<DailyLogIcon />}
+      icon={<DailyLogIcon size={32} weight="duotone" />}
       title="No daily logs"
       description="Start logging daily field activities including weather, labor, equipment, and work completed."
       actionLabel="New Daily Log"
@@ -312,7 +230,7 @@ export function EmptyDailyLogs({ actionHref, onAction }: VariantProps) {
 export function EmptyBids({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<BidIcon />}
+      icon={<BidIcon size={32} weight="duotone" />}
       title="No bids received"
       description="Bid submissions from subcontractors and vendors will appear here once bid packages are published."
       actionLabel="Create Bid Package"
@@ -325,7 +243,7 @@ export function EmptyBids({ actionHref, onAction }: VariantProps) {
 export function EmptyContracts({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<ContractIcon />}
+      icon={<ContractIcon size={32} weight="duotone" />}
       title="No contracts created"
       description="Create contracts to define scope, pricing, and terms with subcontractors and suppliers."
       actionLabel="New Contract"
@@ -338,7 +256,7 @@ export function EmptyContracts({ actionHref, onAction }: VariantProps) {
 export function EmptySubmittals({ actionHref, onAction }: VariantProps) {
   return (
     <EmptyState
-      icon={<SubmittalIcon />}
+      icon={<SubmittalIcon size={32} weight="duotone" />}
       title="No submittals"
       description="Track shop drawings, product data, and material samples submitted for approval by the design team."
       actionLabel="New Submittal"

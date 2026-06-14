@@ -2,14 +2,16 @@
 import React, { useState } from 'react';
 
 const C = {
-  dark: '#0d1117',
-  gold: '#F59E0B',
-  text: '#F8FAFC',
-  dim: '#CBD5E1',
-  border: '#1E3A5F',
-  raised: '#0F172A',
-  green: '#22c55e',
-  blue: '#3B82F6',
+  dark: '#0B0B0F',
+  gold: '#D4A017',
+  goldBright: '#F0C040',
+  text: '#F5F5F7',
+  dim: '#A1A1AA',
+  border: 'rgba(255,255,255,0.10)',
+  raised: '#131318',
+  raisedAlt: '#1A1A21',
+  green: '#22C55E',
+  blue: '#6366F1',
   font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
 };
 
@@ -321,15 +323,15 @@ export default function PricingPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.25)`, borderRadius: 8, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, #FCD34D)`, borderRadius: 8, color: '#0d1117', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(245,158,11,0.25)` }}>Free Trial</a>
+          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
+          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '88px 24px 64px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(245,158,11,0.07) 0%, transparent 70%)` }}>
+        <section style={{ textAlign: 'center', padding: '88px 24px 64px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(34,197,94,0.1)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 20, fontSize: 12, fontWeight: 700, color: C.green, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, display: 'inline-block' }} />
             Free Migration Included on All Plans
@@ -337,7 +339,7 @@ export default function PricingPage() {
 
           <h1 style={{ fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 20px', letterSpacing: -1.5 }}>
             One Platform.{' '}
-            <span style={{ background: `linear-gradient(135deg, ${C.gold}, #FCD34D)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               Your Whole Team.
             </span>
           </h1>
@@ -352,20 +354,20 @@ export default function PricingPage() {
               { from: 'Buildertrend', save: 'Save $200–$500/mo' },
               { from: 'Autodesk', save: 'Save $1,900+/mo' },
             ].map(item => (
-              <div key={item.from} style={{ padding: '6px 14px', background: 'rgba(245,158,11,0.07)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 20, fontSize: 12, color: C.gold, fontWeight: 600 }}>
+              <div key={item.from} style={{ padding: '6px 14px', background: 'rgba(212,160,23,0.08)', border: `1px solid rgba(212,160,23,0.22)`, borderRadius: 999, fontSize: 12, color: C.gold, fontWeight: 600 }}>
                 vs {item.from} — {item.save}
               </div>
             ))}
           </div>
 
           {/* Toggle */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: C.raised, borderRadius: 10, padding: '4px', border: `1px solid ${C.border}`, marginBottom: 16 }}>
-            <button onClick={() => setAnnual(false)} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: !annual ? 'rgba(245,158,11,0.15)' : 'transparent', color: !annual ? C.gold : C.dim, fontWeight: 700, fontSize: 14, cursor: 'pointer', outline: !annual ? `1px solid rgba(245,158,11,0.3)` : 'none' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: C.raisedAlt, borderRadius: 999, padding: '5px', border: `1px solid ${C.border}`, marginBottom: 16, boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+            <button onClick={() => setAnnual(false)} style={{ padding: '8px 22px', borderRadius: 999, border: !annual ? `1px solid rgba(212,160,23,0.35)` : '1px solid transparent', background: !annual ? 'rgba(212,160,23,0.14)' : 'transparent', color: !annual ? C.gold : C.dim, fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: !annual ? '0 1px 2px rgba(0,0,0,.4)' : 'none', transition: 'background 0.15s, color 0.15s' }}>
               Monthly
             </button>
-            <button onClick={() => setAnnual(true)} style={{ padding: '8px 22px', borderRadius: 7, border: 'none', background: annual ? 'rgba(245,158,11,0.15)' : 'transparent', color: annual ? C.gold : C.dim, fontWeight: 700, fontSize: 14, cursor: 'pointer', outline: annual ? `1px solid rgba(245,158,11,0.3)` : 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => setAnnual(true)} style={{ padding: '8px 22px', borderRadius: 999, border: annual ? `1px solid rgba(212,160,23,0.35)` : '1px solid transparent', background: annual ? 'rgba(212,160,23,0.14)' : 'transparent', color: annual ? C.gold : C.dim, fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: annual ? '0 1px 2px rgba(0,0,0,.4)' : 'none', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 0.15s, color 0.15s' }}>
               Annual
-              <span style={{ fontSize: 11, fontWeight: 800, color: C.green, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', padding: '1px 7px', borderRadius: 10 }}>SAVE 17%</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: C.green, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', padding: '1px 7px', borderRadius: 999 }}>SAVE 17%</span>
             </button>
           </div>
           <div style={{ fontSize: 13, color: C.dim }}>
@@ -389,7 +391,7 @@ export default function PricingPage() {
                 { step: '4', icon: '📱', title: 'Install on Your Phone', desc: 'Visit the site on your iPhone or Android and tap "Add to Home Screen." Works offline. No App Store.' },
               ].map((s, i, arr) => (
                 <div key={i} style={{ padding: '0 28px', borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none', position: 'relative' }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
                     {s.icon}
                   </div>
                   <div style={{ fontSize: 10, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Step {s.step}</div>
@@ -399,7 +401,7 @@ export default function PricingPage() {
               ))}
             </div>
             <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 28, borderTop: `1px solid ${C.border}` }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '14px 40px', background: `linear-gradient(135deg, ${C.gold}, #D97706)`, borderRadius: 10, color: '#000', fontWeight: 900, fontSize: 15, textDecoration: 'none', boxShadow: '0 4px 20px rgba(245,158,11,0.3)' }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '14px 40px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 900, fontSize: 15, textDecoration: 'none', boxShadow: '0 4px 14px rgba(212,160,23,0.30)' }}>
                 Start Free Trial — No Credit Card →
               </a>
               <div style={{ marginTop: 12, fontSize: 13, color: C.dim }}>
@@ -414,20 +416,21 @@ export default function PricingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'start' }}>
             {PLANS.map((plan) => (
               <div key={plan.name} style={{
-                background: plan.popular ? 'linear-gradient(180deg, #111827 0%, #0F172A 100%)' : C.raised,
-                border: `1.5px solid ${plan.popular ? C.gold : C.border}`,
-                borderRadius: 16, overflow: 'hidden', position: 'relative',
-                boxShadow: plan.popular ? `0 0 0 1px rgba(245,158,11,0.2), 0 24px 48px rgba(0,0,0,0.5), 0 0 80px rgba(245,158,11,0.06)` : '0 4px 24px rgba(0,0,0,0.3)',
+                background: plan.popular ? C.raisedAlt : C.raised,
+                border: plan.popular ? `2px solid ${C.gold}` : `1px solid ${C.border}`,
+                borderRadius: 14, overflow: 'hidden', position: 'relative',
+                marginTop: plan.popular ? -8 : 0,
+                boxShadow: plan.popular ? '0 16px 44px rgba(0,0,0,.55)' : '0 4px 14px rgba(0,0,0,.45)',
               }}>
                 {plan.popular && (
-                  <div style={{ background: `linear-gradient(90deg, ${C.gold}, #FCD34D)`, textAlign: 'center', padding: '7px 0', fontSize: 11, fontWeight: 800, color: '#0d1117', letterSpacing: 2, textTransform: 'uppercase' }}>
+                  <div style={{ background: `linear-gradient(90deg, ${C.gold}, ${C.goldBright})`, textAlign: 'center', padding: '7px 0', fontSize: 11, fontWeight: 800, color: '#0B0B0F', letterSpacing: 2, textTransform: 'uppercase' }}>
                     Most Popular
                   </div>
                 )}
                 <div style={{ padding: '30px 28px 28px' }}>
                   <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: plan.popular ? C.gold : C.dim, marginBottom: 2 }}>{plan.name}</div>
                   <div style={{ fontSize: 13, color: C.dim, marginBottom: 6 }}>{plan.tagline}</div>
-                  <div style={{ fontSize: 11, color: plan.popular ? C.gold : C.dim, background: plan.popular ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${plan.popular ? 'rgba(245,158,11,0.2)' : C.border}`, borderRadius: 6, padding: '3px 10px', display: 'inline-block', marginBottom: 20, fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: plan.popular ? C.gold : C.dim, background: plan.popular ? 'rgba(212,160,23,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${plan.popular ? 'rgba(212,160,23,0.25)' : C.border}`, borderRadius: 999, padding: '3px 10px', display: 'inline-block', marginBottom: 20, fontWeight: 600 }}>
                     {plan.highlight}
                   </div>
 
@@ -452,11 +455,11 @@ export default function PricingPage() {
 
                   <a href={plan.cta_href} style={{
                     display: 'block', textAlign: 'center', padding: '13px 0',
-                    background: plan.popular ? `linear-gradient(135deg, ${C.gold}, #FCD34D)` : plan.name === 'Enterprise' ? 'transparent' : 'rgba(255,255,255,0.05)',
-                    border: plan.popular ? 'none' : `1.5px solid ${plan.name === 'Enterprise' ? C.gold : C.border}`,
-                    borderRadius: 9, color: plan.popular ? '#0d1117' : plan.name === 'Enterprise' ? C.gold : C.text,
+                    background: plan.popular ? `linear-gradient(135deg, ${C.gold}, ${C.goldBright})` : plan.name === 'Enterprise' ? 'rgba(212,160,23,0.10)' : 'rgba(255,255,255,0.05)',
+                    border: plan.popular ? '1px solid transparent' : `1px solid ${plan.name === 'Enterprise' ? 'rgba(212,160,23,0.35)' : C.border}`,
+                    borderRadius: 10, color: plan.popular ? '#0B0B0F' : plan.name === 'Enterprise' ? C.gold : C.text,
                     fontWeight: 800, fontSize: 14, textDecoration: 'none', marginBottom: 28, letterSpacing: 0.3,
-                    boxShadow: plan.popular ? `0 4px 16px rgba(245,158,11,0.3)` : 'none',
+                    boxShadow: plan.popular ? `0 4px 14px rgba(212,160,23,0.30)` : 'none',
                   }}>
                     {plan.cta}
                   </a>
@@ -488,7 +491,7 @@ export default function PricingPage() {
 
         {/* Migration Banner */}
         <section style={{ padding: '0 24px 80px', maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(13,17,23,0) 100%)', border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 16, padding: '40px 48px', display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(212,160,23,0.10) 0%, rgba(11,11,15,0) 100%)', border: `1px solid rgba(212,160,23,0.30)`, borderRadius: 14, padding: '40px 48px', display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
             <div style={{ flex: 1, minWidth: 280 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Free Migration — Every Plan</div>
               <h2 style={{ fontSize: 28, fontWeight: 900, margin: '0 0 12px', lineHeight: 1.2 }}>We move you over in 1 day. Free.</h2>
@@ -507,7 +510,7 @@ export default function PricingPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
               <div style={{ fontSize: 64, fontWeight: 900, color: C.gold, lineHeight: 1 }}>$0</div>
               <div style={{ fontSize: 14, color: C.dim, textAlign: 'center' }}>Migration fee<br />(always free)</div>
-              <a href="/signup" style={{ padding: '14px 28px', background: `linear-gradient(135deg, ${C.gold}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 800, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 24px rgba(245,158,11,0.35)`, textAlign: 'center' }}>
+              <a href="/signup" style={{ padding: '14px 28px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)`, textAlign: 'center' }}>
                 Start Free Migration
               </a>
             </div>
@@ -517,7 +520,7 @@ export default function PricingPage() {
         {/* Add-ons */}
         <section style={{ padding: '0 24px 96px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 20, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Add-Ons & Upgrades
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>Power up your plan</h2>
@@ -525,7 +528,7 @@ export default function PricingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {ADDONS.map(addon => (
-              <div key={addon.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px' }}>
+              <div key={addon.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 4 }}>{addon.name}</div>
@@ -555,7 +558,7 @@ export default function PricingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
             {SUPPORT_TIERS.map(tier => (
-              <div key={tier.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '28px 24px' }}>
+              <div key={tier.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '28px 24px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: tier.color, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tier.name}</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 4 }}>{tier.price}</div>
                 <div style={{ fontSize: 11, color: C.dim, marginBottom: 20 }}>{tier.plans}</div>
@@ -584,12 +587,13 @@ export default function PricingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
             {SERVICES.map(service => (
               <div key={service.name} style={{
-                background: service.highlight ? 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(15,23,42,0) 100%)' : C.raised,
-                border: `1.5px solid ${service.highlight ? 'rgba(245,158,11,0.4)' : C.border}`,
+                background: service.highlight ? 'linear-gradient(135deg, rgba(212,160,23,0.10) 0%, rgba(11,11,15,0) 100%)' : C.raised,
+                border: service.highlight ? `1px solid rgba(212,160,23,0.40)` : `1px solid ${C.border}`,
                 borderRadius: 14, padding: '28px 24px', position: 'relative',
+                boxShadow: '0 1px 2px rgba(0,0,0,.4)',
               }}>
                 {service.highlight && (
-                  <div style={{ position: 'absolute', top: -1, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${C.gold}, #FCD34D)`, borderRadius: '14px 14px 0 0' }} />
+                  <div style={{ position: 'absolute', top: -1, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${C.gold}, ${C.goldBright})`, borderRadius: '14px 14px 0 0' }} />
                 )}
                 <div style={{ fontSize: 24, marginBottom: 12 }}>{service.icon}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -599,7 +603,7 @@ export default function PricingPage() {
                 <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>{service.description}</div>
                 {service.highlight && (
                   <div style={{ marginTop: 16 }}>
-                    <a href="/signup" style={{ display: 'inline-block', padding: '10px 20px', background: `linear-gradient(135deg, ${C.gold}, #D97706)`, borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>
+                    <a href="/signup" style={{ display: 'inline-block', padding: '10px 20px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>
                       Start Free Migration
                     </a>
                   </div>
@@ -612,12 +616,12 @@ export default function PricingPage() {
         {/* Competitor Price Comparison */}
         <section style={{ padding: '0 24px 96px', maxWidth: 900, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 20, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               How We Stack Up
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>The construction software market — honestly</h2>
           </div>
-          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}` }}>
@@ -629,13 +633,13 @@ export default function PricingPage() {
               <tbody>
                 {COMPETITOR_COMPARISON.map((row, i) => (
                   <tr key={row.name} style={{
-                    borderBottom: i < COMPETITOR_COMPARISON.length - 1 ? `1px solid rgba(30,58,95,0.5)` : 'none',
-                    background: row.isSaguaro ? 'rgba(245,158,11,0.04)' : 'transparent',
+                    borderBottom: i < COMPETITOR_COMPARISON.length - 1 ? `1px solid ${C.border}` : 'none',
+                    background: row.isSaguaro ? 'rgba(212,160,23,0.06)' : 'transparent',
                   }}>
                     <td style={{ padding: '14px 20px' }}>
                       <span style={{ fontSize: 14, fontWeight: row.isSaguaro ? 800 : 600, color: row.isSaguaro ? C.gold : C.text }}>
                         {row.name}
-                        {row.isSaguaro && <span style={{ fontSize: 10, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 4, padding: '2px 6px', marginLeft: 8, color: C.gold, fontWeight: 700 }}>YOU</span>}
+                        {row.isSaguaro && <span style={{ fontSize: 10, background: 'rgba(212,160,23,0.15)', border: '1px solid rgba(212,160,23,0.30)', borderRadius: 6, padding: '2px 6px', marginLeft: 8, color: C.gold, fontWeight: 700 }}>YOU</span>}
                       </span>
                     </td>
                     <td style={{ padding: '14px 20px', textAlign: 'center', fontSize: 13, color: row.isSaguaro ? C.gold : C.text, fontWeight: row.isSaguaro ? 700 : 400 }}>{row.price}</td>
@@ -660,18 +664,18 @@ export default function PricingPage() {
         {/* Feature Comparison Table */}
         <section style={{ padding: '0 24px 96px', maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 20, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Full Comparison
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Everything, side by side</h2>
           </div>
-          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}` }}>
                   <th style={{ padding: '20px 24px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: C.dim, width: '40%' }}>Feature</th>
                   {['Starter', 'Professional', 'Enterprise'].map((col) => (
-                    <th key={col} style={{ padding: '20px 16px', textAlign: 'center', fontWeight: 800, fontSize: 13, color: col === 'Professional' ? C.gold : C.text, background: col === 'Professional' ? 'rgba(245,158,11,0.05)' : 'transparent', borderLeft: col === 'Professional' ? `1px solid rgba(245,158,11,0.15)` : `1px solid ${C.border}`, borderRight: col === 'Professional' ? `1px solid rgba(245,158,11,0.15)` : undefined }}>
+                    <th key={col} style={{ padding: '20px 16px', textAlign: 'center', fontWeight: 800, fontSize: 13, color: col === 'Professional' ? C.gold : C.text, background: col === 'Professional' ? 'rgba(212,160,23,0.06)' : 'transparent', borderLeft: col === 'Professional' ? `1px solid rgba(212,160,23,0.18)` : `1px solid ${C.border}`, borderRight: col === 'Professional' ? `1px solid rgba(212,160,23,0.18)` : undefined }}>
                       {col}
                     </th>
                   ))}
@@ -679,10 +683,10 @@ export default function PricingPage() {
               </thead>
               <tbody>
                 {COMPARISON_FEATURES.map((row, i) => (
-                  <tr key={row.label} style={{ borderBottom: i < COMPARISON_FEATURES.length - 1 ? `1px solid rgba(30,58,95,0.5)` : 'none' }}>
+                  <tr key={row.label} style={{ borderBottom: i < COMPARISON_FEATURES.length - 1 ? `1px solid ${C.border}` : 'none' }}>
                     <td style={{ padding: '14px 24px', fontSize: 13, color: C.dim, fontWeight: 500 }}>{row.label}</td>
                     {(['starter', 'pro', 'ent'] as const).map((key) => (
-                      <td key={key} style={{ padding: '14px 16px', textAlign: 'center', verticalAlign: 'middle', background: key === 'pro' ? 'rgba(245,158,11,0.03)' : 'transparent', borderLeft: key === 'pro' ? `1px solid rgba(245,158,11,0.12)` : `1px solid rgba(30,58,95,0.4)`, borderRight: key === 'pro' ? `1px solid rgba(245,158,11,0.12)` : undefined }}>
+                      <td key={key} style={{ padding: '14px 16px', textAlign: 'center', verticalAlign: 'middle', background: key === 'pro' ? 'rgba(212,160,23,0.05)' : 'transparent', borderLeft: key === 'pro' ? `1px solid rgba(212,160,23,0.15)` : `1px solid ${C.border}`, borderRight: key === 'pro' ? `1px solid rgba(212,160,23,0.15)` : undefined }}>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                           <ComparisonCell value={row[key]} />
                         </div>
@@ -698,7 +702,7 @@ export default function PricingPage() {
         {/* FAQ */}
         <section style={{ padding: '0 24px 96px', maxWidth: 760, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 20, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>FAQ</div>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>FAQ</div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Frequently asked questions</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -706,7 +710,7 @@ export default function PricingPage() {
               <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? `1px solid ${C.border}` : 'none' }}>
                 <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: '100%', textAlign: 'left', padding: '22px 0', background: 'none', border: 'none', color: C.text, fontSize: 16, fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, lineHeight: 1.4, fontFamily: C.font }}>
                   <span>{faq.q}</span>
-                  <span style={{ flexShrink: 0, width: 28, height: 28, background: openFaq === i ? `rgba(245,158,11,0.15)` : 'rgba(255,255,255,0.05)', border: `1px solid ${openFaq === i ? 'rgba(245,158,11,0.4)' : C.border}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.gold, fontSize: 18, fontWeight: 300 }}>
+                  <span style={{ flexShrink: 0, width: 28, height: 28, background: openFaq === i ? `rgba(212,160,23,0.15)` : 'rgba(255,255,255,0.05)', border: `1px solid ${openFaq === i ? 'rgba(212,160,23,0.40)' : C.border}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.gold, fontSize: 18, fontWeight: 300 }}>
                     {openFaq === i ? '−' : '+'}
                   </span>
                 </button>
@@ -719,20 +723,20 @@ export default function PricingPage() {
         </section>
 
         {/* Final CTA */}
-        <section style={{ padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(245,158,11,0.04) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
               Ready to stop paying{' '}
-              <span style={{ background: `linear-gradient(135deg, ${C.gold}, #FCD34D)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Procore prices?</span>
+              <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Procore prices?</span>
             </h2>
             <p style={{ fontSize: 17, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
               30-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, #FCD34D)`, borderRadius: 10, color: '#0d1117', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 24px rgba(245,158,11,0.35)` }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
                 Start Free Trial — No CC Required
               </a>
-              <a href="/switch-from-procore" style={{ display: 'inline-block', padding: '15px 36px', background: 'transparent', border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              <a href="/switch-from-procore" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 Free Migration Guide
               </a>
             </div>

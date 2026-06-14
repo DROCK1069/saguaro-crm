@@ -1,12 +1,33 @@
 'use client';
 import React from 'react';
+import { colors, radius, shadow } from '../../lib/design-tokens';
+
+// Shared skeleton system — raised surface base with a soft neutral shimmer
+// sweep. Tokens keep every loading state consistent with the design system.
+const SKEL_BASE = colors.raised;       // #1A1A21 — matches card/panel surface
+const SKEL_SHEEN = 'rgba(255,255,255,0.06)';
 
 const keyframes = `
-@keyframes skel {
-  0%,100% { opacity: 1; }
-  50%      { opacity: .3; }
+@keyframes skelShimmer {
+  0%   { background-position: -160% 0; }
+  100% { background-position: 160% 0; }
 }
-.skel { animation: skel 1.4s ease-in-out infinite; }
+.skel {
+  position: relative;
+  background-color: ${SKEL_BASE};
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    ${SKEL_SHEEN} 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skelShimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation-duration: 3s; }
+}
 `;
 
 interface SkeletonProps {
@@ -16,7 +37,7 @@ interface SkeletonProps {
   style?: React.CSSProperties;
 }
 
-export function Skeleton({ width = '100%', height = 14, borderRadius = 4, style }: SkeletonProps) {
+export function Skeleton({ width = '100%', height = 14, borderRadius = radius.sm, style }: SkeletonProps) {
   return (
     <>
       <style>{keyframes}</style>
@@ -26,7 +47,6 @@ export function Skeleton({ width = '100%', height = 14, borderRadius = 4, style 
           width,
           height,
           borderRadius,
-          background: '#1f2c3e',
           display: 'block',
           ...style,
         }}
@@ -49,11 +69,12 @@ export function SkeletonCard({ height = 80 }: { height?: number }) {
   return (
     <div
       style={{
-        background: '#1f2c3e',
-        borderRadius: 10,
+        background: colors.raised,
+        borderRadius: radius['2xl'],
         padding: '16px 18px',
         marginBottom: 12,
-        border: '1px solid #263347',
+        border: `1px solid ${colors.border}`,
+        boxShadow: shadow.sm,
         height,
       }}
     >
@@ -62,7 +83,7 @@ export function SkeletonCard({ height = 80 }: { height?: number }) {
           <Skeleton width="55%" height={14} />
           <Skeleton width="80%" height={11} />
         </div>
-        <Skeleton width={64} height={24} borderRadius={6} />
+        <Skeleton width={64} height={24} borderRadius={radius.sm} />
       </div>
     </div>
   );
@@ -72,9 +93,10 @@ export function SkeletonKPI() {
   return (
     <div
       style={{
-        background: '#1f2c3e',
-        border: '1px solid #263347',
-        borderRadius: 10,
+        background: colors.raised,
+        border: `1px solid ${colors.border}`,
+        borderRadius: radius['2xl'],
+        boxShadow: shadow.sm,
         padding: '18px 20px',
       }}
     >
@@ -93,18 +115,15 @@ export function SkeletonRow() {
         alignItems: 'center',
         gap: 14,
         padding: '14px 18px',
-        borderBottom: '1px solid #263347',
+        borderBottom: `1px solid ${colors.borderDim}`,
       }}
     >
-      <div
-        className="skel"
-        style={{ width: 4, height: 48, borderRadius: 2, background: '#263347', flexShrink: 0 }}
-      />
+      <Skeleton width={4} height={48} borderRadius={radius.full} style={{ flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
         <Skeleton width="55%" height={14} style={{ marginBottom: 8 }} />
         <Skeleton width="75%" height={11} />
       </div>
-      <Skeleton width={80} height={30} borderRadius={6} />
+      <Skeleton width={80} height={30} borderRadius={radius.sm} />
     </div>
   );
 }

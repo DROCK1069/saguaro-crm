@@ -291,17 +291,17 @@ export default function LandingPage() {
       })()}
 
       {/* ══════════ 3. HERO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.92) 40%, rgba(0,0,0,0.3) 100%)', zIndex: 0 }} />
         {/* left */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <span style={{ display: 'inline-block', background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.25)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, padding: '5px 12px', borderRadius: 20, marginBottom: 16, textTransform: 'uppercase' as const }}>AI-POWERED CONSTRUCTION CRM</span>
-          <h1 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.2, margin: '0 0 14px', color: TEXT }}>The Smarter CRM Built<br />for General Contractors</h1>
-          <p style={{ color: DIM, fontSize: 15, lineHeight: 1.6, margin: '0 0 24px', maxWidth: 440 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.35)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.4, padding: '6px 13px', borderRadius: 999, marginBottom: 20, textTransform: 'uppercase' as const }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(212,160,23,0.6)' }} />AI-POWERED CONSTRUCTION CRM</span>
+          <h1 style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.02em', margin: '0 0 18px', color: TEXT }}>The Smarter CRM Built<br />for General Contractors</h1>
+          <p style={{ color: DIM, fontSize: 16, lineHeight: 1.65, margin: '0 0 28px', maxWidth: 460 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
-            <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '12px 28px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6 }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
-            <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '12px 24px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <svg viewBox="0 0 20 20" width={16} height={16} fill={TEXT}><polygon points="5,3 19,10 5,17" /></svg> Watch Demo
+            <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,160,23,0.35)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
+            <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.16)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <svg viewBox="0 0 20 20" width={15} height={15} fill={TEXT}><polygon points="5,3 19,10 5,17" /></svg> Watch Demo
             </Link>
           </div>
         </div>
@@ -352,8 +352,8 @@ export default function LandingPage() {
       </section>
 
       {/* ── social proof bar ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 48px' }}>
-        <p style={{ textAlign: 'center' as const, fontSize: 13, color: DIM, marginBottom: 16 }}>Trusted by <span style={{ color: TEXT, fontWeight: 600 }}>200+ general contractors</span> in Arizona</p>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '8px 24px 56px' }}>
+        <p style={{ textAlign: 'center' as const, fontSize: 13, color: DIM, marginBottom: 20 }}>Trusted by <span style={{ color: TEXT, fontWeight: 600 }}>200+ general contractors</span> in Arizona</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="stats-grid">
           {[
             { val: '12,400+', lbl: 'AI Takeoffs Run' },
@@ -383,9 +383,9 @@ export default function LandingPage() {
       </div>
 
       {/* ══════════ 4. FEATURE GRID ══════════ */}
-      <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 26, fontWeight: 800, marginBottom: 6 }}>Everything You Need. Nothing You Don&apos;t.</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
+      <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px' }}>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Everything You Need. Nothing You Don&apos;t.</h2>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 40, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="feature-grid">
           {FEATURES.map(f => {
             const cardImg = f.title.includes('Blueprint') || f.title.includes('Takeoff') ? 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&q=80'
@@ -417,7 +417,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 5. AI DESIGN STUDIO PROMO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px' }}>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
         <div style={{ ...glass, padding: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr' }} className="design-grid">
           {/* left copy */}
           <div style={{ padding: '40px 36px' }}>
@@ -454,9 +454,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 6. COMPARISON TABLE ══════════ */}
-      <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, marginBottom: 6 }}>Why GCs Switch from Procore</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 28 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
+      <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Why GCs Switch from Procore</h2>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
         <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
           {/* header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -484,9 +484,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 7. PRICING ══════════ */}
-      <section id="pricing" style={{ maxWidth: 1000, margin: '0 auto', padding: '48px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, marginBottom: 6 }}>Simple, Transparent Pricing</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
+      <section id="pricing" style={{ maxWidth: 1000, margin: '0 auto', padding: '64px 24px' }}>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Simple, Transparent Pricing</h2>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
           {PLANS.map(plan => (
             <div key={plan.name} style={{
@@ -539,7 +539,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 8. TESTIMONIAL ══════════ */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }}>
+      <section style={{ maxWidth: 700, margin: '0 auto', padding: '40px 24px', textAlign: 'center' as const }}>
         <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
           <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=80" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #D4A017', display: 'block', margin: '0 auto 16px' }} />
           <blockquote style={{ fontSize: 16, color: TEXT, lineHeight: 1.6, fontStyle: 'italic' as const, margin: '0 0 16px', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
@@ -549,8 +549,8 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 9. CTA SECTION ══════════ */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>Ready to Build Smarter?</h2>
+      <section style={{ maxWidth: 700, margin: '0 auto', padding: '72px 24px 80px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }}>
+        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 12 }}>Ready to Build Smarter?</h2>
         <p style={{ color: DIM, fontSize: 15, marginBottom: 28 }}>Join 200+ general contractors who switched to Saguaro and never looked back.</p>
         <Link href="/signup" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.3), 0 12px 40px rgba(212,160,23,0.15)', transition: 'all 0.3s ease' }}>Start Your Free Trial</Link>
         <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>No credit card required. 14-day free trial.</p>
