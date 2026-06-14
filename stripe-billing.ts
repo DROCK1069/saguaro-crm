@@ -31,6 +31,7 @@
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from './supabase/admin';
+import { getUser } from './lib/supabase-server';
 import { Resend } from 'resend';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -429,8 +430,12 @@ export async function billingPortalHandler(request: NextRequest) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getSubscriptionHandler(request: NextRequest) {
-  const tenantId = request.nextUrl.searchParams.get('tenantId');
-  if (!tenantId) return err('tenantId required');
+  // Resolve the tenant from the authenticated session (cookie or Bearer), not a
+  // client-supplied query param — the param was never sent by the shared plan
+  // check, so this 400'd on every dashboard page (and was tenant-unsafe).
+  const user = await getUser(request);
+  const tenantId = user?.tenantId ?? request.nextUrl.searchParams.get('tenantId');
+  if (!tenantId) return ok({ hasSubscription: false, isTrialing: false });
 
   const { data: sub } = await supabaseAdmin
     .from('subscriptions')
