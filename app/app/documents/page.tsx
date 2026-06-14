@@ -57,14 +57,27 @@ const statusConfig: Record<string, { color: string; bg: string }> = {
   submitted: { color: '#4a9de8', bg: 'rgba(26,95,168,.12)' },
 };
 
+// AIA bond/form card code -> { route, body } using existing /api/documents/* generators.
+const BOND_ROUTES: Record<string, { path: string; body: (projectId: string) => Record<string, unknown> }> = {
+  'A310':   { path: '/api/documents/a310', body: (projectId) => ({ projectId }) },
+  'A312-P': { path: '/api/documents/a312', body: (projectId) => ({ projectId, bondType: 'performance' }) },
+  'A312-L': { path: '/api/documents/a312', body: (projectId) => ({ projectId, bondType: 'payment' }) },
+  'G704':   { path: '/api/documents/g704', body: (projectId) => ({ projectId }) },
+  'G706':   { path: '/api/documents/g706', body: (projectId) => ({ projectId }) },
+  'G707':   { path: '/api/documents/g707', body: (projectId) => ({ projectId }) },
+};
+
 export default function DocumentsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('Pay Applications');
   const [payApps, setPayApps] = useState<any[]>([]);
   const [lienWaivers, setLienWaivers] = useState<any[]>([]);
   const [payroll, setPayroll] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('');
   const [loadingPayApps, setLoadingPayApps] = useState(true);
   const [loadingLienWaivers, setLoadingLienWaivers] = useState(true);
   const [loadingPayroll, setLoadingPayroll] = useState(true);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/pay-apps/list')
@@ -85,10 +98,58 @@ export default function DocumentsPage() {
   useEffect(() => {
     fetch('/api/documents/list?type=payroll')
       .then(r => r.json())
-      .then(d => setPayroll(d.payroll ?? d.items ?? []))
+      .then(d => setPayroll(d.payroll ?? d.documents ?? d.items ?? []))
       .catch(() => setPayroll([]))
       .finally(() => setLoadingPayroll(false));
   }, []);
+
+  useEffect(() => {
+    fetch('/api/projects/list')
+      .then(r => r.json())
+      .then(d => {
+        const list = d.projects ?? d.items ?? [];
+        setProjects(list);
+        if (list.length) setSelectedProject(list[0].id);
+      })
+      .catch(() => setProjects([]));
+  }, []);
+
+  // Open an already-saved PDF, or POST to a generator route and open the returned URL.
+  async function openOrGenerate(
+    key: string,
+    existingUrl: string | null | undefined,
+    gen: { path: string; body: Record<string, unknown>; urlField?: string } | null,
+  ) {
+    if (existingUrl) { window.open(existingUrl, '_blank'); return; }
+    if (!gen) { alert('No document available to download.'); return; }
+    setBusyKey(key);
+    try {
+      const res = await fetch(gen.path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gen.body),
+      });
+      const data = await res.json();
+      const url = data[gen.urlField ?? 'pdfUrl'] ?? data.pdfUrl ?? data.g702Url;
+      if (!res.ok || !url) { alert(data.error || 'Document generation failed.'); return; }
+      window.open(url, '_blank');
+    } catch {
+      alert('Document generation failed.');
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  function requireProject(): string | null {
+    if (selectedProject) return selectedProject;
+    alert('Select a project first.');
+    return null;
+  }
+
+  const projectSelectStyle: React.CSSProperties = {
+    background: '#0a1117', border: `1px solid ${BORDER}`, borderRadius: 7,
+    color: TEXT, fontSize: 13, fontWeight: 600, padding: '8px 12px', cursor: 'pointer',
+  };
 
   return (
     <div style={{ background: DARK, minHeight: '100%' }}>
@@ -176,11 +237,19 @@ export default function DocumentsPage() {
                         <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{fmt(pa.amount)}</td>
                         <td style={{ padding: '12px 16px' }}><Badge label={pa.status} color={sc.color} bg={sc.bg} /></td>
                         <td style={{ padding: '12px 16px' }}>
-                          <button style={{
-                            background: 'none', border: `1px solid ${BORDER}`,
-                            borderRadius: 5, color: GOLD, fontSize: 11,
-                            padding: '3px 10px', cursor: 'pointer',
-                          }}>📄 G702 PDF</button>
+                          <button
+                            disabled={busyKey === `payapp-${pa.id}`}
+                            onClick={() => openOrGenerate(
+                              `payapp-${pa.id}`,
+                              pa.g702_pdf_url ?? pa.g702Url,
+                              { path: '/api/documents/pay-application', body: { payAppId: pa.id, projectId: pa.project_id ?? pa.projectId }, urlField: 'g702Url' },
+                            )}
+                            style={{
+                              background: 'none', border: `1px solid ${BORDER}`,
+                              borderRadius: 5, color: GOLD, fontSize: 11,
+                              padding: '3px 10px', cursor: 'pointer',
+                              opacity: busyKey === `payapp-${pa.id}` ? 0.5 : 1,
+                            }}>{busyKey === `payapp-${pa.id}` ? '…' : '📄 G702 PDF'}</button>
                         </td>
                       </tr>
                     );
@@ -232,11 +301,29 @@ export default function DocumentsPage() {
                         <td style={{ padding: '12px 16px', color: DIM }}>{lw.throughDate ?? lw.through_date}</td>
                         <td style={{ padding: '12px 16px' }}><Badge label={lw.status} color={sc.color} bg={sc.bg} /></td>
                         <td style={{ padding: '12px 16px' }}>
-                          <button style={{
-                            background: 'none', border: `1px solid ${BORDER}`,
-                            borderRadius: 5, color: GOLD, fontSize: 11,
-                            padding: '3px 10px', cursor: 'pointer',
-                          }}>📄 Download</button>
+                          <button
+                            disabled={busyKey === `lw-${lw.id}`}
+                            onClick={() => openOrGenerate(
+                              `lw-${lw.id}`,
+                              lw.signed_pdf_url ?? lw.pdf_url ?? lw.pdfUrl,
+                              {
+                                path: '/api/lien-waivers/generate',
+                                body: {
+                                  projectId: lw.project_id ?? lw.projectId,
+                                  waiverType: lw.waiver_type ?? lw.type,
+                                  claimantName: lw.claimant_name ?? lw.subName ?? lw.sub_name,
+                                  amount: lw.amount,
+                                  throughDate: lw.through_date ?? lw.throughDate,
+                                  state: lw.state,
+                                },
+                              },
+                            )}
+                            style={{
+                              background: 'none', border: `1px solid ${BORDER}`,
+                              borderRadius: 5, color: GOLD, fontSize: 11,
+                              padding: '3px 10px', cursor: 'pointer',
+                              opacity: busyKey === `lw-${lw.id}` ? 0.5 : 1,
+                            }}>{busyKey === `lw-${lw.id}` ? '…' : '📄 Download'}</button>
                         </td>
                       </tr>
                     );
@@ -250,14 +337,34 @@ export default function DocumentsPage() {
         {/* ── Bonds & Forms ─────────────────────────────────────────── */}
         {activeTab === 'Bonds & Forms' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>AIA Bonds & Standard Forms</div>
-              <button style={{
-                padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#F0C040)`,
-                border: 'none', borderRadius: 7,
-                color: '#0d1117', fontSize: 13, fontWeight: 800, cursor: 'pointer',
-              }}>+ Generate New</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <select
+                  value={selectedProject}
+                  onChange={e => setSelectedProject(e.target.value)}
+                  style={projectSelectStyle}
+                >
+                  {projects.length === 0 && <option value="">No projects</option>}
+                  {projects.map(pr => (
+                    <option key={pr.id} value={pr.id}>{pr.name ?? pr.project_number ?? pr.id}</option>
+                  ))}
+                </select>
+                <button
+                  disabled={busyKey === 'bond-new'}
+                  onClick={() => {
+                    const projectId = requireProject();
+                    if (!projectId) return;
+                    openOrGenerate('bond-new', null, { ...BOND_ROUTES['A312-P'], body: BOND_ROUTES['A312-P'].body(projectId) });
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+                    border: 'none', borderRadius: 7,
+                    color: '#0d1117', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                    opacity: busyKey === 'bond-new' ? 0.6 : 1,
+                  }}>{busyKey === 'bond-new' ? 'Generating…' : '+ Generate New'}</button>
+              </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
               {BOND_CARDS.map(card => (
@@ -274,12 +381,22 @@ export default function DocumentsPage() {
                     </div>
                   </div>
                   <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>{card.desc}</div>
-                  <button style={{
-                    marginTop: 4, padding: '8px 0', width: '100%',
-                    background: `linear-gradient(135deg,${GOLD},#F0C040)`,
-                    border: 'none', borderRadius: 7,
-                    color: '#0d1117', fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                  }}>Generate {card.code}</button>
+                  <button
+                    disabled={busyKey === `bond-${card.code}` || !BOND_ROUTES[card.code]}
+                    onClick={() => {
+                      const route = BOND_ROUTES[card.code];
+                      if (!route) { alert(`No generator for ${card.code}.`); return; }
+                      const projectId = requireProject();
+                      if (!projectId) return;
+                      openOrGenerate(`bond-${card.code}`, null, { ...route, body: route.body(projectId) });
+                    }}
+                    style={{
+                      marginTop: 4, padding: '8px 0', width: '100%',
+                      background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+                      border: 'none', borderRadius: 7,
+                      color: '#0d1117', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                      opacity: busyKey === `bond-${card.code}` ? 0.6 : 1,
+                    }}>{busyKey === `bond-${card.code}` ? 'Generating…' : `Generate ${card.code}`}</button>
                 </div>
               ))}
             </div>
@@ -326,11 +443,17 @@ export default function DocumentsPage() {
                         <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(pr.totalGross ?? pr.total_gross ?? 0)}</td>
                         <td style={{ padding: '12px 16px' }}><Badge label={pr.status} color={sc.color} bg={sc.bg} /></td>
                         <td style={{ padding: '12px 16px' }}>
-                          <button style={{
-                            background: 'none', border: `1px solid ${BORDER}`,
-                            borderRadius: 5, color: GOLD, fontSize: 11,
-                            padding: '3px 10px', cursor: 'pointer',
-                          }}>📄 WH-347</button>
+                          <button
+                            onClick={() => openOrGenerate(
+                              `pr-${pr.id}`,
+                              pr.pdf_url ?? pr.pdfUrl ?? pr.url ?? pr.file_url,
+                              null,
+                            )}
+                            style={{
+                              background: 'none', border: `1px solid ${BORDER}`,
+                              borderRadius: 5, color: GOLD, fontSize: 11,
+                              padding: '3px 10px', cursor: 'pointer',
+                            }}>📄 WH-347</button>
                         </td>
                       </tr>
                     );
@@ -344,14 +467,34 @@ export default function DocumentsPage() {
         {/* ── Closeout ──────────────────────────────────────────────── */}
         {activeTab === 'Closeout' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Closeout Checklist</div>
-              <button style={{
-                padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#F0C040)`,
-                border: 'none', borderRadius: 7,
-                color: '#0d1117', fontSize: 13, fontWeight: 800, cursor: 'pointer',
-              }}>+ Export Closeout Package</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <select
+                  value={selectedProject}
+                  onChange={e => setSelectedProject(e.target.value)}
+                  style={projectSelectStyle}
+                >
+                  {projects.length === 0 && <option value="">No projects</option>}
+                  {projects.map(pr => (
+                    <option key={pr.id} value={pr.id}>{pr.name ?? pr.project_number ?? pr.id}</option>
+                  ))}
+                </select>
+                <button
+                  disabled={busyKey === 'closeout'}
+                  onClick={() => {
+                    const projectId = requireProject();
+                    if (!projectId) return;
+                    openOrGenerate('closeout', null, { path: '/api/documents/closeout', body: { projectId } });
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+                    border: 'none', borderRadius: 7,
+                    color: '#0d1117', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                    opacity: busyKey === 'closeout' ? 0.6 : 1,
+                  }}>{busyKey === 'closeout' ? 'Generating…' : '+ Export Closeout Package'}</button>
+              </div>
             </div>
 
             {/* Progress bar */}

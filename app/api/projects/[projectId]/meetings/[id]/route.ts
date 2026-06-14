@@ -7,12 +7,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
   try {
     const body = await req.json();
     const supabase = createServerClient();
-    // The field page PATCHes a full Meeting object; only map fields that exist as
-    // real meetings columns (mapping type->meeting_type, date->meeting_date,
-    // time->start_time, general_notes->notes). Array fields (attendees/agenda) and
-    // client-only fields (id/recurring/series_id/created_at) have no column and are
+    // The field page PATCHes a full Meeting object; map fields that exist as real
+    // meetings columns (type->meeting_type, date->meeting_date, time->start_time,
+    // general_notes->notes). The structured array fields are persisted to jsonb:
+    // attendees[] -> attendees, the structured agenda[] array -> agenda_items.
+    // Client-only fields (id/recurring/series_id/created_at) have no column and are
     // dropped to avoid a 500.
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    // Keep `agenda` in `direct` so a *text* agenda value still maps to the agenda
+    // text column; the array agenda is routed to agenda_items below.
     const direct = ['title','status','location','end_time','minutes_text','agenda'];
     for (const k of direct) if (body[k] !== undefined && typeof body[k] !== 'object') updates[k] = body[k];
     if (body.meeting_type !== undefined) updates.meeting_type = body.meeting_type;
@@ -23,6 +26,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
     else if (body.time !== undefined) updates.start_time = body.time;
     if (body.notes !== undefined) updates.notes = body.notes;
     else if (body.general_notes !== undefined) updates.notes = body.general_notes;
+    if (Array.isArray(body.attendees)) updates.attendees = body.attendees;
+    if (Array.isArray(body.agenda)) updates.agenda_items = body.agenda;
     const { data, error } = await supabase
       .from('meetings')
       .update(updates)

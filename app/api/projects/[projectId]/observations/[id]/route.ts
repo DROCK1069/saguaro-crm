@@ -11,14 +11,16 @@ export const dynamic = 'force-dynamic';
  *     with { corrective_action: {...}, status }
  *
  * observations real columns: title, description, observation_type, severity,
- * location, photo_urls (jsonb), assigned_to, status, due_date, resolved_at.
- * The field page also sends `corrective_action` (a sub-object) which has no
- * column on this table, so it is dropped to avoid a write error.
+ * location, photo_urls (jsonb), assigned_to, status, due_date, resolved_at,
+ * corrective_action (jsonb), metadata (jsonb).
+ * The field page sends `corrective_action` (a sub-object) which is now persisted
+ * into its own jsonb column; rich/structured fields fold into metadata.
  */
 
 const validColumns = new Set([
   'title', 'description', 'observation_type', 'severity', 'location',
   'photo_urls', 'assigned_to', 'status', 'due_date', 'resolved_at',
+  'corrective_action', 'metadata',
 ]);
 
 export async function GET(req: NextRequest, { params }: { params: { projectId: string; id: string } }) {

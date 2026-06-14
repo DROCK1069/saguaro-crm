@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#c03030';
 
@@ -21,8 +21,31 @@ export default function AutopilotPage() {
   const [feedback, setFeedback] = useState<string>('');
   const [alertStates, setAlertStates] = useState<Record<string, 'acknowledged'|'dismissed'>>({});
   const [scanning, setScanning] = useState(false);
+  const [allAlerts, setAllAlerts] = useState<AutopilotAlert[]>([]);
 
-  const allAlerts: AutopilotAlert[] = [];
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAlerts() {
+      try {
+        const r = await fetch('/api/autopilot/alerts');
+        if (!r.ok) return;
+        const data = await r.json();
+        if (cancelled) return;
+        const rows = Array.isArray(data.alerts) ? data.alerts : [];
+        setAllAlerts(rows.map((a: any): AutopilotAlert => ({
+          id: a.id,
+          severity: (a.severity || 'medium') as AlertSeverity,
+          title: a.title || '',
+          summary: a.summary || a.body || '',
+          rule_code: a.rule_code || '',
+          entity_type: a.entity_type || '',
+        })));
+      } catch { /* non-critical */ }
+    }
+    loadAlerts();
+    return () => { cancelled = true; };
+  }, []);
+
   const visibleAlerts = allAlerts.filter(a => {
     if (alertStates[a.id] === 'dismissed') return false;
     return filter === 'all' || a.severity === filter;
