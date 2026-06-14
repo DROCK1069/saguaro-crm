@@ -87,7 +87,51 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ proj
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const body = await req.json();
     const db = createServerClient();
-    const { data, error } = await db.from('projects').update(body).eq('id', projectId).eq('tenant_id', user.tenantId).select().single();
+    const ALLOWED_PROJECT_COLUMNS = [
+      'name', 'address', 'type', 'contract_value', 'description', 'owner_name', 'owner_email',
+      'architect', 'architect_email', 'contract_type', 'retainage_pct', 'start_date', 'end_date',
+      'status', 'architect_entity', 'architect_license', 'gc_license', 'project_number', 'bid_date',
+      'substantial_completion', 'final_completion', 'contract_date', 'notice_to_proceed', 'bonded',
+      'prevailing_wage', 'county', 'state', 'zip', 'latitude', 'longitude', 'gc_name', 'gc_email',
+      'gc_phone', 'sub_name', 'sub_email', 'sub_phone', 'project_manager', 'superintendent', 'foreman',
+      'scope_of_work', 'divisions', 'tags', 'architect_name', 'architect_phone', 'architect_contact',
+      'engineer_name', 'engineer_email', 'engineer_phone', 'engineer_entity', 'inspector_name',
+      'inspector_email', 'inspector_phone', 'owner_phone', 'owner_entity', 'owner_address', 'gc_entity',
+      'gc_address', 'gc_license_number', 'gc_license_expiry', 'gc_insurance_expiry', 'sub_entity',
+      'sub_address', 'sub_license', 'pm_name', 'pm_email', 'pm_phone', 'super_name', 'super_email',
+      'super_phone', 'foreman_name', 'foreman_email', 'foreman_phone', 'bid_number', 'permit_number',
+      'permit_expiry', 'aia_project_number', 'federal_project_number', 'davis_bacon_wage_decision',
+      'liquidated_damages', 'liquidated_damages_per', 'mobilization_pct', 'stored_materials_allowed',
+      'certified_payroll_required', 'osha_required', 'leed_required', 'leed_level', 'insurance_required',
+      'performance_bond_required', 'payment_bond_required', 'bond_amount', 'work_hours_start',
+      'work_hours_end', 'work_days', 'logo_url', 'cover_photo_url', 'notes', 'internal_notes', 'phase',
+      'percent_complete', 'original_contract_value', 'approved_change_orders', 'revised_contract_value',
+      'billed_to_date', 'retainage_held', 'balance_to_finish', 'contract_amount', 'total_contract_amount',
+      'original_contract_amount', 'contract_sum', 'scheduled_value', 'total_earned', 'total_billed',
+      'total_paid', 'total_retainage', 'total_pending', 'cost_to_date', 'estimated_cost', 'projected_cost',
+      'contingency', 'overhead_pct', 'profit_pct', 'tax_pct', 'insurance_pct', 'bond_pct', 'sq_footage',
+      'num_floors', 'num_units', 'building_type', 'occupancy_type', 'construction_type', 'zoning',
+      'parcel_number', 'legal_description', 'created_by', 'updated_by', 'deleted_at', 'deleted_by',
+      'archived_at', 'archived_by', 'created_by_name', 'updated_by_name', 'assigned_to', 'assigned_to_name',
+      'project_lead', 'project_lead_name', 'last_activity_at', 'last_log_at', 'last_photo_at', 'last_rfi_at',
+      'last_pay_app_at', 'rfi_count', 'change_order_count', 'photo_count', 'punch_count', 'open_punch_count',
+      'pay_app_count', 'current_pay_app_number', 'is_archived', 'is_deleted', 'is_template', 'template_name',
+      'source', 'external_id', 'integration_source', 'custom_fields', 'metadata', 'final_completion_date',
+      'substantial_completion_date', 'notice_to_proceed_date', 'bid_due_date', 'award_date',
+      'contract_execution_date', 'groundbreaking_date', 'occupancy_date', 'warranty_expiry_date',
+      'closeout_date', 'projected_start_date', 'projected_end_date', 'actual_start_date', 'actual_end_date',
+      'revised_completion_date', 'owner_occupancy_date', 'punch_list_due_date', 'punch_list_complete_date',
+      'lien_deadline_date', 'retention_release_date', 'state_jurisdiction', 'project_type',
+      'original_contract', 'ntp_date', 'substantial_date', 'is_public_project', 'geofence_lat',
+      'geofence_lng', 'geofence_radius_meters', 'net_change_by_co', 'approved_co_count', 'city',
+      'estimated_completion', 'square_footage', 'architect_firm', 'completeness_score', 'setup_complete',
+      'setup_step', 'setup_dismissed', 'health_score', 'target_finish_date', 'updated_at',
+    ];
+    const updates: Record<string, any> = {};
+    for (const k of ALLOWED_PROJECT_COLUMNS) {
+      if (body[k] !== undefined) updates[k] = body[k];
+    }
+    const { data, error } = await db.from('projects').update(updates).eq('id', projectId).eq('tenant_id', user.tenantId).select().single();
     if (error) throw error;
     return NextResponse.json({ project: data });
   } catch {

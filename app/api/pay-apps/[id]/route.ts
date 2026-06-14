@@ -97,3 +97,81 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// Partial update of pay app header fields. Whitelists real pay_applications
+// columns (legacy keys are mapped to their live column names) and writes only
+// the provided fields. Tenant-scoped.
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const body = await req.json();
+    const db = createServerClient();
+
+    const columnMap: Record<string, string> = {
+      period_from: 'period_from',
+      period_to: 'period_to',
+      contract_sum: 'contract_sum',
+      change_orders_total: 'change_orders_total',
+      contract_sum_to_date: 'contract_sum_to_date',
+      prev_completed: 'prev_completed',
+      this_period: 'this_period',
+      materials_stored: 'stored_materials',
+      stored_materials: 'stored_materials',
+      total_completed: 'total_completed_stored',
+      percent_complete: 'percent_complete',
+      retainage_percent: 'retainage_percent',
+      retainage_amount: 'total_retainage',
+      total_earned_less_retainage: 'total_earned_less_retainage',
+      prev_payments: 'less_previous_certificates',
+      current_payment_due: 'current_payment_due',
+      net_amount_due: 'net_payment_due',
+      net_payment_due: 'net_payment_due',
+      status: 'status',
+      notes: 'notes',
+      internal_notes: 'internal_notes',
+      owner_name: 'owner_name',
+      owner_address: 'owner_address',
+      architect_name: 'architect_name',
+    };
+
+    const updates: Record<string, unknown> = {};
+    for (const k of Object.keys(columnMap)) {
+      if (body[k] !== undefined) updates[columnMap[k]] = body[k];
+    }
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ success: true });
+    }
+
+    const { data, error } = await db
+      .from('pay_applications')
+      .update(updates)
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId)
+      .select()
+      .single();
+    if (error) throw error;
+    return NextResponse.json({ payApp: data });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const db = createServerClient();
+    const { error } = await db
+      .from('pay_applications')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId);
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

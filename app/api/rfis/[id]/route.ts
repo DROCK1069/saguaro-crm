@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
+const ALLOWED_RFI_COLUMNS = [
+  'project_id', 'subject', 'question', 'answer', 'spec_section', 'due_date', 'status',
+  'submitted_by', 'rfi_number', 'answered_by', 'answered_date', 'answered_at',
+  'drawing_reference', 'days_to_respond', 'is_urgent', 'pdf_url', 'pdf_generated_at',
+  'submitted_at', 'closed_at', 'closed_by', 'notes', 'created_by', 'ai_suggested',
+  'ai_suggested_from', 'response_days_elapsed', 'is_overdue', 'impact_description',
+  'schedule_impact_days', 'cost_impact', 'cost_impact_direction', 'related_submittal_id',
+  'related_change_order_id', 'attachments', 'revision_number', 'previous_rfi_id', 'priority',
+  'draft_answer', 'answer_drafted_at', 'answer_confidence', 'answer_references', 'sage_analysis',
+  'ball_in_court', 'escalated_at', 'escalated_to', 'escalation_reason', 'internal_notes',
+  'linked_co_id', 'watchers', 'view_count', 'last_activity_at', 'last_activity_type',
+  'ai_draft_question', 'ai_drafted_at', 'html_content', 'assigned_to_name', 'assigned_to_email',
+  'assigned_to_company', 'overdue_reminder_sent_at', 'updated_at',
+];
+
+function filterRfiBody(body: Record<string, any>): Record<string, any> {
+  const updates: Record<string, any> = {};
+  for (const k of ALLOWED_RFI_COLUMNS) {
+    if (body[k] !== undefined) updates[k] = body[k];
+  }
+  return updates;
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     const db = createServerClient();
-    const { data, error } = await db.from('rfis').update(body).eq('id', id).select().single();
+    const { data, error } = await db.from('rfis').update(filterRfiBody(body)).eq('id', id).select().single();
     if (error) throw error;
     return NextResponse.json({ rfi: data });
   } catch {
@@ -37,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const body = await req.json();
     const db = createServerClient();
-    const { data, error } = await db.from('rfis').update(body).eq('id', id).select().single();
+    const { data, error } = await db.from('rfis').update(filterRfiBody(body)).eq('id', id).select().single();
     if (error) throw error;
     return NextResponse.json({ rfi: data });
   } catch {

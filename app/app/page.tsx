@@ -150,7 +150,7 @@ function BidScoreModal({ onClose }: { onClose: () => void }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectName: form.projectName,
-          estValue: parseFloat(form.estValue.replace(/[^0-9.]/g, '')),
+          estimatedValue: parseFloat(form.estValue.replace(/[^0-9.]/g, '')),
           trade: form.trade, location: form.location,
           targetMargin: parseFloat(form.targetMargin),
         }),

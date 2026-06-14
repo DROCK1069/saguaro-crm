@@ -7,9 +7,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
   try {
     const body = await req.json();
     const supabase = createServerClient();
+    const ALLOWED_TM_TICKET_COLUMNS = [
+      'project_id', 'ticket_number', 'description', 'work_date', 'labor_hours', 'labor_rate',
+      'labor_total', 'materials', 'materials_total', 'equipment', 'equipment_total', 'markup_pct',
+      'total', 'status', 'approved_by', 'approved_at', 'signature_url', 'pdf_url', 'notes', 'created_by',
+    ];
+    const updates: Record<string, any> = {};
+    for (const k of ALLOWED_TM_TICKET_COLUMNS) {
+      if (body[k] !== undefined) updates[k] = body[k];
+    }
     const { data, error } = await supabase
       .from('tm_tickets')
-      .update({ ...body, updated_at: new Date().toISOString(), updated_by: user.email })
+      .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', params.id)
       .eq('project_id', params.projectId)
       .select()

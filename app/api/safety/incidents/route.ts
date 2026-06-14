@@ -29,9 +29,23 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const db = createServerClient();
+    const ALLOWED_INCIDENT_COLUMNS = [
+      'project_id', 'description', 'severity', 'injury_type', 'location', 'reported_to',
+      'incident_date', 'reported_by', 'status', 'time_of_incident', 'weather_conditions', 'witnesses',
+      'root_cause', 'corrective_actions', 'preventive_measures', 'photos', 'supervisor_name', 'gps_lat',
+      'gps_lng', 'created_by', 'osha_reportable', 'injury_description', 'body_part', 'treatment_type',
+      'hospital_name', 'work_restrictions', 'days_away', 'incident_type', 'near_miss', 'osha_recordable',
+      'type', 'injury_nature', 'days_restricted', 'employee_name', 'employee_id', 'reported_to_osha',
+      'osha_case_number', 'first_aid_only', 'medical_treatment', 'injured_party', 'witness_names',
+      'immediate_actions', 'reviewed_by', 'reviewed_at',
+    ];
+    const insertRow: Record<string, unknown> = {};
+    for (const k of ALLOWED_INCIDENT_COLUMNS) {
+      if ((body as Record<string, unknown>)[k] !== undefined) insertRow[k] = (body as Record<string, unknown>)[k];
+    }
     const { data, error } = await db
       .from('safety_incidents')
-      .insert({ ...body, tenant_id: user.tenantId })
+      .insert({ ...insertRow, tenant_id: user.tenantId })
       .select()
       .single();
     if (error) throw error;

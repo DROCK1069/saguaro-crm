@@ -12,7 +12,15 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    const { data, error } = await supabase.from('project_todos').insert(body).select().single();
+    const ALLOWED_TODO_COLUMNS = [
+      'tenant_id', 'project_id', 'title', 'description', 'assigned_to', 'due_date',
+      'priority', 'status', 'completed_at', 'created_by',
+    ];
+    const insertRow: Record<string, unknown> = {};
+    for (const k of ALLOWED_TODO_COLUMNS) {
+      if (body[k] !== undefined) insertRow[k] = body[k];
+    }
+    const { data, error } = await supabase.from('project_todos').insert(insertRow).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, todo: data });
   } catch (err: unknown) {

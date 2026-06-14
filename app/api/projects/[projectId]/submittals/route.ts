@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,5 +28,70 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     return NextResponse.json({ submittals: data ?? [] });
   } catch {
     return NextResponse.json({ submittals: [] });
+  }
+}
+
+/**
+ * Create a submittal.
+ *
+ * Caller: app/field/submittals/page.tsx
+ *   handleCreate() → POST multipart/form-data (online, with optional
+ *     `attachment` file) or JSON (offline replay) with fields:
+ *     title, description, spec_section, submittal_type, subcontractor,
+ *     due_date, priority, linked_spec.
+ *
+ * submittals real columns used: title, description, spec_section,
+ * submittal_type, subcontractor, due_date, priority, file_name, status,
+ * created_by, project_id, tenant_id. `linked_spec` has no column and is dropped.
+ * Binary attachments are not uploaded here (no storage helper in scope); the
+ * file name is recorded in file_name when present.
+ */
+export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Field page sends multipart/form-data (online) or JSON (offline replay).
+  const body: Record<string, unknown> = {};
+  let attachmentName: string | null = null;
+  const ct = req.headers.get('content-type') || '';
+  try {
+    if (ct.includes('multipart/form-data') || ct.includes('application/x-www-form-urlencoded')) {
+      const fd = await req.formData();
+      fd.forEach((v, k) => {
+        if (typeof v === 'string') body[k] = v;
+        else if (v && typeof (v as File).name === 'string') attachmentName = (v as File).name;
+      });
+    } else {
+      Object.assign(body, await req.json());
+    }
+  } catch { /* empty body */ }
+
+  if (!body.title) {
+    return NextResponse.json({ error: 'title is required' }, { status: 400 });
+  }
+
+  try {
+    const supabase = createServerClient();
+
+    const record: Record<string, unknown> = {
+      tenant_id: user.tenantId,
+      project_id: params.projectId,
+      title: body.title,
+      description: body.description ?? null,
+      spec_section: body.spec_section ?? null,
+      submittal_type: body.submittal_type ?? null,
+      subcontractor: body.subcontractor ?? null,
+      due_date: (body.due_date as string) || null,
+      priority: body.priority ?? null,
+      status: (body.status as string) || 'pending',
+      created_by: user.id,
+    };
+    if (attachmentName) record.file_name = attachmentName;
+
+    const { data, error } = await supabase.from('submittals').insert(record).select().single();
+    if (error) throw error;
+    return NextResponse.json({ submittal: data }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
