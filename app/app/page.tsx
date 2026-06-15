@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useDashboardStats, useTodayItems } from '@/lib/hooks/useDashboard';
@@ -323,12 +323,14 @@ export default function DashboardPage() {
 
   const formatCurrency = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString();
 
-  const greeting = (() => {
+  // Time-based greeting is computed AFTER mount so the server-rendered HTML and
+  // the first client render match (both 'Welcome back'); otherwise the UTC-vs-local
+  // hour difference causes a React hydration mismatch (#418/#425) on /app.
+  const [greeting, setGreeting] = useState('Welcome back');
+  useEffect(() => {
     const h = new Date().getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  })();
+    setGreeting(h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
+  }, []);
 
   const activeProjects = stats?.activeProjects ?? 0;
   const openBids       = stats?.openBids ?? 0;
