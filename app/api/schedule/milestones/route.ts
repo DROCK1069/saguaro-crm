@@ -28,9 +28,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
 
-    // Real date column on schedule_milestones is `current_date`
-    // (baseline_date / actual_date also exist). Accept several client aliases.
-    const milestoneDate = pick(body, 'milestone_date', 'milestoneDate', 'date', 'target_date', 'targetDate', 'current_date');
+    // schedule_milestones.baseline_date is NOT NULL; current_date/actual_date
+    // are nullable. Accept several client aliases and require a date.
+    const milestoneDate = pick(body, 'milestone_date', 'milestoneDate', 'date', 'target_date', 'targetDate', 'current_date', 'baseline_date');
+    if (milestoneDate === undefined || milestoneDate === null) {
+      return NextResponse.json({ error: 'milestone date is required' }, { status: 400 });
+    }
 
     const db = createServerClient();
 
@@ -54,10 +57,10 @@ export async function POST(req: NextRequest) {
       name: title,
       status: pick(body, 'status') ?? 'pending',
       created_by: user.id,
+      // baseline_date is the NOT NULL schedule anchor; mirror to current_date.
+      baseline_date: milestoneDate,
+      current_date: milestoneDate,
     };
-    if (milestoneDate !== undefined && milestoneDate !== null) {
-      insert.current_date = milestoneDate;
-    }
     const sortOrder = pick(body, 'sort_order', 'sortOrder');
     if (sortOrder !== undefined && sortOrder !== null) insert.sort_order = Number(sortOrder);
     const description = pick(body, 'description');
