@@ -242,6 +242,7 @@ export default function NotificationsPage() {
                     {(n.link || n.action_url) && (
                       <Link
                         href={n.link || n.action_url || '#'}
+                        prefetch={false}
                         onClick={e => { e.stopPropagation(); markRead(n.id); }}
                         style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.25)', borderRadius: 5 }}
                       >
@@ -249,19 +250,19 @@ export default function NotificationsPage() {
                       </Link>
                     )}
                     {n.project_id && n.type === 'pay_app_approved' && (
-                      <Link href={`/app/projects/${n.project_id}/lien-waivers`} onClick={e => { e.stopPropagation(); markRead(n.id); }}
+                      <Link href={`/app/projects/${n.project_id}/lien-waivers`} prefetch={false} onClick={e => { e.stopPropagation(); markRead(n.id); }}
                         style={{ fontSize: 12, color: '#3b82f6', textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(59,130,246,.1)', border: '1px solid rgba(59,130,246,.25)', borderRadius: 5 }}>
                         Lien Waivers →
                       </Link>
                     )}
                     {n.project_id && (n.type === 'rfi_submitted') && (
-                      <Link href={`/app/projects/${n.project_id}/rfis`} onClick={e => { e.stopPropagation(); markRead(n.id); }}
+                      <Link href={`/app/projects/${n.project_id}/rfis`} prefetch={false} onClick={e => { e.stopPropagation(); markRead(n.id); }}
                         style={{ fontSize: 12, color: '#8b5cf6', textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(139,92,246,.1)', border: '1px solid rgba(139,92,246,.25)', borderRadius: 5 }}>
                         Answer RFI →
                       </Link>
                     )}
                     {n.project_id && n.type === 'bid_submitted' && (
-                      <Link href={`/app/projects/${n.project_id}/bid-packages`} onClick={e => { e.stopPropagation(); markRead(n.id); }}
+                      <Link href={`/app/projects/${n.project_id}/bid-packages`} prefetch={false} onClick={e => { e.stopPropagation(); markRead(n.id); }}
                         style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.25)', borderRadius: 5 }}>
                         Review Bid →
                       </Link>

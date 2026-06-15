@@ -152,7 +152,11 @@ function CloseoutInner() {
     if (!projectId) return;
     setLoading(true);
     api(base)
-      .then((d) => { if (d) setItems(d); })
+      .then((d) => {
+        // API returns { items: [...] }; tolerate a bare array or null too.
+        const list = Array.isArray(d) ? d : Array.isArray(d?.items) ? d.items : [];
+        setItems(list);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [projectId, base]);
@@ -162,7 +166,8 @@ function CloseoutInner() {
     if (!form.title.trim()) { setError('Title is required'); return; }
     try {
       const res = await api(base, { method: 'POST', body: JSON.stringify(form), headers: { 'Content-Type': 'application/json' } });
-      if (res) setItems((p) => [...p, res]);
+      const created = res?.item || res;
+      if (created && created.id) setItems((p) => [...p, created as CloseoutItem]);
       else setItems((p) => [...p, { ...form, id: `tmp-${Date.now()}` } as CloseoutItem]);
       setForm(empty);
       setView('list');
@@ -172,7 +177,8 @@ function CloseoutInner() {
   async function patchItem(id: string, patch: Partial<CloseoutItem>) {
     try {
       const res = await api(`${base}/${id}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'Content-Type': 'application/json' } });
-      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch, ...(res || {}) } : i)));
+      const updated = res?.item || res;
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch, ...(updated || {}) } : i)));
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Update failed'); }
   }
 

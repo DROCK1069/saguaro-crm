@@ -16,6 +16,41 @@ function mimeFromExt(ext: string): string {
   }
 }
 
+// ─── GET: list uploaded BIM models for a project ────────────────────────────
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getUser(req);
+    if (!user) {
+      return NextResponse.json({ models: [] }, { status: 200 });
+    }
+
+    const supabase = createServerClient();
+    const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
+
+    let query = supabase
+      .from('bim_models')
+      .select('*')
+      .eq('tenant_id', user.tenantId)
+      .order('uploaded_at', { ascending: false });
+
+    if (projectId) query = query.eq('project_id', projectId);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[bim/upload] list error:', error.message);
+      return NextResponse.json({ models: [] }, { status: 200 });
+    }
+
+    return NextResponse.json({ models: data || [] });
+  } catch (err: unknown) {
+    console.error('[bim/upload] GET', err);
+    return NextResponse.json({ models: [] }, { status: 200 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getUser(req);
@@ -46,7 +81,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const projectId = formData.get('project_id') as string | null;
+    const projectId = (formData.get('project_id') || formData.get('projectId')) as string | null;
     if (!projectId) {
       return NextResponse.json({ error: 'project_id is required' }, { status: 400 });
     }

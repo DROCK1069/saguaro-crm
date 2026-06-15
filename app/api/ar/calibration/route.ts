@@ -12,21 +12,19 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServerClient();
     const { searchParams } = new URL(req.url);
-    const floorId = searchParams.get('floor_id');
-    const projectId = searchParams.get('project_id');
+    const floorId = searchParams.get('floor_id') || searchParams.get('floorId');
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
 
+    // No scope provided: render an empty list rather than erroring so the page mounts.
     if (!floorId && !projectId) {
-      return NextResponse.json(
-        { error: 'Either floor_id or project_id query param is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ data: [], calibration: null });
     }
 
     let query = supabase
       .from('ar_calibrations')
       .select('*')
       .eq('tenant_id', user.tenantId)
-      .order('created_at', { ascending: false });
+      .order('calibrated_at', { ascending: false });
 
     if (floorId) query = query.eq('floor_id', floorId);
     if (projectId) query = query.eq('project_id', projectId);
@@ -38,7 +36,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch calibrations' }, { status: 500 });
     }
 
-    return NextResponse.json({ data: data || [] });
+    return NextResponse.json({ data: data || [], calibration: data?.[0] ?? null });
   } catch (err: unknown) {
     console.error('[ar/calibration]', err);
     return NextResponse.json(

@@ -87,6 +87,7 @@ const ACTION_OPTIONS = [
 ];
 
 function moduleLabel(mod: string): string {
+  if (!mod) return '';
   const found = MODULE_OPTIONS.find(m => m.value === mod);
   return found ? found.label : mod.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
@@ -168,15 +169,18 @@ function ActivityLogPage() {
     try {
       const res = await fetch(`/api/projects/${projectId}/activity?${params.toString()}`);
       if (res.ok) {
-        const data: ActivityResponse = await res.json();
-        setEntries(prev => append ? [...prev, ...data.entries] : data.entries);
-        setHasMore(data.has_more);
-        setTotal(data.total);
-        setPage(data.page);
+        const data = (await res.json()) as Partial<ActivityResponse> | null;
+        // Guard against missing/odd response shapes so render never crashes on
+        // a non-array `entries` (e.g. an error body returned with 200).
+        const newEntries: ActivityEntry[] = Array.isArray(data?.entries) ? data!.entries : [];
+        setEntries(prev => append ? [...prev, ...newEntries] : newEntries);
+        setHasMore(Boolean(data?.has_more));
+        setTotal(typeof data?.total === 'number' ? data!.total : newEntries.length);
+        setPage(typeof data?.page === 'number' ? data!.page : pageNum);
 
         // Collect unique user names
-        const allEntries = append ? [...entries, ...data.entries] : data.entries;
-        const users = Array.from(new Set(allEntries.map(e => e.user_name))).sort();
+        const allEntries = append ? [...entries, ...newEntries] : newEntries;
+        const users = Array.from(new Set(allEntries.map(e => e.user_name).filter(Boolean))).sort();
         setKnownUsers(users);
       }
     } catch {

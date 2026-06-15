@@ -9,16 +9,16 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get('project_id');
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
 
     if (!projectId) {
-      return NextResponse.json({ error: 'project_id is required' }, { status: 400 });
+      return NextResponse.json({ crew: [] }, { status: 200 });
     }
 
     const db = createServerClient();
     const { data, error } = await db
       .from('crew_locations')
-      .select('*, profiles(full_name, email, avatar_url)')
+      .select('*')
       .eq('project_id', projectId)
       .eq('tenant_id', user.tenantId)
       .order('updated_at', { ascending: false });
@@ -27,7 +27,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch crew locations', details: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ locations: data || [] });
+    // Map DB columns to the shape the page expects (lat/lng, name).
+    const userIds = Array.from(new Set((data || []).map((r: any) => r.user_id).filter(Boolean)));
+    let names: Record<string, string> = {};
+    if (userIds.length) {
+      const { data: profs } = await db
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      for (const p of profs || []) names[p.id] = p.full_name;
+    }
+
+    const crew = (data || []).map((r: any) => ({
+      ...r,
+      lat: r.latitude,
+      lng: r.longitude,
+      accuracy: r.accuracy_meters,
+      name: names[r.user_id] || 'Crew Member',
+    }));
+
+    return NextResponse.json({ crew });
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error', details: err.message }, { status: 500 });
   }

@@ -159,6 +159,43 @@ function makeMockInvites(): Invite[] {
   ];
 }
 
+/* ─── API row normalizers ───
+   Real prequalification_submissions / templates rows are snake_case and may
+   omit the nested arrays/objects the UI iterates (documents, scores, answers,
+   questions, requiredDocs). Coerce every such field to a safe default so the
+   dashboard's .some()/.forEach()/.map() calls never crash. */
+function normalizeSubmission(s: any): Submission {
+  return {
+    id: String(s?.id ?? uid()),
+    sub_name: s?.sub_name ?? s?.name ?? '',
+    sub_email: s?.sub_email ?? s?.email ?? '',
+    sub_trade: s?.sub_trade ?? s?.trade ?? '',
+    status: (s?.status as SubStatus) ?? 'pending',
+    submitted_at: s?.submitted_at ?? s?.created_at ?? '',
+    expires_at: s?.expires_at ?? '',
+    total_score: Number(s?.total_score ?? 0),
+    max_score: Number(s?.max_score ?? 0),
+    scores: (s?.scores && typeof s.scores === 'object') ? s.scores : {},
+    answers: (s?.answers && typeof s.answers === 'object') ? s.answers : {},
+    documents: Array.isArray(s?.documents) ? s.documents : [],
+    notes: s?.notes ?? '',
+    template_id: s?.template_id ?? '',
+    reviewer_notes: s?.reviewer_notes ?? '',
+  };
+}
+
+function normalizeTemplate(t: any): Template {
+  return {
+    id: String(t?.id ?? uid()),
+    name: t?.name ?? '',
+    description: t?.description ?? '',
+    questions: Array.isArray(t?.questions) ? t.questions : [],
+    threshold: Number(t?.threshold ?? 70),
+    requiredDocs: Array.isArray(t?.requiredDocs) ? t.requiredDocs : (Array.isArray(t?.required_docs) ? t.required_docs : []),
+    created_at: t?.created_at ?? new Date().toISOString(),
+  };
+}
+
 /* ════════════════════════════════════════════════════════════════════
    MAIN PAGE
    ════════════════════════════════════════════════════════════════════ */
@@ -188,10 +225,16 @@ export default function PrequalificationPage() {
         fetch('/api/prequalification/submissions'),
       ]);
       if (tRes.status === 'fulfilled' && tRes.value.ok) {
-        const d = await tRes.value.json(); setTemplates(d.templates ?? d ?? []);
+        const d = await tRes.value.json();
+        const raw = Array.isArray(d) ? d : (d.templates ?? d.data ?? []);
+        const list = (Array.isArray(raw) ? raw : []).map(normalizeTemplate);
+        setTemplates(list.length ? list : makeMockTemplates());
       } else { setTemplates(makeMockTemplates()); }
       if (sRes.status === 'fulfilled' && sRes.value.ok) {
-        const d = await sRes.value.json(); setSubmissions(d.submissions ?? d ?? []);
+        const d = await sRes.value.json();
+        const raw = Array.isArray(d) ? d : (d.submissions ?? d.data ?? []);
+        const list = (Array.isArray(raw) ? raw : []).map(normalizeSubmission);
+        setSubmissions(list.length ? list : makeMockSubmissions());
       } else { setSubmissions(makeMockSubmissions()); }
       setInvites(makeMockInvites());
     } catch (e: any) {

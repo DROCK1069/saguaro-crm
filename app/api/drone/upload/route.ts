@@ -50,6 +50,43 @@ function extractGpsFromFilename(filename: string): { lat: number; lng: number } 
   return null;
 }
 
+// ─── GET: list drone jobs ────────────────────────────────────────────────────
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getUser(req);
+    if (!user) {
+      return NextResponse.json({ jobs: [] }, { status: 200 });
+    }
+
+    const supabase = createServerClient();
+    const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
+
+    let query = supabase
+      .from('drone_jobs')
+      .select('*')
+      .eq('tenant_id', user.tenantId)
+      .order('created_at', { ascending: false });
+
+    if (projectId) {
+      query = query.eq('project_id', projectId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[drone/upload] list error:', error.message);
+      return NextResponse.json({ jobs: [] }, { status: 200 });
+    }
+
+    return NextResponse.json({ jobs: data || [] });
+  } catch (err: unknown) {
+    console.error('[drone/upload] GET', err);
+    return NextResponse.json({ jobs: [] }, { status: 200 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getUser(req);
@@ -60,7 +97,7 @@ export async function POST(req: NextRequest) {
     const supabase = createServerClient();
     const formData = await req.formData();
 
-    const projectId = formData.get('project_id') as string | null;
+    const projectId = (formData.get('project_id') as string | null) || (formData.get('projectId') as string | null);
     if (!projectId) {
       return NextResponse.json({ error: 'project_id is required' }, { status: 400 });
     }

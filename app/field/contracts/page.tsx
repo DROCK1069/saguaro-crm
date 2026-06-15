@@ -158,7 +158,11 @@ function ContractsPage() {
     setLoading(true);
     fetch(`/api/projects/${projectId}/contracts`)
       .then(r => r.ok ? r.json() : Promise.reject(r))
-      .then((data: Contract[]) => { setContracts(data); setLoading(false); })
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : (data?.contracts ?? data?.data ?? []);
+        setContracts(Array.isArray(list) ? list : []);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [projectId]);
 
@@ -183,7 +187,7 @@ function ContractsPage() {
     if (vendorFilter) list = list.filter(c => c.vendor_name === vendorFilter);
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      list = list.filter(c => c.title.toLowerCase().includes(q) || c.contract_number.toLowerCase().includes(q) || c.vendor_name.toLowerCase().includes(q));
+      list = list.filter(c => (c.title || '').toLowerCase().includes(q) || (c.contract_number || '').toLowerCase().includes(q) || (c.vendor_name || '').toLowerCase().includes(q));
     }
 
     list.sort((a, b) => {
@@ -245,7 +249,8 @@ function ContractsPage() {
       try {
         const res = await fetch(`/api/projects/${projectId}/contracts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) {
-          const created = await res.json();
+          const json = await res.json();
+          const created = json?.contract ?? json;
           setContracts(prev => [created, ...prev]);
           resetForm();
           setView('list');

@@ -229,9 +229,16 @@ export default function RolesPermissionsPage() {
 
       /* If API not available, fall back to mock data */
       let loadedRoles: Role[] = [];
+      let rolesFromApi = false;
       if (rolesRes.status === 'fulfilled' && rolesRes.value.ok) {
-        loadedRoles = await rolesRes.value.json();
-      } else {
+        const raw = await rolesRes.value.json();
+        /* /api/roles returns { roles, assignments }; older shape is a bare array.
+           Normalize to an array so .map/.length never blow up. */
+        const arr = Array.isArray(raw) ? raw : Array.isArray(raw?.roles) ? raw.roles : [];
+        loadedRoles = arr as Role[];
+        rolesFromApi = arr.length > 0;
+      }
+      if (!rolesFromApi) {
         const now = new Date().toISOString();
         loadedRoles = ROLE_PRESETS.map((p, i) => ({
           id: `builtin-${i + 1}`, name: p.name, description: p.desc, color: p.color,
@@ -266,9 +273,14 @@ export default function RolesPermissionsPage() {
       }
 
       let loadedAssign: UserAssignment[] = [];
+      let assignFromApi = false;
       if (assignRes.status === 'fulfilled' && assignRes.value.ok) {
-        loadedAssign = await assignRes.value.json();
-      } else {
+        const raw = await assignRes.value.json();
+        const arr = Array.isArray(raw) ? raw : Array.isArray(raw?.assignments) ? raw.assignments : [];
+        loadedAssign = arr as UserAssignment[];
+        assignFromApi = arr.length > 0;
+      }
+      if (!assignFromApi) {
         loadedAssign = [
           { id: 'a1', userId: 'u1', userName: 'Chad Derocher', email: 'chad@tntcyber.com', roleId: 'builtin-1', projectId: null, projectName: null, assignedAt: '2026-01-01T08:00:00Z', assignedBy: 'System' },
           { id: 'a2', userId: 'u2', userName: 'Maria Gonzalez', email: 'maria@tntcyber.com', roleId: 'builtin-2', projectId: null, projectName: null, assignedAt: '2026-01-05T10:00:00Z', assignedBy: 'Chad Derocher' },
@@ -284,9 +296,14 @@ export default function RolesPermissionsPage() {
       setAssignments(loadedAssign);
 
       let loadedAudit: AuditEntry[] = [];
+      let auditFromApi = false;
       if (auditRes.status === 'fulfilled' && auditRes.value.ok) {
-        loadedAudit = await auditRes.value.json();
-      } else {
+        const raw = await auditRes.value.json();
+        const arr = Array.isArray(raw) ? raw : Array.isArray(raw?.audit) ? raw.audit : [];
+        loadedAudit = arr as AuditEntry[];
+        auditFromApi = arr.length > 0;
+      }
+      if (!auditFromApi) {
         loadedAudit = [
           { id: 'au1', action: 'Role Created', roleName: 'Safety Officer', changedBy: 'Chad Derocher', changedAt: '2026-01-10T08:00:00Z', detail: 'Custom role created with safety-focused permissions.' },
           { id: 'au2', action: 'Permission Updated', roleName: 'Safety Officer', changedBy: 'Maria Gonzalez', changedAt: '2026-02-15T14:30:00Z', detail: 'Changed Safety from Edit to Full (CRUD + Approve).' },

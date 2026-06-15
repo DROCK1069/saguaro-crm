@@ -9,9 +9,15 @@ export async function GET(req: NextRequest) {
     if (!user) return NextResponse.json({ subs: [] });
 
     const db = createServerClient();
-    let query = db.from('subcontractors').select('*').eq('tenant_id', user.tenantId).order('name');
-    if (projectId) query = query.eq('project_id', projectId);
-    const { data, error } = await query;
+    // NOTE: `subcontractors` is tenant-scoped only — it has no `project_id` column,
+    // and its name column is `company_name` (not `name`). Filtering/ordering on the
+    // non-existent columns is what was throwing the 500. Project association lives in
+    // `project_subcontractors`; per-tenant listing is the intended behavior here.
+    const { data, error } = await db
+      .from('subcontractors')
+      .select('*')
+      .eq('tenant_id', user.tenantId)
+      .order('company_name');
     if (error) throw error;
     return NextResponse.json({ subs: data || [] });
   } catch {

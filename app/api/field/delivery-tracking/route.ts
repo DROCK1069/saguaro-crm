@@ -9,11 +9,11 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get('project_id');
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
     const status = searchParams.get('status');
 
     if (!projectId) {
-      return NextResponse.json({ error: 'project_id is required' }, { status: 400 });
+      return NextResponse.json({ deliveries: [] }, { status: 200 });
     }
 
     const db = createServerClient();

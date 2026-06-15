@@ -9,16 +9,19 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('user_id') || user.id;
-    const projectId = searchParams.get('project_id');
+    const userId = searchParams.get('user_id') || searchParams.get('userId') || user.id;
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
 
     const db = createServerClient();
+    // The `badges` table is the per-user earned-badge record (real schema:
+    // id, tenant_id, user_id, project_id, badge_type, badge_name, badge_icon,
+    // description, earned_at, data). Query it directly.
     let query = db
-      .from('user_badges')
-      .select('*, badges(name, description, icon, category, points)')
+      .from('badges')
+      .select('id, badge_type, badge_name, badge_icon, description, earned_at, project_id')
       .eq('tenant_id', user.tenantId)
       .eq('user_id', userId)
-      .order('awarded_at', { ascending: false });
+      .order('earned_at', { ascending: false });
 
     if (projectId) query = query.eq('project_id', projectId);
 
@@ -28,7 +31,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to list badges', details: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ badges: data || [] });
+    // Map to the shape the leaderboard page expects: { id, icon, name, description, earned_date }
+    const badges = (data || []).map((b: any) => ({
+      id: b.id,
+      icon: b.badge_icon || '🏅',
+      name: b.badge_name || b.badge_type || 'Badge',
+      description: b.description || '',
+      earned_date: b.earned_at,
+    }));
+
+    return NextResponse.json({ badges });
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error', details: err.message }, { status: 500 });
   }

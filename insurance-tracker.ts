@@ -25,6 +25,7 @@ import { Resend } from 'resend';
 
 import { supabaseAdmin } from './supabase/admin';
 import { getProjectContext } from './project-context';
+import { getUser } from './lib/supabase-server';
 
 const client  = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const FROM    = process.env.EMAIL_FROM    ?? 'Saguaro CRM <noreply@mail.saguarocrm.com>';
@@ -336,8 +337,13 @@ export async function uploadCOIHandler(req: NextRequest) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getCOIListHandler(req: NextRequest, projectId: string) {
-  const tenantId = req.nextUrl.searchParams.get('tenantId');
-  if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 });
+  // Tenant priority: explicit query param → authenticated user. Never 400 a logged-in page.
+  let tenantId = req.nextUrl.searchParams.get('tenantId');
+  if (!tenantId) {
+    const user = await getUser(req);
+    tenantId = user?.tenantId ?? null;
+  }
+  if (!tenantId) return NextResponse.json({ certificates: [] }, { status: 200 });
 
   const { data } = await supabaseAdmin
     .from('insurance_certificates')

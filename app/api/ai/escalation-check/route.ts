@@ -1,6 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+function severityFromDays(days: number): 'high' | 'medium' | 'low' {
+  if (days >= 7) return 'high';
+  if (days >= 3) return 'medium';
+  return 'low';
+}
+
+// ─── GET: list escalations ───────────────────────────────────────────────────
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getUser(req);
+    if (!user) {
+      return NextResponse.json({
+        escalations: [],
+        summary: { total_open: 0, high_severity: 0, avg_days_overdue: 0 },
+      }, { status: 200 });
+    }
+
+    const db = createServerClient();
+    const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
+
+    let query = db
+      .from('escalations')
+      .select('*')
+      .eq('tenant_id', user.tenantId)
+      .order('created_at', { ascending: false });
+
+    if (projectId) {
+      query = query.eq('project_id', projectId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[ai/escalation-check] list error:', error.message);
+      return NextResponse.json({
+        escalations: [],
+        summary: { total_open: 0, high_severity: 0, avg_days_overdue: 0 },
+      }, { status: 200 });
+    }
+
+    const rows = data || [];
+    const escalations = rows.map((e: any) => {
+      const daysOverdue = e.days_overdue ?? 0;
+      const resolved = e.status === 'resolved';
+      return {
+        id: e.id,
+        item_type: e.item_type,
+        item_id: e.item_id,
+        item_title: e.reason || e.item_type || 'Escalation',
+        days_overdue: daysOverdue,
+        severity: severityFromDays(daysOverdue),
+        escalated_to: e.escalated_to || '',
+        created_at: e.created_at,
+        resolved,
+        resolved_at: e.resolved_at || undefined,
+      };
+    });
+
+    const open = escalations.filter((e) => !e.resolved);
+    const totalDays = open.reduce((sum, e) => sum + (e.days_overdue || 0), 0);
+    const summary = {
+      total_open: open.length,
+      high_severity: open.filter((e) => e.severity === 'high').length,
+      avg_days_overdue: open.length > 0 ? totalDays / open.length : 0,
+    };
+
+    return NextResponse.json({ escalations, summary });
+  } catch (err: any) {
+    console.error('[ai/escalation-check] GET', err);
+    return NextResponse.json({
+      escalations: [],
+      summary: { total_open: 0, high_severity: 0, avg_days_overdue: 0 },
+    }, { status: 200 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getUser(req);

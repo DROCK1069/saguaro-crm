@@ -44,10 +44,11 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServerClient();
     const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get('project_id');
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
 
     if (!projectId) {
-      return NextResponse.json({ error: 'project_id query param is required' }, { status: 400 });
+      // Render the page with no rows rather than a 400 error.
+      return NextResponse.json({ data: [] }, { status: 200 });
     }
 
     let query = supabase

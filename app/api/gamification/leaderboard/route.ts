@@ -10,21 +10,25 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category') || 'overall';
-    const projectId = searchParams.get('project_id');
-    const timeframe = searchParams.get('timeframe') || 'all_time';
+    const projectId = searchParams.get('project_id') || searchParams.get('projectId');
+    const period = searchParams.get('period') || searchParams.get('timeframe');
+    const requestedUserId = searchParams.get('userId') || searchParams.get('user_id') || user.id;
     const limit = Math.min(parseInt(searchParams.get('limit') || '25', 10), 100);
 
     const db = createServerClient();
+    // Real `leaderboards` schema: id, tenant_id, project_id, category,
+    // entity_type, entity_id, entity_name, score, rank, period, metadata, updated_at.
+    // (No user_id / points columns and no profiles FK.)
     let query = db
       .from('leaderboards')
-      .select('*, profiles(full_name, email, avatar_url)')
+      .select('id, project_id, category, entity_type, entity_id, entity_name, score, rank, period, metadata')
       .eq('tenant_id', user.tenantId)
       .eq('category', category)
-      .order('points', { ascending: false })
+      .order('score', { ascending: false })
       .limit(limit);
 
     if (projectId) query = query.eq('project_id', projectId);
-    if (timeframe !== 'all_time') query = query.eq('timeframe', timeframe);
+    if (period) query = query.eq('period', period);
 
     const { data, error } = await query;
 
@@ -32,50 +36,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch leaderboard', details: error.message }, { status: 500 });
     }
 
-    // Add rank to each entry
-    const leaderboard = (data || []).map((entry: any, index: number) => ({
-      ...entry,
-      rank: index + 1,
-      is_current_user: entry.user_id === user.id,
-    }));
-
-    // Find current user's rank if not in the top results
-    let currentUserRank = null;
-    const userEntry = leaderboard.find((e: any) => e.is_current_user);
-    if (!userEntry) {
-      let userQuery = db
-        .from('leaderboards')
-        .select('points')
-        .eq('tenant_id', user.tenantId)
-        .eq('category', category)
-        .eq('user_id', user.id);
-
-      if (projectId) userQuery = userQuery.eq('project_id', projectId);
-
-      const { data: userData } = await userQuery.single();
-      if (userData) {
-        let rankQuery = db
-          .from('leaderboards')
-          .select('id', { count: 'exact', head: true })
-          .eq('tenant_id', user.tenantId)
-          .eq('category', category)
-          .gt('points', userData.points);
-
-        if (projectId) rankQuery = rankQuery.eq('project_id', projectId);
-
-        const { count } = await rankQuery;
-        currentUserRank = {
-          rank: (count || 0) + 1,
-          points: userData.points,
-        };
-      }
-    }
+    // Map to the shape the page expects: { id, name, score, rank, trend, is_current_user }
+    const entries = (data || []).map((entry: any, index: number) => {
+      const meta = entry.metadata || {};
+      return {
+        id: entry.id,
+        name: entry.entity_name || 'Unknown',
+        score: entry.score ?? 0,
+        rank: entry.rank ?? index + 1,
+        trend: (meta.trend as 'up' | 'down' | 'same') || 'same',
+        is_current_user: entry.entity_id === requestedUserId,
+      };
+    });
 
     return NextResponse.json({
-      leaderboard,
+      entries,
+      leaderboard: entries,
       category,
-      timeframe,
-      current_user_rank: userEntry ? { rank: userEntry.rank, points: userEntry.points } : currentUserRank,
+      period: period || 'all_time',
     });
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error', details: err.message }, { status: 500 });

@@ -173,12 +173,13 @@ function ResourcePlanningInner() {
         fetch(`/api/resource-planning/requests?projectId=${projectId}`),
         fetch(`/api/projects/${projectId}`),
       ]);
-      if (wRes.ok) { const d = await wRes.json(); setWorkers(d.workers || d || []); }
-      if (eRes.ok) { const d = await eRes.json(); setEquipment(d.equipment || d || []); }
-      if (fRes.ok) { const d = await fRes.json(); setForecast(d.forecast || d || []); setWeatherNotes(d.weather_notes || ''); }
-      if (sRes.ok) { const d = await sRes.json(); setSubCrews(d.subcontractors || d || []); }
-      if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || d || []); }
-      if (pRes.ok) { const d = await pRes.json(); setProjectName(d.name || d.project_name || ''); }
+      const asArray = (v: unknown): any[] => (Array.isArray(v) ? v : []);
+      if (wRes.ok) { const d = await wRes.json(); setWorkers(asArray(d?.workers ?? d)); }
+      if (eRes.ok) { const d = await eRes.json(); setEquipment(asArray(d?.equipment ?? d)); }
+      if (fRes.ok) { const d = await fRes.json(); setForecast(asArray(d?.forecast ?? d)); setWeatherNotes(d?.weather_notes || ''); }
+      if (sRes.ok) { const d = await sRes.json(); setSubCrews(asArray(d?.subcontractors ?? d)); }
+      if (rRes.ok) { const d = await rRes.json(); setRequests(asArray(d?.requests ?? d)); }
+      if (pRes.ok) { const d = await pRes.json(); setProjectName(d?.name || d?.project_name || ''); }
     } catch (e: unknown) {
       setError('Failed to load resource data. You may be offline.');
     } finally {
@@ -289,7 +290,7 @@ function ResourcePlanningInner() {
     if (filterStatus && w.status !== filterStatus) return false;
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      return w.name.toLowerCase().includes(s) || w.trade.toLowerCase().includes(s) || w.role.toLowerCase().includes(s) || w.company.toLowerCase().includes(s);
+      return (w.name || '').toLowerCase().includes(s) || (w.trade || '').toLowerCase().includes(s) || (w.role || '').toLowerCase().includes(s) || (w.company || '').toLowerCase().includes(s);
     }
     return true;
   });
@@ -299,7 +300,7 @@ function ResourcePlanningInner() {
   const offSiteCount = workers.filter(w => w.status === 'off-site').length;
   const absentCount = workers.filter(w => w.status === 'absent').length;
   const totalWorkers = workers.length;
-  const totalSubHeadcount = subCrews.reduce((s, c) => s + c.headcount, 0);
+  const totalSubHeadcount = subCrews.reduce((s, c) => s + (Number(c.headcount) || 0), 0);
 
   /* unique trades and areas from actual data */
   const activeTrades = [...new Set(workers.map(w => w.trade))].sort();

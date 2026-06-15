@@ -1,0 +1,142 @@
+[
+ {
+  "u": "/app/client-portal",
+  "probs": [
+   "ERROR-TEXT",
+   "CONSOLE:JSHandle@error|ErrorBoundary caught: JSHandle@error JSHandle@object"
+  ]
+ },
+ {
+  "u": "/app/notifications",
+  "probs": [
+   "CONSOLE:Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "u": "/app/prequalification",
+  "probs": [
+   "ERROR-TEXT",
+   "CONSOLE:JSHandle@error|ErrorBoundary caught: JSHandle@error JSHandle@object"
+  ]
+ },
+ {
+  "u": "/app/projects/11111111-1111-1111-1111-111111111104/inspections",
+  "probs": [
+   "API:500 /api/projects/11111111-1111-1111-1111-111111111104/inspections",
+   "CONSOLE:Failed to load resource: the server responded with a status of 500 ()"
+  ]
+ },
+ {
+  "u": "/app/projects/11111111-1111-1111-1111-111111111104/insurance",
+  "probs": [
+   "API:400 /api/insurance/11111111-1111-1111-1111-111111111104",
+   "CONSOLE:Failed to load resource: the server responded with a status of 400 ()"
+  ]
+ },
+ {
+  "u": "/app/projects/11111111-1111-1111-1111-111111111104/proposal",
+  "probs": [
+   "API:500 /api/projects/11111111-1111-1111-1111-111111111104/proposals",
+   "CONSOLE:Failed to load resource: the server responded with a status of 500 ()"
+  ]
+ },
+ {
+  "u": "/app/projects/11111111-1111-1111-1111-111111111104/subs",
+  "probs": [
+   "ERROR-TEXT",
+   "API:500 /api/subs/list",
+   "CONSOLE:Failed to load resource: the server responded with a status of 500 ()"
+  ]
+ },
+ {
+  "u": "/app/roles-permissions",
+  "probs": [
+   "ERROR-TEXT",
+   "CONSOLE:JSHandle@error|ErrorBoundary caught: JSHandle@error JSHandle@object"
+  ]
+ },
+ {
+  "u": "/field/activity",
+  "probs": [
+   "ERROR-TEXT",
+   "CONSOLE:JSHandle@error"
+  ]
+ },
+ {
+  "u": "/field/ar-overlay",
+  "probs": [
+   "API:400 /api/ar/calibration",
+   "CONSOLE:Failed to load resource: the server responded with a status of 400 ()"
+  ]
+ },
+ {
+  "u": "/field/bim-viewer",
+  "probs": [
+   "API:405 /api/bim/upload,net::ERR_ABORTED /api/bim/upload?projectId=102c3d23-3b8f-423c-ac1c-8ebbd46d22dd",
+   "CONSOLE:Failed to load resource: the server responded with a status of 405 ()"
+  ]
+ },
+ {
+  "u": "/field/closeout",
+  "probs": [
+   "ERROR-TEXT",
+   "CONSOLE:JSHandle@error"
+  ]
+ },
+ {
+  "u": "/field/contracts",
+  "probs": [
+   "ERROR-TEXT",
+   "CONSOLE:JSHandle@error"
+  ]
+ },
+ {
+  "u": "/field/crew-map",
+  "probs": [
+   "API:400 /api/field/crew-locations",
+   "CONSOLE:Failed to load resource: the server responded with a status of 400 ()"
+  ]
+ },
+ {
+  "u": "/field/deliveries",
+  "probs": [
+   "API:400 /api/field/delivery-tracking",
+   "CONSOLE:Failed to load resource: the server responded with a status of 400 ()"
+  ]
+ },
+ {
+  "u": "/field/drone",
+  "probs": [
+   "API:405 /api/drone/upload,net::ERR_ABORTED /api/drone/upload?projectId=102c3d23-3b8f-423c-ac1c-8ebbd46d22dd",
+   "CONSOLE:Failed to load resource: the server responded with a status of 405 ()"
+  ]
+ },
+ {
+  "u": "/field/escalations",
+  "probs": [
+   "API:405 /api/ai/escalation-check,net::ERR_ABORTED /api/ai/escalation-check",
+   "CONSOLE:Failed to load resource: the server responded with a status of 405 ()"
+  ]
+ },
+ {
+  "u": "/field/laser",
+  "probs": [
+   "API:400 /api/laser/measurements",
+   "CONSOLE:Failed to load resource: the server responded with a status of 400 ()"
+  ]
+ },
+ {
+  "u": "/field/leaderboard",
+  "probs": [
+   "API:500 /api/gamification/badges,500 /api/gamification/leaderboard",
+   "CONSOLE:Failed to load resource: the server responded with a status of 500 ()"
+  ]
+ },
+ {
+  "u": "/field/resource-planning",
+  "probs": [
+   "ERROR-TEXT",
+   "CONSOLE:JSHandle@error"
+  ]
+ }
+]

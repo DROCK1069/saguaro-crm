@@ -157,12 +157,35 @@ export default function ClientPortalPage() {
   const [copiedLink, setCopiedLink] = useState('');
 
   /* ── fetch data ─────────────────────────────────────── */
+  // Normalize a portal_users DB row (snake_case, possibly missing fields)
+  // into the PortalUser shape the UI renders. Guards every field the table/
+  // filters touch so a missing column never crashes the page.
+  const normalizeUser = (u: any): PortalUser => ({
+    id: String(u?.id ?? uid()),
+    name: u?.name ?? '',
+    email: u?.email ?? '',
+    company: u?.company ?? '',
+    status: (u?.status as PortalStatus) ?? 'pending',
+    role: u?.role ?? 'Owner',
+    phone: u?.phone ?? '',
+    lastLogin: u?.lastLogin ?? u?.last_login ?? null,
+    invitedAt: u?.invitedAt ?? u?.invited_at ?? u?.created_at ?? now(),
+    projectIds: Array.isArray(u?.projectIds)
+      ? u.projectIds
+      : Array.isArray(u?.project_ids)
+        ? u.project_ids
+        : (u?.project_id ? [u.project_id] : []),
+    accessLink: u?.accessLink ?? u?.access_link ?? (u?.token ? 'https://portal.saguaro.app/c/' + u.token : ''),
+    permissions: (u?.permissions && typeof u.permissions === 'object') ? u.permissions : defaultPerms(),
+  });
+
   const fetchPortalUsers = useCallback(async () => {
     try {
       const r = await fetch('/api/client-portal/users');
       if (!r.ok) throw new Error('Failed to load portal users');
       const d = await r.json();
-      setUsers(d.users ?? d ?? []);
+      const raw = Array.isArray(d) ? d : (d.users ?? d.data ?? []);
+      setUsers((Array.isArray(raw) ? raw : []).map(normalizeUser));
     } catch (e: any) { setError(e.message); }
   }, []);
 
@@ -171,7 +194,8 @@ export default function ClientPortalPage() {
       const r = await fetch('/api/client-portal/messages');
       if (!r.ok) throw new Error('Failed to load messages');
       const d = await r.json();
-      setMessages(d.messages ?? d ?? []);
+      const raw = Array.isArray(d) ? d : (d.messages ?? d.data ?? []);
+      setMessages(Array.isArray(raw) ? raw : []);
     } catch { /* silent */ }
   }, []);
 
@@ -180,7 +204,8 @@ export default function ClientPortalPage() {
       const r = await fetch('/api/client-portal/activity');
       if (!r.ok) throw new Error('Failed to load activity');
       const d = await r.json();
-      setActLog(d.entries ?? d ?? []);
+      const raw = Array.isArray(d) ? d : (d.entries ?? d.data ?? []);
+      setActLog(Array.isArray(raw) ? raw : []);
     } catch { /* silent */ }
   }, []);
 
@@ -248,7 +273,7 @@ export default function ClientPortalPage() {
       if (logSection !== 'all' && e.section !== logSection) return false;
       if (logSearch) {
         const q = logSearch.toLowerCase();
-        if (!e.userName.toLowerCase().includes(q) && !e.action.toLowerCase().includes(q)) return false;
+        if (!(e.userName || '').toLowerCase().includes(q) && !(e.action || '').toLowerCase().includes(q)) return false;
       }
       return true;
     });
