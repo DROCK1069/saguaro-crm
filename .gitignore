@@ -145,3 +145,9 @@ bundle-report.html
 .Rhistory
 .claude/settings.local.json
 .env.local
+_schema.txt
+_schema_fix.sql
+_write_routes.json
+_schema_mismatches.txt
+_write_routes.txt
+flip_abs.json

@@ -90,9 +90,9 @@ export async function POST(req: NextRequest) {
       calculated_deadlines: Object.keys(calculated_deadlines).length > 0 ? calculated_deadlines : null,
       status: 'active',
       created_by: user.id,
-      reminder_30: false,
-      reminder_14: false,
-      reminder_7: false,
+      reminder_sent_30: false,
+      reminder_sent_14: false,
+      reminder_sent_7: false,
     })
     .select()
     .single();
