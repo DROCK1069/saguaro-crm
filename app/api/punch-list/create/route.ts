@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
       title:       body.title       || '',
       description: body.description || '',
       location:    body.location    || '',
-      trade:       body.trade       || 'General Contractor',
-      priority:    body.priority    || 'Medium',
+      trade:       body.trade       || 'General',
+      priority:    body.priority    || 'medium',
       status:      body.status      || 'open',
-      due_date:    body.due_date    || null,
+      due_date:    body.dueDate     || body.due_date     || null,
       notes:       body.notes       || '',
     };
 

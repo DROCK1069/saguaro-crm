@@ -18,15 +18,32 @@ export async function POST(req: NextRequest) {
     const checklistPassed = results ? results.filter((r) => r?.result === 'pass').length : (body.checklist_passed || 0);
     const deficiencyCount = results ? results.filter((r) => r?.result === 'fail').length : (body.deficiency_count || 0);
 
+    // Accept both camelCase and snake_case from the body for every field.
+    const inspectionType =
+      body.inspection_type ?? body.inspectionType ?? body.type ?? body.template_name ?? 'Other';
+    const inspectorName    = body.inspector_name    ?? body.inspectorName    ?? null;
+    const inspectorAgency  = body.inspector_agency  ?? body.inspectorAgency  ?? body.agency ?? body.agencyName ?? null;
+    const agency           = body.agency            ?? body.agencyName       ?? inspectorAgency ?? null;
+    const ahjName          = body.ahj_name          ?? body.ahjName          ?? null;
+    const permitNumber     = body.permit_number     ?? body.permitNumber     ?? null;
+    const scheduledDate    = body.scheduled_date    ?? body.scheduledDate     ?? new Date().toISOString().split('T')[0];
+    const result           = body.result            ?? 'pending';
+    const notes            = body.notes             ?? null;
+    const weather          = body.weather           ?? null;
+
     const row = {
-      project_id:        body.project_id,
+      project_id:        body.project_id ?? body.projectId,
       tenant_id:         user.tenantId,
-      inspection_type:   body.type              ?? body.template_name ?? 'Other',
-      result:            body.result            || 'pending',
-      inspector_name:    body.inspector_name    || '',
-      agency:            body.agency            || '',
-      notes:             body.notes             || '',
-      scheduled_date:    body.scheduled_date    || new Date().toISOString().split('T')[0],
+      inspection_type:   inspectionType,
+      result:            result || 'pending',
+      inspector_name:    inspectorName,
+      inspector_agency:  inspectorAgency,
+      agency:            agency,
+      ahj_name:          ahjName,
+      permit_number:     permitNumber,
+      scheduled_date:    scheduledDate,
+      notes:             notes,
+      weather:           weather,
       checklist:         body.checklist         || '[]',
       checklist_total:   checklistTotal,
       checklist_passed:  checklistPassed,
