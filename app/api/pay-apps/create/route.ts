@@ -52,15 +52,11 @@ export async function POST(req: NextRequest) {
       contract_sum_to_date: body.contractSumToDate || p?.contract_amount || 0,
       prev_completed: body.prevCompleted || 0,
       this_period: workCompleted,
-      // Mobile detail sheet reads `work_completed` directly — persist it.
-      work_completed: workCompleted,
       stored_materials: body.materialsStored || 0,
       total_completed_stored: body.totalCompleted || workCompleted,
       total_completed: body.totalCompleted || workCompleted,
       percent_complete: body.percentComplete || 0,
       retainage_percent: retainagePercent,
-      // Mobile detail sheet reads `retainage` directly — persist it alongside total_retainage.
-      retainage: retainageAmount,
       total_retainage: retainageAmount,
       retainage_amount: retainageAmount,
       total_earned_less_retainage: body.totalEarnedLessRetainage || (workCompleted - retainageAmount),
