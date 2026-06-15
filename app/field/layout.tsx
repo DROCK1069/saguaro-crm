@@ -134,6 +134,19 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
     }).catch(() => {});
   }, []);
 
+  // ── Bridge the project context to the tool pages ─────────────────
+  // Field tool pages read ?projectId= from the URL, but navigation (bottom nav,
+  // menu, direct links) doesn't carry it — so every tool showed "No project
+  // selected" even though the picker knows the active project. Inject it.
+  useEffect(() => {
+    if (!activeProjectId || typeof window === 'undefined') return;
+    if (pathname === '/field' || pathname === '/field/') return; // home doesn't need it
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('projectId')) return;
+    params.set('projectId', activeProjectId);
+    router.replace(`${pathname}?${params.toString()}`);
+  }, [activeProjectId, pathname, router]);
+
   const switchProject = (id: string) => {
     const proj = projects.find(p => p.id === id);
     if (proj) {
@@ -141,8 +154,11 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
       setProjectName(proj.name);
       localStorage.setItem('sag_active_project', proj.id);
       setShowProjectPicker(false);
-      // Reload page to refresh data for new project
-      window.location.reload();
+      // Reload with the new projectId in the URL so the tool page actually
+      // switches projects (a plain reload would keep the old ?projectId=).
+      const url = new URL(window.location.href);
+      url.searchParams.set('projectId', proj.id);
+      window.location.href = url.toString();
     }
   };
 
