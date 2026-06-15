@@ -828,7 +828,7 @@ export default function SaguaroChatWidget({
                     onKeyDown={handleKeyDown}
                     placeholder={variant === 'crm' ? 'Ask Sage about your projects...' : 'Ask Sage anything about construction...'}
                     rows={1}
-                    color: '#1C1C1E' lineHeight: 1.5, resize: 'none', minHeight: 22, maxHeight: 120, fontFamily: 'inherit' }}
+                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#1C1C1E', fontSize: 14, lineHeight: 1.5, resize: 'none', minHeight: 22, maxHeight: 120, fontFamily: 'inherit' }}
                     onFocus={e => {
                       const c = e.currentTarget.parentElement;
                       if (c) { c.style.borderColor = 'rgba(212,160,23,0.4)'; c.style.boxShadow = '0 0 0 3px rgba(212,160,23,0.08)'; }
