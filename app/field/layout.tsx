@@ -236,8 +236,10 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
       (window.navigator as any).standalone === true;
     setIsStandalone(standalone);
     if (ios && !standalone) {
-      const dismissed = sessionStorage.getItem('sag_install_dismissed');
-      if (!dismissed) setTimeout(() => setShowInstall(true), 3000);
+      // Persist dismissal across sessions (localStorage) so "Not now" means
+      // never again — it was sessionStorage, re-popping on every visit.
+      const dismissed = localStorage.getItem('sag_install_dismissed');
+      if (!dismissed) setTimeout(() => setShowInstall(true), 8000);
     }
   }, [native]);
 
@@ -276,7 +278,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
 
   const dismissInstall = () => {
     setShowInstall(false);
-    sessionStorage.setItem('sag_install_dismissed', '1');
+    localStorage.setItem('sag_install_dismissed', '1');
   };
 
   return (
