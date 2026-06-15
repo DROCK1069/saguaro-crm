@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { getUser, createServerClient } from '@/lib/supabase-server';
 
 /**
  * Timesheet / time-clock create.
@@ -20,10 +19,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch { /* empty body */ }
 
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createServerClient();
 
     // Accept both casings; honor whatever the caller chose.
     const projectId   = body.project_id   ?? body.projectId   ?? null;
