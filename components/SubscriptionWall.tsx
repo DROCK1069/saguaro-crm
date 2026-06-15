@@ -9,34 +9,54 @@
  * and replaces page content with an upgrade prompt if access is denied.
  *
  * /app/billing is always allowed through so users can upgrade.
+ *
+ * IMPORTANT — response contract (see getSubscriptionHandler in stripe-billing.ts):
+ *   { hasSubscription: boolean,
+ *     subscription?: { status, trial_ends_at, current_period_end, plans?: { name } },
+ *     isActive, isTrialing, isPastDue, isCanceled, daysUntilRenewal }
+ * The actual row is NESTED under `subscription` and the server precomputes
+ * `isActive` (= trialing|active). Reading `status` at the top level (as an
+ * earlier version did) always saw `undefined` and walled every tenant.
  */
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const GOLD  = '#F59E0B';
-const DARK  = '#0d1117';
-const RAISED = '#0F172A';
-const BORDER = '#1E3A5F';
-const DIM   = '#CBD5E1';
-const TEXT  = '#F8FAFC';
-const GREEN = '#22c55e';
-const RED   = '#ef4444';
+// ── Apple LIGHT tokens (match the mobile app + dashboard) ──────────────────────
+const GOLD   = '#C8881C';
+const PAGE   = '#F2F2F7';
+const CARD   = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM    = '#6E6E73';
+const TEXT   = '#1C1C1E';
+const GREEN  = '#34C759';
+const RED    = '#FF3B30';
+const AMBER  = '#FF9500';
 
-interface SubStatus {
+interface SubRow {
   status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused' | null;
   trial_ends_at: string | null;
-  daysUntilRenewal: number | null;
-  plan_name: string | null;
+  current_period_end: string | null;
+  plans?: { name: string | null } | null;
 }
 
-function daysLeft(dateStr: string | null): number {
+interface SubResponse {
+  hasSubscription: boolean;
+  subscription?: SubRow | null;
+  isActive?: boolean;
+  isTrialing?: boolean;
+  isPastDue?: boolean;
+  isCanceled?: boolean;
+  daysUntilRenewal?: number | null;
+}
+
+function daysLeft(dateStr: string | null | undefined): number {
   if (!dateStr) return 999;
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
 
 export default function SubscriptionWall({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [sub, setSub] = useState<SubStatus | null>(null);
+  const [sub, setSub] = useState<SubResponse | null>(null);
   const [checked, setChecked] = useState(false);
 
   // Always allow billing page through so users can upgrade
@@ -52,45 +72,72 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
   // Still loading — render children (avoids flash)
   if (!checked) return <>{children}</>;
 
-  // No subscription data (demo mode / Supabase not set up) — let through
+  // Fetch failed / non-OK — fail open, never wall on a network blip
   if (!sub) return <>{children}</>;
 
-  // Active subscription — let through
-  if (sub.status === 'active') return <>{children}</>;
+  // No subscription row (demo mode / Supabase not provisioned) — let through
+  if (!sub.hasSubscription) return <>{children}</>;
 
-  // Trial still valid — let through
-  if (sub.status === 'trialing' && sub.trial_ends_at && daysLeft(sub.trial_ends_at) > 0) {
-    return <>{children}</>;
-  }
+  const row = sub.subscription ?? null;
+  const status = row?.status ?? null;
 
-  // Billing page always accessible
+  // Active or in a valid trial — let through. Trust the server's isActive
+  // (= trialing|active) and double-check the trial window client-side.
+  if (sub.isActive || status === 'active') return <>{children}</>;
+  if (status === 'trialing' && daysLeft(row?.trial_ends_at) > 0) return <>{children}</>;
+
+  // Billing page always accessible so the user can fix it
   if (isBillingPage) return <>{children}</>;
 
   // ── WALL ────────────────────────────────────────────────────────────────────
-  const isExpiredTrial = sub.status === 'trialing' || (!sub.status && sub.trial_ends_at && daysLeft(sub.trial_ends_at) <= 0);
-  const isPastDue = sub.status === 'past_due';
-  const isCanceled = sub.status === 'canceled';
+  const isPastDue     = status === 'past_due' || sub.isPastDue === true;
+  const isCanceled    = status === 'canceled' || sub.isCanceled === true;
+  const isExpiredTrial = status === 'trialing' || (!status && daysLeft(row?.trial_ends_at) <= 0);
+
+  const accent = isPastDue ? RED : AMBER;
 
   return (
     <div style={{
-      minHeight: '100vh', background: DARK, display: 'flex', alignItems: 'center',
+      minHeight: '100vh', background: PAGE, display: 'flex', alignItems: 'center',
       justifyContent: 'center', padding: '24px',
       fontFamily: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
     }}>
-      <div style={{ maxWidth: 560, width: '100%', textAlign: 'center' }}>
+      <div style={{
+        maxWidth: 560, width: '100%', textAlign: 'center',
+        background: CARD, border: `1px solid ${BORDER}`, borderRadius: 20,
+        padding: '40px 32px', boxShadow: '0 16px 44px rgba(0,0,0,.10)',
+      }}>
 
         {/* Icon */}
         <div style={{
-          width: 72, height: 72, borderRadius: '50%', margin: '0 auto 28px',
-          background: isPastDue ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
-          border: `1px solid ${isPastDue ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
+          width: 72, height: 72, borderRadius: 20, margin: '0 auto 28px',
+          background: isPastDue ? 'rgba(255,59,48,0.10)' : 'rgba(255,149,0,0.10)',
+          border: `1px solid ${isPastDue ? 'rgba(255,59,48,0.22)' : 'rgba(255,149,0,0.22)'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          {isPastDue ? '⚠️' : isCanceled ? '🔒' : '⏰'}
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            {isPastDue ? (
+              <>
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </>
+            ) : isCanceled ? (
+              <>
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </>
+            ) : (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <polyline points="12 7 12 12 15 14" />
+              </>
+            )}
+          </svg>
         </div>
 
         {/* Heading */}
-        <h1 style={{ fontSize: 28, fontWeight: 900, margin: '0 0 12px', letterSpacing: -0.5, color: TEXT }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5, color: TEXT }}>
           {isPastDue && 'Payment Failed'}
           {isCanceled && 'Subscription Canceled'}
           {isExpiredTrial && 'Your Free Trial Has Ended'}
@@ -110,21 +157,22 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
               { id: 'professional', name: 'Professional', price: '$599', sub: '/mo · unlimited everything', popular: true },
             ].map(plan => (
               <div key={plan.id} style={{
-                background: plan.popular ? 'linear-gradient(180deg,#111827,#0F172A)' : RAISED,
+                background: CARD,
                 border: `1.5px solid ${plan.popular ? GOLD : BORDER}`,
-                borderRadius: 12, padding: '20px 16px',
+                borderRadius: 16, padding: '20px 16px',
+                boxShadow: plan.popular ? '0 4px 14px rgba(200,136,28,.12)' : 'none',
               }}>
                 {plan.popular && (
                   <div style={{ fontSize: 9, fontWeight: 800, color: GOLD, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Most Popular</div>
                 )}
                 <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 4 }}>{plan.name}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: plan.popular ? GOLD : TEXT, marginBottom: 4 }}>{plan.price}<span style={{ fontSize: 12, fontWeight: 400, color: DIM }}>/mo</span></div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: plan.popular ? GOLD : TEXT, marginBottom: 4 }}>{plan.price}<span style={{ fontSize: 12, fontWeight: 400, color: DIM }}>/mo</span></div>
                 <div style={{ fontSize: 11, color: DIM, marginBottom: 16 }}>{plan.sub}</div>
                 <a href={`/app/billing?plan=${plan.id}`} style={{
-                  display: 'block', padding: '10px 0', borderRadius: 7,
-                  background: plan.popular ? `linear-gradient(135deg,${GOLD},#D97706)` : 'rgba(255,255,255,0.06)',
+                  display: 'block', padding: '10px 0', borderRadius: 10,
+                  background: plan.popular ? GOLD : PAGE,
                   border: plan.popular ? 'none' : `1px solid ${BORDER}`,
-                  color: plan.popular ? '#000' : TEXT, fontWeight: 800, fontSize: 13,
+                  color: plan.popular ? '#fff' : TEXT, fontWeight: 700, fontSize: 13,
                   textDecoration: 'none',
                 }}>
                   Select Plan
@@ -138,17 +186,17 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href="/app/billing" style={{
             padding: '14px 32px',
-            background: isPastDue ? `linear-gradient(135deg,${RED},#dc2626)` : `linear-gradient(135deg,${GOLD},#D97706)`,
-            borderRadius: 9, color: isPastDue ? '#fff' : '#000',
-            fontWeight: 800, fontSize: 15, textDecoration: 'none',
-            boxShadow: `0 4px 20px rgba(245,158,11,0.3)`,
+            background: isPastDue ? RED : GOLD,
+            borderRadius: 12, color: '#fff',
+            fontWeight: 700, fontSize: 15, textDecoration: 'none',
+            boxShadow: isPastDue ? '0 4px 16px rgba(255,59,48,0.25)' : '0 4px 16px rgba(200,136,28,0.25)',
           }}>
             {isPastDue ? 'Update Payment Method' : 'Upgrade Now →'}
           </a>
           <a href="mailto:support@saguarocontrol.net" style={{
-            padding: '14px 24px', background: 'transparent',
-            border: `1px solid ${BORDER}`, borderRadius: 9,
-            color: DIM, fontWeight: 600, fontSize: 14, textDecoration: 'none',
+            padding: '14px 24px', background: CARD,
+            border: `1px solid ${BORDER}`, borderRadius: 12,
+            color: TEXT, fontWeight: 600, fontSize: 14, textDecoration: 'none',
           }}>
             Contact Support
           </a>
@@ -159,7 +207,7 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
           {['Your data is safe', 'Cancel anytime', 'No per-seat fees'].map(t => (
             <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: DIM }}>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="8" fill="rgba(34,197,94,0.15)" />
+                <circle cx="8" cy="8" r="8" fill="rgba(52,199,89,0.15)" />
                 <path d="M4.5 8l2.5 2.5 4-5" stroke={GREEN} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               {t}
@@ -168,7 +216,7 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
         </div>
 
         {/* Data preservation note */}
-        <div style={{ marginTop: 24, padding: '14px 20px', background: 'rgba(245,158,11,0.05)', border: `1px solid rgba(245,158,11,0.15)`, borderRadius: 8, fontSize: 13, color: DIM }}>
+        <div style={{ marginTop: 24, padding: '14px 20px', background: 'rgba(200,136,28,0.06)', border: `1px solid rgba(200,136,28,0.15)`, borderRadius: 12, fontSize: 13, color: DIM }}>
           Your projects, documents, and data are preserved for <strong style={{ color: TEXT }}>30 days</strong>. Reactivate anytime to pick up right where you left off.
         </div>
 
