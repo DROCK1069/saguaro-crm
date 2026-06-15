@@ -236,7 +236,7 @@ const miniBtn: React.CSSProperties = {
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.65)',
+  background: '#F2F2F7',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

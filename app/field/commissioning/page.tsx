@@ -124,7 +124,7 @@ function Btn({ label, color, onClick, disabled, full, small }: { label: string; 
       onClick={onClick} disabled={disabled}
       style={{
         padding: small ? '6px 14px' : '12px 20px', borderRadius: 10, border: 'none', cursor: disabled ? 'default' : 'pointer',
-        background: disabled ? '#1a2a3a' : color, color: '#fff', fontWeight: 700, fontSize: small ? 12 : 14,
+        background: disabled ? '#FFFFFF' : color, color: '#fff', fontWeight: 700, fontSize: small ? 12 : 14,
         opacity: disabled ? 0.5 : 1, width: full ? '100%' : undefined, whiteSpace: 'nowrap',
       }}
     >
@@ -638,7 +638,7 @@ function CommissioningInner() {
 
   /* ── Main render ── */
   return (
-    <div style={{ minHeight: '100vh', background: '#0B1929', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px 16px 100px' }}>
         {view === 'list' && renderList()}
         {view === 'new' && renderCreateForm()}
@@ -989,7 +989,7 @@ function EquipmentPanel({ system, onPatch }: { system: CommissioningSystem; onPa
 /* ──────────────────────────────────────────────────── */
 export default function CommissioningPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0B1929', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73', fontFamily: 'sans-serif' }}>Loading Commissioning...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73', fontFamily: 'sans-serif' }}>Loading Commissioning...</div>}>
       <CommissioningInner />
     </Suspense>
   );

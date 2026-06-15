@@ -156,9 +156,9 @@ export default function AutopilotPage() {
                   <div style={{fontWeight:800,color:TEXT,fontSize:15,marginBottom:5}}>{alert.title}</div>
                   <div style={{fontSize:13,color:DIM,lineHeight:1.6,marginBottom:12}}>{alert.summary}</div>
                   <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
-                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:4,background:'rgba(255,255,255,.05)',color:DIM}}>{alert.rule_code.replace(/_/g,' ')}</span>
-                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:4,background:'rgba(255,255,255,.05)',color:DIM}}>{alert.entity_type}</span>
-                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:4,background:'rgba(255,255,255,.05)',color:DIM}}>{alert.entity_type}</span>
+                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:4,background:'rgba(0,0,0,.05)',color:DIM}}>{alert.rule_code.replace(/_/g,' ')}</span>
+                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:4,background:'rgba(0,0,0,.05)',color:DIM}}>{alert.entity_type}</span>
+                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:4,background:'rgba(0,0,0,.05)',color:DIM}}>{alert.entity_type}</span>
                   </div>
                 </div>
                 <div style={{display:'flex',gap:8,flexShrink:0}}>

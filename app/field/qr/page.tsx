@@ -271,7 +271,7 @@ function QRPage() {
                     borderRight: h === 'right' ? `3px solid ${GOLD}` : 'none',
                   }} />
                 ))}
-                <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: 'rgba(255,255,255,.6)', background: 'rgba(0,0,0,.5)', borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>
+                <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: 'rgba(28,28,30,.6)', background: '#F2F2F7', borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>
                   Scanning...
                 </div>
               </>

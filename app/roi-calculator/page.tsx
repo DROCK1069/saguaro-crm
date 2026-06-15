@@ -307,7 +307,7 @@ export default function ROICalculatorPage() {
           font-weight: 500;
         }
         .comparison-table tr:hover td {
-          background: rgba(255,255,255,0.02);
+          background: rgba(0,0,0,0.02);
         }
         .trust-pill {
           display: inline-flex;
@@ -367,7 +367,7 @@ export default function ROICalculatorPage() {
         }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 48, mixBlendMode: 'screen' }} />
+              <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 48 }} />
             </a>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <a href="/login" className="nav-btn-outline">Log In</a>
@@ -772,7 +772,7 @@ export default function ROICalculatorPage() {
           }}>
             <table className="comparison-table">
               <thead>
-                <tr style={{ background: 'rgba(0,0,0,0.3)' }}>
+                <tr style={{ background: '#F2F2F7' }}>
                   <th style={{ textAlign: 'left', color: DIM, padding: '16px 20px' }}>Feature</th>
                   <th style={{ color: DIM }}>Manual</th>
                   <th style={{ color: DIM }}>Procore</th>
@@ -883,7 +883,7 @@ export default function ROICalculatorPage() {
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20, marginBottom: 28 }}>
               <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-                <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 40, mixBlendMode: 'screen' }} />
+                <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 40 }} />
               </a>
               <div className="footer-links" style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
                 {[

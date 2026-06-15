@@ -180,7 +180,7 @@ export default function ProjectSwitcher({ open, onClose }: ProjectSwitcherProps)
         alignItems: 'flex-start',
         justifyContent: 'center',
         paddingTop: 100,
-        background: 'rgba(0,0,0,0.55)',
+        background: '#F2F2F7',
         backdropFilter: 'blur(4px)',
       }}
     >

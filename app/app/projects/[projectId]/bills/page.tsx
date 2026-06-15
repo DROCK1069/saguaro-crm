@@ -216,7 +216,7 @@ export default function BillsPage() {
                 {bills.map(b => {
                   const overdue = isOverdue(b.due_date, b.status);
                   return (
-                    <tr key={b.id} style={{ borderBottom: '1px solid rgba(38,51,71,.4)', background: overdue ? 'rgba(239,68,68,.05)' : 'transparent' }}>
+                    <tr key={b.id} style={{ borderBottom: '1px solid rgba(229,229,234,.4)', background: overdue ? 'rgba(239,68,68,.05)' : 'transparent' }}>
                       <td style={{ padding: '10px 14px', color: GOLD, fontWeight: 600 }}>{b.invoice_num}</td>
                       <td style={{ padding: '10px 14px', color: TEXT }}>{b.vendor}</td>
                       <td style={{ padding: '10px 14px', color: DIM, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.description}</td>

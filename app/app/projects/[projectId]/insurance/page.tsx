@@ -237,7 +237,7 @@ export default function InsurancePage() {
                   const rowBg    = expired?'rgba(192,48,48,.06)':expiring?'rgba(245,158,11,.04)':'transparent';
                   const cid      = c.id||String(idx);
                   return (
-                    <tr key={cid} style={{borderBottom:`1px solid rgba(38,51,71,.5)`,background:rowBg}}>
+                    <tr key={cid} style={{borderBottom:`1px solid rgba(229,229,234,.5)`,background:rowBg}}>
                       <td style={{padding:'11px 14px',color:TEXT,fontWeight:600}}>{c.sub_name||c.subName||c.vendor_name||'—'}</td>
                       <td style={{padding:'11px 14px'}}>
                         <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(212,160,23,.12)',color:GOLD,textTransform:'uppercase' as const}}>

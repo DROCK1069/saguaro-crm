@@ -222,7 +222,7 @@ export default function CityLandingPage({ city }: { city: City }) {
               </span>
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Link href="/login" style={{ padding: '7px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>
+              <Link href="/login" style={{ padding: '7px 16px', background: 'transparent', border: '1px solid #E5E5EA', borderRadius: '6px', color: 'rgba(28,28,30,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>
                 Log In
               </Link>
               <Link href="/signup" style={{ padding: '7px 16px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textDecoration: 'none' }}>
@@ -392,7 +392,7 @@ export default function CityLandingPage({ city }: { city: City }) {
 
             <div style={{ borderRadius: '12px', border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
               {/* Header */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: '#0a0f18', padding: '14px 20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: '#F2F2F7', padding: '14px 20px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#6E6E73', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Feature</span>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#6E6E73', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>Manual / Excel</span>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: GOLD, letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>Saguaro CRM</span>
@@ -457,7 +457,7 @@ export default function CityLandingPage({ city }: { city: City }) {
         </section>
 
         {/* ── Footer ───────────────────────────────────────────────────────── */}
-        <footer style={{ borderTop: `1px solid ${BORDER}`, background: '#080c11' }}>
+        <footer style={{ borderTop: `1px solid ${BORDER}`, background: '#FFFFFF' }}>
           <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
             <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
               <img src="/logo-full.jpg" alt="Saguaro" style={{ height: '28px', width: 'auto', borderRadius: '3px' }} />

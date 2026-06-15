@@ -48,13 +48,13 @@ export default function BidsPage() {
           </tr></thead>
           <tbody>{opportunities.map(op=>{
             const ac = op.action==='bid'?{bg:'rgba(26,138,74,.12)',c:'#3dd68c',label:'✓ BID'}:op.action==='pass'?{bg:'rgba(192,48,48,.12)',c:'#ff7070',label:'✗ PASS'}:{bg:'rgba(212,160,23,.12)',c:GOLD,label:'? INVESTIGATE'};
-            return <tr key={op.id} style={{borderBottom:`1px solid rgba(38,51,71,.5)`}}>
+            return <tr key={op.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
               <td style={{padding:'12px 14px',color:TEXT,fontWeight:600,maxWidth:240,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{op.title}</td>
               <td style={{padding:'12px 14px',color:DIM}}>{op.trade}</td>
               <td style={{padding:'12px 14px',color:TEXT}}>${op.value.toLocaleString()}</td>
               <td style={{padding:'12px 14px'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <div style={{width:60,height:5,background:'rgba(255,255,255,.06)',borderRadius:3}}>
+                  <div style={{width:60,height:5,background:'rgba(0,0,0,.06)',borderRadius:3}}>
                     <div style={{height:'100%',width:`${op.fitScore}%`,background:op.fitScore>=70?'#3dd68c':op.fitScore>=50?GOLD:'#ff7070',borderRadius:3}}/>
                   </div>
                   <span style={{color:op.fitScore>=70?'#3dd68c':op.fitScore>=50?GOLD:'#ff7070',fontWeight:700}}>{op.fitScore}</span>

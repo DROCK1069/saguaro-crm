@@ -33,7 +33,7 @@ function RiskBadge({ level }: { level: 'LOW' | 'MEDIUM' | 'HIGH' }) {
 function AIRiskPanel({ result, onClose }: { result: AIRiskResult; onClose: () => void }) {
   const approvalColor = result.approval_likelihood >= 70 ? '#3dd68c' : result.approval_likelihood >= 40 ? AMBER : RED;
   return (
-    <div style={{marginTop:12,background:'rgba(15,22,35,0.97)',border:`1px solid rgba(212,160,23,.25)`,borderRadius:12,padding:20,animation:'slideDown .25s ease'}}>
+    <div style={{marginTop:12,background:'rgba(255,255,255,0.97)',border:`1px solid rgba(212,160,23,.25)`,borderRadius:12,padding:20,animation:'slideDown .25s ease'}}>
       <style>{`@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -415,7 +415,7 @@ export default function ChangeOrdersPage() {
                   const cost = Number(co.cost_impact||0);
                   return (
                     <React.Fragment key={co.id}>
-                    <tr style={{borderBottom:`1px solid rgba(38,51,71,.5)`}}>
+                    <tr style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
                       <td style={{padding:'12px 14px',color:GOLD,fontWeight:800}}>CO-{String(co.co_number).padStart(3,'0')}</td>
                       <td style={{padding:'12px 14px',color:TEXT,maxWidth:240}}>
                         <div style={{fontWeight:600}}>{co.title}</div>

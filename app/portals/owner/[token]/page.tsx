@@ -120,7 +120,7 @@ export default function OwnerApprovalPortal() {
               ['Current Payment Due', fmt(pa.current_payment_due||0)],
               ['Balance to Finish (incl. Retainage)', fmt(Math.max(0,(pa.contract_sum_to_date||0)-(pa.total_earned_less_retainage||0)))],
             ].map(([l,v]:any)=>(
-              <div key={l} style={{ display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(38,51,71,.4)',fontSize:13 }}>
+              <div key={l} style={{ display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(229,229,234,.4)',fontSize:13 }}>
                 <span style={{ color:DIM }} dangerouslySetInnerHTML={{ __html:l }} />
                 <span style={{ color:l.includes('Current Payment')?(GOLD):TEXT,fontWeight:700 }}>{v}</span>
               </div>
@@ -135,7 +135,7 @@ export default function OwnerApprovalPortal() {
             <div style={{ overflowX:'auto' }}>
               <table style={{ width:'100%',borderCollapse:'collapse',fontSize:12 }}>
                 <thead>
-                  <tr style={{ background:'rgba(0,0,0,.3)' }}>
+                  <tr style={{ background:'#F2F2F7' }}>
                     {['#','Description','Sched Value','From Prev','This Period','Materials Stored','Total Completed','%','Balance'].map(h=>(
                       <th key={h} style={{ padding:'8px 10px',textAlign:'right',color:DIM,fontWeight:700,whiteSpace:'nowrap',borderBottom:`1px solid ${BORDER}` }}>{h}</th>
                     ))}
@@ -143,7 +143,7 @@ export default function OwnerApprovalPortal() {
                 </thead>
                 <tbody>
                   {lineItems.map((item:any,i:number)=>(
-                    <tr key={i} style={{ borderBottom:'1px solid rgba(38,51,71,.3)' }}>
+                    <tr key={i} style={{ borderBottom:'1px solid rgba(229,229,234,.3)' }}>
                       <td style={{ padding:'7px 10px',color:DIM,textAlign:'right' }}>{item.line_number||i+1}</td>
                       <td style={{ padding:'7px 10px',color:TEXT,maxWidth:200 }}>{item.description}</td>
                       <td style={{ padding:'7px 10px',textAlign:'right',color:TEXT }}>{fmt(item.scheduled_value||0)}</td>

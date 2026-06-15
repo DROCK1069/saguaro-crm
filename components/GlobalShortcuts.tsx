@@ -105,7 +105,7 @@ export default function GlobalShortcuts({ onProjectSwitch }: GlobalShortcutsProp
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0,0,0,0.6)',
+        background: '#F2F2F7',
         backdropFilter: 'blur(4px)',
       }}
     >

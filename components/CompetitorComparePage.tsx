@@ -52,7 +52,7 @@ function Nav() {
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="ccp-desktop">
-            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
+            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid #E5E5EA', borderRadius: '6px', color: 'rgba(28,28,30,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
             <Link href="/signup" style={{ padding: '7px 18px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
           </div>
 
@@ -275,7 +275,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           {/* Table header */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
-            background: '#070d14', borderBottom: `1px solid ${BORDER}`,
+            background: '#F2F2F7', borderBottom: `1px solid ${BORDER}`,
           }}>
             <div style={{ padding: '18px 24px', fontSize: '12px', fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Feature
@@ -298,7 +298,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
               style={{
                 display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
                 borderBottom: i < rows.length - 1 ? `1px solid ${BORDER}` : 'none',
-                background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)',
               }}
             >
               <div style={{ padding: '15px 24px', fontSize: '13px', fontWeight: 600, color: TEXT, display: 'flex', alignItems: 'center' }}>

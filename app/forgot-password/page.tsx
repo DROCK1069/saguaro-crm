@@ -29,7 +29,7 @@ export default function ForgotPasswordPage(){
     setLoading(false);
   }
 
-  const inputStyle = {width:'100%',padding:'11px 14px',background:'rgba(255,255,255,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box' as const};
+  const inputStyle = {width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box' as const};
 
   return (
     <div style={{minHeight:'100vh',background:DARK,display:'flex',flexDirection:'column'}}>

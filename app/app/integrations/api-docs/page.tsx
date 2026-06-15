@@ -221,7 +221,7 @@ export default function ApiDocsPage() {
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
               border: 'none',
               background: activeSection === s.key ? GOLD : 'transparent',
-              color: activeSection === s.key ? '#F2F2F7' : DIM,
+              color: activeSection === s.key ? '#1C1C1E' : DIM,
             }}
           >
             {s.label}
@@ -333,7 +333,7 @@ export default function ApiDocsPage() {
                     padding: '6px 16px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     border: 'none', textTransform: 'capitalize',
                     background: codeTab === lang ? GOLD : 'transparent',
-                    color: codeTab === lang ? '#F2F2F7' : DIM,
+                    color: codeTab === lang ? '#1C1C1E' : DIM,
                   }}
                 >
                   {lang}

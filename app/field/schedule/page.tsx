@@ -973,7 +973,7 @@ function SchedulePage() {
                 onClick={() => setEditPct(v)}
                 style={{
                   flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                  background: pct === v ? (v === 100 ? GREEN : GOLD) : 'rgba(30,58,95,.5)',
+                  background: pct === v ? (v === 100 ? GREEN : GOLD) : 'rgba(229,229,234,.5)',
                   border: `1px solid ${pct === v ? (v === 100 ? GREEN : GOLD) : BORDER}`,
                   color: pct === v ? (v === 100 ? '#000' : '#000') : DIM,
                   transition: 'all .2s',

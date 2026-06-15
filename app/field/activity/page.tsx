@@ -250,7 +250,7 @@ function ActivityLogPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#060E18', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: TEXT, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#F2F2F7', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: TEXT, paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ background: RAISED, borderBottom: `1px solid ${BORDER}`, padding: '16px 16px 12px', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

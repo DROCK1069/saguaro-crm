@@ -387,7 +387,7 @@ export default function CertifiedPayrollPage() {
       </div>
 
       {error && (
-        <div style={{ ...card, borderColor: RED, background: '#1a0a0a', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ ...card, borderColor: RED, background: `${RED}15`, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: RED, fontSize: 13 }}>{error}</span>
           <button style={{ ...btn(RED), padding: '4px 12px', fontSize: 12 }} onClick={() => setError(null)}>Dismiss</button>
         </div>

@@ -77,8 +77,8 @@ export default function HowToGetStartedPage() {
 
         .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
         .device-card {
-          padding: 18px; background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(30,58,95,0.6); border-radius: 12px;
+          padding: 18px; background: rgba(0,0,0,0.02);
+          border: 1px solid rgba(229,229,234,0.6); border-radius: 12px;
         }
         .device-card .icon { font-size: 28px; margin-bottom: 10px; }
         .device-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }

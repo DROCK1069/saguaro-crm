@@ -81,7 +81,7 @@ export default function LoginPage(){
     width:'100%',
     padding:'12px 14px',
     paddingRight: field === 'password' ? 44 : 14,
-    background:'rgba(255,255,255,.04)',
+    background:'rgba(0,0,0,.04)',
     border:`1.5px solid ${focused === field ? GOLD : BORDER}`,
     borderRadius:8,
     color:TEXT,
@@ -221,7 +221,7 @@ export default function LoginPage(){
                 {loading && (
                   <span style={{
                     display:'inline-block',width:16,height:16,
-                    border:'2px solid rgba(255,255,255,.3)',borderTopColor:'#F2F2F7',
+                    border:'2px solid #E5E5EA',borderTopColor:'#F2F2F7',
                     borderRadius:'50%',animation:'spin .6s linear infinite',
                   }}/>
                 )}

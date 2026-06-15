@@ -283,7 +283,7 @@ export default function PayrollPage() {
                     const gross = calcGross(emp);
                     const net = calcNet(emp);
                     return (
-                      <tr key={emp.id} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.02)', borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                      <tr key={emp.id} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,.02)', borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                         <td style={{ padding: '7px 8px', minWidth: 140 }}>
                           <input value={emp.name} onChange={e => updateEmp(emp.id, 'name', e.target.value)} placeholder="Name" style={{ ...inp, fontSize: 11 }} />
                         </td>
@@ -380,7 +380,7 @@ export default function PayrollPage() {
                 {records.map(record => {
                   const sc = statusCfg[record.status] || statusCfg.draft;
                   return (
-                    <tr key={record.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                    <tr key={record.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                       <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{record.week_ending}</td>
                       <td style={{ padding: '12px 16px', color: DIM }}>{record.employee_count}</td>
                       <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(record.total_gross)}</td>

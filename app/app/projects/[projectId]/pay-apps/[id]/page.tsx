@@ -294,7 +294,7 @@ export default function PayAppDetailPage() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {isDraft && !editMode && (
             <button onClick={() => setEditMode(true)}
-              style={{ padding: '8px 18px', background: 'rgba(255,255,255,.07)', border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+              style={{ padding: '8px 18px', background: 'rgba(0,0,0,.07)', border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
               ✏️ Edit SOV
             </button>
           )}
@@ -331,7 +331,7 @@ export default function PayAppDetailPage() {
             <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Project Completion</span>
             <span style={{ fontSize: 18, fontWeight: 800, color: GOLD }}>{completePct}%</span>
           </div>
-          <div style={{ height: 10, background: 'rgba(255,255,255,.08)', borderRadius: 999, overflow: 'hidden' }}>
+          <div style={{ height: 10, background: 'rgba(0,0,0,.08)', borderRadius: 999, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${Math.min(100, completePct)}%`, background: `linear-gradient(90deg, ${GOLD}, #22c55e)`, borderRadius: 999, transition: 'width .6s ease' }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: DIM }}>
@@ -367,7 +367,7 @@ export default function PayAppDetailPage() {
           {/* SOV Table */}
           <div>
             <div style={{ background: RAISED2, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
-              <div style={{ padding: '13px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,.02)' }}>
+              <div style={{ padding: '13px 18px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,.02)' }}>
                 <div>
                   <span style={{ fontWeight: 800, fontSize: 15, color: TEXT }}>Schedule of Values</span>
                   <span style={{ fontSize: 11, color: DIM, marginLeft: 10 }}>G703 Continuation Sheet</span>
@@ -392,7 +392,7 @@ export default function PayAppDetailPage() {
                   </thead>
                   <tbody>
                     {lines.map((l, i) => (
-                      <tr key={i} style={{ borderBottom: `1px solid rgba(38,51,71,.4)`, background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.015)' }}>
+                      <tr key={i} style={{ borderBottom: `1px solid rgba(229,229,234,.4)`, background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,.015)' }}>
                         <td style={{ padding: '7px 10px', color: DIM, fontWeight: 700, minWidth: 28 }}>{l.line_number}</td>
                         <td style={{ padding: '4px 6px', minWidth: 180 }}>
                           {canEdit
@@ -418,7 +418,7 @@ export default function PayAppDetailPage() {
                         {/* Progress mini-bar */}
                         <td style={{ padding: '7px 10px', minWidth: 80 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,.08)', borderRadius: 999, overflow: 'hidden', minWidth: 40 }}>
+                            <div style={{ flex: 1, height: 5, background: 'rgba(0,0,0,.08)', borderRadius: 999, overflow: 'hidden', minWidth: 40 }}>
                               <div style={{ height: '100%', width: `${Math.min(100, l.percent_complete)}%`, background: l.percent_complete >= 100 ? GREEN : GOLD, borderRadius: 999 }} />
                             </div>
                             <span style={{ color: TEXT, fontSize: 11, fontWeight: 700, minWidth: 36, textAlign: 'right' }}>{l.percent_complete.toFixed(0)}%</span>
@@ -443,7 +443,7 @@ export default function PayAppDetailPage() {
                       <td style={{ padding: '10px 10px', fontWeight: 700, color: BLUE, textAlign: 'right' }}>{fmt(sovMats)}</td>
                       <td style={{ padding: '10px 10px', fontWeight: 700, color: TEXT }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <div style={{ width: 36, height: 5, background: 'rgba(255,255,255,.1)', borderRadius: 999, overflow: 'hidden' }}>
+                          <div style={{ width: 36, height: 5, background: 'rgba(0,0,0,.1)', borderRadius: 999, overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${Math.min(100, completePct)}%`, background: GOLD, borderRadius: 999 }} />
                           </div>
                           <span style={{ fontSize: 11 }}>{completePct}%</span>
@@ -475,7 +475,7 @@ export default function PayAppDetailPage() {
                   { label: '8. Current Payment Due (6–7)', value: fmt(sovPayment), color: GREEN, bold: true, large: true },
                   { label: '9. Balance to Finish, including Retainage', value: fmt(contractToDate - sovCompleted + sovRetainage) },
                 ].map(row => (
-                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: `1px solid rgba(38,51,71,.4)` }}>
+                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: `1px solid rgba(229,229,234,.4)` }}>
                     <span style={{ fontSize: 12, color: DIM, flex: 1, paddingRight: 16 }}>{row.label}</span>
                     <span style={{ fontSize: row.large ? 18 : 13, fontWeight: row.bold ? 800 : 600, color: row.color || TEXT, whiteSpace: 'nowrap' }}>
                       {row.value}
@@ -500,7 +500,7 @@ export default function PayAppDetailPage() {
                   {timeline.map((step, i) => (
                     <div key={step.label} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', paddingBottom: i < timeline.length - 1 ? 14 : 0 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: step.done ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.06)', border: `1px solid ${step.done ? 'rgba(34,197,94,.4)' : BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: step.done ? 'rgba(34,197,94,.15)' : 'rgba(0,0,0,.06)', border: `1px solid ${step.done ? 'rgba(34,197,94,.4)' : BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>
                           {step.done ? '✓' : step.icon}
                         </div>
                         {i < timeline.length - 1 && (
@@ -560,7 +560,7 @@ export default function PayAppDetailPage() {
                 { label: '💰 Project Budget', href: `/app/projects/${projectId}/budget` },
               ].map(link => (
                 <Link key={link.href} href={link.href}
-                  style={{ display: 'block', fontSize: 12, color: DIM, textDecoration: 'none', padding: '5px 0', borderBottom: `1px solid rgba(38,51,71,.4)` }}
+                  style={{ display: 'block', fontSize: 12, color: DIM, textDecoration: 'none', padding: '5px 0', borderBottom: `1px solid rgba(229,229,234,.4)` }}
                   onMouseEnter={e => (e.currentTarget.style.color = GOLD)}
                   onMouseLeave={e => (e.currentTarget.style.color = DIM)}>
                   {link.label}

@@ -193,8 +193,8 @@ function PunchItemModal({
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,.65)', padding: 20 }}>
-      <div style={{ background: '#0B1929', border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, maxWidth: 420, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7', padding: 20 }}>
+      <div style={{ background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, maxWidth: 420, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
         {created ? (
           <div style={{ textAlign: 'center' }}>
             <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(34,197,94,.15)', border: `2px solid rgba(34,197,94,.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>

@@ -55,8 +55,8 @@ function StatusBadge({ status }: { status: string }) {
     trialing:  { label: 'Free Trial',  bg: 'rgba(245,158,11,0.12)', color: GOLD },
     active:    { label: 'Active',      bg: 'rgba(34,197,94,0.12)',  color: GREEN },
     past_due:  { label: 'Past Due',    bg: 'rgba(239,68,68,0.12)',  color: RED },
-    canceled:  { label: 'Canceled',    bg: 'rgba(203,213,225,0.1)', color: DIM },
-    paused:    { label: 'Paused',      bg: 'rgba(203,213,225,0.1)', color: DIM },
+    canceled:  { label: 'Canceled',    bg: 'rgba(110,110,115,0.1)', color: DIM },
+    paused:    { label: 'Paused',      bg: 'rgba(110,110,115,0.1)', color: DIM },
   };
   const s = map[status] ?? map.active;
   return (
@@ -215,7 +215,7 @@ export default function BillingPage() {
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {sub.status === 'active' && (
-                <button onClick={handlePortal} disabled={portalLoading} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={handlePortal} disabled={portalLoading} style={{ padding: '10px 20px', background: 'rgba(0,0,0,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   {portalLoading ? 'Loading...' : 'Manage Payment & Invoices'}
                 </button>
               )}
@@ -235,7 +235,7 @@ export default function BillingPage() {
           {/* Trial progress bar */}
           {sub.status === 'trialing' && trialDays !== null && (
             <div style={{ marginTop: 20 }}>
-              <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: 6, background: 'rgba(0,0,0,0.06)', borderRadius: 3, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, ((30 - trialDays) / 30) * 100))}%`, background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, borderRadius: 3 }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: DIM }}>
@@ -258,7 +258,7 @@ export default function BillingPage() {
           <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
             {sub?.status === 'trialing' ? 'Upgrade Your Plan' : 'Change Plan'}
           </h2>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '3px', border: `1px solid ${BORDER}` }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(0,0,0,0.04)', borderRadius: 8, padding: '3px', border: `1px solid ${BORDER}` }}>
             <button onClick={() => setAnnual(false)} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: !annual ? 'rgba(245,158,11,0.15)' : 'transparent', color: !annual ? GOLD : DIM, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Monthly</button>
             <button onClick={() => setAnnual(true)} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: annual ? 'rgba(245,158,11,0.15)' : 'transparent', color: annual ? GOLD : DIM, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               Annual
@@ -305,7 +305,7 @@ export default function BillingPage() {
                     disabled={isCurrent || upgrading === plan.id}
                     style={{
                       width: '100%', padding: '11px 0', borderRadius: 8, border: isCurrent ? `1px solid rgba(34,197,94,0.3)` : plan.popular ? 'none' : `1px solid ${BORDER}`,
-                      background: isCurrent ? 'rgba(34,197,94,0.08)' : plan.popular ? `linear-gradient(135deg, ${GOLD}, #D97706)` : 'rgba(255,255,255,0.05)',
+                      background: isCurrent ? 'rgba(34,197,94,0.08)' : plan.popular ? `linear-gradient(135deg, ${GOLD}, #D97706)` : 'rgba(0,0,0,0.05)',
                       color: isCurrent ? GREEN : plan.popular ? '#000' : TEXT,
                       fontWeight: 800, fontSize: 13, cursor: isCurrent ? 'default' : 'pointer', marginBottom: 20,
                       boxShadow: plan.popular && !isCurrent ? `0 4px 16px rgba(245,158,11,0.3)` : 'none',
@@ -357,7 +357,7 @@ export default function BillingPage() {
             { q: 'What happens if my payment fails?', a: 'We\'ll retry your card 3 times over 7 days and email you each time. If payment still fails, your account is paused but your data is preserved for 30 days.' },
             { q: 'Do you offer refunds?', a: 'We offer a full refund within 7 days of your first payment. After that, we don\'t offer refunds but you can cancel anytime and retain access until your period ends.' },
           ].map((faq, i, arr) => (
-            <div key={i} style={{ padding: '18px 0', borderBottom: i < arr.length - 1 ? `1px solid rgba(30,58,95,0.6)` : 'none' }}>
+            <div key={i} style={{ padding: '18px 0', borderBottom: i < arr.length - 1 ? `1px solid rgba(229,229,234,0.6)` : 'none' }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: TEXT, marginBottom: 6 }}>{faq.q}</div>
               <div style={{ fontSize: 13, color: DIM, lineHeight: 1.65 }}>{faq.a}</div>
             </div>
@@ -377,7 +377,7 @@ export default function BillingPage() {
               Before you go — email us at <strong>support@saguarocontrol.net</strong> and we'll give you 20% off your next 3 months.
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => setShowCancel(false)} style={{ flex: 1, padding: '12px 0', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Keep My Plan</button>
+              <button onClick={() => setShowCancel(false)} style={{ flex: 1, padding: '12px 0', background: 'rgba(0,0,0,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Keep My Plan</button>
               <button onClick={handleCancel} disabled={canceling} style={{ flex: 1, padding: '12px 0', background: 'rgba(239,68,68,0.1)', border: `1px solid rgba(239,68,68,0.3)`, borderRadius: 8, color: RED, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
                 {canceling ? 'Canceling...' : 'Yes, Cancel'}
               </button>

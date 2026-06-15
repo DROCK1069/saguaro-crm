@@ -145,7 +145,7 @@ export default function CompareProcorePage() {
             alt="Saguaro"
             width={132}
             height={44}
-            style={{ height: 44, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }}
+            style={{ height: 44, width: 'auto', objectFit: 'contain' }}
           />
         </a>
         <div style={{ flex: 1 }} />
@@ -403,7 +403,7 @@ export default function CompareProcorePage() {
                   display: 'grid',
                   gridTemplateColumns: '2fr 1.1fr 1.1fr',
                   borderBottom: i < ROWS.length - 1 ? `1px solid ${C.border}` : 'none',
-                  background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.012)',
+                  background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.012)',
                 }}
               >
                 <div style={{ padding: '16px 28px' }}>
@@ -1137,7 +1137,7 @@ export default function CompareProcorePage() {
           <a href="/signup" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, textDecoration: 'none' }}>
             Start Free Trial
           </a>
-          <a href="/switch-from-procore" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, color: '#F59E0B', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+          <a href="/switch-from-procore" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, color: '#F59E0B', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
             Free Migration
           </a>
         </div>

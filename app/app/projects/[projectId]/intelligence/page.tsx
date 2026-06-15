@@ -208,7 +208,7 @@ function IntelligenceChat() {
 
         <div style={{ marginTop: '24px', fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '8px' }}>Expertise</div>
         {['CSI MasterFormat', 'AIA Contracts', 'Lien Law (AZ/CA/TX)', 'Davis-Bacon / WH-347', 'OSHA 29 CFR 1926', 'Change Orders & Claims', 'Pay Application Process', 'Construction Finance'].map(item => (
-          <div key={item} style={{ fontSize: '11px', color: DIM, padding: '4px 0', borderBottom: `1px solid rgba(38,51,71,0.5)` }}>{item}</div>
+          <div key={item} style={{ fontSize: '11px', color: DIM, padding: '4px 0', borderBottom: `1px solid rgba(229,229,234,0.5)` }}>{item}</div>
         ))}
       </div>
 
@@ -243,7 +243,7 @@ function IntelligenceChat() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div style={{ padding: '12px 20px', borderTop: `1px solid ${BORDER}`, display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+        <div style={{ padding: '12px 20px', borderTop: `1px solid ${BORDER}`, display: 'flex', gap: '10px', alignItems: 'center', background: '#F2F2F7' }}>
           <input
             ref={inputRef}
             value={input}
@@ -251,7 +251,7 @@ function IntelligenceChat() {
             onKeyDown={handleKeyDown}
             placeholder="Ask about costs, schedules, lien waivers, change orders..."
             disabled={isLoading}
-            style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', color: TEXT, fontSize: '13px', outline: 'none' }}
+            style={{ flex: 1, background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', color: TEXT, fontSize: '13px', outline: 'none' }}
           />
           <button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()}
             style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: '8px', color: '#1C1C1E', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}>

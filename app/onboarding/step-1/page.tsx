@@ -34,7 +34,7 @@ export default function OnboardingStep1() {
           {STEPS.map((s, i) => (
             <React.Fragment key={s.num}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : 'rgba(255,255,255,.06)', color: s.active ? '#F2F2F7' : DIM, border: `2px solid ${s.active ? GOLD : BORDER}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : 'rgba(0,0,0,.06)', color: s.active ? '#1C1C1E' : DIM, border: `2px solid ${s.active ? GOLD : BORDER}` }}>
                   {s.num}
                 </div>
                 <span style={{ fontSize: 11, color: s.active ? TEXT : DIM, fontWeight: s.active ? 700 : 400 }}>{s.label}</span>
@@ -64,7 +64,7 @@ export default function OnboardingStep1() {
               { icon: '🔒', title: 'Lien Waivers', desc: 'State-specific forms for all 50 states. AZ, CA, TX statutory language included.' },
               { icon: '🤖', title: 'Autopilot', desc: 'Automated RFI routing, change order tracking, and insurance expiry alerts.' },
             ].map(f => (
-              <div key={f.title} style={{ background: 'rgba(255,255,255,.02)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
+              <div key={f.title} style={{ background: 'rgba(0,0,0,.02)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>{f.icon}</div>
                 <div style={{ fontWeight: 700, fontSize: 13, color: TEXT, marginBottom: 4 }}>{f.title}</div>
                 <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>{f.desc}</div>

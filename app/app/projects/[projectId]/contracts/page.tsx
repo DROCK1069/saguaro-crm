@@ -158,7 +158,7 @@ export default function ContractsPage() {
               </thead>
               <tbody>
                 {contracts.map(c => (
-                  <tr key={c.id} style={{ borderBottom: '1px solid rgba(38,51,71,.4)' }}>
+                  <tr key={c.id} style={{ borderBottom: '1px solid rgba(229,229,234,.4)' }}>
                     <td style={{ padding: '10px 14px', color: TEXT, fontWeight: 600 }}>{c.sub_name}</td>
                     <td style={{ padding: '10px 14px', color: DIM }}>{c.trade}</td>
                     <td style={{ padding: '10px 14px', color: GOLD, fontWeight: 700 }}>${c.amount?.toLocaleString()}</td>

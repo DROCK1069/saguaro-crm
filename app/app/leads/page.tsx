@@ -57,7 +57,7 @@ const labelS: React.CSSProperties = {
   fontSize: 12, fontWeight: 600, color: DIM, marginBottom: 4, display: 'block',
 };
 const overlayS: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 1000,
+  position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 1000,
   display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
   paddingTop: 60, overflowY: 'auto',
 };
@@ -518,7 +518,7 @@ export default function LeadsPage() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontWeight: 700, fontSize: 13, color: TEXT }}>{stage}</span>
-                    <span style={{ ...chipS('rgba(255,255,255,.08)', DIM) }}>
+                    <span style={{ ...chipS('rgba(0,0,0,.08)', DIM) }}>
                       {stageLeads.length}
                     </span>
                   </div>
@@ -531,7 +531,7 @@ export default function LeadsPage() {
                     <div style={{
                       padding: '20px 12px', textAlign: 'center', color: DIM, fontSize: 12,
                       border: `1px dashed ${BORDER}`, borderRadius: 8,
-                      background: 'rgba(255,255,255,.01)',
+                      background: 'rgba(0,0,0,.01)',
                     }}>No leads</div>
                   )}
 
@@ -671,7 +671,7 @@ export default function LeadsPage() {
                     borderBottom: `1px solid ${BORDER}`, cursor: 'pointer',
                     transition: 'background .1s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.03)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,.03)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <td style={{ padding: '10px 12px', fontWeight: 600, color: TEXT }}
@@ -741,7 +741,7 @@ export default function LeadsPage() {
                       <span style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>
                         {item.count} lead{item.count !== 1 ? 's' : ''}
                       </span>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: 'rgba(255,255,255,.85)' }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'rgba(28,28,30,.85)' }}>
                         {fmt(item.value)}
                       </span>
                     </div>

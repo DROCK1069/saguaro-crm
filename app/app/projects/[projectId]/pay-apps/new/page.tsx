@@ -225,7 +225,7 @@ export default function NewPayAppPage() {
                     </thead>
                     <tbody>
                       {lines.map((l,i)=>(
-                        <tr key={i} style={{borderBottom:`1px solid rgba(38,51,71,.4)`,background:i%2===0?'transparent':'rgba(255,255,255,.015)'}}>
+                        <tr key={i} style={{borderBottom:`1px solid rgba(229,229,234,.4)`,background:i%2===0?'transparent':'rgba(0,0,0,.015)'}}>
                           <td style={{padding:'6px 10px',color:DIM,fontWeight:700,minWidth:28}}>{l.lineNumber}</td>
                           <td style={{padding:'4px 6px',minWidth:170}}>
                             <input value={l.description} onChange={e=>updateLine(i,'description',e.target.value)}

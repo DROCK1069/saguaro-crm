@@ -335,7 +335,7 @@ function PhotosInner() {
               }} />
               <button onClick={clearCapture} style={{
                 position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%',
-                background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', fontSize: 14,
+                background: '#F2F2F7', color: '#fff', border: 'none', fontSize: 14,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>X</button>
             </div>
@@ -457,7 +457,7 @@ function PhotosInner() {
           {/* Close button */}
           <button onClick={() => setViewingPhoto(null)} style={{
             position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', fontSize: 18,
+            background: 'rgba(0,0,0,0.15)', color: '#fff', border: 'none', fontSize: 18,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10,
           }}>X</button>
 

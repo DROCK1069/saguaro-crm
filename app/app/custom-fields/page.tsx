@@ -219,7 +219,7 @@ function FieldPreview({ field }: { field: CustomField }) {
           <span style={lbl}>
             Preview: {fieldLabel}{requiredMark}
           </span>
-          <input style={{ ...inp, colorScheme: 'dark' }} type="date" readOnly />
+          <input style={{ ...inp, colorScheme: 'light' }} type="date" readOnly />
         </div>
       );
     case 'checkbox':
@@ -555,7 +555,7 @@ function DeleteModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,.65)',
+        background: '#F2F2F7',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -604,7 +604,7 @@ function ModuleSummaryModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,.65)',
+        background: '#F2F2F7',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

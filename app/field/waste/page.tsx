@@ -389,7 +389,7 @@ function WasteTrackingPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A1222', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       {/* Header */}
       <div style={{ background: RAISED, borderBottom: `1px solid ${BORDER}`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -505,7 +505,7 @@ function WasteTrackingPage() {
                     </div>
                   </div>
                   {r.waste_type === 'hazardous' && (
-                    <div style={{ marginTop: 6, padding: '4px 8px', background: '#3B0764', borderRadius: 6, fontSize: 11, color: '#D8B4FE' }}>
+                    <div style={{ marginTop: 6, padding: '4px 8px', background: '#AF52DE22', borderRadius: 6, fontSize: 11, color: '#AF52DE' }}>
                       Manifest: {r.manifest_number || 'MISSING'}
                     </div>
                   )}
@@ -866,8 +866,8 @@ function WasteTrackingPage() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ marginTop: 8, padding: '6px 10px', background: r.manifest_number ? '#1E1045' : '#450A0A', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: r.manifest_number ? '#D8B4FE' : '#FCA5A5', fontWeight: 600 }}>
+                  <div style={{ marginTop: 8, padding: '6px 10px', background: r.manifest_number ? '#AF52DE15' : '#FF3B3015', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: r.manifest_number ? '#AF52DE' : '#FF3B30', fontWeight: 600 }}>
                       Manifest: {r.manifest_number || 'NOT ASSIGNED'}
                     </span>
                     {!r.manifest_number && <span style={{ fontSize: 10, color: RED, fontWeight: 700 }}>ACTION REQUIRED</span>}
@@ -984,7 +984,7 @@ function WasteTrackingPage() {
 
 export default function WasteTrackingPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0A1222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
       <WasteTrackingPage />
     </Suspense>
   );

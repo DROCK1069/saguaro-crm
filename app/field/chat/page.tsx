@@ -234,7 +234,7 @@ function ChatPage() {
             if (isSystem) {
               return (
                 <div key={msg.id} style={{ textAlign: 'center', padding: '4px 0' }}>
-                  <span style={{ fontSize: 12, color: DIM, background: 'rgba(255,255,255,.04)', borderRadius: 8, padding: '3px 10px' }}>{msg.content}</span>
+                  <span style={{ fontSize: 12, color: DIM, background: 'rgba(0,0,0,.04)', borderRadius: 8, padding: '3px 10px' }}>{msg.content}</span>
                 </div>
               );
             }
@@ -264,7 +264,7 @@ function ChatPage() {
       </div>
 
       {/* Input bar */}
-      <div style={{ flexShrink: 0, padding: '10px 12px', borderTop: `1px solid ${BORDER}`, background: '#070f18' }}>
+      <div style={{ flexShrink: 0, padding: '10px 12px', borderTop: `1px solid ${BORDER}`, background: '#FFFFFF' }}>
         {!online && (
           <div style={{ fontSize: 12, color: '#EF4444', fontWeight: 600, marginBottom: 6, textAlign: 'center' }}>Offline — message will send when reconnected</div>
         )}

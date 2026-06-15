@@ -226,7 +226,7 @@ export default function NotificationsPage() {
                         onClick={e => { e.stopPropagation(); dismiss(n.id); }}
                         disabled={dismissingId === n.id}
                         title="Dismiss"
-                        style={{ background: 'none', border: 'none', color: '#3a4f6a', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
+                        style={{ background: 'none', border: 'none', color: '#AEAEB2', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
                       >×</button>
                     </div>
                   </div>

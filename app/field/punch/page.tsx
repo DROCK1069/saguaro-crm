@@ -58,7 +58,7 @@ type View = 'list' | 'new' | 'detail';
 /* ─── Confirmation Dialog ─── */
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,.65)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
       <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 340, width: '90%' }}>
         <p style={{ margin: '0 0 20px', fontSize: 15, color: TEXT, lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -74,7 +74,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onCo
 function AssigneePickerDialog({ assignees, onSelect, onCancel }: { assignees: string[]; onSelect: (a: string) => void; onCancel: () => void }) {
   const [custom, setCustom] = useState('');
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,.65)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
       <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 380, width: '90%', maxHeight: '70vh', overflow: 'auto' }}>
         <p style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: TEXT }}>Reassign To</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
@@ -95,7 +95,7 @@ function AssigneePickerDialog({ assignees, onSelect, onCancel }: { assignees: st
 /* ─── Priority Picker Dialog ─── */
 function PriorityPickerDialog({ onSelect, onCancel }: { onSelect: (p: string) => void; onCancel: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,.65)' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
       <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 300, width: '90%' }}>
         <p style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: TEXT }}>Change Priority</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
@@ -274,7 +274,7 @@ function AdvancedFilterPanel({
   });
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', flexDirection: 'column', background: '#070E18' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', flexDirection: 'column', background: '#F2F2F7' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: `1px solid ${BORDER}` }}>
         <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: TEXT }}>Advanced Filters</h3>
         <button onClick={onClose} style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '8px 18px', color: '#000', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Apply</button>

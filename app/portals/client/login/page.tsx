@@ -131,7 +131,7 @@ export default function ClientPortalLogin() {
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'rgba(255,255,255,0.05)',
+                background: 'rgba(0,0,0,0.05)',
                 border: `1px solid ${error ? RED : BORDER}`,
                 borderRadius: 8,
                 color: TEXT,

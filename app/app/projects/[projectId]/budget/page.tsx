@@ -228,7 +228,7 @@ export default function BudgetPage() {
           </div>
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 18 }}>
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: i < 5 ? `1px solid rgba(38,51,71,.5)` : 'none' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: i < 5 ? `1px solid rgba(229,229,234,.5)` : 'none' }}>
                 <Skeleton width={70} height={14} />
                 <Skeleton width="32%" height={14} />
                 <div style={{ flex: 1 }} />
@@ -370,7 +370,7 @@ export default function BudgetPage() {
                   const pct = l.pct_complete ?? 0;
                   const isEditing = editingId === l.id;
                   return (
-                    <tr key={l.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)`, background: rowBg(l) }}>
+                    <tr key={l.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)`, background: rowBg(l) }}>
                       <td style={{ padding: '11px 14px', color: GOLD, fontWeight: 700, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{l.cost_code}</td>
                       <td style={{ padding: '11px 14px', color: TEXT, fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.description}</td>
                       <td style={{ padding: '11px 14px', textAlign: 'right', color: TEXT }}>
@@ -390,7 +390,7 @@ export default function BudgetPage() {
                       <td style={{ padding: '11px 14px', textAlign: 'right', color: (l.actual_cost ?? 0) > (l.revised_budget ?? 0) ? '#ff7070' : (l.actual_cost ?? 0) > 0 ? '#f97316' : DIM }}>{fmt(l.actual_cost)}</td>
                       <td style={{ padding: '11px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                          <div style={{ width: 40, height: 4, background: 'rgba(255,255,255,.08)', borderRadius: 2 }}>
+                          <div style={{ width: 40, height: 4, background: 'rgba(0,0,0,.08)', borderRadius: 2 }}>
                             <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: pct >= 100 ? '#3dd68c' : GOLD, borderRadius: 2 }} />
                           </div>
                           <span style={{ color: pct >= 100 ? '#3dd68c' : TEXT, fontWeight: 600, whiteSpace: 'nowrap' }}>{pct}%</span>
@@ -445,7 +445,7 @@ export default function BudgetPage() {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ background: 'rgba(255,255,255,.03)', fontWeight: 800 }}>
+                <tr style={{ background: 'rgba(0,0,0,.03)', fontWeight: 800 }}>
                   <td colSpan={2} style={{ padding: '12px 14px', color: TEXT, fontWeight: 800 }}>TOTALS</td>
                   <td style={{ padding: '12px 14px', textAlign: 'right', color: TEXT }}>{fmt(totalOriginal)}</td>
                   <td style={{ padding: '12px 14px', textAlign: 'right', color: totalApprovedCOs > 0 ? '#4a9de8' : DIM }}>{totalApprovedCOs > 0 ? '+' + fmt(totalApprovedCOs) : '—'}</td>

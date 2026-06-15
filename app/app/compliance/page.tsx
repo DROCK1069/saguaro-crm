@@ -7,7 +7,7 @@ const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E
 function ScoreBar({score}:{score:number}){
   const color = score>=80?GREEN:score>=50?AMBER:RED;
   return <div style={{display:'flex',alignItems:'center',gap:8}}>
-    <div style={{flex:1,height:6,background:'rgba(38,51,71,.6)',borderRadius:3,overflow:'hidden'}}>
+    <div style={{flex:1,height:6,background:'rgba(229,229,234,.6)',borderRadius:3,overflow:'hidden'}}>
       <div style={{height:'100%',background:color,width:score+'%',borderRadius:3}}/>
     </div>
     <span style={{fontSize:12,fontWeight:700,color,minWidth:30}}>{score}</span>
@@ -91,13 +91,13 @@ export default function CompliancePage(){
         :filtered.length===0?<div style={{textAlign:'center',padding:40,color:DIM}}>No subcontractors found.</div>
         :<div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,overflow:'hidden'}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
-            <thead><tr style={{background:'rgba(0,0,0,.3)'}}>
+            <thead><tr style={{background:'#F2F2F7'}}>
               {['Subcontractor','Trade','Score','W-9','Insurance','Lien Waivers','Status',''].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,textTransform:'uppercase',color:DIM,borderBottom:`1px solid ${BORDER}`,whiteSpace:'nowrap'}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{filtered.map(sub=>(
-              <tr key={sub.id} onClick={()=>setSelected(selected?.id===sub.id?null:sub)} style={{borderBottom:`1px solid rgba(38,51,71,.4)`,cursor:'pointer',background:selected?.id===sub.id?'rgba(212,160,23,.04)':'transparent'}}>
+              <tr key={sub.id} onClick={()=>setSelected(selected?.id===sub.id?null:sub)} style={{borderBottom:`1px solid rgba(229,229,234,.4)`,cursor:'pointer',background:selected?.id===sub.id?'rgba(212,160,23,.04)':'transparent'}}>
                 <td style={{padding:'11px 14px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
                     <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(212,160,23,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:GOLD,flexShrink:0}}>{sub.name?.[0]||'?'}</div>
@@ -137,7 +137,7 @@ export default function CompliancePage(){
         </div>}
       </div>
 
-      {selected&&<div style={{borderLeft:`1px solid ${BORDER}`,padding:24,background:'rgba(31,44,62,.4)'}}>
+      {selected&&<div style={{borderLeft:`1px solid ${BORDER}`,padding:24,background:'rgba(229,229,234,.4)'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
           <div style={{fontWeight:700,fontSize:15,color:TEXT}}>{selected.name}</div>
           <button onClick={()=>setSelected(null)} style={{background:'none',border:'none',color:DIM,fontSize:18,cursor:'pointer',lineHeight:1}}>×</button>

@@ -243,7 +243,7 @@ export default function PayAppsPage() {
                   <tr
                     key={pa.id}
                     onClick={()=>router.push(`/app/projects/${projectId}/pay-apps/${pa.id}`)}
-                    style={{borderBottom:`1px solid rgba(38,51,71,.5)`,cursor:'pointer',transition:'background .15s',opacity:draggingIndex===idx?0.5:1}}
+                    style={{borderBottom:`1px solid rgba(229,229,234,.5)`,cursor:'pointer',transition:'background .15s',opacity:draggingIndex===idx?0.5:1}}
                     onMouseEnter={e=>(e.currentTarget.style.background='rgba(212,160,23,.06)')}
                     onMouseLeave={e=>(e.currentTarget.style.background='')}
                     {...handlers}

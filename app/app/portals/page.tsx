@@ -371,7 +371,7 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 }
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.05)',
+  width: '100%', padding: '10px 12px', background: 'rgba(0,0,0,0.05)',
   border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontSize: 14,
   outline: 'none', boxSizing: 'border-box',
 };
@@ -416,7 +416,7 @@ function SuccessCard({ url, name, type, emailSent, onAnother, onClose }: { url: 
       )}
 
       {/* Link box */}
-      <div style={{ background: 'rgba(0,0,0,0.3)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, textAlign: 'left' }}>
+      <div style={{ background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, textAlign: 'left' }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: DIM, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Portal Link</div>
         <div style={{ fontSize: 12, color: DIM, wordBreak: 'break-all', lineHeight: 1.5, marginBottom: 10 }}>{url}</div>
         <button onClick={copyUrl}
@@ -435,7 +435,7 @@ function SuccessCard({ url, name, type, emailSent, onAnother, onClose }: { url: 
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={onAnother} style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={onAnother} style={{ flex: 1, padding: '10px', background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           + Invite Another
         </button>
         <button onClick={onClose} style={{ flex: 1, padding: '10px', background: `rgba(212,160,23,0.1)`, border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
@@ -465,7 +465,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
-          <tr style={{ background: 'rgba(0,0,0,0.2)' }}>
+          <tr style={{ background: '#F2F2F7' }}>
             {['Client', 'Project', 'Status', 'Last Access', 'Expires', 'Invite', 'Actions'].map(h => (
               <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
             ))}
@@ -486,7 +486,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
               <td style={{ padding: '12px 16px' }}>
                 {s.status === 'active' && (
                   <button onClick={() => onResend(s.id, 'client')} disabled={resending === s.id}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.25)' : BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: resendMsg?.id === s.id && resendMsg.ok ? GREEN : DIM, cursor: 'pointer', opacity: resending === s.id ? 0.5 : 1 }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.04)', border: `1px solid ${resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.25)' : BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: resendMsg?.id === s.id && resendMsg.ok ? GREEN : DIM, cursor: 'pointer', opacity: resending === s.id ? 0.5 : 1 }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                     {resending === s.id ? 'Sending…' : resendMsg?.id === s.id && resendMsg.ok ? '✓ Sent' : 'Resend Invite'}
                   </button>
@@ -499,7 +499,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
                     {copied === s.token ? '✓ Copied' : '⎘ Copy Link'}
                   </button>
                   <a href={`/portals/client/${s.token}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: DIM, textDecoration: 'none' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: DIM, textDecoration: 'none' }}>
                     View →
                   </a>
                   {s.status === 'active' && (
@@ -537,7 +537,7 @@ function SubTable({ sessions, copied, revoking, resending, resendMsg, onCopy, on
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
-          <tr style={{ background: 'rgba(0,0,0,0.2)' }}>
+          <tr style={{ background: '#F2F2F7' }}>
             {['Company', 'Project', 'Status', 'Last Login', 'Invite', 'Actions'].map(h => (
               <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
             ))}
@@ -557,7 +557,7 @@ function SubTable({ sessions, copied, revoking, resending, resendMsg, onCopy, on
               <td style={{ padding: '12px 16px' }}>
                 {s.status === 'active' && (
                   <button onClick={() => onResend(s.id, 'sub')} disabled={resending === s.id}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.25)' : BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: resendMsg?.id === s.id && resendMsg.ok ? GREEN : DIM, cursor: 'pointer', opacity: resending === s.id ? 0.5 : 1 }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.04)', border: `1px solid ${resendMsg?.id === s.id && resendMsg.ok ? 'rgba(34,197,94,0.25)' : BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: resendMsg?.id === s.id && resendMsg.ok ? GREEN : DIM, cursor: 'pointer', opacity: resending === s.id ? 0.5 : 1 }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                     {resending === s.id ? 'Sending…' : resendMsg?.id === s.id && resendMsg.ok ? '✓ Sent' : 'Resend Invite'}
                   </button>
@@ -570,7 +570,7 @@ function SubTable({ sessions, copied, revoking, resending, resendMsg, onCopy, on
                     {copied === s.token ? '✓ Copied' : '⎘ Copy Link'}
                   </button>
                   <a href={`/portals/subcontractor/${s.token}`} target="_blank" rel="noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: DIM, textDecoration: 'none' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: DIM, textDecoration: 'none' }}>
                     View →
                   </a>
                   {s.status === 'active' && (

@@ -277,7 +277,7 @@ export default function DailyLogPage() {
       {toast && (
         <div style={{
           position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
-          background: toast.includes('success') ? '#166534' : '#7f1d1d',
+          background: toast.includes('success') ? '#34C759' : '#FF3B30',
           color: '#fff', padding: '10px 20px', borderRadius: 8, zIndex: 9999,
           fontSize: 14, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,.5)',
         }}>{toast}</div>
@@ -308,7 +308,7 @@ export default function DailyLogPage() {
             type="date"
             value={logDate}
             onChange={e => setLogDate(e.target.value)}
-            style={{ ...sInput, colorScheme: 'dark' }}
+            style={{ ...sInput, colorScheme: 'light' }}
           />
         </div>
 

@@ -1031,7 +1031,7 @@ export default function ClientPortalPage() {
   const renderDashboard = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Welcome Banner */}
-      <div style={{ ...cardStyle, background: `linear-gradient(135deg, ${RAISED} 0%, #0A2540 100%)`, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ ...cardStyle, background: `linear-gradient(135deg, ${RAISED} 0%, #F2F2F7 100%)`, position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: `${GOLD}10` }} />
         <div style={{ position: 'absolute', bottom: -20, right: 40, width: 80, height: 80, borderRadius: '50%', background: `${GOLD}08` }} />
         <div style={{ position: 'relative' }}>
@@ -1193,7 +1193,7 @@ export default function ClientPortalPage() {
                   padding: '16px 8px 8px',
                 }}>
                   <div style={{ fontSize: 10, color: '#fff', fontWeight: 600 }}>{photo.caption}</div>
-                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,.6)' }}>{fmtDate(photo.date)}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(28,28,30,.6)' }}>{fmtDate(photo.date)}</div>
                 </div>
               </div>
             ))}
@@ -2139,7 +2139,7 @@ export default function ClientPortalPage() {
       {showChangeRequest && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,.6)', zIndex: 300,
+          background: '#F2F2F7', zIndex: 300,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 24,
         }}

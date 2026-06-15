@@ -107,7 +107,7 @@ function GanttChart({tasks}:{tasks:any[]}){
         const isDone=task.status==='completed';
         return(
           <div key={task.id} style={{display:'flex',alignItems:'center',
-            minHeight:36,borderBottom:`1px solid rgba(38,51,71,.3)`,minWidth:700}}>
+            minHeight:36,borderBottom:`1px solid rgba(229,229,234,.3)`,minWidth:700}}>
             {/* Label */}
             <div style={{width:200,flexShrink:0,paddingRight:12,
               fontSize:12,fontWeight:600,color:isDone?DIM:TEXT,
@@ -414,7 +414,7 @@ export default function SchedulePage(){
                     return(
                       <tr key={task.id}
                         onClick={()=>viewTask(task)}
-                        style={{borderBottom:`1px solid rgba(38,51,71,.4)`,cursor:'pointer',
+                        style={{borderBottom:`1px solid rgba(229,229,234,.4)`,cursor:'pointer',
                           background:selected?.id===task.id&&mode==='view'?'rgba(212,160,23,.05)':''}}
                         onMouseEnter={e=>e.currentTarget.style.background='rgba(212,160,23,.04)'}
                         onMouseLeave={e=>e.currentTarget.style.background=selected?.id===task.id&&mode==='view'?'rgba(212,160,23,.05)':''}>
@@ -431,7 +431,7 @@ export default function SchedulePage(){
                         </td>
                         <td style={{padding:'11px 14px'}}>
                           <div style={{display:'flex',alignItems:'center',gap:8}}>
-                            <div style={{width:60,height:6,background:'rgba(38,51,71,.8)',borderRadius:3,overflow:'hidden'}}>
+                            <div style={{width:60,height:6,background:'rgba(229,229,234,.8)',borderRadius:3,overflow:'hidden'}}>
                               <div style={{height:'100%',borderRadius:3,background:color,
                                 width:`${task.pct_complete??0}%`}}/>
                             </div>
@@ -592,7 +592,7 @@ export default function SchedulePage(){
                         {selected.pct_complete??0}%
                       </span>
                     </div>
-                    <div style={{background:'rgba(38,51,71,.6)',borderRadius:4,height:10,overflow:'hidden'}}>
+                    <div style={{background:'rgba(229,229,234,.6)',borderRadius:4,height:10,overflow:'hidden'}}>
                       <div style={{height:'100%',borderRadius:4,
                         background:STATUS_COLORS[selected.status]||GREEN,
                         width:`${selected.pct_complete??0}%`,transition:'width .3s'}}/>

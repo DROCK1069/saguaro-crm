@@ -100,7 +100,7 @@ const css = {
   th: { textAlign: 'left' as const, padding: '10px 12px', borderBottom: `1px solid ${BORDER}`, color: DIM, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 } as React.CSSProperties,
   td: { padding: '10px 12px', borderBottom: `1px solid ${BORDER}15` } as React.CSSProperties,
   trHover: { cursor: 'pointer', transition: 'background .15s' } as React.CSSProperties,
-  overlay: { position: 'fixed' as const, inset: 0, background: 'rgba(0,0,0,.65)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' } as React.CSSProperties,
+  overlay: { position: 'fixed' as const, inset: 0, background: '#F2F2F7', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' } as React.CSSProperties,
   modal: { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 28, width: '90%', maxWidth: 820, maxHeight: '90vh', overflowY: 'auto' as const, position: 'relative' as const } as React.CSSProperties,
   close: { position: 'absolute' as const, top: 12, right: 16, background: 'none', border: 'none', color: DIM, fontSize: 22, cursor: 'pointer' } as React.CSSProperties,
   tab: (active: boolean) => ({ padding: '8px 18px', border: 'none', borderBottom: active ? `2px solid ${GOLD}` : '2px solid transparent', background: 'transparent', color: active ? GOLD : DIM, fontWeight: active ? 700 : 500, fontSize: 13, cursor: 'pointer' }) as React.CSSProperties,

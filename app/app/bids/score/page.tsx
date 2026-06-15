@@ -28,7 +28,7 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
         <span style={{ fontSize: 12, color: DIM }}>{label}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color }}>{value}/100</span>
       </div>
-      <div style={{ height: 6, background: 'rgba(255,255,255,.06)', borderRadius: 3 }}>
+      <div style={{ height: 6, background: 'rgba(0,0,0,.06)', borderRadius: 3 }}>
         <div style={{ height: '100%', width: `${value}%`, background: color, borderRadius: 3, transition: 'width .5s' }} />
       </div>
     </div>

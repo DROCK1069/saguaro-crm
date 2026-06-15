@@ -57,7 +57,7 @@ export default function IndustryLandingPage({ industry }: Props) {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
         background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: scrolled ? '1px solid rgba(212,160,23,0.25)' : '1px solid rgba(38,51,71,0.8)',
+        borderBottom: scrolled ? '1px solid rgba(212,160,23,0.25)' : '1px solid rgba(229,229,234,0.8)',
         transition: 'all 0.3s ease', height: '58px',
         display: 'flex', alignItems: 'center',
       }}>
@@ -84,8 +84,8 @@ export default function IndustryLandingPage({ industry }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="ind-desktop">
             <Link href="/login" style={{
               padding: '7px 18px', background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px',
-              color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none',
+              border: '1px solid #E5E5EA', borderRadius: '6px',
+              color: 'rgba(28,28,30,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none',
             }}>Log In</Link>
             <Link href="/signup" style={{
               padding: '7px 18px', background: GOLD_DARK, border: 'none', borderRadius: '6px',
@@ -175,7 +175,7 @@ export default function IndustryLandingPage({ industry }: Props) {
             {TRUST_PILLS.map(pill => (
               <span key={pill} style={{
                 padding: '5px 12px',
-                background: 'rgba(30,58,95,0.5)',
+                background: 'rgba(229,229,234,0.5)',
                 border: `1px solid ${BORDER}`,
                 borderRadius: '100px',
                 fontSize: '12px', color: DIM, fontWeight: 500,

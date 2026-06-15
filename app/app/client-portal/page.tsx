@@ -73,7 +73,7 @@ const tdS: React.CSSProperties = { padding: '12px 14px', fontSize: 13, color: TE
 function Modal({ open, onClose, title, children, width = 540 }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; width?: number }) {
   if (!open) return null;
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
       <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 28, width, maxWidth: '94vw', maxHeight: '85vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: TEXT }}>{title}</h3>

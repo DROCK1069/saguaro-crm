@@ -853,9 +853,9 @@ function ObservationsPage() {
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Date Range</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input type="date" value={filters.dateFrom} onChange={e => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1, colorScheme: 'dark' }} />
+              <input type="date" value={filters.dateFrom} onChange={e => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1, colorScheme: 'light' }} />
               <span style={{ color: DIM, fontSize: 12 }}>to</span>
-              <input type="date" value={filters.dateTo} onChange={e => setFilters(prev => ({ ...prev, dateTo: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1, colorScheme: 'dark' }} />
+              <input type="date" value={filters.dateTo} onChange={e => setFilters(prev => ({ ...prev, dateTo: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1, colorScheme: 'light' }} />
             </div>
           </div>
           {/* Sort */}
@@ -1208,7 +1208,7 @@ function ObservationsPage() {
           />
           <label style={labelStyle}>Due Date</label>
           <input type="date" value={newCADue} onChange={e => setNewCADue(e.target.value)}
-            style={{ ...inputStyle, marginBottom: 12, colorScheme: 'dark' }}
+            style={{ ...inputStyle, marginBottom: 12, colorScheme: 'light' }}
           />
           <label style={labelStyle}>Action Description</label>
           <textarea value={newCADesc} onChange={e => setNewCADesc(e.target.value)}
@@ -1507,7 +1507,7 @@ function ObservationsPage() {
   /* ── MAIN RENDER ── */
   return (
     <div style={{
-      minHeight: '100vh', background: '#070F1B', color: TEXT,
+      minHeight: '100vh', background: '#F2F2F7', color: TEXT,
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       padding: '16px 16px 40px',
       maxWidth: 600, margin: '0 auto',
@@ -1536,7 +1536,7 @@ export default function ObservationsPageWrapper() {
   return (
     <Suspense fallback={
       <div style={{
-        minHeight: '100vh', background: '#070F1B', display: 'flex',
+        minHeight: '100vh', background: '#F2F2F7', display: 'flex',
         alignItems: 'center', justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}>

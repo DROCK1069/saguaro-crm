@@ -250,7 +250,7 @@ function CloseoutInner() {
     const pct = max ? Math.round((value / max) * 100) : 0;
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ flex: 1, height: 10, background: '#1a2a3d', borderRadius: 5, overflow: 'hidden' }}>
+        <div style={{ flex: 1, height: 10, background: '#FFFFFF', borderRadius: 5, overflow: 'hidden' }}>
           <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 5, transition: 'width 0.4s' }} />
         </div>
         <span style={{ fontSize: 12, color: DIM, minWidth: 40, textAlign: 'right' }}>{pct}%</span>
@@ -683,7 +683,7 @@ function CloseoutInner() {
 
         {/* bulk bar */}
         {bulkIds.size > 0 && (
-          <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, background: '#132236' }}>
+          <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, background: '#FFFFFF' }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>{bulkIds.size} selected</span>
             <select style={{ ...input, width: 'auto', fontSize: 12 }} value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
               {STATUSES.filter((s) => s !== 'na').map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
@@ -748,7 +748,7 @@ function CloseoutInner() {
 
       {/* error */}
       {error && (
-        <div style={{ margin: '12px 20px', padding: '10px 14px', background: '#2d1015', border: `1px solid ${RED}`, borderRadius: 8, fontSize: 13, color: RED, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ margin: '12px 20px', padding: '10px 14px', background: 'rgba(239,68,68,.1)', border: `1px solid ${RED}`, borderRadius: 8, fontSize: 13, color: RED, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{error}</span>
           <button style={{ background: 'none', border: 'none', color: RED, cursor: 'pointer', fontWeight: 700 }} onClick={() => setError('')}>X</button>
         </div>

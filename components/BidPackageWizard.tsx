@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 const GOLD = '#C8881C';
 const DARK = '#F2F2F7';
 const RAISED = '#FFFFFF';
-const RAISED2 = '#253549';
+const RAISED2 = '#FFFFFF';
 const BORDER = '#E5E5EA';
 const DIM = '#6E6E73';
 const TEXT = '#1C1C1E';
@@ -139,7 +139,7 @@ function ProgressBar({ step }: { step: number }) {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: '50%',
-                  background: done ? GOLD : active ? 'rgba(212,160,23,0.15)' : 'rgba(38,51,71,0.6)',
+                  background: done ? GOLD : active ? 'rgba(212,160,23,0.15)' : 'rgba(229,229,234,0.6)',
                   border: `2px solid ${color}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: done ? DARK : color, fontWeight: 800, fontSize: 13,
@@ -348,7 +348,7 @@ function Step2({ projectId, lineItems, onLineItemsChange, onNext, onBack }: {
               </thead>
               <tbody>
                 {lineItems.map((row) => (
-                  <tr key={row.id} style={{ borderBottom: `1px solid rgba(38,51,71,.4)`, background: row.selected ? 'transparent' : 'rgba(0,0,0,0.15)' }}>
+                  <tr key={row.id} style={{ borderBottom: `1px solid rgba(229,229,234,.4)`, background: row.selected ? 'transparent' : 'rgba(0,0,0,0.15)' }}>
                     <td style={tdStyle}>
                       <input type="checkbox" checked={!!row.selected} onChange={e => updateRow(row.id, 'selected', e.target.checked)}
                         style={{ accentColor: GOLD, marginLeft: 6 }} />

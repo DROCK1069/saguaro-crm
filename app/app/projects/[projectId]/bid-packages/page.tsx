@@ -210,7 +210,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
         <div style={{ display: 'flex', padding: '12px 24px', gap: 6, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
           {STEPS.map((label, i) => (
             <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ height: 3, borderRadius: 2, background: i + 1 <= step ? GOLD : 'rgba(255,255,255,.08)', marginBottom: 4 }} />
+              <div style={{ height: 3, borderRadius: 2, background: i + 1 <= step ? GOLD : 'rgba(0,0,0,.08)', marginBottom: 4 }} />
               <div style={{ fontSize: 10, color: i + 1 === step ? GOLD : DIM, fontWeight: i + 1 === step ? 700 : 400 }}>{label}</div>
             </div>
           ))}
@@ -255,7 +255,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
                 </thead>
                 <tbody>
                   {w.lineItems.map(li => (
-                    <tr key={li.id} style={{ borderBottom: `1px solid rgba(38,51,71,.4)` }}>
+                    <tr key={li.id} style={{ borderBottom: `1px solid rgba(229,229,234,.4)` }}>
                       <td style={{ padding: '6px 6px 6px 10px', width: '45%' }}>
                         <input value={li.description} onChange={e => updateLineItem(li.id, 'description', e.target.value)} placeholder="Description" style={{ ...inp, fontSize: 12 }} />
                       </td>
@@ -291,7 +291,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                 {w.suggestedSubs.map(sub => (
-                  <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: sub.checked ? 'rgba(212,160,23,.05)' : 'rgba(255,255,255,.02)', border: `1px solid ${sub.checked ? 'rgba(212,160,23,.3)' : BORDER}`, borderRadius: 8, cursor: 'pointer' }}>
+                  <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: sub.checked ? 'rgba(212,160,23,.05)' : 'rgba(0,0,0,.02)', border: `1px solid ${sub.checked ? 'rgba(212,160,23,.3)' : BORDER}`, borderRadius: 8, cursor: 'pointer' }}>
                     <input type="checkbox" checked={sub.checked} onChange={e => setW(prev => ({ ...prev, suggestedSubs: prev.suggestedSubs.map(s => s.id === sub.id ? { ...s, checked: e.target.checked } : s) }))} style={{ accentColor: GOLD, width: 16, height: 16 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{sub.name}</div>
@@ -310,7 +310,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
                   <button onClick={addExtra} style={{ padding: '8px 14px', background: 'rgba(212,160,23,.1)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
                 </div>
                 {w.extraInvites.map((ei, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,.02)', borderRadius: 6, marginBottom: 4, fontSize: 12, color: TEXT }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(0,0,0,.02)', borderRadius: 6, marginBottom: 4, fontSize: 12, color: TEXT }}>
                     <span style={{ flex: 1 }}>{ei.name} — {ei.email}</span>
                     <button onClick={() => setW(prev => ({ ...prev, extraInvites: prev.extraInvites.filter((_, j) => j !== i) }))} style={{ background: 'none', border: 'none', color: RED, cursor: 'pointer', fontSize: 13 }}>✕</button>
                   </div>
@@ -350,7 +350,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
         <div style={{ padding: '14px 24px', borderTop: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <button
             onClick={() => step > 1 ? setStep(s => s - 1) : onClose()}
-            style={{ padding: '9px 20px', background: 'rgba(255,255,255,.05)', border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            style={{ padding: '9px 20px', background: 'rgba(0,0,0,.05)', border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             {step === 1 ? 'Cancel' : '← Back'}
           </button>
           <button
@@ -466,7 +466,7 @@ export default function BidPackagesPage() {
                   const invites = pkg.bid_package_invites?.[0]?.count ?? 0;
                   const subs = pkg.bid_submissions?.[0]?.count ?? 0;
                   return (
-                    <tr key={pkg.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                    <tr key={pkg.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                       <td style={{ padding: '12px 14px', color: GOLD, fontWeight: 700 }}>{pkg.trade || '—'}</td>
                       <td style={{ padding: '12px 14px', color: TEXT, fontWeight: 600 }}>{pkg.name}</td>
                       <td style={{ padding: '12px 14px', color: DIM }}>{pkg.bid_due_date?.slice(0, 10) || '—'}</td>

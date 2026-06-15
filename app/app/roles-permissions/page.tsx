@@ -133,7 +133,7 @@ function permLevelColor(level: PermLevel): string {
     case 'Full': return GREEN;
     case 'Edit': return BLUE;
     case 'View': return AMBER;
-    default: return '#3a3a4a';
+    default: return '#AEAEB2';
   }
 }
 
@@ -160,7 +160,7 @@ function Modal({ open, onClose, title, width, children }: {
   if (!open) return null;
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.65)' }} onClick={onClose} />
+      <div style={{ position: 'absolute', inset: 0, background: '#F2F2F7' }} onClick={onClose} />
       <div style={{ position: 'relative', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
         width: width ?? 520, maxHeight: '85vh', overflowY: 'auto', padding: 28, zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
@@ -678,7 +678,7 @@ export default function RolesPermissionsPage() {
             <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: GREEN, marginRight: 4 }} />Full = Create, Read, Update, Delete + Approve</span>
             <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: BLUE, marginRight: 4 }} />Edit = Create, Read, Update</span>
             <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: AMBER, marginRight: 4 }} />View = Read Only</span>
-            <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: '#3a3a4a', marginRight: 4 }} />None = No Access</span>
+            <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: DIM, marginRight: 4 }} />None = No Access</span>
           </div>
         </div>
       )}

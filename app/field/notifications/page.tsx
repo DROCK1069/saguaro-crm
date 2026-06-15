@@ -397,7 +397,7 @@ function NotificationCenter() {
                   style={{
                     position: 'relative',
                     overflow: 'hidden',
-                    borderTop: idx > 0 ? `1px solid rgba(30,58,95,.5)` : 'none',
+                    borderTop: idx > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
                     opacity: isDismissing ? 0 : 1,
                     maxHeight: isDismissing ? 0 : 200,
                     transition: 'opacity .3s, max-height .3s',
@@ -537,7 +537,7 @@ function NotificationCenter() {
                 style={{
                   display: 'flex', gap: 10, alignItems: 'flex-start',
                   padding: '10px 14px',
-                  borderTop: idx > 0 ? `1px solid rgba(30,58,95,.5)` : 'none',
+                  borderTop: idx > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
                 }}
               >
                 {/* Timeline dot */}

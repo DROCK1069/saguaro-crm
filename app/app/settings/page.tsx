@@ -160,7 +160,7 @@ export default function SettingsPage() {
               <img
                 src={branding.logo_url}
                 alt="Company logo"
-                style={{ maxHeight: 56, maxWidth: 180, objectFit: 'contain', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'rgba(255,255,255,0.04)', padding: 8 }}
+                style={{ maxHeight: 56, maxWidth: 180, objectFit: 'contain', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'rgba(0,0,0,0.04)', padding: 8 }}
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <span style={{ fontSize: 12, color: DIM }}>Logo preview</span>
@@ -175,7 +175,7 @@ export default function SettingsPage() {
                 value={branding.company_name}
                 onChange={e => setBranding(b => ({ ...b, company_name: e.target.value }))}
                 placeholder="e.g. Acme General Contractors"
-                style={{ width: '100%', maxWidth: 420, background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', maxWidth: 420, background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <div>
@@ -185,7 +185,7 @@ export default function SettingsPage() {
                 value={branding.logo_url}
                 onChange={e => setBranding(b => ({ ...b, logo_url: e.target.value }))}
                 placeholder="https://yoursite.com/logo.png or Supabase storage URL"
-                style={{ width: '100%', maxWidth: 520, background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', maxWidth: 520, background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
               <div style={{ fontSize: 11, color: DIM, marginTop: 5 }}>
                 Accepts PNG or JPG. Upload your logo to Supabase Storage, Imgur, or any public URL.
@@ -220,15 +220,15 @@ export default function SettingsPage() {
               <a key={item.label} href={item.href} style={{
                 display: 'flex', alignItems: 'center', gap: 16,
                 padding: '18px 24px',
-                borderBottom: i < section.items.length - 1 ? `1px solid rgba(30,58,95,0.6)` : 'none',
+                borderBottom: i < section.items.length - 1 ? `1px solid rgba(229,229,234,0.6)` : 'none',
                 textDecoration: 'none',
                 background: item.highlight ? 'rgba(245,158,11,0.03)' : 'transparent',
                 transition: 'background .15s',
               }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.03)')}
                 onMouseLeave={e => (e.currentTarget.style.background = item.highlight ? 'rgba(245,158,11,0.03)' : 'transparent')}
               >
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: item.highlight ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${item.highlight ? 'rgba(245,158,11,0.2)' : BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: item.highlight ? 'rgba(245,158,11,0.1)' : 'rgba(0,0,0,0.05)', border: `1px solid ${item.highlight ? 'rgba(245,158,11,0.2)' : BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
                   {item.icon}
                 </div>
                 <div style={{ flex: 1 }}>

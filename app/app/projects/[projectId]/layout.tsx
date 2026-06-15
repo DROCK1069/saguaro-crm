@@ -151,7 +151,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2, lineHeight: 1.3 }}>{projectName || '—'}</div>
             <div style={{ fontSize: 10, color: DIM, marginBottom: 8 }}>{projectNumber}</div>
             {/* Progress */}
-            <div style={{ height: 3, background: 'rgba(255,255,255,.08)', borderRadius: 2, marginBottom: 3 }}>
+            <div style={{ height: 3, background: 'rgba(0,0,0,.08)', borderRadius: 2, marginBottom: 3 }}>
               <div style={{ height: '100%', width: `${pctComplete}%`, background: `linear-gradient(90deg,${GOLD},#E0A030)`, borderRadius: 2 }} />
             </div>
             <div style={{ fontSize: 10, color: DIM }}>{pctComplete}% complete</div>
@@ -296,7 +296,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
           {/* Backdrop */}
           <div
             onClick={() => setMobileOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 199 }}
+            style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 199 }}
           />
           {/* Panel */}
           <aside style={{

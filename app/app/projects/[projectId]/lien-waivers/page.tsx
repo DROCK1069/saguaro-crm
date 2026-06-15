@@ -253,7 +253,7 @@ export default function LienWaiversPage() {
                 </thead>
                 <tbody>
                   {matrix.map(row=>(
-                    <tr key={row.subId} style={{borderBottom:`1px solid rgba(38,51,71,.5)`}}>
+                    <tr key={row.subId} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
                       <td style={{padding:'14px 16px',color:TEXT,fontWeight:700}}>{row.subName}</td>
                       {WAIVER_TYPES.map(t=>{
                         const w = row.waivers[t.key];
@@ -288,7 +288,7 @@ export default function LienWaiversPage() {
                       {waivers.map((w:any)=>{
                         const typeLabel = WAIVER_TYPES.find(t=>t.key===w.waiver_type)?.label || w.waiver_type;
                         return (
-                          <tr key={w.id} style={{borderBottom:`1px solid rgba(38,51,71,.4)`}}>
+                          <tr key={w.id} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
                             <td style={{padding:'10px 14px',color:TEXT,fontWeight:600}}>{w.claimant_name||(w.subcontractors as any)?.name||'—'}</td>
                             <td style={{padding:'10px 14px',color:DIM}}>{typeLabel}</td>
                             <td style={{padding:'10px 14px',color:DIM}}>{w.state||'—'}</td>

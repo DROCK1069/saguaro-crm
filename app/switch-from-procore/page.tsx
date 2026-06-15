@@ -69,7 +69,7 @@ export default function SwitchFromProcorePage() {
         }
         .btn-amber {
           background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-          color: #F2F2F7;
+          color: #1C1C1E;
           font-weight: 700;
           border: none;
           border-radius: 10px;
@@ -133,7 +133,7 @@ export default function SwitchFromProcorePage() {
           transition: border-color 0.15s;
         }
         .calc-input-field:focus { border-color: ${GOLD}; }
-        .comparison-table tr:nth-child(even) td { background: rgba(30,58,95,0.1); }
+        .comparison-table tr:nth-child(even) td { background: rgba(229,229,234,0.1); }
         .comparison-table tr:hover td { background: rgba(245,158,11,0.04); }
       `}</style>
 
@@ -146,7 +146,7 @@ export default function SwitchFromProcorePage() {
       }}>
         <div className="nav-container">
           <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 48, mixBlendMode: 'screen' }} />
+            <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 48 }} />
           </Link>
           <div className="nav-links">
             <Link href="/login" className="btn-outline" style={{ padding: '9px 20px', fontSize: '0.9rem' }}>
@@ -344,7 +344,7 @@ export default function SwitchFromProcorePage() {
                     <div style={{ fontSize: '0.75rem', color: DIM, fontWeight: 500, marginTop: 2 }}>$299/mo flat</div>
                   </th>
                   <th style={{
-                    background: 'rgba(30,58,95,0.2)', padding: '16px 24px', textAlign: 'center',
+                    background: 'rgba(229,229,234,0.2)', padding: '16px 24px', textAlign: 'center',
                     borderBottom: `1px solid ${BORDER}`,
                     borderLeft: `1px solid ${BORDER}`,
                     color: DIM, fontWeight: 700, fontSize: '1.05rem',
@@ -677,7 +677,7 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── FINAL CTA ─── */}
       <section style={{
-        background: `linear-gradient(135deg, #1a0f00 0%, #F2F2F7 40%, #F2F2F7 60%, #1a0f00 100%)`,
+        background: `linear-gradient(135deg, #FFFFFF 0%, #F2F2F7 40%, #F2F2F7 60%, #FFFFFF 100%)`,
         borderTop: `1px solid rgba(245,158,11,0.2)`,
         borderBottom: `1px solid rgba(245,158,11,0.2)`,
         padding: '90px 40px',
@@ -753,7 +753,7 @@ export default function SwitchFromProcorePage() {
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ marginBottom: 24 }}>
             <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 40, mixBlendMode: 'screen' }} />
+              <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 40 }} />
             </Link>
           </div>
           <div className="footer-links" style={{ marginBottom: 20 }}>

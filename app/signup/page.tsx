@@ -77,8 +77,8 @@ export default function SignupPage(){
     setLoading(false);
   }
 
-  const inputStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'rgba(255,255,255,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box'};
-  const selectStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'#0a0f1a',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box',cursor:'pointer'};
+  const inputStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box'};
+  const selectStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box',cursor:'pointer'};
   const labelStyle: React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
 
   if(success) return (
@@ -242,7 +242,7 @@ export default function SignupPage(){
             </form>
 
             {/* What happens next */}
-            <div style={{marginTop:20,padding:'14px 18px',background:'rgba(255,255,255,0.02)',border:`1px solid rgba(30,58,95,0.5)`,borderRadius:8}}>
+            <div style={{marginTop:20,padding:'14px 18px',background:'rgba(0,0,0,0.02)',border:`1px solid rgba(229,229,234,0.5)`,borderRadius:8}}>
               <div style={{fontSize:11,fontWeight:700,color:DIM,letterSpacing:1,textTransform:'uppercase',marginBottom:10}}>After you sign up:</div>
               {['Confirm your email → you\'re in instantly','Log in at saguarocontrol.net — works in any browser','Optional: install on your phone in 30 seconds'].map((t,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:DIM,marginBottom:6}}>

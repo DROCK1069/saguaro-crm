@@ -19,10 +19,10 @@ const RED = '#EF4444';
 const BORDER = '#E5E5EA';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(26,31,46,0.7)',
+  background: 'rgba(255,255,255,0.7)',
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
-  border: '1px solid rgba(255,255,255,0.06)',
+  border: '1px solid rgba(0,0,0,0.06)',
   borderRadius: 16,
 };
 
@@ -346,7 +346,7 @@ function AROverlayPage() {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         ...glass, borderRadius: 0, padding: '12px 16px',
         display: 'flex', alignItems: 'center', gap: 10,
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
       }}>
         <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: 0, display: 'flex' }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" width={22} height={22}><line x1={19} y1={12} x2={5} y2={12}/><polyline points="12 19 5 12 12 5"/></svg>
@@ -449,7 +449,7 @@ function AROverlayPage() {
             <div style={{
               position: 'fixed', top: 72, left: 0, right: 0, zIndex: 60,
               ...glass, borderRadius: 0, padding: '12px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid rgba(0,0,0,0.06)',
             }}>
               {calibStep === 'point_a' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -600,7 +600,7 @@ function AROverlayPage() {
                   Takeoff Dims
                 </p>
                 {takeoffDims.map((d, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
                     <span style={{ fontSize: 11, color: DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{d.label}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: TEXT }}>{d.value} {d.unit}</span>
                   </div>
@@ -614,15 +614,15 @@ function AROverlayPage() {
             position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
             ...glass, borderRadius: 0, padding: '10px 12px',
             display: 'flex', alignItems: 'center', gap: 6,
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: '1px solid rgba(0,0,0,0.06)',
           }}>
             {/* Measure toggle */}
             <button onClick={() => { setMeasuring(!measuring); setPendingPoint(null); }} style={{
               flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-              background: measuring ? GOLD : 'rgba(26,31,46,0.7)',
+              background: measuring ? GOLD : 'rgba(255,255,255,0.7)',
               color: measuring ? BASE : GOLD,
-              border: measuring ? `1px solid ${GOLD}` : '1px solid rgba(255,255,255,0.06)',
+              border: measuring ? `1px solid ${GOLD}` : '1px solid rgba(0,0,0,0.06)',
             }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
                 <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0l12.6 12.6z"/>
@@ -634,8 +634,8 @@ function AROverlayPage() {
             {/* Clear */}
             <button onClick={() => { setMeasurements([]); setPendingPoint(null); }} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: 'rgba(26,31,46,0.7)', color: RED,
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.7)', color: RED,
+              border: '1px solid rgba(0,0,0,0.06)',
             }}>
               Clear
             </button>
@@ -643,8 +643,8 @@ function AROverlayPage() {
             {/* Undo */}
             <button onClick={undo} disabled={measurements.length === 0 && !pendingPoint} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: 'rgba(26,31,46,0.7)', color: (measurements.length === 0 && !pendingPoint) ? 'rgba(139,170,200,0.3)' : DIM,
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.7)', color: (measurements.length === 0 && !pendingPoint) ? 'rgba(139,170,200,0.3)' : DIM,
+              border: '1px solid rgba(0,0,0,0.06)',
             }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
                 <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.69 3L3 13"/>
@@ -655,9 +655,9 @@ function AROverlayPage() {
             <button onClick={saveMeasurements} disabled={saving || measurements.length === 0} style={{
               flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-              background: (saving || measurements.length === 0) ? 'rgba(26,31,46,0.7)' : GREEN,
+              background: (saving || measurements.length === 0) ? 'rgba(255,255,255,0.7)' : GREEN,
               color: (saving || measurements.length === 0) ? 'rgba(139,170,200,0.3)' : '#000',
-              border: '1px solid rgba(255,255,255,0.06)',
+              border: '1px solid rgba(0,0,0,0.06)',
             }}>
               {saving ? 'Saving...' : `Save (${measurements.length})`}
             </button>
@@ -665,8 +665,8 @@ function AROverlayPage() {
             {/* Unit toggle */}
             <button onClick={() => setUnit(u => u === 'ft' ? 'mm' : 'ft')} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 800,
-              background: 'rgba(26,31,46,0.7)', color: BLUE,
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.7)', color: BLUE,
+              border: '1px solid rgba(0,0,0,0.06)',
             }}>
               {unit}
             </button>
@@ -674,9 +674,9 @@ function AROverlayPage() {
             {/* Takeoff toggle */}
             <button onClick={() => setShowTakeoff(!showTakeoff)} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: showTakeoff ? 'rgba(59,130,246,0.15)' : 'rgba(26,31,46,0.7)',
+              background: showTakeoff ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.7)',
               color: showTakeoff ? BLUE : DIM,
-              border: showTakeoff ? `1px solid rgba(59,130,246,0.3)` : '1px solid rgba(255,255,255,0.06)',
+              border: showTakeoff ? `1px solid rgba(59,130,246,0.3)` : '1px solid rgba(0,0,0,0.06)',
             }}>
               &#x1F4D0;
             </button>
@@ -692,7 +692,7 @@ function AROverlayPage() {
               Saved Measurements ({measurements.length})
             </p>
             {measurements.map((m, i) => (
-              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
                 <span style={{ fontSize: 13, color: TEXT }}>Line {i + 1}</span>
                 <span style={{ fontSize: 14, fontWeight: 800, color: GOLD }}>{formatDist(m.realDist, m.unit)}</span>
               </div>

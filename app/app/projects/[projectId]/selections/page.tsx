@@ -220,7 +220,7 @@ export default function SelectionsPage(){
                   {fmt(totalCost)} / {fmt(totalAllowance)}
                 </span>
               </div>
-              <div style={{background:'rgba(38,51,71,.6)',borderRadius:4,height:8,overflow:'hidden'}}>
+              <div style={{background:'rgba(229,229,234,.6)',borderRadius:4,height:8,overflow:'hidden'}}>
                 <div style={{height:'100%',borderRadius:4,
                   background:overage>0?`linear-gradient(90deg,${RED},#f87171)`:`linear-gradient(90deg,${GREEN},#3dd68c)`,
                   width:`${Math.min(100,totalAllowance>0?(totalCost/totalAllowance*100):0)}%`,transition:'width .4s'}}/>

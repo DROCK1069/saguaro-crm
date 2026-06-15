@@ -72,7 +72,7 @@ export default function SecurityPage() {
           <p style={{color:DIM,textAlign:'center',marginBottom:40,fontSize:15}}>Industry-leading infrastructure so you can focus on building — not on uptime.</p>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:0,border:`1px solid ${BORDER}`,borderRadius:12,overflow:'hidden'}}>
             {INFRA.map((row,i)=>(
-              <div key={row.label} style={{padding:'18px 24px',borderBottom:`1px solid ${BORDER}`,borderRight:i%2===0?`1px solid ${BORDER}`:'none',background:i%4<2?'rgba(255,255,255,.01)':'transparent'}}>
+              <div key={row.label} style={{padding:'18px 24px',borderBottom:`1px solid ${BORDER}`,borderRight:i%2===0?`1px solid ${BORDER}`:'none',background:i%4<2?'rgba(0,0,0,.01)':'transparent'}}>
                 <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:.5,color:DIM,marginBottom:4}}>{row.label}</div>
                 <div style={{fontWeight:600,color:TEXT,fontSize:14}}>{row.value}</div>
               </div>

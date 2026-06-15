@@ -132,7 +132,7 @@ export default function TeamPage(){
             <tr><td colSpan={6} style={{padding:'24px 12px',textAlign:'center',color:DIM,fontSize:13}}>Loading...</td></tr>
           ) : members.length === 0 ? (
             <tr><td colSpan={6} style={{padding:'32px 12px',textAlign:'center',color:DIM,fontSize:13}}>No team members yet. Invite someone to get started.</td></tr>
-          ) : members.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(38,51,71,.4)`}}>
+          ) : members.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
             <td style={{padding:'11px 12px'}}><div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:'50%',background:`linear-gradient(135deg,${GOLD},#B85C2A)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#1C1C1E'}}>{m.name[0]}</div><span style={{color:TEXT,fontWeight:600}}>{m.name}</span></div></td>
             <td style={{padding:'11px 12px',color:DIM}}>{m.role}</td>
             <td style={{padding:'11px 12px',color:DIM}}>{m.email}</td>
@@ -149,7 +149,7 @@ export default function TeamPage(){
           </tr></thead>
           <tbody>{subs.length === 0 ? (
             <tr><td colSpan={4} style={{padding:'32px 12px',textAlign:'center',color:DIM,fontSize:13}}>No subcontractors on this project yet.</td></tr>
-          ) : subs.map(s=><tr key={s.name} style={{borderBottom:`1px solid rgba(38,51,71,.4)`}}>
+          ) : subs.map(s=><tr key={s.name} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
             <td style={{padding:'11px 12px',color:TEXT,fontWeight:600}}>{s.name}</td>
             <td style={{padding:'11px 12px',color:DIM}}>{s.email}</td>
             <td style={{padding:'11px 12px'}}><Badge label="Sub Portal" color='#a78bfa' bg='rgba(167,139,250,.12)'/></td>

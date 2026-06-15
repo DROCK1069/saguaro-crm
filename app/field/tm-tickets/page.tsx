@@ -1131,7 +1131,7 @@ function TMTicketsPage() {
         )}
 
         {/* Grand Total Card */}
-        <div style={{ ...card, background: 'linear-gradient(135deg, #FFFFFF 0%, #142A40 100%)' }}>
+        <div style={{ ...card, background: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 100%)' }}>
           <p style={secLbl}>Ticket Summary</p>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
             <span style={{ color: TEXT, fontSize: 14 }}>Subtotal</span>
@@ -1431,7 +1431,7 @@ function TMTicketsPage() {
         </div>
 
         {/* ── Markup, Tax & Totals ── */}
-        <div style={{ ...card, background: 'linear-gradient(135deg, #FFFFFF 0%, #142A40 100%)' }}>
+        <div style={{ ...card, background: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 100%)' }}>
           <p style={secLbl}>Totals & Markup</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
             <div>

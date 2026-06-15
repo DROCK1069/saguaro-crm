@@ -414,7 +414,7 @@ function PunchListInner() {
           {/* Due Date */}
           <div>
             <label style={labelStyle}>Due Date</label>
-            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ ...inputStyle, colorScheme: 'dark' }} />
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ ...inputStyle, colorScheme: 'light' }} />
           </div>
 
           {/* Photo Capture */}

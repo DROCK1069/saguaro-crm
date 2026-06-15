@@ -117,7 +117,7 @@ export default function CashFlowLoading() {
               <div
                 key={i}
                 style={{
-                  padding: '14px 20px', borderBottom: `1px solid rgba(38,51,71,0.4)`,
+                  padding: '14px 20px', borderBottom: `1px solid rgba(229,229,234,0.4)`,
                   display: 'flex', gap: 30, alignItems: 'center',
                 }}
               >

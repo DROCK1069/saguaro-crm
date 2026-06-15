@@ -149,7 +149,7 @@ export default function InspectionsPage() {
             </thead>
             <tbody>
               {inspections.map(i => (
-                <tr key={i.id} style={{ borderBottom: '1px solid rgba(38,51,71,.4)' }}>
+                <tr key={i.id} style={{ borderBottom: '1px solid rgba(229,229,234,.4)' }}>
                   <td style={{ padding: '10px 14px', color: TEXT, fontWeight: 600 }}>{i.type}</td>
                   <td style={{ padding: '10px 14px', color: DIM, whiteSpace: 'nowrap' }}>{i.date}</td>
                   <td style={{ padding: '10px 14px', color: DIM }}>{i.inspector}</td>

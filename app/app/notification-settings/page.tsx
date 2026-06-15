@@ -363,7 +363,7 @@ export default function NotificationSettingsPage() {
       borderRadius: 12,
       cursor: 'pointer',
       border: 'none',
-      background: on ? GREEN : '#374151',
+      background: on ? GREEN : '#E5E5EA',
       position: 'relative' as const,
       transition: 'background 0.2s ease',
       flexShrink: 0,

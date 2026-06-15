@@ -1384,7 +1384,7 @@ function ChangeOrdersPage() {
 
         {/* ── Delete (Reject) Confirmation Overlay ────────────── */}
         {deleteConfirm && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
+          <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 340, textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>{'\uD83D\uDDD1\uFE0F'}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Reject this change order?</div>

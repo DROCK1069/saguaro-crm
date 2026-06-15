@@ -334,7 +334,7 @@ function RFIPageInner() {
               type="date"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              style={{ ...inputStyle, colorScheme: 'dark' }}
+              style={{ ...inputStyle, colorScheme: 'light' }}
             />
           </div>
 

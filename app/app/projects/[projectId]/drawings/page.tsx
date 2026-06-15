@@ -205,8 +205,8 @@ export default function DrawingsPage(){
       <tr
         onClick={()=>viewDrawing(drawing)}
         style={{background:isSel?'rgba(212,160,23,.07)':'transparent',
-          borderBottom:`1px solid rgba(38,51,71,.5)`,cursor:'pointer',transition:'background .1s'}}
-        onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background='rgba(255,255,255,.02)';}}
+          borderBottom:`1px solid rgba(229,229,234,.5)`,cursor:'pointer',transition:'background .1s'}}
+        onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background='rgba(0,0,0,.02)';}}
         onMouseLeave={e=>{if(!isSel)e.currentTarget.style.background='transparent';}}>
         <td style={{padding:'11px 14px',color:GOLD,fontWeight:700,whiteSpace:'nowrap'}}>
           {drawing.drawing_number||'—'}
@@ -364,7 +364,7 @@ export default function DrawingsPage(){
                   <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,overflow:'hidden',overflowX:'auto'}}>
                     <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
                       <thead>
-                        <tr style={{background:'rgba(0,0,0,.3)'}}>
+                        <tr style={{background:'#F2F2F7'}}>
                           {['Drawing #','Title','Discipline','Rev','Rev Date','Status','Link'].map(h=>(
                             <th key={h} style={{padding:'9px 14px',textAlign:'left',fontSize:11,fontWeight:700,
                               textTransform:'uppercase',letterSpacing:.5,color:DIM,
@@ -388,7 +388,7 @@ export default function DrawingsPage(){
             <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,overflow:'hidden',overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
                 <thead>
-                  <tr style={{background:'rgba(0,0,0,.3)'}}>
+                  <tr style={{background:'#F2F2F7'}}>
                     {['Drawing #','Title','Discipline','Rev','Rev Date','Status','Link'].map(h=>(
                       <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,
                         textTransform:'uppercase',letterSpacing:.5,color:DIM,

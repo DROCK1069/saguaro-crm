@@ -141,8 +141,8 @@ function CashFlowContent() {
       {toast && (
         <div style={{
           position: 'fixed', top: 24, right: 24, zIndex: 9999,
-          background: toast.ok ? '#14532d' : '#7f1d1d',
-          color: TEXT, padding: '12px 24px', borderRadius: 8,
+          background: toast.ok ? '#34C759' : '#FF3B30',
+          color: '#fff', padding: '12px 24px', borderRadius: 8,
           border: `1px solid ${toast.ok ? GREEN : RED}`,
           fontSize: 13, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,.5)',
         }}>
@@ -319,7 +319,7 @@ function CashFlowContent() {
                 onClick={() => setExpandedRow(isExpanded ? null : i)}
                 style={{
                   display: 'grid', gridTemplateColumns: '160px 1fr 1fr 1fr 1fr 40px',
-                  padding: '14px 20px', borderBottom: `1px solid rgba(38,51,71,0.4)`,
+                  padding: '14px 20px', borderBottom: `1px solid rgba(229,229,234,0.4)`,
                   cursor: 'pointer', fontSize: 13,
                   background: isDanger ? 'rgba(192,48,48,0.08)' : 'transparent',
                   transition: 'background 0.2s',
@@ -350,7 +350,7 @@ function CashFlowContent() {
               {/* Expanded line items */}
               {isExpanded && (
                 <div style={{
-                  background: 'rgba(255,255,255,0.6)', borderBottom: `1px solid rgba(38,51,71,0.4)`,
+                  background: 'rgba(255,255,255,0.6)', borderBottom: `1px solid rgba(229,229,234,0.4)`,
                   padding: '12px 20px 12px 40px',
                 }}>
                   {period.line_items.length === 0 ? (
@@ -359,7 +359,7 @@ function CashFlowContent() {
                     period.line_items.map((item, j) => (
                       <div key={j} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '6px 0', borderBottom: j < period.line_items.length - 1 ? `1px solid rgba(38,51,71,0.3)` : 'none',
+                        padding: '6px 0', borderBottom: j < period.line_items.length - 1 ? `1px solid rgba(229,229,234,0.3)` : 'none',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{

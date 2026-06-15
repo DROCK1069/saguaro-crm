@@ -581,7 +581,7 @@ function InvoicesPage() {
 
             {/* Batch actions */}
             {selected.size > 0 && (
-              <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#112240' }}>
+              <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#FFFFFF' }}>
                 <span style={{ color: GOLD, fontWeight: 600 }}>{selected.size} selected</span>
                 <button onClick={() => batchAction('approved')} style={{ ...btnBase, background: GREEN, color: '#fff', padding: '6px 14px', fontSize: 13 }}>
                   Batch Approve
@@ -963,7 +963,7 @@ function InvoicesPage() {
 
       {/* ── Delete (Void) Confirmation Overlay ────────────── */}
       {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
+        <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 340, textAlign: 'center' }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>{'\uD83D\uDDD1\uFE0F'}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Void this invoice?</div>

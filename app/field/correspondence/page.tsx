@@ -762,13 +762,13 @@ function CorrespondencePage() {
               <span style={label}>Date From</span>
               <input type="date" value={advFilters.dateFrom}
                 onChange={e => setAdvFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                style={{ ...input, colorScheme: 'dark' }} />
+                style={{ ...input, colorScheme: 'light' }} />
             </div>
             <div style={{ flex: 1, minWidth: 140 }}>
               <span style={label}>Date To</span>
               <input type="date" value={advFilters.dateTo}
                 onChange={e => setAdvFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                style={{ ...input, colorScheme: 'dark' }} />
+                style={{ ...input, colorScheme: 'light' }} />
             </div>
           </div>
 

@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 // ── Color palette ──────────────────────────────────────────────
 const GOLD   = '#C8881C';
 const DARK   = '#F2F2F7';
-const RAISED = 'rgba(255,255,255,0.04)';
-const BORDER = 'rgba(255,255,255,0.08)';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
 const DIM    = '#6E6E73';
 const TEXT   = '#1C1C1E';
 const GREEN  = '#22C55E';
@@ -103,8 +103,8 @@ function fmtText(v: unknown): string {
 
 function getBadgeStyle(v: unknown): React.CSSProperties {
   const s = String(v ?? '').toLowerCase();
-  let bg = 'rgba(255,255,255,0.1)';
-  let color = 'rgba(255,255,255,0.6)';
+  let bg = 'rgba(0,0,0,0.1)';
+  let color = '#6E6E73';
   if (['active', 'approved', 'complete', 'completed', 'paid', 'closed-won'].some(k => s.includes(k))) {
     bg = 'rgba(34,197,94,0.15)'; color = GREEN;
   } else if (['pending', 'submitted', 'in progress', 'in-progress', 'open', 'review'].some(k => s.includes(k))) {
@@ -112,7 +112,7 @@ function getBadgeStyle(v: unknown): React.CSSProperties {
   } else if (['overdue', 'expired', 'rejected', 'void', 'failed', 'critical'].some(k => s.includes(k))) {
     bg = 'rgba(239,68,68,0.15)'; color = RED;
   } else if (['draft', 'closed', 'cancelled', 'canceled', 'inactive'].some(k => s.includes(k))) {
-    bg = 'rgba(255,255,255,0.06)'; color = DIM;
+    bg = 'rgba(0,0,0,0.06)'; color = DIM;
   } else if (['info', 'new', 'assigned'].some(k => s.includes(k))) {
     bg = 'rgba(59,130,246,0.15)'; color = BLUE;
   }
@@ -399,7 +399,7 @@ export default function ReportsPage() {
             disabled={pageState === 'loading'}
             style={{
               flex: 1, minWidth: 240,
-              background: 'rgba(255,255,255,0.05)',
+              background: 'rgba(0,0,0,0.05)',
               border: `1px solid ${BORDER}`,
               borderRadius: 10,
               padding: '10px 16px',
@@ -418,7 +418,7 @@ export default function ReportsPage() {
               onChange={e => setProjectFilter(e.target.value)}
               disabled={pageState === 'loading'}
               style={{
-                background: 'rgba(255,255,255,0.05)',
+                background: 'rgba(0,0,0,0.05)',
                 border: `1px solid ${BORDER}`,
                 borderRadius: 10,
                 padding: '10px 14px',
@@ -472,7 +472,7 @@ export default function ReportsPage() {
               onMouseLeave={() => setHoveredChip(null)}
               style={{
                 padding: '4px 12px',
-                background: hoveredChip === chip ? `${GOLD}22` : 'rgba(255,255,255,0.05)',
+                background: hoveredChip === chip ? `${GOLD}22` : 'rgba(0,0,0,0.05)',
                 border: `1px solid ${hoveredChip === chip ? GOLD + '55' : BORDER}`,
                 borderRadius: 20,
                 color: hoveredChip === chip ? GOLD : DIM,
@@ -522,7 +522,7 @@ export default function ReportsPage() {
               </div>
               {/* Progress bar */}
               <div style={{
-                background: 'rgba(255,255,255,0.06)',
+                background: 'rgba(0,0,0,0.06)',
                 borderRadius: 8,
                 height: 8,
                 overflow: 'hidden',
@@ -556,7 +556,7 @@ export default function ReportsPage() {
               <div style={{
                 padding: '16px 20px',
                 borderBottom: `1px solid ${BORDER}`,
-                background: 'rgba(0,0,0,0.25)',
+                background: '#F2F2F7',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
@@ -586,19 +586,19 @@ export default function ReportsPage() {
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                   <button
                     onClick={exportCSV}
-                    style={{ padding: '7px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '7px 14px', background: 'rgba(0,0,0,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                   >
                     CSV
                   </button>
                   <button
                     onClick={exportXLS}
-                    style={{ padding: '7px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '7px 14px', background: 'rgba(0,0,0,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                   >
                     Excel
                   </button>
                   <button
                     onClick={exportPDF}
-                    style={{ padding: '7px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '7px 14px', background: 'rgba(0,0,0,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                   >
                     PDF
                   </button>
@@ -653,7 +653,7 @@ export default function ReportsPage() {
                           <tr
                             key={ri}
                             style={{
-                              background: ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
+                              background: ri % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)',
                               borderBottom: `1px solid ${BORDER}`,
                               transition: 'background .1s',
                             }}
@@ -752,7 +752,7 @@ export default function ReportsPage() {
                   >
                     <div style={{
                       width: 36, height: 36, borderRadius: 9,
-                      background: hoveredCard === r.id ? `${GOLD}22` : 'rgba(255,255,255,0.05)',
+                      background: hoveredCard === r.id ? `${GOLD}22` : 'rgba(0,0,0,0.05)',
                       border: `1px solid ${hoveredCard === r.id ? GOLD + '44' : BORDER}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 17, flexShrink: 0,
@@ -799,7 +799,7 @@ export default function ReportsPage() {
                     runSageReport(item.query);
                   }}
                   style={{
-                    background: 'rgba(255,255,255,0.03)',
+                    background: 'rgba(0,0,0,0.03)',
                     border: `1px solid ${BORDER}`,
                     borderRadius: 8,
                     padding: '9px 11px',

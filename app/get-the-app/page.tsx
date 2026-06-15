@@ -50,10 +50,10 @@ export default function GetTheAppPage() {
           height: 64px;
           background: rgba(255,255,255,0.92);
           backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(30,58,95,0.6);
+          border-bottom: 1px solid rgba(229,229,234,0.6);
         }
         .nav-logo { display: flex; align-items: center; text-decoration: none; }
-        .nav-logo img { height: 40px; mix-blend-mode: screen; }
+        .nav-logo img { height: 40px;  }
         .nav-spacer { flex: 1; }
         .nav-login {
           color: var(--dim);
@@ -66,7 +66,7 @@ export default function GetTheAppPage() {
         .nav-login:hover { color: var(--text); }
         .nav-cta {
           background: var(--gold);
-          color: #F2F2F7;
+          color: #1C1C1E;
           text-decoration: none;
           font-size: 13px;
           font-weight: 700;
@@ -105,7 +105,7 @@ export default function GetTheAppPage() {
           position: absolute;
           top: -80px; right: -100px;
           width: 600px; height: 600px;
-          background: radial-gradient(circle, rgba(30,58,95,0.5) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(229,229,234,0.5) 0%, transparent 65%);
           pointer-events: none;
         }
         .hero-inner {
@@ -171,7 +171,7 @@ export default function GetTheAppPage() {
         }
         .btn-primary {
           background: var(--gold);
-          color: #F2F2F7;
+          color: #1C1C1E;
           text-decoration: none;
           font-size: 15px;
           font-weight: 700;
@@ -223,10 +223,10 @@ export default function GetTheAppPage() {
           position: absolute;
           right: 20px; top: 0;
           width: 168px; height: 360px;
-          background: linear-gradient(160deg, #FFFFFF 0%, #0f1a2e 100%);
+          background: linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 100%);
           border-radius: 38px;
-          border: 2px solid rgba(255,255,255,0.12);
-          box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 1px rgba(0,0,0,0.3);
+          border: 2px solid rgba(0,0,0,0.12);
+          box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.3);
           overflow: hidden;
           animation: floatPhone 5s ease-in-out infinite;
         }
@@ -272,7 +272,7 @@ export default function GetTheAppPage() {
         .ps-row {
           display:flex;align-items:center;gap:8px;
           padding:6px 8px;border-radius:8px;
-          background:rgba(255,255,255,0.04);
+          background:rgba(0,0,0,0.04);
           margin-bottom:5px;
         }
         .ps-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
@@ -286,7 +286,7 @@ export default function GetTheAppPage() {
           position:absolute;bottom:0;left:0;right:0;
           height:42px;
           background:rgba(8,15,26,0.96);
-          border-top:1px solid rgba(255,255,255,0.06);
+          border-top:1px solid rgba(0,0,0,0.06);
           display:flex;align-items:center;justify-content:space-around;
         }
         .ps-nav-i { width:16px;height:16px;stroke:rgba(255,255,255,0.25);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round; }
@@ -297,10 +297,10 @@ export default function GetTheAppPage() {
           position:absolute;
           left:0; top:60px;
           width:268px; height:370px;
-          background: linear-gradient(160deg, #FFFFFF 0%, #0f1a2e 100%);
+          background: linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 100%);
           border-radius:20px;
-          border:2px solid rgba(255,255,255,0.12);
-          box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
+          border:2px solid rgba(0,0,0,0.12);
+          box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(0,0,0,0.07);
           overflow:hidden;
           animation: floatTablet 5.5s ease-in-out infinite 0.4s;
         }
@@ -314,7 +314,7 @@ export default function GetTheAppPage() {
         }
         .ts-header {
           padding:10px 12px 8px;
-          border-bottom:1px solid rgba(255,255,255,0.05);
+          border-bottom:1px solid rgba(0,0,0,0.05);
           display:flex;align-items:center;justify-content:space-between;
         }
         .ts-logo { font-size:11px;font-weight:800;color:var(--gold);letter-spacing:.06em; }
@@ -338,7 +338,7 @@ export default function GetTheAppPage() {
         .ts-bars-label { font-size:7px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px; }
         .ts-bars { display:flex;align-items:flex-end;gap:4px;height:36px; }
         .ts-bar { flex:1;border-radius:3px 3px 0 0; }
-        .ts-row { display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:8px; }
+        .ts-row { display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-size:8px; }
         .ts-row-name { color:rgba(255,255,255,0.6); }
         .ts-bge { padding:2px 6px;border-radius:4px;font-size:7px;font-weight:600; }
         .bg-gn { background:rgba(34,197,94,0.15);color:#22c55e; }
@@ -355,9 +355,9 @@ export default function GetTheAppPage() {
         @keyframes floatLaptop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
         .dev-laptop-body {
           height:112px;
-          background:linear-gradient(160deg,#FFFFFF,#0f1a2e);
+          background:linear-gradient(160deg,#FFFFFF,#FFFFFF);
           border-radius:10px 10px 0 0;
-          border:2px solid rgba(255,255,255,0.12);
+          border:2px solid rgba(0,0,0,0.12);
           border-bottom:none;
           padding:7px;
         }
@@ -371,7 +371,7 @@ export default function GetTheAppPage() {
         .ls-sidebar {
           width:30%;
           background:rgba(245,158,11,0.04);
-          border-right:1px solid rgba(255,255,255,0.05);
+          border-right:1px solid rgba(0,0,0,0.05);
           padding:6px 4px;
         }
         .ls-logo { font-size:7px;font-weight:800;color:var(--gold);padding:0 3px;margin-bottom:7px; }
@@ -394,15 +394,15 @@ export default function GetTheAppPage() {
         .lc3 .ls-card-n { color:#60a5fa; }
         .lc4 .ls-card-n { color:#a78bfa; }
         .ls-card-l { font-size:5px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px; }
-        .ls-row { display:flex;gap:4px;padding:2.5px 0;border-bottom:1px solid rgba(255,255,255,0.04); }
+        .ls-row { display:flex;gap:4px;padding:2.5px 0;border-bottom:1px solid rgba(0,0,0,0.04); }
         .ls-td { font-size:5.5px;color:rgba(255,255,255,0.35);flex:1; }
         .ls-td.bold { color:rgba(255,255,255,0.7); }
         .dev-laptop-hinge {
           height:10px;
-          background:linear-gradient(160deg,#FFFFFF,#0f1a2e);
-          border-left:2px solid rgba(255,255,255,0.1);
-          border-right:2px solid rgba(255,255,255,0.1);
-          border-bottom:2px solid rgba(255,255,255,0.08);
+          background:linear-gradient(160deg,#FFFFFF,#FFFFFF);
+          border-left:2px solid rgba(0,0,0,0.1);
+          border-right:2px solid rgba(0,0,0,0.1);
+          border-bottom:2px solid rgba(0,0,0,0.08);
           border-radius:0 0 6px 6px;
           width:108%; margin-left:-4%;
         }
@@ -412,7 +412,7 @@ export default function GetTheAppPage() {
           width:52%;
           margin:0 auto;
           border-radius:0 0 6px 6px;
-          border:1px solid rgba(255,255,255,0.06);
+          border:1px solid rgba(0,0,0,0.06);
           border-top:none;
         }
 
@@ -434,7 +434,7 @@ export default function GetTheAppPage() {
           text-align: center;
           padding: 24px 16px;
           border-radius: 12px;
-          background: rgba(255,255,255,0.02);
+          background: rgba(0,0,0,0.02);
           border: 1px solid var(--border);
         }
         .stat-number {
@@ -492,7 +492,7 @@ export default function GetTheAppPage() {
           padding: 32px 28px;
           transition: background .2s;
         }
-        .feat-card:hover { background: #131d2e; }
+        .feat-card:hover { background: #F2F2F7; }
         .feat-icon-wrap {
           width: 44px; height: 44px;
           border-radius: 11px;
@@ -632,7 +632,7 @@ export default function GetTheAppPage() {
           overflow: hidden;
           border: 1px solid var(--border);
         }
-        .compare-table thead tr { background: #0a1520; }
+        .compare-table thead tr { background: #F2F2F7; }
         .compare-table th {
           padding: 16px 24px;
           font-size: 13px;
@@ -652,7 +652,7 @@ export default function GetTheAppPage() {
           padding: 14px 24px;
           font-size: 14px;
           color: var(--dim);
-          border-bottom: 1px solid rgba(30,58,95,0.5);
+          border-bottom: 1px solid rgba(229,229,234,0.5);
           background: var(--raised);
         }
         .compare-table tr:last-child td { border-bottom: none; }
@@ -729,13 +729,13 @@ export default function GetTheAppPage() {
         .trust-note {
           margin-top: 28px;
           font-size: 13px;
-          color: rgba(203,213,225,0.6);
+          color: rgba(110,110,115,0.6);
           line-height: 1.6;
         }
 
         /* ── FOOTER ── */
         .footer {
-          background: #080d13;
+          background: #FFFFFF;
           border-top: 1px solid var(--border);
           padding: 48px 32px;
         }
@@ -749,12 +749,12 @@ export default function GetTheAppPage() {
           gap: 24px;
         }
         .footer-left { display:flex;align-items:center;gap:16px; }
-        .footer-logo img { height:32px;mix-blend-mode:screen; }
-        .footer-copy { font-size:13px;color:rgba(203,213,225,0.4); }
+        .footer-logo img { height:32px; }
+        .footer-copy { font-size:13px;color:rgba(110,110,115,0.4); }
         .footer-links { display:flex;gap:24px;flex-wrap:wrap; }
         .footer-link {
           font-size:13px;
-          color:rgba(203,213,225,0.5);
+          color:rgba(110,110,115,0.5);
           text-decoration:none;
           transition:color .2s;
         }
@@ -798,7 +798,7 @@ export default function GetTheAppPage() {
         {/* ── NAV ── */}
         <nav className="nav">
           <a href="/" className="nav-logo">
-            <img src="/logo-full.jpg" alt="Saguaro" height={40} style={{ mixBlendMode: 'screen' }} />
+            <img src="/logo-full.jpg" alt="Saguaro" height={40} style={{ }} />
           </a>
           <div className="nav-spacer" />
           <a href="/login" className="nav-login">Log In</a>
@@ -884,7 +884,7 @@ export default function GetTheAppPage() {
                 <div className="dev-phone-screen">
                   <div className="ps-bar">
                     <span className="ps-time">9:41</span>
-                    <span style={{ fontSize:'8px', color:'rgba(255,255,255,0.5)' }}>●●●</span>
+                    <span style={{ fontSize:'8px', color:'rgba(28,28,30,0.5)' }}>●●●</span>
                   </div>
                   <div className="ps-header">
                     <div className="ps-label">GPS Clock-In</div>
@@ -1249,7 +1249,7 @@ export default function GetTheAppPage() {
           <div className="footer-inner">
             <div className="footer-left">
               <div className="footer-logo">
-                <img src="/logo-full.jpg" alt="Saguaro" height={32} style={{ mixBlendMode: 'screen' }} />
+                <img src="/logo-full.jpg" alt="Saguaro" height={32} style={{ }} />
               </div>
               <span className="footer-copy">© {new Date().getFullYear()} Saguaro Control. All rights reserved.</span>
             </div>

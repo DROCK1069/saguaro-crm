@@ -1346,7 +1346,7 @@ function DocsPage() {
                 style={{
                   flex: 1, padding: '6px 8px', borderRadius: 6, background: 'rgba(139,170,200,0.06)',
                   border: `1px solid ${BORDER}`, color: TEXT, fontSize: 12, outline: 'none',
-                  colorScheme: 'dark',
+                  colorScheme: 'light',
                 }}
               />
               <span style={{ color: DIM, fontSize: 12 }}>to</span>
@@ -1357,7 +1357,7 @@ function DocsPage() {
                 style={{
                   flex: 1, padding: '6px 8px', borderRadius: 6, background: 'rgba(139,170,200,0.06)',
                   border: `1px solid ${BORDER}`, color: TEXT, fontSize: 12, outline: 'none',
-                  colorScheme: 'dark',
+                  colorScheme: 'light',
                 }}
               />
             </div>

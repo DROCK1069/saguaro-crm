@@ -313,7 +313,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
             onChange={e => setTextInput(e.target.value)}
             placeholder="Type annotation text..."
             autoFocus
-            style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,.08)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14 }}
+            style={{ flex: 1, padding: '10px 14px', background: 'rgba(0,0,0,.08)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14 }}
           />
           <button onClick={addTextAnnotation} style={{ padding: '10px 18px', background: GOLD, border: 'none', borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>Add</button>
         </div>
@@ -323,7 +323,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
       {tool === 'crop' && cropStart && cropEnd && !isCropping && Math.abs(cropEnd.x - cropStart.x) > 10 && (
         <div style={{ position: 'absolute', bottom: 160, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10 }}>
           <button onClick={applyCrop} style={{ padding: '10px 24px', background: GREEN, border: 'none', borderRadius: 8, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}>Apply Crop</button>
-          <button onClick={() => { setCropStart(null); setCropEnd(null); renderCanvas(); }} style={{ padding: '10px 24px', background: 'rgba(255,255,255,.1)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Reset</button>
+          <button onClick={() => { setCropStart(null); setCropEnd(null); renderCanvas(); }} style={{ padding: '10px 24px', background: 'rgba(0,0,0,.1)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Reset</button>
         </div>
       )}
 
@@ -339,7 +339,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
               }
               setTool(tool === t.id ? null : t.id);
             }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px', background: tool === t.id ? 'rgba(212,160,23,.2)' : 'rgba(255,255,255,.06)', border: `1px solid ${tool === t.id ? GOLD : 'rgba(255,255,255,.1)'}`, borderRadius: 10, color: tool === t.id ? GOLD : DIM, cursor: 'pointer', minWidth: 52 }}>
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px', background: tool === t.id ? 'rgba(212,160,23,.2)' : 'rgba(0,0,0,.06)', border: `1px solid ${tool === t.id ? GOLD : 'rgba(0,0,0,.1)'}`, borderRadius: 10, color: tool === t.id ? GOLD : DIM, cursor: 'pointer', minWidth: 52 }}>
               <span style={{ fontSize: 18 }}>{t.icon}</span>
               <span style={{ fontSize: 10, fontWeight: 600 }}>{t.label}</span>
             </button>
@@ -359,7 +359,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', marginBottom: 6 }}>
             {colors.map(c => (
               <button key={c} onClick={() => setDrawColor(c)}
-                style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: drawColor === c ? '3px solid #fff' : '2px solid rgba(255,255,255,.2)', cursor: 'pointer' }} />
+                style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: drawColor === c ? '3px solid #fff' : '2px solid #E5E5EA', cursor: 'pointer' }} />
             ))}
             <input type="range" min={1} max={10} value={drawWidth} onChange={e => setDrawWidth(Number(e.target.value))}
               style={{ width: 60, accentColor: GOLD }} />
@@ -381,6 +381,6 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
 }
 
 const qBtn: React.CSSProperties = {
-  padding: '6px 12px', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)',
+  padding: '6px 12px', background: 'rgba(0,0,0,.06)', border: '1px solid rgba(0,0,0,.1)',
   borderRadius: 8, color: '#6E6E73', fontSize: 11, fontWeight: 600, cursor: 'pointer',
 };

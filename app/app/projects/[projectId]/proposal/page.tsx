@@ -163,7 +163,7 @@ export default function ProposalPage() {
               {proposals.map(p => {
                 const sc = STATUS_MAP[p.status.replace(' ', '_')] || STATUS_MAP[p.status] || { bg: 'rgba(143,163,192,.2)', color: DIM };
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid rgba(38,51,71,.4)', background: p.status === 'Accepted' ? 'rgba(61,214,140,.04)' : 'transparent' }}>
+                  <tr key={p.id} style={{ borderBottom: '1px solid rgba(229,229,234,.4)', background: p.status === 'Accepted' ? 'rgba(61,214,140,.04)' : 'transparent' }}>
                     <td style={{ padding: '10px 14px', color: GOLD, fontWeight: 700 }}>{p.version}</td>
                     <td style={{ padding: '10px 14px', color: DIM }}>{p.created_date}</td>
                     <td style={{ padding: '10px 14px', color: TEXT, fontWeight: 800, fontSize: 14 }}>${p.amount?.toLocaleString()}</td>

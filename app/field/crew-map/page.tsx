@@ -56,10 +56,10 @@ const ACTIVITY_CONFIG: Record<ActivityStatus, { color: string; label: string }> 
 };
 
 const glass: React.CSSProperties = {
-  background: 'rgba(26,31,46,0.7)',
+  background: 'rgba(255,255,255,0.7)',
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
-  border: '1px solid rgba(255,255,255,0.06)',
+  border: '1px solid rgba(0,0,0,0.06)',
   borderRadius: 16,
 };
 
@@ -245,7 +245,7 @@ function CrewMapPage() {
           onClick={toggleSharing}
           style={{
             width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-            background: sharing ? GREEN : 'rgba(255,255,255,0.1)',
+            background: sharing ? GREEN : 'rgba(0,0,0,0.1)',
             position: 'relative', transition: 'background 0.3s',
           }}
         >
@@ -287,10 +287,10 @@ function CrewMapPage() {
           {[1, 2, 3, 4, 5].map(i => (
             <div key={i} style={{ ...glass, padding: 16, height: 64, animation: 'pulse 1.5s ease-in-out infinite' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,0.04)' }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 6, height: 14, width: '50%', marginBottom: 6 }} />
-                  <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6, height: 10, width: '30%' }} />
+                  <div style={{ background: 'rgba(0,0,0,0.04)', borderRadius: 6, height: 14, width: '50%', marginBottom: 6 }} />
+                  <div style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, height: 10, width: '30%' }} />
                 </div>
               </div>
             </div>
@@ -366,10 +366,10 @@ function CrewCard({ member, activity, timeAgo }: { member: CrewMember; activity:
 
   return (
     <div style={{
-      background: 'rgba(26,31,46,0.7)',
+      background: 'rgba(255,255,255,0.7)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      border: '1px solid rgba(0,0,0,0.06)',
       borderRadius: 16,
       padding: '12px 14px',
       display: 'flex', alignItems: 'center', gap: 12,
@@ -388,7 +388,7 @@ function CrewCard({ member, activity, timeAgo }: { member: CrewMember; activity:
         <div style={{
           position: 'absolute', bottom: -1, right: -1,
           width: 12, height: 12, borderRadius: '50%',
-          background: cfg.color, border: '2px solid rgba(26,31,46,1)',
+          background: cfg.color, border: '2px solid #E5E5EA',
           boxShadow: `0 0 4px ${cfg.color}`,
         }} />
       </div>

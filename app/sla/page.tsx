@@ -94,9 +94,9 @@ export default function SLAPage() {
               </thead>
               <tbody>
                 {SUPPORT_ROWS.map((row,i)=>(
-                  <tr key={row.priority} style={{borderTop:`1px solid ${BORDER}`,background:i%2===0?'transparent':'rgba(255,255,255,.01)'}}>
+                  <tr key={row.priority} style={{borderTop:`1px solid ${BORDER}`,background:i%2===0?'transparent':'rgba(0,0,0,.01)'}}>
                     <td style={{padding:'14px 20px'}}>
-                      <span style={{fontSize:11,fontWeight:800,padding:'3px 10px',borderRadius:4,background:row.priority==='Critical'?'rgba(239,68,68,.15)':row.priority==='High'?'rgba(212,160,23,.12)':'rgba(255,255,255,.06)',color:row.priority==='Critical'?RED:row.priority==='High'?GOLD:DIM}}>
+                      <span style={{fontSize:11,fontWeight:800,padding:'3px 10px',borderRadius:4,background:row.priority==='Critical'?'rgba(239,68,68,.15)':row.priority==='High'?'rgba(212,160,23,.12)':'rgba(0,0,0,.06)',color:row.priority==='Critical'?RED:row.priority==='High'?GOLD:DIM}}>
                         {row.priority.toUpperCase()}
                       </span>
                     </td>
@@ -141,7 +141,7 @@ export default function SLAPage() {
           <p style={{color:DIM,textAlign:'center',marginBottom:32,fontSize:14}}>The following are not counted against our uptime commitment.</p>
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
             {EXCLUSIONS.map((e,i)=>(
-              <div key={i} style={{display:'flex',gap:12,alignItems:'flex-start',padding:'12px 16px',background:'rgba(255,255,255,.02)',border:`1px solid ${BORDER}`,borderRadius:8}}>
+              <div key={i} style={{display:'flex',gap:12,alignItems:'flex-start',padding:'12px 16px',background:'rgba(0,0,0,.02)',border:`1px solid ${BORDER}`,borderRadius:8}}>
                 <span style={{color:DIM,fontWeight:700,fontSize:13,marginTop:1}}>✗</span>
                 <span style={{color:DIM,fontSize:13,lineHeight:1.6}}>{e}</span>
               </div>

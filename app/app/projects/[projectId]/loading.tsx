@@ -86,7 +86,7 @@ export default function ProjectLoading() {
               key={i}
               style={{
                 padding: '12px 14px',
-                borderBottom: `1px solid rgba(38,51,71,.4)`,
+                borderBottom: `1px solid rgba(229,229,234,.4)`,
                 display: 'flex',
                 gap: 20,
                 alignItems: 'center',

@@ -314,7 +314,7 @@ export default function BidPackageDetailPage() {
               </thead>
               <tbody>
                 {pkg.sov_items.map(item => (
-                  <tr key={item.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                  <tr key={item.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                     <td style={{ padding: '11px 16px', color: TEXT }}>{item.description}</td>
                     <td style={{ padding: '11px 16px', color: DIM }}>{item.quantity}</td>
                     <td style={{ padding: '11px 16px', color: DIM }}>{item.unit}</td>
@@ -350,7 +350,7 @@ export default function BidPackageDetailPage() {
                 {submissions.map(sub => {
                   const isAwarded = pkg.awarded_to === sub.sub_name || (pkg.awarded_amount !== null && pkg.awarded_amount === sub.amount);
                   return (
-                    <tr key={sub.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)`, background: isAwarded ? 'rgba(26,138,74,.04)' : 'transparent' }}>
+                    <tr key={sub.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)`, background: isAwarded ? 'rgba(26,138,74,.04)' : 'transparent' }}>
                       <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>
                         {sub.sub_name}
                         {isAwarded && <span style={{ fontSize: 10, color: '#1db954', marginLeft: 8, fontWeight: 700 }}>★ AWARDED</span>}
@@ -385,7 +385,7 @@ export default function BidPackageDetailPage() {
               <span style={{ fontSize: 12, color: DIM }}>{pkg.invited_subs.length} invited · {submittedSubs.length} submitted</span>
               <button
                 onClick={() => setShowInviteForm(!showInviteForm)}
-                style={{ padding: '5px 12px', background: showInviteForm ? 'rgba(255,255,255,.05)' : 'rgba(212,160,23,.1)', border: `1px solid ${showInviteForm ? BORDER : 'rgba(212,160,23,.3)'}`, borderRadius: 6, color: showInviteForm ? DIM : GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                style={{ padding: '5px 12px', background: showInviteForm ? 'rgba(0,0,0,.05)' : 'rgba(212,160,23,.1)', border: `1px solid ${showInviteForm ? BORDER : 'rgba(212,160,23,.3)'}`, borderRadius: 6, color: showInviteForm ? DIM : GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                 {showInviteForm ? 'Cancel' : '+ Invite More'}
               </button>
             </div>
@@ -427,7 +427,7 @@ export default function BidPackageDetailPage() {
                   const sc = subStatusColor(sub.status);
                   const isAwarded = pkg.awarded_amount !== null && sub.bid_amount === pkg.awarded_amount;
                   return (
-                    <tr key={sub.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                    <tr key={sub.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                       <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{sub.company_name}</td>
                       <td style={{ padding: '12px 16px', color: DIM }}>{sub.contact_name || '—'}</td>
                       <td style={{ padding: '12px 16px', color: DIM, fontSize: 12 }}>{sub.email || '—'}</td>

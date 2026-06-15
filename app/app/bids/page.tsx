@@ -252,7 +252,7 @@ function BidsPageInner() {
         {pipelineLoading ? (
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
             {Array.from({length:6}).map((_,i)=>(
-              <div key={i} style={{display:'flex',alignItems:'center',gap:16,padding:'14px',border:`1px solid rgba(38,51,71,.5)`,borderRadius:8}}>
+              <div key={i} style={{display:'flex',alignItems:'center',gap:16,padding:'14px',border:`1px solid rgba(229,229,234,.5)`,borderRadius:8}}>
                 <Skeleton width="30%" height={14}/>
                 <Skeleton width="15%" height={14}/>
                 <Skeleton width="12%" height={14}/>
@@ -284,7 +284,7 @@ function BidsPageInner() {
               ))}
             </tr></thead>
             <tbody>{opportunities.map(op=>(
-              <tr key={op.id} style={{borderBottom:`1px solid rgba(38,51,71,.5)`}}>
+              <tr key={op.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
                 <td style={{padding:'12px 14px',color:TEXT,fontWeight:600}}>{op.name}</td>
                 <td style={{padding:'12px 14px',color:DIM}}>{op.trade}</td>
                 <td style={{padding:'12px 14px'}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(26,95,168,.12)',color:'#4a9de8',textTransform:'uppercase' as const}}>{op.status}</span></td>
@@ -341,7 +341,7 @@ function BidsPageInner() {
         {/* LOADING — skeleton rows, never computed zeros */}
         {historyLoading&&<div style={{display:'flex',flexDirection:'column',gap:10}}>
           {Array.from({length:6}).map((_,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:16,padding:'14px',border:`1px solid rgba(38,51,71,.5)`,borderRadius:8}}>
+            <div key={i} style={{display:'flex',alignItems:'center',gap:16,padding:'14px',border:`1px solid rgba(229,229,234,.5)`,borderRadius:8}}>
               <Skeleton width="22%" height={14}/>
               <Skeleton width="12%" height={14}/>
               <Skeleton width="12%" height={14}/>
@@ -379,7 +379,7 @@ function BidsPageInner() {
               : b.outcome==='pending'
               ? {bg:'rgba(212,160,23,.12)',c:GOLD}
               : {bg:'rgba(143,163,192,.1)',c:DIM};
-            return <tr key={b.id} style={{borderBottom:`1px solid rgba(38,51,71,.5)`}}>
+            return <tr key={b.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
               <td style={{padding:'12px 14px',color:TEXT,fontWeight:600,maxWidth:220,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{b.project_name}</td>
               <td style={{padding:'12px 14px',color:DIM}}>{b.project_type}</td>
               <td style={{padding:'12px 14px',color:DIM}}>{b.bid_date}</td>
@@ -458,7 +458,7 @@ function BidsPageInner() {
       </div>}
 
       {/* ── Score a Bid Modal ─────────────────────────────────────────────────── */}
-      {showScore&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.6)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+      {showScore&&<div style={{position:'fixed',inset:0,background:'#F2F2F7',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
         <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:28,width:480,maxWidth:'95vw',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
             <div style={{fontWeight:800,fontSize:17,color:TEXT}}>🤖 Score This Bid</div>

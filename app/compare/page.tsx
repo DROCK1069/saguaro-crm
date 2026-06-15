@@ -41,7 +41,7 @@ export default function ComparePage() {
             alt="Saguaro"
             width={132}
             height={44}
-            style={{ height: 44, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }}
+            style={{ height: 44, width: 'auto', objectFit: 'contain' }}
           />
         </a>
         <div style={{ flex: 1 }} />

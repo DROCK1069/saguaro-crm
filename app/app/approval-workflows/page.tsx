@@ -208,7 +208,7 @@ const inputStyle: React.CSSProperties = {
 const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
 
 const overlayStyle: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', display: 'flex',
+  position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex',
   alignItems: 'center', justifyContent: 'center', zIndex: 1000,
 };
 

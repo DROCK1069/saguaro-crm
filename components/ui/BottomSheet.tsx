@@ -47,7 +47,7 @@ export function BottomSheet({ open, onClose, title, children, height = 'auto' }:
         position: 'fixed',
         inset: 0,
         zIndex: 600,
-        background: 'rgba(0,0,0,0.65)',
+        background: '#F2F2F7',
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'center',

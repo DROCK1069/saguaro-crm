@@ -34,7 +34,7 @@ export default function MarketingNav() {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
         background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: scrolled ? '1px solid rgba(212,160,23,0.25)' : '1px solid rgba(38,51,71,0.8)',
+        borderBottom: scrolled ? '1px solid rgba(212,160,23,0.25)' : '1px solid rgba(229,229,234,0.8)',
         transition: 'all 0.3s ease', height: '58px',
         display: 'flex', alignItems: 'center',
       }}>
@@ -53,15 +53,15 @@ export default function MarketingNav() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }} className="mn-desktop">
             {navLinks.map(link => (
               <button key={link.label} onClick={() => scrollTo(link.href)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.65)', fontSize: '13px', fontWeight: 400, letterSpacing: '0.04em', padding: 0, transition: 'color 0.2s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,1)'}
-                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.65)'}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(28,28,30,0.65)', fontSize: '13px', fontWeight: 400, letterSpacing: '0.04em', padding: 0, transition: 'color 0.2s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#C8881C'}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(28,28,30,0.65)'}
               >{link.label}</button>
             ))}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="mn-desktop">
-            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
+            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid #E5E5EA', borderRadius: '6px', color: 'rgba(28,28,30,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
             <Link href="/signup" style={{ padding: '7px 18px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
           </div>
 
@@ -75,7 +75,7 @@ export default function MarketingNav() {
         <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(255,255,255,0.99)', borderBottom: '1px solid #E5E5EA', padding: '8px 0', backdropFilter: 'blur(12px)' }}>
           {[...navLinks, { label: 'Log In', href: '/login' }].map(link => (
             <button key={link.href} onClick={() => scrollTo(link.href)}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 24px', fontSize: '15px', fontWeight: 600, color: '#1C1C1E', background: 'none', border: 'none', borderBottom: '1px solid rgba(38,51,71,0.5)', cursor: 'pointer' }}>
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 24px', fontSize: '15px', fontWeight: 600, color: '#1C1C1E', background: 'none', border: 'none', borderBottom: '1px solid rgba(229,229,234,0.5)', cursor: 'pointer' }}>
               {link.label}
             </button>
           ))}

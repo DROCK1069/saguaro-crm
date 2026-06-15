@@ -622,7 +622,7 @@ function ContractsPage() {
                     onClick={() => handleComplianceToggle(c, 'insurance_verified')}
                     style={{
                       width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                      background: c.insurance_verified ? GREEN : '#374151',
+                      background: c.insurance_verified ? GREEN : '#6E6E73',
                       position: 'relative', transition: 'background 0.2s',
                     }}
                   >
@@ -644,7 +644,7 @@ function ContractsPage() {
                     onClick={() => handleComplianceToggle(c, 'bonding_verified')}
                     style={{
                       width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                      background: c.bonding_verified ? GREEN : '#374151',
+                      background: c.bonding_verified ? GREEN : '#6E6E73',
                       position: 'relative', transition: 'background 0.2s',
                     }}
                   >
@@ -849,7 +849,7 @@ function ContractsPage() {
               </div>
               <button onClick={() => setFInsuranceReq(!fInsuranceReq)} style={{
                 width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                background: fInsuranceReq ? GREEN : '#374151', position: 'relative', transition: 'background 0.2s',
+                background: fInsuranceReq ? GREEN : '#6E6E73', position: 'relative', transition: 'background 0.2s',
               }}>
                 <div style={{
                   width: 22, height: 22, borderRadius: 11, background: '#fff',
@@ -865,7 +865,7 @@ function ContractsPage() {
               </div>
               <button onClick={() => setFBondingReq(!fBondingReq)} style={{
                 width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                background: fBondingReq ? GREEN : '#374151', position: 'relative', transition: 'background 0.2s',
+                background: fBondingReq ? GREEN : '#6E6E73', position: 'relative', transition: 'background 0.2s',
               }}>
                 <div style={{
                   width: 22, height: 22, borderRadius: 11, background: '#fff',

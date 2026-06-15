@@ -173,7 +173,7 @@ export default function W9Portal() {
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 20 }}>
             <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, fontWeight: 700, fontSize: 14 }}>Part III — Certification</div>
             <div style={{ padding: 20 }}>
-              <div style={{ fontSize: 12, color: DIM, lineHeight: 1.7, marginBottom: 16, background: 'rgba(0,0,0,.2)', borderRadius: 6, padding: '12px 14px' }}>
+              <div style={{ fontSize: 12, color: DIM, lineHeight: 1.7, marginBottom: 16, background: '#F2F2F7', borderRadius: 6, padding: '12px 14px' }}>
                 Under penalties of perjury, I certify that: (1) The number shown on this form is my correct taxpayer identification number; (2) I am not subject to backup withholding; (3) I am a U.S. citizen or other U.S. person; (4) The FATCA code(s) entered on this form (if any) indicating that I am exempt from FATCA reporting is correct.
               </div>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 20 }}>

@@ -45,7 +45,7 @@ const C = {
   GREEN:  '#1a8a4a',
   RED:    '#c03030',
   BLUE:   '#1a5fa8',
-  CARD:   '#162032',
+  CARD:   '#FFFFFF',
 } as const;
 
 // ─── MARKDOWN RENDERER ─────────────────────────────────────────────────────────
@@ -357,7 +357,7 @@ export default function SageV6Chat({
         flexDirection: 'column',
         background:  C.RAISED,
         border:      `1px solid ${C.BORDER}`,
-        boxShadow:   '0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+        boxShadow:   '0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.04)',
         overflow:    'hidden',
         animation:   'slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards',
         transformOrigin: 'bottom right',

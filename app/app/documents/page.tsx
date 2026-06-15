@@ -56,7 +56,7 @@ function SkeletonRows({ rows = 4, cols }: { rows?: number; cols: number }) {
   return (
     <>
       {Array.from({ length: rows }).map((_, r) => (
-        <tr key={r} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+        <tr key={r} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
           {Array.from({ length: cols }).map((_, c) => (
             <td key={c} style={{ padding: '12px 16px' }}>
               <Skeleton height={14} width={c === 0 ? '50%' : '70%'} />
@@ -291,7 +291,7 @@ export default function DocumentsPage() {
                   ) : payApps.map(pa => {
                     const sc = statusConfig[pa.status] || statusConfig.draft;
                     return (
-                      <tr key={pa.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                      <tr key={pa.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                         <td style={{ padding: '12px 16px', color: GOLD, fontWeight: 700 }}>#{(pa.appNo ?? pa.app_no ?? '').toString().padStart(3, '0')}</td>
                         <td style={{ padding: '12px 16px', color: DIM }}>{pa.period}</td>
                         <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{fmt(pa.amount)}</td>
@@ -356,7 +356,7 @@ export default function DocumentsPage() {
                   ) : lienWaivers.map(lw => {
                     const sc = statusConfig[lw.status] || statusConfig.pending;
                     return (
-                      <tr key={lw.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                      <tr key={lw.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                         <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{lw.subName ?? lw.sub_name}</td>
                         <td style={{ padding: '12px 16px', color: DIM }}>{lw.type}</td>
                         <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(lw.amount)}</td>
@@ -501,7 +501,7 @@ export default function DocumentsPage() {
                   ) : payroll.map(pr => {
                     const sc = statusConfig[pr.status] || statusConfig.draft;
                     return (
-                      <tr key={pr.id} style={{ borderBottom: `1px solid rgba(38,51,71,.5)` }}>
+                      <tr key={pr.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
                         <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{pr.weekEnding ?? pr.week_ending}</td>
                         <td style={{ padding: '12px 16px', color: DIM }}>{pr.employees}</td>
                         <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(pr.totalGross ?? pr.total_gross ?? 0)}</td>
@@ -574,7 +574,7 @@ export default function DocumentsPage() {
                     <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Closeout Progress</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: GOLD }}>{done} / {CLOSEOUT_CHECKLIST.length} items ({pct}%)</span>
                   </div>
-                  <div style={{ height: 8, background: 'rgba(255,255,255,.06)', borderRadius: 4 }}>
+                  <div style={{ height: 8, background: 'rgba(0,0,0,.06)', borderRadius: 4 }}>
                     <div style={{
                       height: '100%', width: `${pct}%`,
                       background: `linear-gradient(90deg,${GOLD},#E0A030)`,
@@ -592,7 +592,7 @@ export default function DocumentsPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 14,
                     padding: '14px 20px',
-                    borderBottom: idx < CLOSEOUT_CHECKLIST.length - 1 ? `1px solid rgba(38,51,71,.5)` : 'none',
+                    borderBottom: idx < CLOSEOUT_CHECKLIST.length - 1 ? `1px solid rgba(229,229,234,.5)` : 'none',
                     background: item.done ? 'rgba(61,214,140,.03)' : 'transparent',
                   }}
                 >

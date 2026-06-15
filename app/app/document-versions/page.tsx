@@ -419,7 +419,7 @@ export default function DocumentVersionsPage() {
   };
 
   const sOverlay: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex',
+    position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex',
     alignItems: 'center', justifyContent: 'center', zIndex: 1000,
   };
 
@@ -601,12 +601,12 @@ export default function DocumentVersionsPage() {
                 <button style={sBtn(C.PURPLE, true)} onClick={() => openModal(doc, 'compare')} disabled={doc.versions.length < 2}>Compare</button>
                 <button style={sBtn(C.GOLD, true)} onClick={() => openModal(doc, 'upload')}>Upload</button>
                 {!doc.checkedOutBy ? (
-                  <button style={sBtn('#374151', true)} onClick={() => handleCheckOut(doc.id)}>Check Out</button>
+                  <button style={sBtn(C.DIM, true)} onClick={() => handleCheckOut(doc.id)}>Check Out</button>
                 ) : doc.checkedOutBy === 'You' ? (
                   <button style={sBtn(C.GREEN, true)} onClick={() => handleCheckIn(doc.id)}>Check In</button>
                 ) : null}
-                <button style={sBtn('#374151', true)} onClick={() => openModal(doc, 'metadata')}>Info</button>
-                <button style={sBtn('#374151', true)} onClick={() => { setSelectedDoc(doc); openModal(doc, 'access'); }}>Access</button>
+                <button style={sBtn(C.DIM, true)} onClick={() => openModal(doc, 'metadata')}>Info</button>
+                <button style={sBtn(C.DIM, true)} onClick={() => { setSelectedDoc(doc); openModal(doc, 'access'); }}>Access</button>
               </div>
             </div>
           ))}
@@ -624,7 +624,7 @@ export default function DocumentVersionsPage() {
                 <h2 style={{ margin: 0, fontSize: 18, color: C.GOLD }}>Version History</h2>
                 <p style={{ margin: '4px 0 0', color: C.DIM, fontSize: 13 }}>{selectedDoc.title}</p>
               </div>
-              <button style={{ ...sBtn('#374151', true), fontSize: 18 }} onClick={closeModal}>x</button>
+              <button style={{ ...sBtn('#6E6E73', true), fontSize: 18 }} onClick={closeModal}>x</button>
             </div>
 
             <div style={{ position: 'relative', paddingLeft: 24 }}>
@@ -681,7 +681,7 @@ export default function DocumentVersionsPage() {
           <div style={{ ...sModal, width: 760 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 18, color: C.GOLD }}>Compare Versions</h2>
-              <button style={{ ...sBtn('#374151', true), fontSize: 18 }} onClick={closeModal}>x</button>
+              <button style={{ ...sBtn('#6E6E73', true), fontSize: 18 }} onClick={closeModal}>x</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
@@ -770,7 +770,7 @@ export default function DocumentVersionsPage() {
               <h2 style={{ margin: 0, fontSize: 18, color: C.GOLD }}>
                 {selectedDoc ? `Upload New Version — ${selectedDoc.title}` : 'New Document'}
               </h2>
-              <button style={{ ...sBtn('#374151', true), fontSize: 18 }} onClick={closeModal}>x</button>
+              <button style={{ ...sBtn('#6E6E73', true), fontSize: 18 }} onClick={closeModal}>x</button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -831,7 +831,7 @@ export default function DocumentVersionsPage() {
               )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
-                <button style={sBtn('#374151')} onClick={closeModal}>Cancel</button>
+                <button style={sBtn(C.DIM)} onClick={closeModal}>Cancel</button>
                 <button style={sBtn(C.GOLD)} onClick={handleUploadVersion}>
                   {selectedDoc ? 'Upload Version' : 'Create Document'}
                 </button>
@@ -847,7 +847,7 @@ export default function DocumentVersionsPage() {
           <div style={sModal} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 18, color: C.GOLD }}>Document Metadata</h2>
-              <button style={{ ...sBtn('#374151', true), fontSize: 18 }} onClick={closeModal}>x</button>
+              <button style={{ ...sBtn('#6E6E73', true), fontSize: 18 }} onClick={closeModal}>x</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -907,7 +907,7 @@ export default function DocumentVersionsPage() {
                 <h2 style={{ margin: 0, fontSize: 18, color: C.GOLD }}>Access Control</h2>
                 <p style={{ margin: '4px 0 0', color: C.DIM, fontSize: 13 }}>{selectedDoc.title}</p>
               </div>
-              <button style={{ ...sBtn('#374151', true), fontSize: 18 }} onClick={closeModal}>x</button>
+              <button style={{ ...sBtn('#6E6E73', true), fontSize: 18 }} onClick={closeModal}>x</button>
             </div>
 
             {/* Current access list */}
@@ -960,7 +960,7 @@ export default function DocumentVersionsPage() {
           <div style={sModal} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 18, color: C.PURPLE }}>Bulk Upload</h2>
-              <button style={{ ...sBtn('#374151', true), fontSize: 18 }} onClick={closeModal}>x</button>
+              <button style={{ ...sBtn('#6E6E73', true), fontSize: 18 }} onClick={closeModal}>x</button>
             </div>
 
             <div style={{ marginBottom: 16 }}>
@@ -1011,7 +1011,7 @@ export default function DocumentVersionsPage() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button style={sBtn('#374151')} onClick={closeModal}>Cancel</button>
+              <button style={sBtn(C.DIM)} onClick={closeModal}>Cancel</button>
               <button style={sBtn(C.PURPLE)} onClick={handleBulkUpload} disabled={bulkFiles.length === 0}>
                 Upload {bulkFiles.length} File{bulkFiles.length !== 1 ? 's' : ''}
               </button>

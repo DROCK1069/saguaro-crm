@@ -404,7 +404,7 @@ function SearchPage() {
               key={i}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 0', borderTop: i > 0 ? `1px solid rgba(30,58,95,.5)` : 'none',
+                padding: '8px 0', borderTop: i > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
               }}
             >
               <button
@@ -533,7 +533,7 @@ function SearchPage() {
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '12px 14px', cursor: 'pointer',
                 background: 'transparent', border: 'none',
-                borderTop: idx > 0 ? `1px solid rgba(30,58,95,.5)` : 'none',
+                borderTop: idx > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
                 transition: 'background .15s',
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.04)'; }}

@@ -134,7 +134,7 @@ export default function SubPortalLogin() {
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'rgba(255,255,255,0.05)',
+                background: 'rgba(0,0,0,0.05)',
                 border: `1px solid ${error ? RED : BORDER}`,
                 borderRadius: 8,
                 color: TEXT,
@@ -175,7 +175,7 @@ export default function SubPortalLogin() {
             </button>
 
             {/* Have a direct link */}
-            <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, borderRadius: 8 }}>
+            <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(0,0,0,0.03)', border: `1px solid ${BORDER}`, borderRadius: 8 }}>
               <div style={{ fontSize: 11, color: DIM, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Have a direct portal link?</div>
               <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>
                 If your GC sent you a direct URL, click the link in that email instead of entering your email here.

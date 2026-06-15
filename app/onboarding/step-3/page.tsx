@@ -12,7 +12,7 @@ const STEPS = [
 ];
 
 const inputStyle: React.CSSProperties = {
-  width:'100%',padding:'11px 14px',background:'rgba(255,255,255,.04)',
+  width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',
   border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,
   outline:'none',boxSizing:'border-box',
 };
@@ -77,8 +77,8 @@ export default function OnboardingStep3() {
                 <div style={{
                   width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
                   fontSize:14,fontWeight:800,
-                  background: s.done ? GREEN : s.active ? GOLD : 'rgba(255,255,255,.06)',
-                  color: (s.done||s.active) ? '#F2F2F7' : DIM,
+                  background: s.done ? GREEN : s.active ? GOLD : 'rgba(0,0,0,.06)',
+                  color: (s.done||s.active) ? '#1C1C1E' : DIM,
                   border:`2px solid ${s.done ? GREEN : s.active ? GOLD : BORDER}`,
                 }}>
                   {s.done ? '✓' : s.num}
@@ -122,7 +122,7 @@ export default function OnboardingStep3() {
               </div>
               <div>
                 <label style={labelStyle}>Start Date</label>
-                <SaguaroDatePicker value={form.startDate} onChange={v => setForm(p=>({...p,startDate:v}))} style={{...inputStyle,colorScheme:'dark'}}/>
+                <SaguaroDatePicker value={form.startDate} onChange={v => setForm(p=>({...p,startDate:v}))} style={{...inputStyle,colorScheme:'light'}}/>
               </div>
             </div>
 

@@ -96,7 +96,7 @@ export default function IntelligencePage() {
                 <span style={{color:TEXT,fontWeight:600}}>{t.trade}</span>
                 <span style={{color:t.wr>=60?'#3dd68c':t.wr>0?GOLD:RED,fontWeight:700}}>{t.wr}% win ({t.wins}/{t.bids})</span>
               </div>
-              <div style={{height:5,background:'rgba(255,255,255,.06)',borderRadius:3}}>
+              <div style={{height:5,background:'rgba(0,0,0,.06)',borderRadius:3}}>
                 <div style={{height:'100%',width:`${t.wr}%`,background:t.wr>=60?'#3dd68c':t.wr>0?GOLD:RED,borderRadius:3}}/>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function IntelligencePage() {
               {['Project','Trade','Bid','Margin','Result'].map(h=><th key={h} style={{padding:'9px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
             </tr></thead>
             <tbody>{outcomes.map((o,i)=>(
-              <tr key={i} style={{borderBottom:`1px solid rgba(38,51,71,.4)`}}>
+              <tr key={i} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
                 <td style={{padding:'11px 14px',color:TEXT,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{o.project}</td>
                 <td style={{padding:'11px 14px',color:DIM}}>{o.trade}</td>
                 <td style={{padding:'11px 14px',color:TEXT}}>${o.amount.toLocaleString()}</td>

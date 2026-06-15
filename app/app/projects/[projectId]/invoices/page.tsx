@@ -192,7 +192,7 @@ export default function InvoicesPage() {
                 const effectiveStatus = overdue ? 'Overdue' : inv.status;
                 const sc = STATUS_MAP[effectiveStatus] || { bg: 'rgba(143,163,192,.2)', color: DIM };
                 return (
-                  <tr key={inv.id} style={{ borderBottom: '1px solid rgba(38,51,71,.4)', background: overdue ? 'rgba(239,68,68,.04)' : 'transparent' }}>
+                  <tr key={inv.id} style={{ borderBottom: '1px solid rgba(229,229,234,.4)', background: overdue ? 'rgba(239,68,68,.04)' : 'transparent' }}>
                     <td style={{ padding: '10px 14px', color: GOLD, fontWeight: 700 }}>{inv.invoice_num}</td>
                     <td style={{ padding: '10px 14px', color: DIM }}>{inv.period}</td>
                     <td style={{ padding: '10px 14px', position: 'relative' as const }}>

@@ -484,7 +484,7 @@ export default function IntegrationsPage() {
       {/* Sage 300 Setup Modal */}
       {showSetup === 'sage300' && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+          position: 'fixed', inset: 0, background: '#F2F2F7',
           backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowSetup(null)}>
           <div

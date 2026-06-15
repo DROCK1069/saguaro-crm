@@ -14,7 +14,7 @@ const GREEN = '#22c55e';
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '11px 14px',
-  background: '#0a0f16',
+  background: '#FFFFFF',
   border: `1px solid ${BORDER}`,
   borderRadius: 8,
   color: TEXT,
@@ -321,8 +321,8 @@ export default function SandboxPage() {
                       width: 26, height: 26, borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 700,
-                      background: step >= s ? GOLD : 'rgba(255,255,255,0.06)',
-                      color: step >= s ? '#F2F2F7' : DIM,
+                      background: step >= s ? GOLD : 'rgba(0,0,0,0.06)',
+                      color: step >= s ? '#1C1C1E' : DIM,
                       border: step >= s ? 'none' : `1px solid ${BORDER}`,
                       transition: 'all 0.2s',
                     }}>
@@ -335,7 +335,7 @@ export default function SandboxPage() {
                     {s < 2 && (
                       <div style={{
                         flex: 1, height: 2, borderRadius: 1,
-                        background: step > s ? GOLD : 'rgba(255,255,255,0.08)',
+                        background: step > s ? GOLD : 'rgba(0,0,0,0.08)',
                         transition: 'background 0.3s',
                       }} />
                     )}
@@ -492,7 +492,7 @@ export default function SandboxPage() {
                 )}
 
                 {/* Legal */}
-                <p style={{ fontSize: 11, color: 'rgba(203,213,225,0.5)', textAlign: 'center', marginTop: 14, marginBottom: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: 11, color: 'rgba(110,110,115,0.5)', textAlign: 'center', marginTop: 14, marginBottom: 0, lineHeight: 1.6 }}>
                   By signing up you agree to our{' '}
                   <Link href="/terms" style={{ color: DIM, textDecoration: 'underline' }}>Terms of Service</Link>.{' '}
                   Cancel anytime.
@@ -594,7 +594,7 @@ export default function SandboxPage() {
                       style={{
                         display: 'flex', alignItems: 'flex-start', gap: 12,
                         padding: '13px 18px',
-                        borderBottom: i < 3 ? `1px solid rgba(30,58,95,0.5)` : 'none',
+                        borderBottom: i < 3 ? `1px solid rgba(229,229,234,0.5)` : 'none',
                       }}
                     >
                       <PulseDot />
@@ -603,7 +603,7 @@ export default function SandboxPage() {
                         <span style={{ fontSize: 13, color: DIM }}> from {city} </span>
                         <span style={{ fontSize: 13, color: DIM }}>{action}</span>
                       </div>
-                      <span style={{ fontSize: 11, color: 'rgba(203,213,225,0.4)', whiteSpace: 'nowrap', marginTop: 2 }}>{ago}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(110,110,115,0.4)', whiteSpace: 'nowrap', marginTop: 2 }}>{ago}</span>
                     </div>
                   ))}
                 </div>
@@ -625,16 +625,16 @@ export default function SandboxPage() {
                     <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5, borderLeft: `1px solid ${BORDER}` }}>Procore Demo</div>
                   </div>
                   {/* Row 1 */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: `1px solid rgba(30,58,95,0.5)` }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: `1px solid rgba(229,229,234,0.5)` }}>
                     <div style={{ padding: '12px 14px', color: DIM, fontWeight: 600 }}>Setup time</div>
-                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid rgba(30,58,95,0.5)` }}>60 seconds</div>
-                    <div style={{ padding: '12px 14px', color: 'rgba(203,213,225,0.5)', borderLeft: `1px solid rgba(30,58,95,0.5)` }}>Schedule a call (2–5 days)</div>
+                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid rgba(229,229,234,0.5)` }}>60 seconds</div>
+                    <div style={{ padding: '12px 14px', color: 'rgba(110,110,115,0.5)', borderLeft: `1px solid rgba(229,229,234,0.5)` }}>Schedule a call (2–5 days)</div>
                   </div>
                   {/* Row 2 */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
                     <div style={{ padding: '12px 14px', color: DIM, fontWeight: 600 }}>What you get</div>
-                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid rgba(30,58,95,0.5)`, lineHeight: 1.4 }}>Full product, real AI, your data</div>
-                    <div style={{ padding: '12px 14px', color: 'rgba(203,213,225,0.5)', borderLeft: `1px solid rgba(30,58,95,0.5)`, lineHeight: 1.4 }}>Guided tour with sales rep</div>
+                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid rgba(229,229,234,0.5)`, lineHeight: 1.4 }}>Full product, real AI, your data</div>
+                    <div style={{ padding: '12px 14px', color: 'rgba(110,110,115,0.5)', borderLeft: `1px solid rgba(229,229,234,0.5)`, lineHeight: 1.4 }}>Guided tour with sales rep</div>
                   </div>
                 </div>
               </div>

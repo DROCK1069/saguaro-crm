@@ -171,7 +171,7 @@ export default function SubsPage() {
               </thead>
               <tbody>
                 {subs.map(sub=>(
-                  <tr key={sub.id} style={{borderBottom:`1px solid rgba(38,51,71,.5)`}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(212,160,23,.04)')} onMouseLeave={e=>(e.currentTarget.style.background='')}>
+                  <tr key={sub.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(212,160,23,.04)')} onMouseLeave={e=>(e.currentTarget.style.background='')}>
                     <td style={{padding:'12px 14px'}}>
                       <div style={{color:TEXT,fontWeight:700}}>{sub.name}</div>
                       <div style={{color:DIM,fontSize:11}}>{sub.contact_email}</div>

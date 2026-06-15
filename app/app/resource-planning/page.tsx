@@ -58,7 +58,7 @@ function Spinner() {
   return <div style={{ display: 'inline-block', width: 16, height: 16, border: `2px solid ${BORDER}`, borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />;
 }
 function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+  return <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
     <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 28, minWidth: 520, maxWidth: 720, maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
       {children}
     </div>

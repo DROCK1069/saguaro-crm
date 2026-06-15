@@ -1027,7 +1027,7 @@ function DailyLogForm() {
                         {tradeDistribution.map((entry) => (
                           <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <span style={{ fontSize: 11, color: DIM, width: 90, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.trade}</span>
-                            <div style={{ flex: 1, height: 14, background: 'rgba(255,255,255,.05)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ flex: 1, height: 14, background: 'rgba(0,0,0,.05)', borderRadius: 4, overflow: 'hidden' }}>
                               <div style={{
                                 width: `${Math.round((entry.headcount / maxTradeCount) * 100)}%`,
                                 height: '100%',
@@ -1046,7 +1046,7 @@ function DailyLogForm() {
 
                 {/* Entry rows */}
                 {manpowerEntries.map((entry, idx) => (
-                  <div key={entry.id} style={{ background: 'rgba(255,255,255,.03)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, marginBottom: 10, position: 'relative' }}>
+                  <div key={entry.id} style={{ background: 'rgba(0,0,0,.03)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, marginBottom: 10, position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: GOLD }}>Trade #{idx + 1}</span>
                       <button type="button" onClick={() => removeManpower(entry.id)} style={removeBtnStyle}>
@@ -1115,7 +1115,7 @@ function DailyLogForm() {
 
                 {/* Entry rows */}
                 {equipmentEntries.map((entry, idx) => (
-                  <div key={entry.id} style={{ background: 'rgba(255,255,255,.03)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, marginBottom: 10, position: 'relative' }}>
+                  <div key={entry.id} style={{ background: 'rgba(0,0,0,.03)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, marginBottom: 10, position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: ORANGE }}>Equipment #{idx + 1}</span>
                       <button type="button" onClick={() => removeEquipmentEntry(entry.id)} style={removeBtnStyle}>
@@ -1194,7 +1194,7 @@ function DailyLogForm() {
             {activeTab === 'Visitors' && (
               <div>
                 {visitorEntries.map((entry, idx) => (
-                  <div key={entry.id} style={{ background: 'rgba(255,255,255,.03)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, marginBottom: 10, position: 'relative' }}>
+                  <div key={entry.id} style={{ background: 'rgba(0,0,0,.03)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, marginBottom: 10, position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: CYAN }}>Visitor #{idx + 1}</span>
                       <button type="button" onClick={() => removeVisitor(entry.id)} style={removeBtnStyle}>

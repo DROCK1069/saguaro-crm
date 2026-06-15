@@ -208,7 +208,7 @@ export default function PunchListPage(){
                   {Math.round((done/items.length)*100)}%
                 </span>
               </div>
-              <div style={{background:'rgba(38,51,71,.6)',borderRadius:4,height:8,overflow:'hidden'}}>
+              <div style={{background:'rgba(229,229,234,.6)',borderRadius:4,height:8,overflow:'hidden'}}>
                 <div style={{height:'100%',borderRadius:4,
                   background:`linear-gradient(90deg,${GREEN},#3dd68c)`,
                   width:`${Math.round((done/items.length)*100)}%`,transition:'width .4s'}}/>
