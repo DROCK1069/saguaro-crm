@@ -6,15 +6,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const BASE = '#0F1419';
-const CARD = 'rgba(26,31,46,0.7)';
-const GOLD = '#D4A017';
-const GREEN = '#22C55E';
-const BLUE = '#3B82F6';
-const RED = '#EF4444';
-const TEXT = '#F0F4FF';
-const DIM = '#8BAAC8';
-const BORDER = 'rgba(255,255,255,0.06)';
+const BASE = '#F2F2F7';
+const CARD = '#FFFFFF';
+const GOLD = '#C8881C';
+const GREEN = '#34C759';
+const BLUE = '#007AFF';
+const RED = '#FF3B30';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
 
 const MODULES = [
   { value: 'punch', label: 'Punch List', route: '/field/punch' },
@@ -215,7 +215,7 @@ export default function SavedViewsPage() {
           onClick={() => setShowCreate(!showCreate)}
           style={{
             background: showCreate ? 'rgba(239,68,68,0.15)' : GOLD,
-            color: showCreate ? RED : '#000',
+            color: showCreate ? RED : '#FF3B30',
             border: 'none',
             borderRadius: 10,
             padding: '10px 20px',
@@ -311,7 +311,7 @@ export default function SavedViewsPage() {
                 disabled={!formName.trim() || saving}
                 style={{
                   background: !formName.trim() ? 'rgba(212,160,23,0.3)' : GOLD,
-                  color: !formName.trim() ? DIM : '#000',
+                  color: !formName.trim() ? DIM : '#6E6E73',
                   border: 'none',
                   borderRadius: 10,
                   padding: '10px 28px',
@@ -329,7 +329,7 @@ export default function SavedViewsPage() {
         {/* Loading */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-            <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ width: 32, height: 32, border: '3px solid #E5E5EA', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
             Loading saved views...
           </div>
         ) : Object.keys(grouped).length === 0 ? (
@@ -412,7 +412,7 @@ export default function SavedViewsPage() {
                       <button
                         onClick={() => toggleDefault(view.id, view.is_default)}
                         style={{
-                          background: view.is_default ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)',
+                          background: view.is_default ? 'rgba(34,197,94,0.12)' : 'rgba(0,0,0,0.04)',
                           color: view.is_default ? GREEN : DIM,
                           border: `1px solid ${view.is_default ? 'rgba(34,197,94,0.25)' : BORDER}`,
                           borderRadius: 8,
@@ -444,7 +444,7 @@ export default function SavedViewsPage() {
                           <button
                             onClick={() => setDeleteConfirm(null)}
                             style={{
-                              background: 'rgba(255,255,255,0.04)',
+                              background: 'rgba(0,0,0,0.04)',
                               color: DIM,
                               border: `1px solid ${BORDER}`,
                               borderRadius: 8,

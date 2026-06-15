@@ -5,14 +5,14 @@
  */
 import React, { useState, useMemo } from 'react';
 
-const BASE = '#0F1419';
-const CARD = 'rgba(26,31,46,0.7)';
-const GOLD = '#D4A017';
-const GREEN = '#22C55E';
-const BLUE = '#3B82F6';
-const TEXT = '#F0F4FF';
-const DIM = '#8BAAC8';
-const BORDER = 'rgba(255,255,255,0.06)';
+const BASE = '#F2F2F7';
+const CARD = '#FFFFFF';
+const GOLD = '#C8881C';
+const GREEN = '#34C759';
+const BLUE = '#007AFF';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
 
 interface WageRate {
   trade: string;

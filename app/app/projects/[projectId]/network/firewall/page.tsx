@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-const BASE = '#0F1419';
-const CARD = '#1A1F2E';
-const GOLD = '#D4A017';
-const GREEN = '#22C55E';
-const BLUE = '#3B82F6';
-const RED = '#EF4444';
-const BORDER = 'rgba(255,255,255,0.08)';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const BASE = '#F2F2F7';
+const CARD = '#FFFFFF';
+const GOLD = '#C8881C';
+const GREEN = '#34C759';
+const BLUE = '#007AFF';
+const RED = '#FF3B30';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 
 interface FirewallRule {
   id: string;
@@ -153,7 +153,7 @@ export default function FirewallRulesPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h1 style={{ color: TEXT, fontSize: 22, fontWeight: 700, margin: 0 }}>Firewall Rules</h1>
         <button onClick={() => setShowForm(!showForm)} style={{
-          padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`, color: '#000',
+          padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, color: '#000',
           border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
         }}>
           {showForm ? 'Cancel' : '+ Add Rule'}
@@ -228,7 +228,7 @@ export default function FirewallRulesPage() {
             <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
           <button onClick={handleSubmit} disabled={saving || !form.name} style={{
-            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`,
+            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
             color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
             opacity: saving || !form.name ? 0.5 : 1,
           }}>
@@ -267,7 +267,7 @@ export default function FirewallRulesPage() {
                 key={rule.id}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                  background: !rule.enabled ? 'rgba(255,255,255,0.02)' : 'transparent',
+                  background: !rule.enabled ? 'rgba(0,0,0,0.02)' : 'transparent',
                   opacity: rule.enabled ? 1 : 0.5,
                   borderBottom: idx < filteredRules.length - 1 ? `1px solid ${BORDER}` : 'none',
                 }}
@@ -299,7 +299,7 @@ export default function FirewallRulesPage() {
 
                 {/* Category */}
                 <span style={{
-                  fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(255,255,255,0.05)',
+                  fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(0,0,0,0.05)',
                   color: DIM, textTransform: 'capitalize', fontWeight: 600,
                 }}>{rule.category}</span>
 
@@ -311,7 +311,7 @@ export default function FirewallRulesPage() {
                   onClick={() => toggleEnabled(rule)}
                   style={{
                     width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
-                    background: rule.enabled ? GREEN : '#374151', position: 'relative', transition: 'background .2s',
+                    background: rule.enabled ? GREEN : '#34C759', position: 'relative', transition: 'background .2s',
                   }}
                 >
                   <div style={{

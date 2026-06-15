@@ -6,9 +6,9 @@ import { UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { useToast } from '@/components/Toast';
 
 /* ─── Palette ─── */
-const BG = '#0F1419', CARD = '#1A1F2E', GOLD = '#D4A017', GREEN = '#22C55E';
-const BORDER = '#2A3040', TEXT = '#F0F4FF', DIM = '#8B9DB8', DARK = '#141922';
-const RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
+const BG = '#F2F2F7', CARD = '#FFFFFF', GOLD = '#C8881C', GREEN = '#34C759';
+const BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73', DARK = '#F2F2F7';
+const RED = '#FF3B30', AMBER = '#FF9500', BLUE = '#007AFF', PURPLE = '#AF52DE';
 
 const glass: React.CSSProperties = {
   background: `${CARD}CC`, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',

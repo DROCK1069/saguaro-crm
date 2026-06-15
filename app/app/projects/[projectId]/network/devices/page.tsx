@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-const BASE = '#0F1419';
-const CARD = '#1A1F2E';
-const GOLD = '#D4A017';
-const GREEN = '#22C55E';
-const BLUE = '#3B82F6';
-const RED = '#EF4444';
-const BORDER = 'rgba(255,255,255,0.08)';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const BASE = '#F2F2F7';
+const CARD = '#FFFFFF';
+const GOLD = '#C8881C';
+const GREEN = '#34C759';
+const BLUE = '#007AFF';
+const RED = '#FF3B30';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 
 interface Device {
   id: string;
@@ -158,7 +158,7 @@ export default function DeviceInventoryPage() {
         <button
           onClick={() => { setShowForm(!showForm); setSelectedDevice(null); }}
           style={{
-            padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`, color: '#000',
+            padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, color: '#000',
             border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
           }}
         >
@@ -234,7 +234,7 @@ export default function DeviceInventoryPage() {
             <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
           </div>
           <button onClick={handleSubmit} disabled={saving || !form.hostname} style={{
-            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`,
+            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
             color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
             opacity: saving || !form.hostname ? 0.5 : 1,
           }}>
@@ -299,7 +299,7 @@ export default function DeviceInventoryPage() {
             ))}
           </div>
           {selectedDevice.notes && (
-            <div style={{ marginTop: 12, padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+            <div style={{ marginTop: 12, padding: 12, background: 'rgba(0,0,0,0.03)', borderRadius: 8 }}>
               <div style={{ color: DIM, fontSize: 11, fontWeight: 600, marginBottom: 4 }}>NOTES</div>
               <div style={{ color: TEXT, fontSize: 13 }}>{selectedDevice.notes}</div>
             </div>
@@ -326,7 +326,7 @@ export default function DeviceInventoryPage() {
                   key={dev.id}
                   onClick={() => setSelectedDevice(dev)}
                   style={{ cursor: 'pointer', transition: 'background .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${BORDER}`, fontSize: 18 }}>{TYPE_ICONS[dev.device_type] || '📦'}</td>

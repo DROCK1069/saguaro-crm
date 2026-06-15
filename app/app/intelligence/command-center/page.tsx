@@ -8,16 +8,16 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import HealthScoreRing from '@/components/field/HealthScoreRing';
 
-const BASE   = '#0F1419';
-const CARD   = '#1A1F2E';
-const GOLD   = '#D4A017';
-const GREEN  = '#22C55E';
-const RED    = '#EF4444';
-const BORDER = '#2A3144';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
-const BLUE   = '#3B82F6';
-const AMBER  = '#F59E0B';
+const BASE   = '#F2F2F7';
+const CARD   = '#FFFFFF';
+const GOLD   = '#C8881C';
+const GREEN  = '#34C759';
+const RED    = '#FF3B30';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
+const BLUE   = '#007AFF';
+const AMBER  = '#FF9500';
 
 interface ProjectCard {
   id: string;

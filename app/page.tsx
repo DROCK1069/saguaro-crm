@@ -4,20 +4,20 @@ import Link from 'next/link';
 import { Blueprint, Robot, CurrencyDollar, DeviceMobile, PaintBrush, WifiHigh, Cube, Drone, Buildings, Hammer, HouseSimple, Building, ShieldCheck, ChartLine, User, UsersThree, PenNib, Handshake, BookOpen, Calculator, Scales, Wrench, Trophy, CaretDown, List, X } from '@phosphor-icons/react';
 
 /* ── palette ── */
-const BG = '#0F1419';
-const CARD = '#1A1F2E';
-const GOLD = '#D4A017';
-const GREEN = '#22C55E';
-const TEXT = '#F0F4FF';
-const DIM = '#8B9DB8';
+const BG = '#F2F2F7';
+const CARD = '#FFFFFF';
+const GOLD = '#C8881C';
+const GREEN = '#34C759';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(26,31,46,0.65)',
+  background: 'rgba(255,255,255,0.65)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255,255,255,0.08)',
+  border: '1px solid #E5E5EA',
   borderRadius: 16,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)',
 };
 
 /* ── icons (inline SVG) ── */
@@ -163,44 +163,44 @@ export default function LandingPage() {
           products: {
             label: 'Products',
             items: [
-              { icon: <Blueprint size={22} weight="duotone" color="#D4A017" />, title: 'AI Blueprint Takeoff', desc: 'Upload plans, get instant estimates', href: '/#features' },
-              { icon: <Robot size={22} weight="duotone" color="#D4A017" />, title: 'Sage AI Assistant', desc: 'Your AI construction advisor', href: '/#features' },
-              { icon: <CurrencyDollar size={22} weight="duotone" color="#D4A017" />, title: 'Financial Suite', desc: 'Pay apps, invoices, change orders', href: '/#features' },
-              { icon: <DeviceMobile size={22} weight="duotone" color="#D4A017" />, title: 'Field App', desc: 'Mobile-first job site tools', href: '/field-app' },
-              { icon: <PaintBrush size={22} weight="duotone" color="#D4A017" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
-              { icon: <WifiHigh size={22} weight="duotone" color="#D4A017" />, title: 'Low Voltage / IT', desc: 'Network design & configuration', href: '/#features' },
-              { icon: <Cube size={22} weight="duotone" color="#D4A017" />, title: 'BIM 3D Viewer', desc: 'Upload IFC models, tap for specs', href: '/field-app' },
-              { icon: <Drone size={22} weight="duotone" color="#D4A017" />, title: 'Drone Analysis', desc: 'AI-powered site progress', href: '/field-app' },
+              { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Upload plans, get instant estimates', href: '/#features' },
+              { icon: <Robot size={22} weight="duotone" color="#C8881C" />, title: 'Sage AI Assistant', desc: 'Your AI construction advisor', href: '/#features' },
+              { icon: <CurrencyDollar size={22} weight="duotone" color="#C8881C" />, title: 'Financial Suite', desc: 'Pay apps, invoices, change orders', href: '/#features' },
+              { icon: <DeviceMobile size={22} weight="duotone" color="#C8881C" />, title: 'Field App', desc: 'Mobile-first job site tools', href: '/field-app' },
+              { icon: <PaintBrush size={22} weight="duotone" color="#C8881C" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
+              { icon: <WifiHigh size={22} weight="duotone" color="#C8881C" />, title: 'Low Voltage / IT', desc: 'Network design & configuration', href: '/#features' },
+              { icon: <Cube size={22} weight="duotone" color="#C8881C" />, title: 'BIM 3D Viewer', desc: 'Upload IFC models, tap for specs', href: '/field-app' },
+              { icon: <Drone size={22} weight="duotone" color="#C8881C" />, title: 'Drone Analysis', desc: 'AI-powered site progress', href: '/field-app' },
             ],
           },
           solutions: {
             label: 'Solutions',
             items: [
-              { icon: <Buildings size={22} weight="duotone" color="#D4A017" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
-              { icon: <Hammer size={22} weight="duotone" color="#D4A017" />, title: 'Specialty Contractors', desc: 'Subs, trades, field crews', href: '/industry/specialty-subcontractors' },
-              { icon: <HouseSimple size={22} weight="duotone" color="#D4A017" />, title: 'Home Builders', desc: 'Residential construction', href: '/industry/residential-remodelers' },
-              { icon: <Building size={22} weight="duotone" color="#D4A017" />, title: 'Commercial Developers', desc: 'Multi-project portfolio', href: '/industry/commercial-contractors' },
-              { icon: <ShieldCheck size={22} weight="duotone" color="#D4A017" />, title: 'Compliance & Safety', desc: 'OSHA, insurance, lien tracking', href: '/#features' },
-              { icon: <ChartLine size={22} weight="duotone" color="#D4A017" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
+              { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
+              { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Contractors', desc: 'Subs, trades, field crews', href: '/industry/specialty-subcontractors' },
+              { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Home Builders', desc: 'Residential construction', href: '/industry/residential-remodelers' },
+              { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Developers', desc: 'Multi-project portfolio', href: '/industry/commercial-contractors' },
+              { icon: <ShieldCheck size={22} weight="duotone" color="#C8881C" />, title: 'Compliance & Safety', desc: 'OSHA, insurance, lien tracking', href: '/#features' },
+              { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
             ],
           },
           portals: {
             label: 'Portals',
             items: [
-              { icon: <User size={22} weight="duotone" color="#D4A017" />, title: 'Owner / Client Portal', desc: 'Live project visibility for owners', href: '/portals/client' },
-              { icon: <UsersThree size={22} weight="duotone" color="#D4A017" />, title: 'Subcontractor Portal', desc: 'Self-service docs & pay apps', href: '/portals/sub' },
-              { icon: <PenNib size={22} weight="duotone" color="#D4A017" />, title: 'E-Signature Portal', desc: 'Sign documents in-browser', href: '/portals/sign' },
-              { icon: <Handshake size={22} weight="duotone" color="#D4A017" />, title: 'Integrations', desc: 'QuickBooks, Sage, Stripe', href: '/#features' },
+              { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner / Client Portal', desc: 'Live project visibility for owners', href: '/portals/client' },
+              { icon: <UsersThree size={22} weight="duotone" color="#C8881C" />, title: 'Subcontractor Portal', desc: 'Self-service docs & pay apps', href: '/portals/sub' },
+              { icon: <PenNib size={22} weight="duotone" color="#C8881C" />, title: 'E-Signature Portal', desc: 'Sign documents in-browser', href: '/portals/sign' },
+              { icon: <Handshake size={22} weight="duotone" color="#C8881C" />, title: 'Integrations', desc: 'QuickBooks, Sage, Stripe', href: '/#features' },
             ],
           },
           resources: {
             label: 'Resources',
             items: [
-              { icon: <BookOpen size={22} weight="duotone" color="#D4A017" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
-              { icon: <Calculator size={22} weight="duotone" color="#D4A017" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/design/roi' },
-              { icon: <Scales size={22} weight="duotone" color="#D4A017" />, title: 'Compare Platforms', desc: 'Saguaro vs Procore vs Buildertrend', href: '/#compare' },
-              { icon: <Wrench size={22} weight="duotone" color="#D4A017" />, title: 'Prevailing Wage Calc', desc: 'Davis-Bacon rates by state/trade', href: '/roi-calculator' },
-              { icon: <Trophy size={22} weight="duotone" color="#D4A017" />, title: 'Leaderboard', desc: 'Gamification & team performance', href: '/field/leaderboard' },
+              { icon: <BookOpen size={22} weight="duotone" color="#C8881C" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
+              { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/design/roi' },
+              { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare Platforms', desc: 'Saguaro vs Procore vs Buildertrend', href: '/#compare' },
+              { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Prevailing Wage Calc', desc: 'Davis-Bacon rates by state/trade', href: '/roi-calculator' },
+              { icon: <Trophy size={22} weight="duotone" color="#C8881C" />, title: 'Leaderboard', desc: 'Gamification & team performance', href: '/field/leaderboard' },
             ],
           },
         };
@@ -214,7 +214,7 @@ export default function LandingPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             {/* Logo */}
-            <a href="/" style={{ color: '#D4A017', fontWeight: 800, fontSize: 18, letterSpacing: '0.12em', textDecoration: 'none' }}>SAGUARO</a>
+            <a href="/" style={{ color: '#C8881C', fontWeight: 800, fontSize: 18, letterSpacing: '0.12em', textDecoration: 'none' }}>SAGUARO</a>
 
             {/* Desktop menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
@@ -225,7 +225,7 @@ export default function LandingPage() {
                     onMouseEnter={() => setOpenMenu(key)}
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: openMenu === key ? '#D4A017' : '#F5F5F7',
+                      color: openMenu === key ? '#C8881C' : '#F5F5F7',
                       fontSize: 13, fontWeight: 500, padding: '8px 14px',
                       display: 'flex', alignItems: 'center', gap: 4,
                       transition: 'color 0.15s ease',
@@ -242,10 +242,10 @@ export default function LandingPage() {
                       style={{
                         position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
                         width: 420, marginTop: 8,
-                        background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
+                        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
                         border: '1px solid rgba(212,160,23,0.15)',
                         borderRadius: 16, padding: '8px',
-                        boxShadow: '0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04)',
+                        boxShadow: '0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,0,0,0.04)',
                         animation: 'navDropFadeIn 0.15s ease',
                       }}
                     >
@@ -256,7 +256,7 @@ export default function LandingPage() {
                           textDecoration: 'none', transition: 'all 0.15s ease',
                           borderLeft: '3px solid transparent',
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,160,23,0.06)'; e.currentTarget.style.borderLeftColor = '#D4A017'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,160,23,0.06)'; e.currentTarget.style.borderLeftColor = '#C8881C'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
                         >
                           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -281,7 +281,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <a href="/login" style={{ color: '#86868B', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</a>
               <a href="/signup" style={{
-                background: 'linear-gradient(135deg, #D4A017, #C8960F)',
+                background: 'linear-gradient(135deg, #C8881C, #C8960F)',
                 color: '#000', fontSize: 13, fontWeight: 700,
                 padding: '8px 20px', borderRadius: 8, textDecoration: 'none',
                 boxShadow: '0 0 20px rgba(212,160,23,0.2)',
@@ -306,7 +306,7 @@ export default function LandingPage() {
           <p style={{ color: DIM, fontSize: 16, lineHeight: 1.65, margin: '0 0 28px', maxWidth: 460 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
             <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,160,23,0.35)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
-            <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.16)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid #E5E5EA', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <svg viewBox="0 0 20 20" width={15} height={15} fill={TEXT}><polygon points="5,3 19,10 5,17" /></svg> Watch Demo
             </Link>
           </div>
@@ -317,14 +317,14 @@ export default function LandingPage() {
         {/* right — takeoff mockup */}
         <div id="demo" style={{ ...glass, padding: 0, overflow: 'hidden', position: 'relative', zIndex: 1, scrollMarginTop: 72 }} className="hero-mockup">
           {/* browser chrome */}
-          <div style={{ background: 'rgba(15,20,25,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ background: 'rgba(15,20,25,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #E5E5EA' }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: GOLD }} />
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: GREEN }} />
-            <span style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: DIM, marginLeft: 8 }}>app.saguaro.build/takeoff</span>
+            <span style={{ flex: 1, background: 'rgba(0,0,0,0.06)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: DIM, marginLeft: 8 }}>app.saguaro.build/takeoff</span>
           </div>
           {/* mockup content */}
-          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(26,31,46,0.95) 50%, rgba(15,20,25,0.98) 100%)` }}>
+          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(255,255,255,0.95) 50%, rgba(15,20,25,0.98) 100%)` }}>
             {/* toolbar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>AI Takeoff Results</span>
@@ -333,7 +333,7 @@ export default function LandingPage() {
             {/* table header */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1, marginBottom: 2 }}>
               {['Item', 'Qty', 'Unit', 'Cost'].map(h => (
-                <div key={h} style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, padding: '6px 8px', background: 'rgba(255,255,255,0.03)' }}>{h}</div>
+                <div key={h} style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, padding: '6px 8px', background: 'rgba(0,0,0,0.03)' }}>{h}</div>
               ))}
             </div>
             {/* table rows */}
@@ -346,7 +346,7 @@ export default function LandingPage() {
             ].map((row, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1, marginBottom: 1 }}>
                 {row.map((cell, j) => (
-                  <div key={j} style={{ fontSize: 12, color: j === 3 ? GOLD : j === 0 ? TEXT : DIM, padding: '7px 8px', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', fontWeight: j === 3 ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>{cell}</div>
+                  <div key={j} style={{ fontSize: 12, color: j === 3 ? GOLD : j === 0 ? TEXT : DIM, padding: '7px 8px', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent', fontWeight: j === 3 ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>{cell}</div>
                 ))}
               </div>
             ))}
@@ -370,7 +370,7 @@ export default function LandingPage() {
             { val: '8,900+', lbl: 'Blueprints Analyzed' },
           ].map(s => (
             <div key={s.lbl} style={{ ...glass, padding: '20px 24px', textAlign: 'center' as const }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: '#D4A017', letterSpacing: '-0.02em' }}>{s.val}</div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: '#C8881C', letterSpacing: '-0.02em' }}>{s.val}</div>
               <div style={{ fontSize: 12, color: DIM, marginTop: 6, fontWeight: 500 }}>{s.lbl}</div>
             </div>
           ))}
@@ -378,7 +378,7 @@ export default function LandingPage() {
       </div>
 
       {/* Integration logos */}
-      <div style={{ padding: '32px 0', overflow: 'hidden', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ padding: '32px 0', overflow: 'hidden', borderTop: '1px solid #E5E5EA', borderBottom: '1px solid #E5E5EA' }}>
         <div style={{ textAlign: 'center' as const, color: '#86868B', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 20 }}>
           Integrates with tools you already use
         </div>
@@ -405,7 +405,7 @@ export default function LandingPage() {
             return (
             <div key={f.title} style={{ ...glass, padding: 0, overflow: 'hidden', transition: 'all 0.3s ease', cursor: 'default' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,23,0.25)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'; }}>
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)'; }}>
               <div style={{ height: 160, overflow: 'hidden', borderRadius: '16px 16px 0 0', position: 'relative' as const }}>
                 <img src={cardImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, #000)' }} />
@@ -436,11 +436,11 @@ export default function LandingPage() {
             <Link href="/design" style={{ background: GREEN, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '11px 24px', borderRadius: 10, display: 'inline-block' }}>Try AI Design Studio &mdash; Free</Link>
           </div>
           {/* right mockup — before/after */}
-          <div style={{ background: `linear-gradient(135deg, rgba(15,20,25,0.9), rgba(26,31,46,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
+          <div style={{ background: `linear-gradient(135deg, rgba(15,20,25,0.9), rgba(255,255,255,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
             <div style={{ display: 'flex', gap: 12, width: '100%' }}>
               {/* before */}
-              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' as const }}>
-                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.5)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: DIM, textTransform: 'uppercase' as const, zIndex: 1 }}>Before</div>
+              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid #E5E5EA', position: 'relative' as const }}>
+                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: '#F2F2F7', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: DIM, textTransform: 'uppercase' as const, zIndex: 1 }}>Before</div>
                 <div style={{ height: 160 }}>
                   <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80" alt="Before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
                 </div>
@@ -465,9 +465,9 @@ export default function LandingPage() {
       <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
         <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Why GCs Switch from Procore</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
-        <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+        <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.06)' }}>
           {/* header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid #E5E5EA' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
             <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 700, color: GOLD, textAlign: 'center' as const }}>Saguaro</div>
             <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Procore_Technologies_logo.svg/2560px-Procore_Technologies_logo.svg.png" alt="Procore" style={{ height: 20, filter: 'grayscale(1) brightness(0.7)' }} /></div>
@@ -475,7 +475,7 @@ export default function LandingPage() {
           </div>
           {/* rows */}
           {COMPARISON_ROWS.map((r, i) => (
-            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid #E5E5EA' : 'none', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
               <div style={{ padding: '11px 20px', fontSize: 13, color: TEXT }}>{r.feature}</div>
               <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {r.feature === 'Starting Price' ? <PriceLabel v={r.saguaro} /> : <StatusCell v={r.saguaro} />}
@@ -498,14 +498,14 @@ export default function LandingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
           {PLANS.map(plan => (
             <div key={plan.name} style={{
-              background: 'rgba(255,255,255,0.05)',
+              background: 'rgba(0,0,0,0.05)',
               backdropFilter: 'blur(40px)',
               WebkitBackdropFilter: 'blur(40px)',
-              border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.08)',
+              border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid #E5E5EA',
               borderRadius: 16,
               padding: '28px 24px',
               position: 'relative' as const,
-              boxShadow: plan.highlighted ? '0 0 60px rgba(212,160,23,0.12), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)' : '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
+              boxShadow: plan.highlighted ? '0 0 60px rgba(212,160,23,0.12), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)' : '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(0,0,0,0.05)',
               display: 'flex',
               flexDirection: 'column' as const,
               transition: 'all 0.3s ease',
@@ -537,7 +537,7 @@ export default function LandingPage() {
                 textDecoration: 'none',
                 ...(plan.highlighted
                   ? { background: GOLD, color: '#000' }
-                  : { border: '1px solid rgba(255,255,255,0.12)', color: TEXT }),
+                  : { border: '1px solid #E5E5EA', color: TEXT }),
               }}>
                 {plan.cta}
               </Link>
@@ -548,8 +548,8 @@ export default function LandingPage() {
 
       {/* ══════════ 8. TESTIMONIAL ══════════ */}
       <section style={{ maxWidth: 700, margin: '0 auto', padding: '40px 24px', textAlign: 'center' as const }}>
-        <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
-          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=80" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #D4A017', display: 'block', margin: '0 auto 16px' }} />
+        <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(0,0,0,0.06)' }}>
+          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=80" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #C8881C', display: 'block', margin: '0 auto 16px' }} />
           <blockquote style={{ fontSize: 16, color: TEXT, lineHeight: 1.6, fontStyle: 'italic' as const, margin: '0 0 16px', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
           <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px' }}>Marcus Torres</p>
           <p style={{ color: DIM, fontSize: 12, margin: 0 }}>VP of Operations &mdash; Sonoran Builders, Phoenix AZ</p>
@@ -565,7 +565,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 10. FOOTER ══════════ */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
+      <footer style={{ borderTop: '1px solid #E5E5EA', maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, marginBottom: 32 }} className="footer-grid">
           {/* product */}
           <div>
@@ -596,7 +596,7 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
+        <div style={{ borderTop: '1px solid #E5E5EA', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
           <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: 2 }}>SAGUARO</span>
           <span style={{ fontSize: 12, color: DIM }}>&copy; {new Date().getFullYear()} Saguaro Technologies Inc. All rights reserved.</span>
         </div>

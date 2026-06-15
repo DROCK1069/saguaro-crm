@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-const BASE = '#0F1419';
-const CARD = '#1A1F2E';
-const GOLD = '#D4A017';
-const GREEN = '#22C55E';
-const BLUE = '#3B82F6';
-const RED = '#EF4444';
-const BORDER = 'rgba(255,255,255,0.08)';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const BASE = '#F2F2F7';
+const CARD = '#FFFFFF';
+const GOLD = '#C8881C';
+const GREEN = '#34C759';
+const BLUE = '#007AFF';
+const RED = '#FF3B30';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 
 interface WizardResult {
   vlans: Array<{ vlan_id: number; name: string; subnet: string; gateway: string; purpose: string }>;
@@ -253,7 +253,7 @@ export default function NetworkWizardPage() {
         </div>
 
         <button onClick={generateDesign} disabled={generating} style={{
-          marginTop: 20, padding: '12px 32px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`,
+          marginTop: 20, padding: '12px 32px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
           color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer',
           opacity: generating ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: 8,
         }}>
@@ -409,8 +409,8 @@ export default function NetworkWizardPage() {
                     <span style={{ color: TEXT, fontSize: 13, fontWeight: 600 }}>{ssid.ssid}</span>
                     <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
                       <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 6, background: `${GREEN}15`, color: GREEN }}>{ssid.security}</span>
-                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: DIM }}>VLAN {ssid.vlan}</span>
-                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: DIM }}>{ssid.band}</span>
+                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.05)', color: DIM }}>VLAN {ssid.vlan}</span>
+                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.05)', color: DIM }}>{ssid.band}</span>
                     </div>
                   </div>
                   <span style={{ color: DIM, fontSize: 12 }}>{ssid.purpose}</span>
@@ -444,7 +444,7 @@ export default function NetworkWizardPage() {
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <button onClick={applyAll} disabled={applying || applied} style={{
               padding: '14px 40px', background: applied ? `${GREEN}20` : `linear-gradient(135deg, ${GREEN}, #16A34A)`,
-              color: applied ? GREEN : '#fff', border: applied ? `1px solid ${GREEN}` : 'none',
+              color: applied ? GREEN : '#34C759', border: applied ? `1px solid ${GREEN}` : 'none',
               borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: applying || applied ? 'default' : 'pointer',
               opacity: applying ? 0.6 : 1,
             }}>
