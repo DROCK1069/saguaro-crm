@@ -259,7 +259,7 @@ export default function AppSidebar({
                   }}
                   onMouseEnter={(e) => {
                     if (!active) {
-                      e.currentTarget.style.background = 'rgba(255,255,255,.05)';
+                      e.currentTarget.style.background = 'rgba(0,0,0,.04)';
                       e.currentTarget.style.color = colors.text;
                     }
                   }}
@@ -345,7 +345,7 @@ export default function AppSidebar({
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,.05)';
+                  e.currentTarget.style.background = 'rgba(0,0,0,.04)';
                   e.currentTarget.style.color = colors.text;
                 }
               }}
@@ -399,7 +399,7 @@ export default function AppSidebar({
             transition: 'background .15s ease, color .15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,.05)';
+            e.currentTarget.style.background = 'rgba(0,0,0,.04)';
             e.currentTarget.style.color = colors.text;
           }}
           onMouseLeave={(e) => {

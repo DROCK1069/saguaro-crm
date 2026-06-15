@@ -20,20 +20,21 @@ const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: 
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false });
 const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false });
 
-const GOLD   = '#D4A017';
-const DARK   = '#0B0B0F';
-const RAISED = '#1A1A21';
-const RAISED_ALT = '#212129';
-const BORDER = 'rgba(255,255,255,0.10)';
-const BORDER_SUBTLE = 'rgba(255,255,255,0.07)';
-const DIM    = '#A1A1AA';
-const TEXT   = '#F5F5F7';
-const GREEN  = '#1a8a4a';
-const RED    = '#c03030';
-const BLUE   = '#1a5fa8';
-const ORANGE = '#B85C2A';
-const SHADOW_SM = '0 1px 2px rgba(0,0,0,.4)';
-const SHADOW_MD = '0 4px 14px rgba(0,0,0,.45)';
+const GOLD   = '#C8881C';
+const DARK   = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const RAISED_ALT = '#F2F2F7';
+const BORDER = '#E5E5EA';
+const BORDER_SUBTLE = 'rgba(0,0,0,0.06)';
+const DIM    = '#6E6E73';
+const TEXT   = '#1C1C1E';
+const GREEN  = '#34C759';
+const RED    = '#FF3B30';
+const BLUE   = '#007AFF';
+const ORANGE = '#FF9500';
+const SHADOW_SM = '0 1px 2px rgba(0,0,0,0.06)';
+const SHADOW_MD = '0 4px 14px rgba(0,0,0,0.08)';
+const SHADOW_LG = '0 16px 44px rgba(0,0,0,0.10)';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 interface ScoreResult {
@@ -65,11 +66,11 @@ function KPI({
       style={{
         background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14,
         padding: '18px 20px', cursor: onClick || href ? 'pointer' : 'default',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.4)',
+        boxShadow: SHADOW_SM,
         transition: 'border-color .18s, box-shadow .18s, transform .12s',
       }}
-      onMouseEnter={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = 'rgba(255,255,255,0.16)'; t.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; t.style.transform = 'translateY(-2px)'; } }}
-      onMouseLeave={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = BORDER; t.style.boxShadow = '0 1px 2px rgba(0,0,0,0.4)'; t.style.transform = 'translateY(0)'; } }}
+      onMouseEnter={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = 'rgba(0,0,0,0.14)'; t.style.boxShadow = SHADOW_LG; t.style.transform = 'translateY(-2px)'; } }}
+      onMouseLeave={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = BORDER; t.style.boxShadow = SHADOW_SM; t.style.transform = 'translateY(0)'; } }}
     >
       <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: DIM, marginBottom: 8 }}>{label}</div>
       <div style={{ fontSize: 28, fontWeight: 700, color: color ?? TEXT, lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{value}</div>
@@ -99,7 +100,7 @@ const TYPE_META: Record<TodayItem['type'], { icon: React.ReactNode; borderColor:
   'pay-app':    { icon: <CurrencyDollar size={22} weight="duotone" color={GOLD} />, borderColor: GOLD, label: 'Pay App' },
   'insurance':  { icon: <ShieldCheck size={22} weight="duotone" color={RED} />, borderColor: RED, label: 'Insurance' },
   'rfi':        { icon: <ClipboardText size={22} weight="duotone" color={ORANGE} />, borderColor: ORANGE, label: 'RFI' },
-  'compliance': { icon: <CheckCircle size={22} weight="duotone" color="#3B82F6" />, borderColor: '#2a6db8', label: 'Compliance' },
+  'compliance': { icon: <CheckCircle size={22} weight="duotone" color={BLUE} />, borderColor: BLUE, label: 'Compliance' },
 };
 const URGENCY_COLOR: Record<TodayItem['urgency'], string> = { high: RED, medium: ORANGE, low: DIM };
 
@@ -112,7 +113,7 @@ function TodayActionCard({ item }: { item: TodayItem }) {
         borderBottom: `1px solid ${BORDER_SUBTLE}`, borderLeft: `3px solid ${meta.borderColor}`,
         background: 'transparent', transition: 'background .15s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.025)')}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.03)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{meta.icon}</span>
@@ -127,8 +128,8 @@ function TodayActionCard({ item }: { item: TodayItem }) {
         href={item.actionUrl}
         style={{
           padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 700,
-          background: `rgba(212,160,23,.12)`, color: GOLD,
-          border: `1px solid rgba(212,160,23,.3)`, textDecoration: 'none',
+          background: `rgba(200,136,28,0.12)`, color: GOLD,
+          border: `1px solid rgba(200,136,28,0.3)`, textDecoration: 'none',
           whiteSpace: 'nowrap', flexShrink: 0,
         }}
       >
@@ -173,10 +174,10 @@ function BidScoreModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: '0 30px 80px rgba(0,0,0,.6)', overflow: 'hidden' }}>
+      <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: SHADOW_LG, overflow: 'hidden' }}>
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 16, color: TEXT }}>Score a Bid</div>
@@ -207,7 +208,7 @@ function BidScoreModal({ onClose }: { onClose: () => void }) {
               {error && <div style={{ color: RED, fontSize: 12, marginBottom: 12 }}>{error}</div>}
               <button
                 type="submit" disabled={loading}
-                style={{ width: '100%', padding: '11px', background: loading ? 'rgba(212,160,23,.4)' : GOLD, border: 'none', borderRadius: 8, color: '#000000', fontWeight: 800, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4 }}
+                style={{ width: '100%', padding: '11px', background: loading ? 'rgba(200,136,28,0.4)' : GOLD, border: 'none', borderRadius: 8, color: '#FFFFFF', fontWeight: 800, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4 }}
               >
                 {loading ? 'Analyzing...' : 'Score This Bid →'}
               </button>
@@ -229,7 +230,7 @@ function BidScoreModal({ onClose }: { onClose: () => void }) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 5 }}>Reasoning</div>
                 <div style={{ fontSize: 13, color: TEXT, lineHeight: 1.6 }}>{result.reasoning}</div>
               </div>
-              <div style={{ background: `rgba(212,160,23,.08)`, border: `1px solid rgba(212,160,23,.2)`, borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+              <div style={{ background: `rgba(200,136,28,0.12)`, border: `1px solid rgba(200,136,28,0.2)`, borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 4 }}>Suggested Margin</div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: GOLD }}>{result.suggestedMargin}%</div>
               </div>
@@ -358,12 +359,12 @@ export default function DashboardPage() {
             <div style={{ fontSize: 14, color: DIM }}>Here's what needs your attention today.</div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/app/projects/new" style={{ padding: '10px 18px', background: GOLD, color: '#000000', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+            <Link href="/app/projects/new" style={{ padding: '10px 18px', background: GOLD, color: '#FFFFFF', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
               + New Project
             </Link>
             <button
               onClick={() => setShowScoreModal(true)}
-              style={{ padding: '10px 18px', background: 'rgba(212,160,23,.12)', color: GOLD, border: `1px solid rgba(212,160,23,.3)`, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              style={{ padding: '10px 18px', background: 'rgba(200,136,28,0.12)', color: GOLD, border: `1px solid rgba(200,136,28,0.3)`, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
             >
               Score a Bid
             </button>
@@ -432,7 +433,7 @@ export default function DashboardPage() {
             {/* Project Budget Chart */}
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(212,160,23,.10)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(200,136,28,0.12)' }}>
                   <ChartBar size={17} weight="duotone" color={GOLD} />
                 </span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Project Budgets</span>
@@ -447,7 +448,7 @@ export default function DashboardPage() {
                       <XAxis dataKey="name" tick={{ fill: DIM, fontSize: 11 }} axisLine={{ stroke: BORDER_SUBTLE }} tickLine={false} />
                       <YAxis tick={{ fill: DIM, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
                       <Tooltip
-                        cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                        cursor={{ fill: 'rgba(0,0,0,0.04)' }}
                         contentStyle={{ background: RAISED_ALT, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 12, color: TEXT, boxShadow: SHADOW_MD }}
                         labelStyle={{ color: GOLD, fontWeight: 700 }}
                         formatter={(v: number) => [`$${v.toLocaleString()}`, 'Budget']}
@@ -466,7 +467,7 @@ export default function DashboardPage() {
             {/* Portfolio Status Donut */}
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(212,160,23,.10)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(200,136,28,0.12)' }}>
                   <TrendUp size={17} weight="duotone" color={GOLD} />
                 </span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Portfolio Status</span>
@@ -523,7 +524,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Items requiring your attention</div>
             </div>
             {!todayLoading && !todayError && todayItems.filter((i: TodayItem) => i.urgency === 'high').length > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: 'rgba(192,48,48,.15)', color: RED, border: '1px solid rgba(192,48,48,.3)' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: 'rgba(255,59,48,0.12)', color: RED, border: '1px solid rgba(255,59,48,0.25)' }}>
                 {todayItems.filter((i: TodayItem) => i.urgency === 'high').length} urgent
               </span>
             )}
@@ -574,7 +575,7 @@ export default function DashboardPage() {
                 <div style={{ padding: '24px 0', textAlign: 'center' }}>
                   <div style={{ fontSize: 32, marginBottom: 10, display: 'flex', justifyContent: 'center' }}><ClipboardText size={32} weight="duotone" color={DIM} /></div>
                   <div style={{ color: DIM, fontSize: 13, marginBottom: 14 }}>No active projects yet.</div>
-                  <Link href="/app/projects/new" style={{ display: 'inline-block', padding: '8px 18px', background: GOLD, color: '#000000', borderRadius: 7, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                  <Link href="/app/projects/new" style={{ display: 'inline-block', padding: '8px 18px', background: GOLD, color: '#FFFFFF', borderRadius: 7, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
                     Create your first project
                   </Link>
                 </div>
@@ -582,7 +583,7 @@ export default function DashboardPage() {
               {!projectsLoading && !projectsError && projects.slice(0, 3).map(proj => (
                 <Link key={proj.id} href={`/app/projects/${proj.id}`} style={{ display: 'block', textDecoration: 'none', marginBottom: 10 }}>
                   <div style={{ padding: '14px 16px', background: RAISED_ALT, borderRadius: 10, border: `1px solid ${BORDER_SUBTLE}`, cursor: 'pointer', transition: 'border-color .15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(212,160,23,.5)')}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(200,136,28,0.5)')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER_SUBTLE)}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -590,7 +591,7 @@ export default function DashboardPage() {
                         <div style={{ fontWeight: 700, color: TEXT, fontSize: 14, marginBottom: 2 }}>{proj.name}</div>
                         <div style={{ fontSize: 12, color: DIM }}>{proj.address}</div>
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 4, background: 'rgba(26,138,74,.15)', color: '#3dd68c', border: '1px solid rgba(26,138,74,.3)', height: 'fit-content', textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 4, background: 'rgba(52,199,89,0.14)', color: '#248A3D', border: '1px solid rgba(52,199,89,0.3)', height: 'fit-content', textTransform: 'uppercase' }}>
                         {proj.status}
                       </span>
                     </div>
@@ -645,7 +646,7 @@ export default function DashboardPage() {
                           <td style={{ padding: '10px 16px', color: DIM }}>{rfi.rfi_number}</td>
                           <td style={{ padding: '10px 16px', color: TEXT, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rfi.subject}</td>
                           <td style={{ padding: '10px 16px' }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(184,92,42,.15)', color: ORANGE, border: `1px solid rgba(184,92,42,.3)`, textTransform: 'uppercase' }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,149,0,0.14)', color: '#B25E00', border: `1px solid rgba(255,149,0,0.3)`, textTransform: 'uppercase' }}>
                               {rfi.status}
                             </span>
                           </td>

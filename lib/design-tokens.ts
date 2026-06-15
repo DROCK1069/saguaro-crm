@@ -5,33 +5,33 @@
 
 /* ── Colors ────────────────────────────────────────────────────────── */
 export const colors = {
-  gold:       '#D4A017',
-  goldLight:  '#F0C040',
-  goldDim:    'rgba(212,160,23,.12)',
-  goldBorder: 'rgba(212,160,23,.25)',
-  goldHover:  'rgba(212,160,23,.18)',
-  goldActive: 'rgba(212,160,23,.25)',
+  gold:       '#C8881C',
+  goldLight:  '#E0A030',
+  goldDim:    'rgba(200,136,28,.12)',
+  goldBorder: 'rgba(200,136,28,.25)',
+  goldHover:  'rgba(200,136,28,.18)',
+  goldActive: 'rgba(200,136,28,.25)',
 
-  // Neutral near-black ramp — reconciled with app/globals.css :root tokens
-  // (page base #0B0B0F) so the chrome no longer reads as a bluish slab.
-  dark:       '#131318',
-  darkAlt:    '#0B0B0F',
-  raised:     '#1A1A21',
-  raisedAlt:  '#212129',
-  surface:    '#242430',
+  // Apple LIGHT ramp — matches the (light) mobile app: iOS grouped page
+  // background #F2F2F7 with #FFFFFF cards/panels and #F2F2F7 grouped insets.
+  dark:       '#F2F2F7',
+  darkAlt:    '#FFFFFF',
+  raised:     '#FFFFFF',
+  raisedAlt:  '#F2F2F7',
+  surface:    '#FFFFFF',
 
-  border:     'rgba(255,255,255,0.10)',
-  borderDim:  'rgba(255,255,255,0.06)',
+  border:     '#E5E5EA',
+  borderDim:  'rgba(0,0,0,0.06)',
 
-  text:       '#F5F5F7',
-  textMuted:  '#A1A1AA',
-  textDim:    '#71717A',
-  textFaint:  '#52525B',
+  text:       '#1C1C1E',
+  textMuted:  '#6E6E73',
+  textDim:    '#AEAEB2',
+  textFaint:  '#C7C7CC',
 
-  green:      '#22c55e',
-  red:        '#ef4444',
-  orange:     '#f59e0b',
-  blue:       '#6366F1',
+  green:      '#34C759',
+  red:        '#FF3B30',
+  orange:     '#FF9500',
+  blue:       '#007AFF',
 
   white:      '#ffffff',
   black:      '#000000',
@@ -86,11 +86,11 @@ export const radius = {
 
 /* ── Shadows ───────────────────────────────────────────────────────── */
 export const shadow = {
-  sm:   '0 1px 2px rgba(0,0,0,.3)',
-  md:   '0 4px 12px rgba(0,0,0,.4)',
-  lg:   '0 8px 32px rgba(0,0,0,.5)',
-  xl:   '0 16px 48px rgba(0,0,0,.6)',
-  glow: `0 0 20px rgba(212,160,23,.15)`,
+  sm:   '0 1px 2px rgba(0,0,0,.06)',
+  md:   '0 4px 14px rgba(0,0,0,.08)',
+  lg:   '0 16px 44px rgba(0,0,0,.10)',
+  xl:   '0 24px 60px rgba(0,0,0,.12)',
+  glow: `0 0 20px rgba(200,136,28,.15)`,
 } as const;
 
 /* ── Sidebar ───────────────────────────────────────────────────────── */

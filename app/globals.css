@@ -1,33 +1,33 @@
 :root {
-  /* Surfaces — layered near-black elevation ramp (not pure black) */
-  --bg-base: #0B0B0F;
-  --bg-surface: #131318;
-  --bg-surface-2: #1A1A21;
-  --bg-elevated: #212129;
+  /* Surfaces — Apple LIGHT: iOS grouped page + white cards */
+  --bg-base: #F2F2F7;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #FFFFFF;
+  --bg-elevated: #FFFFFF;
   /* Hairlines */
-  --border-subtle: rgba(255,255,255,0.07);
-  --border-default: rgba(255,255,255,0.10);
-  --border-strong: rgba(255,255,255,0.16);
+  --border-subtle: rgba(0,0,0,0.06);
+  --border-default: #E5E5EA;
+  --border-strong: rgba(0,0,0,0.14);
   /* Text */
-  --text-primary: #F5F5F7;
-  --text-secondary: #A1A1AA;
-  --text-tertiary: #71717A;
-  --text-disabled: #52525B;
+  --text-primary: #1C1C1E;
+  --text-secondary: #6E6E73;
+  --text-tertiary: #AEAEB2;
+  --text-disabled: #C7C7CC;
   /* Brand gold — reserved for genuine emphasis */
-  --gold: #D4A017;
-  --gold-bright: #F0C040;
-  --gold-hover: #E0B040;
-  --gold-soft: rgba(212,160,23,0.12);
-  --gold-ring: rgba(212,160,23,0.35);
+  --gold: #C8881C;
+  --gold-bright: #E0A82E;
+  --gold-hover: #B6790F;
+  --gold-soft: rgba(200,136,28,0.12);
+  --gold-ring: rgba(200,136,28,0.35);
   /* Status */
-  --info: #6366F1;
-  --success: #22C55E;
-  --danger: #EF4444;
-  --warning: #E0850F;
+  --info: #007AFF;
+  --success: #34C759;
+  --danger: #FF3B30;
+  --warning: #FF9500;
   /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 14px rgba(0,0,0,0.45);
-  --shadow-lg: 0 16px 44px rgba(0,0,0,0.55);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.08);
+  --shadow-lg: 0 16px 44px rgba(0,0,0,0.10);
   /* Radii */
   --radius-sm: 8px;
   --radius-md: 10px;
@@ -40,10 +40,10 @@
 html { font-size: 14px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif; background: var(--bg-base); color: var(--text-primary); overflow-x: hidden; font-size: 14px; line-height: 1.5; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg-surface); }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #D4A017; }
-a { color: #D4A017; text-decoration: none; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #C8881C; }
+a { color: #C8881C; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease; }
 button:hover { border-color: var(--border-strong); }
 button:active { transform: scale(0.98); }
@@ -61,7 +61,7 @@ a, button, input, textarea, select, [role="button"] { transition: color .18s eas
 .glass-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 
 /* ── Table row hover: subtle neutral ── */
-tr:hover td, [data-row]:hover { background: rgba(255,255,255,0.035); }
+tr:hover td, [data-row]:hover { background: rgba(0,0,0,0.03); }
 
 /* ── Nav link gold on hover (gold belongs on nav) ── */
 nav a:hover { color: var(--gold); }
@@ -71,15 +71,15 @@ nav a:hover { color: var(--gold); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-@keyframes goldGlow { 0%, 100% { box-shadow: 0 0 20px rgba(212,160,23,0.2); } 50% { box-shadow: 0 0 40px rgba(212,160,23,0.4); } }
+@keyframes goldGlow { 0%, 100% { box-shadow: 0 0 20px rgba(200,136,28,0.2); } 50% { box-shadow: 0 0 40px rgba(200,136,28,0.4); } }
 
-/* ── Apple-grade dark select styling ── */
+/* ── Apple-grade light select styling ── */
 select {
   appearance: none;
   -webkit-appearance: none;
-  background-color: rgba(255,255,255,0.06);
-  color: #F5F5F7;
-  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #FFFFFF;
+  color: #1C1C1E;
+  border: 1px solid #E5E5EA;
   border-radius: 10px;
   padding: 10px 36px 10px 12px;
   font-size: 14px;
@@ -87,65 +87,65 @@ select {
   cursor: pointer;
   outline: none;
   transition: all .2s ease;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2386868B' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
 }
-select:hover { border-color: rgba(255,255,255,0.15); background-color: rgba(255,255,255,0.08); }
-select:focus { border-color: #D4A017; box-shadow: 0 0 0 3px rgba(212,160,23,0.12); color: #F5F5F7; }
-select option { background-color: #1C1C1E; color: #F5F5F7; font-size: 14px; padding: 8px 12px; }
-select option:checked, select option:hover { background-color: #2C2C2E; color: #D4A017; }
+select:hover { border-color: rgba(0,0,0,0.14); background-color: #F2F2F7; }
+select:focus { border-color: #C8881C; box-shadow: 0 0 0 3px rgba(200,136,28,0.12); color: #1C1C1E; }
+select option { background-color: #FFFFFF; color: #1C1C1E; font-size: 14px; padding: 8px 12px; }
+select option:checked, select option:hover { background-color: #F2F2F7; color: #C8881C; }
 
-/* ── react-datepicker Apple dark theme ── */
+/* ── react-datepicker Apple light theme ── */
 .saguaro-calendar {
-  background: rgba(28,28,30,0.95) !important;
+  background: rgba(255,255,255,0.98) !important;
   backdrop-filter: blur(40px) !important;
   -webkit-backdrop-filter: blur(40px) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  border: 1px solid #E5E5EA !important;
   border-radius: 14px !important;
   font-family: inherit !important;
   font-size: 13px !important;
-  color: #F5F5F7 !important;
-  box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  color: #1C1C1E !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.10), 0 0 0 1px rgba(0,0,0,0.04) !important;
 }
 .saguaro-calendar .react-datepicker__header {
-  background: rgba(255,255,255,0.04) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  background: #F2F2F7 !important;
+  border-bottom: 1px solid rgba(0,0,0,0.06) !important;
   border-radius: 14px 14px 0 0 !important;
 }
 .saguaro-calendar .react-datepicker__current-month,
 .saguaro-calendar .react-datepicker__day-name {
-  color: #F5F5F7 !important;
+  color: #1C1C1E !important;
   font-weight: 600 !important;
 }
 .saguaro-calendar .react-datepicker__day {
-  color: #F5F5F7 !important;
+  color: #1C1C1E !important;
   border-radius: 8px !important;
   transition: all 0.15s ease !important;
 }
 .saguaro-calendar .react-datepicker__day:hover {
-  background: rgba(255,255,255,0.08) !important;
-  color: #D4A017 !important;
+  background: rgba(0,0,0,0.05) !important;
+  color: #C8881C !important;
 }
 .saguaro-calendar .react-datepicker__day--selected,
 .saguaro-calendar .react-datepicker__day--keyboard-selected {
-  background: #D4A017 !important;
-  color: #000000 !important;
+  background: #C8881C !important;
+  color: #FFFFFF !important;
   font-weight: 700 !important;
 }
 .saguaro-calendar .react-datepicker__day--today {
-  border: 1px solid #D4A017 !important;
+  border: 1px solid #C8881C !important;
   background: transparent !important;
-  color: #D4A017 !important;
+  color: #C8881C !important;
 }
 .saguaro-calendar .react-datepicker__day--outside-month {
-  color: #48484A !important;
+  color: #C7C7CC !important;
 }
 .saguaro-calendar .react-datepicker__navigation-icon::before {
-  border-color: #86868B !important;
+  border-color: #AEAEB2 !important;
 }
 .saguaro-calendar .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
-  border-color: #D4A017 !important;
+  border-color: #C8881C !important;
 }
 .react-datepicker-wrapper {
   width: 100%;
@@ -252,15 +252,15 @@ body, button, input, textarea, select {
 
 /* ── Apple-grade Glassmorphism ── */
 .glass {
-  background: var(--bg-surface-2);
+  background: #FFFFFF;
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
 }
 .glass-sm {
-  background: var(--bg-surface);
+  background: #FFFFFF;
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--border-subtle);
@@ -268,10 +268,10 @@ body, button, input, textarea, select {
   box-shadow: var(--shadow-sm);
 }
 .glass-elevated {
-  background: var(--bg-elevated);
+  background: #FFFFFF;
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
 }
@@ -309,7 +309,7 @@ body, button, input, textarea, select {
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
@@ -338,33 +338,33 @@ body, button, input, textarea, select {
 
 /* Gold glow on focus */
 input:focus, textarea:focus, select:focus {
-  border-color: #D4A017 !important;
-  box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.12), 0 0 20px rgba(212, 160, 23, 0.06);
+  border-color: #C8881C !important;
+  box-shadow: 0 0 0 3px rgba(200, 136, 28, 0.12);
   outline: none;
 }
 /* Apple-grade input styling */
 input, textarea {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: #FFFFFF;
+  border: 1px solid #E5E5EA;
   border-radius: 10px;
-  color: #F5F5F7;
+  color: #1C1C1E;
   transition: all 0.2s ease;
 }
 input:hover, textarea:hover {
-  border-color: rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.08);
+  border-color: rgba(0,0,0,0.14);
+  background: #FFFFFF;
 }
 input::placeholder, textarea::placeholder {
   color: var(--text-disabled);
 }
 
-/* Status badge colors */
-.badge-green { background: rgba(34, 197, 94, 0.12); color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.25); }
-.badge-gold { background: rgba(212, 160, 23, 0.12); color: #D4A017; border: 1px solid rgba(212, 160, 23, 0.25); }
-.badge-red { background: rgba(239, 68, 68, 0.12); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.25); }
-.badge-blue { background: rgba(99, 102, 241, 0.14); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.30); }
-.badge-purple { background: rgba(139, 92, 246, 0.12); color: #8B5CF6; border: 1px solid rgba(139, 92, 246, 0.25); }
-.badge-gray { background: rgba(148, 163, 184, 0.12); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.25); }
+/* Status badge colors — iOS system hues on light tints */
+.badge-green { background: rgba(52, 199, 89, 0.14); color: #248A3D; border: 1px solid rgba(52, 199, 89, 0.30); }
+.badge-gold { background: rgba(200, 136, 28, 0.12); color: #C8881C; border: 1px solid rgba(200, 136, 28, 0.28); }
+.badge-red { background: rgba(255, 59, 48, 0.12); color: #D70015; border: 1px solid rgba(255, 59, 48, 0.28); }
+.badge-blue { background: rgba(0, 122, 255, 0.12); color: #0066CC; border: 1px solid rgba(0, 122, 255, 0.28); }
+.badge-purple { background: rgba(175, 82, 222, 0.12); color: #9A3CCB; border: 1px solid rgba(175, 82, 222, 0.28); }
+.badge-gray { background: rgba(142, 142, 147, 0.12); color: #6E6E73; border: 1px solid rgba(142, 142, 147, 0.28); }
 [class^="badge-"] {
   display: inline-flex; align-items: center; padding: 2px 10px;
   border-radius: 20px; font-size: 11px; font-weight: 600;
@@ -375,32 +375,32 @@ input::placeholder, textarea::placeholder {
 .tooltip { position: relative; }
 .tooltip::after {
   content: attr(data-tip); position: absolute; bottom: 100%; left: 50%;
-  transform: translateX(-50%); background: rgba(28,28,30,0.95); color: #F5F5F7;
+  transform: translateX(-50%); background: rgba(255,255,255,0.98); color: #1C1C1E;
   padding: 6px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap;
   opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
-  border: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px;
+  border: 1px solid #E5E5EA; margin-bottom: 6px;
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 .tooltip:hover::after { opacity: 1; }
 
 /* Progress bar */
 .progress-bar {
-  height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;
+  height: 6px; background: rgba(0,0,0,0.08); border-radius: 4px; overflow: hidden;
 }
 .progress-bar-fill {
   height: 100%; border-radius: 4px; transition: width 0.5s ease;
-  background: linear-gradient(90deg, #D4A017, #F0C040);
+  background: linear-gradient(90deg, #C8881C, #E0A82E);
 }
 
 /* Divider */
 .divider {
-  height: 1px; background: rgba(255,255,255,0.06); margin: 16px 0;
+  height: 1px; background: rgba(0,0,0,0.08); margin: 16px 0;
 }
 
-/* Scrollbar for dark glass containers */
+/* Scrollbar for light glass containers */
 .glass::-webkit-scrollbar { width: 4px; }
-.glass::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.glass::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 2px; }
 
 /* Confetti burst */
 @keyframes confetti-fall {
@@ -415,32 +415,32 @@ a, button, input, select, textarea {
 
 /* Apple-grade table rows */
 tr { transition: background 0.15s ease; }
-tr:hover td { background: rgba(255, 255, 255, 0.03) !important; }
-thead th { background: rgba(255,255,255,0.03) !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
-tbody td { border-bottom: 1px solid rgba(255,255,255,0.03) !important; }
+tr:hover td { background: rgba(0, 0, 0, 0.03) !important; }
+thead th { background: #F2F2F7 !important; border-bottom: 1px solid #E5E5EA !important; }
+tbody td { border-bottom: 1px solid #E5E5EA !important; }
 
 /* Gold accent button utility */
 .btn-gold {
-  background: linear-gradient(135deg, #D4A017 0%, #C8960F 100%);
-  color: #000; font-weight: 700; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, #C8881C 0%, #B6790F 100%);
+  color: #FFFFFF; font-weight: 700; border: none; border-radius: 10px;
   padding: 10px 24px; cursor: pointer; transition: all 0.2s ease;
-  box-shadow: 0 2px 12px rgba(212,160,23,0.2);
+  box-shadow: 0 2px 12px rgba(200,136,28,0.25);
 }
 .btn-gold:hover {
-  box-shadow: 0 4px 20px rgba(212,160,23,0.35);
+  box-shadow: 0 4px 20px rgba(200,136,28,0.35);
   transform: translateY(-1px);
 }
 .btn-gold:active { transform: scale(0.98) translateY(0); }
 
 /* Ghost button */
 .btn-ghost {
-  background: rgba(255,255,255,0.06); color: #F5F5F7;
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+  background: #FFFFFF; color: #1C1C1E;
+  border: 1px solid #E5E5EA; border-radius: 10px;
   padding: 10px 24px; cursor: pointer; transition: all 0.2s ease;
 }
 .btn-ghost:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.2);
+  background: #F2F2F7;
+  border-color: rgba(0,0,0,0.14);
 }
 
 /* Gradient mesh background utility */
@@ -452,9 +452,9 @@ tbody td { border-bottom: 1px solid rgba(255,255,255,0.03) !important; }
   content: '';
   position: absolute;
   top: -50%; left: -50%; width: 200%; height: 200%;
-  background: radial-gradient(ellipse at 20% 50%, rgba(212,160,23,0.06) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 20%, rgba(59,130,246,0.04) 0%, transparent 50%),
-              radial-gradient(ellipse at 50% 80%, rgba(139,92,246,0.03) 0%, transparent 50%);
+  background: radial-gradient(ellipse at 20% 50%, rgba(200,136,28,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(0,122,255,0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(175,82,222,0.03) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }

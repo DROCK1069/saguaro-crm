@@ -1,35 +1,35 @@
 import React from 'react';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
-// Aligned to the shipped design system (app/globals.css / lib/design-tokens.ts):
-// near-black page base, raised neutral surfaces, hairline borders, reserved gold.
+// Apple light theme — matches the (light) mobile app:
+// iOS grouped page base, white raised surfaces, hairline borders, reserved gold.
 export const T = {
-  bg: '#0B0B0F',
-  surface: '#131318',
-  surface2: '#1A1A21',
-  elevated: '#212129',
-  border: 'rgba(255,255,255,0.10)',
-  borderSubtle: 'rgba(255,255,255,0.07)',
-  borderStrong: 'rgba(255,255,255,0.16)',
-  borderGold: 'rgba(212,160,23,0.35)',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
-  goldDim: 'rgba(212,160,23,0.12)',
-  goldMid: 'rgba(212,160,23,0.22)',
-  white: '#F5F5F7',
-  muted: '#A1A1AA',
-  faint: '#71717A',
-  green: '#22C55E',
-  greenDim: 'rgba(34,197,94,0.12)',
-  red: '#EF4444',
-  redDim: 'rgba(239,68,68,0.12)',
-  amber: '#E0850F',
-  amberDim: 'rgba(224,133,15,0.12)',
-  blue: '#6366F1',
-  blueDim: 'rgba(99,102,241,0.12)',
-  shadowSm: '0 1px 2px rgba(0,0,0,0.4)',
-  shadowMd: '0 4px 14px rgba(0,0,0,0.45)',
-  shadowLg: '0 16px 44px rgba(0,0,0,0.55)',
+  bg: '#F2F2F7',
+  surface: '#F2F2F7',
+  surface2: '#FFFFFF',
+  elevated: '#FFFFFF',
+  border: '#E5E5EA',
+  borderSubtle: 'rgba(0,0,0,0.08)',
+  borderStrong: 'rgba(0,0,0,0.14)',
+  borderGold: 'rgba(200,136,28,0.35)',
+  gold: '#C8881C',
+  goldBright: '#E0A030',
+  goldDim: 'rgba(200,136,28,0.12)',
+  goldMid: 'rgba(200,136,28,0.22)',
+  white: '#1C1C1E',
+  muted: '#6E6E73',
+  faint: '#AEAEB2',
+  green: '#34C759',
+  greenDim: 'rgba(52,199,89,0.12)',
+  red: '#FF3B30',
+  redDim: 'rgba(255,59,48,0.12)',
+  amber: '#FF9500',
+  amberDim: 'rgba(255,149,0,0.12)',
+  blue: '#007AFF',
+  blueDim: 'rgba(0,122,255,0.12)',
+  shadowSm: '0 1px 2px rgba(0,0,0,0.06)',
+  shadowMd: '0 4px 14px rgba(0,0,0,0.08)',
+  shadowLg: '0 16px 44px rgba(0,0,0,0.10)',
 } as const;
 
 // ─── PageWrap ─────────────────────────────────────────────────────────────────
@@ -56,7 +56,6 @@ export function Card({ children, style }: { children: React.ReactNode; style?: R
     <div
       style={{
         background: T.surface2,
-        border: `1px solid ${T.border}`,
         borderRadius: 14,
         boxShadow: T.shadowMd,
         overflow: 'hidden',
@@ -98,11 +97,11 @@ type BadgeColor = 'gold' | 'green' | 'red' | 'amber' | 'blue' | 'muted';
 
 const badgeStyles: Record<BadgeColor, { bg: string; color: string; border: string }> = {
   gold:  { bg: T.goldDim,  color: T.gold,  border: T.borderGold },
-  green: { bg: T.greenDim, color: T.green, border: 'rgba(34,197,94,0.25)' },
-  red:   { bg: T.redDim,   color: T.red,   border: 'rgba(239,68,68,0.25)' },
-  amber: { bg: T.amberDim, color: T.amber, border: 'rgba(224,133,15,0.28)' },
-  blue:  { bg: T.blueDim,  color: T.blue,  border: 'rgba(99,102,241,0.28)' },
-  muted: { bg: 'rgba(255,255,255,0.06)', color: T.muted, border: T.border },
+  green: { bg: T.greenDim, color: T.green, border: 'rgba(52,199,89,0.30)' },
+  red:   { bg: T.redDim,   color: T.red,   border: 'rgba(255,59,48,0.30)' },
+  amber: { bg: T.amberDim, color: T.amber, border: 'rgba(255,149,0,0.32)' },
+  blue:  { bg: T.blueDim,  color: T.blue,  border: 'rgba(0,122,255,0.32)' },
+  muted: { bg: '#F2F2F7', color: T.muted, border: T.border },
 };
 
 export function Badge({ label, color = 'muted' }: { label: string; color?: BadgeColor }) {
@@ -221,9 +220,9 @@ const btnBase: React.CSSProperties = {
 };
 
 const btnVariants: Record<BtnVariant, React.CSSProperties> = {
-  primary: { background: T.gold, color: '#0B0B0F', boxShadow: T.shadowSm },
+  primary: { background: T.gold, color: '#FFFFFF', boxShadow: T.shadowSm },
   ghost: { background: T.elevated, color: T.white, border: `1px solid ${T.border}` },
-  danger: { background: T.redDim, color: T.red, border: `1px solid rgba(239,68,68,0.25)` },
+  danger: { background: T.redDim, color: T.red, border: `1px solid rgba(255,59,48,0.30)` },
 };
 
 const btnSizes: Record<BtnSize, React.CSSProperties> = {
@@ -280,7 +279,7 @@ export function ProgressBar({
       style={{
         width: '100%',
         height,
-        background: 'rgba(255,255,255,0.08)',
+        background: 'rgba(0,0,0,0.08)',
         borderRadius: 999,
         overflow: 'hidden',
       }}
