@@ -25,13 +25,13 @@ import {
   registerForPush,
 } from '@/lib/native';
 
-const GOLD   = '#D4A017';
-const DARK   = '#000000';
-const BORDER = 'rgba(255,255,255,0.06)';
-const TEXT   = '#F5F5F7';
-const DIM    = '#86868B';
-const GREEN  = '#22C55E';
-const RED    = '#EF4444';
+const GOLD   = '#C8881C';
+const DARK   = '#F2F2F7';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
+const GREEN  = '#34C759';
+const RED    = '#FF3B30';
 
 const NAV = [
   { href: '/field',         label: 'Home',   PhIcon: House },
@@ -231,7 +231,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', background: DARK, color: TEXT, fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', maxWidth: 480, margin: '0 auto' }}>
 
       {/* ── Header with project switcher ── */}
-      <div style={{ background: 'rgba(0,0,0,0.95)', position: 'sticky', top: 0, zIndex: 50, borderBottom: `1px solid ${BORDER}`, paddingTop: `max(${native && isIOS() ? '44px' : '6px'}, env(safe-area-inset-top))` }}>
+      <div style={{ background: 'rgba(255,255,255,0.92)', position: 'sticky', top: 0, zIndex: 50, borderBottom: `1px solid ${BORDER}`, paddingTop: `max(${native && isIOS() ? '44px' : '6px'}, env(safe-area-inset-top))` }}>
         {/* Top row: Logo + Status */}
         <div style={{ padding: '6px 14px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -253,7 +253,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
         {/* Project switcher row */}
         <div style={{ padding: '0 14px 6px', position: 'relative' }}>
           <button onClick={() => { setShowProjectPicker(!showProjectPicker); hapticLight().catch(() => {}); }}
-            style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 6, width: '100%', cursor: 'pointer', color: TEXT }}>
+            style={{ background: 'rgba(0,0,0,.04)', border: '1px solid #E5E5EA', borderRadius: 8, padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 6, width: '100%', cursor: 'pointer', color: TEXT }}>
             <span style={{ display: 'flex', alignItems: 'center' }}><House size={16} weight="duotone" color={GOLD} /></span>
             <span style={{ flex: 1, textAlign: 'left', fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {projectName || 'Select Project'}
@@ -262,10 +262,10 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
           </button>
           {/* Project dropdown */}
           {showProjectPicker && projects.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 14, right: 14, background: '#0A0A0A', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 100, maxHeight: 240, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.6)' }}>
+            <div style={{ position: 'absolute', top: '100%', left: 14, right: 14, background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 100, maxHeight: 240, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.6)' }}>
               {projects.map(p => (
                 <button key={p.id} onClick={() => switchProject(p.id)}
-                  style={{ width: '100%', padding: '10px 14px', background: p.id === activeProjectId ? 'rgba(212,160,23,.1)' : 'transparent', border: 'none', borderBottom: `1px solid rgba(255,255,255,.04)`, color: p.id === activeProjectId ? GOLD : TEXT, fontSize: 13, fontWeight: p.id === activeProjectId ? 700 : 400, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  style={{ width: '100%', padding: '10px 14px', background: p.id === activeProjectId ? 'rgba(212,160,23,.1)' : 'transparent', border: 'none', borderBottom: `1px solid #E5E5EA`, color: p.id === activeProjectId ? GOLD : TEXT, fontSize: 13, fontWeight: p.id === activeProjectId ? 700 : 400, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                   {p.id === activeProjectId && <span style={{ fontSize: 10 }}>✓</span>}
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
                 </button>
@@ -277,7 +277,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
         {pathname !== '/field' && (
           <div style={{ padding: '0 14px 5px', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: DIM }}>
             <button onClick={() => router.push('/field')} style={{ background: 'none', border: 'none', color: GOLD, fontSize: 11, cursor: 'pointer', padding: 0, fontWeight: 600 }}>Home</button>
-            <span style={{ color: 'rgba(255,255,255,.2)' }}>›</span>
+            <span style={{ color: 'rgba(28,28,30,.2)' }}>›</span>
             <span style={{ fontWeight: 600, color: TEXT, textTransform: 'capitalize' }}>
               {pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ')}
             </span>
@@ -304,9 +304,9 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
       {showInstall && !isStandalone && !native && (
         <>
           <div onClick={dismissInstall} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', zIndex: 200 }} />
-          <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: '#0A0A0A', borderRadius: '20px 20px 0 0', border: '1px solid rgba(212,160,23,.22)', borderBottom: 'none', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))', zIndex: 201, boxShadow: '0 -10px 48px rgba(0,0,0,0.7)' }}>
+          <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: '#FFFFFF', borderRadius: '20px 20px 0 0', border: '1px solid rgba(212,160,23,.22)', borderBottom: 'none', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))', zIndex: 201, boxShadow: '0 -10px 48px rgba(0,0,0,0.7)' }}>
             <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
-              <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.14)' }} />
+              <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(0,0,0,.14)' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 24px 0' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -321,7 +321,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
                 <span key={b} style={{ background: 'rgba(212,160,23,.12)', border: '1px solid rgba(212,160,23,.28)', borderRadius: 20, padding: '4px 13px', fontSize: 12, fontWeight: 700, color: GOLD }}>{b}</span>
               ))}
             </div>
-            <div style={{ height: 1, background: 'rgba(255,255,255,.07)', margin: '0 24px' }} />
+            <div style={{ height: 1, background: 'rgba(0,0,0,.07)', margin: '0 24px' }} />
             {isIosWeb ? (
               <div style={{ padding: '16px 24px 0' }}>
                 <p style={{ margin: '0 0 14px', fontSize: 13, color: DIM, textAlign: 'center', fontWeight: 600 }}>3 steps in Safari — 15 seconds</p>
@@ -341,7 +341,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
               </div>
             ) : (
               <div style={{ padding: '20px 24px 0' }}>
-                <button onClick={handleInstall} style={{ width: '100%', background: 'linear-gradient(135deg, #D4A017 0%, #EF8C1A 100%)', border: 'none', borderRadius: 14, padding: '16px', color: '#000', fontSize: 17, fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 28px rgba(212,160,23,.5)' }}>
+                <button onClick={handleInstall} style={{ width: '100%', background: 'linear-gradient(135deg, #C8881C 0%, #EF8C1A 100%)', border: 'none', borderRadius: 14, padding: '16px', color: '#000', fontSize: 17, fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 28px rgba(212,160,23,.5)' }}>
                   Install App
                 </button>
                 <p style={{ margin: '9px 0 0', textAlign: 'center', fontSize: 12, color: DIM }}>Takes 2 seconds · Works like a native app</p>
@@ -374,7 +374,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
       </main>
 
       {/* ── Bottom nav ── */}
-      <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', paddingBottom: 'env(safe-area-inset-bottom)', zIndex: 50 }}>
+      <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid #E5E5EA', display: 'flex', paddingBottom: 'env(safe-area-inset-bottom)', zIndex: 50 }}>
         {NAV.map(({ href, label, PhIcon }) => {
           const active = href === '/field' ? pathname === '/field' : pathname.startsWith(href);
           return (
@@ -418,13 +418,13 @@ function HomeIcon({ active }: { active: boolean }) {
   return <svg width="25" height="25" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>{!active&&<polyline points="9 22 9 12 15 12 15 22"/>}</svg>;
 }
 function PunchIcon({ active }: { active: boolean }) {
-  return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill={active ? 'currentColor' : 'none'}/><line x1="12" y1="8" x2="12" y2="12" stroke={active?'#060C15':'currentColor'} strokeWidth="2.5"/><line x1="12" y1="16" x2="12.01" y2="16" stroke={active?'#060C15':'currentColor'} strokeWidth="3"/></svg>;
+  return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill={active ? 'currentColor' : 'none'}/><line x1="12" y1="8" x2="12" y2="12" stroke={active?'#F2F2F7':'currentColor'} strokeWidth="2.5"/><line x1="12" y1="16" x2="12.01" y2="16" stroke={active?'#F2F2F7':'currentColor'} strokeWidth="3"/></svg>;
 }
 function LogIcon({ active }: { active: boolean }) {
-  return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill={active?'currentColor':'none'}/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13" stroke={active?'#060C15':'currentColor'}/><line x1="16" y1="17" x2="8" y2="17" stroke={active?'#060C15':'currentColor'}/></svg>;
+  return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill={active?'currentColor':'none'}/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13" stroke={active?'#F2F2F7':'currentColor'}/><line x1="16" y1="17" x2="8" y2="17" stroke={active?'#F2F2F7':'currentColor'}/></svg>;
 }
 function CameraIcon({ active }: { active: boolean }) {
-  return <svg width="25" height="25" viewBox="0 0 24 24" fill={active?'currentColor':'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4" fill={active?'#060C15':'none'}/></svg>;
+  return <svg width="25" height="25" viewBox="0 0 24 24" fill={active?'currentColor':'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4" fill={active?'#F2F2F7':'none'}/></svg>;
 }
 function GridIcon({ active }: { active: boolean }) {
   return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" fill={active?'currentColor':'none'}/><rect x="14" y="3" width="7" height="7" fill={active?'currentColor':'none'}/><rect x="3" y="14" width="7" height="7" fill={active?'currentColor':'none'}/><rect x="14" y="14" width="7" height="7" fill={active?'currentColor':'none'}/></svg>;

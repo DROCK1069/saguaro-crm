@@ -107,7 +107,7 @@ export function SwipeActionItem({
           transition: dragging.current ? 'none' : 'transform 0.2s cubic-bezier(0.32,0.72,0,1)',
           position: 'relative',
           zIndex: 1,
-          background: '#07101C',
+          background: '#FFFFFF',
         }}
       >
         {children}

@@ -591,10 +591,10 @@ export default function SaguaroChatWidget({
           50% { opacity: 0.7; }
         }
         .sage-scroll::-webkit-scrollbar { width: 4px; }
-        .sage-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+        .sage-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.03); }
         .sage-scroll::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.25); border-radius: 2px; }
-        .sage-msg-bubble strong { color: #D4A017; }
-        .sage-msg-bubble code { background: rgba(212,160,23,0.12); color: #D4A017; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+        .sage-msg-bubble strong { color: #C8881C; }
+        .sage-msg-bubble code { background: rgba(212,160,23,0.12); color: #C8881C; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
         .sage-msg-bubble ul { margin: 4px 0; padding-left: 16px; }
         .sage-msg-bubble li { margin: 2px 0; }
         .sage-msg-bubble p { margin: 0 0 8px; }
@@ -615,7 +615,7 @@ export default function SaguaroChatWidget({
               background: 'rgba(0,0,0,0.88)', color: '#fff', fontSize: 11,
               padding: '7px 14px', borderRadius: 20, whiteSpace: 'nowrap',
               animation: 'tooltipFade 0.2s ease forwards', pointerEvents: 'none',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid #E5E5EA',
             }}>
               Chat with Sage — AI Construction Expert
               <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(0,0,0,0.88)' }} />
@@ -628,7 +628,7 @@ export default function SaguaroChatWidget({
               alignItems: 'center', justifyContent: 'center', fontSize: 10,
               fontWeight: 700, color: '#fff', zIndex: 1,
               animation: 'badgePulse 2s ease-in-out infinite',
-              border: '2px solid #0D1520',
+              border: '2px solid #FFFFFF',
             }}>1</div>
           )}
           <button
@@ -663,11 +663,11 @@ export default function SaguaroChatWidget({
             position: 'fixed', bottom: 24, right: 24,
             width: 'min(420px, calc(100vw - 32px))',
             height: isMinimized ? 72 : 'min(620px, 80vh)',
-            zIndex: 9998, background: '#0C1420',
-            border: '1px solid rgba(255,255,255,0.09)',
+            zIndex: 9998, background: '#FFFFFF',
+            border: '1px solid #E5E5EA',
             borderRadius: 20, overflow: 'hidden',
             display: 'flex', flexDirection: 'column',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(0,0,0,0.04)',
             animation: 'panelIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
             transformOrigin: 'bottom right',
             transition: 'height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -678,25 +678,25 @@ export default function SaguaroChatWidget({
             onClick={isMinimized ? () => setIsMinimized(false) : undefined}
             style={{
               height: 72, minHeight: 72,
-              background: 'linear-gradient(135deg, #131C2A 0%, #0C1420 100%)',
-              borderBottom: isMinimized ? 'none' : '1px solid rgba(255,255,255,0.07)',
+              background: 'linear-gradient(135deg, #FFFFFF 0%, #F2F2F7 100%)',
+              borderBottom: isMinimized ? 'none' : '1px solid #E5E5EA',
               padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12,
               cursor: isMinimized ? 'pointer' : 'default', flexShrink: 0,
             }}
           >
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #D4A017, #8B6210)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 2px 12px rgba(212,160,23,0.35)', flexShrink: 0 }}>🌵</div>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #C8881C, #8B6210)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 2px 12px rgba(212,160,23,0.35)', flexShrink: 0 }}>🌵</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
                 Sage
                 {memoryProfile?.identity.firstName && (
-                  <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}> — hey {memoryProfile.identity.firstName}</span>
+                  <span style={{ fontWeight: 400, color: 'rgba(28,28,30,0.4)', fontSize: 13 }}> — hey {memoryProfile.identity.firstName}</span>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+              <div style={{ fontSize: 11, color: 'rgba(28,28,30,0.4)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', animation: 'onlinePulse 2s ease-in-out infinite', flexShrink: 0 }} />
                 AI Construction Expert · Online
                 {memoryProfile && memoryProfile.engagement.currentStreak > 2 && (
-                  <span style={{ marginLeft: 6, color: '#D4A017', fontSize: 10, animation: 'streakFlicker 3s ease-in-out infinite' }}>
+                  <span style={{ marginLeft: 6, color: '#C8881C', fontSize: 10, animation: 'streakFlicker 3s ease-in-out infinite' }}>
                     🔥 {memoryProfile.engagement.currentStreak}d
                   </span>
                 )}
@@ -705,12 +705,12 @@ export default function SaguaroChatWidget({
             <div style={{ display: 'flex', gap: 6, flexShrink: 0, position: 'relative' }}>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.13)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+                style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.07)', border: 'none', cursor: 'pointer', color: 'rgba(28,28,30,0.5)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.13)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.07)')}
               >⋯</button>
               {showMenu && (
-                <div style={{ position: 'absolute', top: '110%', right: 0, background: '#1A2535', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden', zIndex: 100, minWidth: 180, boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+                <div style={{ position: 'absolute', top: '110%', right: 0, background: '#FFFFFF', border: '1px solid #E5E5EA', borderRadius: 10, overflow: 'hidden', zIndex: 100, minWidth: 180, boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
                   {[
                     { label: '🗑 Clear conversation', action: clearConversation },
                     { label: '📋 Copy transcript', action: copyTranscript },
@@ -718,8 +718,8 @@ export default function SaguaroChatWidget({
                     { label: '🧠 Delete my memory', action: clearMemory },
                   ].map(item => (
                     <button key={item.label} onClick={item.action}
-                      style={{ display: 'block', width: '100%', padding: '10px 14px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+                      style={{ display: 'block', width: '100%', padding: '10px 14px', background: 'none', border: 'none', color: 'rgba(28,28,30,0.75)', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.07)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                     >{item.label}</button>
                   ))}
@@ -728,14 +728,14 @@ export default function SaguaroChatWidget({
               <button
                 onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
                 title={isMinimized ? 'Expand' : 'Minimize'}
-                style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.13)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+                style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.07)', border: 'none', cursor: 'pointer', color: 'rgba(28,28,30,0.5)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.13)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.07)')}
               >{isMinimized ? '□' : '─'}</button>
               <button
                 className="sage-close-btn"
                 onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, color 0.15s' }}
+                style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.07)', border: 'none', cursor: 'pointer', color: 'rgba(28,28,30,0.5)', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, color 0.15s' }}
               >×</button>
             </div>
           </div>
@@ -753,27 +753,27 @@ export default function SaguaroChatWidget({
                   }}>
                     {msg.role === 'user' ? (
                       <>
-                        <div style={{ maxWidth: '80%', background: 'linear-gradient(135deg, #D4A017 0%, #C8960F 100%)', color: '#000', fontSize: 14, fontWeight: 500, padding: '10px 16px', borderRadius: '18px 18px 4px 18px', boxShadow: '0 2px 12px rgba(212,160,23,0.2)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        <div style={{ maxWidth: '80%', background: 'linear-gradient(135deg, #C8881C 0%, #C8960F 100%)', color: '#000', fontSize: 14, fontWeight: 500, padding: '10px 16px', borderRadius: '18px 18px 4px 18px', boxShadow: '0 2px 12px rgba(212,160,23,0.2)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                           {msg.content}
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', paddingRight: 4 }}>
+                        <div style={{ fontSize: 10, color: 'rgba(28,28,30,0.2)', paddingRight: 4 }}>
                           {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </>
                     ) : (
                       <div style={{ display: 'flex', gap: 10, maxWidth: '88%', alignItems: 'flex-start' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #D4A017, #8B6210)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0, marginTop: 2 }}>🌵</div>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #C8881C, #8B6210)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0, marginTop: 2 }}>🌵</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           {msg.content === '__TYPING__' ? (
-                            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', padding: '14px 18px', borderRadius: '4px 18px 18px 18px', display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <div style={{ background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', padding: '14px 18px', borderRadius: '4px 18px 18px 18px', display: 'flex', gap: 6, alignItems: 'center' }}>
                               {[0, 0.2, 0.4].map((delay, i) => (
-                                <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4A017', animation: 'dotBlink 1.2s ease-in-out infinite', animationDelay: `${delay}s` }} />
+                                <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#C8881C', animation: 'dotBlink 1.2s ease-in-out infinite', animationDelay: `${delay}s` }} />
                               ))}
                             </div>
                           ) : (
                             <div
                               className="sage-msg-bubble"
-                              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.88)', fontSize: 14, lineHeight: 1.65, padding: '12px 16px', borderRadius: '4px 18px 18px 18px', wordBreak: 'break-word' }}
+                              style={{ background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', color: 'rgba(28,28,30,0.88)', fontSize: 14, lineHeight: 1.65, padding: '12px 16px', borderRadius: '4px 18px 18px 18px', wordBreak: 'break-word' }}
                               dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                             />
                           )}
@@ -786,16 +786,16 @@ export default function SaguaroChatWidget({
                                 >
                                   <span style={{ fontSize: 18 }}>{action.icon}</span>
                                   <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#D4A017' }}>{action.label}</div>
-                                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{action.description}</div>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#C8881C' }}>{action.label}</div>
+                                    <div style={{ fontSize: 11, color: 'rgba(28,28,30,0.4)', marginTop: 2 }}>{action.description}</div>
                                   </div>
-                                  <span style={{ fontSize: 12, color: '#D4A017', opacity: 0.7 }}>→</span>
+                                  <span style={{ fontSize: 12, color: '#C8881C', opacity: 0.7 }}>→</span>
                                 </button>
                               ))}
                             </div>
                           )}
                           {msg.content !== '__TYPING__' && (
-                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', paddingLeft: 4 }}>
+                            <div style={{ fontSize: 10, color: 'rgba(28,28,30,0.2)', paddingLeft: 4 }}>
                               {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           )}
@@ -812,15 +812,15 @@ export default function SaguaroChatWidget({
                 <div style={{ padding: '0 14px 12px', display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                   {chips.map(chip => (
                     <button key={chip} className="sage-chip" onClick={() => sendMessage(chip)}
-                      style={{ background: 'rgba(212,160,23,0.07)', border: '1px solid rgba(212,160,23,0.22)', borderRadius: 20, padding: '6px 14px', fontSize: 12, color: '#D4A017', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit' }}
+                      style={{ background: 'rgba(212,160,23,0.07)', border: '1px solid rgba(212,160,23,0.22)', borderRadius: 20, padding: '6px 14px', fontSize: 12, color: '#C8881C', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit' }}
                     >{chip}</button>
                   ))}
                 </div>
               )}
 
               {/* INPUT */}
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: '14px', background: 'rgba(0,0,0,0.15)', flexShrink: 0 }}>
-                <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, display: 'flex', alignItems: 'flex-end', padding: '10px 12px', gap: 10, transition: 'border-color 0.2s, box-shadow 0.2s' }}>
+              <div style={{ borderTop: '1px solid #E5E5EA', padding: '14px', background: 'rgba(0,0,0,0.15)', flexShrink: 0 }}>
+                <div style={{ background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 14, display: 'flex', alignItems: 'flex-end', padding: '10px 12px', gap: 10, transition: 'border-color 0.2s, box-shadow 0.2s' }}>
                   <textarea
                     ref={inputRef}
                     value={input}
@@ -835,7 +835,7 @@ export default function SaguaroChatWidget({
                     }}
                     onBlur={e => {
                       const c = e.currentTarget.parentElement;
-                      if (c) { c.style.borderColor = 'rgba(255,255,255,0.09)'; c.style.boxShadow = 'none'; }
+                      if (c) { c.style.borderColor = 'rgba(0,0,0,0.09)'; c.style.boxShadow = 'none'; }
                     }}
                   />
                   <button
@@ -847,7 +847,7 @@ export default function SaguaroChatWidget({
                       cursor: isStreaming || input.trim() ? 'pointer' : 'default',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       transition: 'all 0.15s',
-                      background: isStreaming ? 'rgba(239,68,68,0.2)' : input.trim() ? 'linear-gradient(135deg, #D4A017, #C8960F)' : 'rgba(255,255,255,0.05)',
+                      background: isStreaming ? 'rgba(239,68,68,0.2)' : input.trim() ? 'linear-gradient(135deg, #C8881C, #C8960F)' : 'rgba(0,0,0,0.05)',
                       boxShadow: input.trim() && !isStreaming ? '0 2px 12px rgba(212,160,23,0.3)' : 'none',
                     }}
                   >
@@ -860,7 +860,7 @@ export default function SaguaroChatWidget({
                     )}
                   </button>
                 </div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.16)', textAlign: 'center', marginTop: 8, letterSpacing: '0.3px' }}>
+                <div style={{ fontSize: 10, color: 'rgba(28,28,30,0.16)', textAlign: 'center', marginTop: 8, letterSpacing: '0.3px' }}>
                   Sage · Powered by Claude AI · Knows construction inside and out
                 </div>
               </div>

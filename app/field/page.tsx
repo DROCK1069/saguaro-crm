@@ -6,16 +6,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 
-const GOLD   = '#D4A017';
-const RAISED = 'rgba(255,255,255,0.03)';
-const BORDER = 'rgba(255,255,255,0.06)';
-const TEXT   = '#F5F5F7';
-const DIM    = '#86868B';
-const GREEN  = '#22C55E';
-const RED    = '#EF4444';
-const BLUE   = '#3B82F6';
-const AMBER  = '#F59E0B';
-const PURPLE = '#8B5CF6';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
+const GREEN  = '#34C759';
+const RED    = '#FF3B30';
+const BLUE   = '#007AFF';
+const AMBER  = '#FF9500';
+const PURPLE = '#AF52DE';
 
 interface Project { id: string; name: string; status?: string; }
 interface Weather { temp: number; description: string; icon: string; windspeed: number; condition: 'good' | 'caution' | 'stop'; }
@@ -202,7 +202,7 @@ export default function FieldHome() {
         {/* Project name / selector */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {loadingProjects ? (
-            <div style={{ height: 26, background: 'rgba(255,255,255,0.06)', borderRadius: 4, width: '60%' }} />
+            <div style={{ height: 26, background: 'rgba(0,0,0,0.06)', borderRadius: 4, width: '60%' }} />
           ) : projects.length === 0 ? (
             <div style={{ flex: 1 }}>
               <p style={{ margin: 0, fontSize: 13, color: AMBER, fontWeight: 700 }}>No projects yet</p>
@@ -219,7 +219,7 @@ export default function FieldHome() {
                 style={{ width: '100%', background: 'transparent', border: 'none', color: TEXT, fontSize: 19, fontWeight: 900, outline: 'none', cursor: 'pointer', padding: '2px 0 0', appearance: 'none', WebkitAppearance: 'none', letterSpacing: -0.3 }}
               >
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id} style={{ background: '#0A0A0A' }}>{p.name}</option>
+                  <option key={p.id} value={p.id} style={{ background: '#FFFFFF' }}>{p.name}</option>
                 ))}
               </select>
             </div>
@@ -227,7 +227,7 @@ export default function FieldHome() {
         </div>
         {/* Stats strip */}
         {active && !loadingProjects && (
-          <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.07)' }}>
+          <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 10, borderTop: '1px solid #E5E5EA' }}>
             <Stat label="Last Log" value={lastLog ? daysAgo(lastLog.log_date || lastLog.date || '') : '—'} />
             <Stat label="Crew" value={lastLog?.crew_count ? String(lastLog.crew_count) : '—'} />
             <Stat label="Open RFIs" value={String(openRFIs.length)} color={openRFIs.length > 0 ? AMBER : DIM} />
@@ -309,17 +309,17 @@ export default function FieldHome() {
       {sageOpen && (
         <div
           onClick={handleBackdropClick}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }}
+          style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }}
         >
           <div
             ref={drawerRef}
-            style={{ background: '#0A0A0A', borderRadius: '20px 20px 0 0', border: '1px solid rgba(212,160,23,.2)', borderBottom: 'none', display: 'flex', flexDirection: 'column', maxHeight: '80dvh', minHeight: '50dvh' }}
+            style={{ background: '#FFFFFF', borderRadius: '20px 20px 0 0', border: '1px solid rgba(212,160,23,.2)', borderBottom: 'none', display: 'flex', flexDirection: 'column', maxHeight: '80dvh', minHeight: '50dvh' }}
             onClick={e => e.stopPropagation()}
           >
             {/* Drawer handle + header */}
             <div style={{ padding: '10px 16px 0', flexShrink: 0 }}>
-              <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, margin: '0 auto 12px' }} />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 2, margin: '0 auto 12px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #E5E5EA' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ color: GOLD, display: 'flex' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                   <span style={{ fontSize: 16, fontWeight: 800, color: GOLD }}>Sage AI</span>
@@ -369,7 +369,7 @@ export default function FieldHome() {
             </div>
 
             {/* Input */}
-            <div style={{ padding: '10px 12px', paddingBottom: 'max(12px,env(safe-area-inset-bottom))', borderTop: `1px solid ${BORDER}`, flexShrink: 0, background: '#0A0A0A' }}>
+            <div style={{ padding: '10px 12px', paddingBottom: 'max(12px,env(safe-area-inset-bottom))', borderTop: `1px solid ${BORDER}`, flexShrink: 0, background: '#FFFFFF' }}>
               <div style={{ display: 'flex', gap: 8, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 20, padding: '6px 6px 6px 14px', alignItems: 'flex-end' }}>
                 <input
                   value={sageInput}

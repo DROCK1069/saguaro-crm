@@ -7,14 +7,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/components/Toast';
 
-const BASE   = '#0F1419';
-const CARD   = '#1A1F2E';
-const GOLD   = '#D4A017';
-const GREEN  = '#22C55E';
-const RED    = '#EF4444';
-const BORDER = '#2A3144';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const BASE   = '#F2F2F7';
+const CARD   = '#FFFFFF';
+const GOLD   = '#C8881C';
+const GREEN  = '#34C759';
+const RED    = '#FF3B30';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 
 type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'checkbox' | 'photo' | 'signature' | 'rating';
 type Category = 'safety' | 'quality' | 'inspection' | 'checklist' | 'custom';
@@ -685,7 +685,7 @@ export default function FormsPage() {
                   type="date"
                   value={responses[field.id] || ''}
                   onChange={(e) => setResponse(field.id, e.target.value)}
-                  style={{ ...inputStyle(), colorScheme: 'dark' }}
+                  style={{ ...inputStyle(), colorScheme: 'light' }}
                 />
               )}
 
@@ -805,8 +805,8 @@ function inputStyle(): React.CSSProperties {
     padding: '10px 12px',
     borderRadius: 8,
     border: '1px solid #2A3144',
-    background: '#0F1419cc',
-    color: '#F0F4FF',
+    background: 'rgba(242,242,247,0.85)',
+    color: '#1C1C1E',
     fontSize: 14,
     outline: 'none',
     boxSizing: 'border-box',
