@@ -359,7 +359,7 @@ function CoordinationPage() {
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: GOLD }}>Coordination Issues</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={handleExportPDF} style={headerBtn} title="Export PDF">🖨</button>
-          <button onClick={() => { setForm(emptyForm); setFormPhotos([]); setPhotoPreview([]); setView('create'); }} style={{ ...headerBtn, background: GOLD, color: '#F2F2F7' }}>+ New</button>
+          <button onClick={() => { setForm(emptyForm); setFormPhotos([]); setPhotoPreview([]); setView('create'); }} style={{ ...headerBtn, background: GOLD, color: '#1C1C1E' }}>+ New</button>
         </div>
       </div>
 
@@ -769,7 +769,7 @@ function CoordinationPage() {
 
         {/* Submit */}
         <button onClick={handleCreate} disabled={saving}
-          style={{ width: '100%', marginTop: 20, marginBottom: 40, padding: 14, background: GOLD, color: '#F2F2F7', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+          style={{ width: '100%', marginTop: 20, marginBottom: 40, padding: 14, background: GOLD, color: '#1C1C1E', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
           {saving ? 'Saving...' : 'Create Issue'}
         </button>
       </div>
@@ -781,7 +781,7 @@ function CoordinationPage() {
 
 /* ─── Shared Styles ─── */
 const toastStyle: React.CSSProperties = {
-  position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: GOLD, color: '#F2F2F7',
+  position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: GOLD, color: '#1C1C1E',
   padding: '10px 20px', borderRadius: 10, fontWeight: 600, fontSize: 14, zIndex: 9999, boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
 };
 const headerBtn: React.CSSProperties = {

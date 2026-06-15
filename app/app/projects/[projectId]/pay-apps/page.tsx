@@ -161,7 +161,7 @@ export default function PayAppsPage() {
         </div>
         <Link
           href={`/app/projects/${projectId}/pay-apps/new`}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,textDecoration:'none'}}
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}
         >
           + New Pay Application
         </Link>
@@ -203,7 +203,7 @@ export default function PayAppsPage() {
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Create your first AIA G702/G703 pay application to bill the owner.</div>
             <Link
               href={`/app/projects/${projectId}/pay-apps/new`}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,textDecoration:'none'}}
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}
             >
               + Create First Pay Application
             </Link>
@@ -275,7 +275,7 @@ export default function PayAppsPage() {
                       ) : editId===pa.id ? (
                         <div style={{display:'flex',alignItems:'center',gap:4}}>
                           <input value={editVal} onChange={e=>setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditPayAmt(pa.id);if(e.key==='Escape')setEditId(null);}} style={{width:100,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
-                          <button onClick={()=>handleEditPayAmt(pa.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#F2F2F7',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                          <button onClick={()=>handleEditPayAmt(pa.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
                           <button onClick={()=>setEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                         </div>
                       ) : (

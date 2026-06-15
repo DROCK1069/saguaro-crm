@@ -101,7 +101,7 @@ export default function ReportsPage() {
                   <button
                     onClick={() => downloadReport(r.reportType, r.title, 'pdf')}
                     disabled={busy}
-                    style={{ padding: '6px 14px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 6, color: '#F2F2F7', fontSize: 12, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1, minWidth: 110 }}
+                    style={{ padding: '6px 14px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 6, color: '#1C1C1E', fontSize: 12, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1, minWidth: 110 }}
                   >
                     {pdfBusy ? '⏳ Generating...' : '📄 Download PDF'}
                   </button>

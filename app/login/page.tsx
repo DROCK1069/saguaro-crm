@@ -202,7 +202,7 @@ export default function LoginPage(){
                     transition:'all .15s',cursor:'pointer',flexShrink:0,
                   }}
                 >
-                  {remember && <span style={{color:'#F2F2F7',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>}
+                  {remember && <span style={{color:'#1C1C1E',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>}
                 </div>
                 <span style={{fontSize:12,color:DIM,fontWeight:500}}>Remember me on this device</span>
               </label>
@@ -212,7 +212,7 @@ export default function LoginPage(){
                 style={{
                   marginTop:4,padding:'14px 0',
                   background:loading?'rgba(212,160,23,.5)':`linear-gradient(135deg,${GOLD},#E0A030)`,
-                  border:'none',borderRadius:9,color:'#F2F2F7',fontSize:15,fontWeight:800,
+                  border:'none',borderRadius:9,color:'#1C1C1E',fontSize:15,fontWeight:800,
                   cursor:loading?'not-allowed':'pointer',transition:'all .2s',
                   display:'flex',alignItems:'center',justifyContent:'center',gap:8,
                   boxShadow: loading ? 'none' : '0 4px 16px rgba(212,160,23,.25)',

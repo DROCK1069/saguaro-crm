@@ -65,7 +65,7 @@ export default function ResetPasswordPage(){
                     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Confirm Password</label>
                     <input type="password" placeholder="Repeat password" value={confirm} onChange={e=>setConfirm(e.target.value)} required autoComplete="new-password" style={inputStyle}/>
                   </div>
-                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:9,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
+                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:9,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
                     {loading?'Updating…':'Update Password →'}
                   </button>
                 </form>

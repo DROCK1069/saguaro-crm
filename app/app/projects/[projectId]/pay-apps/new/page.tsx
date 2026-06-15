@@ -195,7 +195,7 @@ export default function NewPayAppPage() {
                   <input type="number" value={retainagePct} onChange={e=>setRetainagePct(e.target.value)} placeholder="10" min="0" max="100" style={INP}/>
                 </div>
               </div>
-              <button onClick={()=>setStep(2)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:'pointer'}}>
+              <button onClick={()=>setStep(2)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:'pointer'}}>
                 Next: Schedule of Values →
               </button>
             </div>
@@ -273,7 +273,7 @@ export default function NewPayAppPage() {
                   {saving ? 'Saving…' : 'Save Draft'}
                 </button>
                 <button onClick={()=>save('submitted')} disabled={saving}
-                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
+                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
                   {saving ? 'Submitting…' : 'Submit to Owner →'}
                 </button>
               </div>

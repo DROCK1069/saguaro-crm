@@ -391,7 +391,7 @@ function AROverlayPage() {
               </p>
               <button onClick={() => { startCamera(); setCalibStep('point_a'); }} style={{
                 ...glass, padding: '14px 28px', cursor: 'pointer', fontSize: 15, fontWeight: 800,
-                color: BASE, background: GOLD, border: `1px solid ${GOLD}`, borderRadius: 14,
+                color: '#1C1C1E', background: GOLD, border: `1px solid ${GOLD}`, borderRadius: 14,
                 width: '100%',
               }}>
                 Start Calibration
@@ -409,7 +409,7 @@ function AROverlayPage() {
               </p>
               <button onClick={startCamera} style={{
                 ...glass, padding: '14px 28px', cursor: 'pointer', fontSize: 15, fontWeight: 800,
-                color: BASE, background: GOLD, border: `1px solid ${GOLD}`, borderRadius: 14,
+                color: '#1C1C1E', background: GOLD, border: `1px solid ${GOLD}`, borderRadius: 14,
                 width: '100%', marginBottom: 10,
               }}>
                 Open Camera

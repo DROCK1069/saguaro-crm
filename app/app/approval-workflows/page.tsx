@@ -602,7 +602,7 @@ export default function ApprovalWorkflowsPage() {
       {/* Toast notification */}
       {toast && (
         <div style={{
-          position: 'fixed', top: 20, right: 20, background: GOLD, color: BG, padding: '10px 24px',
+          position: 'fixed', top: 20, right: 20, background: GOLD, color: '#1C1C1E', padding: '10px 24px',
           borderRadius: 8, fontWeight: 700, fontSize: 13, zIndex: 9999, boxShadow: '0 4px 24px rgba(0,0,0,.5)',
         }}>{toast}</div>
       )}

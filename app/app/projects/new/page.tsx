@@ -145,7 +145,7 @@ export default function NewProjectPage() {
           </div>
         </div>
         <div style={{display:'flex',gap:12,marginTop:8}}>
-          <button type="submit" disabled={saving||!name.trim()||!address.trim()} style={{padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:'pointer',opacity:saving||!name.trim()||!address.trim()?0.6:1}}>
+          <button type="submit" disabled={saving||!name.trim()||!address.trim()} style={{padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:'pointer',opacity:saving||!name.trim()||!address.trim()?0.6:1}}>
             {saving?'Creating…':'Create Project'}
           </button>
           <button type="button" onClick={()=>router.back()} style={{padding:'13px 20px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,color:DIM,fontSize:14,cursor:'pointer'}}>

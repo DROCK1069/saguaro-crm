@@ -97,7 +97,7 @@ export default function TeamPage(){
   const inputStyle = {width:'100%',padding:'8px 12px',background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const};
 
   return <div>
-    <PageHeader title="Team" sub="Manage project team members and access" actions={<button onClick={()=>setShowInvite(!showInvite)} style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Invite Member</button>}/>
+    <PageHeader title="Team" sub="Manage project team members and access" actions={<button onClick={()=>setShowInvite(!showInvite)} style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Invite Member</button>}/>
     {showInvite&&<div style={{margin:24,background:RAISED,border:`1px solid rgba(212,160,23,.3)`,borderRadius:10,padding:24}}>
       <div style={{fontWeight:700,fontSize:15,marginBottom:16,color:TEXT}}>Invite Team Member</div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:16}}>
@@ -118,7 +118,7 @@ export default function TeamPage(){
       </div>
       {inviteMsg&&<div style={{fontSize:13,marginBottom:12,color:inviteMsg==='Invitation sent!'?GREEN:RED}}>{inviteMsg}</div>}
       <div style={{display:'flex',gap:10}}>
-        <button onClick={handleInvite} disabled={inviting} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer',opacity:inviting?.6:1}}>{inviting?'Sending...':'Send Invitation'}</button>
+        <button onClick={handleInvite} disabled={inviting} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',opacity:inviting?.6:1}}>{inviting?'Sending...':'Send Invitation'}</button>
         <button onClick={()=>{setShowInvite(false);setInviteMsg('');}} style={{padding:'9px 20px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
       </div>
     </div>}
@@ -133,7 +133,7 @@ export default function TeamPage(){
           ) : members.length === 0 ? (
             <tr><td colSpan={6} style={{padding:'32px 12px',textAlign:'center',color:DIM,fontSize:13}}>No team members yet. Invite someone to get started.</td></tr>
           ) : members.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(38,51,71,.4)`}}>
-            <td style={{padding:'11px 12px'}}><div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:'50%',background:`linear-gradient(135deg,${GOLD},#B85C2A)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#F2F2F7'}}>{m.name[0]}</div><span style={{color:TEXT,fontWeight:600}}>{m.name}</span></div></td>
+            <td style={{padding:'11px 12px'}}><div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:'50%',background:`linear-gradient(135deg,${GOLD},#B85C2A)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#1C1C1E'}}>{m.name[0]}</div><span style={{color:TEXT,fontWeight:600}}>{m.name}</span></div></td>
             <td style={{padding:'11px 12px',color:DIM}}>{m.role}</td>
             <td style={{padding:'11px 12px',color:DIM}}>{m.email}</td>
             <td style={{padding:'11px 12px'}}><Badge label={m.access} color={m.access==='Admin'?GOLD:m.access==='Manager'?'#4a9de8':'#6E6E73'} bg={m.access==='Admin'?'rgba(212,160,23,.12)':m.access==='Manager'?'rgba(26,95,168,.12)':'rgba(148,163,184,.08)'}/></td>

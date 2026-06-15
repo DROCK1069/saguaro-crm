@@ -702,7 +702,7 @@ export default function DashboardConfigPage() {
         </div>
         <button onClick={() => setPresetModalOpen(true)} style={{ ...btnStyle('secondary'), display: 'flex', alignItems: 'center', gap: 6 }}>
           <span>Presets</span>
-          {layout.preset && <span style={{ fontSize: 10, background: GOLD, color: BG, padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>{layout.preset}</span>}
+          {layout.preset && <span style={{ fontSize: 10, background: GOLD, color: '#1C1C1E', padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>{layout.preset}</span>}
         </button>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: DIM }}>{layout.widgets.length} widget{layout.widgets.length !== 1 ? 's' : ''}</span>
@@ -748,7 +748,7 @@ export default function DashboardConfigPage() {
                       <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{cw.name}</span>
                     </div>
                     {count > 0 && (
-                      <span style={{ fontSize: 10, background: GOLD, color: BG, padding: '2px 7px', borderRadius: 10, fontWeight: 700 }}>{count}</span>
+                      <span style={{ fontSize: 10, background: GOLD, color: '#1C1C1E', padding: '2px 7px', borderRadius: 10, fontWeight: 700 }}>{count}</span>
                     )}
                   </div>
                   <div style={{ fontSize: 12, color: DIM, flex: 1 }}>{cw.description}</div>

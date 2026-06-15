@@ -156,7 +156,7 @@ export default function OverviewPage(){
       </div>
       <div style={{display:'flex',gap:10,alignItems:'center'}}>
         <button onClick={runAutopilot} disabled={scanning} style={{padding:'9px 16px',background:'rgba(212,160,23,.1)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer',opacity:scanning?.6:1}}>{scanning?'Scanning...':'Run Autopilot'}</button>
-        <Link href={'/app/projects/'+projectId+'/pay-apps/new'} style={{padding:'9px 16px',background:'linear-gradient(135deg,'+GOLD+',#E0A030)',borderRadius:7,color:'#F2F2F7',fontSize:12,fontWeight:800,textDecoration:'none'}}>+ New Pay App</Link>
+        <Link href={'/app/projects/'+projectId+'/pay-apps/new'} style={{padding:'9px 16px',background:'linear-gradient(135deg,'+GOLD+',#E0A030)',borderRadius:7,color:'#1C1C1E',fontSize:12,fontWeight:800,textDecoration:'none'}}>+ New Pay App</Link>
       </div>
     </div>
     {scanMsg&&<div style={{margin:'12px 24px 0',padding:'12px 18px',background: scanMsg.includes('failed') ? 'rgba(192,48,48,.1)' : 'rgba(26,138,74,.1)',border:`1px solid ${scanMsg.includes('failed') ? 'rgba(192,48,48,.35)' : 'rgba(26,138,74,.35)'}`,borderRadius:8,fontSize:13,fontWeight:600,color: scanMsg.includes('failed') ? RED : GREEN,display:'flex',alignItems:'center',gap:8}}>

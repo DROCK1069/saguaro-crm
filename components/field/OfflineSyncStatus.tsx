@@ -130,7 +130,7 @@ export default function OfflineSyncStatus() {
         <span
           style={{
             background: online ? GOLD : '#ef4444',
-            color: DARK,
+            color: '#1C1C1E',
             fontSize: 11,
             fontWeight: 700,
             padding: '2px 8px',
@@ -155,7 +155,7 @@ export default function OfflineSyncStatus() {
           onClick={handleSync}
           style={{
             background: GOLD,
-            color: DARK,
+            color: '#1C1C1E',
             border: 'none',
             borderRadius: 6,
             padding: '4px 10px',

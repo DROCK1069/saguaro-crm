@@ -629,7 +629,7 @@ export default function CertifiedPayrollPage() {
                             {editId === worker.id ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" step="0.01" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditRate(worker.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 90, padding: '4px 8px', background: BG, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
-                                <button onClick={() => handleEditRate(worker.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 5, color: '#F2F2F7', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                                <button onClick={() => handleEditRate(worker.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 5, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                                 <button onClick={() => setEditId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                               </div>
                             ) : adjustId === worker.id ? (

@@ -361,7 +361,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
               else handleSubmit();
             }}
             disabled={w.submitting}
-            style={{ padding: '9px 24px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 14, fontWeight: 800, cursor: w.submitting ? 'wait' : 'pointer', opacity: w.submitting ? 0.7 : 1 }}>
+            style={{ padding: '9px 24px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 14, fontWeight: 800, cursor: w.submitting ? 'wait' : 'pointer', opacity: w.submitting ? 0.7 : 1 }}>
             {step < 4 ? 'Next →' : w.submitting ? 'Creating...' : 'Create Bid Package'}
           </button>
         </div>
@@ -420,7 +420,7 @@ export default function BidPackagesPage() {
         </div>
         <button
           onClick={() => setShowWizard(true)}
-          style={{ padding: '9px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
+          style={{ padding: '9px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
           + Create Bid Package
         </button>
       </div>
@@ -449,7 +449,7 @@ export default function BidPackagesPage() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 8 }}>No bid packages yet</div>
             <div style={{ fontSize: 13, marginBottom: 20 }}>Create your first bid package to start soliciting subcontractors.</div>
-            <button onClick={() => setShowWizard(true)} style={{ padding: '10px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Create Bid Package</button>
+            <button onClick={() => setShowWizard(true)} style={{ padding: '10px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Create Bid Package</button>
           </div>
         ) : (
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>

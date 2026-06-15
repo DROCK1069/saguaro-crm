@@ -553,7 +553,7 @@ function WarrantyClaimsInner() {
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: TEXT, flex: 1 }}>Warranty Claims</h1>
           <button
             onClick={() => { resetForm(); setView('new'); }}
-            style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '8px 16px', color: BG, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+            style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '8px 16px', color: '#1C1C1E', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
           >
             + New
           </button>
@@ -664,7 +664,7 @@ function WarrantyClaimsInner() {
             {claims.length === 0 && (
               <button
                 onClick={() => { resetForm(); setView('new'); }}
-                style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '12px 24px', color: BG, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '12px 24px', color: '#1C1C1E', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
               >
                 + Create Claim
               </button>
@@ -1136,7 +1136,7 @@ function WarrantyClaimsInner() {
         <p style={{ color: DIM, fontSize: 15, marginBottom: 16 }}>Claim not found</p>
         <button
           onClick={() => { setView('list'); setSelectedId(null); }}
-          style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '12px 24px', color: BG, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+          style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '12px 24px', color: '#1C1C1E', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
         >
           Back to Claims
         </button>

@@ -40,7 +40,7 @@ export default function IntelligencePage() {
           <h1 style={{fontSize:26,fontWeight:800,color:TEXT,margin:'4px 0'}}>Bid Intelligence</h1>
           <div style={{fontSize:13,color:DIM}}>Saguaro learns from every bid you win or lose. No competitor has this.</div>
         </div>
-        <button onClick={()=>setScoring(!scoring)} style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+        <button onClick={()=>setScoring(!scoring)} style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           🎯 Score New Opportunity
         </button>
       </div>
@@ -61,7 +61,7 @@ export default function IntelligencePage() {
         <div style={{marginBottom:14}}><label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Description</label>
           <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} placeholder="Describe the project scope..." style={{width:'100%',padding:'9px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',resize:'vertical'}}/></div>
         <div style={{display:'flex',gap:10}}>
-          <button onClick={scoreOpportunity} disabled={loading} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>🤖 {loading?'Scoring...':'Score with AI'}</button>
+          <button onClick={scoreOpportunity} disabled={loading} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>🤖 {loading?'Scoring...':'Score with AI'}</button>
           <button onClick={()=>setScoring(false)} style={{padding:'9px 20px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
         </div>
         {result&&!('error' in result)&&<div style={{marginTop:20,background:'rgba(212,160,23,.06)',border:'1px solid rgba(212,160,23,.2)',borderRadius:10,padding:20}}>
@@ -72,7 +72,7 @@ export default function IntelligencePage() {
           </div>
           <div style={{background:DARK,borderRadius:8,padding:14,fontSize:13,color:DIM,lineHeight:1.7}}>{result['bid_recommendation_text'] as string}</div>
           <div style={{marginTop:12,display:'flex',gap:10}}>
-            <button style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:12,fontWeight:800,cursor:'pointer'}}>✅ Add to Pipeline</button>
+            <button style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:12,fontWeight:800,cursor:'pointer'}}>✅ Add to Pipeline</button>
             <button style={{padding:'8px 16px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:12,cursor:'pointer'}}>Pass on this bid</button>
           </div>
         </div>}

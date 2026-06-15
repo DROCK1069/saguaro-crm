@@ -902,7 +902,7 @@ function PurchaseOrdersInner() {
               <div>
                 <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus style={{ width: '100%', padding: '12px', background: RAISED, border: `1px solid ${GOLD}`, borderRadius: 8, color: TEXT, fontSize: 16, textAlign: 'center', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditPO(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#F2F2F7', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditPO(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
                   <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '12px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>

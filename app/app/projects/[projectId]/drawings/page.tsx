@@ -268,7 +268,7 @@ export default function DrawingsPage(){
           </div>
           <button onClick={openCreate}
             style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-              border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + Add Drawing
           </button>
         </div>
@@ -345,7 +345,7 @@ export default function DrawingsPage(){
               {drawings.length===0&&(
                 <button onClick={openCreate}
                   style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-                    border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+                    border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                   + Add First Drawing
                 </button>
               )}
@@ -503,7 +503,7 @@ export default function DrawingsPage(){
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',
                       background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-                      border:'none',borderRadius:8,color:DARK,
+                      border:'none',borderRadius:8,color:'#1C1C1E',
                       fontSize:14,fontWeight:800,cursor:'pointer',opacity:saving?0.6:1}}>
                     {saving?'Saving...':mode==='create'?'Add Drawing':'Save Changes'}
                   </button>

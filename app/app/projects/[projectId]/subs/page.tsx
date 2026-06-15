@@ -96,7 +96,7 @@ export default function SubsPage() {
           <h2 style={{margin:0,fontSize:20,fontWeight:800,color:TEXT}}>Subcontractors</h2>
           <div style={{fontSize:12,color:DIM,marginTop:3}}>Manage subs, track compliance, monitor health scores</div>
         </div>
-        <button onClick={()=>setShowForm(!showForm)} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+        <button onClick={()=>setShowForm(!showForm)} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           {showForm ? 'Cancel' : '+ Add Subcontractor'}
         </button>
       </div>
@@ -139,7 +139,7 @@ export default function SubsPage() {
               ))}
             </div>
             <div style={{marginTop:14,display:'flex',gap:10}}>
-              <button type="submit" style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>Add Subcontractor</button>
+              <button type="submit" style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>Add Subcontractor</button>
               <button type="button" onClick={()=>setShowForm(false)} style={{padding:'9px 22px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
             </div>
           </form>
@@ -154,7 +154,7 @@ export default function SubsPage() {
             <div style={{fontSize:48,marginBottom:14}}>🤝</div>
             <div style={{fontWeight:800,fontSize:18,color:TEXT,marginBottom:8}}>No subcontractors yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24,maxWidth:400,margin:'0 auto 24px'}}>Add your project subcontractors to track contracts, compliance, insurance, and performance scores.</div>
-            <button onClick={()=>setShowForm(true)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Add First Subcontractor</button>
+            <button onClick={()=>setShowForm(true)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Add First Subcontractor</button>
           </div>
         )}
 

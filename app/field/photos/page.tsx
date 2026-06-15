@@ -311,7 +311,7 @@ function PhotosInner() {
         {!capturedPreview ? (
           <button onClick={handleTakePhoto} style={{
             width: '100%', padding: '18px 0', borderRadius: 14, border: 'none',
-            background: GOLD, color: DARK, fontSize: 17, fontWeight: 700,
+            background: GOLD, color: '#1C1C1E', fontSize: 17, fontWeight: 700,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             boxShadow: '0 4px 20px rgba(212,160,23,0.3)',
           }}>

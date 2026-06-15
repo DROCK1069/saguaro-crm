@@ -23,7 +23,7 @@ export default function BidsPage() {
         </div>
         <div style={{display:'flex',gap:10}}>
           <Link href="/app/intelligence" style={{padding:'9px 16px',background:'rgba(212,160,23,.12)',border:'1px solid rgba(212,160,23,.3)',borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>🧠 Bid Intelligence</Link>
-          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Score Opportunity</button>
+          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Score Opportunity</button>
         </div>
       </div>
 
@@ -67,7 +67,7 @@ export default function BidsPage() {
               </td>
               <td style={{padding:'12px 14px',display:'flex',gap:6}}>
                 <button style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,padding:'3px 8px',cursor:'pointer'}}>Details</button>
-                {op.action==='bid'&&<button style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#F2F2F7',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>Bid →</button>}
+                {op.action==='bid'&&<button style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>Bid →</button>}
               </td>
             </tr>;
           })}</tbody>

@@ -190,7 +190,7 @@ export default function W9Portal() {
           <button
             type="submit"
             disabled={saving}
-            style={{ width: '100%', padding: '14px', background: saving ? '#6E6E73' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 9, color: '#F2F2F7', fontWeight: 800, fontSize: 16, cursor: saving ? 'not-allowed' : 'pointer', letterSpacing: .5 }}
+            style={{ width: '100%', padding: '14px', background: saving ? '#6E6E73' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 9, color: '#1C1C1E', fontWeight: 800, fontSize: 16, cursor: saving ? 'not-allowed' : 'pointer', letterSpacing: .5 }}
           >
             {saving ? 'Submitting...' : 'Submit W-9 Securely →'}
           </button>

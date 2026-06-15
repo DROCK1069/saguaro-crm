@@ -405,7 +405,7 @@ export default function BidPackageDetailPage() {
               <button
                 onClick={handleInviteMore}
                 disabled={!inviteEmail || inviting}
-                style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: (!inviteEmail || inviting) ? 0.6 : 1 }}>
+                style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: (!inviteEmail || inviting) ? 0.6 : 1 }}>
                 {inviting ? 'Sending...' : 'Send Invite'}
               </button>
             </div>

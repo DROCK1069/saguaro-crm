@@ -111,7 +111,7 @@ export default function AutopilotPage() {
         <button
           onClick={runScan}
           disabled={scanning}
-          style={{padding:'9px 18px',background:scanning?'rgba(212,160,23,.4)':`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:scanning?'not-allowed':'pointer'}}
+          style={{padding:'9px 18px',background:scanning?'rgba(212,160,23,.4)':`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:scanning?'not-allowed':'pointer'}}
         >
           {scanning ? '🔄 Scanning...' : '🤖 Run Scan Now'}
         </button>

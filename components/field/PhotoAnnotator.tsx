@@ -123,7 +123,7 @@ export function PhotoAnnotator({ onSave, onCancel }: PhotoAnnotatorProps) {
         <button
           onClick={handleSave}
           disabled={!imgSrc}
-          style={{ background: imgSrc ? GOLD : 'rgba(212,160,23,.3)', border: 'none', borderRadius: 8, padding: '8px 16px', color: '#F2F2F7', fontWeight: 700, fontSize: 13, cursor: imgSrc ? 'pointer' : 'not-allowed' }}
+          style={{ background: imgSrc ? GOLD : 'rgba(212,160,23,.3)', border: 'none', borderRadius: 8, padding: '8px 16px', color: '#1C1C1E', fontWeight: 700, fontSize: 13, cursor: imgSrc ? 'pointer' : 'not-allowed' }}
         >
           Attach
         </button>
@@ -136,7 +136,7 @@ export function PhotoAnnotator({ onSave, onCancel }: PhotoAnnotatorProps) {
           <div style={{ color: DIM, fontSize: 14 }}>Take or choose a photo to annotate</div>
           <button
             onClick={() => fileRef.current?.click()}
-            style={{ padding: '12px 28px', background: GOLD, border: 'none', borderRadius: 10, color: '#F2F2F7', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+            style={{ padding: '12px 28px', background: GOLD, border: 'none', borderRadius: 10, color: '#1C1C1E', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
           >
             Choose Photo
           </button>
@@ -235,7 +235,7 @@ export function PhotoAnnotator({ onSave, onCancel }: PhotoAnnotatorProps) {
               <button
                 onClick={commitAnnotation}
                 disabled={!newText.trim()}
-                style={{ padding: '9px 18px', background: newText.trim() ? GOLD : 'rgba(212,160,23,.3)', border: 'none', borderRadius: 8, color: '#F2F2F7', fontWeight: 700, fontSize: 13, cursor: newText.trim() ? 'pointer' : 'not-allowed' }}
+                style={{ padding: '9px 18px', background: newText.trim() ? GOLD : 'rgba(212,160,23,.3)', border: 'none', borderRadius: 8, color: '#1C1C1E', fontWeight: 700, fontSize: 13, cursor: newText.trim() ? 'pointer' : 'not-allowed' }}
               >
                 Add
               </button>

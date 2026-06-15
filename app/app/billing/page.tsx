@@ -279,7 +279,7 @@ export default function BillingPage() {
                 boxShadow: plan.popular ? `0 0 40px rgba(245,158,11,0.08)` : 'none',
               }}>
                 {plan.popular && !isCurrent && (
-                  <div style={{ background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: '#F2F2F7', letterSpacing: 2, textTransform: 'uppercase' }}>Most Popular</div>
+                  <div style={{ background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: '#1C1C1E', letterSpacing: 2, textTransform: 'uppercase' }}>Most Popular</div>
                 )}
                 {isCurrent && (
                   <div style={{ background: 'rgba(34,197,94,0.15)', borderBottom: `1px solid rgba(34,197,94,0.25)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: GREEN, letterSpacing: 2, textTransform: 'uppercase' }}>Current Plan</div>

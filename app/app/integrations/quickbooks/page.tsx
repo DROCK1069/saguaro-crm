@@ -251,7 +251,7 @@ export default function QuickBooksPage() {
                 style={{
                   padding: '10px 24px', borderRadius: 10, cursor: 'pointer',
                   background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
-                  color: '#F2F2F7', fontSize: 13, fontWeight: 700,
+                  color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                   opacity: syncing ? 0.6 : 1,
                 }}
               >

@@ -179,7 +179,7 @@ export default function PayrollPage() {
         <button
           onClick={handleGenerate}
           disabled={loading}
-          style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+          style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
           {loading ? 'Generating...' : 'Generate WH-347'}
         </button>
       </div>
@@ -258,7 +258,7 @@ export default function PayrollPage() {
                 <input type="number" value={newEmp.deductions} onChange={e => setNewEmp(p => ({ ...p, deductions: Number(e.target.value) }))} style={{ ...inp, maxWidth: 120, textAlign: 'right' }} />
               </div>
             </div>
-            <button onClick={addEmployee} style={{ padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add to Payroll</button>
+            <button onClick={addEmployee} style={{ padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add to Payroll</button>
           </div>
         )}
 

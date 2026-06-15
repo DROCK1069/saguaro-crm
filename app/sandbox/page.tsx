@@ -173,7 +173,7 @@ export default function SandboxPage() {
             <Link href="/app" style={{
               display: 'block', padding: '15px 32px',
               background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
-              color: '#F2F2F7', borderRadius: 9, fontWeight: 900,
+              color: '#1C1C1E', borderRadius: 9, fontWeight: 900,
               fontSize: 16, textDecoration: 'none', textAlign: 'center',
               boxShadow: `0 4px 24px rgba(245,158,11,0.35)`,
               letterSpacing: 0.3,
@@ -412,7 +412,7 @@ export default function SandboxPage() {
                           ? 'rgba(245,158,11,0.4)'
                           : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
                         border: 'none', borderRadius: 9,
-                        color: '#F2F2F7', fontSize: 15, fontWeight: 900,
+                        color: '#1C1C1E', fontSize: 15, fontWeight: 900,
                         cursor: (!firstName || !lastName || !email || !company) ? 'not-allowed' : 'pointer',
                         marginBottom: 0,
                         transition: 'all 0.15s',
@@ -466,7 +466,7 @@ export default function SandboxPage() {
                           ? 'rgba(245,158,11,0.5)'
                           : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
                         border: 'none', borderRadius: 9,
-                        color: '#F2F2F7', fontSize: 16, fontWeight: 900,
+                        color: '#1C1C1E', fontSize: 16, fontWeight: 900,
                         cursor: loading ? 'not-allowed' : 'pointer',
                         boxShadow: loading ? 'none' : '0 4px 20px rgba(245,158,11,0.3)',
                         marginBottom: 12,

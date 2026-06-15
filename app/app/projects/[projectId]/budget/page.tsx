@@ -294,7 +294,7 @@ export default function BudgetPage() {
           <button
             onClick={exportReport}
             disabled={exporting}
-            style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800, cursor: exporting ? 'wait' : 'pointer', opacity: exporting ? 0.7 : 1 }}
+            style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: exporting ? 'wait' : 'pointer', opacity: exporting ? 0.7 : 1 }}
           >
             {exporting ? 'Exporting...' : 'Export'}
           </button>
@@ -336,7 +336,7 @@ export default function BudgetPage() {
                 <input value={addForm.original_budget} onChange={e => setAddForm(f => ({ ...f, original_budget: e.target.value }))} placeholder="0" type="number" min="0" required style={inputStyle} />
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add</button>
+                <button type="submit" style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add</button>
                 <button type="button" onClick={() => setShowAddForm(false)} style={{ padding: '8px 12px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
@@ -400,7 +400,7 @@ export default function BudgetPage() {
                       <td style={{ padding: '11px 14px', whiteSpace: 'nowrap', position: 'relative' as const }}>
                         {isEditing ? (
                           <div style={{ display: 'flex', gap: 5 }}>
-                            <button onClick={() => saveEdit(l.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 4, color: '#F2F2F7', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                            <button onClick={() => saveEdit(l.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 4, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                             <button onClick={() => setEditingId(null)} style={{ padding: '3px 8px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 4, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                           </div>
                         ) : adjustId === l.id ? (

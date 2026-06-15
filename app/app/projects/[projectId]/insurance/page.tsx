@@ -116,7 +116,7 @@ export default function InsurancePage() {
           <div style={{fontSize:12,color:DIM,marginTop:3}}>COIs for all subcontractors — expiration alerts included</div>
         </div>
         <button onClick={()=>setShowForm(!showForm)}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           {showForm ? '× Cancel' : '+ Add Certificate'}
         </button>
       </div>
@@ -164,7 +164,7 @@ export default function InsurancePage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button onClick={addCert} disabled={saving}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
               {saving ? 'Adding…' : 'Add Certificate'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -208,7 +208,7 @@ export default function InsurancePage() {
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No certificates yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Upload COIs for all subcontractors to track expiration dates and maintain compliance.</div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Add First Certificate
             </button>
           </div>

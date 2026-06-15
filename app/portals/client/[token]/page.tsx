@@ -831,7 +831,7 @@ export default function ClientPortalPage() {
 
   const btnPrimary: React.CSSProperties = {
     background: GOLD,
-    color: BG,
+    color: '#1C1C1E',
     border: 'none',
     borderRadius: 8,
     padding: '10px 20px',
@@ -2081,7 +2081,7 @@ export default function ClientPortalPage() {
               )}
               {tab.id === 'approvals' && pendingApprovalCount > 0 && (
                 <span style={{
-                  background: AMBER, color: BG, fontSize: 10, fontWeight: 800,
+                  background: AMBER, color: '#1C1C1E', fontSize: 10, fontWeight: 800,
                   borderRadius: 10, padding: '2px 6px', minWidth: 18, textAlign: 'center',
                   lineHeight: '14px',
                 }}>
@@ -2230,7 +2230,7 @@ export default function ClientPortalPage() {
             height: 48,
             borderRadius: '50%',
             background: GOLD,
-            color: BG,
+            color: '#1C1C1E',
             border: 'none',
             fontSize: 20,
             fontWeight: 800,

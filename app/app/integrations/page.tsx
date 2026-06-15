@@ -295,7 +295,7 @@ export default function IntegrationsPage() {
             href="/app/integrations/api-docs"
             style={{
               padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`,
-              color: '#F2F2F7', borderRadius: 8, fontWeight: 800, fontSize: 13, textDecoration: 'none',
+              color: '#1C1C1E', borderRadius: 8, fontWeight: 800, fontSize: 13, textDecoration: 'none',
             }}
           >
             API Docs
@@ -414,7 +414,7 @@ export default function IntegrationsPage() {
                           href="/app/integrations/quickbooks"
                           style={{
                             flex: 1, padding: '8px 0', textAlign: 'center', borderRadius: 8,
-                            background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: '#F2F2F7',
+                            background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: '#1C1C1E',
                             fontSize: 12, fontWeight: 700, textDecoration: 'none',
                           }}
                         >
@@ -452,7 +452,7 @@ export default function IntegrationsPage() {
                     style={{
                       flex: 1, padding: '9px 0', borderRadius: 8, cursor: 'pointer',
                       background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
-                      color: '#F2F2F7', fontSize: 13, fontWeight: 700,
+                      color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                       opacity: connectingKey === intg.key ? 0.6 : 1,
                     }}
                   >
@@ -568,7 +568,7 @@ export default function IntegrationsPage() {
                 style={{
                   padding: '10px 24px', borderRadius: 8, cursor: 'pointer',
                   background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
-                  color: '#F2F2F7', fontSize: 13, fontWeight: 700,
+                  color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                   opacity: !setupForm.api_url || connectingKey === 'sage300' ? 0.5 : 1,
                 }}
               >

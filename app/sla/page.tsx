@@ -7,11 +7,11 @@ const NAV = (
     <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
       <span style={{fontSize:22}}>🌵</span>
       <span style={{fontWeight:800,fontSize:16,letterSpacing:1,color:GOLD}}>SAGUARO</span>
-      <span style={{fontSize:10,background:GOLD,color:'#F2F2F7',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
+      <span style={{fontSize:10,background:GOLD,color:'#1C1C1E',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
     </a>
     <div style={{flex:1}}/>
     <a href="/login" style={{padding:'7px 16px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>Log In</a>
-    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
+    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
   </nav>
 );
 
@@ -65,7 +65,7 @@ export default function SLAPage() {
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}}>
           {UPTIME_TIERS.map(t=>(
             <div key={t.plan} style={{background:RAISED,border:`2px solid ${t.popular?t.color:BORDER}`,borderRadius:14,padding:'28px 24px',textAlign:'center',position:'relative'}}>
-              {t.popular&&<div style={{position:'absolute',top:-1,left:0,right:0,background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:'12px 12px 0 0',padding:'5px 0',fontSize:10,fontWeight:800,color:'#F2F2F7',letterSpacing:1}}>MOST POPULAR</div>}
+              {t.popular&&<div style={{position:'absolute',top:-1,left:0,right:0,background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:'12px 12px 0 0',padding:'5px 0',fontSize:10,fontWeight:800,color:'#1C1C1E',letterSpacing:1}}>MOST POPULAR</div>}
               <div style={{marginTop:t.popular?12:0}}>
                 <div style={{fontSize:12,fontWeight:700,letterSpacing:1,textTransform:'uppercase',color:t.color,marginBottom:10}}>{t.plan}</div>
                 <div style={{fontSize:52,fontWeight:900,color:TEXT,lineHeight:1}}>{t.uptime}</div>
@@ -170,7 +170,7 @@ export default function SLAPage() {
       <div style={{textAlign:'center',padding:'60px 24px',background:RAISED,borderTop:`1px solid ${BORDER}`}}>
         <h2 style={{fontSize:26,fontWeight:900,marginBottom:10}}>SLA questions or incident reports?</h2>
         <p style={{color:DIM,marginBottom:20,fontSize:15}}>We respond to SLA inquiries within one business day.</p>
-        <a href="mailto:sla@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#F2F2F7',fontWeight:800,fontSize:15,textDecoration:'none'}}>
+        <a href="mailto:sla@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}>
           sla@saguarocontrol.net
         </a>
         <div style={{marginTop:20,fontSize:13,color:DIM}}>

@@ -238,7 +238,7 @@ const inputStyle: React.CSSProperties = {
 };
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'auto' as React.CSSProperties['appearance'] };
 const btnPrimary: React.CSSProperties = {
-  padding: '9px 20px', background: GOLD, color: BG, border: 'none', borderRadius: 6,
+  padding: '9px 20px', background: GOLD, color: '#1C1C1E', border: 'none', borderRadius: 6,
   fontWeight: 600, cursor: 'pointer', fontSize: 14,
 };
 const btnSecondary: React.CSSProperties = {

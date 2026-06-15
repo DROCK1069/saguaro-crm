@@ -220,7 +220,7 @@ export default function VoiceToLog({ onTranscript }: VoiceToLogProps) {
           borderRadius: '50%',
           border: 'none',
           background: recording ? '#ef4444' : GOLD,
-          color: DARK,
+          color: '#1C1C1E',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',

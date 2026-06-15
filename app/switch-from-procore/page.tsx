@@ -455,7 +455,7 @@ export default function SwitchFromProcorePage() {
                     background: `linear-gradient(135deg, ${GOLD}, #D97706)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     margin: '0 auto 20px',
-                    fontWeight: 800, fontSize: '1.3rem', color: DARK,
+                    fontWeight: 800, fontSize: '1.3rem', color: '#1C1C1E',
                     position: 'relative', zIndex: 1,
                     boxShadow: `0 0 20px rgba(245,158,11,0.35)`,
                   }}>
@@ -650,7 +650,7 @@ export default function SwitchFromProcorePage() {
                     width: 44, height: 44, borderRadius: '50%',
                     background: `linear-gradient(135deg, ${GOLD}, #D97706)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 800, fontSize: '0.9rem', color: DARK, flexShrink: 0,
+                    fontWeight: 800, fontSize: '0.9rem', color: '#1C1C1E', flexShrink: 0,
                   }}>
                     {t.initials}
                   </div>

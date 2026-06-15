@@ -508,7 +508,7 @@ export default function ApiDocsPage() {
                 style={{
                   padding: '10px 28px', borderRadius: 8, cursor: 'pointer',
                   background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
-                  color: '#F2F2F7', fontSize: 13, fontWeight: 700,
+                  color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                   opacity: tryLoading ? 0.6 : 1,
                 }}
               >

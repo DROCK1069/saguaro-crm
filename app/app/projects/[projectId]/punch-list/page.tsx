@@ -177,7 +177,7 @@ export default function PunchListPage(){
           </div>
           <button onClick={openCreate}
             style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-              border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + Add Item
           </button>
         </div>
@@ -264,7 +264,7 @@ export default function PunchListPage(){
               {items.length===0&&(
                 <button onClick={openCreate}
                   style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-                    border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+                    border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                   + Add First Item
                 </button>
               )}
@@ -412,7 +412,7 @@ export default function PunchListPage(){
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',
                       background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-                      border:'none',borderRadius:8,color:'#F2F2F7',
+                      border:'none',borderRadius:8,color:'#1C1C1E',
                       fontSize:14,fontWeight:800,cursor:'pointer',opacity:saving?.6:1}}>
                     {saving?'Saving…':mode==='create'?'Add Item':'Save Changes'}
                   </button>

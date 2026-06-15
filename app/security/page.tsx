@@ -7,11 +7,11 @@ const NAV = (
     <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
       <span style={{fontSize:22}}>🌵</span>
       <span style={{fontWeight:800,fontSize:16,letterSpacing:1,color:GOLD}}>SAGUARO</span>
-      <span style={{fontSize:10,background:GOLD,color:'#F2F2F7',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
+      <span style={{fontSize:10,background:GOLD,color:'#1C1C1E',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
     </a>
     <div style={{flex:1}}/>
     <a href="/login" style={{padding:'7px 16px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>Log In</a>
-    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
+    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
   </nav>
 );
 
@@ -117,7 +117,7 @@ export default function SecurityPage() {
       <div style={{textAlign:'center',padding:'60px 24px',background:RAISED,borderTop:`1px solid ${BORDER}`}}>
         <h2 style={{fontSize:28,fontWeight:900,marginBottom:12}}>Questions about security?</h2>
         <p style={{color:DIM,fontSize:16,marginBottom:20}}>Our security team is here to help.</p>
-        <a href="mailto:security@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#F2F2F7',fontWeight:800,fontSize:15,textDecoration:'none'}}>
+        <a href="mailto:security@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}>
           security@saguarocontrol.net
         </a>
         <div style={{marginTop:20,fontSize:13,color:DIM}}>

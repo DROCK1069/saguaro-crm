@@ -41,7 +41,7 @@ function ErrorRow({ colSpan, message, onRetry }: { colSpan: number; message: str
               padding: '7px 18px',
               background: `linear-gradient(135deg,${GOLD},#E0A030)`,
               border: 'none', borderRadius: 7,
-              color: '#F2F2F7', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              color: '#1C1C1E', fontSize: 12, fontWeight: 800, cursor: 'pointer',
             }}
           >Retry</button>
         </div>
@@ -263,7 +263,7 @@ export default function DocumentsPage() {
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
                 background: `linear-gradient(135deg,${GOLD},#E0A030)`,
-                borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800,
+                borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate New</Link>
             </div>
@@ -328,7 +328,7 @@ export default function DocumentsPage() {
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
                 background: `linear-gradient(135deg,${GOLD},#E0A030)`,
-                borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800,
+                borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate New</Link>
             </div>
@@ -423,7 +423,7 @@ export default function DocumentsPage() {
                     padding: '8px 16px',
                     background: `linear-gradient(135deg,${GOLD},#E0A030)`,
                     border: 'none', borderRadius: 7,
-                    color: '#F2F2F7', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                    color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                     opacity: busyKey === 'bond-new' ? 0.6 : 1,
                   }}>{busyKey === 'bond-new' ? 'Generating…' : '+ Generate New'}</button>
               </div>
@@ -456,7 +456,7 @@ export default function DocumentsPage() {
                       marginTop: 4, padding: '8px 0', width: '100%',
                       background: `linear-gradient(135deg,${GOLD},#E0A030)`,
                       border: 'none', borderRadius: 7,
-                      color: '#F2F2F7', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                      color: '#1C1C1E', fontSize: 12, fontWeight: 800, cursor: 'pointer',
                       opacity: busyKey === `bond-${card.code}` ? 0.6 : 1,
                     }}>{busyKey === `bond-${card.code}` ? 'Generating…' : `Generate ${card.code}`}</button>
                 </div>
@@ -473,7 +473,7 @@ export default function DocumentsPage() {
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
                 background: `linear-gradient(135deg,${GOLD},#E0A030)`,
-                borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800,
+                borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate WH-347</Link>
             </div>
@@ -555,7 +555,7 @@ export default function DocumentsPage() {
                     padding: '8px 16px',
                     background: `linear-gradient(135deg,${GOLD},#E0A030)`,
                     border: 'none', borderRadius: 7,
-                    color: '#F2F2F7', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                    color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                     opacity: busyKey === 'closeout' ? 0.6 : 1,
                   }}>{busyKey === 'closeout' ? 'Generating…' : '+ Export Closeout Package'}</button>
               </div>

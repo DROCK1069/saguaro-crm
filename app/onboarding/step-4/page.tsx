@@ -108,7 +108,7 @@ export default function OnboardingStep4() {
             </p>
             <a
               href="/app"
-              style={{display:'inline-block',padding:'14px 40px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:10,color:'#F2F2F7',fontWeight:800,fontSize:15,textDecoration:'none'}}
+              style={{display:'inline-block',padding:'14px 40px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:10,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}
             >
               Go to Dashboard →
             </a>
@@ -163,7 +163,7 @@ export default function OnboardingStep4() {
               <button
                 onClick={handleSendInvites}
                 disabled={loading}
-                style={{padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
+                style={{padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
               >
                 {loading?'Sending Invites...':'Send Invites'}
               </button>

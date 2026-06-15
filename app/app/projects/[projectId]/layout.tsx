@@ -195,7 +195,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
                 <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
                 {!isCollapsed && <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
                 {!isCollapsed && item.badge && (
-                  <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 8, background: active ? GOLD : '#B85C2A', color: '#F2F2F7' }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 8, background: active ? GOLD : '#B85C2A', color: '#1C1C1E' }}>
                     {item.badge}
                   </span>
                 )}

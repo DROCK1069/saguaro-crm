@@ -150,7 +150,7 @@ export default function LienWaiversPage() {
             + Generate Waiver
           </button>
           <button onClick={generateAll} disabled={genAll}
-            style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:genAll?'wait':'pointer',opacity:genAll?.6:1}}>
+            style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:genAll?'wait':'pointer',opacity:genAll?.6:1}}>
             {genAll ? 'Generating…' : '⚡ Generate All'}
           </button>
         </div>
@@ -191,7 +191,7 @@ export default function LienWaiversPage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button onClick={generate} disabled={generating}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:generating?'wait':'pointer',opacity:generating?.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:generating?'wait':'pointer',opacity:generating?.6:1}}>
               {generating ? 'Generating…' : 'Generate PDF'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -223,7 +223,7 @@ export default function LienWaiversPage() {
               AZ (ARS §33-1008), CA (Civil Code §8132), TX (Property Code Ch. 53) statutory forms included.
             </div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Generate First Waiver
             </button>
           </div>

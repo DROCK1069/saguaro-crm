@@ -313,7 +313,7 @@ export default function PayAppDetailPage() {
           {meta.next && !editMode && (
             <button onClick={() => doAction(meta.next === 'paid' ? 'paid' : meta.next === 'submitted' ? 'submit' : meta.next === 'approved' ? 'approve' : 'certify')}
               disabled={actioning}
-              style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, border: 'none', borderRadius: 7, color: DARK, fontWeight: 800, fontSize: 13, cursor: actioning ? 'wait' : 'pointer', opacity: actioning ? 0.7 : 1 }}>
+              style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontWeight: 800, fontSize: 13, cursor: actioning ? 'wait' : 'pointer', opacity: actioning ? 0.7 : 1 }}>
               {actioning ? '…' : `${meta.nextLabel} →`}
             </button>
           )}

@@ -46,7 +46,7 @@ export default function ForgotPasswordPage(){
               <div style={{fontSize:52,marginBottom:16}}>📬</div>
               <h1 style={{fontSize:22,fontWeight:800,color:TEXT,marginBottom:10}}>Check your email</h1>
               <p style={{color:DIM,fontSize:14,lineHeight:1.6,marginBottom:24}}>We sent a password reset link to <strong style={{color:TEXT}}>{email}</strong>.</p>
-              <a href="/login" style={{display:'block',padding:'12px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#F2F2F7',fontWeight:800,fontSize:14,textDecoration:'none',textAlign:'center'}}>Back to Login</a>
+              <a href="/login" style={{display:'block',padding:'12px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#1C1C1E',fontWeight:800,fontSize:14,textDecoration:'none',textAlign:'center'}}>Back to Login</a>
             </div>
           ) : (
             <>
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage(){
                     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Work Email</label>
                     <input type="email" placeholder="you@company.com" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email" style={inputStyle}/>
                   </div>
-                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:9,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
+                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:9,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
                     {loading?'Sending…':'Send Reset Link →'}
                   </button>
                 </form>

@@ -46,7 +46,7 @@ export default function OwnerApprovePage() {
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:32}}>
           <span style={{fontSize:24}}>🌵</span>
           <span style={{fontWeight:900,fontSize:18,letterSpacing:2,color:GOLD}}>SAGUARO</span>
-          <span style={{fontSize:10,background:GOLD,color:'#F2F2F7',padding:'2px 8px',borderRadius:4,fontWeight:700}}>OWNER PORTAL</span>
+          <span style={{fontSize:10,background:GOLD,color:'#1C1C1E',padding:'2px 8px',borderRadius:4,fontWeight:700}}>OWNER PORTAL</span>
         </div>
 
         <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.5)'}}>

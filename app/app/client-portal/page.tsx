@@ -61,7 +61,7 @@ function defaultPerms(): Record<string, boolean> {
 
 /* ── shared inline styles ─────────────────────────────── */
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20 };
-const btnGold: React.CSSProperties = { padding: '9px 20px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: BG, borderRadius: 8, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' };
+const btnGold: React.CSSProperties = { padding: '9px 20px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: '#1C1C1E', borderRadius: 8, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' };
 const btnOutline: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, cursor: 'pointer' };
 const btnDanger: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${RED}`, borderRadius: 8, color: RED, fontSize: 13, cursor: 'pointer' };
 const inputS: React.CSSProperties = { padding: '9px 14px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' as const };
@@ -696,7 +696,7 @@ export default function ClientPortalPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>{t.user.name}</span>
                   {t.unread > 0 && (
-                    <span style={{ width: 20, height: 20, borderRadius: 10, background: GOLD, color: BG, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ width: 20, height: 20, borderRadius: 10, background: GOLD, color: '#1C1C1E', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {t.unread}
                     </span>
                   )}

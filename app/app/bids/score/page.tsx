@@ -348,7 +348,7 @@ export default function BidScorePage() {
                     width: '100%', padding: '12px',
                     background: loading || !form.projectName ? 'rgba(212,160,23,.3)' : `linear-gradient(135deg,${GOLD},#E0A030)`,
                     border: 'none', borderRadius: 8,
-                    color: '#F2F2F7', fontSize: 14, fontWeight: 800,
+                    color: '#1C1C1E', fontSize: 14, fontWeight: 800,
                     cursor: loading || !form.projectName ? 'not-allowed' : 'pointer',
                   }}
                 >
@@ -406,7 +406,7 @@ export default function BidScorePage() {
                     <button
                       onClick={addToPipeline}
                       disabled={addingToPipeline}
-                      style={{ padding: '11px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#F2F2F7', fontSize: 13, fontWeight: 800, cursor: addingToPipeline ? 'wait' : 'pointer', opacity: addingToPipeline ? 0.7 : 1 }}
+                      style={{ padding: '11px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: addingToPipeline ? 'wait' : 'pointer', opacity: addingToPipeline ? 0.7 : 1 }}
                     >
                       {addingToPipeline ? 'Adding...' : '+ Add to Pipeline'}
                     </button>

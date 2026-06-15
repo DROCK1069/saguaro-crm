@@ -189,7 +189,7 @@ export default function SelectionsPage(){
           </div>
           <button onClick={openCreate}
             style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-              border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + Add Selection
           </button>
         </div>
@@ -262,7 +262,7 @@ export default function SelectionsPage(){
               <div style={{fontSize:13,color:DIM,marginBottom:24}}>Track material selections, finishes, and owner approvals.</div>
               <button onClick={openCreate}
                 style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-                  border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+                  border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                 + Add First Selection
               </button>
             </div>
@@ -426,7 +426,7 @@ export default function SelectionsPage(){
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
-                      border:'none',borderRadius:8,color:'#F2F2F7',fontSize:14,fontWeight:800,
+                      border:'none',borderRadius:8,color:'#1C1C1E',fontSize:14,fontWeight:800,
                       cursor:'pointer',opacity:saving?0.6:1}}>
                     {saving?'Saving...':mode==='create'?'Add Selection':'Save Changes'}
                   </button>

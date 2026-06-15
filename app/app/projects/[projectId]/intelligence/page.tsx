@@ -218,7 +218,7 @@ function IntelligenceChat() {
           {messages.map(msg => (
             <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {msg.role === 'assistant' && (
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg,${GOLD},#E0A030)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-end', fontWeight: 900, color: '#F2F2F7' }}>S</div>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg,${GOLD},#E0A030)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-end', fontWeight: 900, color: '#1C1C1E' }}>S</div>
               )}
               <div style={{
                 maxWidth: '78%',
@@ -254,7 +254,7 @@ function IntelligenceChat() {
             style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', color: TEXT, fontSize: '13px', outline: 'none' }}
           />
           <button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()}
-            style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: '8px', color: '#F2F2F7', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}>
+            style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: '8px', color: '#1C1C1E', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}>
             {isLoading ? '...' : 'Ask →'}
           </button>
         </div>

@@ -274,7 +274,7 @@ export default function ChangeOrdersPage() {
           </div>
         </div>
         <button onClick={()=>setShowForm(!showForm)}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           {showForm ? '× Cancel' : '+ New Change Order'}
         </button>
       </div>
@@ -308,7 +308,7 @@ export default function ChangeOrdersPage() {
           </div>
           <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
             <button onClick={createCO} disabled={saving||!fTitle.trim()}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:(saving||!fTitle.trim())?0.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:(saving||!fTitle.trim())?0.6:1}}>
               {saving ? 'Creating…' : 'Create Change Order'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -390,7 +390,7 @@ export default function ChangeOrdersPage() {
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No change orders yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Track scope changes, owner requests, and unforeseen conditions.</div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Create First Change Order
             </button>
           </div>
@@ -430,7 +430,7 @@ export default function ChangeOrdersPage() {
                         {coEditId===co.id ? (
                           <div style={{display:'flex',alignItems:'center',gap:4}}>
                             <input value={coEditVal} onChange={e=>setCoEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditCO(co.id);if(e.key==='Escape')setCoEditId(null);}} style={{width:100,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
-                            <button onClick={()=>handleEditCO(co.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#F2F2F7',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                            <button onClick={()=>handleEditCO(co.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
                             <button onClick={()=>setCoEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                           </div>
                         ) : (
@@ -468,7 +468,7 @@ export default function ChangeOrdersPage() {
                           {co.status==='pending' && (
                             <>
                               <button onClick={()=>approveCO(co.id)} disabled={approvingId===co.id}
-                                style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:DARK,fontSize:11,padding:'4px 12px',fontWeight:800,cursor:approvingId===co.id?'wait':'pointer',opacity:approvingId===co.id?0.6:1}}>
+                                style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 12px',fontWeight:800,cursor:approvingId===co.id?'wait':'pointer',opacity:approvingId===co.id?0.6:1}}>
                                 {approvingId===co.id ? '…' : 'Approve'}
                               </button>
                               <button onClick={()=>rejectCO(co.id)} disabled={approvingId===co.id}
