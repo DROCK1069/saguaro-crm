@@ -8,12 +8,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const body = await req.json();
     const db = createServerClient();
-    const { error } = await db.from('lien_waivers').update({
+    const now = new Date();
+    const signer = body.signedBy ?? body.signed_by ?? body.signedName ?? body.signed_name;
+    const { data, error } = await db.from('lien_waivers').update({
       status: 'signed',
-      signed_date: new Date().toISOString().split('T')[0],
-      signed_by: body.signedBy,
-    }).eq('id', id);
+      signed_date: now.toISOString().split('T')[0],
+      signed_at: now.toISOString(),
+      signed_by: signer,
+      signed_name: body.signedName ?? body.signed_name ?? signer,
+      signature_method: body.signatureMethod ?? body.signature_method ?? 'mobile',
+    })
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId) // tenant guard: prevent cross-tenant sign
+      .select('id')
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

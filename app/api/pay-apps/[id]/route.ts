@@ -57,6 +57,37 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (body[k] !== undefined) headerFields[columnMap[k]] = body[k];
     }
 
+    // The mobile edit form sends `work_completed`/`workCompleted` (the dollar
+    // amount completed this period), which the columnMap above does not cover —
+    // without this, editing the amount silently no-ops. Map it to `this_period`
+    // and recompute the derived money fields the same way create does, so the
+    // detail sheet's retainage / payment-due stay consistent after an edit.
+    const workEdited = body.work_completed ?? body.workCompleted ?? body.thisPeriod;
+    if (workEdited !== undefined) {
+      const workCompleted = Number(workEdited) || 0;
+      // Need retainage_percent to recompute; use the provided value or read the row.
+      let retainagePercent = Number(body.retainage_percent ?? body.retainagePercent);
+      if (!Number.isFinite(retainagePercent)) {
+        const { data: existing } = await db
+          .from('pay_applications')
+          .select('retainage_percent')
+          .eq('id', id)
+          .eq('tenant_id', user.tenantId)
+          .maybeSingle();
+        retainagePercent = Number((existing as any)?.retainage_percent ?? 10) || 0;
+      }
+      const retainageAmount = (workCompleted * retainagePercent) / 100;
+      const netDue = workCompleted - retainageAmount;
+      headerFields.this_period = workCompleted;
+      headerFields.total_completed_stored = workCompleted;
+      headerFields.total_completed = workCompleted;
+      headerFields.total_retainage = retainageAmount;
+      headerFields.retainage_amount = retainageAmount;
+      headerFields.total_earned_less_retainage = netDue;
+      headerFields.current_payment_due = netDue;
+      headerFields.net_payment_due = netDue;
+    }
+
     if (Object.keys(headerFields).length > 0) {
       const { error } = await db
         .from('pay_applications')
