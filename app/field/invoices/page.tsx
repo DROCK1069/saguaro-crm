@@ -491,7 +491,7 @@ function InvoicesPage() {
 
       <div style={{ padding: '16px 20px', maxWidth: 1200, margin: '0 auto' }}>
         {error && (
-          <div style={{ background: '#3B1111', border: `1px solid ${RED}`, borderRadius: 8, padding: 12, marginBottom: 16, color: RED, fontWeight: 600 }}>
+          <div style={{ background: 'rgba(255,59,48,0.1)', border: `1px solid ${RED}`, borderRadius: 8, padding: 12, marginBottom: 16, color: RED, fontWeight: 600 }}>
             {error}
             <button onClick={() => setError('')} style={{ float: 'right', background: 'none', border: 'none', color: RED, cursor: 'pointer', fontWeight: 700 }}>X</button>
           </div>

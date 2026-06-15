@@ -1599,7 +1599,7 @@ const backBtn: React.CSSProperties = {
 };
 
 const iconBtn: React.CSSProperties = {
-  background: 'rgba(13,29,46,.8)', border: `1px solid #E5E5EA`, borderRadius: 8, padding: 6, color: '#6E6E73', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: '#FFFFFF', border: `1px solid #E5E5EA`, borderRadius: 8, padding: 6, color: '#6E6E73', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
 const smallBtn: React.CSSProperties = {
