@@ -6,19 +6,29 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const body = await req.json();
-    if (!body.name || !body.projectId) {
+    // Accept both camelCase and snake_case for every field the app sends.
+    const name = body.name ?? body.title;
+    const projectId = body.projectId ?? body.project_id;
+    if (!name || !projectId) {
       return NextResponse.json({ error: 'name and projectId are required' }, { status: 400 });
     }
+    const startDate = body.start_date ?? body.startDate ?? null;
+    const endDate = body.end_date ?? body.endDate ?? null;
+    const phase = body.phase ?? '';
+    const trade = body.trade ?? null;
+    const pctComplete = body.pct_complete ?? body.pctComplete ?? body.percent_complete ?? body.percentComplete ?? 0;
+    const status = body.status ?? 'not_started';
     const db = createServerClient();
     const { data, error } = await db.from('schedule_tasks').insert({
       tenant_id: user.tenantId,
-      project_id: body.projectId,
-      name: body.name,
-      phase: body.phase || '',
-      start_date: body.start_date || body.startDate,
-      end_date: body.end_date || body.endDate,
-      pct_complete: body.pct_complete ?? body.pctComplete ?? 0,
-      status: body.status || 'not_started',
+      project_id: projectId,
+      name,
+      phase,
+      trade,
+      start_date: startDate,
+      end_date: endDate,
+      pct_complete: pctComplete,
+      status,
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, task: data });

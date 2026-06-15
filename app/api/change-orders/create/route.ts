@@ -7,24 +7,35 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    if (!body.projectId || !body.title) {
+    const projectId = body.projectId ?? body.project_id;
+    const title = body.title;
+    if (!projectId || !title) {
       return NextResponse.json({ error: 'projectId and title are required' }, { status: 400 });
     }
 
+    // Accept both camelCase and snake_case for every field the clients send.
+    const amount = Number(body.amount ?? body.costImpact ?? body.cost_impact ?? 0) || 0;
+    const scheduleImpactDays = body.scheduleImpact ?? body.schedule_impact_days ?? body.scheduleImpactDays ?? body.schedule_impact ?? null;
+    const scheduleImpact = scheduleImpactDays != null ? Number(scheduleImpactDays) || 0 : 0;
+
     const db = createServerClient();
-    const { data: last } = await db.from('change_orders').select('co_number').eq('project_id', body.projectId).order('co_number', { ascending: false }).limit(1).maybeSingle();
+    const { data: last } = await db.from('change_orders').select('co_number').eq('project_id', projectId).order('co_number', { ascending: false }).limit(1).maybeSingle();
     const coNumber = ((last as any)?.co_number || 0) + 1;
 
     const { data: co, error } = await db.from('change_orders').insert({
       tenant_id: user.tenantId,
-      project_id: body.projectId,
+      project_id: projectId,
       co_number: coNumber,
-      title: body.title,
-      description: body.description,
-      reason: body.reason,
+      title,
+      description: body.description ?? null,
+      reason: body.reason ?? null,
       status: 'pending',
-      amount: body.costImpact || body.amount || 0,
-      schedule_impact: body.scheduleImpact || 0,
+      // Lists & detail screens read `amount`; keep `cost_impact` in sync for callers that read it.
+      amount,
+      cost_impact: amount,
+      // Detail screens read `schedule_impact_days` (falling back to `schedule_impact`) — write both.
+      schedule_impact_days: scheduleImpactDays != null ? scheduleImpact : null,
+      schedule_impact: scheduleImpact,
       submitted_by: user.id,
     }).select().single();
 

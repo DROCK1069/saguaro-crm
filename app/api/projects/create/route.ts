@@ -10,6 +10,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     if (!body.name) return NextResponse.json({ error: 'Project name is required' }, { status: 400 });
 
+    // Accept both camelCase (web) and snake_case (mobile) for every field the
+    // clients send, and honor the user's choices instead of hard-coding them.
+    const projectType = body.projectType ?? body.project_type ?? 'commercial';
+    const status = body.status ?? 'active';
+    // Numeric contract — the projects LIST/dashboard read `contract_value`, so
+    // that column MUST be populated; mirror to the contract_amount/original_*
+    // columns the web detail + financial views read.
+    const contractValue = Number(body.contractValue ?? body.contract_value ?? body.contractAmount ?? body.contract_amount ?? 0) || 0;
+    const startDate = body.startDate ?? body.start_date ?? null;
+
     const db = createServerClient();
 
     const { data: project, error } = await db.from('projects').insert({
@@ -17,14 +27,16 @@ export async function POST(req: NextRequest) {
       name: body.name,
       address: body.address,
       state_jurisdiction: body.stateJurisdiction || 'AZ',
-      project_type: body.projectType || 'commercial',
-      status: 'active',
-      contract_amount: body.contractAmount || 0,
-      original_contract: body.contractAmount || 0,
-      original_contract_amount: body.contractAmount || 0,
+      project_type: projectType,
+      status,
+      percent_complete: 0,
+      contract_value: contractValue,
+      contract_amount: contractValue,
+      original_contract: contractValue,
+      original_contract_amount: contractValue,
       description: body.description || '',
       // Dates
-      start_date: body.startDate || null,
+      start_date: startDate,
       ntp_date: body.noticeToProceedDate || null,
       substantial_date: body.substantialCompletionDate || null,
       final_completion_date: body.finalCompletionDate || null,

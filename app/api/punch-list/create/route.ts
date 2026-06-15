@@ -41,6 +41,10 @@ export async function POST(req: NextRequest) {
       priority:    body.priority    || 'medium',
       status:      body.status      || 'open',
       due_date:    body.dueDate     || body.due_date     || null,
+      // Person/company responsible. App sends snake_case `assigned_to`; also
+      // accept camelCase `assignedTo`. Real punch_list column the detail/list
+      // screens read from is `assigned_to`.
+      assigned_to: body.assigned_to ?? body.assignedTo ?? null,
       notes:       body.notes       || '',
     };
 

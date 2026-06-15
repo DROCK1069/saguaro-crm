@@ -27,9 +27,35 @@ export async function POST(req: NextRequest) {
     const ahjName          = body.ahj_name          ?? body.ahjName          ?? null;
     const permitNumber     = body.permit_number     ?? body.permitNumber     ?? null;
     const scheduledDate    = body.scheduled_date    ?? body.scheduledDate     ?? new Date().toISOString().split('T')[0];
-    const result           = body.result            ?? 'pending';
     const notes            = body.notes             ?? null;
     const weather          = body.weather           ?? null;
+
+    // The template wizard posts { template_name, results, score } with NO
+    // top-level result, so without a fallback every wizard inspection saved as
+    // "pending". Honor an explicit result (manual form) first; otherwise derive
+    // one from the wizard's 0-100 score. The detail/list screens read the
+    // `result` column and recognize passed | conditional_pass | failed | pending,
+    // matching their own score buckets (>=80 green, >=60 amber, else red).
+    const scoreRaw = body.score ?? body.checklist_score ?? body.checklistScore;
+    const score = scoreRaw == null ? null : Number(scoreRaw);
+    const explicitResult = body.result ?? body.outcome;
+    const result =
+      explicitResult ??
+      (score == null || Number.isNaN(score)
+        ? 'pending'
+        : score >= 80
+        ? 'passed'
+        : score >= 60
+        ? 'conditional_pass'
+        : 'failed');
+
+    // Mark inspections that carry a result/score as completed instead of always
+    // "Scheduled"; pending (no result yet) stays Scheduled. Honor an explicit
+    // status from the body if one was sent.
+    const explicitStatus = body.status;
+    const status =
+      explicitStatus ??
+      (result && result !== 'pending' ? 'completed' : 'Scheduled');
 
     const row = {
       project_id:        body.project_id ?? body.projectId,
@@ -49,7 +75,7 @@ export async function POST(req: NextRequest) {
       checklist_passed:  checklistPassed,
       deficiency_count:  deficiencyCount,
       items:             body.results           || body.checklist || '[]',
-      status:            'Scheduled',
+      status:            status,
     };
 
     const { data, error } = await supabase

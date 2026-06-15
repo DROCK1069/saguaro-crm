@@ -8,11 +8,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     const db = createServerClient();
-    const allowed = ['name','phase','start_date','end_date','pct_complete','status'];
+    // Map every alias the app may send (camelCase or snake_case) onto the real
+    // schedule_tasks columns. Only assign a column when a value was actually
+    // provided so a partial PUT doesn't null out untouched fields.
     const fields: Record<string, any> = {};
-    for (const k of allowed) {
-      if (body[k] !== undefined) fields[k] = body[k];
-    }
+    const name = body.name ?? body.title;
+    if (name !== undefined) fields.name = name;
+    if (body.phase !== undefined) fields.phase = body.phase;
+    if (body.trade !== undefined) fields.trade = body.trade;
+    const startDate = body.start_date ?? body.startDate;
+    if (startDate !== undefined) fields.start_date = startDate;
+    const endDate = body.end_date ?? body.endDate;
+    if (endDate !== undefined) fields.end_date = endDate;
+    const pctComplete = body.pct_complete ?? body.pctComplete ?? body.percent_complete ?? body.percentComplete;
+    if (pctComplete !== undefined) fields.pct_complete = pctComplete;
+    if (body.status !== undefined) fields.status = body.status;
     const { error } = await db
       .from('schedule_tasks')
       .update(fields)

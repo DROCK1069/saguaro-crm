@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const db = createServerClient();
 
-    const projectId = body.projectId;
+    const projectId = body.projectId ?? body.project_id;
     if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
 
     const { data: project } = await db.from('projects').select('*').eq('id', projectId).single();
@@ -26,26 +26,47 @@ export async function POST(req: NextRequest) {
       .single();
     const appNumber = ((lastApp as any)?.app_number || 0) + 1;
 
+    // Accept both camelCase and snake_case for the keys the mobile form sends.
+    const periodTo = body.periodTo ?? body.period_to ?? null;
+    const periodFrom = body.periodFrom ?? body.period_from ?? null;
+    // Work completed this period — the mobile detail sheet reads `work_completed`.
+    const workCompleted = Number(body.workCompleted ?? body.work_completed ?? body.thisPeriod ?? 0) || 0;
+    const retainagePercent = Number(body.retainagePercent ?? body.retainage_percent ?? 10) || 0;
+    // Derive retainage held if not explicitly supplied; detail sheet reads `retainage`.
+    const retainageAmount = Number(
+      body.retainageAmount ?? body.retainage_amount ?? body.retainage ?? (workCompleted * retainagePercent) / 100
+    ) || 0;
+    const currentPaymentDue = Number(
+      body.currentPaymentDue ?? body.current_payment_due ?? (workCompleted - retainageAmount)
+    ) || 0;
+
     const { data: payApp, error } = await db.from('pay_applications').insert({
       tenant_id: user.tenantId,
       project_id: projectId,
       app_number: appNumber,
-      period_from: body.periodFrom,
-      period_to: body.periodTo,
+      period_from: periodFrom,
+      period_to: periodTo,
       status: body.status || 'draft',
       contract_sum: body.contractSum || p?.contract_amount || 0,
       change_orders_total: body.changeOrdersTotal || 0,
       contract_sum_to_date: body.contractSumToDate || p?.contract_amount || 0,
       prev_completed: body.prevCompleted || 0,
-      this_period: body.thisPeriod || 0,
+      this_period: workCompleted,
+      // Mobile detail sheet reads `work_completed` directly — persist it.
+      work_completed: workCompleted,
       stored_materials: body.materialsStored || 0,
-      total_completed_stored: body.totalCompleted || 0,
+      total_completed_stored: body.totalCompleted || workCompleted,
+      total_completed: body.totalCompleted || workCompleted,
       percent_complete: body.percentComplete || 0,
-      retainage_percent: body.retainagePercent || 10,
-      total_retainage: body.retainageAmount || 0,
-      total_earned_less_retainage: body.totalEarnedLessRetainage || 0,
+      retainage_percent: retainagePercent,
+      // Mobile detail sheet reads `retainage` directly — persist it alongside total_retainage.
+      retainage: retainageAmount,
+      total_retainage: retainageAmount,
+      retainage_amount: retainageAmount,
+      total_earned_less_retainage: body.totalEarnedLessRetainage || (workCompleted - retainageAmount),
       less_previous_certificates: body.prevPayments || 0,
-      current_payment_due: body.currentPaymentDue || 0,
+      current_payment_due: currentPaymentDue,
+      net_payment_due: currentPaymentDue,
       owner_name: p?.owner_entity?.name || body.ownerName,
       owner_address: p?.owner_entity?.address || body.ownerAddress,
       architect_name: p?.architect_entity?.name || body.architectName,

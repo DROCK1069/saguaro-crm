@@ -7,20 +7,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     const db = createServerClient();
-    // Map inbound API keys to real `drawings` columns
-    // (sheet_number<-drawing_number, name<-title, version<-revision).
-    const fieldMap: Record<string, string> = {
-      drawing_number: 'sheet_number',
-      title: 'name',
-      discipline: 'discipline',
-      revision: 'version',
-      revision_date: 'revision_date',
-      status: 'status',
-      url: 'url',
-      notes: 'notes',
+    // Accept BOTH camelCase and snake_case from every client (mobile sends
+    // sheet_number/title/discipline; web may send drawing_number/sheetNumber)
+    // and write to the REAL `drawings` columns the list/detail screens read:
+    //   name <- title, url, sheet_number, discipline, version <- revision.
+    const pick = (...keys: string[]) => {
+      for (const k of keys) { if (body[k] !== undefined) return body[k]; }
+      return undefined;
+    };
+    const candidates: Record<string, any> = {
+      name: pick('name', 'title'),
+      url: pick('url', 'file_url', 'fileUrl'),
+      sheet_number: pick('sheet_number', 'sheetNumber', 'sheet_no', 'drawing_number', 'drawingNumber'),
+      discipline: pick('discipline'),
+      version: pick('version', 'revision'),
+      revision_date: pick('revision_date', 'revisionDate'),
+      status: pick('status'),
+      notes: pick('notes'),
     };
     const fields: Record<string, any> = {};
-    for (const k of Object.keys(fieldMap)) { if (body[k] !== undefined) fields[fieldMap[k]] = body[k]; }
+    for (const [col, val] of Object.entries(candidates)) { if (val !== undefined) fields[col] = val; }
     const { error } = await db.from('drawings').update(fields).eq('id', id).eq('tenant_id', user.tenantId);
     if (error) throw error;
     return NextResponse.json({ success: true });
