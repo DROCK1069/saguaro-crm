@@ -32,24 +32,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Read a metadata field accepting both snake_case and camelCase keys.
+    const field = (...keys: string[]): string => {
+      for (const k of keys) {
+        const v = formData.get(k);
+        if (typeof v === 'string' && v.trim()) return v.trim();
+      }
+      return '';
+    };
+
     // Derive a sheet number from the filename (e.g. "A-101 Floor Plan.pdf" -> "A-101").
     const base = filename.replace(/\.[^.]+$/, '');
     const m = base.match(/^([A-Za-z]{1,3}[-\s]?\d{2,4})/);
+    // Client sends sheet_number (api key), drawing_number (column alias), or sheetNumber (camel).
     const sheetNumber =
-      (formData.get('sheet_number') as string) ||
+      field('sheet_number', 'sheetNumber', 'drawing_number', 'drawingNumber') ||
       (m ? m[1].toUpperCase().replace(/\s/, '-') : base.slice(0, 24));
+
+    const title = field('title', 'name') || base;
+    const discipline = field('discipline') || 'General';
 
     const row: Record<string, unknown> = {
       project_id: projectId,
       tenant_id: user.tenantId,
-      name: (formData.get('title') as string) || base,
+      name: title,
       url,
       sheet_number: sheetNumber,
-      discipline: (formData.get('discipline') as string) || 'General',
+      discipline,
       status: 'current',
     };
 
-    const { data: dbData, error } = await db.from('drawings').insert(row).select().single();
+    // Optional metadata if the client supplies it.
+    const notes = field('notes');
+    if (notes) row.notes = notes;
+    const version = field('version', 'revision');
+    if (version) row.version = version;
+
+    const { data: dbData, error } = await db.from('drawings').insert(row as never).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, drawing: dbData, url });
   } catch (err: unknown) {

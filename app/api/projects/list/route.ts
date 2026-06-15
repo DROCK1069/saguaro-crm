@@ -12,6 +12,10 @@ export async function GET(req: NextRequest) {
       .from('projects')
       .select('*')
       .eq('tenant_id', user.tenantId)
+      // Exclude soft-deleted / archived projects. Legacy rows have NULL flags,
+      // so keep NULL (treated as not-archived) and drop only explicit `true`.
+      .or('is_archived.is.null,is_archived.eq.false')
+      .or('is_deleted.is.null,is_deleted.eq.false')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json({ projects: data || [], source: 'live' });

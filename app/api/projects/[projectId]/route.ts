@@ -138,3 +138,29 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ proj
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// Soft-delete: archive the project (is_archived=true, archived_at=now). FKs make a
+// hard delete unsafe, so we never DELETE the row. Tenant-scoped by id+tenant_id.
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
+  try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = createServerClient();
+    const { error } = await db
+      .from('projects')
+      .update({
+        is_archived: true,
+        archived_at: new Date().toISOString(),
+        archived_by: user.id ?? null,
+      })
+      .eq('id', projectId)
+      .eq('tenant_id', user.tenantId);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
