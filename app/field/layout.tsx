@@ -247,8 +247,11 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
     if (native) return;
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallEvent(e);
-      setShowInstall(true);
+      setInstallEvent(e); // always capture so the Install button can fire the native prompt
+      // Respect prior dismissal (was unconditional → re-popped on every Chrome/Android
+      // visit and ignored "Not now"). Delay so it never covers the screen on load.
+      if (typeof window !== 'undefined' && localStorage.getItem('sag_install_dismissed')) return;
+      setTimeout(() => setShowInstall(true), 8000);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
