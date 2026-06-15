@@ -188,7 +188,7 @@ export default function FieldHome() {
   return (
     <div style={{ paddingBottom: 8 }}>
       {/* ── Project header bar ─────────────────────────────────── */}
-      <div style={{ background: 'linear-gradient(160deg,#0A0A0A 0%,#000000 70%)', borderBottom: '1px solid rgba(212,160,23,.2)', padding: '14px 16px 12px' }}>
+      <div style={{ background: 'linear-gradient(160deg,#FFFFFF 0%,#F2F2F7 70%)', borderBottom: '1px solid rgba(212,160,23,.2)', padding: '14px 16px 12px' }}>
         {/* Top row: date + desktop link */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontSize: 11, color: DIM, fontWeight: 600, letterSpacing: 0.3 }}>{todayStr()}{userName ? ` · ${userName}` : ''}</span>

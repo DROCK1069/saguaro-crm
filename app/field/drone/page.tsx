@@ -636,7 +636,7 @@ function DronePage() {
                   <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 }}>Captured Date</p>
                   <input type="date" value={capturedDate} onChange={e => setCapturedDate(e.target.value)}
                     style={{
-                      width: '100%', background: 'rgba(15,20,25,0.8)', border: `1px solid ${BORDER}`,
+                      width: '100%', background: 'rgba(255,255,255,0.8)', border: `1px solid ${BORDER}`,
                       borderRadius: 10, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none',
                       colorScheme: 'light',
                     }} />

@@ -208,7 +208,7 @@ export default function LandingPage() {
         return (
           <nav ref={navRef} style={{
             position: 'sticky', top: 0, zIndex: 100,
-            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             borderBottom: '1px solid rgba(212,160,23,0.12)',
             padding: '0 max(24px, 4vw)', height: 56,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -225,7 +225,7 @@ export default function LandingPage() {
                     onMouseEnter={() => setOpenMenu(key)}
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: openMenu === key ? '#C8881C' : '#F5F5F7',
+                      color: openMenu === key ? '#C8881C' : '#1C1C1E',
                       fontSize: 13, fontWeight: 500, padding: '8px 14px',
                       display: 'flex', alignItems: 'center', gap: 4,
                       transition: 'color 0.15s ease',
@@ -263,7 +263,7 @@ export default function LandingPage() {
                             {item.icon}
                           </div>
                           <div>
-                            <div style={{ color: '#F5F5F7', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
+                            <div style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
                             <div style={{ color: '#86868B', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
                           </div>
                         </a>
@@ -274,7 +274,7 @@ export default function LandingPage() {
               ))}
 
               {/* Pricing link */}
-              <a href="/#pricing" style={{ color: '#F5F5F7', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
+              <a href="/#pricing" style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
             </div>
 
             {/* Right side CTAs */}
@@ -288,7 +288,7 @@ export default function LandingPage() {
               }}>Start Free</a>
 
               {/* Mobile hamburger */}
-              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#F5F5F7', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
+              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#1C1C1E', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
                 {mobileOpen ? <X size={24} /> : <List size={24} />}
               </button>
             </div>
@@ -317,14 +317,14 @@ export default function LandingPage() {
         {/* right — takeoff mockup */}
         <div id="demo" style={{ ...glass, padding: 0, overflow: 'hidden', position: 'relative', zIndex: 1, scrollMarginTop: 72 }} className="hero-mockup">
           {/* browser chrome */}
-          <div style={{ background: 'rgba(15,20,25,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #E5E5EA' }}>
+          <div style={{ background: 'rgba(255,255,255,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #E5E5EA' }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: GOLD }} />
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: GREEN }} />
             <span style={{ flex: 1, background: 'rgba(0,0,0,0.06)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: DIM, marginLeft: 8 }}>app.saguaro.build/takeoff</span>
           </div>
           {/* mockup content */}
-          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(255,255,255,0.95) 50%, rgba(15,20,25,0.98) 100%)` }}>
+          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.98) 100%)` }}>
             {/* toolbar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>AI Takeoff Results</span>
@@ -408,7 +408,7 @@ export default function LandingPage() {
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)'; }}>
               <div style={{ height: 160, overflow: 'hidden', borderRadius: '16px 16px 0 0', position: 'relative' as const }}>
                 <img src={cardImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, #000)' }} />
+                background: 'linear-gradient(transparent, rgba(0,0,0,0.25))'
               </div>
               <div style={{ padding: '24px 22px' }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
@@ -436,7 +436,7 @@ export default function LandingPage() {
             <Link href="/design" style={{ background: GREEN, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '11px 24px', borderRadius: 10, display: 'inline-block' }}>Try AI Design Studio &mdash; Free</Link>
           </div>
           {/* right mockup — before/after */}
-          <div style={{ background: `linear-gradient(135deg, rgba(15,20,25,0.9), rgba(255,255,255,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
+          <div style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
             <div style={{ display: 'flex', gap: 12, width: '100%' }}>
               {/* before */}
               <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid #E5E5EA', position: 'relative' as const }}>
@@ -498,7 +498,7 @@ export default function LandingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
           {PLANS.map(plan => (
             <div key={plan.name} style={{
-              background: 'rgba(0,0,0,0.05)',
+              background: '#FFFFFF',
               backdropFilter: 'blur(40px)',
               WebkitBackdropFilter: 'blur(40px)',
               border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid #E5E5EA',

@@ -175,7 +175,7 @@ export default function EscalationDashboard() {
           disabled={running}
           style={{
             background: running ? 'rgba(212,160,23,0.3)' : GOLD,
-            color: running ? DIM : '#6E6E73',
+            color: running ? DIM : '#000',
             border: 'none',
             borderRadius: 10,
             padding: '10px 22px',

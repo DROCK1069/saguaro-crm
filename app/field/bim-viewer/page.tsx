@@ -335,7 +335,7 @@ function BimViewerPage() {
               width: '100%', padding: '14px 20px', marginBottom: 12,
               background: analyzing ? 'rgba(59,130,246,0.15)' : `linear-gradient(135deg, ${GOLD} 0%, #EF8C1A 100%)`,
               border: analyzing ? `1px solid ${BLUE}33` : 'none',
-              borderRadius: RADIUS, color: analyzing ? BLUE : '#007AFF',
+              borderRadius: RADIUS, color: analyzing ? BLUE : '#000',
               fontSize: 15, fontWeight: 800, cursor: analyzing ? 'default' : 'pointer',
             }}>
             {analyzing ? analyzeProgress || 'Analyzing...' : 'Analyze Model'}

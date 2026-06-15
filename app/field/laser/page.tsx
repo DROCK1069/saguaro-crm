@@ -28,7 +28,7 @@ const glass: React.CSSProperties = {
 };
 
 const inp: React.CSSProperties = {
-  width: '100%', background: 'rgba(15,20,25,0.8)', border: `1px solid ${BORDER}`,
+  width: '100%', background: 'rgba(255,255,255,0.8)', border: `1px solid ${BORDER}`,
   borderRadius: 10, padding: '11px 14px', color: TEXT, fontSize: 15, outline: 'none', boxSizing: 'border-box',
 };
 

@@ -185,7 +185,7 @@ export default function SavedViewsPage() {
   };
 
   const inputStyle: React.CSSProperties = {
-    background: 'rgba(15,20,25,0.6)',
+    background: 'rgba(255,255,255,0.6)',
     border: `1px solid ${BORDER}`,
     borderRadius: 10,
     padding: '10px 14px',
@@ -215,7 +215,7 @@ export default function SavedViewsPage() {
           onClick={() => setShowCreate(!showCreate)}
           style={{
             background: showCreate ? 'rgba(239,68,68,0.15)' : GOLD,
-            color: showCreate ? RED : '#FF3B30',
+            color: showCreate ? RED : '#000',
             border: 'none',
             borderRadius: 10,
             padding: '10px 20px',
@@ -271,7 +271,7 @@ export default function SavedViewsPage() {
                       key={s}
                       onClick={() => toggleStatus(s)}
                       style={{
-                        background: formStatuses.includes(s) ? 'rgba(212,160,23,0.15)' : 'rgba(15,20,25,0.4)',
+                        background: formStatuses.includes(s) ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.4)',
                         color: formStatuses.includes(s) ? GOLD : DIM,
                         border: `1px solid ${formStatuses.includes(s) ? GOLD + '40' : BORDER}`,
                         borderRadius: 6,
@@ -311,7 +311,7 @@ export default function SavedViewsPage() {
                 disabled={!formName.trim() || saving}
                 style={{
                   background: !formName.trim() ? 'rgba(212,160,23,0.3)' : GOLD,
-                  color: !formName.trim() ? DIM : '#6E6E73',
+                  color: !formName.trim() ? DIM : '#000',
                   border: 'none',
                   borderRadius: 10,
                   padding: '10px 28px',

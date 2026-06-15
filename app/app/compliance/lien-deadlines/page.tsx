@@ -152,7 +152,7 @@ export default function LienDeadlinePage() {
   const sorted = [...deadlines].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
   const inputStyle: React.CSSProperties = {
-    background: 'rgba(15,20,25,0.6)',
+    background: 'rgba(255,255,255,0.6)',
     border: `1px solid ${BORDER}`,
     borderRadius: 10,
     padding: '10px 14px',

@@ -804,7 +804,7 @@ function inputStyle(): React.CSSProperties {
     width: '100%',
     padding: '10px 12px',
     borderRadius: 8,
-    border: '1px solid #2A3144',
+    border: '1px solid #E5E5EA',
     background: 'rgba(242,242,247,0.85)',
     color: '#1C1C1E',
     fontSize: 14,

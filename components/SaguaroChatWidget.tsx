@@ -686,7 +686,7 @@ export default function SaguaroChatWidget({
           >
             <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #C8881C, #8B6210)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 2px 12px rgba(212,160,23,0.35)', flexShrink: 0 }}>🌵</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.2px' }}>
                 Sage
                 {memoryProfile?.identity.firstName && (
                   <span style={{ fontWeight: 400, color: 'rgba(28,28,30,0.4)', fontSize: 13 }}> — hey {memoryProfile.identity.firstName}</span>
@@ -828,7 +828,7 @@ export default function SaguaroChatWidget({
                     onKeyDown={handleKeyDown}
                     placeholder={variant === 'crm' ? 'Ask Sage about your projects...' : 'Ask Sage anything about construction...'}
                     rows={1}
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14, lineHeight: 1.5, resize: 'none', minHeight: 22, maxHeight: 120, fontFamily: 'inherit' }}
+                    color: '#1C1C1E' lineHeight: 1.5, resize: 'none', minHeight: 22, maxHeight: 120, fontFamily: 'inherit' }}
                     onFocus={e => {
                       const c = e.currentTarget.parentElement;
                       if (c) { c.style.borderColor = 'rgba(212,160,23,0.4)'; c.style.boxShadow = '0 0 0 3px rgba(212,160,23,0.08)'; }

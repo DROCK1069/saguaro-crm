@@ -13,7 +13,7 @@ export default function PortalsHub() {
       <div style={{ maxWidth: 600, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <div style={{ color: '#C8881C', fontWeight: 800, fontSize: 24, letterSpacing: '0.12em', marginBottom: 8 }}>SAGUARO</div>
-          <h1 style={{ color: '#F5F5F7', fontSize: 32, fontWeight: 700, margin: '0 0 8px' }}>Portal Access</h1>
+          <h1 style={{ color: '#1C1C1E', fontSize: 32, fontWeight: 700, margin: '0 0 8px' }}>Portal Access</h1>
           <p style={{ color: '#86868B', fontSize: 14, margin: 0 }}>Select your portal below to get started.</p>
         </div>
 
@@ -25,7 +25,7 @@ export default function PortalsHub() {
               border: '1px solid #E5E5EA', borderRadius: 16, padding: '24px 28px',
               borderLeft: `4px solid ${p.color}`,
             }}>
-              <div style={{ color: '#F5F5F7', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.title}</div>
+              <div style={{ color: '#1C1C1E', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.title}</div>
               <div style={{ color: '#86868B', fontSize: 13 }}>{p.desc}</div>
             </a>
           ))}

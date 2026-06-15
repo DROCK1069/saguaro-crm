@@ -444,7 +444,7 @@ export default function NetworkWizardPage() {
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <button onClick={applyAll} disabled={applying || applied} style={{
               padding: '14px 40px', background: applied ? `${GREEN}20` : `linear-gradient(135deg, ${GREEN}, #16A34A)`,
-              color: applied ? GREEN : '#34C759', border: applied ? `1px solid ${GREEN}` : 'none',
+              color: applied ? GREEN : '#000', border: applied ? `1px solid ${GREEN}` : 'none',
               borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: applying || applied ? 'default' : 'pointer',
               opacity: applying ? 0.6 : 1,
             }}>

@@ -42,7 +42,7 @@ export default function ClientPortalLanding() {
       <div style={{ maxWidth: 440, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ color: '#C8881C', fontWeight: 800, fontSize: 24, letterSpacing: '0.12em', marginBottom: 8 }}>SAGUARO</div>
-          <h1 style={{ color: '#F5F5F7', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>Owner / Client Portal</h1>
+          <h1 style={{ color: '#1C1C1E', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>Owner / Client Portal</h1>
           <p style={{ color: '#86868B', fontSize: 14, margin: 0 }}>View your project progress, budgets, photos, and documents in real time.</p>
         </div>
 
@@ -55,7 +55,7 @@ export default function ClientPortalLanding() {
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleEmailAccess()}
               placeholder="you@example.com"
-              style={{ width: '100%', padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#F5F5F7', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#1C1C1E', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
             />
             <button
               onClick={handleEmailAccess}
@@ -81,12 +81,12 @@ export default function ClientPortalLanding() {
                 onChange={(e) => setToken(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleTokenAccess()}
                 placeholder="Paste your token"
-                style={{ flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#F5F5F7', fontSize: 14, outline: 'none' }}
+                style={{ flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#1C1C1E', fontSize: 14, outline: 'none' }}
               />
               <button
                 onClick={handleTokenAccess}
                 disabled={!token.trim()}
-                style={{ padding: '12px 20px', background: 'rgba(0,0,0,0.08)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#F5F5F7', fontWeight: 600, fontSize: 14, cursor: 'pointer', opacity: !token.trim() ? 0.5 : 1 }}
+                style={{ padding: '12px 20px', background: 'rgba(0,0,0,0.08)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#1C1C1E', fontWeight: 600, fontSize: 14, cursor: 'pointer', opacity: !token.trim() ? 0.5 : 1 }}
               >
                 Go
               </button>

@@ -11,14 +11,14 @@ export default function SignPortalLanding() {
       <div style={{ maxWidth: 440, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ color: '#C8881C', fontWeight: 800, fontSize: 24, letterSpacing: '0.12em', marginBottom: 8 }}>SAGUARO</div>
-          <h1 style={{ color: '#F5F5F7', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>E-Signature Portal</h1>
+          <h1 style={{ color: '#1C1C1E', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>E-Signature Portal</h1>
           <p style={{ color: '#86868B', fontSize: 14, margin: 0 }}>Sign documents securely in your browser. No account required.</p>
         </div>
         <div style={{ background: 'rgba(0,0,0,0.04)', backdropFilter: 'blur(40px)', border: '1px solid #E5E5EA', borderRadius: 16, padding: 32 }}>
           <label style={{ color: '#86868B', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>Enter your signing token</label>
           <p style={{ color: '#86868B', fontSize: 13, margin: '0 0 16px' }}>Check your email for a signing link, or paste your token below.</p>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input type="text" value={token} onChange={(e) => setToken(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && token.trim() && router.push(`/portals/sign/${token.trim()}`)} placeholder="Paste signing token" style={{ flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#F5F5F7', fontSize: 14, outline: 'none' }} />
+            <input type="text" value={token} onChange={(e) => setToken(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && token.trim() && router.push(`/portals/sign/${token.trim()}`)} placeholder="Paste signing token" style={{ flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#1C1C1E', fontSize: 14, outline: 'none' }} />
             <button onClick={() => token.trim() && router.push(`/portals/sign/${token.trim()}`)} disabled={!token.trim()} style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #C8881C, #C8960F)', border: 'none', borderRadius: 10, color: '#000', fontWeight: 700, fontSize: 14, cursor: 'pointer', opacity: !token.trim() ? 0.5 : 1 }}>Sign</button>
           </div>
         </div>

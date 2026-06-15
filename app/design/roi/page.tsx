@@ -6,7 +6,7 @@ const GOLD = '#C8881C', GREEN = '#34C759';
 const TEXT = '#1C1C1E', DIM = '#6E6E73';
 const RED = '#FF3B30', BLUE = '#007AFF';
 const BG = '#F2F2F7', CARD_BG = 'rgba(0,0,0,0.04)';
-const CARD_BORDER = 'rgba(0,0,0,0.08)', CARD_SHADOW = '0 8px 32px rgba(0,0,0,0.4)';
+const CARD_BORDER = 'rgba(0,0,0,0.08)', CARD_SHADOW = '0 8px 32px rgba(0,0,0,0.12)';
 
 /* ─── State Data ─── */
 type StateData = {
@@ -430,7 +430,7 @@ export default function ROICalculatorPage() {
                   left: 24,
                   right: 24,
                   zIndex: 9999,
-                  background: 'rgba(15,15,15,0.98)',
+                  background: 'rgba(255,255,255,0.98)',
                   backdropFilter: 'blur(40px)',
                   WebkitBackdropFilter: 'blur(40px)',
                   border: '1px solid rgba(212,160,23,0.2)',
@@ -757,7 +757,7 @@ export default function ROICalculatorPage() {
                               width: '44%',
                               height: costH,
                               borderRadius: '6px 6px 0 0',
-                              background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 100%)',
+                              background: 'linear-gradient(180deg, #E5E5EA 0%, #F2F2F7 100%)',
                               transition: 'height 0.5s ease',
                             }} />
                           </div>

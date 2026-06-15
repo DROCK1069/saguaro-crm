@@ -63,7 +63,7 @@ export default function PrevailingWagePage() {
   const weeklyCost = rate.total * 40;
 
   const inputStyle: React.CSSProperties = {
-    background: 'rgba(15,20,25,0.6)',
+    background: 'rgba(255,255,255,0.6)',
     border: `1px solid ${BORDER}`,
     borderRadius: 10,
     padding: '10px 14px',
@@ -143,7 +143,7 @@ export default function PrevailingWagePage() {
                     }}
                     style={{
                       background: (!isCustom && hoursPreset === p.hours) || (isCustom && p.label === 'Custom')
-                        ? 'rgba(212,160,23,0.15)' : 'rgba(15,20,25,0.4)',
+                        ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.4)',
                       color: (!isCustom && hoursPreset === p.hours) || (isCustom && p.label === 'Custom')
                         ? GOLD : DIM,
                       border: `1px solid ${(!isCustom && hoursPreset === p.hours) || (isCustom && p.label === 'Custom')
