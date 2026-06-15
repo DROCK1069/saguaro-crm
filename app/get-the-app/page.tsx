@@ -257,7 +257,7 @@ export default function GetTheAppPage() {
           align-items:center;
           flex-shrink:0;
         }
-        .ps-time { font-size:9px;font-weight:700;color:rgba(248,250,252,0.9); }
+        .ps-time { font-size:9px;font-weight:700;color:rgba(28,28,30,0.9); }
         .ps-header {
           background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.08));
           border-bottom: 1px solid rgba(245,158,11,0.2);
@@ -266,9 +266,9 @@ export default function GetTheAppPage() {
         }
         .ps-label { font-size:8px;color:rgba(245,158,11,0.7);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px; }
         .ps-big { font-size:20px;font-weight:800;color:#FCD34D;line-height:1; }
-        .ps-small { font-size:7.5px;color:rgba(248,250,252,0.4);margin-top:2px; }
+        .ps-small { font-size:7.5px;color:rgba(110,110,115,0.7);margin-top:2px; }
         .ps-body { padding:10px 12px;flex:1;overflow:hidden; }
-        .ps-section { font-size:8px;color:rgba(248,250,252,0.35);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px; }
+        .ps-section { font-size:8px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px; }
         .ps-row {
           display:flex;align-items:center;gap:8px;
           padding:6px 8px;border-radius:8px;
@@ -277,19 +277,19 @@ export default function GetTheAppPage() {
         }
         .ps-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
         .ps-row-text { flex:1; }
-        .ps-row-name { font-size:8px;color:rgba(248,250,252,0.75); }
-        .ps-row-sub { font-size:6.5px;color:rgba(248,250,252,0.3);margin-top:1px; }
+        .ps-row-name { font-size:8px;color:rgba(28,28,30,0.75); }
+        .ps-row-sub { font-size:6.5px;color:rgba(110,110,115,0.7);margin-top:1px; }
         .ps-badge { padding:2px 6px;border-radius:4px;font-size:6.5px;font-weight:600; }
         .ps-badge-green { background:rgba(34,197,94,0.15);color:#22c55e; }
         .ps-badge-amber { background:rgba(245,158,11,0.15);color:#F59E0B; }
         .ps-nav {
           position:absolute;bottom:0;left:0;right:0;
           height:42px;
-          background:rgba(8,15,26,0.96);
+          background:rgba(255,255,255,0.96);
           border-top:1px solid rgba(0,0,0,0.06);
           display:flex;align-items:center;justify-content:space-around;
         }
-        .ps-nav-i { width:16px;height:16px;stroke:rgba(255,255,255,0.25);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round; }
+        .ps-nav-i { width:16px;height:16px;stroke:rgba(110,110,115,0.7);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round; }
         .ps-nav-i.act { stroke:var(--gold); }
 
         /* Tablet */
@@ -321,7 +321,7 @@ export default function GetTheAppPage() {
         .ts-dots { display:flex;gap:4px; }
         .ts-dot { width:5px;height:5px;border-radius:50%; }
         .ts-body { padding:10px 12px; }
-        .ts-greeting { font-size:8px;color:rgba(248,250,252,0.35);margin-bottom:1px; }
+        .ts-greeting { font-size:8px;color:rgba(110,110,115,0.7);margin-bottom:1px; }
         .ts-title { font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px; }
         .ts-grid { display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px; }
         .ts-card { border-radius:8px;padding:8px 9px; }
@@ -334,12 +334,12 @@ export default function GetTheAppPage() {
         .c-green .ts-card-n { color:#22c55e; }
         .c-blue .ts-card-n { color:#60a5fa; }
         .c-purple .ts-card-n { color:#a78bfa; }
-        .ts-card-l { font-size:7px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.06em; }
-        .ts-bars-label { font-size:7px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px; }
+        .ts-card-l { font-size:7px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.06em; }
+        .ts-bars-label { font-size:7px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px; }
         .ts-bars { display:flex;align-items:flex-end;gap:4px;height:36px; }
         .ts-bar { flex:1;border-radius:3px 3px 0 0; }
         .ts-row { display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-size:8px; }
-        .ts-row-name { color:rgba(255,255,255,0.6); }
+        .ts-row-name { color:rgba(28,28,30,0.6); }
         .ts-bge { padding:2px 6px;border-radius:4px;font-size:7px;font-weight:600; }
         .bg-gn { background:rgba(34,197,94,0.15);color:#22c55e; }
         .bg-am { background:rgba(245,158,11,0.15);color:#F59E0B; }
@@ -375,7 +375,7 @@ export default function GetTheAppPage() {
           padding:6px 4px;
         }
         .ls-logo { font-size:7px;font-weight:800;color:var(--gold);padding:0 3px;margin-bottom:7px; }
-        .ls-item { padding:3px 5px;border-radius:4px;font-size:6px;color:rgba(255,255,255,0.3);margin-bottom:1px;display:flex;align-items:center;gap:3px; }
+        .ls-item { padding:3px 5px;border-radius:4px;font-size:6px;color:rgba(110,110,115,0.7);margin-bottom:1px;display:flex;align-items:center;gap:3px; }
         .ls-item.act { background:rgba(245,158,11,0.15);color:var(--gold); }
         .ls-dot { width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5; }
         .ls-main { flex:1;padding:7px 8px; }
@@ -393,10 +393,10 @@ export default function GetTheAppPage() {
         .lc2 .ls-card-n { color:#22c55e; }
         .lc3 .ls-card-n { color:#60a5fa; }
         .lc4 .ls-card-n { color:#a78bfa; }
-        .ls-card-l { font-size:5px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px; }
+        .ls-card-l { font-size:5px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.05em;margin-top:1px; }
         .ls-row { display:flex;gap:4px;padding:2.5px 0;border-bottom:1px solid rgba(0,0,0,0.04); }
-        .ls-td { font-size:5.5px;color:rgba(255,255,255,0.35);flex:1; }
-        .ls-td.bold { color:rgba(255,255,255,0.7); }
+        .ls-td { font-size:5.5px;color:rgba(110,110,115,0.7);flex:1; }
+        .ls-td.bold { color:rgba(28,28,30,0.7); }
         .dev-laptop-hinge {
           height:10px;
           background:linear-gradient(160deg,#FFFFFF,#FFFFFF);
@@ -408,7 +408,7 @@ export default function GetTheAppPage() {
         }
         .dev-laptop-base {
           height:7px;
-          background:#090f1b;
+          background:#F2F2F7;
           width:52%;
           margin:0 auto;
           border-radius:0 0 6px 6px;

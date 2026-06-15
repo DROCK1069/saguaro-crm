@@ -221,7 +221,7 @@ export default function LoginPage(){
                 {loading && (
                   <span style={{
                     display:'inline-block',width:16,height:16,
-                    border:'2px solid #E5E5EA',borderTopColor:'#F2F2F7',
+                    border:'2px solid #E5E5EA',borderTopColor:'#C8881C',
                     borderRadius:'50%',animation:'spin .6s linear infinite',
                   }}/>
                 )}
@@ -230,7 +230,7 @@ export default function LoginPage(){
             </form>
 
             {/* Hint */}
-            <div style={{marginTop:12,textAlign:'center',fontSize:11,color:'rgba(143,163,192,.5)'}}>
+            <div style={{marginTop:12,textAlign:'center',fontSize:11,color:'rgba(110,110,115,0.7)'}}>
               Press Enter to sign in
             </div>
 
@@ -242,7 +242,7 @@ export default function LoginPage(){
           {/* Trust badges */}
           <div style={{marginTop:20,textAlign:'center',display:'flex',justifyContent:'center',gap:20,flexWrap:'wrap'}}>
             {['256-bit SSL','SOC 2','99.9% Uptime'].map(badge => (
-              <span key={badge} style={{fontSize:10,color:'rgba(143,163,192,.4)',fontWeight:600,letterSpacing:.5,textTransform:'uppercase'}}>
+              <span key={badge} style={{fontSize:10,color:'rgba(110,110,115,0.7)',fontWeight:600,letterSpacing:.5,textTransform:'uppercase'}}>
                 🔒 {badge}
               </span>
             ))}

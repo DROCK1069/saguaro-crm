@@ -335,7 +335,7 @@ function PhotosInner() {
               }} />
               <button onClick={clearCapture} style={{
                 position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%',
-                background: '#F2F2F7', color: '#fff', border: 'none', fontSize: 14,
+                background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', fontSize: 14,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>X</button>
             </div>

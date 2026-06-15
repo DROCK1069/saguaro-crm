@@ -147,7 +147,7 @@ function QRPage() {
   const generateQR = () => {
     if (!genText.trim()) return;
     setGenerating(true);
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(genText.trim())}&bgcolor=0f1d2b&color=D4A017`;
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(genText.trim())}&bgcolor=FFFFFF&color=1C1C1E`;
     setQrUrl(url);
   };
 

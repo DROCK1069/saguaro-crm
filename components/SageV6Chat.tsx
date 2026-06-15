@@ -603,7 +603,7 @@ export default function SageV6Chat({
                     }}>
                       {msg.content}
                     </div>
-                    <div style={{ fontSize: 10, color: 'rgba(232,237,248,0.25)', paddingRight: 4 }}>
+                    <div style={{ fontSize: 10, color: 'rgba(110,110,115,0.7)', paddingRight: 4 }}>
                       {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </>
@@ -648,7 +648,7 @@ export default function SageV6Chat({
                         display: 'flex', alignItems: 'center', gap: 6,
                         paddingLeft: 4,
                       }}>
-                        <span style={{ fontSize: 10, color: 'rgba(232,237,248,0.25)' }}>
+                        <span style={{ fontSize: 10, color: 'rgba(110,110,115,0.7)' }}>
                           {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
 
@@ -857,7 +857,7 @@ export default function SageV6Chat({
             {/* footer caption */}
             <div style={{
               marginTop: 7, textAlign: 'center',
-              fontSize: 10, color: 'rgba(143,163,192,0.35)',
+              fontSize: 10, color: 'rgba(110,110,115,0.7)',
               letterSpacing: '0.3px',
             }}>
               Sage · Saguaro Control Systems · Powered by Claude
