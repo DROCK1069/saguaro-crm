@@ -2,6 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { ClipboardText, Ruler, FileText, CurrencyDollar, Warning, UsersThree, Cube, Wrench } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',RAISED='#FFFFFF',BORDER='#E5E5EA',TEXT='#1C1C1E',DIM='#6E6E73';
 const GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',PURPLE='#8B5CF6',BLUE='#3B82F6',TEAL='#06B6D4';
@@ -164,17 +165,17 @@ function MorePage(){
         <>
           {/* Categorized modules like Procore */}
           {[
-            { title: '📋 Daily Operations', items: PAGE_LINKS.filter(l => ['/field/clock','/field/schedule','/field/equipment','/field/delivery','/field/meetings'].some(p => l.href.startsWith(p))) },
-            { title: '🏗 Quality & Punch', items: PAGE_LINKS.filter(l => ['/field/punch','/field/inspect','/field/observations','/field/commissioning','/field/closeout','/field/coordination','/field/waste'].some(p => l.href.startsWith(p))) },
-            { title: '📄 Documents & Plans', items: PAGE_LINKS.filter(l => ['/field/drawings','/field/docs','/field/specs','/field/submittals','/field/correspondence','/field/forms'].some(p => l.href.startsWith(p))) },
-            { title: '💰 Financial', items: PAGE_LINKS.filter(l => ['/field/change-orders','/field/contracts','/field/invoices','/field/budget','/field/bids','/field/purchase-orders','/field/tm-tickets','/field/timesheets'].some(p => l.href.startsWith(p))) },
-            { title: '⚠️ Safety', items: PAGE_LINKS.filter(l => ['/field/safety','/field/incidents','/field/permits'].some(p => l.href.startsWith(p))) },
-            { title: '👥 People & Comms', items: PAGE_LINKS.filter(l => ['/field/contacts','/field/chat','/field/directory','/field/rfis'].some(p => l.href.startsWith(p))) },
-            { title: '🏗️ Spatial Intelligence', items: PAGE_LINKS.filter(l => ['/field/bim-viewer','/field/laser','/field/drone','/field/ar-overlay','/field/floor-plan','/field/room-progress','/field/crew-map'].some(p => l.href.startsWith(p))) },
-            { title: '🔧 Tools', items: PAGE_LINKS.filter(l => ['/field/sage','/field/qr','/field/search','/field/notifications','/field/favorites','/field/activity','/field/todos'].some(p => l.href.startsWith(p))) },
+            { title: 'Daily Operations', Icon: ClipboardText, items: PAGE_LINKS.filter(l => ['/field/clock','/field/schedule','/field/equipment','/field/delivery','/field/meetings'].some(p => l.href.startsWith(p))) },
+            { title: 'Quality & Punch', Icon: Ruler, items: PAGE_LINKS.filter(l => ['/field/punch','/field/inspect','/field/observations','/field/commissioning','/field/closeout','/field/coordination','/field/waste'].some(p => l.href.startsWith(p))) },
+            { title: 'Documents & Plans', Icon: FileText, items: PAGE_LINKS.filter(l => ['/field/drawings','/field/docs','/field/specs','/field/submittals','/field/correspondence','/field/forms'].some(p => l.href.startsWith(p))) },
+            { title: 'Financial', Icon: CurrencyDollar, items: PAGE_LINKS.filter(l => ['/field/change-orders','/field/contracts','/field/invoices','/field/budget','/field/bids','/field/purchase-orders','/field/tm-tickets','/field/timesheets'].some(p => l.href.startsWith(p))) },
+            { title: 'Safety', Icon: Warning, items: PAGE_LINKS.filter(l => ['/field/safety','/field/incidents','/field/permits'].some(p => l.href.startsWith(p))) },
+            { title: 'People & Comms', Icon: UsersThree, items: PAGE_LINKS.filter(l => ['/field/contacts','/field/chat','/field/directory','/field/rfis'].some(p => l.href.startsWith(p))) },
+            { title: 'Spatial Intelligence', Icon: Cube, items: PAGE_LINKS.filter(l => ['/field/bim-viewer','/field/laser','/field/drone','/field/ar-overlay','/field/floor-plan','/field/room-progress','/field/crew-map'].some(p => l.href.startsWith(p))) },
+            { title: 'Tools', Icon: Wrench, items: PAGE_LINKS.filter(l => ['/field/sage','/field/qr','/field/search','/field/notifications','/field/favorites','/field/activity','/field/todos'].some(p => l.href.startsWith(p))) },
           ].filter(cat => cat.items.length > 0).map(cat => (
             <div key={cat.title} style={{marginBottom:16}}>
-              <p style={{...sLbl, fontSize:13, fontWeight:800, marginBottom:8}}>{cat.title}</p>
+              <p style={{...sLbl, fontSize:13, fontWeight:800, marginBottom:8, display:'flex', alignItems:'center', gap:6}}><cat.Icon size={16} weight="bold"/>{cat.title}</p>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
                 {cat.items.map(l=>(
                   <a key={l.href} href={l.href} style={{background:l.bg,border:`1px solid ${l.border}`,borderRadius:10,padding:'10px 12px',display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>

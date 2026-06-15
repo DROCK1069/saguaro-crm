@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { FileText, MagnifyingGlass, Warning, Clock, BookOpen } from '@phosphor-icons/react';
 import { enqueue } from '@/lib/field-db';
 
 /* ── Theme constants ── */
@@ -407,7 +408,7 @@ function SpecsPageInner() {
                   border: `1px solid ${GOLD}33`,
                 }}
               >
-                <span style={{ fontSize: 18 }}>&#128196;</span>
+                <FileText size={18} weight="duotone" />
                 View Attached PDF / File
                 <span style={{ fontSize: 12, color: DIM, marginLeft: 4 }}>&#8599;</span>
               </a>
@@ -476,7 +477,7 @@ function SpecsPageInner() {
         <div style={{ padding: 16, maxWidth: 600, margin: '0 auto' }}>
           {!online && (
             <div style={{ background: `${AMBER}20`, border: `1px solid ${AMBER}`, borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: AMBER, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16 }}>&#9888;</span>
+              <Warning size={16} weight="bold" />
               You are offline. This section will be queued and synced when reconnected.
             </div>
           )}
@@ -595,7 +596,7 @@ function SpecsPageInner() {
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: GOLD }}>Specifications</h1>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {!online && (
-              <span style={{ color: AMBER, fontSize: 12, fontWeight: 600 }}>&#9888; Offline</span>
+              <span style={{ color: AMBER, fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Warning size={12} weight="bold" /> Offline</span>
             )}
             <button
               onClick={handlePrint}
@@ -626,8 +627,8 @@ function SpecsPageInner() {
               outline: 'none', boxSizing: 'border-box',
             }}
           />
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: DIM, fontSize: 16, pointerEvents: 'none' }}>
-            &#128269;
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: DIM, fontSize: 16, pointerEvents: 'none', display: 'inline-flex' }}>
+            <MagnifyingGlass size={16} weight="regular" />
           </span>
           {searchText && (
             <button
@@ -681,7 +682,7 @@ function SpecsPageInner() {
               border: `1px solid ${showRecentOnly ? BLUE : BORDER}`,
             }}
           >
-            &#128339; Recent ({recentIds.length})
+            <Clock size={12} weight="bold" style={{ verticalAlign: 'middle' }} /> Recent ({recentIds.length})
           </button>
           <div style={{ flex: 1 }} />
           <button
@@ -716,7 +717,7 @@ function SpecsPageInner() {
 
       {error && (
         <div style={{ margin: 16, padding: '12px 16px', background: `${RED}18`, border: `1px solid ${RED}44`, borderRadius: 8, color: RED, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18 }}>&#9888;</span>
+          <Warning size={18} weight="duotone" />
           {error}
           <button
             onClick={() => window.location.reload()}
@@ -730,7 +731,7 @@ function SpecsPageInner() {
       {/* ── Empty state ── */}
       {!loading && !error && sections.length === 0 && (
         <div style={{ padding: 40, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>&#128214;</div>
+          <div style={{ marginBottom: 12 }}><BookOpen size={48} weight="duotone" /></div>
           <p style={{ color: DIM, fontSize: 15, marginBottom: 16 }}>No specification sections yet.</p>
           <button
             onClick={() => setShowCreateForm(true)}
@@ -828,10 +829,10 @@ function SpecsPageInner() {
                             <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
                               <span style={{ fontSize: 11, color: DIM }}>v{sec.version}</span>
                               {sec.file_url && (
-                                <span style={{ fontSize: 11, color: BLUE }}>&#128196; PDF</span>
+                                <span style={{ fontSize: 11, color: BLUE, display: 'inline-flex', alignItems: 'center', gap: 3 }}><FileText size={11} weight="bold" /> PDF</span>
                               )}
                               {isRecent && (
-                                <span style={{ fontSize: 11, color: AMBER }}>&#128339; Recent</span>
+                                <span style={{ fontSize: 11, color: AMBER, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Clock size={11} weight="bold" /> Recent</span>
                               )}
                             </div>
                           </div>

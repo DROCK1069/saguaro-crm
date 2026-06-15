@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Robot } from '@phosphor-icons/react';
 
 const BASE = '#F2F2F7';
 const CARD = '#FFFFFF';
@@ -252,7 +253,7 @@ export default function TradeGuidePage() {
             zIndex: 100,
           }}
         >
-          🤖
+          <Robot size={28} weight="fill" color="#000" />
         </button>
 
         {/* Chat Panel */}
@@ -428,7 +429,7 @@ export default function TradeGuidePage() {
           zIndex: 100,
         }}
       >
-        🤖
+        <Robot size={28} weight="fill" color="#000" />
       </button>
 
       {/* Chat Panel */}

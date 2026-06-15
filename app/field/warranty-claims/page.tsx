@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Toolbox, MapPin, Phone, Envelope } from '@phosphor-icons/react';
 import { enqueue } from '@/lib/field-db';
 
 const GOLD   = '#C8881C';
@@ -652,7 +653,7 @@ function WarrantyClaimsInner() {
         {/* Empty state */}
         {!loading && filteredClaims.length === 0 && (
           <div style={{ padding: '60px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.4 }}>&#128736;</div>
+            <div style={{ marginBottom: 16, opacity: 0.4 }}><Toolbox size={48} weight="duotone" color={DIM} /></div>
             <p style={{ color: DIM, fontSize: 15, marginBottom: 8 }}>
               {claims.length === 0 ? 'No warranty claims yet' : 'No claims match your filters'}
             </p>
@@ -904,7 +905,7 @@ function WarrantyClaimsInner() {
           {/* Location */}
           {claim.location && (
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8 }}>
-              <span style={{ fontSize: 14 }}>&#128205;</span>
+              <MapPin size={14} weight="regular" color={DIM} style={{ flexShrink: 0 }} />
               <span style={{ fontSize: 13, color: DIM }}>{claim.location}</span>
             </div>
           )}
@@ -952,7 +953,7 @@ function WarrantyClaimsInner() {
                     borderRadius: 10, color: GREEN, fontSize: 13, fontWeight: 600, textDecoration: 'none',
                   }}
                 >
-                  &#128222; Call
+                  <Phone size={15} weight="bold" /> Call
                 </a>
               )}
               {claim.assigned_email && (
@@ -964,7 +965,7 @@ function WarrantyClaimsInner() {
                     borderRadius: 10, color: BLUE, fontSize: 13, fontWeight: 600, textDecoration: 'none',
                   }}
                 >
-                  &#9993; Email
+                  <Envelope size={15} weight="bold" /> Email
                 </a>
               )}
             </div>

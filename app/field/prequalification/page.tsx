@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { FileText, Warning, Phone, ChatCircle, Envelope, Scroll, MagnifyingGlass, NotePencil } from '@phosphor-icons/react';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
@@ -343,7 +344,7 @@ function PrequalInner() {
     return (
       <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>&#128196;</div>
+          <div style={{ marginBottom: 16 }}><FileText size={48} weight="duotone" /></div>
           <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No Project Selected</div>
           <div style={{ color: DIM, fontSize: 14 }}>Select a project to view subcontractor prequalification data.</div>
         </div>
@@ -442,7 +443,7 @@ function PrequalInner() {
           </div>
 
           <div style={{ ...cardStyle, background: `${RED}11`, borderColor: `${RED}44` }}>
-            <div style={{ fontSize: 13, color: RED, fontWeight: 600, marginBottom: 6 }}>&#9888; Warning</div>
+            <div style={{ fontSize: 13, color: RED, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}><Warning size={13} weight="bold" /> Warning</div>
             <div style={{ fontSize: 13, color: DIM }}>
               Flagging this subcontractor will alert the project team and may prevent further work assignments until resolved.
             </div>
@@ -517,7 +518,7 @@ function PrequalInner() {
               gap: 10,
               marginBottom: 16,
             }}>
-              <span style={{ fontSize: 20 }}>&#9888;</span>
+              <Warning size={20} weight="duotone" color={RED} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: RED, marginBottom: 4 }}>Compliance Flagged</div>
                 <div style={{ fontSize: 13, color: DIM }}>{sub.compliance_flag_reason || 'No details provided'}</div>
@@ -537,13 +538,13 @@ function PrequalInner() {
             <div style={{ fontSize: 13, color: DIM, marginBottom: 2 }}>{sub.trade}</div>
             <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
               <a href={`tel:${sub.phone}`} style={{ ...btnStyle(BLUE), textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                &#128222; Call
+                <Phone size={13} weight="bold" /> Call
               </a>
               <a href={`sms:${sub.phone}`} style={{ ...btnStyle(GREEN), textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                &#128172; Text
+                <ChatCircle size={13} weight="bold" /> Text
               </a>
               <a href={`mailto:${sub.email}`} style={{ ...btnStyle(PURPLE), textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                &#9993; Email
+                <Envelope size={13} weight="bold" /> Email
               </a>
             </div>
             <div style={{ marginTop: 10, fontSize: 12, color: DIM }}>{sub.phone} &middot; {sub.email}</div>
@@ -831,7 +832,7 @@ function PrequalInner() {
         {/* error state */}
         {!loading && error && (
           <div style={{ textAlign: 'center', padding: 32 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>&#9888;</div>
+            <div style={{ marginBottom: 12 }}><Warning size={40} weight="duotone" color={RED} /></div>
             <div style={{ fontSize: 16, fontWeight: 600, color: RED, marginBottom: 8 }}>Error Loading Data</div>
             <div style={{ color: DIM, fontSize: 13, marginBottom: 16 }}>{error}</div>
             <button onClick={fetchSubs} style={btnStyle(GOLD)}>Retry</button>
@@ -841,7 +842,7 @@ function PrequalInner() {
         {/* empty state */}
         {!loading && !error && subs.length === 0 && (
           <div style={{ textAlign: 'center', padding: 48 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>&#128220;</div>
+            <div style={{ marginBottom: 12 }}><Scroll size={48} weight="duotone" /></div>
             <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No Prequalification Data</div>
             <div style={{ color: DIM, fontSize: 13 }}>No subcontractor submissions found for this project.</div>
           </div>
@@ -850,7 +851,7 @@ function PrequalInner() {
         {/* no results after filter */}
         {!loading && !error && subs.length > 0 && filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: 48 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>&#128269;</div>
+            <div style={{ marginBottom: 12 }}><MagnifyingGlass size={40} weight="duotone" /></div>
             <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No Matches</div>
             <div style={{ color: DIM, fontSize: 13, marginBottom: 16 }}>
               No subcontractors match your current filters.
@@ -948,24 +949,24 @@ function PrequalInner() {
                 <a
                   href={`tel:${sub.phone}`}
                   onClick={e => e.stopPropagation()}
-                  style={{ fontSize: 12, color: BLUE, textDecoration: 'none', fontWeight: 600 }}
+                  style={{ fontSize: 12, color: BLUE, textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                 >
-                  &#128222; {sub.phone}
+                  <Phone size={12} weight="bold" /> {sub.phone}
                 </a>
                 <span style={{ color: BORDER }}>|</span>
                 <a
                   href={`mailto:${sub.email}`}
                   onClick={e => e.stopPropagation()}
-                  style={{ fontSize: 12, color: PURPLE, textDecoration: 'none', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  style={{ fontSize: 12, color: PURPLE, textDecoration: 'none', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                 >
-                  &#9993; {sub.email}
+                  <Envelope size={12} weight="bold" /> {sub.email}
                 </a>
               </div>
 
               {/* notes indicator */}
               {sub.field_notes.length > 0 && (
-                <div style={{ fontSize: 11, color: DIM, marginTop: 6 }}>
-                  &#128221; {sub.field_notes.length} field note{sub.field_notes.length !== 1 ? 's' : ''}
+                <div style={{ fontSize: 11, color: DIM, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <NotePencil size={11} weight="bold" /> {sub.field_notes.length} field note{sub.field_notes.length !== 1 ? 's' : ''}
                 </div>
               )}
             </div>

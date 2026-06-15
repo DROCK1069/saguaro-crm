@@ -474,7 +474,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
       {/* ── Dead-letter alert ── */}
       {deadCount > 0 && (
         <div style={{ background: 'rgba(245,158,11,.1)', borderBottom: '1px solid rgba(245,158,11,.3)', padding: '7px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: GOLD }}>
-          <span style={{ fontWeight: 700 }}>⚠ {deadCount} item{deadCount > 1 ? 's' : ''} failed to sync after 5 attempts</span>
+          <span style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Warning size={14} weight="fill" /> {deadCount} item{deadCount > 1 ? 's' : ''} failed to sync after 5 attempts</span>
           <span style={{ color: DIM, fontSize: 11 }}>Contact support</span>
         </div>
       )}

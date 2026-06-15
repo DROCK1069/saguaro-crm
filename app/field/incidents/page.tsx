@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { ShieldCheck, MapPin } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -601,7 +602,7 @@ function IncidentsPage() {
                 {/* Incident Cards */}
                 {filtered.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: 40, color: DIM }}>
-                    <div style={{ fontSize: 40, marginBottom: 8 }}>🛡️</div>
+                    <div style={{ marginBottom: 8 }}><ShieldCheck size={40} weight="duotone" color={DIM} /></div>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>No incidents found</div>
                     <div style={{ fontSize: 12, marginTop: 4 }}>Tap "+ Report" to log a new incident</div>
                   </div>
@@ -624,7 +625,7 @@ function IncidentsPage() {
                       {inc.recordable && <span style={badgeStyle(RED)}>RECORDABLE</span>}
                       {inc.osha_reportable && <span style={badgeStyle('#DC2626')}>OSHA REPORTABLE</span>}
                     </div>
-                    {inc.location && <div style={{ fontSize: 12, color: DIM, marginTop: 6 }}>📍 {inc.location}</div>}
+                    {inc.location && <div style={{ fontSize: 12, color: DIM, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={12} weight="fill" /> {inc.location}</div>}
                   </div>
                 ))}
               </>
@@ -700,8 +701,8 @@ function IncidentsPage() {
                         <div style={{ fontSize: 12, color: DIM }}>
                           GPS: {form.gps_lat && form.gps_lng ? `${form.gps_lat.toFixed(6)}, ${form.gps_lng.toFixed(6)}` : 'Not captured'}
                         </div>
-                        <button onClick={captureGPS} style={{ background: 'none', border: `1px solid ${BORDER}`, color: GOLD, borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
-                          📍 Capture GPS
+                        <button onClick={captureGPS} style={{ background: 'none', border: `1px solid ${BORDER}`, color: GOLD, borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={12} weight="bold" /> Capture GPS
                         </button>
                       </div>
                     </div>

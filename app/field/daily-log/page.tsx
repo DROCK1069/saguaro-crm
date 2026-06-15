@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import VoiceToLog from '../../../components/field/VoiceToLog';
 import OfflineSyncStatus from '../../../components/field/OfflineSyncStatus';
 import { queueAction, isOnline } from '../../../lib/offline-sync';
+import { Cloud, HardHat, Wrench, Tractor, Warning, UsersThree, Camera, NotePencil } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const DARK   = '#F2F2F7';
@@ -315,7 +316,7 @@ export default function DailyLogPage() {
         {/* ── Weather Section ─────────────────────────────── */}
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>&#9729;</span> Weather
+            <Cloud size={18} weight="duotone" /> Weather
           </div>
 
           {/* Auto-populated current weather */}
@@ -393,7 +394,7 @@ export default function DailyLogPage() {
         {/* ── Crew Section ────────────────────────────────── */}
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>&#128119;</span> Crew on Site
+            <HardHat size={18} weight="duotone" /> Crew on Site
           </div>
           <div style={{ fontSize: 12, color: DIM, marginBottom: 12 }}>Total: {totalCrew} workers</div>
 
@@ -460,7 +461,7 @@ export default function DailyLogPage() {
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 18 }}>&#128295;</span> Work Performed
+              <Wrench size={18} weight="duotone" /> Work Performed
             </div>
             <VoiceToLog onTranscript={(text) => setWorkPerformed(prev => prev ? prev + '\n' + text : text)} />
           </div>
@@ -476,7 +477,7 @@ export default function DailyLogPage() {
         {/* ── Equipment ───────────────────────────────────── */}
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>&#128668;</span> Equipment
+            <Tractor size={18} weight="duotone" /> Equipment
           </div>
 
           {equipment.length === 0 && (
@@ -533,7 +534,7 @@ export default function DailyLogPage() {
         {/* ── Issues / Delays ─────────────────────────────── */}
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>&#9888;</span> Issues / Delays
+            <Warning size={18} weight="duotone" /> Issues / Delays
           </div>
           <div style={{ marginBottom: 10 }}>
             <label style={sLabel}>Severity</label>
@@ -553,7 +554,7 @@ export default function DailyLogPage() {
         {/* ── Visitors ────────────────────────────────────── */}
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>&#128101;</span> Visitors
+            <UsersThree size={18} weight="duotone" /> Visitors
           </div>
           <textarea
             value={visitors}
@@ -567,7 +568,7 @@ export default function DailyLogPage() {
         {/* ── Photos ──────────────────────────────────────── */}
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>&#128247;</span> Photos
+            <Camera size={18} weight="duotone" /> Photos
           </div>
 
           <input
@@ -617,13 +618,13 @@ export default function DailyLogPage() {
           <button
             onClick={() => fileRef.current?.click()}
             style={{ ...sBtn, background: `${GOLD}22`, color: GOLD, width: '100%', justifyContent: 'center' }}
-          >&#128247; Take Photo</button>
+          ><Camera size={16} weight="bold" /> Take Photo</button>
         </div>
 
         {/* ── Notes ────────────────────────────────────────── */}
         <div style={sSection}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>&#128221;</span> Notes
+            <NotePencil size={18} weight="duotone" /> Notes
           </div>
           <textarea
             value={notes}

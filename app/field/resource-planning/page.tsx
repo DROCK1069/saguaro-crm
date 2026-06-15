@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
+import { UsersThree, Hammer, CalendarBlank, Phone, Crane } from '@phosphor-icons/react';
 
 /* ── colour palette ────────────────────────────────────────────────── */
 const GOLD = '#C8881C', BG = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA';
@@ -440,7 +441,7 @@ function ResourcePlanningInner() {
               {/* empty state */}
               {filteredWorkers.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>&#128101;</div>
+                  <div style={{ marginBottom: 8 }}><UsersThree size={36} weight="duotone" color={DIM} /></div>
                   <p style={{ color: DIM, fontSize: 15, margin: '0 0 4px' }}>
                     {workers.length === 0 ? 'No crew assigned today' : 'No workers match filters'}
                   </p>
@@ -522,7 +523,7 @@ function ResourcePlanningInner() {
               <p style={secLbl}>Equipment on site today</p>
               {equipment.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>&#128296;</div>
+                  <div style={{ marginBottom: 8 }}><Hammer size={36} weight="duotone" color={DIM} /></div>
                   <p style={{ color: DIM, fontSize: 15 }}>No equipment assigned today</p>
                 </div>
               )}
@@ -656,7 +657,7 @@ function ResourcePlanningInner() {
               <p style={secLbl}>Week-ahead resource forecast</p>
               {forecast.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>&#128197;</div>
+                  <div style={{ marginBottom: 8 }}><CalendarBlank size={36} weight="duotone" color={DIM} /></div>
                   <p style={{ color: DIM, fontSize: 15 }}>No forecast data available</p>
                 </div>
               )}
@@ -711,7 +712,7 @@ function ResourcePlanningInner() {
               <p style={secLbl}>Crew contact list</p>
               {workers.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>&#128222;</div>
+                  <div style={{ marginBottom: 8 }}><Phone size={36} weight="duotone" color={DIM} /></div>
                   <p style={{ color: DIM, fontSize: 15 }}>No crew members assigned</p>
                 </div>
               )}
@@ -749,7 +750,7 @@ function ResourcePlanningInner() {
                                 fontSize: 16,
                               }}
                             >
-                              &#9742;
+                              <Phone size={18} weight="bold" />
                             </a>
                           ) : (
                             <span style={{ fontSize: 11, color: DIM }}>No phone</span>
@@ -787,7 +788,7 @@ function ResourcePlanningInner() {
                             fontSize: 16,
                           }}
                         >
-                          &#9742;
+                          <Phone size={18} weight="bold" />
                         </a>
                       ) : (
                         <span style={{ fontSize: 11, color: DIM }}>No phone</span>
@@ -805,7 +806,7 @@ function ResourcePlanningInner() {
               <p style={secLbl}>Subcontractor crew counts</p>
               {subCrews.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>&#127959;</div>
+                  <div style={{ marginBottom: 8 }}><Crane size={36} weight="duotone" color={DIM} /></div>
                   <p style={{ color: DIM, fontSize: 15 }}>No subcontractor crews reported today</p>
                 </div>
               )}

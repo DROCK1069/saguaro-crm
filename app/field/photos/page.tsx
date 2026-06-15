@@ -10,6 +10,7 @@ import { takePhoto, getCurrentPosition, hapticSuccess, hapticLight, hapticError,
 import OfflineSyncStatus from '@/components/field/OfflineSyncStatus';
 import VoiceToLog from '@/components/field/VoiceToLog';
 import PhotoEditor from '@/components/field/PhotoEditor';
+import { PencilSimple, Trash } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const DARK   = '#F2F2F7';
@@ -493,8 +494,8 @@ function PhotosInner() {
             {/* Edit + Delete buttons */}
             <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'center' }}>
               <button onClick={(e) => { e.stopPropagation(); setEditingPhoto(viewingPhoto); setViewingPhoto(null); }}
-                style={{ padding: '8px 20px', background: 'rgba(212,160,23,.2)', border: '1px solid rgba(212,160,23,.4)', borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                ✏️ Edit
+                style={{ padding: '8px 20px', background: 'rgba(212,160,23,.2)', border: '1px solid rgba(212,160,23,.4)', borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <PencilSimple size={14} weight="bold" /> Edit
               </button>
               <button onClick={async (e) => {
                 e.stopPropagation();
@@ -506,8 +507,8 @@ function PhotosInner() {
                   window.location.reload();
                 } catch { /* */ }
               }}
-                style={{ padding: '8px 20px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, color: RED, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                🗑 Delete
+                style={{ padding: '8px 20px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, color: RED, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Trash size={14} weight="bold" /> Delete
               </button>
             </div>
           </div>

@@ -7,6 +7,7 @@
  */
 import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { FlagCheckered } from '@phosphor-icons/react';
 import { enqueue } from '@/lib/field-db';
 
 const GOLD   = '#C8881C';
@@ -1226,7 +1227,7 @@ function SchedulePage() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
-                          {task.is_milestone && <span title="Milestone" style={{ fontSize: 12 }}>&#127937;</span>}
+                          {task.is_milestone && <FlagCheckered size={12} weight="bold" aria-label="Milestone" style={{ verticalAlign: 'middle', flexShrink: 0 }} />}
                           <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT, lineHeight: 1.3 }}>{task.name}</p>
                           {task._isCritical && (
                             <span style={{

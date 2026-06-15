@@ -9,6 +9,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
+import { MagnifyingGlass, ClipboardText, MapPin, Wrench, Camera, Clock } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -975,7 +976,7 @@ function ObservationsPage() {
         <div style={{ textAlign: 'center', color: DIM, padding: 40 }}>Loading observations...</div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', color: DIM, padding: 40 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+          <div style={{ marginBottom: 12 }}><MagnifyingGlass size={40} weight="duotone" color={DIM} /></div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>No observations found</div>
           <div style={{ fontSize: 12, marginTop: 6 }}>Tap + New to record a safety observation</div>
         </div>
@@ -1001,9 +1002,9 @@ function ObservationsPage() {
                 {obs.description.length > 120 ? obs.description.slice(0, 120) + '...' : obs.description}
               </div>
               <div style={{ display: 'flex', gap: 12, fontSize: 11, color: DIM, flexWrap: 'wrap' }}>
-                {obs.template && <span>📋 {obs.template}</span>}
-                {obs.location && <span>📍 {obs.location}</span>}
-                {obs.trade && <span>🔧 {obs.trade}</span>}
+                {obs.template && <span><ClipboardText size={12} weight="regular" style={{ verticalAlign: 'middle' }} /> {obs.template}</span>}
+                {obs.location && <span><MapPin size={12} weight="regular" style={{ verticalAlign: 'middle' }} /> {obs.location}</span>}
+                {obs.trade && <span><Wrench size={12} weight="regular" style={{ verticalAlign: 'middle' }} /> {obs.trade}</span>}
                 {obs.checklist && obs.checklist.length > 0 && (
                   <span>✅ {obs.checklist.filter(c => c.result === 'pass').length}/{obs.checklist.length}</span>
                 )}
@@ -1166,7 +1167,7 @@ function ObservationsPage() {
             width: 72, height: 72, background: '#FFFFFF', border: `2px dashed ${BORDER}`,
             borderRadius: 10, color: DIM, fontSize: 24, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>📷</button>
+          }}><Camera size={24} weight="regular" /></button>
         </div>
       </div>
 
@@ -1350,8 +1351,8 @@ function ObservationsPage() {
             {selected.description}
           </div>
           <div style={{ display: 'flex', gap: 14, fontSize: 11, color: DIM, flexWrap: 'wrap' }}>
-            <span>🕐 {fmtDateTime(selected.created_at)}</span>
-            {selected.template && <span>📋 {selected.template}</span>}
+            <span><Clock size={12} weight="regular" style={{ verticalAlign: 'middle' }} /> {fmtDateTime(selected.created_at)}</span>
+            {selected.template && <span><ClipboardText size={12} weight="regular" style={{ verticalAlign: 'middle' }} /> {selected.template}</span>}
           </div>
         </div>
 

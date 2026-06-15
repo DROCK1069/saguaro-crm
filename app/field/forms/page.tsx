@@ -5,6 +5,7 @@
  * Glassmorphism design, real Supabase data via API routes.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ClipboardText } from '@phosphor-icons/react';
 import { useToast } from '@/components/Toast';
 
 const BASE   = '#F2F2F7';
@@ -412,7 +413,7 @@ export default function FormsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {templates.length === 0 && (
               <div style={{ ...glassCard(), textAlign: 'center', padding: 40 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+                <div style={{ marginBottom: 12 }}><ClipboardText size={40} weight="duotone" color={DIM} /></div>
                 <p style={{ color: DIM, fontSize: 14, margin: 0 }}>No form templates yet. Create your first one.</p>
               </div>
             )}
