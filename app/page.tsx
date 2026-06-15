@@ -298,7 +298,7 @@ export default function LandingPage() {
 
       {/* ══════════ 3. HERO ══════════ */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.92) 40%, rgba(0,0,0,0.3) 100%)', zIndex: 0 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(242,242,247,0.97) 0%, rgba(242,242,247,0.95) 45%, rgba(242,242,247,0.55) 100%)', zIndex: 0 }} />
         {/* left */}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.35)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.4, padding: '6px 13px', borderRadius: 999, marginBottom: 20, textTransform: 'uppercase' as const }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(212,160,23,0.6)' }} />AI-POWERED CONSTRUCTION CRM</span>
