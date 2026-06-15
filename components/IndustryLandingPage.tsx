@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import type { Industry } from '@/lib/industries';
 
-const DARK = '#0d1117';
+const DARK = '#F2F2F7';
 const GOLD = '#F59E0B';
-const GOLD_DARK = '#D4A017';
-const TEXT = '#F8FAFC';
-const DIM = '#CBD5E1';
-const BORDER = '#1E3A5F';
-const RAISED = '#0F172A';
+const GOLD_DARK = '#C8881C';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
+const RAISED = '#FFFFFF';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 
@@ -55,7 +55,7 @@ export default function IndustryLandingPage({ industry }: Props) {
       {/* ── NAV ── */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        background: scrolled ? 'rgba(13,17,23,0.97)' : 'rgba(13,17,23,0.85)',
+        background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         borderBottom: scrolled ? '1px solid rgba(212,160,23,0.25)' : '1px solid rgba(38,51,71,0.8)',
         transition: 'all 0.3s ease', height: '58px',
@@ -74,10 +74,10 @@ export default function IndustryLandingPage({ industry }: Props) {
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
               <span style={{
                 fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em',
-                background: 'linear-gradient(90deg,#D4A017,#F0C040)',
+                background: 'linear-gradient(90deg,#C8881C,#E0A030)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               }}>SAGUARO</span>
-              <span style={{ fontSize: '7px', color: '#8fa3c0', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
+              <span style={{ fontSize: '7px', color: '#6E6E73', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
             </span>
           </Link>
 
@@ -103,7 +103,7 @@ export default function IndustryLandingPage({ industry }: Props) {
       </nav>
 
       {mobileOpen && (
-        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(13,17,23,0.99)', borderBottom: `1px solid ${BORDER}`, padding: '16px', backdropFilter: 'blur(12px)' }}>
+        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(255,255,255,0.99)', borderBottom: `1px solid ${BORDER}`, padding: '16px', backdropFilter: 'blur(12px)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Link href="/login" onClick={() => setMobileOpen(false)} style={{ padding: '13px', textAlign: 'center', border: `1px solid ${BORDER}`, borderRadius: '8px', color: TEXT, textDecoration: 'none', fontWeight: 500 }}>Log In</Link>
             <Link href="/signup" onClick={() => setMobileOpen(false)} style={{ padding: '13px', textAlign: 'center', background: GOLD_DARK, borderRadius: '8px', color: '#000', textDecoration: 'none', fontWeight: 600 }}>Start Free Trial</Link>
@@ -384,7 +384,7 @@ export default function IndustryLandingPage({ industry }: Props) {
       {/* ── FINAL CTA ── */}
       <section style={{
         padding: '80px 24px',
-        background: `linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(251,191,36,0.06) 50%, rgba(13,17,23,0) 100%)`,
+        background: `linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(251,191,36,0.06) 50%, rgba(255,255,255,0) 100%)`,
         textAlign: 'center',
       }}>
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
@@ -417,7 +417,7 @@ export default function IndustryLandingPage({ industry }: Props) {
             </Link>
           </div>
 
-          <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: '#6E6E73', margin: 0 }}>
             Free forever for your field crew. No App Store required.
           </p>
         </div>

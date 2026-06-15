@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#ef4444';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444';
 
 function getSupabase() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
@@ -65,7 +65,7 @@ export default function ResetPasswordPage(){
                     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Confirm Password</label>
                     <input type="password" placeholder="Repeat password" value={confirm} onChange={e=>setConfirm(e.target.value)} required autoComplete="new-password" style={inputStyle}/>
                   </div>
-                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:9,color:'#0d1117',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
+                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:9,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
                     {loading?'Updating…':'Update Password →'}
                   </button>
                 </form>

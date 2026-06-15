@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='#1E3A5F',DIM='#CBD5E1',TEXT='#F8FAFC',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#F59E0B',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -111,7 +111,7 @@ export default function SignupPage(){
     <div style={{minHeight:'100vh',background:DARK,fontFamily:"system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
       {/* Nav */}
-      <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(13,17,23,0.95)',backdropFilter:'blur(12px)',zIndex:50}}>
+      <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(255,255,255,0.95)',backdropFilter:'blur(12px)',zIndex:50}}>
         <a href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:10}}>
           <img src="/logo-full.jpg" alt="Saguaro" style={{height:34,width:'auto',borderRadius:4}}/>
           <span style={{fontWeight:900,fontSize:15,background:`linear-gradient(90deg,${GOLD},#FCD34D)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
@@ -255,7 +255,7 @@ export default function SignupPage(){
             <div style={{marginTop:16,textAlign:'center',fontSize:12,color:DIM}}>
               Already have an account? <a href="/login" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Log in →</a>
             </div>
-            <div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#4a5f7a'}}>
+            <div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#6E6E73'}}>
               By signing up you agree to our <a href="/terms" style={{color:DIM,textDecoration:'none'}}>Terms</a> and <a href="/privacy" style={{color:DIM,textDecoration:'none'}}>Privacy Policy</a>
             </div>
           </div>

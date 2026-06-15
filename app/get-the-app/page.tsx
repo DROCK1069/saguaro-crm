@@ -26,12 +26,12 @@ export default function GetTheAppPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --dark:   #0d1117;
+          --dark:   #F2F2F7;
           --gold:   #F59E0B;
-          --text:   #F8FAFC;
-          --dim:    #CBD5E1;
-          --border: #1E3A5F;
-          --raised: #0F172A;
+          --text:   #1C1C1E;
+          --dim:    #6E6E73;
+          --border: #E5E5EA;
+          --raised: #FFFFFF;
           --green:  #22c55e;
           --gold-dim: rgba(245,158,11,0.12);
           --gold-glow: rgba(245,158,11,0.25);
@@ -48,7 +48,7 @@ export default function GetTheAppPage() {
           align-items: center;
           padding: 0 32px;
           height: 64px;
-          background: rgba(13,17,23,0.92);
+          background: rgba(255,255,255,0.92);
           backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(30,58,95,0.6);
         }
@@ -66,7 +66,7 @@ export default function GetTheAppPage() {
         .nav-login:hover { color: var(--text); }
         .nav-cta {
           background: var(--gold);
-          color: #0d1117;
+          color: #F2F2F7;
           text-decoration: none;
           font-size: 13px;
           font-weight: 700;
@@ -171,7 +171,7 @@ export default function GetTheAppPage() {
         }
         .btn-primary {
           background: var(--gold);
-          color: #0d1117;
+          color: #F2F2F7;
           text-decoration: none;
           font-size: 15px;
           font-weight: 700;
@@ -203,7 +203,7 @@ export default function GetTheAppPage() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: rgba(15,23,42,0.8);
+          background: rgba(242,242,247,0.8);
           border: 1px solid var(--border);
           border-radius: 100px;
           padding: 6px 14px;
@@ -223,7 +223,7 @@ export default function GetTheAppPage() {
           position: absolute;
           right: 20px; top: 0;
           width: 168px; height: 360px;
-          background: linear-gradient(160deg, #1a2840 0%, #0f1a2e 100%);
+          background: linear-gradient(160deg, #FFFFFF 0%, #0f1a2e 100%);
           border-radius: 38px;
           border: 2px solid rgba(255,255,255,0.12);
           box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 1px rgba(0,0,0,0.3);
@@ -237,14 +237,14 @@ export default function GetTheAppPage() {
           top:11px; left:50%;
           transform:translateX(-50%);
           width:52px; height:6px;
-          background:#080f1a;
+          background:#F2F2F7;
           border-radius:10px;
           z-index:10;
         }
         .dev-phone-screen {
           position:absolute;
           top:26px; left:6px; right:6px; bottom:6px;
-          background: #080f1a;
+          background: #F2F2F7;
           border-radius:32px;
           overflow:hidden;
           display:flex;
@@ -297,7 +297,7 @@ export default function GetTheAppPage() {
           position:absolute;
           left:0; top:60px;
           width:268px; height:370px;
-          background: linear-gradient(160deg, #1a2840 0%, #0f1a2e 100%);
+          background: linear-gradient(160deg, #FFFFFF 0%, #0f1a2e 100%);
           border-radius:20px;
           border:2px solid rgba(255,255,255,0.12);
           box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
@@ -308,7 +308,7 @@ export default function GetTheAppPage() {
         .dev-tablet-screen {
           position:absolute;
           top:8px;left:14px;right:14px;bottom:8px;
-          background:#080f1a;
+          background:#F2F2F7;
           border-radius:14px;
           overflow:hidden;
         }
@@ -355,7 +355,7 @@ export default function GetTheAppPage() {
         @keyframes floatLaptop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
         .dev-laptop-body {
           height:112px;
-          background:linear-gradient(160deg,#1a2840,#0f1a2e);
+          background:linear-gradient(160deg,#FFFFFF,#0f1a2e);
           border-radius:10px 10px 0 0;
           border:2px solid rgba(255,255,255,0.12);
           border-bottom:none;
@@ -363,7 +363,7 @@ export default function GetTheAppPage() {
         }
         .dev-laptop-screen {
           width:100%;height:100%;
-          background:#080f1a;
+          background:#F2F2F7;
           border-radius:5px;
           overflow:hidden;
           display:flex;
@@ -399,7 +399,7 @@ export default function GetTheAppPage() {
         .ls-td.bold { color:rgba(255,255,255,0.7); }
         .dev-laptop-hinge {
           height:10px;
-          background:linear-gradient(160deg,#1a2840,#0f1a2e);
+          background:linear-gradient(160deg,#FFFFFF,#0f1a2e);
           border-left:2px solid rgba(255,255,255,0.1);
           border-right:2px solid rgba(255,255,255,0.1);
           border-bottom:2px solid rgba(255,255,255,0.08);
@@ -660,7 +660,7 @@ export default function GetTheAppPage() {
           color: var(--text);
           font-weight: 500;
         }
-        .compare-table td.app-store-col { color: #94a3b8; }
+        .compare-table td.app-store-col { color: #6E6E73; }
         .compare-table td.saguaro-col {
           background: rgba(245,158,11,0.05);
           color: var(--text);

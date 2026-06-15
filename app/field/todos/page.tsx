@@ -8,11 +8,11 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -603,7 +603,7 @@ function TodosPageInner() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A1628', padding: '16px 16px 100px' }}>
+    <div style={{ minHeight: '100vh', background: '#FFFFFF', padding: '16px 16px 100px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
@@ -755,7 +755,7 @@ function TodosPageInner() {
 /* ─── Default export with Suspense wrapper ─── */
 export default function TodosPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0A1628', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8BAAC8' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
       <TodosPageInner />
     </Suspense>
   );

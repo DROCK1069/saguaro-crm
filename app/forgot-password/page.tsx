@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
 
 function getSupabase() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage(){
               <div style={{fontSize:52,marginBottom:16}}>📬</div>
               <h1 style={{fontSize:22,fontWeight:800,color:TEXT,marginBottom:10}}>Check your email</h1>
               <p style={{color:DIM,fontSize:14,lineHeight:1.6,marginBottom:24}}>We sent a password reset link to <strong style={{color:TEXT}}>{email}</strong>.</p>
-              <a href="/login" style={{display:'block',padding:'12px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,borderRadius:9,color:'#0d1117',fontWeight:800,fontSize:14,textDecoration:'none',textAlign:'center'}}>Back to Login</a>
+              <a href="/login" style={{display:'block',padding:'12px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#F2F2F7',fontWeight:800,fontSize:14,textDecoration:'none',textAlign:'center'}}>Back to Login</a>
             </div>
           ) : (
             <>
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage(){
                     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Work Email</label>
                     <input type="email" placeholder="you@company.com" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email" style={inputStyle}/>
                   </div>
-                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:9,color:'#0d1117',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
+                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:9,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
                     {loading?'Sending…':'Send Reset Link →'}
                   </button>
                 </form>

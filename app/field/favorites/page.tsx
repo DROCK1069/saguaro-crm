@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -499,7 +499,7 @@ function FavoritesRecentsPage() {
 
 export default function FieldFavoritesPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <FavoritesRecentsPage />
     </Suspense>
   );
@@ -530,7 +530,7 @@ const secLbl: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: 0.8,
 };
 const inp: React.CSSProperties = {
-  width: '100%', background: '#07101C', border: `1px solid ${BORDER}`,
+  width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`,
   borderRadius: 10, padding: '11px 14px', color: TEXT, fontSize: 15, outline: 'none',
   boxSizing: 'border-box',
 };

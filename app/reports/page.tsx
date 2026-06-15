@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#D4A017',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
+const GOLD='#C8881C',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 
 const REPORTS = [
   { icon:'💰', title:'Job Cost Report',          desc:'Budget vs actuals by cost code, variance analysis',              reportType:'job-cost' },
@@ -101,7 +101,7 @@ export default function ReportsPage() {
                   <button
                     onClick={() => downloadReport(r.reportType, r.title, 'pdf')}
                     disabled={busy}
-                    style={{ padding: '6px 14px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 6, color: '#0d1117', fontSize: 12, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1, minWidth: 110 }}
+                    style={{ padding: '6px 14px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 6, color: '#F2F2F7', fontSize: 12, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1, minWidth: 110 }}
                   >
                     {pdfBusy ? '⏳ Generating...' : '📄 Download PDF'}
                   </button>

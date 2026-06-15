@@ -9,11 +9,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -377,7 +377,7 @@ function SubmittalsPage() {
   /* ━━━━━━━━━━━━━━━━━━━━ CREATE FORM VIEW ━━━━━━━━━━━━━━━━━━━━ */
   if (showCreateForm) {
     return (
-      <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#060C15' }}>
+      <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#F2F2F7' }}>
         <button onClick={resetCreateForm} style={backBtn}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" width={22} height={22}><line x1={19} y1={12} x2={5} y2={12}/><polyline points="12 19 5 12 12 5"/></svg>
           <span style={{ marginLeft: 6, fontSize: 14 }}>Cancel</span>
@@ -488,7 +488,7 @@ function SubmittalsPage() {
             </button>
           </div>
           {newAttachment && (
-            <div style={{ marginBottom: 14, padding: '6px 10px', background: '#060C15', borderRadius: 8, border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ marginBottom: 14, padding: '6px 10px', background: '#F2F2F7', borderRadius: 8, border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{newAttachment.name}</span>
               <button onClick={() => setNewAttachment(null)} style={{ background: 'none', border: 'none', color: RED, cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>x</button>
             </div>
@@ -532,7 +532,7 @@ function SubmittalsPage() {
     const responseDue = selected.response_due_date || selected.due_date;
 
     return (
-      <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#060C15' }}>
+      <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#F2F2F7' }}>
         <button onClick={() => { setSelected(null); setReviewAction(null); setReviewNotes(''); }} style={backBtn}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" width={22} height={22}><line x1={19} y1={12} x2={5} y2={12}/><polyline points="12 19 5 12 12 5"/></svg>
           <span style={{ marginLeft: 6, fontSize: 14 }}>Back to List</span>
@@ -603,15 +603,15 @@ function SubmittalsPage() {
         <div style={{ background: RAISED, border: `1px solid ${overdue ? 'rgba(239,68,68,.4)' : BORDER}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
           <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 700, color: TEXT }}>Response Tracking</h3>
           <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#060C15', borderRadius: 10, border: `1px solid ${BORDER}` }}>
+            <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#F2F2F7', borderRadius: 10, border: `1px solid ${BORDER}` }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: daysInReview > 14 ? RED : daysInReview > 7 ? AMBER : TEXT }}>{daysInReview}</div>
               <div style={{ fontSize: 11, color: DIM, marginTop: 2 }}>Days in Review</div>
             </div>
-            <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#060C15', borderRadius: 10, border: `1px solid ${overdue ? 'rgba(239,68,68,.35)' : BORDER}` }}>
+            <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#F2F2F7', borderRadius: 10, border: `1px solid ${overdue ? 'rgba(239,68,68,.35)' : BORDER}` }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: overdue ? RED : TEXT }}>{responseDue ? formatDate(responseDue) : 'N/A'}</div>
               <div style={{ fontSize: 11, color: DIM, marginTop: 2 }}>Response Due</div>
             </div>
-            <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#060C15', borderRadius: 10, border: `1px solid ${overdue ? 'rgba(239,68,68,.35)' : BORDER}` }}>
+            <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#F2F2F7', borderRadius: 10, border: `1px solid ${overdue ? 'rgba(239,68,68,.35)' : BORDER}` }}>
               {overdue ? (
                 <>
                   <div style={{ fontSize: 14, fontWeight: 800, color: RED }}>OVERDUE</div>
@@ -702,7 +702,7 @@ function SubmittalsPage() {
                   {/* Timeline dot */}
                   <div style={{
                     position: 'absolute', left: -20, top: 4, width: 12, height: 12, borderRadius: '50%',
-                    background: getStatusColor(rev.status), border: '2px solid #060C15',
+                    background: getStatusColor(rev.status), border: '2px solid #F2F2F7',
                   }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Rev {rev.revision}</span>
@@ -749,7 +749,7 @@ function SubmittalsPage() {
               onChange={(e) => setReviewNotes(e.target.value)}
               rows={4}
               placeholder="Enter review notes..."
-              style={{ width: '100%', padding: '10px 12px', background: '#060C15', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 12px', background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
             />
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button
@@ -777,7 +777,7 @@ function SubmittalsPage() {
 
   /* ━━━━━━━━━━━━━━━━━━━━ LIST VIEW ━━━━━━━━━━━━━━━━━━━━ */
   return (
-    <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#060C15' }}>
+    <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#F2F2F7' }}>
       <button onClick={() => router.back()} style={backBtn}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" width={22} height={22}><line x1={19} y1={12} x2={5} y2={12}/><polyline points="12 19 5 12 12 5"/></svg>
       </button>
@@ -893,11 +893,11 @@ function SubmittalsPage() {
 }
 
 export default function FieldSubmittalsPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}><SubmittalsPage /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><SubmittalsPage /></Suspense>;
 }
 
 const backBtn: React.CSSProperties = {
-  background: 'none', border: 'none', color: '#8BAAC8', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'flex', alignItems: 'center',
+  background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'flex', alignItems: 'center',
 };
 
 const actionBtn: React.CSSProperties = {
@@ -911,6 +911,6 @@ const labelStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', background: '#060C15', border: `1px solid ${BORDER}`,
+  width: '100%', padding: '10px 12px', background: '#F2F2F7', border: `1px solid ${BORDER}`,
   borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 14,
 };

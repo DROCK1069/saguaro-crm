@@ -1,17 +1,17 @@
 import React from 'react';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#22c55e';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#22c55e';
 
 const NAV = (
-  <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(13,17,23,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',gap:24,backdropFilter:'blur(12px)'}}>
+  <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(255,255,255,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',gap:24,backdropFilter:'blur(12px)'}}>
     <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
       <span style={{fontSize:22}}>🌵</span>
       <span style={{fontWeight:800,fontSize:16,letterSpacing:1,color:GOLD}}>SAGUARO</span>
-      <span style={{fontSize:10,background:GOLD,color:'#0d1117',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
+      <span style={{fontSize:10,background:GOLD,color:'#F2F2F7',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
     </a>
     <div style={{flex:1}}/>
     <a href="/login" style={{padding:'7px 16px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>Log In</a>
-    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,borderRadius:7,color:'#0d1117',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
+    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
   </nav>
 );
 
@@ -117,7 +117,7 @@ export default function SecurityPage() {
       <div style={{textAlign:'center',padding:'60px 24px',background:RAISED,borderTop:`1px solid ${BORDER}`}}>
         <h2 style={{fontSize:28,fontWeight:900,marginBottom:12}}>Questions about security?</h2>
         <p style={{color:DIM,fontSize:16,marginBottom:20}}>Our security team is here to help.</p>
-        <a href="mailto:security@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,borderRadius:9,color:'#0d1117',fontWeight:800,fontSize:15,textDecoration:'none'}}>
+        <a href="mailto:security@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#F2F2F7',fontWeight:800,fontSize:15,textDecoration:'none'}}>
           security@saguarocontrol.net
         </a>
         <div style={{marginTop:20,fontSize:13,color:DIM}}>

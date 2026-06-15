@@ -8,12 +8,12 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const BG     = '#07101C';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const BG     = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -1152,16 +1152,16 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <div style={{ minHeight: '100vh', background: '#07101C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ minHeight: '100vh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
-                width: 40, height: 40, border: '3px solid #1E3A5F', borderTopColor: '#D4A017',
+                width: 40, height: 40, border: '3px solid #E5E5EA', borderTopColor: '#C8881C',
                 borderRadius: '50%', margin: '0 auto 16px',
                 animation: 'spin 1s linear infinite',
               }}
             />
-            <p style={{ color: '#8BAAC8', fontSize: 14 }}>Loading Warranty Claims...</p>
+            <p style={{ color: '#6E6E73', fontSize: 14 }}>Loading Warranty Claims...</p>
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </div>
         </div>

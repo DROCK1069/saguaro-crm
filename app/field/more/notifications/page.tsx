@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -216,7 +216,7 @@ function NotificationsPage() {
             disabled={subscribing}
             style={{
               width: 52, height: 30, borderRadius: 15, border: 'none', cursor: subscribing ? 'wait' : 'pointer',
-              background: prefs.enabled ? GREEN : '#1E3A5F', position: 'relative', transition: 'background .3s',
+              background: prefs.enabled ? GREEN : '#E5E5EA', position: 'relative', transition: 'background .3s',
               flexShrink: 0,
             }}
           >
@@ -259,7 +259,7 @@ function NotificationsPage() {
               onClick={() => toggleCategory(cat.id)}
               style={{
                 width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
-                background: prefs.categories[cat.id] ? GOLD : '#1E3A5F', position: 'relative',
+                background: prefs.categories[cat.id] ? GOLD : '#E5E5EA', position: 'relative',
                 transition: 'background .3s', flexShrink: 0, marginLeft: 10,
                 opacity: prefs.enabled ? 1 : 0.4, pointerEvents: prefs.enabled ? 'auto' : 'none',
               }}
@@ -297,7 +297,7 @@ function NotificationsPage() {
 
 export default function FieldNotificationsPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <NotificationsPage />
     </Suspense>
   );

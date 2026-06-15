@@ -9,11 +9,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -308,7 +308,7 @@ function ChangeOrdersPage() {
   };
   const drawerPanelStyle: React.CSSProperties = {
     position: 'fixed', top: 0, right: 0, bottom: 0, width: '85%', maxWidth: 380, zIndex: 910,
-    background: '#0A1929', borderLeft: `1px solid ${BORDER}`,
+    background: '#FFFFFF', borderLeft: `1px solid ${BORDER}`,
     transform: showFilterDrawer ? 'translateX(0)' : 'translateX(100%)',
     transition: 'transform 300ms cubic-bezier(.4,0,.2,1)',
     display: 'flex', flexDirection: 'column' as const, overflowY: 'auto' as const,
@@ -821,7 +821,7 @@ function ChangeOrdersPage() {
     if (!showEmailModal) return null;
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <div style={{ background: '#0A1929', border: `1px solid ${BORDER}`, borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 20 }}>
+        <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: GOLD }}>
               {emailContext === 'co' ? 'Email to Owner' : 'Email for Pricing'}
@@ -851,7 +851,7 @@ function ChangeOrdersPage() {
               Cancel
             </button>
             <button onClick={handleSendEmail} disabled={emailSending || !emailTo.trim()} style={{
-              flex: 2, background: emailSending || !emailTo.trim() ? '#1E3A5F' : BLUE, border: 'none', borderRadius: 12,
+              flex: 2, background: emailSending || !emailTo.trim() ? '#E5E5EA' : BLUE, border: 'none', borderRadius: 12,
               padding: '14px', color: emailSending || !emailTo.trim() ? DIM : '#fff', fontSize: 14, fontWeight: 800,
               cursor: emailSending || !emailTo.trim() ? 'not-allowed' : 'pointer',
             }}>
@@ -1005,7 +1005,7 @@ function ChangeOrdersPage() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input value={coPresetName} onChange={e => setCoPresetName(e.target.value)} placeholder="Preset name..." style={{ ...inp, fontSize: 13, padding: '8px 12px', flex: 1 }} />
                     <button onClick={saveCoPreset} disabled={!coPresetName.trim()} style={{
-                      background: coPresetName.trim() ? GOLD : '#1E3A5F', border: 'none', borderRadius: 10,
+                      background: coPresetName.trim() ? GOLD : '#E5E5EA', border: 'none', borderRadius: 10,
                       padding: '8px 16px', color: coPresetName.trim() ? '#000' : DIM, fontSize: 13, fontWeight: 700, cursor: coPresetName.trim() ? 'pointer' : 'not-allowed',
                     }}>Save</button>
                   </div>
@@ -1353,7 +1353,7 @@ function ChangeOrdersPage() {
                     value={editVal} onChange={e => setEditVal(e.target.value)}
                     type="number" inputMode="decimal" autoFocus
                     onKeyDown={e => { if (e.key === 'Enter') handleCOSaveEdit(); }}
-                    style={{ width: '100%', padding: '14px 16px', background: '#0A1628', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
+                    style={{ width: '100%', padding: '14px 16px', background: '#FFFFFF', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
                   />
                   <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                     <button onClick={handleCOSaveEdit} style={{ flex: 1, padding: '14px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Save</button>
@@ -1542,7 +1542,7 @@ function ChangeOrdersPage() {
               onClick={handleApprove}
               disabled={actionLoading}
               style={{
-                width: '100%', background: actionLoading ? '#1E3A5F' : GREEN, border: 'none', borderRadius: 12,
+                width: '100%', background: actionLoading ? '#E5E5EA' : GREEN, border: 'none', borderRadius: 12,
                 padding: '16px', color: actionLoading ? DIM : '#000', fontSize: 16, fontWeight: 800,
                 cursor: actionLoading ? 'wait' : 'pointer', marginBottom: 10,
               }}
@@ -1564,7 +1564,7 @@ function ChangeOrdersPage() {
               onClick={handleReject}
               disabled={actionLoading || !rejectReason.trim()}
               style={{
-                width: '100%', background: actionLoading || !rejectReason.trim() ? '#1E3A5F' : RED, border: 'none', borderRadius: 12,
+                width: '100%', background: actionLoading || !rejectReason.trim() ? '#E5E5EA' : RED, border: 'none', borderRadius: 12,
                 padding: '16px', color: actionLoading || !rejectReason.trim() ? DIM : '#fff', fontSize: 16, fontWeight: 800,
                 cursor: actionLoading || !rejectReason.trim() ? 'not-allowed' : 'pointer',
               }}
@@ -1644,7 +1644,7 @@ function ChangeOrdersPage() {
         {/* Convert to CO button */}
         {selectedPCO.status !== 'converted' && selectedPCO.status !== 'rejected' && (
           <button onClick={handleConvertPCO} disabled={actionLoading} style={{
-            width: '100%', background: actionLoading ? '#1E3A5F' : GREEN, border: 'none', borderRadius: 12,
+            width: '100%', background: actionLoading ? '#E5E5EA' : GREEN, border: 'none', borderRadius: 12,
             padding: '16px', color: actionLoading ? DIM : '#000', fontSize: 16, fontWeight: 800,
             cursor: actionLoading ? 'wait' : 'pointer', marginBottom: 14,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -1781,7 +1781,7 @@ function ChangeOrdersPage() {
               <div>
                 <label style={lbl}>Reason *</label>
                 <select value={pcoReason} onChange={(e) => setPcoReason(e.target.value)} style={inp}>
-                  {REASONS.map((r) => <option key={r} value={r} style={{ background: '#0D1D2E' }}>{r}</option>)}
+                  {REASONS.map((r) => <option key={r} value={r} style={{ background: '#FFFFFF' }}>{r}</option>)}
                 </select>
               </div>
               <div>
@@ -1836,7 +1836,7 @@ function ChangeOrdersPage() {
             <button type="button" onClick={() => { setView('pco_list'); setActiveTab('pcos'); }} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={pcoSaving} style={{ flex: 2, background: pcoSaving ? '#1E3A5F' : PURPLE, border: 'none', borderRadius: 12, padding: '16px', color: pcoSaving ? DIM : '#fff', fontSize: 15, fontWeight: 800, cursor: pcoSaving ? 'wait' : 'pointer' }}>
+            <button type="submit" disabled={pcoSaving} style={{ flex: 2, background: pcoSaving ? '#E5E5EA' : PURPLE, border: 'none', borderRadius: 12, padding: '16px', color: pcoSaving ? DIM : '#fff', fontSize: 15, fontWeight: 800, cursor: pcoSaving ? 'wait' : 'pointer' }}>
               {pcoSaving ? 'Saving...' : online ? 'Submit PCO' : 'Submit (Offline — will sync)'}
             </button>
           </div>
@@ -1876,7 +1876,7 @@ function ChangeOrdersPage() {
             <div>
               <label style={lbl}>Reason *</label>
               <select value={newReason} onChange={(e) => setNewReason(e.target.value)} style={inp}>
-                {REASONS.map((r) => <option key={r} value={r} style={{ background: '#0D1D2E' }}>{r}</option>)}
+                {REASONS.map((r) => <option key={r} value={r} style={{ background: '#FFFFFF' }}>{r}</option>)}
               </select>
             </div>
             <div>
@@ -1898,7 +1898,7 @@ function ChangeOrdersPage() {
           <button type="button" onClick={() => setView('list')} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
             Cancel
           </button>
-          <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#1E3A5F' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
+          <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
             {saving ? 'Saving...' : online ? 'Submit Change Order' : 'Submit (Offline — will sync)'}
           </button>
         </div>
@@ -1909,7 +1909,7 @@ function ChangeOrdersPage() {
 
 export default function FieldChangeOrdersPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <ChangeOrdersPage />
     </Suspense>
   );
@@ -1932,7 +1932,7 @@ function OfflineBanner() {
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
 const secLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
 const lbl: React.CSSProperties = { display: 'block', fontSize: 12, color: DIM, marginBottom: 4, fontWeight: 600 };
-const inp: React.CSSProperties = { width: '100%', background: '#07101C', border: '1px solid #1E3A5F', borderRadius: 10, padding: '11px 14px', color: '#F0F4FF', fontSize: 15, outline: 'none' };
+const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '8px', marginLeft: -8, display: 'flex', alignItems: 'center', marginBottom: 4 };
 
 function hexRgb(hex: string): string {

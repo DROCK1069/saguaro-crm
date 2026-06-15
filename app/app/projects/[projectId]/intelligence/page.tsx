@@ -3,12 +3,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import ErrorBoundary from '../../../../../components/ErrorBoundary';
 
-const GOLD = '#D4A017';
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const GOLD = '#C8881C';
+const DARK = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 
 interface Message {
   id: string;
@@ -172,7 +172,7 @@ function IntelligenceChat() {
         <span key={li}>
           {parts.map((part, pi) => {
             if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={pi} style={{ color: isUser ? '#0d1117' : GOLD }}>{part.slice(2, -2)}</strong>;
+              return <strong key={pi} style={{ color: isUser ? '#F2F2F7' : GOLD }}>{part.slice(2, -2)}</strong>;
             }
             return <span key={pi}>{part}</span>;
           })}
@@ -185,9 +185,9 @@ function IntelligenceChat() {
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 120px)', background: DARK, borderRadius: '12px', overflow: 'hidden', border: `1px solid ${BORDER}` }}>
       {/* Sidebar */}
-      <div style={{ width: 260, background: '#0a1117', borderRight: `1px solid ${BORDER}`, padding: '20px 16px', overflowY: 'auto', flexShrink: 0 }}>
+      <div style={{ width: 260, background: '#F2F2F7', borderRight: `1px solid ${BORDER}`, padding: '20px 16px', overflowY: 'auto', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🧠</div>
+          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🧠</div>
           <div>
             <div style={{ color: TEXT, fontWeight: 700, fontSize: '13px' }}>Saguaro Intelligence</div>
             <div style={{ color: DIM, fontSize: '11px' }}>AI Construction Expert</div>
@@ -218,12 +218,12 @@ function IntelligenceChat() {
           {messages.map(msg => (
             <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {msg.role === 'assistant' && (
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg,${GOLD},#F0C040)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-end', fontWeight: 900, color: '#0d1117' }}>S</div>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg,${GOLD},#E0A030)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-end', fontWeight: 900, color: '#F2F2F7' }}>S</div>
               )}
               <div style={{
                 maxWidth: '78%',
-                background: msg.role === 'user' ? `linear-gradient(135deg,${GOLD},#F0C040)` : RAISED,
-                color: msg.role === 'user' ? '#0d1117' : TEXT,
+                background: msg.role === 'user' ? `linear-gradient(135deg,${GOLD},#E0A030)` : RAISED,
+                color: msg.role === 'user' ? '#F2F2F7' : TEXT,
                 padding: '12px 16px',
                 borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                 fontSize: '13px', lineHeight: '1.6',
@@ -254,7 +254,7 @@ function IntelligenceChat() {
             style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', color: TEXT, fontSize: '13px', outline: 'none' }}
           />
           <button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()}
-            style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: '8px', color: '#0d1117', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}>
+            style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: '8px', color: '#F2F2F7', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}>
             {isLoading ? '...' : 'Ask →'}
           </button>
         </div>

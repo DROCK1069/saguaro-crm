@@ -2,9 +2,9 @@
 import React from 'react';
 import DatePicker from 'react-datepicker';
 
-const DARK = '#0d1117';
-const BORDER = '#263347';
-const TEXT = '#e8edf8';
+const DARK = '#F2F2F7';
+const BORDER = '#E5E5EA';
+const TEXT = '#1C1C1E';
 
 const DEFAULT_INPUT_STYLE: React.CSSProperties = {
   width: '100%',

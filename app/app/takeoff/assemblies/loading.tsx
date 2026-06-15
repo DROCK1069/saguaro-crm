@@ -1,9 +1,9 @@
 'use client';
 
-const GOLD = '#D4A017';
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
+const GOLD = '#C8881C';
+const DARK = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
 
 export default function AssembliesLoading() {
   return (

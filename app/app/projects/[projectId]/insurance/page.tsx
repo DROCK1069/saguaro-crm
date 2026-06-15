@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 const INP:React.CSSProperties = {padding:'8px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box'};
@@ -116,7 +116,7 @@ export default function InsurancePage() {
           <div style={{fontSize:12,color:DIM,marginTop:3}}>COIs for all subcontractors — expiration alerts included</div>
         </div>
         <button onClick={()=>setShowForm(!showForm)}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
           {showForm ? '× Cancel' : '+ Add Certificate'}
         </button>
       </div>
@@ -164,7 +164,7 @@ export default function InsurancePage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button onClick={addCert} disabled={saving}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
               {saving ? 'Adding…' : 'Add Certificate'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -208,7 +208,7 @@ export default function InsurancePage() {
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No certificates yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Upload COIs for all subcontractors to track expiration dates and maintain compliance.</div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Add First Certificate
             </button>
           </div>

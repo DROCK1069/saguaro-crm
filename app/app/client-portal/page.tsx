@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 /* ── palette ──────────────────────────────────────────── */
-const GOLD='#D4A017',BG='#07101C',RAISED='#0D1D2E',BORDER='#1E3A5F',TEXT='#F0F4FF',DIM='#8BAAC8';
+const GOLD='#C8881C',BG='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',TEXT='#1C1C1E',DIM='#6E6E73';
 const GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',BLUE='#3B82F6',PURPLE='#8B5CF6';
 
 /* ── types ────────────────────────────────────────────── */
@@ -61,7 +61,7 @@ function defaultPerms(): Record<string, boolean> {
 
 /* ── shared inline styles ─────────────────────────────── */
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20 };
-const btnGold: React.CSSProperties = { padding: '9px 20px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, color: BG, borderRadius: 8, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' };
+const btnGold: React.CSSProperties = { padding: '9px 20px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: BG, borderRadius: 8, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' };
 const btnOutline: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, cursor: 'pointer' };
 const btnDanger: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${RED}`, borderRadius: 8, color: RED, fontSize: 13, cursor: 'pointer' };
 const inputS: React.CSSProperties = { padding: '9px 14px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' as const };

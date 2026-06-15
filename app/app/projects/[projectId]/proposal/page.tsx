@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD='#D4A017', DARK='#0d1117', RAISED='#1f2c3e', BORDER='#263347', DIM='#8fa3c0', TEXT='#e8edf8', GREEN='#3dd68c', RED='#ef4444';
+const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E', GREEN='#3dd68c', RED='#ef4444';
 
 interface Proposal {
   id: string;
@@ -105,7 +105,7 @@ export default function ProposalPage() {
     setTimeout(() => setSuccessMsg(''), 4000);
   }
 
-  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#151f2e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
 
   return (
@@ -115,7 +115,7 @@ export default function ProposalPage() {
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: TEXT }}>Proposal</h2>
           <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Project proposals and contract amounts</div>
         </div>
-        <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,' + GOLD + ',#F0C040)', border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>+ New Version</button>
+        <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,' + GOLD + ',#E0A030)', border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>+ New Version</button>
       </div>
 
       {/* Accepted proposal banner */}
@@ -141,7 +141,7 @@ export default function ProposalPage() {
             <div><label style={label}>Notes</label><input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Revised after value engineering" style={inp} /></div>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,' + GOLD + ',#F0C040)', border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,' + GOLD + ',#E0A030)', border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Saving...' : 'Create Version'}
             </button>
             <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={{ padding: '9px 16px', background: RAISED, border: '1px solid ' + BORDER, borderRadius: 7, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
@@ -153,7 +153,7 @@ export default function ProposalPage() {
         {loading ? <div style={{ textAlign: 'center', padding: 40, color: DIM }}>Loading...</div> : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#0a1117' }}>
+              <tr style={{ background: '#F2F2F7' }}>
                 {['Version','Created','Amount','Status','Notes','Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: DIM, borderBottom: '1px solid ' + BORDER, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}

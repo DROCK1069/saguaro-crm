@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const inp: React.CSSProperties = {
@@ -179,7 +179,7 @@ export default function PayrollPage() {
         <button
           onClick={handleGenerate}
           disabled={loading}
-          style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+          style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
           {loading ? 'Generating...' : 'Generate WH-347'}
         </button>
       </div>
@@ -213,7 +213,7 @@ export default function PayrollPage() {
             </div>
             <button
               onClick={() => setShowAddEmployee(!showAddEmployee)}
-              style={{ padding: '8px 18px', background: showAddEmployee ? RAISED : `linear-gradient(135deg,${GOLD},#F0C040)`, border: showAddEmployee ? `1px solid ${BORDER}` : 'none', borderRadius: 7, color: showAddEmployee ? DIM : DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
+              style={{ padding: '8px 18px', background: showAddEmployee ? RAISED : `linear-gradient(135deg,${GOLD},#E0A030)`, border: showAddEmployee ? `1px solid ${BORDER}` : 'none', borderRadius: 7, color: showAddEmployee ? DIM : DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
               {showAddEmployee ? 'Cancel' : '+ Add Employee'}
             </button>
           </div>
@@ -258,7 +258,7 @@ export default function PayrollPage() {
                 <input type="number" value={newEmp.deductions} onChange={e => setNewEmp(p => ({ ...p, deductions: Number(e.target.value) }))} style={{ ...inp, maxWidth: 120, textAlign: 'right' }} />
               </div>
             </div>
-            <button onClick={addEmployee} style={{ padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add to Payroll</button>
+            <button onClick={addEmployee} style={{ padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add to Payroll</button>
           </div>
         )}
 
@@ -271,7 +271,7 @@ export default function PayrollPage() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: '#0a1117' }}>
+                  <tr style={{ background: '#F2F2F7' }}>
                     {['Employee', 'Class', 'Reg $', 'OT $', ...DAYS, 'Hrs', 'Gross', 'Ded.', 'Net', 'OT', ''].map(h => (
                       <th key={h + Math.random()} style={{ padding: '9px 8px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
@@ -320,7 +320,7 @@ export default function PayrollPage() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ background: '#0a1117', borderTop: `2px solid ${BORDER}` }}>
+                  <tr style={{ background: '#F2F2F7', borderTop: `2px solid ${BORDER}` }}>
                     <td colSpan={4} style={{ padding: '10px 8px', fontWeight: 800, fontSize: 12, color: TEXT, textTransform: 'uppercase', letterSpacing: 0.3 }}>TOTALS</td>
                     {DAYS.map(day => (
                       <td key={day} style={{ padding: '10px 4px', fontWeight: 700, color: GOLD, textAlign: 'center', fontSize: 12 }}>
@@ -354,7 +354,7 @@ export default function PayrollPage() {
         <button
           onClick={handleGenerate}
           disabled={loading}
-          style={{ padding: '12px 32px', marginBottom: 32, background: complianceAgreed ? `linear-gradient(135deg,${GOLD},#F0C040)` : 'rgba(212,160,23,.2)', border: 'none', borderRadius: 8, color: complianceAgreed ? DARK : DIM, fontSize: 14, fontWeight: 800, cursor: complianceAgreed && !loading ? 'pointer' : 'not-allowed', opacity: loading ? 0.7 : 1, transition: 'all .2s' }}>
+          style={{ padding: '12px 32px', marginBottom: 32, background: complianceAgreed ? `linear-gradient(135deg,${GOLD},#E0A030)` : 'rgba(212,160,23,.2)', border: 'none', borderRadius: 8, color: complianceAgreed ? DARK : DIM, fontSize: 14, fontWeight: 800, cursor: complianceAgreed && !loading ? 'pointer' : 'not-allowed', opacity: loading ? 0.7 : 1, transition: 'all .2s' }}>
           {loading ? 'Generating WH-347...' : 'Generate WH-347 PDF'}
         </button>
 
@@ -370,7 +370,7 @@ export default function PayrollPage() {
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#0a1117' }}>
+                <tr style={{ background: '#F2F2F7' }}>
                   {['Week Ending', '# Employees', 'Total Gross', 'Status', 'Download'].map(h => (
                     <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: DIM, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
                   ))}

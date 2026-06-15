@@ -32,7 +32,7 @@ export default function MarketingNav() {
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        background: scrolled ? 'rgba(13,17,23,0.97)' : 'rgba(13,17,23,0.85)',
+        background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         borderBottom: scrolled ? '1px solid rgba(212,160,23,0.25)' : '1px solid rgba(38,51,71,0.8)',
         transition: 'all 0.3s ease', height: '58px',
@@ -45,8 +45,8 @@ export default function MarketingNav() {
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
             <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: '36px', width: 'auto', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }} />
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-              <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#D4A017,#F0C040)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
-              <span style={{ fontSize: '7px', color: '#8fa3c0', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
+              <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#C8881C,#E0A030)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
+              <span style={{ fontSize: '7px', color: '#6E6E73', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
             </span>
           </Link>
 
@@ -62,26 +62,26 @@ export default function MarketingNav() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="mn-desktop">
             <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
-            <Link href="/signup" style={{ padding: '7px 18px', background: '#D4A017', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
+            <Link href="/signup" style={{ padding: '7px 18px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
           </div>
 
           <button onClick={() => setMobileOpen(!mobileOpen)} className="mn-mobile"
-            style={{ display: 'none', background: 'none', border: 'none', color: '#e8edf8', fontSize: '22px', cursor: 'pointer', padding: '8px', minWidth: '44px', minHeight: '44px', alignItems: 'center', justifyContent: 'center' }}
+            style={{ display: 'none', background: 'none', border: 'none', color: '#1C1C1E', fontSize: '22px', cursor: 'pointer', padding: '8px', minWidth: '44px', minHeight: '44px', alignItems: 'center', justifyContent: 'center' }}
             aria-label="Menu">{mobileOpen ? '✕' : '☰'}</button>
         </div>
       </nav>
 
       {mobileOpen && (
-        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(13,17,23,0.99)', borderBottom: '1px solid #263347', padding: '8px 0', backdropFilter: 'blur(12px)' }}>
+        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(255,255,255,0.99)', borderBottom: '1px solid #E5E5EA', padding: '8px 0', backdropFilter: 'blur(12px)' }}>
           {[...navLinks, { label: 'Log In', href: '/login' }].map(link => (
             <button key={link.href} onClick={() => scrollTo(link.href)}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 24px', fontSize: '15px', fontWeight: 600, color: '#e8edf8', background: 'none', border: 'none', borderBottom: '1px solid rgba(38,51,71,0.5)', cursor: 'pointer' }}>
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px 24px', fontSize: '15px', fontWeight: 600, color: '#1C1C1E', background: 'none', border: 'none', borderBottom: '1px solid rgba(38,51,71,0.5)', cursor: 'pointer' }}>
               {link.label}
             </button>
           ))}
           <div style={{ padding: '16px' }}>
             <Link href="/signup" onClick={() => setMobileOpen(false)}
-              style={{ display: 'block', textAlign: 'center', padding: '13px', background: '#D4A017', borderRadius: '9px', color: '#000', fontWeight: 600, textDecoration: 'none', fontSize: '15px' }}>
+              style={{ display: 'block', textAlign: 'center', padding: '13px', background: '#C8881C', borderRadius: '9px', color: '#000', fontWeight: 600, textDecoration: 'none', fontSize: '15px' }}>
               Start Free Trial →
             </Link>
           </div>

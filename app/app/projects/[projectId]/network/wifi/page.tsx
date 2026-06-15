@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-const BASE = '#0F1419';
-const CARD = '#1A1F2E';
-const GOLD = '#D4A017';
+const BASE = '#F2F2F7';
+const CARD = '#FFFFFF';
+const GOLD = '#C8881C';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
 const BORDER = 'rgba(255,255,255,0.08)';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 
 interface WifiNetwork {
   id: string;
@@ -122,7 +122,7 @@ export default function WifiManagerPage() {
     ctx.clearRect(0, 0, w, h);
 
     // Floor plan background
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, w, h);
 
     // Grid lines
@@ -251,7 +251,7 @@ export default function WifiManagerPage() {
         <h1 style={{ color: TEXT, fontSize: 22, fontWeight: 700, margin: 0 }}>WiFi Manager</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowSsidForm(!showSsidForm)} style={{
-            padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`, color: '#000',
+            padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, color: '#000',
             border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
           }}>
             + Add SSID
@@ -304,7 +304,7 @@ export default function WifiManagerPage() {
             </div>
           </div>
           <button onClick={handleSsidSubmit} disabled={saving || !ssidForm.ssid} style={{
-            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`,
+            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
             color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
             opacity: saving || !ssidForm.ssid ? 0.5 : 1,
           }}>
@@ -420,7 +420,7 @@ export default function WifiManagerPage() {
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={handleApSubmit} disabled={saving || !apForm.name} style={{
-                padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`,
+                padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
                 color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
                 opacity: saving || !apForm.name ? 0.5 : 1,
               }}>

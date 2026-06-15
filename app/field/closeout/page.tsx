@@ -10,11 +10,11 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -234,10 +234,10 @@ function CloseoutInner() {
   }, [items]);
 
   /* ── styles ────────────────────────────────────────────────────── */
-  const page: React.CSSProperties = { minHeight: '100vh', background: '#0B1623', color: TEXT, fontFamily: 'system-ui, sans-serif', paddingBottom: 80 };
+  const page: React.CSSProperties = { minHeight: '100vh', background: '#FFFFFF', color: TEXT, fontFamily: 'system-ui, sans-serif', paddingBottom: 80 };
   const header: React.CSSProperties = { background: RAISED, padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, zIndex: 50 };
   const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 16, marginBottom: 12 };
-  const input: React.CSSProperties = { width: '100%', padding: '10px 12px', background: '#0B1623', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14, boxSizing: 'border-box' };
+  const input: React.CSSProperties = { width: '100%', padding: '10px 12px', background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14, boxSizing: 'border-box' };
   const btnGold: React.CSSProperties = { padding: '10px 20px', background: GOLD, color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' };
   const btnOutline: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, cursor: 'pointer' };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block', fontWeight: 600 };
@@ -771,7 +771,7 @@ function CloseoutInner() {
 /* ── default export with Suspense ────────────────────────────────── */
 export default function CloseoutPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0B1623', color: '#8BAAC8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#FFFFFF', color: '#6E6E73', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>}>
       <CloseoutInner />
     </Suspense>
   );

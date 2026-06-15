@@ -8,11 +8,11 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -111,7 +111,7 @@ function exportIncidentPDF(inc: Incident) {
   w.document.write(`<!DOCTYPE html><html><head><title>Incident ${inc.incident_number}</title>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;color:#1a1a1a;max-width:800px;margin:0 auto;}
-h1{font-size:22px;border-bottom:2px solid #D4A017;padding-bottom:8px;}
+h1{font-size:22px;border-bottom:2px solid #C8881C;padding-bottom:8px;}
 h2{font-size:16px;color:#333;margin-top:20px;}
 table{width:100%;border-collapse:collapse;margin:10px 0;}
 th,td{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:12px;}
@@ -363,7 +363,7 @@ function IncidentsPage() {
     background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, marginBottom: 12,
   };
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', background: '#0A1628', border: `1px solid ${BORDER}`,
+    width: '100%', padding: '10px 12px', background: '#FFFFFF', border: `1px solid ${BORDER}`,
     borderRadius: 8, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box',
   };
   const labelStyle: React.CSSProperties = { display: 'block', color: DIM, fontSize: 12, fontWeight: 600, marginBottom: 4, marginTop: 12 };
@@ -375,7 +375,7 @@ function IncidentsPage() {
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
-    <div style={{ minHeight: '100vh', background: '#080F1A', color: TEXT, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       {/* ─── Toast ─── */}
       {toast && (
         <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: GREEN, color: '#fff',
@@ -458,7 +458,7 @@ function IncidentsPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DIM, marginBottom: 3 }}>
                           <span>{SEVERITY_LABELS[s]}</span><span>{count}</span>
                         </div>
-                        <div style={{ height: 6, background: '#0A1628', borderRadius: 3 }}>
+                        <div style={{ height: 6, background: '#FFFFFF', borderRadius: 3 }}>
                           <div style={{ height: 6, borderRadius: 3, background: SEVERITY_COLORS[s], width: `${pct}%`, transition: 'width .3s' }} />
                         </div>
                       </div>
@@ -471,7 +471,7 @@ function IncidentsPage() {
                   <div style={{ fontSize: 14, fontWeight: 700, color: GOLD, marginBottom: 12 }}>By Type</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     {INCIDENT_TYPES.map(t => (
-                      <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#0A1628', borderRadius: 8 }}>
+                      <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#FFFFFF', borderRadius: 8 }}>
                         <span style={{ fontSize: 18 }}>{TYPE_ICONS[t]}</span>
                         <div>
                           <div style={{ fontSize: 16, fontWeight: 700, color: TYPE_COLORS[t] }}>{stats.byType[t] || 0}</div>
@@ -487,7 +487,7 @@ function IncidentsPage() {
                   <div style={{ fontSize: 14, fontWeight: 700, color: GOLD, marginBottom: 12 }}>By Status</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {STATUSES.map(s => (
-                      <div key={s} style={{ padding: '6px 12px', background: '#0A1628', borderRadius: 8, textAlign: 'center' }}>
+                      <div key={s} style={{ padding: '6px 12px', background: '#FFFFFF', borderRadius: 8, textAlign: 'center' }}>
                         <div style={{ fontSize: 18, fontWeight: 700, color: STATUS_COLORS[s] }}>{stats.byStatus[s] || 0}</div>
                         <div style={{ fontSize: 10, color: DIM }}>{STATUS_LABELS[s]}</div>
                       </div>
@@ -638,7 +638,7 @@ function IncidentsPage() {
                   {[1, 2, 3].map(s => (
                     <div key={s} onClick={() => s < step && setStep(s)}
                       style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: s === step ? GOLD : s < step ? GREEN : '#0A1628',
+                        background: s === step ? GOLD : s < step ? GREEN : '#FFFFFF',
                         color: s <= step ? '#fff' : DIM, fontWeight: 700, fontSize: 14,
                         border: `2px solid ${s === step ? GOLD : s < step ? GREEN : BORDER}`,
                         cursor: s < step ? 'pointer' : 'default',
@@ -695,7 +695,7 @@ function IncidentsPage() {
                     <input value={form.supervisor_name} onChange={e => setForm(f => ({ ...f, supervisor_name: e.target.value }))} style={inputStyle} placeholder="Direct supervisor" />
 
                     {/* GPS */}
-                    <div style={{ marginTop: 12, padding: 10, background: '#0A1628', borderRadius: 8 }}>
+                    <div style={{ marginTop: 12, padding: 10, background: '#FFFFFF', borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ fontSize: 12, color: DIM }}>
                           GPS: {form.gps_lat && form.gps_lng ? `${form.gps_lat.toFixed(6)}, ${form.gps_lng.toFixed(6)}` : 'Not captured'}
@@ -825,7 +825,7 @@ function IncidentsPage() {
                     {form.witnesses.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                         {form.witnesses.map((w, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#0A1628', padding: '4px 10px', borderRadius: 16, fontSize: 12 }}>
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#FFFFFF', padding: '4px 10px', borderRadius: 16, fontSize: 12 }}>
                             <span>{w}</span>
                             <button onClick={() => setForm(f => ({ ...f, witnesses: f.witnesses.filter((_, j) => j !== i) }))}
                               style={{ background: 'none', border: 'none', color: RED, cursor: 'pointer', fontSize: 12, padding: 0 }}>✕</button>
@@ -844,7 +844,7 @@ function IncidentsPage() {
 
                     {/* Corrective Actions */}
                     <label style={labelStyle}>Corrective Actions</label>
-                    <div style={{ padding: 10, background: '#0A1628', borderRadius: 8, marginBottom: 8 }}>
+                    <div style={{ padding: 10, background: '#FFFFFF', borderRadius: 8, marginBottom: 8 }}>
                       <input value={caDesc} onChange={e => setCaDesc(e.target.value)} style={{ ...inputStyle, marginBottom: 6 }} placeholder="Action description" />
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                         <input value={caAssigned} onChange={e => setCaAssigned(e.target.value)} style={{ ...inputStyle, fontSize: 12 }} placeholder="Assigned to" />
@@ -860,7 +860,7 @@ function IncidentsPage() {
                       </button>
                     </div>
                     {form.corrective_actions.length > 0 && form.corrective_actions.map((ca, i) => (
-                      <div key={ca.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: '#0A1628', borderRadius: 6, marginBottom: 4 }}>
+                      <div key={ca.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: '#FFFFFF', borderRadius: 6, marginBottom: 4 }}>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600 }}>{ca.description}</div>
                           <div style={{ fontSize: 11, color: DIM }}>{ca.assigned_to}{ca.due_date ? ` · Due ${ca.due_date}` : ''}</div>
@@ -1006,7 +1006,7 @@ function IncidentsPage() {
 
                   {/* Investigation Notes */}
                   {selected.investigation_notes && (
-                    <div style={{ marginTop: 10, padding: 10, background: '#0A1628', borderRadius: 8 }}>
+                    <div style={{ marginTop: 10, padding: 10, background: '#FFFFFF', borderRadius: 8 }}>
                       <div style={{ fontSize: 11, color: DIM, fontWeight: 600, marginBottom: 4 }}>Investigation Notes</div>
                       <div style={{ fontSize: 12, lineHeight: 1.5 }}>{selected.investigation_notes}</div>
                     </div>
@@ -1018,7 +1018,7 @@ function IncidentsPage() {
                   <div style={cardStyle}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: GOLD, marginBottom: 10 }}>Witnesses ({selected.witnesses.length})</div>
                     {selected.witnesses.map((w, i) => (
-                      <div key={i} style={{ padding: '6px 10px', background: '#0A1628', borderRadius: 6, marginBottom: 4, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div key={i} style={{ padding: '6px 10px', background: '#FFFFFF', borderRadius: 6, marginBottom: 4, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ width: 22, height: 22, borderRadius: '50%', background: BORDER, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: DIM }}>
                           {i + 1}
                         </span>
@@ -1043,7 +1043,7 @@ function IncidentsPage() {
                       Corrective Actions ({selected.corrective_actions.filter(ca => ca.status === 'closed').length}/{selected.corrective_actions.length} complete)
                     </div>
                     {selected.corrective_actions.map(ca => (
-                      <div key={ca.id} style={{ padding: 10, background: '#0A1628', borderRadius: 8, marginBottom: 8, borderLeft: `3px solid ${ca.status === 'closed' ? GREEN : ca.status === 'in_progress' ? AMBER : RED}` }}>
+                      <div key={ca.id} style={{ padding: 10, background: '#FFFFFF', borderRadius: 8, marginBottom: 8, borderLeft: `3px solid ${ca.status === 'closed' ? GREEN : ca.status === 'in_progress' ? AMBER : RED}` }}>
                         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{ca.description}</div>
                         <div style={{ fontSize: 11, color: DIM }}>
                           {ca.assigned_to && `Assigned: ${ca.assigned_to}`}
@@ -1115,7 +1115,7 @@ function IncidentsPage() {
 /* ═══════════════ EXPORTED DEFAULT WITH SUSPENSE ═══════════════ */
 export default function IncidentsPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#080F1A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8BAAC8' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
       <IncidentsPage />
     </Suspense>
   );

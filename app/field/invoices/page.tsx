@@ -6,11 +6,11 @@ import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
 /* ── Color tokens ─────────────────────────────────────────────── */
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -77,7 +77,7 @@ const btnBase: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: '#0A1628',
+  background: '#FFFFFF',
   border: `1px solid ${BORDER}`,
   borderRadius: 8,
   color: TEXT,
@@ -460,7 +460,7 @@ function InvoicesPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A1628', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#FFFFFF', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Header ──────────────────────────────────────────── */}
       <div style={{ background: RAISED, borderBottom: `2px solid ${GOLD}`, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -932,7 +932,7 @@ function InvoicesPage() {
                   value={editVal} onChange={e => setEditVal(e.target.value)}
                   type="number" inputMode="decimal" autoFocus
                   onKeyDown={e => { if (e.key === 'Enter') handleFieldSaveEdit(); }}
-                  style={{ width: '100%', padding: '14px 16px', background: '#0A1628', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
+                  style={{ width: '100%', padding: '14px 16px', background: '#FFFFFF', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
                 />
                 <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                   <button onClick={handleFieldSaveEdit} style={{ flex: 1, padding: '14px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Save</button>
@@ -989,7 +989,7 @@ function InvoicesPage() {
 /* ── Suspense wrapper ─────────────────────────────────────────── */
 export default function InvoicesPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#8BAAC8', background: '#0A1628', minHeight: '100vh' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6E6E73', background: '#FFFFFF', minHeight: '100vh' }}>Loading...</div>}>
       <InvoicesPage />
     </Suspense>
   );

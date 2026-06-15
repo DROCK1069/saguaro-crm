@@ -8,15 +8,15 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD = '#D4A017';
-const CARD = '#1A1F2E';
-const BASE = '#0F1419';
-const TEXT = '#F0F4FF';
-const DIM = '#8BAAC8';
+const GOLD = '#C8881C';
+const CARD = '#FFFFFF';
+const BASE = '#F2F2F7';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
-const BORDER = '#1E3A5F';
+const BORDER = '#E5E5EA';
 
 const glass: React.CSSProperties = {
   background: 'rgba(26,31,46,0.7)',
@@ -727,7 +727,7 @@ function AROverlayPage() {
 
 export default function FieldAROverlayPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center', background: '#0F1419', minHeight: '100dvh' }}>Loading AR...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center', background: '#F2F2F7', minHeight: '100dvh' }}>Loading AR...</div>}>
       <AROverlayPage />
     </Suspense>
   );

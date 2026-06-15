@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
 
 const STEPS = [
   { num: 1, label: 'Welcome', done: true },
@@ -81,7 +81,7 @@ export default function OnboardingStep4() {
                   width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
                   fontSize:14,fontWeight:800,
                   background: s.done ? GREEN : s.active ? GOLD : 'rgba(255,255,255,.06)',
-                  color: (s.done||s.active) ? '#0d1117' : DIM,
+                  color: (s.done||s.active) ? '#F2F2F7' : DIM,
                   border:`2px solid ${s.done ? GREEN : s.active ? GOLD : BORDER}`,
                 }}>
                   {s.done ? '✓' : s.num}
@@ -108,7 +108,7 @@ export default function OnboardingStep4() {
             </p>
             <a
               href="/app"
-              style={{display:'inline-block',padding:'14px 40px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,borderRadius:10,color:'#0d1117',fontWeight:800,fontSize:15,textDecoration:'none'}}
+              style={{display:'inline-block',padding:'14px 40px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:10,color:'#F2F2F7',fontWeight:800,fontSize:15,textDecoration:'none'}}
             >
               Go to Dashboard →
             </a>
@@ -163,7 +163,7 @@ export default function OnboardingStep4() {
               <button
                 onClick={handleSendInvites}
                 disabled={loading}
-                style={{padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:10,color:'#0d1117',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
+                style={{padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
               >
                 {loading?'Sending Invites...':'Send Invites'}
               </button>
@@ -181,7 +181,7 @@ export default function OnboardingStep4() {
           </div>
         )}
 
-        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#4a5f7a'}}>
+        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6E6E73'}}>
           Questions? <a href="mailto:support@saguarocontrol.net" style={{color:DIM}}>support@saguarocontrol.net</a>
         </div>
       </div>

@@ -1,12 +1,12 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 
-const GOLD = '#D4A017';
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const GOLD = '#C8881C';
+const DARK = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 const BLUE = '#3B82F6';
@@ -377,7 +377,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const selectStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', background: '#0d1117',
+  width: '100%', padding: '10px 12px', background: '#F2F2F7',
   border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontSize: 14,
   outline: 'none', boxSizing: 'border-box', cursor: 'pointer',
 };

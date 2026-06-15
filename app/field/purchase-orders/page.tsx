@@ -9,11 +9,11 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -865,7 +865,7 @@ function PurchaseOrdersInner() {
   /* ── Router ── */
   return (
     <div style={{
-      minHeight: '100vh', background: '#0A1628', color: TEXT,
+      minHeight: '100vh', background: '#FFFFFF', color: TEXT,
       fontFamily: 'system-ui, -apple-system, sans-serif', padding: '16px 16px 80px',
       maxWidth: 960, margin: '0 auto', boxSizing: 'border-box',
     }}>
@@ -902,7 +902,7 @@ function PurchaseOrdersInner() {
               <div>
                 <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus style={{ width: '100%', padding: '12px', background: RAISED, border: `1px solid ${GOLD}`, borderRadius: 8, color: TEXT, fontSize: 16, textAlign: 'center', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditPO(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 8, color: '#0d1117', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditPO(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#F2F2F7', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
                   <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '12px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
@@ -941,8 +941,8 @@ export default function PurchaseOrdersPage() {
   return (
     <Suspense fallback={
       <div style={{
-        minHeight: '100vh', background: '#0A1628', display: 'flex',
-        alignItems: 'center', justifyContent: 'center', color: '#8BAAC8',
+        minHeight: '100vh', background: '#FFFFFF', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', color: '#6E6E73',
         fontFamily: 'system-ui, sans-serif',
       }}>
         Loading purchase orders...

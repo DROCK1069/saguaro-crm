@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 const GREEN='#1a8a4a',RED='#c03030';
 
 const DISCIPLINES=['Architectural','Structural','Mechanical','Electrical','Plumbing','Civil','Landscape','Other'];
@@ -33,7 +33,7 @@ const DISCIPLINE_COLORS:Record<string,string>={
 };
 
 const inp:React.CSSProperties={
-  width:'100%',padding:'9px 12px',background:'#151f2e',
+  width:'100%',padding:'9px 12px',background:'#FFFFFF',
   border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
@@ -62,7 +62,7 @@ function FieldLabel({label}:{label:string}){
 function InfoCard({label,value}:{label:string;value:string|undefined|null}){
   if(!value) return null;
   return(
-    <div style={{background:'#1a2535',border:`1px solid ${BORDER}`,borderRadius:8,padding:'10px 12px'}}>
+    <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'10px 12px'}}>
       <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:4}}>{label}</div>
       <div style={{fontSize:13,color:TEXT}}>{value}</div>
     </div>
@@ -267,7 +267,7 @@ export default function DrawingsPage(){
             <div style={{fontSize:12,color:DIM,marginTop:3}}>Architectural and engineering drawing sets</div>
           </div>
           <button onClick={openCreate}
-            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,
+            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
               border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + Add Drawing
           </button>
@@ -344,7 +344,7 @@ export default function DrawingsPage(){
               </div>
               {drawings.length===0&&(
                 <button onClick={openCreate}
-                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,
+                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
                     border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
                   + Add First Drawing
                 </button>
@@ -502,7 +502,7 @@ export default function DrawingsPage(){
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',
-                      background:`linear-gradient(135deg,${GOLD},#F0C040)`,
+                      background:`linear-gradient(135deg,${GOLD},#E0A030)`,
                       border:'none',borderRadius:8,color:DARK,
                       fontSize:14,fontWeight:800,cursor:'pointer',opacity:saving?0.6:1}}>
                     {saving?'Saving...':mode==='create'?'Add Drawing':'Save Changes'}
@@ -542,7 +542,7 @@ export default function DrawingsPage(){
                 </div>
 
                 {selected.notes&&(
-                  <div style={{background:'#1a2535',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
                     <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>Notes</div>
                     <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.notes}</div>
                   </div>

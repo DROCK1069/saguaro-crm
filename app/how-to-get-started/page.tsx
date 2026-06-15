@@ -11,8 +11,8 @@ export default function HowToGetStartedPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-          --dark: #0d1117; --gold: #F59E0B; --text: #F8FAFC;
-          --dim: #CBD5E1; --border: #1E3A5F; --raised: #0F172A;
+          --dark: #F2F2F7; --gold: #F59E0B; --text: #1C1C1E;
+          --dim: #6E6E73; --border: #E5E5EA; --raised: #FFFFFF;
           --green: #22c55e; --font: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
         }
         body { background: var(--dark); color: var(--text); font-family: var(--font); }
@@ -21,7 +21,7 @@ export default function HowToGetStartedPage() {
           position: sticky; top: 0; z-index: 100;
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 32px;
-          background: rgba(13,17,23,0.95); backdrop-filter: blur(12px);
+          background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
           border-bottom: 1px solid var(--border);
         }
         .logo { font-weight: 900; font-size: 16px; text-decoration: none;

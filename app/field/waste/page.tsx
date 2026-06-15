@@ -7,11 +7,11 @@ import React, { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -80,7 +80,7 @@ const btnStyle = (bg: string, small = false): React.CSSProperties => ({
 });
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', background: '#0A1628', border: `1px solid ${BORDER}`,
+  width: '100%', padding: '10px 12px', background: '#FFFFFF', border: `1px solid ${BORDER}`,
   borderRadius: 8, color: TEXT, fontSize: 14, boxSizing: 'border-box',
 };
 
@@ -904,7 +904,7 @@ function WasteTrackingPage() {
                       {met ? 'EARNED' : 'NOT MET'}
                     </span>
                   </div>
-                  <div style={{ background: '#0A1628', borderRadius: 6, height: 20, overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ background: '#FFFFFF', borderRadius: 6, height: 20, overflow: 'hidden', position: 'relative' }}>
                     <div style={{ background: met ? GREEN : AMBER, height: '100%', width: `${Math.min(totals.diversionRate, 100)}%`, borderRadius: 6, transition: 'width 0.5s ease' }} />
                     <div style={{ position: 'absolute', left: `${target.target}%`, top: 0, height: '100%', width: 2, background: TEXT, opacity: 0.6 }} />
                   </div>
@@ -940,7 +940,7 @@ function WasteTrackingPage() {
                           {Math.round(typePct)}% ({typeDiverted}/{typeTotal})
                         </span>
                       </div>
-                      <div style={{ background: '#0A1628', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+                      <div style={{ background: '#FFFFFF', borderRadius: 4, height: 8, overflow: 'hidden' }}>
                         <div style={{ background: typePct >= 75 ? GREEN : typePct >= 50 ? AMBER : RED, height: '100%', width: `${typePct}%`, borderRadius: 4, transition: 'width 0.4s ease' }} />
                       </div>
                     </div>
@@ -984,7 +984,7 @@ function WasteTrackingPage() {
 
 export default function WasteTrackingPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0A1222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8BAAC8' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0A1222', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
       <WasteTrackingPage />
     </Suspense>
   );

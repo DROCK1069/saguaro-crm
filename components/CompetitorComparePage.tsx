@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import type { Competitor } from '@/lib/competitors';
 
-const DARK = '#0d1117';
+const DARK = '#F2F2F7';
 const GOLD = '#F59E0B';
-const TEXT = '#F8FAFC';
-const DIM = '#CBD5E1';
-const BORDER = '#1E3A5F';
-const RAISED = '#0F172A';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
+const RAISED = '#FFFFFF';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 
@@ -29,7 +29,7 @@ function Nav() {
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        background: scrolled ? 'rgba(13,17,23,0.97)' : 'rgba(13,17,23,0.85)',
+        background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         borderBottom: scrolled ? '1px solid rgba(245,158,11,0.25)' : `1px solid ${BORDER}`,
         transition: 'all 0.3s ease', height: '58px',
@@ -46,14 +46,14 @@ function Nav() {
               style={{ height: '36px', width: 'auto', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
             />
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-              <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#D4A017,#F0C040)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
-              <span style={{ fontSize: '7px', color: '#8fa3c0', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
+              <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#C8881C,#E0A030)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
+              <span style={{ fontSize: '7px', color: '#6E6E73', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
             </span>
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="ccp-desktop">
             <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
-            <Link href="/signup" style={{ padding: '7px 18px', background: '#D4A017', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
+            <Link href="/signup" style={{ padding: '7px 18px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
           </div>
 
           <button
@@ -68,14 +68,14 @@ function Nav() {
       </nav>
 
       {mobileOpen && (
-        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(13,17,23,0.99)', borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px', backdropFilter: 'blur(12px)' }}>
+        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(255,255,255,0.99)', borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px', backdropFilter: 'blur(12px)' }}>
           <div style={{ padding: '16px' }}>
             <Link href="/login" onClick={() => setMobileOpen(false)}
               style={{ display: 'block', textAlign: 'center', padding: '13px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: '9px', color: TEXT, fontWeight: 600, textDecoration: 'none', fontSize: '15px', marginBottom: '10px' }}>
               Log In
             </Link>
             <Link href="/signup" onClick={() => setMobileOpen(false)}
-              style={{ display: 'block', textAlign: 'center', padding: '13px', background: '#D4A017', borderRadius: '9px', color: '#000', fontWeight: 600, textDecoration: 'none', fontSize: '15px' }}>
+              style={{ display: 'block', textAlign: 'center', padding: '13px', background: '#C8881C', borderRadius: '9px', color: '#000', fontWeight: 600, textDecoration: 'none', fontSize: '15px' }}>
               Start Free Trial
             </Link>
           </div>

@@ -12,11 +12,11 @@ import { enqueue } from '@/lib/field-db';
 import SignaturePad from '@/components/SignaturePad';
 import EmailComposer from '@/components/EmailComposer';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -239,7 +239,7 @@ function PunchItemModal({
               <button type="button" onClick={() => onClose()} disabled={creating} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer' }}>
                 Skip
               </button>
-              <button type="button" onClick={handleCreate} disabled={creating} style={{ flex: 1, background: creating ? '#1E3A5F' : GOLD, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 700, cursor: creating ? 'wait' : 'pointer' }}>
+              <button type="button" onClick={handleCreate} disabled={creating} style={{ flex: 1, background: creating ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 700, cursor: creating ? 'wait' : 'pointer' }}>
                 {creating ? 'Creating...' : 'Create Items'}
               </button>
             </div>
@@ -257,7 +257,7 @@ function TemplatePicker({ onSelect }: { onSelect: (template: { name: string; ins
 
   if (!expanded) {
     return (
-      <div style={{ ...card, background: 'linear-gradient(135deg, #0D1D2E 0%, #112840 100%)', borderColor: `rgba(212,160,23,.25)`, cursor: 'pointer' }} onClick={() => setExpanded(true)}>
+      <div style={{ ...card, background: 'linear-gradient(135deg, #FFFFFF 0%, #112840 100%)', borderColor: `rgba(212,160,23,.25)`, cursor: 'pointer' }} onClick={() => setExpanded(true)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(212,160,23,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
@@ -360,7 +360,7 @@ const exportPDF = (title: string, content: string) => {
       <title>${title}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 24px; border-bottom: 2px solid #D4A017; padding-bottom: 8px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
         h2 { font-size: 18px; color: #333; margin-top: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 12px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 13px; }
@@ -746,7 +746,7 @@ function InspectionForm() {
           <p style={sectionLabel}>Inspection Details</p>
           <Label>Type</Label>
           <select value={inspType} onChange={(e) => changeType(e.target.value)} style={{ ...inp, marginBottom: 10 }}>
-            {INSPECTION_TYPES.map((t) => <option key={t} value={t} style={{ background: '#0D1D2E' }}>{t}</option>)}
+            {INSPECTION_TYPES.map((t) => <option key={t} value={t} style={{ background: '#FFFFFF' }}>{t}</option>)}
           </select>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
@@ -774,7 +774,7 @@ function InspectionForm() {
             </div>
           </div>
           {/* Progress bar */}
-          <div style={{ height: 5, background: '#1E3A5F', borderRadius: 3, marginBottom: 12 }}>
+          <div style={{ height: 5, background: '#E5E5EA', borderRadius: 3, marginBottom: 12 }}>
             <div style={{ height: '100%', background: pct === 100 ? GREEN : pct > 50 ? GOLD : AMBER, borderRadius: 3, width: `${pct}%`, transition: 'width 0.25s' }} />
           </div>
           {checklist.map((item, idx) => (
@@ -878,7 +878,7 @@ function InspectionForm() {
         <button
           type="submit"
           disabled={saving}
-          style={{ width: '100%', background: saving ? '#1E3A5F' : res.color, border: 'none', borderRadius: 14, padding: '18px', color: saving ? DIM : (result === 'pending' ? TEXT : '#000'), fontSize: 17, fontWeight: 800, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.3 }}
+          style={{ width: '100%', background: saving ? '#E5E5EA' : res.color, border: 'none', borderRadius: 14, padding: '18px', color: saving ? DIM : (result === 'pending' ? TEXT : '#000'), fontSize: 17, fontWeight: 800, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.3 }}
         >
           {saving ? 'Submitting...' : `Submit — ${res.label}`}
         </button>
@@ -888,7 +888,7 @@ function InspectionForm() {
 }
 
 export default function FieldInspectPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}><InspectionForm /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><InspectionForm /></Suspense>;
 }
 
 function Label({ children }: { children: React.ReactNode }) {
@@ -900,8 +900,8 @@ function OfflineBanner() {
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
 const sectionLabel: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
-const inp: React.CSSProperties = { width: '100%', background: '#07101C', border: '1px solid #1E3A5F', borderRadius: 10, padding: '11px 14px', color: '#F0F4FF', fontSize: 15, outline: 'none' };
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#8BAAC8', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 
 function hexRgb(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);

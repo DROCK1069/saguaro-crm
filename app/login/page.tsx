@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#ef4444';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444';
 
 export default function LoginPage(){
   const [form, setForm] = useState({email:'',password:''});
@@ -100,7 +100,7 @@ export default function LoginPage(){
         <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10}}>
           <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{height:36,width:'auto',objectFit:'contain',borderRadius:4}} />
           <span style={{display:'flex',flexDirection:'column',lineHeight:1.15}}>
-            <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:`linear-gradient(90deg,${GOLD},#F0C040)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
+            <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:`linear-gradient(90deg,${GOLD},#E0A030)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
             <span style={{fontSize:10,color:DIM,letterSpacing:.5,fontWeight:600}}>Control Systems</span>
           </span>
         </a>
@@ -202,7 +202,7 @@ export default function LoginPage(){
                     transition:'all .15s',cursor:'pointer',flexShrink:0,
                   }}
                 >
-                  {remember && <span style={{color:'#0d1117',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>}
+                  {remember && <span style={{color:'#F2F2F7',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>}
                 </div>
                 <span style={{fontSize:12,color:DIM,fontWeight:500}}>Remember me on this device</span>
               </label>
@@ -211,8 +211,8 @@ export default function LoginPage(){
               <button type="submit" disabled={loading}
                 style={{
                   marginTop:4,padding:'14px 0',
-                  background:loading?'rgba(212,160,23,.5)':`linear-gradient(135deg,${GOLD},#F0C040)`,
-                  border:'none',borderRadius:9,color:'#0d1117',fontSize:15,fontWeight:800,
+                  background:loading?'rgba(212,160,23,.5)':`linear-gradient(135deg,${GOLD},#E0A030)`,
+                  border:'none',borderRadius:9,color:'#F2F2F7',fontSize:15,fontWeight:800,
                   cursor:loading?'not-allowed':'pointer',transition:'all .2s',
                   display:'flex',alignItems:'center',justifyContent:'center',gap:8,
                   boxShadow: loading ? 'none' : '0 4px 16px rgba(212,160,23,.25)',
@@ -221,7 +221,7 @@ export default function LoginPage(){
                 {loading && (
                   <span style={{
                     display:'inline-block',width:16,height:16,
-                    border:'2px solid rgba(13,17,23,.3)',borderTopColor:'#0d1117',
+                    border:'2px solid rgba(255,255,255,.3)',borderTopColor:'#F2F2F7',
                     borderRadius:'50%',animation:'spin .6s linear infinite',
                   }}/>
                 )}

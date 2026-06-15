@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',RED='#c03030';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#c03030';
 
 type AlertSeverity = 'critical' | 'high' | 'medium' | 'low';
 
@@ -111,7 +111,7 @@ export default function AutopilotPage() {
         <button
           onClick={runScan}
           disabled={scanning}
-          style={{padding:'9px 18px',background:scanning?'rgba(212,160,23,.4)':`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:'#0d1117',fontSize:13,fontWeight:800,cursor:scanning?'not-allowed':'pointer'}}
+          style={{padding:'9px 18px',background:scanning?'rgba(212,160,23,.4)':`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:scanning?'not-allowed':'pointer'}}
         >
           {scanning ? '🔄 Scanning...' : '🤖 Run Scan Now'}
         </button>

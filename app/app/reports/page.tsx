@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // ── Color palette ──────────────────────────────────────────────
-const GOLD   = '#D4A017';
-const DARK   = '#0d1117';
+const GOLD   = '#C8881C';
+const DARK   = '#F2F2F7';
 const RAISED = 'rgba(255,255,255,0.04)';
 const BORDER = 'rgba(255,255,255,0.08)';
-const DIM    = '#8fa3c0';
-const TEXT   = '#e8edf8';
+const DIM    = '#6E6E73';
+const TEXT   = '#1C1C1E';
 const GREEN  = '#22C55E';
 const YELLOW = '#F59E0B';
 const RED    = '#EF4444';
@@ -445,7 +445,7 @@ export default function ReportsPage() {
               padding: '10px 22px',
               background: pageState === 'loading' || !sageQuery.trim()
                 ? 'rgba(212,160,23,0.3)'
-                : `linear-gradient(135deg, ${GOLD}, #F0C040)`,
+                : `linear-gradient(135deg, ${GOLD}, #E0A030)`,
               border: 'none',
               borderRadius: 10,
               color: pageState === 'loading' || !sageQuery.trim() ? 'rgba(0,0,0,0.4)' : DARK,
@@ -532,7 +532,7 @@ export default function ReportsPage() {
                 <div style={{
                   height: '100%',
                   width: `${progress.pct}%`,
-                  background: `linear-gradient(90deg, ${GOLD}, #F0C040)`,
+                  background: `linear-gradient(90deg, ${GOLD}, #E0A030)`,
                   borderRadius: 8,
                   transition: 'width 0.4s ease',
                 }} />

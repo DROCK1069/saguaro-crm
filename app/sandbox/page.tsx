@@ -3,12 +3,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const DARK = '#0d1117';
+const DARK = '#F2F2F7';
 const GOLD = '#F59E0B';
-const TEXT = '#F8FAFC';
-const DIM = '#CBD5E1';
-const BORDER = '#1E3A5F';
-const RAISED = '#0F172A';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
+const RAISED = '#FFFFFF';
 const GREEN = '#22c55e';
 
 const inputStyle: React.CSSProperties = {
@@ -173,7 +173,7 @@ export default function SandboxPage() {
             <Link href="/app" style={{
               display: 'block', padding: '15px 32px',
               background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
-              color: '#0d1117', borderRadius: 9, fontWeight: 900,
+              color: '#F2F2F7', borderRadius: 9, fontWeight: 900,
               fontSize: 16, textDecoration: 'none', textAlign: 'center',
               boxShadow: `0 4px 24px rgba(245,158,11,0.35)`,
               letterSpacing: 0.3,
@@ -253,7 +253,7 @@ export default function SandboxPage() {
         {/* ── NAV ── */}
         <nav style={{
           position: 'fixed', top: 0, left: 0, right: 0, height: 58,
-          background: 'rgba(13,17,23,0.97)', borderBottom: `1px solid ${BORDER}`,
+          background: 'rgba(255,255,255,0.97)', borderBottom: `1px solid ${BORDER}`,
           display: 'flex', alignItems: 'center', padding: '0 28px',
           gap: 16, zIndex: 100, backdropFilter: 'blur(8px)',
         }}>
@@ -322,13 +322,13 @@ export default function SandboxPage() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 700,
                       background: step >= s ? GOLD : 'rgba(255,255,255,0.06)',
-                      color: step >= s ? '#0d1117' : DIM,
+                      color: step >= s ? '#F2F2F7' : DIM,
                       border: step >= s ? 'none' : `1px solid ${BORDER}`,
                       transition: 'all 0.2s',
                     }}>
                       {step > s ? (
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <polyline points="2,6 5,9 10,3" stroke="#0d1117" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          <polyline points="2,6 5,9 10,3" stroke="#F2F2F7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       ) : s}
                     </div>
@@ -412,7 +412,7 @@ export default function SandboxPage() {
                           ? 'rgba(245,158,11,0.4)'
                           : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
                         border: 'none', borderRadius: 9,
-                        color: '#0d1117', fontSize: 15, fontWeight: 900,
+                        color: '#F2F2F7', fontSize: 15, fontWeight: 900,
                         cursor: (!firstName || !lastName || !email || !company) ? 'not-allowed' : 'pointer',
                         marginBottom: 0,
                         transition: 'all 0.15s',
@@ -466,7 +466,7 @@ export default function SandboxPage() {
                           ? 'rgba(245,158,11,0.5)'
                           : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
                         border: 'none', borderRadius: 9,
-                        color: '#0d1117', fontSize: 16, fontWeight: 900,
+                        color: '#F2F2F7', fontSize: 16, fontWeight: 900,
                         cursor: loading ? 'not-allowed' : 'pointer',
                         boxShadow: loading ? 'none' : '0 4px 20px rgba(245,158,11,0.3)',
                         marginBottom: 12,

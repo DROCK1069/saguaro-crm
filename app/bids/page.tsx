@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 
 export default function BidsPage() {
   const [tab, setTab] = useState<'active'|'pipeline'|'history'>('active');
@@ -23,7 +23,7 @@ export default function BidsPage() {
         </div>
         <div style={{display:'flex',gap:10}}>
           <Link href="/app/intelligence" style={{padding:'9px 16px',background:'rgba(212,160,23,.12)',border:'1px solid rgba(212,160,23,.3)',borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>🧠 Bid Intelligence</Link>
-          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:'#0d1117',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Score Opportunity</button>
+          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Score Opportunity</button>
         </div>
       </div>
 
@@ -41,7 +41,7 @@ export default function BidsPage() {
           🤖 <strong style={{color:TEXT}}>AI Scores These Automatically</strong> — Each opportunity is scored 0–100 for fit based on your win/loss history. Focus on green (BID) first.
         </div>
         <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
-          <thead><tr style={{background:'#0a1117'}}>
+          <thead><tr style={{background:'#F2F2F7'}}>
             {['Opportunity','Trade','Est. Value','Fit Score','Win Prob.','Bid Due','AI Recommendation','Actions'].map(h=>(
               <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
             ))}
@@ -67,7 +67,7 @@ export default function BidsPage() {
               </td>
               <td style={{padding:'12px 14px',display:'flex',gap:6}}>
                 <button style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,padding:'3px 8px',cursor:'pointer'}}>Details</button>
-                {op.action==='bid'&&<button style={{background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:5,color:'#0d1117',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>Bid →</button>}
+                {op.action==='bid'&&<button style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#F2F2F7',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>Bid →</button>}
               </td>
             </tr>;
           })}</tbody>

@@ -9,11 +9,11 @@ import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -944,7 +944,7 @@ function SchedulePage() {
           </div>
 
           {/* Progress bar */}
-          <div style={{ height: 8, background: '#1E3A5F', borderRadius: 4, marginBottom: 16 }}>
+          <div style={{ height: 8, background: '#E5E5EA', borderRadius: 4, marginBottom: 16 }}>
             <div style={{ height: '100%', background: pct === 100 ? GREEN : pct > 0 ? GOLD : 'transparent', borderRadius: 4, width: `${pct}%`, transition: 'width .3s' }} />
           </div>
 
@@ -959,7 +959,7 @@ function SchedulePage() {
               onChange={(e) => setEditPct(parseInt(e.target.value))}
               style={{
                 width: '100%', height: 6, appearance: 'none', WebkitAppearance: 'none',
-                background: `linear-gradient(to right, ${GOLD} 0%, ${GOLD} ${pct}%, #1E3A5F ${pct}%, #1E3A5F 100%)`,
+                background: `linear-gradient(to right, ${GOLD} 0%, ${GOLD} ${pct}%, #E5E5EA ${pct}%, #E5E5EA 100%)`,
                 borderRadius: 3, outline: 'none', cursor: 'pointer',
               }}
             />
@@ -989,7 +989,7 @@ function SchedulePage() {
             onClick={handleSavePct}
             disabled={saving}
             style={{
-              width: '100%', background: saving ? '#1E3A5F' : GOLD, border: 'none', borderRadius: 14,
+              width: '100%', background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 14,
               padding: '18px', color: saving ? DIM : '#000', fontSize: 17, fontWeight: 800,
               cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5,
             }}
@@ -1162,7 +1162,7 @@ function SchedulePage() {
       </div>
 
       {/* View mode toggle: List / Gantt */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 10, background: '#060C15', borderRadius: 10, padding: 4 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 10, background: '#F2F2F7', borderRadius: 10, padding: 4 }}>
         <button
           onClick={() => setViewMode('list')}
           style={{ flex: 1, background: viewMode === 'list' ? RAISED : 'transparent', border: `1px solid ${viewMode === 'list' ? BORDER : 'transparent'}`, borderRadius: 8, padding: '8px 4px', color: viewMode === 'list' ? TEXT : DIM, fontSize: 13, fontWeight: viewMode === 'list' ? 700 : 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
@@ -1182,7 +1182,7 @@ function SchedulePage() {
       {viewMode === 'list' && (
         <>
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#060C15', borderRadius: 10, padding: 4 }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#F2F2F7', borderRadius: 10, padding: 4 }}>
             {tabs.map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{ flex: 1, background: tab === t.id ? RAISED : 'transparent', border: `1px solid ${tab === t.id ? BORDER : 'transparent'}`, borderRadius: 8, padding: '8px 4px', color: tab === t.id ? TEXT : DIM, fontSize: 11, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}
@@ -1261,7 +1261,7 @@ function SchedulePage() {
                           )}
                         </p>
                         {/* Progress bar */}
-                        <div style={{ height: 5, background: '#1E3A5F', borderRadius: 3 }}>
+                        <div style={{ height: 5, background: '#E5E5EA', borderRadius: 3 }}>
                           <div style={{ height: '100%', background: pct === 100 ? GREEN : late ? RED : active ? GOLD : BLUE, borderRadius: 3, width: `${pct}%`, transition: 'width .3s' }} />
                         </div>
                       </div>
@@ -1347,7 +1347,7 @@ function SchedulePage() {
 }
 
 export default function FieldSchedulePage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}><SchedulePage /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><SchedulePage /></Suspense>;
 }
 
 function StatBadge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -1363,7 +1363,7 @@ function InfoRow({ label, value, valueColor }: { label: string; value: string; v
   );
 }
 
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#8BAAC8', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 
 function hexRgb(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 
 interface PhotoEditorProps {
   src: string;
@@ -161,7 +161,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
         <div style={{ color: TEXT, fontWeight: 700, fontSize: 16 }}>📸 Photo Editor</div>
         <div style={{ display: 'flex', gap: 8 }}>
           {onSave && (
-            <button onClick={handleSave} disabled={saving} style={{ ...btnStyle(), background: `linear-gradient(135deg,${GOLD},#F0C040)`, color: '#000', border: 'none' }}>
+            <button onClick={handleSave} disabled={saving} style={{ ...btnStyle(), background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: '#000', border: 'none' }}>
               {saving ? 'Saving…' : '💾 Save'}
             </button>
           )}

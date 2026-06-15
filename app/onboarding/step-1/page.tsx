@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 
 const STEPS = [
   { num: 1, label: 'Welcome', active: true },
@@ -34,7 +34,7 @@ export default function OnboardingStep1() {
           {STEPS.map((s, i) => (
             <React.Fragment key={s.num}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : 'rgba(255,255,255,.06)', color: s.active ? '#0d1117' : DIM, border: `2px solid ${s.active ? GOLD : BORDER}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : 'rgba(255,255,255,.06)', color: s.active ? '#F2F2F7' : DIM, border: `2px solid ${s.active ? GOLD : BORDER}` }}>
                   {s.num}
                 </div>
                 <span style={{ fontSize: 11, color: s.active ? TEXT : DIM, fontWeight: s.active ? 700 : 400 }}>{s.label}</span>
@@ -76,7 +76,7 @@ export default function OnboardingStep1() {
             <button
               onClick={createDemoProject}
               disabled={loading}
-              style={{ padding: '14px 0', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 10, color: '#0d1117', fontSize: 16, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? .7 : 1 }}
+              style={{ padding: '14px 0', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 10, color: '#F2F2F7', fontSize: 16, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? .7 : 1 }}
             >
               {loading ? 'Loading your dashboard...' : 'Go to Dashboard →'}
             </button>
@@ -93,7 +93,7 @@ export default function OnboardingStep1() {
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#4a5f7a' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#6E6E73' }}>
           Need help? <a href="mailto:support@saguarocontrol.net" style={{ color: DIM }}>support@saguarocontrol.net</a>
         </div>
       </div>

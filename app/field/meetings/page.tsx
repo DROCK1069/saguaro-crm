@@ -8,11 +8,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -155,7 +155,7 @@ const btnStyle = (bg: string, small = false): React.CSSProperties => ({
 });
 
 const inputStyle: React.CSSProperties = {
-  background: '#0A1929', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px',
+  background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px',
   color: TEXT, fontSize: 14, width: '100%', boxSizing: 'border-box',
 };
 
@@ -184,7 +184,7 @@ const exportPDF = (title: string, content: string) => {
       <title>${title}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 24px; border-bottom: 2px solid #D4A017; padding-bottom: 8px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
         h2 { font-size: 18px; color: #333; margin-top: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 12px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 13px; }
@@ -644,7 +644,7 @@ function MeetingsPage() {
       </div>
 
       {/* Tabs: Meetings | Action Items */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: '#0A1929', borderRadius: 10, padding: 4 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: '#FFFFFF', borderRadius: 10, padding: 4 }}>
         <button onClick={() => setView('list')} style={tabStyle(view === 'list')}>Meetings</button>
         <button onClick={() => setView('actions')} style={tabStyle(false)}>Action Items</button>
       </div>
@@ -747,7 +747,7 @@ function MeetingsPage() {
       {/* Bulk Action Bar */}
       {selectMode && selectedIds.size > 0 && (
         <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0A1929',
+          position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FFFFFF',
           borderTop: `1px solid ${BORDER}`, padding: '12px 16px', display: 'flex', gap: 8,
           justifyContent: 'center', zIndex: 100,
         }}>
@@ -819,7 +819,7 @@ function MeetingsPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: '#0A1929', borderRadius: 10, padding: 4 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: '#FFFFFF', borderRadius: 10, padding: 4 }}>
         <button onClick={() => setView('list')} style={tabStyle(false)}>Meetings</button>
         <button onClick={() => setView('actions')} style={tabStyle(true)}>Action Items</button>
       </div>
@@ -919,7 +919,7 @@ function MeetingsPage() {
         </div>
         {form.attendees.length === 0 && <div style={{ color: DIM, fontSize: 13 }}>No attendees added yet</div>}
         {form.attendees.map((att, idx) => (
-          <div key={att.id} style={{ background: '#0A1929', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
+          <div key={att.id} style={{ background: '#FFFFFF', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
               <input placeholder="Name" value={att.name} onChange={e => updateAttendee(idx, 'name', e.target.value)} style={inputStyle} />
               <input placeholder="Company" value={att.company} onChange={e => updateAttendee(idx, 'company', e.target.value)} style={inputStyle} />
@@ -947,7 +947,7 @@ function MeetingsPage() {
         </div>
         {form.agenda.length === 0 && <div style={{ color: DIM, fontSize: 13 }}>No agenda items — add items to discuss</div>}
         {form.agenda.map((item, idx) => (
-          <div key={item.id} style={{ background: '#0A1929', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
+          <div key={item.id} style={{ background: '#FFFFFF', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
               <span style={{ color: GOLD, fontWeight: 800, fontSize: 16, minWidth: 28 }}>{idx + 1}.</span>
               <input
@@ -1001,7 +1001,7 @@ function MeetingsPage() {
 
         {/* Series navigation */}
         {seriesMeetings.length > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#0A1929', borderRadius: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#FFFFFF', borderRadius: 10 }}>
             <button
               onClick={() => prevMeeting && openDetail(prevMeeting)}
               disabled={!prevMeeting}
@@ -1175,7 +1175,7 @@ function MeetingsPage() {
                   <div style={{ marginLeft: 28, marginTop: 8 }}>
                     <div style={{ color: AMBER, fontSize: 12, fontWeight: 700, marginBottom: 4 }}>DECISIONS / MOTIONS</div>
                     {item.decisions.map(d => (
-                      <div key={d.id} style={{ padding: '6px 10px', background: '#0A1929', borderRadius: 8, marginBottom: 4, border: `1px solid ${BORDER}` }}>
+                      <div key={d.id} style={{ padding: '6px 10px', background: '#FFFFFF', borderRadius: 8, marginBottom: 4, border: `1px solid ${BORDER}` }}>
                         <div style={{ color: TEXT, fontSize: 13 }}>{d.description}</div>
                         <div style={{ display: 'flex', gap: 12, fontSize: 11, color: DIM, marginTop: 2 }}>
                           <span style={badgeStyle(d.vote === 'Approved' ? GREEN : d.vote === 'Rejected' ? RED : AMBER)}>{d.vote}</span>
@@ -1194,7 +1194,7 @@ function MeetingsPage() {
                     {item.action_items.map(ai => {
                       const overdue = ai.status !== 'Complete' && ai.due_date && isOverdue(ai.due_date);
                       return (
-                        <div key={ai.id} style={{ padding: '6px 10px', background: '#0A1929', borderRadius: 8, marginBottom: 4, border: `1px solid ${overdue ? RED : BORDER}` }}>
+                        <div key={ai.id} style={{ padding: '6px 10px', background: '#FFFFFF', borderRadius: 8, marginBottom: 4, border: `1px solid ${overdue ? RED : BORDER}` }}>
                           <div style={{ color: TEXT, fontSize: 13 }}>{ai.description}</div>
                           <div style={{ display: 'flex', gap: 10, fontSize: 11, color: DIM, marginTop: 2, flexWrap: 'wrap' as const }}>
                             <span style={badgeStyle(ai.status === 'Complete' ? GREEN : ai.status === 'In Progress' ? AMBER : BLUE)}>{ai.status}</span>
@@ -1252,7 +1252,7 @@ function MeetingsPage() {
                 onClick={() => toggleAttendance(idx)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
-                  background: att.present ? `${GREEN}15` : '#0A1929', border: `1px solid ${att.present ? GREEN : BORDER}`,
+                  background: att.present ? `${GREEN}15` : '#FFFFFF', border: `1px solid ${att.present ? GREEN : BORDER}`,
                   cursor: 'pointer', transition: 'all .15s',
                 }}
               >
@@ -1311,7 +1311,7 @@ function MeetingsPage() {
                 <button onClick={() => addDecision(activeAgendaIdx)} style={btnStyle(AMBER, true)}>+ Decision</button>
               </div>
               {(currentItem.decisions || []).map((d, dIdx) => (
-                <div key={d.id} style={{ background: '#0A1929', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
+                <div key={d.id} style={{ background: '#FFFFFF', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
                   <input
                     placeholder="Decision / motion description"
                     value={d.description}
@@ -1341,7 +1341,7 @@ function MeetingsPage() {
                 <button onClick={() => addMinutesAction(activeAgendaIdx)} style={btnStyle(BLUE, true)}>+ Action Item</button>
               </div>
               {(currentItem.action_items || []).map((ai, aiIdx) => (
-                <div key={ai.id} style={{ background: '#0A1929', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
+                <div key={ai.id} style={{ background: '#FFFFFF', borderRadius: 10, padding: 12, marginBottom: 8, border: `1px solid ${BORDER}` }}>
                   <input
                     placeholder="Action item description"
                     value={ai.description}
@@ -1425,7 +1425,7 @@ function MeetingsPage() {
 /* ── Export with Suspense wrapper ── */
 export default function MeetingsPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#8BAAC8' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6E6E73' }}>Loading...</div>}>
       <MeetingsPage />
     </Suspense>
   );

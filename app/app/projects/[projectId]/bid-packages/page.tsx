@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -361,7 +361,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
               else handleSubmit();
             }}
             disabled={w.submitting}
-            style={{ padding: '9px 24px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 14, fontWeight: 800, cursor: w.submitting ? 'wait' : 'pointer', opacity: w.submitting ? 0.7 : 1 }}>
+            style={{ padding: '9px 24px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 14, fontWeight: 800, cursor: w.submitting ? 'wait' : 'pointer', opacity: w.submitting ? 0.7 : 1 }}>
             {step < 4 ? 'Next →' : w.submitting ? 'Creating...' : 'Create Bid Package'}
           </button>
         </div>
@@ -420,7 +420,7 @@ export default function BidPackagesPage() {
         </div>
         <button
           onClick={() => setShowWizard(true)}
-          style={{ padding: '9px 18px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
+          style={{ padding: '9px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
           + Create Bid Package
         </button>
       </div>
@@ -449,13 +449,13 @@ export default function BidPackagesPage() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 8 }}>No bid packages yet</div>
             <div style={{ fontSize: 13, marginBottom: 20 }}>Create your first bid package to start soliciting subcontractors.</div>
-            <button onClick={() => setShowWizard(true)} style={{ padding: '10px 22px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Create Bid Package</button>
+            <button onClick={() => setShowWizard(true)} style={{ padding: '10px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: DARK, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Create Bid Package</button>
           </div>
         ) : (
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#0a1117' }}>
+                <tr style={{ background: '#F2F2F7' }}>
                   {['Trade', 'Package Name', 'Due Date', 'Status', '# Invited', '# Submitted', 'Bid Jacket', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: DIM, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
                   ))}

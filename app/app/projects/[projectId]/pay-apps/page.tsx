@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import DragHandle, { useDragReorder } from '../../../../../components/DragHandle';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 function statusBadge(s:string){
   const map:Record<string,{c:string,bg:string}> = {
-    draft:      {c:'#94a3b8',bg:'rgba(148,163,184,.14)'},
+    draft:      {c:'#6E6E73',bg:'rgba(148,163,184,.14)'},
     submitted:  {c:'#4a9de8',bg:'rgba(74,157,232,.14)'},
     approved:   {c:'#3dd68c',bg:'rgba(26,138,74,.14)'},
     certified:  {c:GOLD,    bg:'rgba(212,160,23,.14)'},
@@ -161,7 +161,7 @@ export default function PayAppsPage() {
         </div>
         <Link
           href={`/app/projects/${projectId}/pay-apps/new`}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:7,color:'#0d1117',fontSize:13,fontWeight:800,textDecoration:'none'}}
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#F2F2F7',fontSize:13,fontWeight:800,textDecoration:'none'}}
         >
           + New Pay Application
         </Link>
@@ -203,7 +203,7 @@ export default function PayAppsPage() {
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Create your first AIA G702/G703 pay application to bill the owner.</div>
             <Link
               href={`/app/projects/${projectId}/pay-apps/new`}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:'#0d1117',fontSize:13,fontWeight:800,textDecoration:'none'}}
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:13,fontWeight:800,textDecoration:'none'}}
             >
               + Create First Pay Application
             </Link>
@@ -275,7 +275,7 @@ export default function PayAppsPage() {
                       ) : editId===pa.id ? (
                         <div style={{display:'flex',alignItems:'center',gap:4}}>
                           <input value={editVal} onChange={e=>setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditPayAmt(pa.id);if(e.key==='Escape')setEditId(null);}} style={{width:100,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
-                          <button onClick={()=>handleEditPayAmt(pa.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:5,color:'#0d1117',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                          <button onClick={()=>handleEditPayAmt(pa.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#F2F2F7',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
                           <button onClick={()=>setEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                         </div>
                       ) : (

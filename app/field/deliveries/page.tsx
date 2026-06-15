@@ -7,15 +7,15 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD = '#D4A017';
-const CARD = '#1A1F2E';
-const BASE = '#0F1419';
-const TEXT = '#F0F4FF';
-const DIM = '#8BAAC8';
+const GOLD = '#C8881C';
+const CARD = '#FFFFFF';
+const BASE = '#F2F2F7';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
-const BORDER = '#1E3A5F';
+const BORDER = '#E5E5EA';
 
 function hr(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);
@@ -445,7 +445,7 @@ function DeliveriesPage() {
 
 export default function FieldDeliveriesPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <DeliveriesPage />
     </Suspense>
   );

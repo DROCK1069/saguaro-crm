@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD = '#D4A017', RAISED = '#0D1D2E', BORDER = '#1E3A5F', TEXT = '#F0F4FF', DIM = '#8BAAC8';
+const GOLD = '#C8881C', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
 const GREEN = '#22C55E', BLUE = '#3B82F6';
 
 function hr(hex: string): string {
@@ -17,8 +17,8 @@ function hr(hex: string): string {
   return `${r},${g},${b}`;
 }
 
-const inp: React.CSSProperties = { width: '100%', background: '#07101C', border: '1px solid #1E3A5F', borderRadius: 10, padding: '11px 14px', color: '#F0F4FF', fontSize: 15, outline: 'none', boxSizing: 'border-box' };
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#8BAAC8', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none', boxSizing: 'border-box' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 
 const MAX_HISTORY = 5;
 
@@ -203,7 +203,7 @@ function QRPage() {
       <h1 style={{ margin: '0 0 16px', fontSize: 22, fontWeight: 800, color: TEXT }}>QR Scanner</h1>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', background: '#07101C', borderRadius: 12, padding: 4, marginBottom: 20, border: `1px solid ${BORDER}` }}>
+      <div style={{ display: 'flex', background: '#F2F2F7', borderRadius: 12, padding: 4, marginBottom: 20, border: `1px solid ${BORDER}` }}>
         {(['scan', 'generate'] as Tab[]).map(t => (
           <button
             key={t}
@@ -410,7 +410,7 @@ function QRPage() {
             disabled={!genText.trim()}
             style={{
               width: '100%',
-              background: genText.trim() ? GOLD : '#1E3A5F',
+              background: genText.trim() ? GOLD : '#E5E5EA',
               border: 'none',
               borderRadius: 12,
               padding: '15px',
@@ -474,7 +474,7 @@ function QRPage() {
 
 export default function FieldQRPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <QRPage />
     </Suspense>
   );

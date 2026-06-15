@@ -8,11 +8,11 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -126,7 +126,7 @@ function exportPDF(title: string, content: string) {
   pw.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
     <style>
       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 900px; margin: 0 auto; }
-      h1 { font-size: 22px; border-bottom: 2px solid #D4A017; padding-bottom: 8px; }
+      h1 { font-size: 22px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
       h2 { font-size: 16px; color: #333; margin-top: 20px; }
       table { width: 100%; border-collapse: collapse; margin: 12px 0; }
       th, td { padding: 6px 10px; border: 1px solid #ddd; font-size: 13px; text-align: left; }
@@ -352,14 +352,14 @@ function CoordinationPage() {
 
   /* ─────────── LIST VIEW ─────────── */
   if (view === 'list') return (
-    <div style={{ minHeight: '100vh', background: '#07101C', color: TEXT }}>
+    <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT }}>
       {toast && <div style={toastStyle}>{toast}</div>}
       {/* Header */}
       <div style={{ padding: '16px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: GOLD }}>Coordination Issues</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={handleExportPDF} style={headerBtn} title="Export PDF">🖨</button>
-          <button onClick={() => { setForm(emptyForm); setFormPhotos([]); setPhotoPreview([]); setView('create'); }} style={{ ...headerBtn, background: GOLD, color: '#07101C' }}>+ New</button>
+          <button onClick={() => { setForm(emptyForm); setFormPhotos([]); setPhotoPreview([]); setView('create'); }} style={{ ...headerBtn, background: GOLD, color: '#F2F2F7' }}>+ New</button>
         </div>
       </div>
 
@@ -480,7 +480,7 @@ function CoordinationPage() {
   if (view === 'detail' && selected) {
     const avail = STATUS_FLOW[selected.status] || [];
     return (
-      <div style={{ minHeight: '100vh', background: '#07101C', color: TEXT }}>
+      <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT }}>
         {toast && <div style={toastStyle}>{toast}</div>}
         <div style={{ padding: 16 }}>
           <button onClick={() => setView('list')} style={backBtn}>← Back</button>
@@ -637,7 +637,7 @@ function CoordinationPage() {
 
   /* ─────────── CREATE VIEW ─────────── */
   if (view === 'create') return (
-    <div style={{ minHeight: '100vh', background: '#07101C', color: TEXT }}>
+    <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT }}>
       {toast && <div style={toastStyle}>{toast}</div>}
       <div style={{ padding: 16 }}>
         <button onClick={() => setView('list')} style={backBtn}>← Cancel</button>
@@ -769,7 +769,7 @@ function CoordinationPage() {
 
         {/* Submit */}
         <button onClick={handleCreate} disabled={saving}
-          style={{ width: '100%', marginTop: 20, marginBottom: 40, padding: 14, background: GOLD, color: '#07101C', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+          style={{ width: '100%', marginTop: 20, marginBottom: 40, padding: 14, background: GOLD, color: '#F2F2F7', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
           {saving ? 'Saving...' : 'Create Issue'}
         </button>
       </div>
@@ -781,7 +781,7 @@ function CoordinationPage() {
 
 /* ─── Shared Styles ─── */
 const toastStyle: React.CSSProperties = {
-  position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: GOLD, color: '#07101C',
+  position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', background: GOLD, color: '#F2F2F7',
   padding: '10px 20px', borderRadius: 10, fontWeight: 600, fontSize: 14, zIndex: 9999, boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
 };
 const headerBtn: React.CSSProperties = {
@@ -792,7 +792,7 @@ const summaryCard: React.CSSProperties = {
   background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px',
 };
 const filterSelect: React.CSSProperties = {
-  background: '#07101C', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 8px',
+  background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 8px',
   color: TEXT, fontSize: 12, outline: 'none', flex: 1, minWidth: 90,
 };
 const sortBtn: React.CSSProperties = {
@@ -810,7 +810,7 @@ const lbl: React.CSSProperties = {
   display: 'block', fontSize: 12, color: DIM, marginBottom: 4, fontWeight: 600,
 };
 const inp: React.CSSProperties = {
-  width: '100%', background: '#07101C', border: `1px solid ${BORDER}`, borderRadius: 10,
+  width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 10,
   padding: '11px 14px', color: TEXT, fontSize: 15, outline: 'none', boxSizing: 'border-box',
 };
 const detailGrid: React.CSSProperties = {

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../components/SaguaroDatePicker';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 const INPUT_STYLE = {width:'100%',padding:'10px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none'};
 const SELECT_STYLE = {...INPUT_STYLE,cursor:'pointer'};
 const FIELD = ({label,children}:{label:string,children:React.ReactNode}) => (
@@ -145,7 +145,7 @@ export default function NewProjectPage() {
           </div>
         </div>
         <div style={{display:'flex',gap:12,marginTop:8}}>
-          <button type="submit" disabled={saving||!name.trim()||!address.trim()} style={{padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:'#0d1117',fontSize:15,fontWeight:800,cursor:'pointer',opacity:saving||!name.trim()||!address.trim()?0.6:1}}>
+          <button type="submit" disabled={saving||!name.trim()||!address.trim()} style={{padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#F2F2F7',fontSize:15,fontWeight:800,cursor:'pointer',opacity:saving||!name.trim()||!address.trim()?0.6:1}}>
             {saving?'Creating…':'Create Project'}
           </button>
           <button type="button" onClick={()=>router.back()} style={{padding:'13px 20px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,color:DIM,fontSize:14,cursor:'pointer'}}>

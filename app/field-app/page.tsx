@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 
 const GOLD   = '#F59E0B';
-const DARK   = '#09111A';
-const RAISED = '#0F172A';
-const BORDER = '#1E3A5F';
-const DIM    = '#CBD5E1';
-const TEXT   = '#F8FAFC';
+const DARK   = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM    = '#6E6E73';
+const TEXT   = '#1C1C1E';
 const GREEN  = '#22C55E';
 const BLUE   = '#3B82F6';
 const PURPLE = '#8B5CF6';
@@ -217,7 +217,7 @@ export default function FieldAppPage() {
         .fa-card:hover { border-color: rgba(245,158,11,.6) !important; background: rgba(245,158,11,0.06) !important; transform: translateY(-3px); transition: all .2s ease; }
         .fa-cta-primary:hover { opacity: 0.9; transform: translateY(-2px); transition: all .15s ease; }
         .fa-nav-link:hover { color: #F59E0B !important; }
-        .fa-back:hover { color: #e8edf8 !important; background: rgba(255,255,255,0.08) !important; }
+        .fa-back:hover { color: #1C1C1E !important; background: rgba(255,255,255,0.08) !important; }
         .fa-get-app:hover { opacity: 0.88; transform: translateY(-1px); transition: all .15s ease; }
       `}</style>
 
@@ -315,7 +315,7 @@ export default function FieldAppPage() {
               <div style={{ position: 'absolute', inset: -24, background: 'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(212,160,23,0.18) 0%, transparent 70%)', pointerEvents: 'none', filter: 'blur(16px)' }} />
               <div style={{ position: 'relative', background: 'linear-gradient(160deg, #141e2e 0%, #0d1520 100%)', border: '2px solid rgba(255,255,255,0.13)', borderRadius: 40, padding: '14px 10px', boxShadow: '0 40px 100px rgba(0,0,0,.7)' }}>
                 <div style={{ width: 72, height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 3, margin: '0 auto 12px' }} />
-                <div style={{ background: '#09111A', borderRadius: 28, overflow: 'hidden', padding: '16px 14px' }}>
+                <div style={{ background: '#F2F2F7', borderRadius: 28, overflow: 'hidden', padding: '16px 14px' }}>
                   {/* Saguaro Field header */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -408,7 +408,7 @@ export default function FieldAppPage() {
         </div>
 
         {/* ── Features grid ───────────────────────────────────────────── */}
-        <section id="features" style={{ padding: '72px 32px', background: 'linear-gradient(180deg, #09111A 0%, #0a1628 50%, #09111A 100%)' }}>
+        <section id="features" style={{ padding: '72px 32px', background: 'linear-gradient(180deg, #F2F2F7 0%, #FFFFFF 50%, #F2F2F7 100%)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Everything In The Field</div>
@@ -501,7 +501,7 @@ export default function FieldAppPage() {
         </section>
 
         {/* ── Testimonials ────────────────────────────────────────────── */}
-        <section style={{ padding: '64px 32px', background: 'linear-gradient(180deg, #0a1220 0%, #09111A 100%)', borderTop: `1px solid ${BORDER}` }}>
+        <section style={{ padding: '64px 32px', background: 'linear-gradient(180deg, #0a1220 0%, #F2F2F7 100%)', borderTop: `1px solid ${BORDER}` }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Field Crew Reviews</div>
@@ -537,7 +537,7 @@ export default function FieldAppPage() {
         </section>
 
         {/* ── Install steps ───────────────────────────────────────────── */}
-        <section id="install" style={{ background: 'linear-gradient(180deg, #0a1628 0%, #0d1f3c 50%, #0a1628 100%)', borderTop: '1px solid rgba(30,58,95,0.8)', borderBottom: '1px solid rgba(30,58,95,0.8)' }}>
+        <section id="install" style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #0d1f3c 50%, #FFFFFF 100%)', borderTop: '1px solid rgba(30,58,95,0.8)', borderBottom: '1px solid rgba(30,58,95,0.8)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 32px' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               {/* "Live in 30 seconds" badge */}
@@ -658,7 +658,7 @@ export default function FieldAppPage() {
               <a key={h} href={h} style={{ fontSize: 12, color: DIM, textDecoration: 'none' }}>{l}</a>
             ))}
           </div>
-          <div style={{ fontSize: 12, color: '#4a5f7a' }}>© {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.</div>
+          <div style={{ fontSize: 12, color: '#6E6E73' }}>© {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.</div>
         </footer>
 
       </div>

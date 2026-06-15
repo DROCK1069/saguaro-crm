@@ -11,11 +11,11 @@ import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import SignaturePad from '@/components/SignaturePad';
 import EmailComposer from '@/components/EmailComposer';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 
@@ -82,7 +82,7 @@ const exportPDF = (title: string, content: string) => {
       <title>${title}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 24px; border-bottom: 2px solid #D4A017; padding-bottom: 8px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
         h2 { font-size: 18px; color: #333; margin-top: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 12px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 13px; }
@@ -635,7 +635,7 @@ function DailyLogForm() {
         {/* Bulk Action Bar */}
         {selectMode && selectedLogIds.size > 0 && (
           <div style={{
-            position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0A1929',
+            position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FFFFFF',
             borderTop: `1px solid ${BORDER}`, padding: '12px 16px', display: 'flex', gap: 8,
             justifyContent: 'center', zIndex: 100,
           }}>
@@ -820,7 +820,7 @@ function DailyLogForm() {
           </Row>
           <Field label="Weather">
             <select value={weather} onChange={(e) => setWeather(e.target.value)} style={inp}>
-              {WEATHER_OPTS.map((o) => <option key={o} value={o} style={{ background: '#0D1D2E' }}>{o}</option>)}
+              {WEATHER_OPTS.map((o) => <option key={o} value={o} style={{ background: '#FFFFFF' }}>{o}</option>)}
             </select>
           </Field>
           <Row>
@@ -858,7 +858,7 @@ function DailyLogForm() {
                 } catch { /* ai unavailable */ }
                 setAiLoading(false);
               }}
-              style={{ flex: 1, background: aiLoading ? '#1E3A5F' : 'rgba(139,92,246,.15)', border: `1px solid rgba(139,92,246,.3)`, borderRadius: 10, padding: '10px', color: aiLoading ? DIM : PURPLE, fontSize: 13, fontWeight: 700, cursor: aiLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              style={{ flex: 1, background: aiLoading ? '#E5E5EA' : 'rgba(139,92,246,.15)', border: `1px solid rgba(139,92,246,.3)`, borderRadius: 10, padding: '10px', color: aiLoading ? DIM : PURPLE, fontSize: 13, fontWeight: 700, cursor: aiLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
               {aiLoading ? (
                 <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14} style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-9-9"/></svg> Drafting...</>
@@ -1249,7 +1249,7 @@ function DailyLogForm() {
               {sitePhotoPreviews.map((src, i) => (
                 <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Site photo ${i + 1}`} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #1E3A5F' }} />
+                  <img src={src} alt={`Site photo ${i + 1}`} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #E5E5EA' }} />
                   <button type="button" onClick={() => removeSitePhoto(i)} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: RED, border: 'none', color: '#fff', fontSize: 12, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>x</button>
                 </div>
               ))}
@@ -1262,8 +1262,8 @@ function DailyLogForm() {
           {signatureData ? (
             <div style={{ textAlign: 'center' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={signatureData} alt="Signature" style={{ maxWidth: '100%', height: 80, borderRadius: 8, border: '1px solid #1E3A5F' }} />
-              <button type="button" onClick={() => { setSignatureData(''); setShowSignature(true); }} style={{ marginTop: 6, background: 'transparent', border: '1px solid #1E3A5F', borderRadius: 8, padding: '6px 14px', color: DIM, fontSize: 12, cursor: 'pointer' }}>Re-sign</button>
+              <img src={signatureData} alt="Signature" style={{ maxWidth: '100%', height: 80, borderRadius: 8, border: '1px solid #E5E5EA' }} />
+              <button type="button" onClick={() => { setSignatureData(''); setShowSignature(true); }} style={{ marginTop: 6, background: 'transparent', border: '1px solid #E5E5EA', borderRadius: 8, padding: '6px 14px', color: DIM, fontSize: 12, cursor: 'pointer' }}>Re-sign</button>
             </div>
           ) : showSignature ? (
             <SignaturePad onSave={(d) => { setSignatureData(d); setShowSignature(false); }} onCancel={() => setShowSignature(false)} label="Superintendent Signature" />
@@ -1279,7 +1279,7 @@ function DailyLogForm() {
         <button
           type="submit"
           disabled={saving}
-          style={{ width: '100%', background: saving ? '#1E3A5F' : GOLD, border: 'none', borderRadius: 14, padding: '18px', color: saving ? DIM : '#000', fontSize: 17, fontWeight: 800, cursor: saving ? 'wait' : 'pointer', marginTop: 4, letterSpacing: 0.3 }}
+          style={{ width: '100%', background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 14, padding: '18px', color: saving ? DIM : '#000', fontSize: 17, fontWeight: 800, cursor: saving ? 'wait' : 'pointer', marginTop: 4, letterSpacing: 0.3 }}
         >
           {saving ? 'Submitting...' : online ? 'Submit Daily Log' : 'Save Offline'}
         </button>
@@ -1289,14 +1289,14 @@ function DailyLogForm() {
 }
 
 export default function FieldLogPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}><DailyLogForm /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><DailyLogForm /></Suspense>;
 }
 
 // ── Shared UI helpers ─────────────────────────────────────
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: '#0D1D2E', border: '1px solid #1E3A5F', borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 }}>
-      <p style={{ margin: '0 0 12px', fontSize: 11, fontWeight: 700, color: '#8BAAC8', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</p>
+    <div style={{ background: '#FFFFFF', border: '1px solid #E5E5EA', borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 }}>
+      <p style={{ margin: '0 0 12px', fontSize: 11, fontWeight: 700, color: '#6E6E73', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</p>
       {children}
     </div>
   );
@@ -1304,7 +1304,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <label style={{ display: 'block', fontSize: 12, color: '#8BAAC8', marginBottom: 5 }}>{label}</label>
+      <label style={{ display: 'block', fontSize: 12, color: '#6E6E73', marginBottom: 5 }}>{label}</label>
       {children}
     </div>
   );
@@ -1319,8 +1319,8 @@ function ErrorBox({ msg }: { msg: string }) {
   return <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', color: RED, fontSize: 14, marginBottom: 12 }}>{msg}</div>;
 }
 
-const inp: React.CSSProperties = { width: '100%', background: '#07101C', border: '1px solid #1E3A5F', borderRadius: 10, padding: '12px 14px', color: '#F0F4FF', fontSize: 15, outline: 'none' };
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#8BAAC8', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '12px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 
 const badgeStyle: React.CSSProperties = {
   background: GOLD,

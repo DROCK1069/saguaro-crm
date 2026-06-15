@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 const WAIVER_TYPES = [
@@ -150,7 +150,7 @@ export default function LienWaiversPage() {
             + Generate Waiver
           </button>
           <button onClick={generateAll} disabled={genAll}
-            style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:genAll?'wait':'pointer',opacity:genAll?.6:1}}>
+            style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:DARK,fontSize:13,fontWeight:800,cursor:genAll?'wait':'pointer',opacity:genAll?.6:1}}>
             {genAll ? 'Generating…' : '⚡ Generate All'}
           </button>
         </div>
@@ -191,7 +191,7 @@ export default function LienWaiversPage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button onClick={generate} disabled={generating}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:generating?'wait':'pointer',opacity:generating?.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontWeight:800,fontSize:13,cursor:generating?'wait':'pointer',opacity:generating?.6:1}}>
               {generating ? 'Generating…' : 'Generate PDF'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -223,7 +223,7 @@ export default function LienWaiversPage() {
               AZ (ARS §33-1008), CA (Civil Code §8132), TX (Property Code Ch. 53) statutory forms included.
             </div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#F0C040)`,border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:DARK,fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Generate First Waiver
             </button>
           </div>

@@ -9,11 +9,11 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -98,7 +98,7 @@ function formatPct(val: number): string {
 /* ── Shared Styles ─────────────────────────────────────── */
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 12 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#0A1628', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none' as const, WebkitAppearance: 'none' as const };
 const labelStyle: React.CSSProperties = { display: 'block', color: DIM, fontSize: 12, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 };
 const btnPrimary: React.CSSProperties = { background: GOLD, color: '#000', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 700, fontSize: 15, cursor: 'pointer', width: '100%' };
@@ -447,7 +447,7 @@ function ContractsPage() {
 
   function renderList() {
     return (
-      <div style={{ minHeight: '100vh', background: '#0A1628', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#FFFFFF', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         <div style={{ padding: '16px 16px 120px' }}>
           {/* Header */}
           <div style={{ ...rowFlex, marginBottom: 16 }}>
@@ -541,7 +541,7 @@ function ContractsPage() {
     const nextStatus = canAdvance ? STATUS_LABELS[WORKFLOW_ORDER[WORKFLOW_ORDER.indexOf(c.status) + 1]] : null;
 
     return (
-      <div style={{ minHeight: '100vh', background: '#0A1628', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#FFFFFF', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         <div style={{ padding: '16px 16px 120px' }}>
           {/* Back */}
           <button onClick={() => setView('list')} style={backBtn}>&larr; Back to Contracts</button>
@@ -755,7 +755,7 @@ function ContractsPage() {
 
   function renderCreate() {
     return (
-      <div style={{ minHeight: '100vh', background: '#0A1628', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#FFFFFF', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         <div style={{ padding: '16px 16px 120px' }}>
           <button onClick={() => setView('list')} style={backBtn}>&larr; Cancel</button>
           <h2 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 800, color: TEXT }}>New Contract</h2>
@@ -927,7 +927,7 @@ function ContractsPage() {
             <div>
               <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus style={{ width: '100%', padding: '12px', background: RAISED, border: `1px solid ${GOLD}`, borderRadius: 8, color: TEXT, fontSize: 16, textAlign: 'center', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditContract(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 8, color: '#0d1117', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
+                <button onClick={() => { const v = parseFloat(editVal); if (!isNaN(v) && v >= 0) handleEditContract(v); }} style={{ flex: 1, padding: '12px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#F2F2F7', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Save</button>
                 <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '12px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
@@ -958,7 +958,7 @@ function ContractsPage() {
 
 export default function ContractsPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0A1628', color: '#8BAAC8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#FFFFFF', color: '#6E6E73', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>Loading...</div>}>
       <ContractsPage />
     </Suspense>
   );

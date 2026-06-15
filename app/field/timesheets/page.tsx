@@ -8,11 +8,11 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -473,7 +473,7 @@ function TimesheetsInner() {
 
   /* ────────────────────────── RENDER ────────────────────────── */
   return (
-    <div style={{ background: '#0A1628', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ background: '#FFFFFF', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       {/* ── Toast ── */}
       {toast && (
         <div style={{
@@ -1212,8 +1212,8 @@ function TimesheetsInner() {
 export default function TimesheetsPage() {
   return (
     <Suspense fallback={
-      <div style={{ background: '#0A1628', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#D4A017', fontWeight: 700, fontSize: 16 }}>Loading Timesheets...</div>
+      <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#C8881C', fontWeight: 700, fontSize: 16 }}>Loading Timesheets...</div>
       </div>
     }>
       <TimesheetsInner />

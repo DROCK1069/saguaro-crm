@@ -1,9 +1,9 @@
 'use client';
 
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
-const GOLD = '#D4A017';
+const DARK = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const GOLD = '#C8881C';
 
 function Pulse({ w, h, mb }: { w: string; h: number; mb?: number }) {
   return (

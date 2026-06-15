@@ -10,12 +10,12 @@ import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
 /* ── colour tokens ─────────────────────────────────────────────── */
-const GOLD   = '#D4A017';
-const BG     = '#07101C';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const BG     = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -982,8 +982,8 @@ export default function Page() {
     <Suspense fallback={
       <div style={{
         minHeight: '100vh',
-        background: '#07101C',
-        color: '#F0F4FF',
+        background: '#F2F2F7',
+        color: '#1C1C1E',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -991,7 +991,7 @@ export default function Page() {
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>&#8635;</div>
-          <div style={{ fontSize: 14, color: '#8BAAC8' }}>Loading Prequalification...</div>
+          <div style={{ fontSize: 14, color: '#6E6E73' }}>Loading Prequalification...</div>
         </div>
       </div>
     }>

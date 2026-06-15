@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#D4A017', DARK = '#0F1419', CARD = '#1A1F2E', BORDER = '#263347';
-const DIM = '#8fa3c0', TEXT = '#e8edf8', GREEN = '#22C55E', RED = '#EF4444';
+const GOLD = '#C8881C', DARK = '#F2F2F7', CARD = '#FFFFFF', BORDER = '#E5E5EA';
+const DIM = '#6E6E73', TEXT = '#1C1C1E', GREEN = '#22C55E', RED = '#EF4444';
 
 type Integration = {
   key: string;
@@ -294,8 +294,8 @@ export default function IntegrationsPage() {
           <Link
             href="/app/integrations/api-docs"
             style={{
-              padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#F0C040)`,
-              color: '#0d1117', borderRadius: 8, fontWeight: 800, fontSize: 13, textDecoration: 'none',
+              padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+              color: '#F2F2F7', borderRadius: 8, fontWeight: 800, fontSize: 13, textDecoration: 'none',
             }}
           >
             API Docs
@@ -414,7 +414,7 @@ export default function IntegrationsPage() {
                           href="/app/integrations/quickbooks"
                           style={{
                             flex: 1, padding: '8px 0', textAlign: 'center', borderRadius: 8,
-                            background: `linear-gradient(135deg,${GOLD},#F0C040)`, color: '#0d1117',
+                            background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: '#F2F2F7',
                             fontSize: 12, fontWeight: 700, textDecoration: 'none',
                           }}
                         >
@@ -451,8 +451,8 @@ export default function IntegrationsPage() {
                     disabled={connectingKey === intg.key}
                     style={{
                       flex: 1, padding: '9px 0', borderRadius: 8, cursor: 'pointer',
-                      background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none',
-                      color: '#0d1117', fontSize: 13, fontWeight: 700,
+                      background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                      color: '#F2F2F7', fontSize: 13, fontWeight: 700,
                       opacity: connectingKey === intg.key ? 0.6 : 1,
                     }}
                   >
@@ -567,8 +567,8 @@ export default function IntegrationsPage() {
                 disabled={!setupForm.api_url || connectingKey === 'sage300'}
                 style={{
                   padding: '10px 24px', borderRadius: 8, cursor: 'pointer',
-                  background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none',
-                  color: '#0d1117', fontSize: 13, fontWeight: 700,
+                  background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                  color: '#F2F2F7', fontSize: 13, fontWeight: 700,
                   opacity: !setupForm.api_url || connectingKey === 'sage300' ? 0.5 : 1,
                 }}
               >

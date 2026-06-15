@@ -7,11 +7,11 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -1018,7 +1018,7 @@ function DocsPage() {
     const currentVersion = currentVersions.find((v) => v.isCurrent);
     const containerStyle: React.CSSProperties = fullScreen
       ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: '#000', display: 'flex', flexDirection: 'column' }
-      : { padding: '18px 16px', minHeight: '100vh', background: '#060C15' };
+      : { padding: '18px 16px', minHeight: '100vh', background: '#F2F2F7' };
 
     return (
       <div style={containerStyle}>
@@ -1228,7 +1228,7 @@ function DocsPage() {
   ];
 
   return (
-    <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#060C15' }}>
+    <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#F2F2F7' }}>
       {/* Hidden file input for version uploads */}
       <input
         ref={fileInputRef}
@@ -1591,17 +1591,17 @@ function DocsPage() {
 }
 
 export default function FieldDocsPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}><DocsPage /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><DocsPage /></Suspense>;
 }
 
 const backBtn: React.CSSProperties = {
-  background: 'none', border: 'none', color: '#8BAAC8', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'flex', alignItems: 'center',
+  background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'flex', alignItems: 'center',
 };
 
 const iconBtn: React.CSSProperties = {
-  background: 'rgba(13,29,46,.8)', border: `1px solid #1E3A5F`, borderRadius: 8, padding: 6, color: '#8BAAC8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: 'rgba(13,29,46,.8)', border: `1px solid #E5E5EA`, borderRadius: 8, padding: 6, color: '#6E6E73', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
 const smallBtn: React.CSSProperties = {
-  padding: '4px 10px', borderRadius: 6, background: 'transparent', border: `1px solid #1E3A5F`, color: '#8BAAC8', fontSize: 11, cursor: 'pointer',
+  padding: '4px 10px', borderRadius: 6, background: 'transparent', border: `1px solid #E5E5EA`, color: '#6E6E73', fontSize: 11, cursor: 'pointer',
 };

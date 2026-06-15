@@ -2,11 +2,11 @@
 import React, { useEffect, useState } from 'react';
 
 const GOLD  = '#F59E0B';
-const DARK  = '#0d1117';
-const RAISED = '#0F172A';
-const BORDER = '#1E3A5F';
-const DIM   = '#CBD5E1';
-const TEXT  = '#F8FAFC';
+const DARK  = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM   = '#6E6E73';
+const TEXT  = '#1C1C1E';
 const GREEN = '#22c55e';
 
 export default function WelcomePage() {
@@ -41,7 +41,7 @@ export default function WelcomePage() {
         </p>
 
         {/* ACCESS CALLOUT — most important box */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(13,17,23,0) 100%)', border: `1.5px solid rgba(245,158,11,0.4)`, borderRadius: 16, padding: '28px 32px', marginBottom: 32 }}>
+        <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(255,255,255,0) 100%)', border: `1.5px solid rgba(245,158,11,0.4)`, borderRadius: 16, padding: '28px 32px', marginBottom: 32 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>How to access your software</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
             Open any browser and go to{' '}

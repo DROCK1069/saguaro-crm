@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD = '#D4A017', BORDER = '#1E3A5F', TEXT = '#F0F4FF', DIM = '#8BAAC8';
+const GOLD = '#C8881C', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
 
 interface FilterOption {
   label: string;
@@ -90,7 +90,7 @@ export default function SearchFilter({
               }}
             >
               {sortOptions.map(s => (
-                <option key={s.value} value={s.value} style={{ background: '#0D1D2E' }}>{s.label}</option>
+                <option key={s.value} value={s.value} style={{ background: '#FFFFFF' }}>{s.label}</option>
               ))}
             </select>
           )}

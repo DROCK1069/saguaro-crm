@@ -36,12 +36,12 @@ interface SageV6ChatProps {
 // ─── PALETTE ───────────────────────────────────────────────────────────────────
 
 const C = {
-  DARK:   '#0d1117',
-  RAISED: '#111827',
-  BORDER: '#1f2c3e',
-  GOLD:   '#D4A017',
-  TEXT:   '#e8edf8',
-  DIM:    '#8fa3c0',
+  DARK:   '#F2F2F7',
+  RAISED: '#FFFFFF',
+  BORDER: '#FFFFFF',
+  GOLD:   '#C8881C',
+  TEXT:   '#1C1C1E',
+  DIM:    '#6E6E73',
   GREEN:  '#1a8a4a',
   RED:    '#c03030',
   BLUE:   '#1a5fa8',
@@ -400,11 +400,11 @@ export default function SageV6Chat({
         .sageV6-scroll::-webkit-scrollbar          { width: 4px; }
         .sageV6-scroll::-webkit-scrollbar-track    { background: transparent; }
         .sageV6-scroll::-webkit-scrollbar-thumb    { background: rgba(212,160,23,0.22); border-radius: 2px; }
-        .sageV6-bubble strong { color: #D4A017; }
+        .sageV6-bubble strong { color: #C8881C; }
         .sageV6-bubble em     { color: #c8d4e8; }
-        .sageV6-bubble code   { background: rgba(212,160,23,0.12); color: #D4A017; padding: 1px 5px; border-radius: 4px; font-size: 12px; font-family: monospace; }
+        .sageV6-bubble code   { background: rgba(212,160,23,0.12); color: #C8881C; padding: 1px 5px; border-radius: 4px; font-size: 12px; font-family: monospace; }
         .sageV6-bubble ul     { margin: 6px 0; padding-left: 18px; }
-        .sageV6-bubble li     { margin: 3px 0; color: #e8edf8; }
+        .sageV6-bubble li     { margin: 3px 0; color: #1C1C1E; }
         .sageV6-bubble p      { margin: 0 0 8px; }
         .sageV6-bubble p:last-child { margin: 0; }
         .sageV6-chip:hover    { background: rgba(212,160,23,0.16) !important; transform: translateY(-1px); box-shadow: 0 3px 12px rgba(212,160,23,0.15); }
@@ -768,7 +768,7 @@ export default function SageV6Chat({
             flexShrink: 0,
             borderTop: `1px solid ${C.BORDER}`,
             padding: '12px 14px 14px',
-            background: 'rgba(13,17,23,0.6)',
+            background: 'rgba(255,255,255,0.6)',
           }}>
             <div style={{
               display: 'flex', alignItems: 'flex-end', gap: 10,

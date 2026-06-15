@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
-const GOLD   = '#D4A017';
-const BG     = '#07101C';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const BG     = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -823,7 +823,7 @@ export default function EstimateBuilderPage() {
                               ) : editId === item.id ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                   <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditLine(div.code, item.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 100, padding: '4px 8px', background: BG, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
-                                  <button onClick={() => handleEditLine(div.code, item.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 5, color: '#0d1117', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                                  <button onClick={() => handleEditLine(div.code, item.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 5, color: '#F2F2F7', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                                   <button onClick={() => setEditId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                                 </div>
                               ) : adjustId === item.id ? (

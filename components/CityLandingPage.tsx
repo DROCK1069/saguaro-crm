@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { City } from '@/lib/cities';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const DARK = '#0d1117';
+const DARK = '#F2F2F7';
 const GOLD = '#F59E0B';
-const TEXT = '#F8FAFC';
-const DIM = '#CBD5E1';
-const BORDER = '#1E3A5F';
-const RAISED = '#0F172A';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
+const RAISED = '#FFFFFF';
 const GREEN = '#22c55e';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export default function CityLandingPage({ city }: { city: City }) {
         {/* ── Nav ─────────────────────────────────────────────────────────── */}
         <nav style={{
           position: 'sticky', top: 0, zIndex: 100,
-          background: 'rgba(13,17,23,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
           borderBottom: `1px solid ${BORDER}`, height: '58px',
           display: 'flex', alignItems: 'center',
         }}>
@@ -217,15 +217,15 @@ export default function CityLandingPage({ city }: { city: City }) {
             <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
               <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: '34px', width: 'auto', objectFit: 'contain', borderRadius: '4px' }} />
               <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-                <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#D4A017,#F0C040)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
-                <span style={{ fontSize: '7px', color: '#8fa3c0', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
+                <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#C8881C,#E0A030)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
+                <span style={{ fontSize: '7px', color: '#6E6E73', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
               </span>
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Link href="/login" style={{ padding: '7px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>
                 Log In
               </Link>
-              <Link href="/signup" style={{ padding: '7px 16px', background: '#D4A017', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textDecoration: 'none' }}>
+              <Link href="/signup" style={{ padding: '7px 16px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textDecoration: 'none' }}>
                 Free Trial
               </Link>
             </div>
@@ -265,7 +265,7 @@ export default function CityLandingPage({ city }: { city: City }) {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
             <Link href="/signup" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '14px 28px', background: `linear-gradient(135deg, #D4A017, ${GOLD})`,
+              padding: '14px 28px', background: `linear-gradient(135deg, #C8881C, ${GOLD})`,
               borderRadius: '8px', color: '#000', fontWeight: 700, fontSize: '15px',
               textDecoration: 'none', letterSpacing: '0.02em',
               boxShadow: '0 4px 24px rgba(212,160,23,0.35)',
@@ -283,7 +283,7 @@ export default function CityLandingPage({ city }: { city: City }) {
           </div>
 
           {/* Trust line */}
-          <p style={{ textAlign: 'center', fontSize: '12px', color: '#64748b', margin: '0 0 40px', letterSpacing: '0.04em' }}>
+          <p style={{ textAlign: 'center', fontSize: '12px', color: '#6E6E73', margin: '0 0 40px', letterSpacing: '0.04em' }}>
             30-day free trial &middot; No credit card &middot; Month-to-month &middot; Cancel anytime
           </p>
 
@@ -324,7 +324,7 @@ export default function CityLandingPage({ city }: { city: City }) {
                     <span style={{ color: GREEN, flexShrink: 0 }}><IconCheck /></span>
                     <span style={{ fontWeight: 700, fontSize: '13px', color: TEXT, lineHeight: 1.3 }}>{item.label}</span>
                   </div>
-                  <p style={{ margin: '0 0 0 24px', fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>{item.sub}</p>
+                  <p style={{ margin: '0 0 0 24px', fontSize: '12px', color: '#6E6E73', lineHeight: 1.5 }}>{item.sub}</p>
                 </div>
               ))}
             </div>
@@ -393,8 +393,8 @@ export default function CityLandingPage({ city }: { city: City }) {
             <div style={{ borderRadius: '12px', border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
               {/* Header */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: '#0a0f18', padding: '14px 20px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Feature</span>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>Manual / Excel</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#6E6E73', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Feature</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#6E6E73', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>Manual / Excel</span>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: GOLD, letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>Saguaro CRM</span>
               </div>
 
@@ -403,13 +403,13 @@ export default function CityLandingPage({ city }: { city: City }) {
                   display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
                   padding: '16px 20px',
                   borderTop: `1px solid ${BORDER}`,
-                  background: i % 2 === 0 ? DARK : 'rgba(15,23,42,0.6)',
+                  background: i % 2 === 0 ? DARK : 'rgba(242,242,247,0.6)',
                   alignItems: 'center',
                 }}>
                   <span style={{ fontSize: '14px', fontWeight: 600, color: TEXT }}>{row.feature}</span>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     <IconX />
-                    <span style={{ fontSize: '13px', color: '#94a3b8' }}>{row.manual}</span>
+                    <span style={{ fontSize: '13px', color: '#6E6E73' }}>{row.manual}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     <IconCheck />
@@ -435,7 +435,7 @@ export default function CityLandingPage({ city }: { city: City }) {
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
             <Link href="/signup" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '15px 32px', background: `linear-gradient(135deg, #D4A017, ${GOLD})`,
+              padding: '15px 32px', background: `linear-gradient(135deg, #C8881C, ${GOLD})`,
               borderRadius: '8px', color: '#000', fontWeight: 700, fontSize: '15px',
               textDecoration: 'none', letterSpacing: '0.02em',
               boxShadow: '0 4px 28px rgba(212,160,23,0.4)',
@@ -451,7 +451,7 @@ export default function CityLandingPage({ city }: { city: City }) {
               Try AI Takeoff Free &rarr;
             </Link>
           </div>
-          <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+          <p style={{ fontSize: '12px', color: '#6E6E73', margin: 0 }}>
             30-day free trial &middot; No credit card &middot; Month-to-month &middot; Cancel anytime
           </p>
         </section>
@@ -461,7 +461,7 @@ export default function CityLandingPage({ city }: { city: City }) {
           <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
             <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
               <img src="/logo-full.jpg" alt="Saguaro" style={{ height: '28px', width: 'auto', borderRadius: '3px' }} />
-              <span style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#D4A017,#F0C040)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
+              <span style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#C8881C,#E0A030)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
             </Link>
             <nav style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
@@ -473,7 +473,7 @@ export default function CityLandingPage({ city }: { city: City }) {
                 { label: 'Privacy', href: '/privacy' },
                 { label: 'Terms', href: '/terms' },
               ].map(link => (
-                <Link key={link.href} href={link.href} style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>
+                <Link key={link.href} href={link.href} style={{ fontSize: '12px', color: '#6E6E73', textDecoration: 'none' }}>
                   {link.label}
                 </Link>
               ))}

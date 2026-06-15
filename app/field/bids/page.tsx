@@ -8,11 +8,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SwipeActionItem } from '@/components/field/SwipeAction';
 
-const GOLD = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT = '#F0F4FF';
-const DIM = '#8BAAC8';
+const GOLD = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
 const GREEN = '#22C55E';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
@@ -110,13 +110,13 @@ function daysUntil(d: string | undefined): number | null {
 /* ── Styles ────────────────────────────────────────────── */
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 12 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#0A1628', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const btnPrimary: React.CSSProperties = { padding: '10px 22px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14 };
 const btnSecondary: React.CSSProperties = { padding: '10px 22px', background: 'transparent', color: DIM, fontWeight: 600, border: `1px solid ${BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 14 };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: 0, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 };
 const badge = (bg: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${bg}22`, color: bg });
 const tabStyle = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? GOLD : 'transparent', color: active ? '#000' : DIM, fontWeight: 700, border: `1px solid ${active ? GOLD : BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 13, transition: 'all .2s' });
-const thStyle: React.CSSProperties = { textAlign: 'left', padding: '10px 12px', fontSize: 12, fontWeight: 700, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap', position: 'sticky' as const, top: 0, background: '#0A1628', zIndex: 1 };
+const thStyle: React.CSSProperties = { textAlign: 'left', padding: '10px 12px', fontSize: 12, fontWeight: 700, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap', position: 'sticky' as const, top: 0, background: '#FFFFFF', zIndex: 1 };
 const tdStyle: React.CSSProperties = { padding: '10px 12px', fontSize: 13, color: TEXT, borderBottom: `1px solid ${BORDER}08` };
 
 /* ── Main Component ────────────────────────────────────── */
@@ -475,7 +475,7 @@ function BidsPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', background: RAISED, borderRadius: 14, overflow: 'hidden' }}>
               <thead>
-                <tr style={{ background: '#0A1628' }}>
+                <tr style={{ background: '#FFFFFF' }}>
                   <th style={thStyle}>Line Item</th>
                   {bidders.map((b, i) => (
                     <th key={b.bidder_id} style={{ ...thStyle, textAlign: 'right', minWidth: 120 }}>
@@ -509,7 +509,7 @@ function BidsPage() {
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#0A1628' }}>
+                <tr style={{ background: '#FFFFFF' }}>
                   <td style={{ ...tdStyle, fontWeight: 800, color: TEXT }}>TOTAL</td>
                   {ranked.map((b, i) => {
                     const isLowest = i === 0;
@@ -545,7 +545,7 @@ function BidsPage() {
                         {formatUSD(b.total)}{diff > 0 ? ` (+${formatUSD(diff)})` : ''}
                       </span>
                     </div>
-                    <div style={{ height: 24, background: '#0A1628', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ height: 24, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
                       <div style={{
                         height: '100%',
                         width: `${Math.min(100, pct)}%`,
@@ -587,7 +587,7 @@ function BidsPage() {
                     return (
                       <div key={b.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ width: 100, fontSize: 11, color: DIM, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', flexShrink: 0 }}>{b.name}</span>
-                        <div style={{ flex: 1, height: 14, background: '#0A1628', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ flex: 1, height: 14, background: '#FFFFFF', borderRadius: 4, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${pct}%`, background: isLowest ? GREEN : Math.abs(deviation) > 20 ? RED : BLUE, borderRadius: 4, transition: 'width .4s' }} />
                         </div>
                         <span style={{ width: 80, textAlign: 'right', fontSize: 12, fontWeight: 600, color: isLowest ? GREEN : TEXT, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
@@ -756,7 +756,7 @@ function BidsPage() {
                     rightAction={{ label: 'Delete', color: RED, icon: '🗑️', onAction: () => setDeleteConfirm(b.bidder_id) }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: i < comparison.bidders.length - 1 ? `1px solid ${BORDER}08` : 'none', background: RAISED }}>
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: i === 0 ? `${GREEN}22` : '#0A1628', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i === 0 ? GREEN : DIM, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: i === 0 ? `${GREEN}22` : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: i === 0 ? GREEN : DIM, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
                         #{i + 1}
                       </div>
                       <div style={{ flex: 1 }}>
@@ -889,7 +889,7 @@ function BidsPage() {
             {/* Mini progress bar for bid submissions */}
             {invCount > 0 && (
               <div style={{ marginTop: 8 }}>
-                <div style={{ height: 4, background: '#0A1628', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: 4, background: '#FFFFFF', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${(submittedCount / invCount) * 100}%`, background: submittedCount === invCount ? GREEN : AMBER, borderRadius: 3, transition: 'width .4s' }} />
                 </div>
               </div>
@@ -928,8 +928,8 @@ function MoneyActionSheet({
       <div style={{ padding: '8px 20px 24px' }}>
         {/* Current amount display */}
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: '#8BAAC8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Current Amount</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#F0F4FF', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: 11, color: '#6E6E73', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Current Amount</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#1C1C1E', fontVariantNumeric: 'tabular-nums' }}>
             {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(actionSheet.amount)}
           </div>
         </div>
@@ -937,7 +937,7 @@ function MoneyActionSheet({
         {sheetMode === 'menu' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {menuItems.map(item => (
-              <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'transparent', border: `1px solid #1E3A5F`, borderRadius: 10, color: '#F0F4FF', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>
+              <button key={item.label} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'transparent', border: `1px solid #E5E5EA`, borderRadius: 10, color: '#1C1C1E', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}>
                 <span style={{ fontSize: 20 }}>{item.icon}</span>{item.label}
               </button>
             ))}
@@ -946,16 +946,16 @@ function MoneyActionSheet({
 
         {sheetMode === 'edit' && (
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#8BAAC8', fontWeight: 700, marginBottom: 6 }}>New Amount ($)</label>
+            <label style={{ display: 'block', fontSize: 12, color: '#6E6E73', fontWeight: 700, marginBottom: 6 }}>New Amount ($)</label>
             <input
               value={editVal} onChange={e => setEditVal(e.target.value)}
               type="number" inputMode="decimal" autoFocus
               onKeyDown={e => { if (e.key === 'Enter') onSaveEdit(); }}
-              style={{ width: '100%', padding: '14px 16px', background: '#0A1628', border: '1px solid #D4A017', borderRadius: 10, color: '#F0F4FF', fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
+              style={{ width: '100%', padding: '14px 16px', background: '#FFFFFF', border: '1px solid #C8881C', borderRadius: 10, color: '#1C1C1E', fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
             />
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <button onClick={onSaveEdit} style={{ flex: 1, padding: '14px', background: '#D4A017', color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Save</button>
-              <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '14px', background: 'transparent', color: '#8BAAC8', fontWeight: 600, border: '1px solid #1E3A5F', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Back</button>
+              <button onClick={onSaveEdit} style={{ flex: 1, padding: '14px', background: '#C8881C', color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Save</button>
+              <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '14px', background: 'transparent', color: '#6E6E73', fontWeight: 600, border: '1px solid #E5E5EA', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Back</button>
             </div>
           </div>
         )}
@@ -973,21 +973,21 @@ function MoneyActionSheet({
                 </button>
               ))}
             </div>
-            <button onClick={() => setSheetMode('menu')} style={{ width: '100%', padding: '12px', background: 'transparent', color: '#8BAAC8', fontWeight: 600, border: '1px solid #1E3A5F', borderRadius: 10, fontSize: 14, cursor: 'pointer' }}>Back</button>
+            <button onClick={() => setSheetMode('menu')} style={{ width: '100%', padding: '12px', background: 'transparent', color: '#6E6E73', fontWeight: 600, border: '1px solid #E5E5EA', borderRadius: 10, fontSize: 14, cursor: 'pointer' }}>Back</button>
           </div>
         )}
 
         {sheetMode === 'note' && (
           <div>
-            <label style={{ display: 'block', fontSize: 12, color: '#8BAAC8', fontWeight: 700, marginBottom: 6 }}>Note</label>
+            <label style={{ display: 'block', fontSize: 12, color: '#6E6E73', fontWeight: 700, marginBottom: 6 }}>Note</label>
             <textarea
               value={noteVal} onChange={e => setNoteVal(e.target.value)}
               rows={3} autoFocus placeholder="e.g. Updated per sub quote 3/25"
-              style={{ width: '100%', padding: '12px 14px', background: '#0A1628', border: '1px solid #D4A017', borderRadius: 10, color: '#F0F4FF', fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px 14px', background: '#FFFFFF', border: '1px solid #C8881C', borderRadius: 10, color: '#1C1C1E', fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
             />
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <button onClick={onSaveNote} disabled={!noteVal.trim()} style={{ flex: 1, padding: '14px', background: '#D4A017', color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer', opacity: noteVal.trim() ? 1 : 0.5 }}>Save Note</button>
-              <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '14px', background: 'transparent', color: '#8BAAC8', fontWeight: 600, border: '1px solid #1E3A5F', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Back</button>
+              <button onClick={onSaveNote} disabled={!noteVal.trim()} style={{ flex: 1, padding: '14px', background: '#C8881C', color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer', opacity: noteVal.trim() ? 1 : 0.5 }}>Save Note</button>
+              <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '14px', background: 'transparent', color: '#6E6E73', fontWeight: 600, border: '1px solid #E5E5EA', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Back</button>
             </div>
           </div>
         )}
@@ -998,7 +998,7 @@ function MoneyActionSheet({
 
 export default function BidsPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#8BAAC8' }}>Loading bid management...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6E6E73' }}>Loading bid management...</div>}>
       <BidsPage />
     </Suspense>
   );

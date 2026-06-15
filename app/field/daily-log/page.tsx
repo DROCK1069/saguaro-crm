@@ -10,12 +10,12 @@ import VoiceToLog from '../../../components/field/VoiceToLog';
 import OfflineSyncStatus from '../../../components/field/OfflineSyncStatus';
 import { queueAction, isOnline } from '../../../lib/offline-sync';
 
-const GOLD   = '#D4A017';
-const DARK   = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
-const DIM    = '#8fa3c0';
-const TEXT   = '#e8edf8';
+const GOLD   = '#C8881C';
+const DARK   = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM    = '#6E6E73';
+const TEXT   = '#1C1C1E';
 
 /* ── WMO weather-code map ─────────────────────────────────── */
 const WMO: Record<number, string> = {

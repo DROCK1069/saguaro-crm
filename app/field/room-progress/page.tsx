@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
-const GOLD='#D4A017',BASE='#0F1419',TEXT='#F0F4FF',DIM='#8BAAC8',GREEN='#22C55E',BLUE='#3B82F6',RED='#EF4444',BORDER='#1E3A5F';
+const GOLD='#C8881C',BASE='#F2F2F7',TEXT='#1C1C1E',DIM='#6E6E73',GREEN='#22C55E',BLUE='#3B82F6',RED='#EF4444',BORDER='#E5E5EA';
 const glass:React.CSSProperties={background:'rgba(26,31,46,0.85)',backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:16};
 const inp:React.CSSProperties={width:'100%',background:BASE,border:'1px solid '+BORDER,borderRadius:10,padding:'10px 14px',color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box' as const};
 const HEAT=[{max:0,color:'#374151'},{max:25,color:'#EF4444'},{max:50,color:'#F97316'},{max:75,color:'#EAB308'},{max:99,color:'#3B82F6'},{max:100,color:'#22C55E'}];
@@ -73,4 +73,4 @@ return(<div key={room.id} style={{...glass,padding:14,borderLeft:'3px solid '+he
 </div>
 );
 }
-export default function FieldRoomProgressPage(){return(<Suspense fallback={<div style={{padding:32,color:'#8BAAC8',textAlign:'center'}}>Loading...</div>}><RoomProgressPage/></Suspense>);}
+export default function FieldRoomProgressPage(){return(<Suspense fallback={<div style={{padding:32,color:'#6E6E73',textAlign:'center'}}>Loading...</div>}><RoomProgressPage/></Suspense>);}

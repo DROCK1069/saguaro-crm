@@ -4,19 +4,19 @@ import Link from 'next/link';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { WarningCircle } from '@phosphor-icons/react';
 
-const GOLD = '#D4A017';
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const GOLD = '#C8881C';
+const DARK = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 const GREEN = '#3dd68c';
 const RED = '#ef4444';
 
 const fmt = (n: number | null | undefined) =>
   '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function Badge({ label, color = '#94a3b8', bg = 'rgba(148,163,184,.12)' }: { label: string; color?: string; bg?: string }) {
+function Badge({ label, color = '#6E6E73', bg = 'rgba(148,163,184,.12)' }: { label: string; color?: string; bg?: string }) {
   return (
     <span style={{
       fontSize: 10, fontWeight: 700, padding: '2px 8px',
@@ -39,9 +39,9 @@ function ErrorRow({ colSpan, message, onRetry }: { colSpan: number; message: str
             onClick={onRetry}
             style={{
               padding: '7px 18px',
-              background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+              background: `linear-gradient(135deg,${GOLD},#E0A030)`,
               border: 'none', borderRadius: 7,
-              color: '#0d1117', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              color: '#F2F2F7', fontSize: 12, fontWeight: 800, cursor: 'pointer',
             }}
           >Retry</button>
         </div>
@@ -205,7 +205,7 @@ export default function DocumentsPage() {
   }
 
   const projectSelectStyle: React.CSSProperties = {
-    background: '#0a1117', border: `1px solid ${BORDER}`, borderRadius: 7,
+    background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 7,
     color: TEXT, fontSize: 13, fontWeight: 600, padding: '8px 12px', cursor: 'pointer',
   };
 
@@ -228,7 +228,7 @@ export default function DocumentsPage() {
       <div style={{
         display: 'flex', gap: 0,
         borderBottom: `1px solid ${BORDER}`,
-        background: '#0a1117', paddingLeft: 24,
+        background: '#F2F2F7', paddingLeft: 24,
         overflowX: 'auto',
       }}>
         {TABS.map(tab => {
@@ -262,15 +262,15 @@ export default function DocumentsPage() {
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Pay Applications (AIA G702 / G703)</div>
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#F0C040)`,
-                borderRadius: 7, color: '#0d1117', fontSize: 13, fontWeight: 800,
+                background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate New</Link>
             </div>
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#0a1117' }}>
+                  <tr style={{ background: '#F2F2F7' }}>
                     {['Application #', 'Period', 'Amount Due', 'Status', 'Download'].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', textAlign: 'left',
@@ -327,15 +327,15 @@ export default function DocumentsPage() {
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Lien Waivers</div>
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#F0C040)`,
-                borderRadius: 7, color: '#0d1117', fontSize: 13, fontWeight: 800,
+                background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate New</Link>
             </div>
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#0a1117' }}>
+                  <tr style={{ background: '#F2F2F7' }}>
                     {['Sub Name', 'Type', 'Amount', 'Through Date', 'Status', 'Download'].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', textAlign: 'left',
@@ -421,9 +421,9 @@ export default function DocumentsPage() {
                   }}
                   style={{
                     padding: '8px 16px',
-                    background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+                    background: `linear-gradient(135deg,${GOLD},#E0A030)`,
                     border: 'none', borderRadius: 7,
-                    color: '#0d1117', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                    color: '#F2F2F7', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                     opacity: busyKey === 'bond-new' ? 0.6 : 1,
                   }}>{busyKey === 'bond-new' ? 'Generating…' : '+ Generate New'}</button>
               </div>
@@ -454,9 +454,9 @@ export default function DocumentsPage() {
                     }}
                     style={{
                       marginTop: 4, padding: '8px 0', width: '100%',
-                      background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+                      background: `linear-gradient(135deg,${GOLD},#E0A030)`,
                       border: 'none', borderRadius: 7,
-                      color: '#0d1117', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                      color: '#F2F2F7', fontSize: 12, fontWeight: 800, cursor: 'pointer',
                       opacity: busyKey === `bond-${card.code}` ? 0.6 : 1,
                     }}>{busyKey === `bond-${card.code}` ? 'Generating…' : `Generate ${card.code}`}</button>
                 </div>
@@ -472,15 +472,15 @@ export default function DocumentsPage() {
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Certified Payroll (WH-347)</div>
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#F0C040)`,
-                borderRadius: 7, color: '#0d1117', fontSize: 13, fontWeight: 800,
+                background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                borderRadius: 7, color: '#F2F2F7', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate WH-347</Link>
             </div>
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#0a1117' }}>
+                  <tr style={{ background: '#F2F2F7' }}>
                     {['Week Ending', '# Employees', 'Total Gross', 'Status', 'Download'].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', textAlign: 'left',
@@ -553,9 +553,9 @@ export default function DocumentsPage() {
                   }}
                   style={{
                     padding: '8px 16px',
-                    background: `linear-gradient(135deg,${GOLD},#F0C040)`,
+                    background: `linear-gradient(135deg,${GOLD},#E0A030)`,
                     border: 'none', borderRadius: 7,
-                    color: '#0d1117', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                    color: '#F2F2F7', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                     opacity: busyKey === 'closeout' ? 0.6 : 1,
                   }}>{busyKey === 'closeout' ? 'Generating…' : '+ Export Closeout Package'}</button>
               </div>
@@ -577,7 +577,7 @@ export default function DocumentsPage() {
                   <div style={{ height: 8, background: 'rgba(255,255,255,.06)', borderRadius: 4 }}>
                     <div style={{
                       height: '100%', width: `${pct}%`,
-                      background: `linear-gradient(90deg,${GOLD},#F0C040)`,
+                      background: `linear-gradient(90deg,${GOLD},#E0A030)`,
                       borderRadius: 4, transition: 'width .3s',
                     }} />
                   </div>

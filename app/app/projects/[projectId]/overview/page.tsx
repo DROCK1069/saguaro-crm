@@ -7,7 +7,7 @@ import { getAuthHeaders } from '@/lib/supabase-browser';
 import EmptyState from '@/components/EmptyState';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
-const GOLD='#D4A017',DARK='#0d1117',RAISED='#1f2c3e',BORDER='#263347',DIM='#8fa3c0',TEXT='#e8edf8',GREEN='#1a8a4a',RED='#c03030';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n:number|null|undefined) => '$'+((n ?? 0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 const fmtPct = (a:number|null|undefined,b:number|null|undefined) => (b ?? 0)>0?(((a ?? 0)/(b as number))*100).toFixed(1)+'%':'0%';
 
@@ -156,7 +156,7 @@ export default function OverviewPage(){
       </div>
       <div style={{display:'flex',gap:10,alignItems:'center'}}>
         <button onClick={runAutopilot} disabled={scanning} style={{padding:'9px 16px',background:'rgba(212,160,23,.1)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer',opacity:scanning?.6:1}}>{scanning?'Scanning...':'Run Autopilot'}</button>
-        <Link href={'/app/projects/'+projectId+'/pay-apps/new'} style={{padding:'9px 16px',background:'linear-gradient(135deg,'+GOLD+',#F0C040)',borderRadius:7,color:'#0d1117',fontSize:12,fontWeight:800,textDecoration:'none'}}>+ New Pay App</Link>
+        <Link href={'/app/projects/'+projectId+'/pay-apps/new'} style={{padding:'9px 16px',background:'linear-gradient(135deg,'+GOLD+',#E0A030)',borderRadius:7,color:'#F2F2F7',fontSize:12,fontWeight:800,textDecoration:'none'}}>+ New Pay App</Link>
       </div>
     </div>
     {scanMsg&&<div style={{margin:'12px 24px 0',padding:'12px 18px',background: scanMsg.includes('failed') ? 'rgba(192,48,48,.1)' : 'rgba(26,138,74,.1)',border:`1px solid ${scanMsg.includes('failed') ? 'rgba(192,48,48,.35)' : 'rgba(26,138,74,.35)'}`,borderRadius:8,fontSize:13,fontWeight:600,color: scanMsg.includes('failed') ? RED : GREEN,display:'flex',alignItems:'center',gap:8}}>

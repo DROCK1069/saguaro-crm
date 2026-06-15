@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 
-const GOLD='#D4A017', DARK='#0d1117', RAISED='#161f2e', RAISED2='#1f2c3e',
-      BORDER='#263347', DIM='#8fa3c0', TEXT='#e8edf8',
+const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', RAISED2='#FFFFFF',
+      BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E',
       GREEN='#22c55e', RED='#ef4444', ORANGE='#f97316', BLUE='#60a5fa';
 
 const fmt  = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n||0);
@@ -13,7 +13,7 @@ const fmt2 = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',curre
 const fmtDate = (s:string|null|undefined) => s ? new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
 
 const STATUS_META: Record<string,{label:string;color:string;bg:string;next?:string;nextLabel?:string}> = {
-  draft:     {label:'Draft',     color:'#94a3b8', bg:'rgba(148,163,184,.15)', next:'submitted',  nextLabel:'Submit to Owner'},
+  draft:     {label:'Draft',     color:'#6E6E73', bg:'rgba(148,163,184,.15)', next:'submitted',  nextLabel:'Submit to Owner'},
   submitted: {label:'Submitted', color:BLUE,      bg:'rgba(96,165,250,.15)',  next:'approved',   nextLabel:'Approve'},
   approved:  {label:'Approved',  color:GREEN,     bg:'rgba(34,197,94,.15)',   next:'certified',  nextLabel:'Certify'},
   certified: {label:'Certified', color:GOLD,      bg:'rgba(212,160,23,.15)', next:'paid',       nextLabel:'Mark Paid'},
@@ -313,7 +313,7 @@ export default function PayAppDetailPage() {
           {meta.next && !editMode && (
             <button onClick={() => doAction(meta.next === 'paid' ? 'paid' : meta.next === 'submitted' ? 'submit' : meta.next === 'approved' ? 'approve' : 'certify')}
               disabled={actioning}
-              style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #F0C040)`, border: 'none', borderRadius: 7, color: DARK, fontWeight: 800, fontSize: 13, cursor: actioning ? 'wait' : 'pointer', opacity: actioning ? 0.7 : 1 }}>
+              style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, border: 'none', borderRadius: 7, color: DARK, fontWeight: 800, fontSize: 13, cursor: actioning ? 'wait' : 'pointer', opacity: actioning ? 0.7 : 1 }}>
               {actioning ? '…' : `${meta.nextLabel} →`}
             </button>
           )}

@@ -8,11 +8,11 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -102,7 +102,7 @@ function TextInput({ value, onChange, placeholder, type }: { value: string; onCh
   return (
     <input
       type={type || 'text'} value={value} placeholder={placeholder || ''} onChange={(e) => onChange(e.target.value)}
-      style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#0A1628', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+      style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#FFFFFF', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
     />
   );
 }
@@ -111,7 +111,7 @@ function SelectInput({ value, onChange, options }: { value: string; onChange: (v
   return (
     <select
       value={value} onChange={(e) => onChange(e.target.value)}
-      style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#0A1628', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+      style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#FFFFFF', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
     >
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
@@ -321,7 +321,7 @@ function CommissioningInner() {
       </div>
 
       {/* Progress Bar */}
-      <div style={{ background: '#0A1628', borderRadius: 8, height: 8, marginBottom: 16, overflow: 'hidden' }}>
+      <div style={{ background: '#FFFFFF', borderRadius: 8, height: 8, marginBottom: 16, overflow: 'hidden' }}>
         <div style={{ width: `${summary.progress}%`, height: '100%', background: `linear-gradient(90deg, ${GOLD}, ${GREEN})`, borderRadius: 8, transition: 'width .3s' }} />
       </div>
 
@@ -437,7 +437,7 @@ function CommissioningInner() {
       <SectionHeader title="Notes" />
       <textarea
         value={form.notes} onChange={(e) => setF('notes', e.target.value)} rows={4} placeholder="Additional notes..."
-        style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#0A1628', color: TEXT, fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
+        style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#FFFFFF', color: TEXT, fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
       />
 
       <div style={{ marginTop: 20 }}>
@@ -550,7 +550,7 @@ function CommissioningInner() {
               <React.Fragment key={p}>
                 <div style={{
                   flex: 1, textAlign: 'center', padding: '6px 4px', borderRadius: 8, fontSize: 10, fontWeight: 700,
-                  background: i <= phaseIdx ? `${PHASE_COLORS[p]}22` : '#0A1628',
+                  background: i <= phaseIdx ? `${PHASE_COLORS[p]}22` : '#FFFFFF',
                   color: i <= phaseIdx ? PHASE_COLORS[p] : DIM,
                   border: `1px solid ${i === phaseIdx ? PHASE_COLORS[p] : 'transparent'}`,
                 }}>
@@ -629,7 +629,7 @@ function CommissioningInner() {
         <textarea
           value={s.notes} rows={3}
           onChange={(e) => patchSystem(s.id, { notes: e.target.value })}
-          style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#0A1628', color: TEXT, fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#FFFFFF', color: TEXT, fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
           placeholder="Notes..."
         />
       </div>
@@ -674,7 +674,7 @@ function ChecklistPanel({ items, onAdd, onToggle, onNote, onRemove }: {
 
       {/* Progress bar */}
       {total > 0 && (
-        <div style={{ background: '#0A1628', borderRadius: 6, height: 6, marginBottom: 12, overflow: 'hidden', display: 'flex' }}>
+        <div style={{ background: '#FFFFFF', borderRadius: 6, height: 6, marginBottom: 12, overflow: 'hidden', display: 'flex' }}>
           <div style={{ width: `${pct}%`, height: '100%', background: GREEN, transition: 'width .3s' }} />
           {failed > 0 && <div style={{ width: `${Math.round((failed / total) * 100)}%`, height: '100%', background: RED, transition: 'width .3s' }} />}
         </div>
@@ -730,7 +730,7 @@ function ChecklistPanel({ items, onAdd, onToggle, onNote, onRemove }: {
               <textarea
                 value={item.notes} onChange={(e) => onNote(item.id, e.target.value)}
                 placeholder="Add notes for this item..." rows={2}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#0A1628', color: TEXT, fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#FFFFFF', color: TEXT, fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
               />
             </div>
           )}
@@ -878,7 +878,7 @@ function IssuesPanel({ issues, onAdd, onResolve }: {
               <FieldLabel text="Description" />
               <textarea
                 value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Detailed description..."
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#0A1628', color: TEXT, fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#FFFFFF', color: TEXT, fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
               />
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -989,7 +989,7 @@ function EquipmentPanel({ system, onPatch }: { system: CommissioningSystem; onPa
 /* ──────────────────────────────────────────────────── */
 export default function CommissioningPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0B1929', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8BAAC8', fontFamily: 'sans-serif' }}>Loading Commissioning...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0B1929', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73', fontFamily: 'sans-serif' }}>Loading Commissioning...</div>}>
       <CommissioningInner />
     </Suspense>
   );

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#D4A017', DARK = '#0d1117', RAISED = '#1f2c3e', BORDER = '#263347', DIM = '#8fa3c0', TEXT = '#e8edf8';
+const GOLD = '#C8881C', DARK = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', DIM = '#6E6E73', TEXT = '#1C1C1E';
 const GREEN = '#1a8a4a', RED = '#c03030', AMBER = '#d49a17';
 
 const fmt = (n: number) => '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -185,7 +185,7 @@ export default function IntelligencePage() {
   const maxRfi = Math.max(...selected.map(m => m.openRfis), 1);
   const maxRet = Math.max(...selected.map(m => m.retainageHeld), 1);
 
-  const barColors = ['#D4A017', '#3dd68c', '#5ba3f5', '#e06be0', '#ff7070'];
+  const barColors = ['#C8881C', '#3dd68c', '#5ba3f5', '#e06be0', '#ff7070'];
 
   if (loading) {
     return (

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 /* ─── Palette ─── */
-const GOLD = '#D4A017', BG = '#07101C', RAISED = '#0D1D2E', BORDER = '#1E3A5F', TEXT = '#F0F4FF', DIM = '#8BAAC8';
+const GOLD = '#C8881C', BG = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
 const GREEN = '#22C55E', RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
 
 /* ─── Constants ─── */
@@ -380,7 +380,7 @@ export default function LeadsPage() {
             ...btnS('transparent', DIM), border: `1px solid ${BORDER}`,
           }}>Export CSV</button>
           <button onClick={() => { setEditLead(emptyLead()); setShowModal(true); }}
-            style={btnS(`linear-gradient(135deg,${GOLD},#F0C040)`)}>
+            style={btnS(`linear-gradient(135deg,${GOLD},#E0A030)`)}>
             + New Lead
           </button>
         </div>
@@ -486,7 +486,7 @@ export default function LeadsPage() {
             Start building your pipeline by adding your first lead.
           </div>
           <button onClick={() => { setEditLead(emptyLead()); setShowModal(true); }}
-            style={btnS(`linear-gradient(135deg,${GOLD},#F0C040)`)}>
+            style={btnS(`linear-gradient(135deg,${GOLD},#E0A030)`)}>
             + Add First Lead
           </button>
         </div>
@@ -1011,7 +1011,7 @@ export default function LeadsPage() {
               <button onClick={handleSave}
                 disabled={saving || !editLead.company_name?.trim()}
                 style={{
-                  ...btnS(saving ? DIM : `linear-gradient(135deg,${GOLD},#F0C040)`),
+                  ...btnS(saving ? DIM : `linear-gradient(135deg,${GOLD},#E0A030)`),
                   opacity: saving || !editLead.company_name?.trim() ? 0.5 : 1,
                 }}
               >

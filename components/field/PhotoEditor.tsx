@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
-const GOLD = '#D4A017', DARK = '#07101C', BORDER = '#1E3A5F', TEXT = '#F0F4FF', DIM = '#8BAAC8';
+const GOLD = '#C8881C', DARK = '#F2F2F7', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
 const RED = '#EF4444', GREEN = '#22C55E';
 
 interface PhotoEditorProps {
@@ -382,5 +382,5 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
 
 const qBtn: React.CSSProperties = {
   padding: '6px 12px', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)',
-  borderRadius: 8, color: '#8BAAC8', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+  borderRadius: 8, color: '#6E6E73', fontSize: 11, fontWeight: 600, cursor: 'pointer',
 };

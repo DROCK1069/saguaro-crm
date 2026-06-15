@@ -12,12 +12,12 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://saguarocontrol.net/compare' },
 };
 
-const DARK = '#0d1117';
+const DARK = '#F2F2F7';
 const GOLD = '#F59E0B';
-const TEXT = '#F8FAFC';
-const DIM = '#CBD5E1';
-const BORDER = '#1E3A5F';
-const RAISED = '#0F172A';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
+const RAISED = '#FFFFFF';
 const GREEN = '#22c55e';
 
 export default function ComparePage() {
@@ -29,7 +29,7 @@ export default function ComparePage() {
       {/* NAV */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(13,17,23,0.9)',
+        height: 64, background: 'rgba(255,255,255,0.9)',
         borderBottom: `1px solid ${BORDER}`,
         backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center',

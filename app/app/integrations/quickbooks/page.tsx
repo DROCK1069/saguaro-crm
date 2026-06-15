@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#D4A017', DARK = '#0F1419', CARD = '#1A1F2E', BORDER = '#263347';
-const DIM = '#8fa3c0', TEXT = '#e8edf8', GREEN = '#22C55E', RED = '#EF4444', QB_GREEN = '#2CA01C';
+const GOLD = '#C8881C', DARK = '#F2F2F7', CARD = '#FFFFFF', BORDER = '#E5E5EA';
+const DIM = '#6E6E73', TEXT = '#1C1C1E', GREEN = '#22C55E', RED = '#EF4444', QB_GREEN = '#2CA01C';
 
 type SyncHistoryEntry = {
   timestamp: string;
@@ -250,8 +250,8 @@ export default function QuickBooksPage() {
                 disabled={syncing}
                 style={{
                   padding: '10px 24px', borderRadius: 10, cursor: 'pointer',
-                  background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none',
-                  color: '#0d1117', fontSize: 13, fontWeight: 700,
+                  background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                  color: '#F2F2F7', fontSize: 13, fontWeight: 700,
                   opacity: syncing ? 0.6 : 1,
                 }}
               >

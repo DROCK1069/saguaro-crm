@@ -7,11 +7,11 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -95,7 +95,7 @@ const exportPDF = (title: string, content: string) => {
   pw.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
     <style>
       body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;color:#1a1a1a;max-width:900px;margin:0 auto;}
-      h1{font-size:24px;border-bottom:2px solid #D4A017;padding-bottom:8px;}
+      h1{font-size:24px;border-bottom:2px solid #C8881C;padding-bottom:8px;}
       h2{font-size:18px;color:#333;margin-top:24px;}
       table{width:100%;border-collapse:collapse;margin:12px 0;}
       th,td{border:1px solid #ddd;padding:8px 12px;text-align:left;font-size:13px;}
@@ -386,7 +386,7 @@ function PermitsPageInner() {
 
   /* ─── Styles ─── */
   const pageStyle: React.CSSProperties = {
-    minHeight: '100vh', background: '#0A1628', color: TEXT,
+    minHeight: '100vh', background: '#FFFFFF', color: TEXT,
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     paddingBottom: 80,
   };
@@ -405,7 +405,7 @@ function PermitsPageInner() {
     fontSize: small ? 12 : 14, cursor: 'pointer',
   });
   const inputStyle: React.CSSProperties = {
-    width: '100%', background: '#0A1628', border: `1px solid ${BORDER}`,
+    width: '100%', background: '#FFFFFF', border: `1px solid ${BORDER}`,
     borderRadius: 8, padding: '10px 12px', color: TEXT, fontSize: 14,
     outline: 'none', boxSizing: 'border-box',
   };
@@ -983,8 +983,8 @@ function PermitsPageInner() {
 export default function PermitsPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#0A1628', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: '#8BAAC8', fontSize: 16 }}>Loading...</span>
+      <div style={{ minHeight: '100vh', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: '#6E6E73', fontSize: 16 }}>Loading...</span>
       </div>
     }>
       <PermitsPageInner />

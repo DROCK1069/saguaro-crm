@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 
-const GOLD = '#D4A017';
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
+const GOLD = '#C8881C';
+const DARK = '#F2F2F7';
+const RAISED = '#FFFFFF';
 const RAISED2 = '#253549';
-const BORDER = '#263347';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 const GREEN = '#3dd68c';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -85,8 +85,8 @@ function PrimaryBtn({ onClick, disabled, loading, children }: {
       disabled={disabled || loading}
       style={{
         padding: '10px 24px',
-        background: disabled || loading ? '#3a4a5a' : `linear-gradient(135deg,${GOLD},#F0C040)`,
-        border: 'none', borderRadius: 7, color: disabled || loading ? DIM : '#0d1117',
+        background: disabled || loading ? '#3a4a5a' : `linear-gradient(135deg,${GOLD},#E0A030)`,
+        border: 'none', borderRadius: 7, color: disabled || loading ? DIM : '#F2F2F7',
         fontSize: 13, fontWeight: 800, cursor: disabled || loading ? 'not-allowed' : 'pointer',
         transition: 'opacity 0.15s',
       }}
@@ -336,7 +336,7 @@ function Step2({ projectId, lineItems, onLineItemsChange, onNext, onBack }: {
           <div style={{ border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden', marginBottom: 12 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#0a1117' }}>
+                <tr style={{ background: '#F2F2F7' }}>
                   <th style={{ ...thStyle, width: 30 }}></th>
                   <th style={thStyle}>Description</th>
                   <th style={{ ...thStyle, width: 70 }}>Qty</th>
@@ -590,9 +590,9 @@ function Step4({ trade, scope, lineItems, selectedSubCount, packageName, onPacka
           disabled={submitting}
           style={{
             padding: '12px 32px',
-            background: submitting ? '#3a4a5a' : `linear-gradient(135deg,${GOLD},#F0C040)`,
+            background: submitting ? '#3a4a5a' : `linear-gradient(135deg,${GOLD},#E0A030)`,
             border: 'none', borderRadius: 8,
-            color: submitting ? DIM : '#0d1117',
+            color: submitting ? DIM : '#F2F2F7',
             fontSize: 15, fontWeight: 800,
             cursor: submitting ? 'not-allowed' : 'pointer',
             boxShadow: submitting ? 'none' : `0 4px 16px rgba(212,160,23,0.3)`,

@@ -7,7 +7,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD = '#D4A017', RAISED = '#0D1D2E', BORDER = '#1E3A5F', TEXT = '#F0F4FF', DIM = '#8BAAC8';
+const GOLD = '#C8881C', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
 const GREEN = '#22C55E', RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6';
 
 function hr(hex: string): string {
@@ -17,8 +17,8 @@ function hr(hex: string): string {
   return `${r},${g},${b}`;
 }
 
-const inp: React.CSSProperties = { width: '100%', background: '#07101C', border: '1px solid #1E3A5F', borderRadius: 10, padding: '11px 14px', color: '#F0F4FF', fontSize: 15, outline: 'none', boxSizing: 'border-box' };
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#8BAAC8', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none', boxSizing: 'border-box' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
 const secLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
 
@@ -267,7 +267,7 @@ function EquipmentPage() {
                 autoComplete="off"
               />
               {showSuggestions && filteredSuggestions.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#07101C', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 20, overflow: 'hidden', marginTop: 2 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 20, overflow: 'hidden', marginTop: 2 }}>
                   {filteredSuggestions.map(s => (
                     <button
                       key={s}
@@ -356,7 +356,7 @@ function EquipmentPage() {
             <button
               type="submit"
               disabled={saving}
-              style={{ flex: 2, background: saving ? '#1E3A5F' : GOLD, border: 'none', borderRadius: 12, padding: '15px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}
+              style={{ flex: 2, background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 12, padding: '15px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}
             >
               {saving ? 'Saving...' : '+ Log Equipment'}
             </button>
@@ -369,7 +369,7 @@ function EquipmentPage() {
 
 export default function FieldEquipmentPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <EquipmentPage />
     </Suspense>
   );

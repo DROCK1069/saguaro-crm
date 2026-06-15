@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#D4A017';
-const DARK = '#0d1117';
-const RAISED = '#1f2c3e';
-const BORDER = '#263347';
-const DIM = '#8fa3c0';
-const TEXT = '#e8edf8';
+const GOLD = '#C8881C';
+const DARK = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM = '#6E6E73';
+const TEXT = '#1C1C1E';
 const GREEN = '#1a8a4a';
 const RED = '#c03030';
 
@@ -154,7 +154,7 @@ export default function NotificationsPage() {
         <button
           onClick={markAllRead}
           disabled={markingAll || unreadCount === 0}
-          style={{ padding: '8px 16px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 7, color: unreadCount > 0 ? DIM : '#4a5f7a', fontSize: 12, fontWeight: 600, cursor: unreadCount > 0 ? 'pointer' : 'not-allowed', opacity: unreadCount > 0 ? 1 : 0.5 }}
+          style={{ padding: '8px 16px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 7, color: unreadCount > 0 ? DIM : '#6E6E73', fontSize: 12, fontWeight: 600, cursor: unreadCount > 0 ? 'pointer' : 'not-allowed', opacity: unreadCount > 0 ? 1 : 0.5 }}
         >
           {markingAll ? 'Marking...' : 'Mark all read'}
         </button>

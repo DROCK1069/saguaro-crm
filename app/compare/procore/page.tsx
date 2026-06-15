@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 
 const C = {
-  dark: '#0d1117',
+  dark: '#F2F2F7',
   gold: '#F59E0B',
-  text: '#F8FAFC',
-  dim: '#CBD5E1',
-  border: '#1E3A5F',
-  raised: '#0F172A',
+  text: '#1C1C1E',
+  dim: '#6E6E73',
+  border: '#E5E5EA',
+  raised: '#FFFFFF',
   green: '#22c55e',
   red: '#ef4444',
 };
@@ -133,7 +133,7 @@ export default function CompareProcorePage() {
       {/* ── NAV ── */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(13,17,23,0.85)',
+        height: 64, background: 'rgba(255,255,255,0.85)',
         borderBottom: `1px solid ${C.border}`,
         backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center',
@@ -177,7 +177,7 @@ export default function CompareProcorePage() {
             padding: '9px 20px',
             background: C.gold,
             borderRadius: 8,
-            color: '#0d1117',
+            color: '#F2F2F7',
             fontSize: 13,
             fontWeight: 800,
             textDecoration: 'none',
@@ -247,7 +247,7 @@ export default function CompareProcorePage() {
             padding: '14px 36px',
             background: C.gold,
             borderRadius: 10,
-            color: '#0d1117',
+            color: '#F2F2F7',
             fontWeight: 800,
             fontSize: 16,
             textDecoration: 'none',
@@ -459,7 +459,7 @@ export default function CompareProcorePage() {
 
       {/* ── ROI MINI-CALCULATOR ── */}
       <div style={{
-        background: 'linear-gradient(180deg, #0F172A 0%, #0d1117 100%)',
+        background: 'linear-gradient(180deg, #FFFFFF 0%, #F2F2F7 100%)',
         padding: '64px 24px',
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
@@ -506,7 +506,7 @@ export default function CompareProcorePage() {
                   style={{
                     width: '100%',
                     padding: '14px 16px 14px 30px',
-                    background: 'rgba(15,23,42,0.8)',
+                    background: 'rgba(242,242,247,0.8)',
                     border: `1px solid rgba(245,158,11,0.3)`,
                     borderRadius: 10,
                     color: C.text,
@@ -548,7 +548,7 @@ export default function CompareProcorePage() {
                 style={{
                   width: '100%',
                   padding: '14px 16px',
-                  background: 'rgba(15,23,42,0.8)',
+                  background: 'rgba(242,242,247,0.8)',
                   border: `1px solid rgba(245,158,11,0.3)`,
                   borderRadius: 10,
                   color: C.text,
@@ -626,7 +626,7 @@ export default function CompareProcorePage() {
               padding: '15px 40px',
               background: `linear-gradient(135deg, ${C.gold}, #D97706)`,
               borderRadius: 10,
-              color: '#0d1117',
+              color: '#F2F2F7',
               fontWeight: 800,
               fontSize: 16,
               textDecoration: 'none',
@@ -853,7 +853,7 @@ export default function CompareProcorePage() {
             padding: '12px 28px',
             background: C.gold,
             borderRadius: 9,
-            color: '#0d1117',
+            color: '#F2F2F7',
             fontWeight: 800,
             fontSize: 14,
             textDecoration: 'none',
@@ -930,7 +930,7 @@ export default function CompareProcorePage() {
 
             {/* RIGHT */}
             <div style={{
-              background: 'rgba(13,17,23,0.7)',
+              background: 'rgba(255,255,255,0.7)',
               border: `1px solid rgba(245,158,11,0.3)`,
               borderRadius: 14,
               padding: '32px 28px',
@@ -967,7 +967,7 @@ export default function CompareProcorePage() {
                 padding: '14px 24px',
                 background: `linear-gradient(135deg, ${C.gold}, #D97706)`,
                 borderRadius: 9,
-                color: '#0d1117',
+                color: '#F2F2F7',
                 fontWeight: 800,
                 fontSize: 15,
                 textDecoration: 'none',
@@ -1040,7 +1040,7 @@ export default function CompareProcorePage() {
                     justifyContent: 'center',
                     fontSize: 13,
                     fontWeight: 800,
-                    color: '#0d1117',
+                    color: '#F2F2F7',
                     flexShrink: 0,
                   }}>
                     {t.initials}
@@ -1100,7 +1100,7 @@ export default function CompareProcorePage() {
             padding: '16px 44px',
             background: C.gold,
             borderRadius: 10,
-            color: '#0d1117',
+            color: '#F2F2F7',
             fontWeight: 800,
             fontSize: 17,
             textDecoration: 'none',
@@ -1132,7 +1132,7 @@ export default function CompareProcorePage() {
       </div>
 
       {/* ── MOBILE STICKY CTA ── */}
-      <div className="mobile-sticky-cta" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(13,17,23,0.97)', borderTop: '1px solid rgba(245,158,11,0.3)', padding: '12px 16px', backdropFilter: 'blur(12px)' }}>
+      <div className="mobile-sticky-cta" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(255,255,255,0.97)', borderTop: '1px solid rgba(245,158,11,0.3)', padding: '12px 16px', backdropFilter: 'blur(12px)' }}>
         <div style={{ display: 'flex', gap: 10 }}>
           <a href="/signup" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, textDecoration: 'none' }}>
             Start Free Trial

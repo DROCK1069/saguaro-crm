@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 
-const GOLD = '#D4A017'; const DARK = '#0d1117'; const RAISED = '#1f2c3e';
-const BORDER = '#263347'; const DIM = '#8fa3c0'; const TEXT = '#e8edf8';
+const GOLD = '#C8881C'; const DARK = '#F2F2F7'; const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA'; const DIM = '#6E6E73'; const TEXT = '#1C1C1E';
 
 // ALL sidebar nav items — every module Buildertrend has + more
 const NAV_SECTIONS = [
@@ -152,7 +152,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             <div style={{ fontSize: 10, color: DIM, marginBottom: 8 }}>{projectNumber}</div>
             {/* Progress */}
             <div style={{ height: 3, background: 'rgba(255,255,255,.08)', borderRadius: 2, marginBottom: 3 }}>
-              <div style={{ height: '100%', width: `${pctComplete}%`, background: `linear-gradient(90deg,${GOLD},#F0C040)`, borderRadius: 2 }} />
+              <div style={{ height: '100%', width: `${pctComplete}%`, background: `linear-gradient(90deg,${GOLD},#E0A030)`, borderRadius: 2 }} />
             </div>
             <div style={{ fontSize: 10, color: DIM }}>{pctComplete}% complete</div>
           </>
@@ -166,7 +166,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       {NAV_SECTIONS.map(section => (
         <div key={section.label} style={{ padding: '8px 0' }}>
           {!isCollapsed && (
-            <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#4a5f7a' }}>
+            <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#6E6E73' }}>
               {section.label}
             </div>
           )}
@@ -195,7 +195,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
                 <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
                 {!isCollapsed && <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
                 {!isCollapsed && item.badge && (
-                  <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 8, background: active ? GOLD : '#B85C2A', color: '#0d1117' }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 8, background: active ? GOLD : '#B85C2A', color: '#F2F2F7' }}>
                     {item.badge}
                   </span>
                 )}
@@ -229,7 +229,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       <aside className="sidebar-desktop" style={{
         width: collapsed ? 56 : 220,
         flexShrink: 0,
-        background: '#0a1117',
+        background: '#F2F2F7',
         borderRight: `1px solid ${BORDER}`,
         position: 'sticky',
         top: 56,
@@ -243,7 +243,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       </aside>
 
       {/* ── Page Content ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, minWidth: 0, background: '#0d1117' }}>
+      <div style={{ flex: 1, minWidth: 0, background: '#F2F2F7' }}>
 
         {/* Mobile module bar — only shown <=768px (hidden on desktop) */}
         <div className="project-mobile-bar" style={{
@@ -251,7 +251,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
           alignItems: 'center',
           gap: 10,
           padding: '8px 12px',
-          background: '#0a1117',
+          background: '#F2F2F7',
           borderBottom: `1px solid ${BORDER}`,
           position: 'sticky',
           top: 56,
@@ -306,7 +306,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             bottom: 0,
             width: 250,
             maxWidth: '82vw',
-            background: '#0a1117',
+            background: '#F2F2F7',
             borderRight: `1px solid ${BORDER}`,
             overflowY: 'auto',
             overflowX: 'hidden',

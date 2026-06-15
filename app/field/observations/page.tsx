@@ -10,11 +10,11 @@ import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -230,7 +230,7 @@ const btnBase: React.CSSProperties = {
   fontSize: 14, cursor: 'pointer', transition: 'opacity 0.15s',
 };
 const inputStyle: React.CSSProperties = {
-  background: '#0A1628', border: `1px solid ${BORDER}`, borderRadius: 10,
+  background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10,
   color: TEXT, padding: '10px 14px', fontSize: 14, width: '100%',
   outline: 'none', boxSizing: 'border-box',
 };
@@ -250,7 +250,7 @@ const exportPDF = (title: string, content: string) => {
       <title>${title}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 24px; border-bottom: 2px solid #D4A017; padding-bottom: 8px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
         h2 { font-size: 18px; color: #333; margin-top: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 12px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 13px; }
@@ -889,7 +889,7 @@ function ObservationsPage() {
             <div style={{ display: 'flex', gap: 8 }}>
               <input value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="Preset name..." style={{ ...inputStyle, fontSize: 12, padding: '6px 10px', flex: 1 }} />
               <button onClick={saveCurrentPreset} disabled={!presetName.trim()} style={{
-                background: presetName.trim() ? GOLD : '#1E3A5F', border: 'none', borderRadius: 8,
+                background: presetName.trim() ? GOLD : '#E5E5EA', border: 'none', borderRadius: 8,
                 padding: '6px 14px', color: presetName.trim() ? '#000' : DIM, fontSize: 12, fontWeight: 700, cursor: presetName.trim() ? 'pointer' : 'not-allowed',
               }}>Save</button>
             </div>
@@ -1116,7 +1116,7 @@ function ObservationsPage() {
         {newChecklist.map(item => (
           <div key={item.id} style={{
             display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6,
-            background: '#0A1628', borderRadius: 10, padding: '8px 12px',
+            background: '#FFFFFF', borderRadius: 10, padding: '8px 12px',
             border: `1px solid ${item.result === 'fail' ? RED + '44' : BORDER}`,
           }}>
             <CheckResultBtn result={item.result} onToggle={() => toggleCheckResult(item.id)} />
@@ -1163,7 +1163,7 @@ function ObservationsPage() {
             </div>
           ))}
           <button onClick={() => fileInputRef.current?.click()} style={{
-            width: 72, height: 72, background: '#0A1628', border: `2px dashed ${BORDER}`,
+            width: 72, height: 72, background: '#FFFFFF', border: `2px dashed ${BORDER}`,
             borderRadius: 10, color: DIM, fontSize: 24, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>📷</button>
@@ -1199,7 +1199,7 @@ function ObservationsPage() {
       {newCorrectiveReq && (
         <div style={{
           ...cardStyle, marginTop: 4, marginBottom: 16, borderColor: AMBER + '44',
-          background: '#0A1628',
+          background: '#FFFFFF',
         }}>
           <label style={labelStyle}>Assignee</label>
           <input value={newCAAssignee} onChange={e => setNewCAAssignee(e.target.value)}
@@ -1540,7 +1540,7 @@ export default function ObservationsPageWrapper() {
         alignItems: 'center', justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}>
-        <div style={{ color: '#D4A017', fontSize: 16, fontWeight: 700 }}>Loading Observations...</div>
+        <div style={{ color: '#C8881C', fontSize: 16, fontWeight: 700 }}>Loading Observations...</div>
       </div>
     }>
       <ObservationsPage />

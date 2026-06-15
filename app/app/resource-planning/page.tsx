@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { CONTRACTOR_TRADES as TRADES, TRADESPERSON_ROLES as ROLES } from '@/lib/contractor-trades';
 
-const GOLD='#D4A017',BG='#07101C',RAISED='#0D1D2E',BORDER='#1E3A5F',TEXT='#F0F4FF',DIM='#8BAAC8',GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',BLUE='#3B82F6',PURPLE='#8B5CF6';
+const GOLD='#C8881C',BG='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',TEXT='#1C1C1E',DIM='#6E6E73',GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',BLUE='#3B82F6',PURPLE='#8B5CF6';
 
 /* ===== TYPES ===== */
 interface Assignment {
@@ -34,7 +34,7 @@ type Tab = 'grid' | 'timeline' | 'people' | 'staffing' | 'utilization' | 'availa
 /* ===== STYLE HELPERS ===== */
 function btn(primary?: boolean): React.CSSProperties {
   return primary
-    ? { padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none', borderRadius: 7, color: BG, fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'opacity .15s' }
+    ? { padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: BG, fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'opacity .15s' }
     : { padding: '8px 18px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'opacity .15s' };
 }
 function inp(): React.CSSProperties {

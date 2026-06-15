@@ -7,16 +7,16 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD = '#D4A017';
-const CARD = '#1A1F2E';
-const BASE = '#0F1419';
-const TEXT = '#F0F4FF';
-const DIM = '#8BAAC8';
+const GOLD = '#C8881C';
+const CARD = '#FFFFFF';
+const BASE = '#F2F2F7';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
-const BORDER = '#1E3A5F';
+const BORDER = '#E5E5EA';
 
 function hr(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);
@@ -395,14 +395,14 @@ function CrewCard({ member, activity, timeAgo }: { member: CrewMember; activity:
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#F0F4FF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#8BAAC8' }}>{member.trade || 'Unassigned'}</p>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1C1C1E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6E6E73' }}>{member.trade || 'Unassigned'}</p>
       </div>
 
       {/* Time */}
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: cfg.color }}>{cfg.label}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 10, color: '#8BAAC8' }}>{timeAgo(member.updated_at)}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 10, color: '#6E6E73' }}>{timeAgo(member.updated_at)}</p>
       </div>
     </div>
   );
@@ -410,7 +410,7 @@ function CrewCard({ member, activity, timeAgo }: { member: CrewMember; activity:
 
 export default function FieldCrewMapPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <CrewMapPage />
     </Suspense>
   );

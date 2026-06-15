@@ -4,11 +4,11 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 const GOLD   = '#F59E0B';
-const DARK   = '#0d1117';
-const RAISED = '#0F172A';
-const BORDER = '#1E3A5F';
-const DIM    = '#CBD5E1';
-const TEXT   = '#F8FAFC';
+const DARK   = '#F2F2F7';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const DIM    = '#6E6E73';
+const TEXT   = '#1C1C1E';
 const GREEN  = '#22c55e';
 const RED    = '#ef4444';
 
@@ -273,13 +273,13 @@ export default function BillingPage() {
             const isUpgrade = plan.id === 'professional' && currentPlanName.includes('starter');
             return (
               <div key={plan.id} style={{
-                background: plan.popular ? 'linear-gradient(180deg, #111827, #0F172A)' : RAISED,
+                background: plan.popular ? 'linear-gradient(180deg, #FFFFFF, #FFFFFF)' : RAISED,
                 border: `1.5px solid ${isCurrent ? GREEN : plan.popular ? GOLD : BORDER}`,
                 borderRadius: 14, overflow: 'hidden', position: 'relative',
                 boxShadow: plan.popular ? `0 0 40px rgba(245,158,11,0.08)` : 'none',
               }}>
                 {plan.popular && !isCurrent && (
-                  <div style={{ background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: '#0d1117', letterSpacing: 2, textTransform: 'uppercase' }}>Most Popular</div>
+                  <div style={{ background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: '#F2F2F7', letterSpacing: 2, textTransform: 'uppercase' }}>Most Popular</div>
                 )}
                 {isCurrent && (
                   <div style={{ background: 'rgba(34,197,94,0.15)', borderBottom: `1px solid rgba(34,197,94,0.25)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: GREEN, letterSpacing: 2, textTransform: 'uppercase' }}>Current Plan</div>
@@ -368,7 +368,7 @@ export default function BillingPage() {
       {/* Cancel Confirmation Modal */}
       {showCancel && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: '#111827', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%' }}>
+          <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%' }}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12, color: TEXT }}>Cancel your subscription?</div>
             <div style={{ fontSize: 14, color: DIM, lineHeight: 1.65, marginBottom: 28 }}>
               You'll retain access until the end of your current billing period. Your data will be preserved for 30 days after that. You can reactivate anytime.

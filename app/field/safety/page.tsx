@@ -8,11 +8,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -67,7 +67,7 @@ const exportPDF = (title: string, content: string) => {
       <title>${title}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 24px; border-bottom: 2px solid #D4A017; padding-bottom: 8px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
         h2 { font-size: 18px; color: #333; margin-top: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 12px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 13px; }
@@ -791,9 +791,9 @@ function SafetyPage() {
               <label style={{ ...lbl, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 }}>Sort By</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <select value={sfSortKey} onChange={e => setSfSortKey(e.target.value as typeof sfSortKey)} style={{ ...inp, fontSize: 13, padding: '8px 12px', flex: 1 }}>
-                  <option value="date" style={{ background: '#07101C' }}>Date</option>
-                  <option value="severity" style={{ background: '#07101C' }}>Severity</option>
-                  <option value="status" style={{ background: '#07101C' }}>Status</option>
+                  <option value="date" style={{ background: '#F2F2F7' }}>Date</option>
+                  <option value="severity" style={{ background: '#F2F2F7' }}>Severity</option>
+                  <option value="status" style={{ background: '#F2F2F7' }}>Status</option>
                 </select>
                 <button onClick={() => setSfSortDir(d => d === 'asc' ? 'desc' : 'asc')} style={{
                   background: 'rgba(212,160,23,.08)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 10,
@@ -833,7 +833,7 @@ function SafetyPage() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <input value={sfPresetName} onChange={e => setSfPresetName(e.target.value)} placeholder="Preset name..." style={{ ...inp, fontSize: 12, padding: '7px 10px', flex: 1 }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveSfPreset(); } }} />
                 <button onClick={saveSfPreset} disabled={!sfPresetName.trim()} style={{
-                  background: sfPresetName.trim() ? GOLD : '#1E3A5F', border: 'none', borderRadius: 8,
+                  background: sfPresetName.trim() ? GOLD : '#E5E5EA', border: 'none', borderRadius: 8,
                   padding: '7px 16px', color: sfPresetName.trim() ? '#000' : DIM, fontSize: 12, fontWeight: 700,
                   cursor: sfPresetName.trim() ? 'pointer' : 'not-allowed', transition: 'all .15s ease',
                 }}>Save</button>
@@ -985,7 +985,7 @@ function SafetyPage() {
           {/* Bulk Action Bar */}
           {selectMode && selectedIds.size > 0 && (
             <div style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0A1929',
+              position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FFFFFF',
               borderTop: `1px solid ${BORDER}`, padding: '12px 16px', display: 'flex', gap: 8,
               justifyContent: 'center', zIndex: 100,
             }}>
@@ -1042,7 +1042,7 @@ function SafetyPage() {
                     padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer',
                   }}>Cancel</button>
                   <button onClick={handleBulkAssignCA} disabled={bulkProcessing || !bulkCADesc.trim()} style={{
-                    flex: 1, background: bulkProcessing ? '#1E3A5F' : GOLD, border: 'none', borderRadius: 10,
+                    flex: 1, background: bulkProcessing ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 10,
                     padding: '12px', color: bulkProcessing ? DIM : '#000', fontSize: 14, fontWeight: 700, cursor: bulkProcessing ? 'wait' : 'pointer',
                   }}>{bulkProcessing ? 'Assigning...' : 'Assign CA'}</button>
                 </div>
@@ -1316,7 +1316,7 @@ function SafetyPage() {
             <button type="button" onClick={() => setView('detail')} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#1E3A5F' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
+            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
               {saving ? 'Saving...' : 'Add Corrective Action'}
             </button>
           </div>
@@ -1350,7 +1350,7 @@ function SafetyPage() {
             <div>
               <label style={lbl}>Type *</label>
               <select value={newType} onChange={(e) => setNewType(e.target.value)} style={inp}>
-                {INCIDENT_TYPES.map((t) => <option key={t} value={t} style={{ background: '#0D1D2E' }}>{TYPE_LABELS[t]}</option>)}
+                {INCIDENT_TYPES.map((t) => <option key={t} value={t} style={{ background: '#FFFFFF' }}>{TYPE_LABELS[t]}</option>)}
               </select>
             </div>
           </div>
@@ -1416,7 +1416,7 @@ function SafetyPage() {
           <button type="button" onClick={() => { setView('list'); resetCreateForm(); }} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
             Cancel
           </button>
-          <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#1E3A5F' : RED, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#fff', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
+          <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#E5E5EA' : RED, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#fff', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
             {saving ? 'Saving...' : online ? 'Report Incident' : 'Report (Offline — will sync)'}
           </button>
         </div>
@@ -1427,7 +1427,7 @@ function SafetyPage() {
 
 export default function FieldSafetyPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <SafetyPage />
     </Suspense>
   );
@@ -1450,7 +1450,7 @@ function OfflineBanner() {
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
 const secLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
 const lbl: React.CSSProperties = { display: 'block', fontSize: 12, color: DIM, marginBottom: 4, fontWeight: 600 };
-const inp: React.CSSProperties = { width: '100%', background: '#07101C', border: '1px solid #1E3A5F', borderRadius: 10, padding: '11px 14px', color: '#F0F4FF', fontSize: 15, outline: 'none' };
+const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '8px', marginLeft: -8, display: 'flex', alignItems: 'center', marginBottom: 4 };
 
 function hexRgb(hex: string): string {

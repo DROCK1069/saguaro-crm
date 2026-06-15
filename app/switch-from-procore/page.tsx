@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-const DARK = '#0d1117';
+const DARK = '#F2F2F7';
 const GOLD = '#F59E0B';
-const TEXT = '#F8FAFC';
-const DIM = '#CBD5E1';
-const BORDER = '#1E3A5F';
-const RAISED = '#0F172A';
+const TEXT = '#1C1C1E';
+const DIM = '#6E6E73';
+const BORDER = '#E5E5EA';
+const RAISED = '#FFFFFF';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 
@@ -69,7 +69,7 @@ export default function SwitchFromProcorePage() {
         }
         .btn-amber {
           background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-          color: #0d1117;
+          color: #F2F2F7;
           font-weight: 700;
           border: none;
           border-radius: 10px;
@@ -121,7 +121,7 @@ export default function SwitchFromProcorePage() {
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { opacity: 1; }
         .calc-input-field {
-          background: #0d1117;
+          background: #F2F2F7;
           border: 1px solid ${BORDER};
           border-radius: 8px;
           color: ${TEXT};
@@ -140,7 +140,7 @@ export default function SwitchFromProcorePage() {
       {/* ─── STICKY NAV ─── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(13,17,23,0.95)',
+        background: 'rgba(255,255,255,0.95)',
         backdropFilter: 'blur(16px)',
         borderBottom: `1px solid ${BORDER}`,
       }}>
@@ -677,7 +677,7 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── FINAL CTA ─── */}
       <section style={{
-        background: `linear-gradient(135deg, #1a0f00 0%, #0d1117 40%, #0d1117 60%, #1a0f00 100%)`,
+        background: `linear-gradient(135deg, #1a0f00 0%, #F2F2F7 40%, #F2F2F7 60%, #1a0f00 100%)`,
         borderTop: `1px solid rgba(245,158,11,0.2)`,
         borderBottom: `1px solid rgba(245,158,11,0.2)`,
         padding: '90px 40px',

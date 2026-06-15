@@ -3,7 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD='#D4A017',RAISED='#0D1D2E',BORDER='#1E3A5F',TEXT='#F0F4FF',DIM='#8BAAC8';
+const GOLD='#C8881C',RAISED='#FFFFFF',BORDER='#E5E5EA',TEXT='#1C1C1E',DIM='#6E6E73';
 const GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',PURPLE='#8B5CF6',BLUE='#3B82F6',TEAL='#06B6D4';
 type Panel=null|'timesheet'|'rfi'|'safety';
 const COST_CODES=['General Conditions','Concrete','Masonry','Metals / Structural','Carpentry','Thermal & Moisture','Openings','Finishes','Electrical','Plumbing','HVAC / Mechanical','Earthwork / Site','Other'];
@@ -221,7 +221,7 @@ function MorePage(){
             <F label="Employee Name *"><input value={tsEmployee} onChange={e=>setTsEmployee(e.target.value)} placeholder="Full name" style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <F label="Hours Worked"><input type="number" inputMode="decimal" step="0.5" min="0" max="24" value={tsHours} onChange={e=>setTsHours(e.target.value)} placeholder="e.g. 8.5" style={inp}/></F>
-              <F label="Cost Code"><select value={tsCostCode} onChange={e=>setTsCostCode(e.target.value)} style={inp}>{COST_CODES.map(c=><option key={c} value={c} style={{background:'#0D1D2E'}}>{c}</option>)}</select></F>
+              <F label="Cost Code"><select value={tsCostCode} onChange={e=>setTsCostCode(e.target.value)} style={inp}>{COST_CODES.map(c=><option key={c} value={c} style={{background:'#FFFFFF'}}>{c}</option>)}</select></F>
             </div>
             <F label="Notes"><input value={tsNotes} onChange={e=>setTsNotes(e.target.value)} placeholder="Work area, task, OT reason..." style={inp}/></F>
           </S>
@@ -238,7 +238,7 @@ function MorePage(){
             <F label="Subject *"><input value={rfiSubject} onChange={e=>setRfiSubject(e.target.value)} placeholder="Brief description" style={inp} required/></F>
             <F label="Question / Description *"><textarea value={rfiQuestion} onChange={e=>setRfiQuestion(e.target.value)} placeholder="Describe the issue and what clarification you need..." rows={4} style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <F label="Spec Section"><select value={rfiSpec} onChange={e=>setRfiSpec(e.target.value)} style={inp}>{SPEC_SECTIONS.map(s=><option key={s} value={s} style={{background:'#0D1D2E'}}>{s}</option>)}</select></F>
+              <F label="Spec Section"><select value={rfiSpec} onChange={e=>setRfiSpec(e.target.value)} style={inp}>{SPEC_SECTIONS.map(s=><option key={s} value={s} style={{background:'#FFFFFF'}}>{s}</option>)}</select></F>
               <F label="Need By"><input type="date" value={rfiDueDate} onChange={e=>setRfiDueDate(e.target.value)} style={inp}/></F>
             </div>
           </S>
@@ -254,8 +254,8 @@ function MorePage(){
           <S label="Incident Details">
             <F label="What Happened *"><textarea value={safetyDesc} onChange={e=>setSafetyDesc(e.target.value)} placeholder="Describe the incident, near miss, or hazard in detail..." rows={5} style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <F label="Severity"><select value={safetySeverity} onChange={e=>setSafetySeverity(e.target.value)} style={inp}>{SEVERITY.map(s=><option key={s} value={s} style={{background:'#0D1D2E'}}>{s}</option>)}</select></F>
-              <F label="Injury Type"><select value={safetyInjury} onChange={e=>setSafetyInjury(e.target.value)} style={inp}>{INJURY_TYPES.map(s=><option key={s} value={s} style={{background:'#0D1D2E'}}>{s}</option>)}</select></F>
+              <F label="Severity"><select value={safetySeverity} onChange={e=>setSafetySeverity(e.target.value)} style={inp}>{SEVERITY.map(s=><option key={s} value={s} style={{background:'#FFFFFF'}}>{s}</option>)}</select></F>
+              <F label="Injury Type"><select value={safetyInjury} onChange={e=>setSafetyInjury(e.target.value)} style={inp}>{INJURY_TYPES.map(s=><option key={s} value={s} style={{background:'#FFFFFF'}}>{s}</option>)}</select></F>
             </div>
             <F label="Location"><input value={safetyLocation} onChange={e=>setSafetyLocation(e.target.value)} placeholder="e.g. Level 3 east stairwell" style={inp}/></F>
             <F label="Reported To"><input value={safetyReported} onChange={e=>setSafetyReported(e.target.value)} placeholder="Supervisor / PM name" style={inp}/></F>
@@ -269,16 +269,16 @@ function MorePage(){
 }
 
 export default function FieldMorePage(){
-  return <Suspense fallback={<div style={{padding:32,color:'#8BAAC8',textAlign:'center'}}>Loading...</div>}><MorePage/></Suspense>;
+  return <Suspense fallback={<div style={{padding:32,color:'#6E6E73',textAlign:'center'}}>Loading...</div>}><MorePage/></Suspense>;
 }
 
 function S({label,children}:{label:string;children:React.ReactNode}){return <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:'14px 14px 6px',marginBottom:12}}><p style={{...sLbl,margin:'0 0 10px'}}>{label}</p>{children}</div>;}
 function F({label,children}:{label:string;children:React.ReactNode}){return <div style={{marginBottom:10}}><label style={{display:'block',fontSize:12,color:DIM,marginBottom:4}}>{label}</label>{children}</div>;}
 function Sub({saving,label,online,color,dark}:{saving:boolean;label:string;online:boolean;color:string;dark?:boolean}){
-  return <button type="submit" disabled={saving} style={{width:'100%',background:saving?'#1E3A5F':color,border:'none',borderRadius:14,padding:'18px',color:saving?DIM:(dark?'#000':'#fff'),fontSize:17,fontWeight:800,cursor:saving?'wait':'pointer',marginTop:4}}>{saving?'Saving...':(online?`Save ${label}`:`${label} (Offline — will sync)`)}</button>;
+  return <button type="submit" disabled={saving} style={{width:'100%',background:saving?'#E5E5EA':color,border:'none',borderRadius:14,padding:'18px',color:saving?DIM:(dark?'#000':'#fff'),fontSize:17,fontWeight:800,cursor:saving?'wait':'pointer',marginTop:4}}>{saving?'Saving...':(online?`Save ${label}`:`${label} (Offline — will sync)`)}</button>;
 }
 
-const inp:React.CSSProperties={width:'100%',background:'#07101C',border:'1px solid #1E3A5F',borderRadius:10,padding:'11px 14px',color:'#F0F4FF',fontSize:15,outline:'none'};
+const inp:React.CSSProperties={width:'100%',background:'#F2F2F7',border:'1px solid #E5E5EA',borderRadius:10,padding:'11px 14px',color:'#1C1C1E',fontSize:15,outline:'none'};
 const bkBtn:React.CSSProperties={background:'none',border:'none',color:DIM,fontSize:14,cursor:'pointer',padding:'0 0 12px',display:'block'};
 const sLbl:React.CSSProperties={margin:'0 0 8px',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:0.8};
 

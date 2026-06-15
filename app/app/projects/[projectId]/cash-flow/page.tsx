@@ -2,7 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD = '#D4A017', DARK = '#0d1117', RAISED = '#1f2c3e', BORDER = '#263347', DIM = '#8fa3c0', TEXT = '#e8edf8';
+const GOLD = '#C8881C', DARK = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', DIM = '#6E6E73', TEXT = '#1C1C1E';
 const GREEN = '#1a8a4a', RED = '#c03030';
 
 const fmt = (n: number) => '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -350,7 +350,7 @@ function CashFlowContent() {
               {/* Expanded line items */}
               {isExpanded && (
                 <div style={{
-                  background: 'rgba(13,17,23,0.6)', borderBottom: `1px solid rgba(38,51,71,0.4)`,
+                  background: 'rgba(255,255,255,0.6)', borderBottom: `1px solid rgba(38,51,71,0.4)`,
                   padding: '12px 20px 12px 40px',
                 }}>
                   {period.line_items.length === 0 ? (

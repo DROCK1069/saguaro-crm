@@ -8,11 +8,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 
-const GOLD   = '#D4A017';
-const RAISED = '#0D1D2E';
-const BORDER = '#1E3A5F';
-const TEXT   = '#F0F4FF';
-const DIM    = '#8BAAC8';
+const GOLD   = '#C8881C';
+const RAISED = '#FFFFFF';
+const BORDER = '#E5E5EA';
+const TEXT   = '#1C1C1E';
+const DIM    = '#6E6E73';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -95,7 +95,7 @@ const exportPDF = (title: string, content: string) => {
       <title>${title}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 24px; border-bottom: 2px solid #D4A017; padding-bottom: 8px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
         h2 { font-size: 18px; color: #333; margin-top: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 12px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 13px; }
@@ -704,7 +704,7 @@ function RFIsPage() {
             {/* Drawer panel */}
             <div style={{
               position: 'relative', width: '100%', maxWidth: 380,
-              background: '#07101C', borderLeft: `1px solid ${BORDER}`,
+              background: '#F2F2F7', borderLeft: `1px solid ${BORDER}`,
               display: 'flex', flexDirection: 'column', overflowY: 'auto',
               animation: 'none',
             }}>
@@ -712,7 +712,7 @@ function RFIsPage() {
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '16px 18px', borderBottom: `1px solid ${BORDER}`,
-                position: 'sticky', top: 0, background: '#07101C', zIndex: 1,
+                position: 'sticky', top: 0, background: '#F2F2F7', zIndex: 1,
               }}>
                 <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: TEXT }}>Filters &amp; Sort</h2>
                 <button onClick={() => setDrawerOpen(false)} style={{
@@ -877,7 +877,7 @@ function RFIsPage() {
               {/* Drawer footer */}
               <div style={{
                 padding: '14px 18px', borderTop: `1px solid ${BORDER}`,
-                display: 'flex', gap: 10, position: 'sticky', bottom: 0, background: '#07101C',
+                display: 'flex', gap: 10, position: 'sticky', bottom: 0, background: '#F2F2F7',
               }}>
                 <button onClick={() => { clearAllFilters(); }} style={{
                   flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10,
@@ -997,7 +997,7 @@ function RFIsPage() {
           {/* Bulk Action Bar */}
           {selectMode && selectedIds.size > 0 && (
             <div style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0A1929',
+              position: 'fixed', bottom: 0, left: 0, right: 0, background: '#FFFFFF',
               borderTop: `1px solid ${BORDER}`, padding: '12px 16px', display: 'flex', gap: 8,
               justifyContent: 'center', zIndex: 100,
             }}>
@@ -1042,7 +1042,7 @@ function RFIsPage() {
                     padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer',
                   }}>Cancel</button>
                   <button onClick={handleBulkReassign} disabled={bulkProcessing || !reassignTo.trim()} style={{
-                    flex: 1, background: bulkProcessing ? '#1E3A5F' : BLUE, border: 'none', borderRadius: 10,
+                    flex: 1, background: bulkProcessing ? '#E5E5EA' : BLUE, border: 'none', borderRadius: 10,
                     padding: '12px', color: bulkProcessing ? DIM : '#fff', fontSize: 14, fontWeight: 700, cursor: bulkProcessing ? 'wait' : 'pointer',
                   }}>{bulkProcessing ? 'Reassigning...' : 'Reassign'}</button>
                 </div>
@@ -1266,7 +1266,7 @@ function RFIsPage() {
             <input ref={photoInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={(e) => setResponsePhoto(e.target.files?.[0] || null)} />
           </div>
           <button type="submit" disabled={submitting} style={{
-            width: '100%', background: submitting ? '#1E3A5F' : GREEN, border: 'none', borderRadius: 14,
+            width: '100%', background: submitting ? '#E5E5EA' : GREEN, border: 'none', borderRadius: 14,
             padding: '16px', color: submitting ? DIM : '#000', fontSize: 16, fontWeight: 800,
             cursor: submitting ? 'wait' : 'pointer', marginTop: 12,
           }}>
@@ -1308,7 +1308,7 @@ function RFIsPage() {
             <div>
               <label style={lbl}>Spec Section</label>
               <select value={newSpec} onChange={(e) => setNewSpec(e.target.value)} style={inp}>
-                {SPEC_SECTIONS.map((s) => <option key={s} value={s} style={{ background: '#0D1D2E' }}>{s}</option>)}
+                {SPEC_SECTIONS.map((s) => <option key={s} value={s} style={{ background: '#FFFFFF' }}>{s}</option>)}
               </select>
             </div>
             <div>
@@ -1319,7 +1319,7 @@ function RFIsPage() {
         </div>
 
         <button type="submit" disabled={submitting} style={{
-          width: '100%', background: submitting ? '#1E3A5F' : PURPLE, border: 'none', borderRadius: 14,
+          width: '100%', background: submitting ? '#E5E5EA' : PURPLE, border: 'none', borderRadius: 14,
           padding: '18px', color: submitting ? DIM : '#fff', fontSize: 17, fontWeight: 800,
           cursor: submitting ? 'wait' : 'pointer', marginTop: 4,
         }}>
@@ -1332,7 +1332,7 @@ function RFIsPage() {
 
 export default function FieldRFIsPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#8BAAC8', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
       <RFIsPage />
     </Suspense>
   );
@@ -1340,7 +1340,7 @@ export default function FieldRFIsPage() {
 
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '8px', marginLeft: -8, display: 'flex', alignItems: 'center', marginBottom: 4 };
 const lbl: React.CSSProperties = { display: 'block', fontSize: 12, color: DIM, marginBottom: 4, fontWeight: 600 };
-const inp: React.CSSProperties = { width: '100%', background: '#07101C', border: '1px solid #1E3A5F', borderRadius: 10, padding: '11px 14px', color: '#F0F4FF', fontSize: 15, outline: 'none' };
+const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
 
 function hexRgb(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);

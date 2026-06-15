@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#D4A017', DARK = '#0F1419', CARD = '#1A1F2E', BORDER = '#263347';
-const DIM = '#8fa3c0', TEXT = '#e8edf8', GREEN = '#22C55E', RED = '#EF4444', BLUE = '#3B82F6';
+const GOLD = '#C8881C', DARK = '#F2F2F7', CARD = '#FFFFFF', BORDER = '#E5E5EA';
+const DIM = '#6E6E73', TEXT = '#1C1C1E', GREEN = '#22C55E', RED = '#EF4444', BLUE = '#3B82F6';
 
 type Endpoint = {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -221,7 +221,7 @@ export default function ApiDocsPage() {
               padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
               border: 'none',
               background: activeSection === s.key ? GOLD : 'transparent',
-              color: activeSection === s.key ? '#0d1117' : DIM,
+              color: activeSection === s.key ? '#F2F2F7' : DIM,
             }}
           >
             {s.label}
@@ -333,7 +333,7 @@ export default function ApiDocsPage() {
                     padding: '6px 16px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     border: 'none', textTransform: 'capitalize',
                     background: codeTab === lang ? GOLD : 'transparent',
-                    color: codeTab === lang ? '#0d1117' : DIM,
+                    color: codeTab === lang ? '#F2F2F7' : DIM,
                   }}
                 >
                   {lang}
@@ -507,8 +507,8 @@ export default function ApiDocsPage() {
                 disabled={tryLoading}
                 style={{
                   padding: '10px 28px', borderRadius: 8, cursor: 'pointer',
-                  background: `linear-gradient(135deg,${GOLD},#F0C040)`, border: 'none',
-                  color: '#0d1117', fontSize: 13, fontWeight: 700,
+                  background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                  color: '#F2F2F7', fontSize: 13, fontWeight: 700,
                   opacity: tryLoading ? 0.6 : 1,
                 }}
               >
