@@ -41,6 +41,41 @@ const NAV = [
   { href: '/field/more',    label: 'More',   PhIcon: SquaresFour },
 ];
 
+// Full grouped module list for the slide-out menu (mirrors the dashboard's IA).
+const MENU: { group: string; items: { href: string; label: string }[] }[] = [
+  { group: 'Daily Work', items: [
+    { href: '/field',          label: 'Field Hub' },
+    { href: '/field/clock',    label: 'Clock In / Out' },
+    { href: '/field/log',      label: 'Daily Log' },
+    { href: '/field/punch',    label: 'Punch List' },
+    { href: '/field/photos',   label: 'Photos' },
+    { href: '/field/safety',   label: 'Safety' },
+  ] },
+  { group: 'Documents & Drawings', items: [
+    { href: '/field/drawings',   label: 'Drawings' },
+    { href: '/field/rfis',       label: 'RFIs' },
+    { href: '/field/submittals', label: 'Submittals' },
+    { href: '/field/docs',       label: 'Documents' },
+    { href: '/field/inspect',    label: 'Inspections' },
+  ] },
+  { group: 'Coordination', items: [
+    { href: '/field/schedule',      label: 'Schedule' },
+    { href: '/field/deliveries',    label: 'Deliveries' },
+    { href: '/field/change-orders', label: 'Change Orders' },
+    { href: '/field/meetings',      label: 'Meetings' },
+    { href: '/field/equipment',     label: 'Equipment' },
+  ] },
+  { group: 'Team', items: [
+    { href: '/field/directory',   label: 'Directory' },
+    { href: '/field/crew-map',    label: 'Crew Map' },
+    { href: '/field/leaderboard', label: 'Leaderboard' },
+  ] },
+  { group: 'More', items: [
+    { href: '/field/qr',   label: 'QR Scanner' },
+    { href: '/field/more', label: 'All Field Tools →' },
+  ] },
+];
+
 
 export default function FieldLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -56,6 +91,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
   const [pushMsg, setPushMsg] = useState<{ title: string; body: string } | null>(null);
   const [projectName, setProjectName] = useState('');
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
   const [activeProjectId, setActiveProjectId] = useState('');
   const native = isNative();
@@ -235,11 +271,20 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
         {/* Top row: Logo + Status */}
         <div style={{ padding: '6px 14px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => { setShowMenu(true); hapticLight().catch(() => {}); }} aria-label="Menu"
+              style={{ background: 'none', border: 'none', padding: 4, marginLeft: -4, cursor: 'pointer', display: 'flex', alignItems: 'center', color: TEXT }}>
+              <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1={3} y1={6} x2={21} y2={6}/><line x1={3} y1={12} x2={21} y2={12}/><line x1={3} y1={18} x2={21} y2={18}/></svg>
+            </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icons/icon-96x96.png" alt="Saguaro" width={26} height={26} style={{ borderRadius: 6, border: '1px solid rgba(212,160,23,.2)' }} />
             <span style={{ fontWeight: 900, fontSize: 13, color: GOLD, letterSpacing: 1 }}>SAGUARO</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={() => { router.push('/field/sage'); hapticLight().catch(() => {}); }} aria-label="Ask Sage AI"
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(212,160,23,.12)', border: '1px solid rgba(212,160,23,.3)', borderRadius: 16, padding: '3px 10px', color: GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.9L21 11l-6.6 2.1L12 20l-2.4-6.9L3 11l6.6-2.1z"/></svg>
+              Sage
+            </button>
             {queueCount > 0 && (
               <button onClick={triggerSync} disabled={syncing || !online}
                 style={{ background: online ? 'rgba(212,160,23,.12)' : 'rgba(239,68,68,.12)', border: `1px solid ${online ? 'rgba(212,160,23,.25)' : 'rgba(239,68,68,.25)'}`, borderRadius: 16, padding: '2px 8px', color: online ? GOLD : RED, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
@@ -287,6 +332,50 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
 
       {/* Click-away for project picker */}
       {showProjectPicker && <div onClick={() => setShowProjectPicker(false)} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />}
+
+      {/* ── Slide-out navigation menu (unified IA) ── */}
+      {showMenu && (
+        <>
+          <div onClick={() => setShowMenu(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }} />
+          <div style={{ position: 'fixed', top: 0, bottom: 0, left: 0, width: '84%', maxWidth: 340, background: '#FFFFFF', zIndex: 201, boxShadow: '4px 0 28px rgba(0,0,0,0.18)', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: 'calc(14px + env(safe-area-inset-top)) 18px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/icons/icon-96x96.png" alt="" width={30} height={30} style={{ borderRadius: 7 }} />
+                <span style={{ fontWeight: 900, fontSize: 16, color: GOLD, letterSpacing: 1 }}>SAGUARO</span>
+              </div>
+              <button onClick={() => setShowMenu(false)} aria-label="Close menu" style={{ background: 'none', border: 'none', fontSize: 26, color: DIM, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
+            </div>
+
+            <div style={{ padding: '14px 14px 4px' }}>
+              <button onClick={() => { setShowMenu(false); router.push('/field/sage'); }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, background: 'linear-gradient(135deg,#C8881C,#E0A030)', border: 'none', borderRadius: 14, padding: '13px 15px', cursor: 'pointer', boxShadow: '0 3px 12px rgba(200,136,28,.3)' }}>
+                <svg width={22} height={22} viewBox="0 0 24 24" fill="#fff"><path d="M12 2l2.4 6.9L21 11l-6.6 2.1L12 20l-2.4-6.9L3 11l6.6-2.1z" /></svg>
+                <span style={{ flex: 1, textAlign: 'left' }}>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 800, color: '#fff' }}>Ask Sage AI</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,.9)', marginTop: 1 }}>Your built-in construction assistant</span>
+                </span>
+              </button>
+            </div>
+
+            {MENU.map(sec => (
+              <div key={sec.group} style={{ padding: '6px 8px' }}>
+                <div style={{ padding: '8px 12px 4px', fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: 0.6, textTransform: 'uppercase' }}>{sec.group}</div>
+                {sec.items.map(it => {
+                  const active = pathname === it.href;
+                  return (
+                    <button key={it.href} onClick={() => { setShowMenu(false); router.push(it.href); }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', background: active ? 'rgba(212,160,23,.1)' : 'none', border: 'none', borderRadius: 10, padding: '11px 14px', cursor: 'pointer', textAlign: 'left', color: active ? GOLD : TEXT, fontSize: 14.5, fontWeight: active ? 700 : 500 }}>
+                      {it.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+            <div style={{ height: 'calc(20px + env(safe-area-inset-bottom))' }} />
+          </div>
+        </>
+      )}
 
       {/* ── Inline push notification banner (native foreground) ── */}
       {pushMsg && (
