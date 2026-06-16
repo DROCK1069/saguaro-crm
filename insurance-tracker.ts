@@ -201,8 +201,13 @@ export async function uploadCOIHandler(req: NextRequest) {
     console.error('[insurance/upload] storage failed:', storageErr.message);
     return NextResponse.json({ error: `Storage upload failed: ${storageErr.message}` }, { status: 500 });
   }
-  const { data: urlData } = supabaseAdmin.storage.from('project-files').getPublicUrl(storagePath);
-  const pdfUrl = urlData?.publicUrl || '';
+  // The project-files bucket is private, so getPublicUrl produces a non-loadable
+  // URL. Sign it (1 year) so the mobile "View certificate" (Linking.openURL) and
+  // the web can open the COI directly.
+  const { data: urlData } = await supabaseAdmin.storage
+    .from('project-files')
+    .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
+  const pdfUrl = urlData?.signedUrl || '';
 
   // Use Claude to extract ACORD 25 fields
   let extracted: Record<string, unknown> = {};
