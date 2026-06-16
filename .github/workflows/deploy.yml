@@ -1,0 +1,29 @@
+name: Deploy to Vercel (production)
+
+on:
+  push:
+    branches: [signup-tenant-fix]
+  workflow_dispatch: {}
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+      # Upload source and let Vercel build it server-side, where the project's
+      # environment variables (Supabase keys, etc.) are injected — same as the
+      # CLI deploys that already work. Building in the runner fails on missing env.
+      - name: Deploy to production
+        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: team_ztEk3GVukQaYrxOKm5zOvUZi
+          VERCEL_PROJECT_ID: prj_Vz0NawniE1BqmQpsX9HxL5MqfYsb
