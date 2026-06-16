@@ -1,21 +1,22 @@
 import type { Metadata } from 'next';
+import { GetAppBadge } from '@/components/GetAppBadge';
 
 export const metadata: Metadata = {
-  title: 'Get the App — Saguaro Field | No App Store Required',
+  title: 'Get Saguaro Field — Native iOS App | Now in TestFlight Beta',
   description:
-    'Install Saguaro Field on iPhone, Android, iPad, Mac, or Windows in 30 seconds. No App Store. GPS clock-in, daily logs, offline mode, AI field assistant — free for your whole crew.',
+    'Saguaro Field is a native iPhone & iPad app — now in open beta on TestFlight. GPS clock-in, daily logs, photos, RFIs, punch lists, offline mode, and an AI field assistant. Free during the beta.',
   keywords: [
     'construction field app',
-    'PWA construction',
-    'no app store field app',
+    'iOS construction app',
+    'TestFlight beta construction',
     'GPS clock in construction',
     'daily logs app',
     'construction mobile app',
   ],
   openGraph: {
-    title: 'Saguaro Field — Install in 30 Seconds, No App Store',
+    title: 'Saguaro Field — Native iOS App, Now in TestFlight Beta',
     description:
-      'Free field app for construction crews. Works offline. Installs instantly. No IT required.',
+      'Native iPhone & iPad field app for construction crews. Works offline. Join the TestFlight beta free.',
   },
 };
 
@@ -815,7 +816,7 @@ export default function GetTheAppPage() {
             <div>
               <div className="hero-badge">
                 <div className="hero-badge-dot" />
-                LIVE IN 30 SECONDS — NO APP STORE REQUIRED
+                NOW IN BETA — TESTFLIGHT FOR iPHONE &amp; iPAD
               </div>
 
               <h1 className="hero-h1">
@@ -825,19 +826,19 @@ export default function GetTheAppPage() {
               </h1>
 
               <p className="hero-sub">
-                GPS clock-in. Daily logs. Photos. RFIs. Punch lists. Offline mode. AI field assistant. Works on every phone, tablet, and laptop — no App Store, no IT department, no extra cost.
+                GPS clock-in. Daily logs. Photos. RFIs. Punch lists. Offline mode. An AI field assistant in your pocket. A true native iPhone &amp; iPad app — now in open beta on TestFlight, free for your whole crew.
               </p>
 
               <div className="hero-ctas">
-                <a href="/app" className="btn-primary">Install Now — It&apos;s Free</a>
-                <a href="#how-to-install" className="btn-ghost">See How It Works</a>
+                <GetAppBadge />
+                <a href="#how-to-install" className="btn-ghost">How to install</a>
               </div>
 
               <div className="trust-pills">
-                <span className="trust-pill">✓ iOS · Android · iPad · Desktop</span>
+                <span className="trust-pill">✓ Native iPhone &amp; iPad</span>
                 <span className="trust-pill">✓ Works Offline</span>
-                <span className="trust-pill">✓ No App Store</span>
-                <span className="trust-pill">✓ Free Forever</span>
+                <span className="trust-pill">✓ Live on TestFlight</span>
+                <span className="trust-pill">✓ Free during beta</span>
               </div>
             </div>
 
@@ -964,20 +965,20 @@ export default function GetTheAppPage() {
         <div className="numbers-bar">
           <div className="numbers-inner">
             <div className="stat-item">
-              <div className="stat-number">30 sec</div>
-              <div className="stat-label">Average install time</div>
+              <div className="stat-number">iOS</div>
+              <div className="stat-label">Native iPhone &amp; iPad</div>
             </div>
             <div className="stat-item">
               <div className="stat-number">100%</div>
-              <div className="stat-label">Offline capable</div>
+              <div className="stat-label">Works offline</div>
             </div>
             <div className="stat-item">
-              <div className="stat-number">0 MB</div>
-              <div className="stat-label">App Store download</div>
+              <div className="stat-number">Beta</div>
+              <div className="stat-label">Live on TestFlight now</div>
             </div>
             <div className="stat-item">
               <div className="stat-number">Free</div>
-              <div className="stat-label">Forever for your crew</div>
+              <div className="stat-label">During the beta</div>
             </div>
           </div>
         </div>
@@ -1039,168 +1040,55 @@ export default function GetTheAppPage() {
         <section className="install-section" id="how-to-install">
           <div className="section-wrap">
             <div className="section-header">
-              <h2 className="section-h2">Install in 30 Seconds on Any Device</h2>
-              <p className="section-sub">No App Store. No download. Just open your browser and tap.</p>
+              <h2 className="section-h2">Install on iPhone or iPad via TestFlight</h2>
+              <p className="section-sub">Saguaro Field is in open beta on TestFlight. Two minutes and it&apos;s on your phone.</p>
             </div>
 
             <div className="platform-grid">
 
-              {/* iPhone / iPad */}
+              {/* iPhone / iPad — TestFlight steps */}
               <div className="platform-card">
                 <div className="platform-header">
                   <div className="platform-icon">
                     <svg viewBox="0 0 24 24">
                       <rect x="5" y="1" width="14" height="22" rx="3" />
-                      <circle cx="12" cy="19.5" r="1" fill="currentColor" stroke="none" style={{ fill: '#F59E0B' }} />
+                      <circle cx="12" cy="19.5" r="1" fill="#F59E0B" stroke="none" />
                       <path d="M9 4h6" />
                     </svg>
                   </div>
-                  <div className="platform-name">iPhone / iPad</div>
+                  <div className="platform-name">iPhone &amp; iPad</div>
                 </div>
                 <ol className="steps-list">
-                  <li className="step-item"><div className="step-num">1</div><span className="step-text">Open <strong>Safari</strong> and go to <strong>saguarocontrol.net/app</strong></span></li>
-                  <li className="step-item"><div className="step-num">2</div><span className="step-text">Tap the <strong>Share button</strong> (box with arrow pointing up)</span></li>
-                  <li className="step-item"><div className="step-num">3</div><span className="step-text">Tap <strong>&quot;Add to Home Screen&quot;</strong></span></li>
-                  <li className="step-item"><div className="step-num">4</div><span className="step-text">Tap <strong>&quot;Add&quot;</strong> — done. Icon appears instantly.</span></li>
+                  <li className="step-item"><div className="step-num">1</div><span className="step-text">Install Apple&apos;s free <strong>TestFlight</strong> app from the App Store</span></li>
+                  <li className="step-item"><div className="step-num">2</div><span className="step-text">Open <strong>testflight.apple.com/join/jg7jdtwx</strong> on your iPhone</span></li>
+                  <li className="step-item"><div className="step-num">3</div><span className="step-text">Tap <strong>&quot;Install&quot;</strong> in TestFlight — Saguaro Field lands on your home screen</span></li>
+                  <li className="step-item"><div className="step-num">4</div><span className="step-text">Open it, sign in, and you&apos;re on the jobsite</span></li>
                 </ol>
-                <div className="platform-note">Works on iOS 14+ · No App Store · Updates automatically</div>
+                <div className="platform-note">iOS 15+ · iPhone &amp; iPad · Free during the beta</div>
               </div>
 
-              {/* Android */}
+              {/* Join CTA */}
               <div className="platform-card">
                 <div className="platform-header">
                   <div className="platform-icon">
                     <svg viewBox="0 0 24 24">
-                      <path d="M6 18V10a6 6 0 0112 0v8" />
-                      <rect x="4" y="10" width="16" height="10" rx="2" />
-                      <line x1="2" y1="13" x2="4" y2="13" />
-                      <line x1="20" y1="13" x2="22" y2="13" />
-                      <line x1="8" y1="21" x2="8" y2="23" />
-                      <line x1="16" y1="21" x2="16" y2="23" />
-                      <circle cx="9" cy="13" r="1" fill="#F59E0B" stroke="none" />
-                      <circle cx="15" cy="13" r="1" fill="#F59E0B" stroke="none" />
+                      <path d="M12 3v12" />
+                      <path d="M8 11l4 4 4-4" />
+                      <rect x="4" y="17" width="16" height="4" rx="1" />
                     </svg>
                   </div>
-                  <div className="platform-name">Android</div>
+                  <div className="platform-name">Join the beta now</div>
                 </div>
-                <ol className="steps-list">
-                  <li className="step-item"><div className="step-num">1</div><span className="step-text">Open <strong>Chrome</strong> and go to <strong>saguarocontrol.net/app</strong></span></li>
-                  <li className="step-item"><div className="step-num">2</div><span className="step-text">Tap the <strong>three-dot menu ⋮</strong> at top right</span></li>
-                  <li className="step-item"><div className="step-num">3</div><span className="step-text">Tap <strong>&quot;Add to Home screen&quot;</strong></span></li>
-                  <li className="step-item"><div className="step-num">4</div><span className="step-text">Tap <strong>&quot;Add&quot;</strong> — app icon appears immediately.</span></li>
-                </ol>
-                <div className="platform-note">Works on Android 8+ · Chrome, Edge, Samsung Browser</div>
-              </div>
-
-              {/* iPad / Tablet */}
-              <div className="platform-card">
-                <div className="platform-header">
-                  <div className="platform-icon">
-                    <svg viewBox="0 0 24 24">
-                      <rect x="3" y="2" width="18" height="20" rx="2" />
-                      <circle cx="12" cy="19" r="1" fill="#F59E0B" stroke="none" />
-                      <line x1="8" y1="5" x2="16" y2="5" />
-                    </svg>
-                  </div>
-                  <div className="platform-name">iPad / Tablet</div>
-                </div>
-                <ol className="steps-list">
-                  <li className="step-item"><div className="step-num">1</div><span className="step-text">Open <strong>Safari</strong> (iOS) or <strong>Chrome</strong> (Android)</span></li>
-                  <li className="step-item"><div className="step-num">2</div><span className="step-text">Go to <strong>saguarocontrol.net/app</strong></span></li>
-                  <li className="step-item"><div className="step-num">3</div><span className="step-text">Tap Share → <strong>&quot;Add to Home Screen&quot;</strong> (iOS) or ⋮ → <strong>&quot;Add to Home screen&quot;</strong> (Android)</span></li>
-                  <li className="step-item"><div className="step-num">4</div><span className="step-text">Full tablet UI loads automatically — optimized layout.</span></li>
-                </ol>
-                <div className="platform-note">Full tablet UI · Landscape + portrait · Offline capable</div>
-              </div>
-
-              {/* Desktop / Laptop */}
-              <div className="platform-card">
-                <div className="platform-header">
-                  <div className="platform-icon">
-                    <svg viewBox="0 0 24 24">
-                      <rect x="2" y="3" width="20" height="14" rx="2" />
-                      <line x1="8" y1="21" x2="16" y2="21" />
-                      <line x1="12" y1="17" x2="12" y2="21" />
-                      <circle cx="5" cy="6" r=".8" fill="#F59E0B" stroke="none" />
-                      <circle cx="8" cy="6" r=".8" fill="#F59E0B" stroke="none" />
-                    </svg>
-                  </div>
-                  <div className="platform-name">Desktop / Laptop</div>
-                </div>
-                <ol className="steps-list">
-                  <li className="step-item"><div className="step-num">1</div><span className="step-text">Open <strong>Chrome, Edge, or Safari</strong> on your computer</span></li>
-                  <li className="step-item"><div className="step-num">2</div><span className="step-text">Go to <strong>saguarocontrol.net/app</strong></span></li>
-                  <li className="step-item"><div className="step-num">3</div><span className="step-text">Click the <strong>install icon ⊞</strong> in the address bar — or use the menu</span></li>
-                  <li className="step-item"><div className="step-num">4</div><span className="step-text">Click <strong>&quot;Install&quot;</strong> — app opens in its own window.</span></li>
-                </ol>
-                <div className="platform-note">Windows, Mac, Linux · Works in Chrome, Edge, Safari</div>
+                <p className="feat-desc" style={{ marginBottom: 20 }}>Saguaro Field is in open beta on TestFlight. Tap below on your iPhone or iPad to get in — it&apos;s free while we&apos;re in beta.</p>
+                <a href="https://testflight.apple.com/join/jg7jdtwx" target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-block' }}>Join the iOS Beta →</a>
+                <div className="platform-note" style={{ marginTop: 16 }}>Public TestFlight link · No charge</div>
               </div>
 
             </div>
           </div>
         </section>
 
-        {/* ── COMPARISON ── */}
-        <div className="section-wrap">
-          <div className="section-header">
-            <h2 className="section-h2">Why Not Just Use the App Store?</h2>
-            <p className="section-sub">App store apps are slow to install, require IT approval, eat storage, and charge per user. Saguaro Field is different.</p>
-          </div>
-
-          <div style={{ overflowX: 'auto' }}>
-            <table className="compare-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '30%' }}></th>
-                  <th>App Store App</th>
-                  <th className="saguaro-col">Saguaro Field (PWA)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="feature-col">Install time</td>
-                  <td className="app-store-col bad">5–15 minutes</td>
-                  <td className="saguaro-col good">30 seconds</td>
-                </tr>
-                <tr>
-                  <td className="feature-col">App Store required</td>
-                  <td className="app-store-col bad">Yes</td>
-                  <td className="saguaro-col good">No</td>
-                </tr>
-                <tr>
-                  <td className="feature-col">IT approval needed</td>
-                  <td className="app-store-col bad">Often</td>
-                  <td className="saguaro-col good">Never</td>
-                </tr>
-                <tr>
-                  <td className="feature-col">Storage used</td>
-                  <td className="app-store-col bad">200–500 MB</td>
-                  <td className="saguaro-col good">~5 MB</td>
-                </tr>
-                <tr>
-                  <td className="feature-col">Updates</td>
-                  <td className="app-store-col bad">Manual</td>
-                  <td className="saguaro-col good">Automatic</td>
-                </tr>
-                <tr>
-                  <td className="feature-col">Works offline</td>
-                  <td className="app-store-col bad">Sometimes</td>
-                  <td className="saguaro-col good">Always</td>
-                </tr>
-                <tr>
-                  <td className="feature-col">Cost</td>
-                  <td className="app-store-col bad">$5–30/user/mo</td>
-                  <td className="saguaro-col good">Free</td>
-                </tr>
-                <tr>
-                  <td className="feature-col">Works on any browser</td>
-                  <td className="app-store-col bad">No</td>
-                  <td className="saguaro-col good">Yes</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* (Removed the PWA-vs-App-Store comparison — Saguaro Field is now a native iOS app on TestFlight.) */}
 
         {/* ── TESTIMONIALS ── */}
         <div style={{ background: 'var(--raised)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
@@ -1212,7 +1100,7 @@ export default function GetTheAppPage() {
 
             <div className="testimonials-grid">
               <div className="testi-card">
-                <p className="testi-quote">&quot;I had the whole crew of 14 installed in under 10 minutes. Just texted them the link. No IT. No App Store. The GPS clock-in alone saves me an hour of timesheet chasing every Friday.&quot;</p>
+                <p className="testi-quote">&quot;I had the whole crew of 14 on the beta in under 10 minutes — just texted them the TestFlight link. The GPS clock-in alone saves me an hour of timesheet chasing every Friday.&quot;</p>
                 <div className="testi-author">Jake T., Superintendent — Mesa, AZ</div>
               </div>
               <div className="testi-card">
@@ -1231,15 +1119,15 @@ export default function GetTheAppPage() {
         <section className="final-cta">
           <div className="final-cta-inner">
             <h2 className="final-h2">30 Seconds Away From a Better Job Site</h2>
-            <a href="/app" className="btn-primary" style={{ display: 'inline-block', fontSize: '17px', padding: '18px 40px' }}>
-              Install Saguaro Field Free →
+            <a href="https://testflight.apple.com/join/jg7jdtwx" target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-block', fontSize: '17px', padding: '18px 40px' }}>
+              Join the iOS Beta →
             </a>
             <div className="final-sub">
               Or <a href="/signup">start a full company trial →</a>
             </div>
             <div className="trust-note">
-              Your crew gets the app free. Managers get the full platform free for 30 days.<br />
-              No credit card. No App Store. No IT department.
+              Your crew gets the app free during the beta. Managers get the full platform free for 30 days.<br />
+              No credit card required.
             </div>
           </div>
         </section>

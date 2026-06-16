@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { toCents, toDollars, subCents } from '@/lib/calc';
 
 const REPORT_CONFIGS: Record<string, { title: string; columns: string[] }> = {
   'job-cost':           { title: 'Job Cost Summary',         columns: ['Cost Code', 'Description', 'Original Budget', 'Committed', 'Actual Cost', 'Forecast', 'Variance'] },
@@ -135,15 +136,20 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           message: `Job Cost Report — ${(lines || []).length} cost codes (${timestamp})`,
           reportType, format, title: config.title, columns: config.columns,
-          rows: (lines || []).map((l: any) => [
-            l.cost_code ?? '',
-            l.description ?? '',
-            `$${(l.original_budget ?? 0).toLocaleString()}`,
-            `$${(l.committed ?? 0).toLocaleString()}`,
-            `$${(l.actual_cost ?? 0).toLocaleString()}`,
-            `$${(l.forecast_cost ?? l.original_budget ?? 0).toLocaleString()}`,
-            `$${((l.original_budget ?? 0) - (l.forecast_cost ?? l.original_budget ?? 0)).toLocaleString()}`,
-          ]),
+          rows: (lines || []).map((l: any) => {
+            const originalBudgetCents = toCents(l.original_budget ?? 0);
+            const forecastCents = toCents(l.forecast_cost ?? l.original_budget ?? 0);
+            const varianceCents = subCents(originalBudgetCents, forecastCents);
+            return [
+              l.cost_code ?? '',
+              l.description ?? '',
+              `$${(l.original_budget ?? 0).toLocaleString()}`,
+              `$${(l.committed ?? 0).toLocaleString()}`,
+              `$${(l.actual_cost ?? 0).toLocaleString()}`,
+              `$${toDollars(forecastCents).toLocaleString()}`,
+              `$${toDollars(varianceCents).toLocaleString()}`,
+            ];
+          }),
           source: 'live',
         });
       }

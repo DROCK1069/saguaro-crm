@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import { computePayApp, toCents, toDollars } from '@/lib/calc';
 
 async function authenticateSubPortal(req: NextRequest) {
   const token =
@@ -37,8 +38,8 @@ export async function GET(req: NextRequest) {
         `*,
          line_items:portal_sub_pay_app_line_items(*)`
       )
-      .eq('sub_id', session.sub_id)
-      .eq('project_id', session.project_id)
+      .eq('sub_id', session.sub_id ?? '')
+      .eq('project_id', session.project_id ?? '')
       .eq('tenant_id', session.tenant_id)
       .order('period_to', { ascending: false });
 
@@ -83,14 +84,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calculate totals from line items
-    const calcTotal = line_items.reduce(
-      (sum: number, item: any) => sum + (item.amount_requested || 0),
+    // ── Money math through the exact-cents engine (DB dollars → cents) ──
+    // DB stores dollars; convert every input to integer cents, compute with the
+    // engine, then convert outputs back to dollars for storage.
+    const retPct = retainage_percent ?? 10;
+
+    // Prior periods' "earned less retainage" — used so currentPaymentDue nets out
+    // certificates already issued. Accepts either dollars on the body or 0.
+    const previousPaymentsLessRetainage = toCents(
+      body.previous_payments_less_retainage ?? 0
+    );
+
+    const engineLines = line_items.map((item: any, idx: number) => {
+      const scheduledValue = toCents(item.scheduled_value ?? 0);
+      const fromPrevious = toCents(item.previous_completed ?? 0);
+      const thisPeriod = toCents(item.this_period ?? item.amount_requested ?? 0);
+      const storedMaterials = toCents(item.stored_materials ?? 0);
+      return {
+        id: String(item.id ?? item.sov_item_id ?? idx),
+        description: item.description ?? '',
+        scheduledValue,
+        fromPrevious,
+        thisPeriod,
+        storedMaterials,
+      };
+    });
+
+    const calc = computePayApp({
+      lines: engineLines,
+      retainagePercent: retPct,
+      previousPaymentsLessRetainage,
+    });
+
+    // Gross billed this period across all lines (this period + stored materials),
+    // which is what the `amount` column represents.
+    const grossThisPeriodCents = calc.lines.reduce(
+      (sum, line, idx) =>
+        sum + line.completedAndStored - engineLines[idx].fromPrevious,
       0
     );
-    const retPct = retainage_percent || 10;
-    const retainageAmount = calcTotal * (retPct / 100);
-    const netAmount = calcTotal - retainageAmount;
+
+    // `amount` (gross this-period request), `retainage` (on completed+stored),
+    // `net_amount` (earned-less-retainage minus prior certificates) — all dollars.
+    const amountDollars =
+      total_requested != null ? total_requested : toDollars(grossThisPeriodCents);
+    const retainageAmount = toDollars(calc.retainageTotal);
+    const netAmount = toDollars(calc.currentPaymentDue);
 
     // Create the pay app.
     // Live portal_sub_pay_apps columns: period_from, period_to, amount, retainage,
@@ -106,7 +145,7 @@ export async function POST(req: NextRequest) {
         tenant_id: session.tenant_id,
         period_from: period_start || null,
         period_to: period_end,
-        amount: total_requested || calcTotal,
+        amount: amountDollars,
         retainage: retainageAmount,
         net_amount: netAmount,
         status: 'submitted',
@@ -124,20 +163,21 @@ export async function POST(req: NextRequest) {
     // percent_complete, balance. There is no tenant_id / sov_item_id / amount_requested
     // / gc_* column. previous_completed -> prev_completed; total_completed and balance
     // are derived.
-    const lineItemRows = line_items.map((item: any) => {
-      const scheduledValue = item.scheduled_value || 0;
-      const prevCompleted = item.previous_completed || 0;
-      const thisPeriod = item.this_period || item.amount_requested || 0;
-      const totalCompleted = prevCompleted + thisPeriod;
+    // Line items: completed/balance/percent come from the engine (exact cents),
+    // converted back to dollars for storage. total_completed here is the
+    // engine's completed+stored (prior + this period + stored materials).
+    const lineItemRows = line_items.map((item: any, idx: number) => {
+      const src = engineLines[idx];
+      const result = calc.lines[idx];
       return {
         pay_app_id: payApp.id,
         description: item.description,
-        scheduled_value: scheduledValue,
-        prev_completed: prevCompleted,
-        this_period: thisPeriod,
-        total_completed: totalCompleted,
-        percent_complete: item.percent_complete || 0,
-        balance: scheduledValue - totalCompleted,
+        scheduled_value: toDollars(src.scheduledValue),
+        prev_completed: toDollars(src.fromPrevious),
+        this_period: toDollars(src.thisPeriod),
+        total_completed: toDollars(result.completedAndStored),
+        percent_complete: result.percentComplete,
+        balance: toDollars(result.balanceToFinish),
       };
     });
 

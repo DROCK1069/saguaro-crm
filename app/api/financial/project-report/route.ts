@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import {
+  toCents,
+  toDollars,
+  sumCents,
+  subCents,
+  summarizeContract,
+  type Cents,
+} from '@/lib/calc';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,9 +50,10 @@ export async function GET(req: NextRequest) {
 
     // Recompute money from child tables; fall back to the projects roll-up
     // columns only when a child aggregate is null (no child rows at all).
-    const sumOrNull = (rows: Record<string, unknown>[] | null, key: string): number | null => {
+    // All sums are done in integer cents via the engine — never on floats.
+    const sumOrNull = (rows: Record<string, unknown>[] | null, key: string): Cents | null => {
       if (!rows || rows.length === 0) return null;
-      return rows.reduce((acc, r) => acc + num(r[key]), 0);
+      return sumCents(rows.map((r) => toCents(num(r[key]))));
     };
 
     const payApps = payAppsRes.error ? null : payAppsRes.data;
@@ -54,24 +63,36 @@ export async function GET(req: NextRequest) {
     const retainageFromChildren = sumOrNull(payApps, 'total_retainage');
     const cosFromChildren = sumOrNull(changeOrders, 'amount');
 
-    const original_contract = num(p.original_contract_value ?? p.contract_value ?? p.original_contract ?? p.contract_amount);
-    const approved_cos = cosFromChildren != null ? cosFromChildren : num(p.approved_change_orders ?? p.net_change_by_co);
-    const billed_to_date = billedFromChildren != null ? billedFromChildren : num(p.billed_to_date ?? p.total_billed);
-    const retainage_held = retainageFromChildren != null ? retainageFromChildren : num(p.retainage_held ?? p.total_retainage);
-    const revised_contract = original_contract + approved_cos;
-    const balance_to_finish = revised_contract - billed_to_date;
-    const percent_billed = revised_contract > 0
-      ? Math.round((billed_to_date / revised_contract) * 100)
-      : 0;
+    // DB stores dollars; convert to cents for all arithmetic.
+    const originalContractCents = toCents(
+      num(p.original_contract_value ?? p.contract_value ?? p.original_contract ?? p.contract_amount),
+    );
+    const approvedCosCents =
+      cosFromChildren != null ? cosFromChildren : toCents(num(p.approved_change_orders ?? p.net_change_by_co));
+    const billedToDateCents =
+      billedFromChildren != null ? billedFromChildren : toCents(num(p.billed_to_date ?? p.total_billed));
+    const retainageHeldCents =
+      retainageFromChildren != null ? retainageFromChildren : toCents(num(p.retainage_held ?? p.total_retainage));
+
+    // Revised contract = original + APPROVED change orders only. The
+    // change_orders query above is already scoped to status='approved', so the
+    // summed amount is fed in as a single approved line.
+    const { revisedContract: revisedContractCents } = summarizeContract(originalContractCents, [
+      { id: 'approved-cos', description: 'Approved change orders', amount: approvedCosCents, status: 'approved' },
+    ]);
+
+    const balanceToFinishCents = subCents(revisedContractCents, billedToDateCents);
+    const percent_billed =
+      revisedContractCents > 0 ? Math.round((billedToDateCents / revisedContractCents) * 100) : 0;
 
     return NextResponse.json({
       summary: {
-        original_contract,
-        approved_cos,
-        revised_contract,
-        billed_to_date,
-        retainage_held,
-        balance_to_finish,
+        original_contract: toDollars(originalContractCents),
+        approved_cos: toDollars(approvedCosCents),
+        revised_contract: toDollars(revisedContractCents),
+        billed_to_date: toDollars(billedToDateCents),
+        retainage_held: toDollars(retainageHeldCents),
+        balance_to_finish: toDollars(balanceToFinishCents),
         percent_billed,
       },
     });

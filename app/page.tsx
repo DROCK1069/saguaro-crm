@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Blueprint, Robot, CurrencyDollar, DeviceMobile, PaintBrush, WifiHigh, Cube, Drone, Buildings, Hammer, HouseSimple, Building, ShieldCheck, ChartLine, User, UsersThree, PenNib, Handshake, BookOpen, Calculator, Scales, Wrench, Trophy, CaretDown, List, X } from '@phosphor-icons/react';
+import { IntegrationStrip } from '../components/Integrations';
 
 /* ── palette ── */
 const BG = '#F2F2F7';
@@ -54,7 +55,7 @@ const FEATURES = [
   {
     icon: 'M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z|M12 18h.01',
     title: 'Field Mobile App',
-    desc: 'Native-speed PWA for daily logs, photos, GPS clock-in, punch lists, and inspections. Works offline on any device.',
+    desc: 'Native iPhone & iPad app for daily logs, photos, GPS clock-in, punch lists, and inspections. Works offline. Now in TestFlight beta.',
     href: '/get-the-app',
   },
   {
@@ -160,47 +161,31 @@ export default function LandingPage() {
         }, []);
 
         const menus = {
-          products: {
-            label: 'Products',
+          platform: {
+            label: 'Platform',
             items: [
-              { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Upload plans, get instant estimates', href: '/#features' },
-              { icon: <Robot size={22} weight="duotone" color="#C8881C" />, title: 'Sage AI Assistant', desc: 'Your AI construction advisor', href: '/#features' },
-              { icon: <CurrencyDollar size={22} weight="duotone" color="#C8881C" />, title: 'Financial Suite', desc: 'Pay apps, invoices, change orders', href: '/#features' },
-              { icon: <DeviceMobile size={22} weight="duotone" color="#C8881C" />, title: 'Field App', desc: 'Mobile-first job site tools', href: '/field-app' },
+              { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, full estimate out in 60 seconds', href: '/roi-calculator' },
               { icon: <PaintBrush size={22} weight="duotone" color="#C8881C" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
-              { icon: <WifiHigh size={22} weight="duotone" color="#C8881C" />, title: 'Low Voltage / IT', desc: 'Network design & configuration', href: '/#features' },
-              { icon: <Cube size={22} weight="duotone" color="#C8881C" />, title: 'BIM 3D Viewer', desc: 'Upload IFC models, tap for specs', href: '/field-app' },
-              { icon: <Drone size={22} weight="duotone" color="#C8881C" />, title: 'Drone Analysis', desc: 'AI-powered site progress', href: '/field-app' },
+              { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
             ],
           },
           solutions: {
             label: 'Solutions',
             items: [
               { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
-              { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Contractors', desc: 'Subs, trades, field crews', href: '/industry/specialty-subcontractors' },
-              { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Home Builders', desc: 'Residential construction', href: '/industry/residential-remodelers' },
-              { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Developers', desc: 'Multi-project portfolio', href: '/industry/commercial-contractors' },
-              { icon: <ShieldCheck size={22} weight="duotone" color="#C8881C" />, title: 'Compliance & Safety', desc: 'OSHA, insurance, lien tracking', href: '/#features' },
-              { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
-            ],
-          },
-          portals: {
-            label: 'Portals',
-            items: [
-              { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner / Client Portal', desc: 'Live project visibility for owners', href: '/portals/client' },
-              { icon: <UsersThree size={22} weight="duotone" color="#C8881C" />, title: 'Subcontractor Portal', desc: 'Self-service docs & pay apps', href: '/portals/sub' },
-              { icon: <PenNib size={22} weight="duotone" color="#C8881C" />, title: 'E-Signature Portal', desc: 'Sign documents in-browser', href: '/portals/sign' },
-              { icon: <Handshake size={22} weight="duotone" color="#C8881C" />, title: 'Integrations', desc: 'QuickBooks, Sage, Stripe', href: '/#features' },
+              { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/industry/specialty-subcontractors' },
+              { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/industry/residential-remodelers' },
+              { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/industry/commercial-contractors' },
+              { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/industry/roofing-contractors' },
             ],
           },
           resources: {
             label: 'Resources',
             items: [
+              { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
+              { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
               { icon: <BookOpen size={22} weight="duotone" color="#C8881C" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
-              { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/design/roi' },
-              { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare Platforms', desc: 'Saguaro vs Procore vs Buildertrend', href: '/#compare' },
-              { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Prevailing Wage Calc', desc: 'Davis-Bacon rates by state/trade', href: '/roi-calculator' },
-              { icon: <Trophy size={22} weight="duotone" color="#C8881C" />, title: 'Leaderboard', desc: 'Gamification & team performance', href: '/field/leaderboard' },
+              { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
             ],
           },
         };
@@ -213,8 +198,14 @@ export default function LandingPage() {
             padding: '0 max(24px, 4vw)', height: 56,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            {/* Logo */}
-            <a href="/" style={{ color: '#C8881C', fontWeight: 800, fontSize: 18, letterSpacing: '0.12em', textDecoration: 'none' }}>SAGUARO</a>
+            {/* Logo lockup — hexagon mark + wordmark, mirrors the badge */}
+            <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
+              <img src="/apple-touch-icon.png" alt="" width={34} height={34} style={{ borderRadius: 8, display: 'block', boxShadow: '0 1px 4px rgba(0,0,0,0.18)' }} />
+              <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.04 }}>
+                <span style={{ color: '#C8881C', fontWeight: 800, fontSize: 16, letterSpacing: '0.14em' }}>SAGUARO</span>
+                <span style={{ color: '#86868B', fontWeight: 600, fontSize: 7.5, letterSpacing: '0.26em', textTransform: 'uppercase' as const }}>Control Systems</span>
+              </span>
+            </a>
 
             {/* Desktop menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
@@ -299,6 +290,8 @@ export default function LandingPage() {
       {/* ══════════ 3. HERO ══════════ */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(242,242,247,0.97) 0%, rgba(242,242,247,0.95) 45%, rgba(242,242,247,0.55) 100%)', zIndex: 0 }} />
+        {/* Brand: subtle sunset glow echoing the Saguaro badge */}
+        <div style={{ position: 'absolute' as const, top: -140, right: -60, width: 560, height: 560, background: 'radial-gradient(circle, rgba(232,140,40,0.20) 0%, rgba(212,160,23,0.07) 42%, transparent 70%)', zIndex: 0, pointerEvents: 'none' as const }} />
         {/* left */}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.35)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.4, padding: '6px 13px', borderRadius: 999, marginBottom: 20, textTransform: 'uppercase' as const }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(212,160,23,0.6)' }} />AI-POWERED CONSTRUCTION CRM</span>
@@ -377,18 +370,8 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Integration logos */}
-      <div style={{ padding: '32px 0', overflow: 'hidden', borderTop: '1px solid #E5E5EA', borderBottom: '1px solid #E5E5EA' }}>
-        <div style={{ textAlign: 'center' as const, color: '#86868B', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 20 }}>
-          Integrates with tools you already use
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 60, flexWrap: 'wrap' as const, opacity: 0.5 }}>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/QuickBooks_Logo.svg/320px-QuickBooks_Logo.svg.png" alt="QuickBooks" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/320px-Stripe_Logo%2C_revised_2016.svg.png" alt="Stripe" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/DocuSign_Logo.svg/320px-DocuSign_Logo.svg.png" alt="DocuSign" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Autodesk_Logo.svg/320px-Autodesk_Logo.svg.png" alt="Autodesk" style={{ height: 28, filter: 'grayscale(1) brightness(0.8)' }} />
-        </div>
-      </div>
+      {/* Integration logos — real vendor marks (react-icons), only for shipped integrations */}
+      <IntegrationStrip />
 
       {/* ══════════ 4. FEATURE GRID ══════════ */}
       <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px' }}>
@@ -408,7 +391,7 @@ export default function LandingPage() {
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)'; }}>
               <div style={{ height: 160, overflow: 'hidden', borderRadius: '16px 16px 0 0', position: 'relative' as const }}>
                 <img src={cardImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                background: 'linear-gradient(transparent, rgba(0,0,0,0.25))'
+                <div style={{ position: 'absolute' as const, inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.25))' }} />
               </div>
               <div style={{ padding: '24px 22px' }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
@@ -470,7 +453,7 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid #E5E5EA' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
             <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 700, color: GOLD, textAlign: 'center' as const }}>Saguaro</div>
-            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Procore_Technologies_logo.svg/2560px-Procore_Technologies_logo.svg.png" alt="Procore" style={{ height: 20, filter: 'grayscale(1) brightness(0.7)' }} /></div>
+            <div style={{ padding: '14px 12px', fontSize: 13, fontWeight: 700, color: DIM, textAlign: 'center' as const }}>Procore</div>
             <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, opacity: 0.6 }}>Buildertrend</div>
           </div>
           {/* rows */}
@@ -597,7 +580,13 @@ export default function LandingPage() {
           </div>
         </div>
         <div style={{ borderTop: '1px solid #E5E5EA', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
-          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: 2 }}>SAGUARO</span>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
+            <img src="/apple-touch-icon.png" alt="" width={28} height={28} style={{ borderRadius: 7, display: 'block' }} />
+            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.04 }}>
+              <span style={{ color: '#C8881C', fontWeight: 800, fontSize: 15, letterSpacing: '0.12em' }}>SAGUARO</span>
+              <span style={{ color: '#86868B', fontWeight: 600, fontSize: 7, letterSpacing: '0.24em', textTransform: 'uppercase' as const }}>Control Systems</span>
+            </span>
+          </a>
           <span style={{ fontSize: 12, color: DIM }}>&copy; {new Date().getFullYear()} Saguaro Technologies Inc. All rights reserved.</span>
         </div>
       </footer>

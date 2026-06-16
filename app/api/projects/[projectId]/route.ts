@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { toCents, toDollars, sumCents, summarizeContract } from '@/lib/calc';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
@@ -42,16 +43,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     const punch = (punchItems || []) as any[];
     const p = project as any;
 
-    const approvedCOs = cos.filter((c: any) => c.status === 'approved');
-    const contractSumToDate = (p.contract_amount || 0) + approvedCOs.reduce((s: number, co: any) => s + (co.amount || 0), 0);
-    const totalBilledToDate = apps.length > 0 ? (apps[0].total_completed_stored || 0) : 0;
+    // Revised contract = original + APPROVED change orders only (exact cents).
+    const contractSummary = summarizeContract(
+      toCents(p.contract_amount || 0),
+      cos.map((co: any) => ({
+        id: String(co.id),
+        description: String(co.description ?? ''),
+        amount: toCents(co.amount || 0),
+        status: co.status,
+      })),
+    );
+    const contractSumToDate = toDollars(contractSummary.revisedContract);
+    const totalBilledToDate = apps.length > 0 ? toDollars(toCents(apps[0].total_completed_stored || 0)) : 0;
 
-    // Budget health aggregates
+    // Budget health aggregates — exact-cents sums, no float reduction.
     const budgetHealth = {
-      originalBudget: lines.reduce((s: number, l: any) => s + (l.original_budget || 0), 0),
-      committedCost: lines.reduce((s: number, l: any) => s + (l.committed || 0), 0),
-      actualCost: lines.reduce((s: number, l: any) => s + (l.actual || 0), 0),
-      forecastCost: lines.reduce((s: number, l: any) => s + (l.projected || l.original_budget || 0), 0),
+      originalBudget: toDollars(sumCents(lines.map((l: any) => toCents(l.original_budget || 0)))),
+      committedCost: toDollars(sumCents(lines.map((l: any) => toCents(l.committed || 0)))),
+      actualCost: toDollars(sumCents(lines.map((l: any) => toCents(l.actual || 0)))),
+      forecastCost: toDollars(sumCents(lines.map((l: any) => toCents(l.projected || l.original_budget || 0)))),
       lineCount: lines.length,
     };
 

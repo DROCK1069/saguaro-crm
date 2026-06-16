@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { COMPETITORS } from '@/lib/competitors';
+import { IntegrationStrip } from '@/components/Integrations';
 
 export const metadata: Metadata = {
   title: 'Saguaro vs Every Construction Software — Full Comparisons',
@@ -252,6 +253,9 @@ export default function ComparePage() {
             </div>
           </div>
         </section>
+
+        {/* TRUSTED INTEGRATIONS */}
+        <IntegrationStrip />
 
         {/* FOOTER */}
         <footer style={{ padding: '40px 32px', textAlign: 'center', borderTop: `1px solid ${BORDER}` }}>

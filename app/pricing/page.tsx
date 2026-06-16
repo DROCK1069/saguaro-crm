@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { IntegrationStrip } from '@/components/Integrations';
 
 const C = {
   dark: '#0B0B0F',
@@ -388,7 +389,7 @@ export default function PricingPage() {
                 { step: '1', icon: '📝', title: 'Sign Up Free', desc: 'Create your account in 30 seconds. No credit card required. 30-day free trial starts immediately.' },
                 { step: '2', icon: '🌐', title: 'Log In — It\'s Instant', desc: 'Open any browser and go to saguarocontrol.net. Your full platform is live — no download, no install.' },
                 { step: '3', icon: '⚙️', title: '5-Min Company Setup', desc: 'Enter your company name, logo, and team roles. Our onboarding wizard walks you through every step.' },
-                { step: '4', icon: '📱', title: 'Install on Your Phone', desc: 'Visit the site on your iPhone or Android and tap "Add to Home Screen." Works offline. No App Store.' },
+                { step: '4', icon: '📱', title: 'Get the iOS App', desc: 'Install Saguaro Field on your iPhone or iPad from TestFlight — our native iOS field app. Works offline.' },
               ].map((s, i, arr) => (
                 <div key={i} style={{ padding: '0 28px', borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none', position: 'relative' }}>
                   <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
@@ -721,6 +722,9 @@ export default function PricingPage() {
             ))}
           </div>
         </section>
+
+        {/* Trusted integrations */}
+        <IntegrationStrip />
 
         {/* Final CTA */}
         <section style={{ padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>

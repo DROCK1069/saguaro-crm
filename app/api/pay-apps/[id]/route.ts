@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { toCents, toDollars, percentOf, subCents } from '@/lib/calc';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -64,28 +65,35 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // detail sheet's retainage / payment-due stay consistent after an edit.
     const workEdited = body.work_completed ?? body.workCompleted ?? body.thisPeriod;
     if (workEdited !== undefined) {
-      const workCompleted = Number(workEdited) || 0;
-      // Need retainage_percent to recompute; use the provided value or read the row.
+      // Recompute derived money fields with the exact-cents calc engine.
+      // Need retainage % and previous certificates; use provided values or read the row.
       let retainagePercent = Number(body.retainage_percent ?? body.retainagePercent);
-      if (!Number.isFinite(retainagePercent)) {
+      let prevPaymentsDollars = Number(body.prev_payments ?? body.prevPayments);
+      if (!Number.isFinite(retainagePercent) || !Number.isFinite(prevPaymentsDollars)) {
         const { data: existing } = await db
           .from('pay_applications')
-          .select('retainage_percent')
+          .select('retainage_percent, less_previous_certificates')
           .eq('id', id)
           .eq('tenant_id', user.tenantId)
           .maybeSingle();
-        retainagePercent = Number((existing as any)?.retainage_percent ?? 10) || 0;
+        if (!Number.isFinite(retainagePercent)) retainagePercent = Number((existing as any)?.retainage_percent ?? 10) || 0;
+        if (!Number.isFinite(prevPaymentsDollars)) prevPaymentsDollars = Number((existing as any)?.less_previous_certificates ?? 0) || 0;
       }
-      const retainageAmount = (workCompleted * retainagePercent) / 100;
-      const netDue = workCompleted - retainageAmount;
-      headerFields.this_period = workCompleted;
-      headerFields.total_completed_stored = workCompleted;
-      headerFields.total_completed = workCompleted;
-      headerFields.total_retainage = retainageAmount;
-      headerFields.retainage_amount = retainageAmount;
-      headerFields.total_earned_less_retainage = netDue;
-      headerFields.current_payment_due = netDue;
-      headerFields.net_payment_due = netDue;
+      const workCents = toCents(Number(workEdited) || 0);
+      const retainageCents = percentOf(workCents, retainagePercent);
+      const earnedCents = subCents(workCents, retainageCents);
+      // current payment due = earned-less-retainage − previous certificates.
+      // (Bug fix: prior payments were previously omitted, over-billing any project
+      // with earlier certificates.)
+      const currentDueCents = subCents(earnedCents, toCents(prevPaymentsDollars));
+      headerFields.this_period = toDollars(workCents);
+      headerFields.total_completed_stored = toDollars(workCents);
+      headerFields.total_completed = toDollars(workCents);
+      headerFields.total_retainage = toDollars(retainageCents);
+      headerFields.retainage_amount = toDollars(retainageCents);
+      headerFields.total_earned_less_retainage = toDollars(earnedCents);
+      headerFields.current_payment_due = toDollars(currentDueCents);
+      headerFields.net_payment_due = toDollars(currentDueCents);
     }
 
     if (Object.keys(headerFields).length > 0) {

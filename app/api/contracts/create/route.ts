@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { summarizeContract, toCents, toDollars, type ChangeOrder } from '@/lib/calc';
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -14,6 +15,28 @@ export async function POST(req: NextRequest) {
 
     const db = createServerClient();
 
+    // Contract money is computed by the exact-cents engine. The contract amount
+    // is the original contract plus only APPROVED change orders (pending/rejected
+    // are excluded). DB stores dollars, so convert to cents for math and back to
+    // dollars to store.
+    let amount: number | null = null;
+    if (body.amount !== undefined && body.amount !== null) {
+      const originalCents = toCents(body.amount as number | string);
+      if (Array.isArray(body.change_orders)) {
+        const changeOrders: ChangeOrder[] = body.change_orders.map(
+          (c: { id?: string; description?: string; amount: number | string; status: ChangeOrder['status'] }) => ({
+            id: String(c.id ?? ''),
+            description: String(c.description ?? ''),
+            amount: toCents(c.amount),
+            status: c.status,
+          })
+        );
+        amount = toDollars(summarizeContract(originalCents, changeOrders).revisedContract);
+      } else {
+        amount = toDollars(originalCents);
+      }
+    }
+
     const { data, error } = await db.from('contracts').insert({
       tenant_id: user.tenantId,
       created_by: user.id,
@@ -27,7 +50,7 @@ export async function POST(req: NextRequest) {
       party_company: body.party_company || null,
       trade: body.trade || null,
       scope_of_work: body.scope_of_work || null,
-      amount: body.amount || null,
+      amount,
       retainage_pct: body.retainage_pct || null,
       status: body.status || null,
       start_date: body.start_date || null,

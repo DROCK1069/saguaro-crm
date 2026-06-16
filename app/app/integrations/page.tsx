@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { IntegrationStrip } from '@/components/Integrations';
 
 const GOLD = '#C8881C', DARK = '#F2F2F7', CARD = '#FFFFFF', BORDER = '#E5E5EA';
 const DIM = '#6E6E73', TEXT = '#1C1C1E', GREEN = '#22C55E', RED = '#EF4444';
@@ -302,6 +303,9 @@ export default function IntegrationsPage() {
           </Link>
         </div>
       </div>
+
+      {/* Supported Integrations Strip */}
+      <IntegrationStrip />
 
       {/* Category Tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { IntegrationStrip } from '@/components/Integrations';
 
 const C = {
   dark: '#0B0B0F',
@@ -315,6 +316,9 @@ export default function FeaturesPage() {
             </div>
           </div>
         </section>
+
+        {/* Trusted integrations */}
+        <IntegrationStrip />
 
         {/* Footer */}
         <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>

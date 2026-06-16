@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 import { getPortalSession, PORTAL_PERMS } from '@/lib/portal-auth';
+import { toCents, toDollars, addCents, subCents } from '@/lib/calc';
 
 /** GET — financial summary for the client portal financials tab */
 export async function GET(req: NextRequest) {
@@ -42,21 +43,28 @@ export async function GET(req: NextRequest) {
       .order('sort_order', { ascending: true });
 
     const budget_lines = (budgetRows || []).map((line: any) => {
-      const original = line.original_budget ?? 0;
-      const changes = line.approved_changes ?? 0;
-      const current = line.revised_budget ?? original + changes;
-      const spent = line.actual ?? 0;
-      const remaining = line.variance ?? current - spent;
+      // DB dollars → cents for any fallback arithmetic, back to dollars to output.
+      const originalC = toCents(line.original_budget ?? 0);
+      const changesC = toCents(line.approved_changes ?? 0);
+      // revised budget = original + approved changes (when not stored explicitly)
+      const currentC =
+        line.revised_budget != null
+          ? toCents(line.revised_budget)
+          : addCents(originalC, changesC);
+      const spentC = toCents(line.actual ?? 0);
+      // remaining/variance = revised budget − actual spent (when not stored)
+      const remainingC =
+        line.variance != null ? toCents(line.variance) : subCents(currentC, spentC);
       return {
         id: line.id,
         code: line.cost_code || '',
         description: line.description || '',
-        original,
-        changes,
-        current,
+        original: toDollars(originalC),
+        changes: toDollars(changesC),
+        current: toDollars(currentC),
         committed: line.committed ?? 0,
-        spent,
-        remaining,
+        spent: toDollars(spentC),
+        remaining: toDollars(remainingC),
       };
     });
 

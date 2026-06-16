@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateG702, generateG703, saveDocument } from '@/lib/pdf-engine';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import {
+  toCents,
+  toDollars,
+  addCents,
+  sumCents,
+  computePayApp,
+  type SovLine,
+} from '@/lib/calc';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +24,41 @@ export async function POST(req: NextRequest) {
     if (!payApp) return NextResponse.json({ error: 'Pay app not found' }, { status: 404 });
     const pa = payApp as any;
     const project = pa.projects;
+    const rows = (lineItems || []) as any[];
+
+    // ── Money math: everything in exact integer cents via @/lib/calc ──
+    // DB stores dollars → convert to cents before any arithmetic, back to
+    // dollars only when handing values to the PDF (which renders dollars).
+    const retainagePercent = Number(pa.retainage_percent) || 10;
+    const previousPaymentsLessRetainage = toCents(pa.prev_payments || 0);
+
+    const sovLines: SovLine[] = rows.map((i, idx) => ({
+      id: String(i.id ?? i.line_number ?? idx + 1),
+      description: i.description || '',
+      scheduledValue: toCents(i.scheduled_value || 0),
+      fromPrevious: toCents(i.work_from_prev || 0),
+      thisPeriod: toCents(i.work_this_period || 0),
+      storedMaterials: toCents(i.materials_stored || 0),
+    }));
+
+    // Compute the schedule of values so the document cross-foots. The computed
+    // totals — not the client/DB-supplied ones — drive the math.
+    const calc = computePayApp({
+      lines: sovLines,
+      retainagePercent,
+      previousPaymentsLessRetainage,
+    });
+
+    // Contract sum to date = original contract sum ± net change orders (rows 1–3
+    // of the G702; these are not part of the SOV completed-work math).
+    const contractSumCents = toCents(pa.contract_sum || 0);
+    const changeOrdersTotalCents = toCents(pa.change_orders_total || 0);
+    const contractSumToDateCents = addCents(contractSumCents, changeOrdersTotalCents);
+
+    // Work-completed totals for the G702 4a/4b/4c breakdown lines.
+    const prevCompletedCents = sumCents(sovLines.map((l) => l.fromPrevious));
+    const thisPeriodCents = sumCents(sovLines.map((l) => l.thisPeriod));
+    const materialsStoredCents = sumCents(sovLines.map((l) => l.storedMaterials));
 
     const g702Bytes = await generateG702({
       projectName: project?.name || '',
@@ -26,37 +69,44 @@ export async function POST(req: NextRequest) {
       appNumber: pa.app_number,
       periodFrom: pa.period_from || '',
       periodTo: pa.period_to || '',
-      contractSum: pa.contract_sum || 0,
-      changeOrdersTotal: pa.change_orders_total || 0,
-      contractSumToDate: pa.contract_sum_to_date || 0,
-      prevCompleted: pa.prev_completed || 0,
-      thisPeriod: pa.this_period || 0,
-      materialsStored: pa.materials_stored || 0,
-      totalCompleted: pa.total_completed || 0,
-      percentComplete: pa.percent_complete || 0,
-      retainagePercent: pa.retainage_percent || 10,
-      retainageAmount: pa.retainage_amount || 0,
-      totalEarnedLessRetainage: pa.total_earned_less_retainage || 0,
-      prevPayments: pa.prev_payments || 0,
-      currentPaymentDue: pa.current_payment_due || 0,
+      contractSum: toDollars(contractSumCents),
+      changeOrdersTotal: toDollars(changeOrdersTotalCents),
+      contractSumToDate: toDollars(contractSumToDateCents),
+      prevCompleted: toDollars(prevCompletedCents),
+      thisPeriod: toDollars(thisPeriodCents),
+      materialsStored: toDollars(materialsStoredCents),
+      totalCompleted: toDollars(calc.completedAndStoredTotal),
+      percentComplete: calc.percentComplete,
+      retainagePercent,
+      retainageAmount: toDollars(calc.retainageTotal),
+      totalEarnedLessRetainage: toDollars(calc.totalEarnedLessRetainage),
+      prevPayments: toDollars(previousPaymentsLessRetainage),
+      // Row 8 = (Total Earned Less Retainage) − (Previous Certificates).
+      // The engine subtracts prior payments; the old code emitted the raw DB
+      // value, which omitted that subtraction.
+      currentPaymentDue: toDollars(calc.currentPaymentDue),
     });
 
     const g703Bytes = await generateG703({
       projectName: project?.name || '',
       appNumber: pa.app_number,
       periodTo: pa.period_to || '',
-      lineItems: (lineItems || []).map((i: any, idx: number) => ({
-        lineNumber: i.line_number || idx + 1,
-        description: i.description,
-        scheduledValue: i.scheduled_value || 0,
-        workFromPrev: i.work_from_prev || 0,
-        workThisPeriod: i.work_this_period || 0,
-        materialsStored: i.materials_stored || 0,
-        totalCompleted: i.total_completed || 0,
-        percentComplete: i.percent_complete || 0,
-        balanceToFinish: i.balance_to_finish || 0,
-        retainage: i.retainage || 0,
-      })),
+      lineItems: rows.map((i, idx) => {
+        const line = calc.lines[idx];
+        const sv = sovLines[idx];
+        return {
+          lineNumber: i.line_number || idx + 1,
+          description: i.description,
+          scheduledValue: toDollars(sv.scheduledValue),
+          workFromPrev: toDollars(sv.fromPrevious),
+          workThisPeriod: toDollars(sv.thisPeriod),
+          materialsStored: toDollars(sv.storedMaterials),
+          totalCompleted: toDollars(line.completedAndStored),
+          percentComplete: line.percentComplete,
+          balanceToFinish: toDollars(line.balanceToFinish),
+          retainage: toDollars(line.retainage),
+        };
+      }),
     });
 
     const tenantId = user?.tenantId || project?.tenant_id;
@@ -65,8 +115,18 @@ export async function POST(req: NextRequest) {
       saveDocument(body.projectId || project?.id, 'g703', g703Bytes, { payAppId: body.payAppId }, tenantId),
     ]);
 
-    // Update pay app with PDF URLs
-    await db.from('pay_applications').update({ g702_pdf_url: g702Url, g703_pdf_url: g703Url }).eq('id', body.payAppId);
+    // Update pay app with PDF URLs and the computed (cross-footed) summary so
+    // the stored figures match the issued document. Existing columns only.
+    await db.from('pay_applications').update({
+      g702_pdf_url: g702Url,
+      g703_pdf_url: g703Url,
+      total_completed: toDollars(calc.completedAndStoredTotal),
+      percent_complete: calc.percentComplete,
+      retainage_amount: toDollars(calc.retainageTotal),
+      total_earned_less_retainage: toDollars(calc.totalEarnedLessRetainage),
+      current_payment_due: toDollars(calc.currentPaymentDue),
+      net_amount_due: toDollars(calc.currentPaymentDue),
+    }).eq('id', body.payAppId);
 
     return NextResponse.json({ g702Url, g703Url, success: true });
   } catch {

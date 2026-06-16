@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { toCents, toDollars, sumCents, subCents, scaleCents } from '@/lib/calc';
 
 function monthLabel(offset: number): string {
   const d = new Date();
@@ -77,36 +78,42 @@ export async function GET(
     const allContracts = (contracts || []) as any[];
     const allCOs = (changeOrders || []) as any[];
 
-    // Contract totals
-    const contractAmount = p.contract_amount || 0;
+    // Contract totals (all money math in integer cents)
+    const contractAmountCents = toCents(p.contract_amount || 0);
     const retainagePct = p.retainage_pct || 10;
     const approvedCOs = allCOs.filter((co: any) => co.status === 'approved');
-    const totalCOAmount = approvedCOs.reduce((s: number, co: any) => s + (co.amount || 0), 0);
-    const adjustedContract = contractAmount + totalCOAmount;
+    const totalCOAmountCents = sumCents(approvedCOs.map((co: any) => toCents(co.amount || 0)));
+    const adjustedContractCents = sumCents([contractAmountCents, totalCOAmountCents]);
 
     // Total billed so far
-    const totalBilled = allPayApps.reduce((s: number, pa: any) => s + (pa.total_completed_stored || 0), 0);
-    const remainingToBill = Math.max(0, adjustedContract - totalBilled);
+    const totalBilledCents = sumCents(allPayApps.map((pa: any) => toCents(pa.total_completed_stored || 0)));
+    const remainingToBillCents = Math.max(0, subCents(adjustedContractCents, totalBilledCents));
 
     // Total retainage held
-    const totalRetainageHeld = allPayApps.reduce((s: number, pa: any) => s + (pa.retainage_held || 0), 0);
+    const totalRetainageHeldCents = sumCents(allPayApps.map((pa: any) => toCents(pa.retainage_held || 0)));
 
     // Outstanding payables
     const unpaidBills = allBills.filter((b: any) => b.status !== 'paid');
     const unpaidInvoices = allInvoices.filter((inv: any) => inv.status !== 'paid');
 
     // Sub contract totals for payable projections
-    const subContractTotal = allContracts.reduce((s: number, c: any) => s + (c.contract_amount || 0), 0);
-    const paidBillsTotal = allBills.filter((b: any) => b.status === 'paid').reduce((s: number, b: any) => s + (b.amount || 0), 0);
-    const remainingSubPayable = Math.max(0, subContractTotal - paidBillsTotal);
+    const subContractTotalCents = sumCents(allContracts.map((c: any) => toCents(c.contract_amount || 0)));
+    const paidBillsTotalCents = sumCents(
+      allBills.filter((b: any) => b.status === 'paid').map((b: any) => toCents(b.amount || 0))
+    );
+    const remainingSubPayableCents = Math.max(0, subCents(subContractTotalCents, paidBillsTotalCents));
 
     // Build 6 monthly periods
     const periodCount = 6;
-    const monthlyBillingTarget = remainingToBill > 0 ? remainingToBill / periodCount : 0;
-    const monthlyPayableTarget = remainingSubPayable > 0 ? remainingSubPayable / periodCount : 0;
+    const monthlyBillingTargetCents = remainingToBillCents > 0 ? scaleCents(remainingToBillCents, 1 / periodCount) : 0;
+    const monthlyPayableTargetCents = remainingSubPayableCents > 0 ? scaleCents(remainingSubPayableCents, 1 / periodCount) : 0;
 
-    let runningBalance = 0;
+    let runningBalanceCents = 0;
     const periods: any[] = [];
+    // Accumulate period receivables/payables in cents so the summary totals
+    // are exact sums of the per-period figures (no rounded-then-resummed drift).
+    let totalReceivablesCents = 0;
+    let totalPayablesCents = 0;
 
     for (let i = 0; i < periodCount; i++) {
       const range = monthRange(i);
@@ -117,12 +124,11 @@ export async function GET(
         const dt = pa.period_to || pa.created_at;
         return dt && dt >= range.start && dt <= range.end;
       });
-      const scheduledReceivables = periodPayApps.reduce(
-        (s: number, pa: any) => s + (pa.current_payment_due || 0),
-        0
+      const scheduledReceivablesCents = sumCents(
+        periodPayApps.map((pa: any) => toCents(pa.current_payment_due || 0))
       );
       // If no scheduled pay apps, use projected monthly billing
-      const receivables = scheduledReceivables > 0 ? scheduledReceivables : monthlyBillingTarget;
+      const receivablesCents = scheduledReceivablesCents > 0 ? scheduledReceivablesCents : monthlyBillingTargetCents;
 
       // Payables: bills/invoices due in this period + projected sub payments
       const periodBills = unpaidBills.filter((b: any) => {
@@ -133,16 +139,18 @@ export async function GET(
         const due = inv.due_date || inv.created_at;
         return due && due >= range.start && due <= range.end;
       });
-      const scheduledBillPayables = periodBills.reduce((s: number, b: any) => s + (b.amount || 0), 0);
-      const scheduledInvoicePayables = periodInvoices.reduce((s: number, inv: any) => s + (inv.amount || 0), 0);
-      const scheduledPayables = scheduledBillPayables + scheduledInvoicePayables;
-      const payables = scheduledPayables > 0 ? scheduledPayables : monthlyPayableTarget;
+      const scheduledBillPayablesCents = sumCents(periodBills.map((b: any) => toCents(b.amount || 0)));
+      const scheduledInvoicePayablesCents = sumCents(periodInvoices.map((inv: any) => toCents(inv.amount || 0)));
+      const scheduledPayablesCents = sumCents([scheduledBillPayablesCents, scheduledInvoicePayablesCents]);
+      const payablesCents = scheduledPayablesCents > 0 ? scheduledPayablesCents : monthlyPayableTargetCents;
 
       // Retainage release: assume last period releases all retainage
-      const retainageRelease = i === periodCount - 1 ? totalRetainageHeld : 0;
+      const retainageReleaseCents = i === periodCount - 1 ? totalRetainageHeldCents : 0;
 
-      const net = receivables - payables + retainageRelease;
-      runningBalance += net;
+      const netCents = sumCents([subCents(receivablesCents, payablesCents), retainageReleaseCents]);
+      runningBalanceCents += netCents;
+      totalReceivablesCents += receivablesCents;
+      totalPayablesCents += payablesCents;
 
       // Line items for expandable detail
       const lineItems: any[] = [];
@@ -151,14 +159,14 @@ export async function GET(
           lineItems.push({
             type: 'receivable',
             label: `Pay App #${pa.app_number}`,
-            amount: pa.current_payment_due || 0,
+            amount: toDollars(toCents(pa.current_payment_due || 0)),
           });
         });
       } else {
         lineItems.push({
           type: 'receivable',
           label: 'Projected billing',
-          amount: monthlyBillingTarget,
+          amount: toDollars(monthlyBillingTargetCents),
         });
       }
 
@@ -166,28 +174,28 @@ export async function GET(
         lineItems.push({
           type: 'payable',
           label: `Bill: ${b.vendor_name || 'Vendor'}`,
-          amount: -(b.amount || 0),
+          amount: toDollars(subCents(0, toCents(b.amount || 0))),
         });
       });
       periodInvoices.forEach((inv: any) => {
         lineItems.push({
           type: 'payable',
           label: `Invoice: ${inv.vendor_name || 'Vendor'} #${inv.invoice_number || ''}`,
-          amount: -(inv.amount || 0),
+          amount: toDollars(subCents(0, toCents(inv.amount || 0))),
         });
       });
-      if (scheduledPayables === 0 && monthlyPayableTarget > 0) {
+      if (scheduledPayablesCents === 0 && monthlyPayableTargetCents > 0) {
         lineItems.push({
           type: 'payable',
           label: 'Projected sub payments',
-          amount: -monthlyPayableTarget,
+          amount: toDollars(subCents(0, monthlyPayableTargetCents)),
         });
       }
-      if (retainageRelease > 0) {
+      if (retainageReleaseCents > 0) {
         lineItems.push({
           type: 'retainage',
           label: 'Retainage release',
-          amount: retainageRelease,
+          amount: toDollars(retainageReleaseCents),
         });
       }
 
@@ -195,37 +203,35 @@ export async function GET(
         month: label,
         start: range.start,
         end: range.end,
-        receivables: Math.round(receivables * 100) / 100,
-        payables: Math.round(payables * 100) / 100,
-        retainage_release: Math.round(retainageRelease * 100) / 100,
-        net: Math.round(net * 100) / 100,
-        running_balance: Math.round(runningBalance * 100) / 100,
+        receivables: toDollars(receivablesCents),
+        payables: toDollars(payablesCents),
+        retainage_release: toDollars(retainageReleaseCents),
+        net: toDollars(netCents),
+        running_balance: toDollars(runningBalanceCents),
         line_items: lineItems,
       });
     }
 
-    const totalReceivables = periods.reduce((s, p) => s + p.receivables, 0);
-    const totalPayables = periods.reduce((s, p) => s + p.payables, 0);
-    const netCashFlow = totalReceivables - totalPayables + totalRetainageHeld;
+    const netCashFlowCents = sumCents([subCents(totalReceivablesCents, totalPayablesCents), totalRetainageHeldCents]);
     const dangerZone = periods.some((p) => p.running_balance < 0);
 
     return NextResponse.json({
       project: {
         id: p.id,
         name: p.name,
-        contract_amount: contractAmount,
-        adjusted_contract: adjustedContract,
+        contract_amount: toDollars(contractAmountCents),
+        adjusted_contract: toDollars(adjustedContractCents),
         retainage_pct: retainagePct,
-        total_billed: totalBilled,
-        remaining_to_bill: remainingToBill,
-        total_retainage_held: totalRetainageHeld,
+        total_billed: toDollars(totalBilledCents),
+        remaining_to_bill: toDollars(remainingToBillCents),
+        total_retainage_held: toDollars(totalRetainageHeldCents),
       },
       periods,
       summary: {
-        total_receivables: Math.round(totalReceivables * 100) / 100,
-        total_payables: Math.round(totalPayables * 100) / 100,
-        net_cash_flow: Math.round(netCashFlow * 100) / 100,
-        retainage_due: Math.round(totalRetainageHeld * 100) / 100,
+        total_receivables: toDollars(totalReceivablesCents),
+        total_payables: toDollars(totalPayablesCents),
+        net_cash_flow: toDollars(netCashFlowCents),
+        retainage_due: toDollars(totalRetainageHeldCents),
         danger_zone: dangerZone,
       },
     });

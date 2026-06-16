@@ -44,6 +44,13 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // The web PWA "field app" page is retired in favor of the one native iOS app
+      // (TestFlight). Point the old marketing URL at the canonical app page.
+      { source: '/field-app', destination: '/get-the-app', permanent: false },
+    ];
+  },
 };
 
 module.exports = nextConfig;
