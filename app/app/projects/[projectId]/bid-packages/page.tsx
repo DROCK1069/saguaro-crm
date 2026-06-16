@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { toCents, toDollars, sumCents, extend } from '@/lib/calc';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -151,7 +152,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
         quantity: Number(li.qty),
         unit: li.unit,
         unitPrice: Number(li.unitPrice),
-        totalAmount: Number(li.qty) * Number(li.unitPrice),
+        totalAmount: toDollars(extend(Number(li.qty), toCents(li.unitPrice))),
       }));
       const cr = await fetch('/api/bid-packages/create', {
         method: 'POST',
@@ -191,7 +192,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
   }
 
   const STEPS = ['Trade & Scope', 'Line Items', 'Invite Subs', 'Review'];
-  const lineTotal = w.lineItems.reduce((s, li) => s + Number(li.qty) * Number(li.unitPrice), 0);
+  const lineTotal = toDollars(sumCents(w.lineItems.map(li => extend(Number(li.qty), toCents(li.unitPrice)))));
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>

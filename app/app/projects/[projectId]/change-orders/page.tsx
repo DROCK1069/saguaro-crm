@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { toCents, toDollars, summarizeContract } from '@/lib/calc';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const AMBER='#d97706';
@@ -253,10 +254,15 @@ export default function ChangeOrdersPage() {
     } catch { setToast({msg:'Failed to delete',type:'error'}); }
   }
 
-  // Running totals
-  const approvedCOs   = cos.filter(c=>c.status==='approved').reduce((s:number,c:any)=>s+(c.cost_impact||0),0);
-  const pendingCOs    = cos.filter(c=>c.status==='pending').reduce((s:number,c:any)=>s+(c.cost_impact||0),0);
-  const currentContract = contractSum + approvedCOs;
+  // Running totals — exact-cents engine. Revised contract = original + APPROVED
+  // change orders only; pending tracked separately (summarizeContract enforces this).
+  const contractSummary = summarizeContract(
+    toCents(contractSum),
+    cos.map((c:any)=>({ id:String(c.id), description:c.title||'', amount:toCents(c.cost_impact||0), status:(c.status||'pending') as 'pending'|'approved'|'rejected' })),
+  );
+  const approvedCOs   = toDollars(contractSummary.approvedChangeOrders);
+  const pendingCOs    = toDollars(contractSummary.pendingChangeOrders);
+  const currentContract = toDollars(contractSummary.revisedContract);
 
   return (
     <div>

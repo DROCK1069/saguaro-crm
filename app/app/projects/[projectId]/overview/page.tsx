@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { WarningCircle, FolderOpen } from '@phosphor-icons/react';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import { toCents, toDollars, sumCents, subCents, summarizeContract } from '@/lib/calc';
 import EmptyState from '@/components/EmptyState';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
@@ -138,14 +139,20 @@ export default function OverviewPage(){
   const schedulePhases = data.schedulePhases||[];
   const alerts = data.alerts||[];
 
-  const approvedCOs = changeOrders.filter((c:any)=>c.status==='approved').reduce((s:number,c:any)=>s+(c.cost_impact||0),0);
-  const contractToDate = (p.contract_amount||0)+approvedCOs;
-  const billedToDate = payApps.length>0?(payApps[0].total_completed_and_stored||0):0;
-  const paidToDate = payApps.filter((pa:any)=>pa.status==='paid').reduce((s:number,pa:any)=>s+(pa.current_payment_due||0),0);
-  const retainageHeld = payApps.reduce((s:number,pa:any)=>s+(pa.retainage_amount||0),0);
+  const contractSummary = summarizeContract(toCents(p.contract_amount||0), changeOrders.map((c:any)=>({ id:String(c.id??''), description:String(c.description??''), amount:toCents(c.cost_impact||0), status:c.status })));
+  const approvedCOs = toDollars(contractSummary.approvedChangeOrders);
+  const contractToDate = toDollars(contractSummary.revisedContract);
+  const billedToDateCents = payApps.length>0?toCents(payApps[0].total_completed_and_stored||0):0;
+  const billedToDate = toDollars(billedToDateCents);
+  const paidToDateCents = sumCents(payApps.filter((pa:any)=>pa.status==='paid').map((pa:any)=>toCents(pa.current_payment_due||0)));
+  const paidToDate = toDollars(paidToDateCents);
+  const retainageHeldCents = sumCents(payApps.map((pa:any)=>toCents(pa.retainage_amount||0)));
+  const retainageHeld = toDollars(retainageHeldCents);
+  const balanceDueCents = subCents(subCents(billedToDateCents, retainageHeldCents), paidToDateCents);
+  const balanceDue = Math.max(0, toDollars(balanceDueCents));
   const daysRemaining = p.end_date?Math.max(0,Math.ceil((new Date(p.end_date).getTime()-Date.now())/86400000)):0;
   const overdueRFIs = rfis.filter((r:any)=>r.status==='open'&&r.due_date&&r.due_date<new Date().toISOString().split('T')[0]);
-  const budgetVariance = budgetHealth.forecastCost - budgetHealth.originalBudget;
+  const budgetVariance = toDollars(subCents(toCents(budgetHealth.forecastCost), toCents(budgetHealth.originalBudget)));
   const budgetPct = budgetHealth.originalBudget > 0 ? (budgetHealth.actualCost / budgetHealth.originalBudget * 100).toFixed(1) : '0';
 
   return <div>
@@ -218,7 +225,7 @@ export default function OverviewPage(){
         </div>
         <div>
           <Card title="Financial Summary" action={<Link href={'/app/projects/'+projectId+'/pay-apps'} style={{fontSize:11,color:GOLD,textDecoration:'none'}}>All Pay Apps →</Link>}>
-            {[['Original Contract',fmt(p.original_contract||p.contract_amount||0)],['Change Orders','+'+fmt(approvedCOs)],['Contract to Date',fmt(contractToDate)],['Billed to Date',fmt(billedToDate)+' ('+fmtPct(billedToDate,contractToDate)+')'],['Retainage Held',fmt(retainageHeld)],['Total Paid',fmt(paidToDate)],['Balance Due',fmt(Math.max(0,billedToDate-retainageHeld-paidToDate))]].map(([l,v]:any)=>(
+            {[['Original Contract',fmt(p.original_contract||p.contract_amount||0)],['Change Orders','+'+fmt(approvedCOs)],['Contract to Date',fmt(contractToDate)],['Billed to Date',fmt(billedToDate)+' ('+fmtPct(billedToDate,contractToDate)+')'],['Retainage Held',fmt(retainageHeld)],['Total Paid',fmt(paidToDate)],['Balance Due',fmt(balanceDue)]].map(([l,v]:any)=>(
               <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(229,229,234,.4)',fontSize:13}}>
                 <span style={{color:DIM}}>{l}</span><span style={{color:TEXT,fontWeight:600}}>{v}</span>
               </div>

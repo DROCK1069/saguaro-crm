@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { toCents, toDollars, extend, sumCents, scaleCents, percentOf, addCents } from '@/lib/calc';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
 const GOLD   = '#C8881C';
@@ -234,16 +235,29 @@ function triggerDownload(content: string, filename: string, mime: string) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+// Extended line cost in exact cents: quantity × unit cost, then apply markup.
+function lineTotalCents(item: LineItem): number {
+  return scaleCents(extend(item.quantity, toCents(item.unitCost)), 1 + item.markupPct / 100);
+}
+
 function lineTotal(item: LineItem): number {
-  return item.quantity * item.unitCost * (1 + item.markupPct / 100);
+  return toDollars(lineTotalCents(item));
+}
+
+function divisionTotalCents(div: Division): number {
+  return sumCents(div.items.map(lineTotalCents));
 }
 
 function divisionTotal(div: Division): number {
-  return div.items.reduce((s, i) => s + lineTotal(i), 0);
+  return toDollars(divisionTotalCents(div));
+}
+
+function costCategoryTotalCents(items: LineItem[], cat: CostCategory): number {
+  return sumCents(items.map(i => extend(i.quantity, toCents(i.costBreakdown[cat]))));
 }
 
 function costCategoryTotal(items: LineItem[], cat: CostCategory): number {
-  return items.reduce((s, i) => s + i.quantity * i.costBreakdown[cat], 0);
+  return toDollars(costCategoryTotalCents(items, cat));
 }
 
 /* ─── Component ─────────────────────────────────────────────────────── */
@@ -317,18 +331,32 @@ export default function EstimateBuilderPage() {
   }, []);
 
   /* ─── Computed ──────────────────────────────────────────────────── */
-  const subtotal = useMemo(() => divisions.reduce((s, d) => s + divisionTotal(d), 0), [divisions]);
-  const overheadAmt = subtotal * markup.overheadPct / 100;
-  const profitAmt = subtotal * markup.profitPct / 100;
-  const contingencyAmt = subtotal * markup.contingencyPct / 100;
-  const bondAmt = subtotal * markup.bondPct / 100;
-  const preMarkupTotal = subtotal + overheadAmt + profitAmt + contingencyAmt + bondAmt;
-  const includedAlternates = alternates.filter(a => a.included).reduce((s, a) => s + a.amount, 0);
-  const allowanceTotal = allowances.reduce((s, a) => s + a.amount, 0);
-  const bidDayNet = bidAdjustments.filter(a => a.applied).reduce((s, a) => s + (a.type === 'add' ? a.amount : -a.amount), 0);
-  const preTaxTotal = preMarkupTotal + includedAlternates + allowanceTotal + bidDayNet;
-  const taxAmt = preTaxTotal * markup.taxPct / 100;
-  const grandTotal = preTaxTotal + taxAmt;
+  // Whole markup/total chain in exact integer cents (see @/lib/calc), then surfaced as dollars.
+  const subtotalCents = useMemo(() => sumCents(divisions.map(divisionTotalCents)), [divisions]);
+  const overheadCents = percentOf(subtotalCents, markup.overheadPct);
+  const profitCents = percentOf(subtotalCents, markup.profitPct);
+  const contingencyCents = percentOf(subtotalCents, markup.contingencyPct);
+  const bondCents = percentOf(subtotalCents, markup.bondPct);
+  const preMarkupCents = addCents(subtotalCents, overheadCents, profitCents, contingencyCents, bondCents);
+  const includedAlternatesCents = sumCents(alternates.filter(a => a.included).map(a => toCents(a.amount)));
+  const allowanceCents = sumCents(allowances.map(a => toCents(a.amount)));
+  const bidDayNetCents = sumCents(bidAdjustments.filter(a => a.applied).map(a => (a.type === 'add' ? toCents(a.amount) : -toCents(a.amount))));
+  const preTaxCents = addCents(preMarkupCents, includedAlternatesCents, allowanceCents, bidDayNetCents);
+  const taxCents = percentOf(preTaxCents, markup.taxPct);
+  const grandTotalCents = addCents(preTaxCents, taxCents);
+
+  const subtotal = toDollars(subtotalCents);
+  const overheadAmt = toDollars(overheadCents);
+  const profitAmt = toDollars(profitCents);
+  const contingencyAmt = toDollars(contingencyCents);
+  const bondAmt = toDollars(bondCents);
+  const preMarkupTotal = toDollars(preMarkupCents);
+  const includedAlternates = toDollars(includedAlternatesCents);
+  const allowanceTotal = toDollars(allowanceCents);
+  const bidDayNet = toDollars(bidDayNetCents);
+  const preTaxTotal = toDollars(preTaxCents);
+  const taxAmt = toDollars(taxCents);
+  const grandTotal = toDollars(grandTotalCents);
 
   const allItems = useMemo(() => divisions.flatMap(d => d.items), [divisions]);
   const filteredDivisions = useMemo(() => {
@@ -505,7 +533,7 @@ export default function EstimateBuilderPage() {
             d.code, d.name, i.description, i.quantity, i.unit,
             i.unitCost, i.markupPct,
             i.costBreakdown.labor, i.costBreakdown.material, i.costBreakdown.equipment, i.costBreakdown.subcontractor,
-            (Math.round(lineTotal(i) * 100) / 100),
+            toDollars(lineTotalCents(i)),
           ].map(csvCell).join(','));
         }
       }
@@ -602,7 +630,7 @@ export default function EstimateBuilderPage() {
     const div = divisions.find(d => d.code === divCode);
     const item = div?.items.find(i => i.id === itemId);
     if (!item) return;
-    const newUnitCost = Math.round(item.unitCost * (1 + pctAdj / 100) * 100) / 100;
+    const newUnitCost = toDollars(scaleCents(toCents(item.unitCost), 1 + pctAdj / 100));
     updateLineItem(divCode, itemId, 'unitCost', newUnitCost);
     setAdjustId(null);
   }

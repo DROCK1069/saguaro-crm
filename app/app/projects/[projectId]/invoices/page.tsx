@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
 
 const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E', GREEN='#3dd68c', RED='#ef4444';
 
@@ -60,9 +61,9 @@ export default function InvoicesPage() {
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   const today = new Date().toISOString().split('T')[0];
-  const totalBilled = invoices.reduce((s, i) => s + (i.amount || 0), 0);
-  const totalPaid = invoices.filter(i => i.status === 'Paid').reduce((s, i) => s + (i.amount || 0), 0);
-  const totalOutstanding = invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').reduce((s, i) => s + (i.amount || 0), 0);
+  const totalBilled = toDollars(sumCents(invoices.map(i => toCents(i.amount || 0))));
+  const totalPaid = toDollars(sumCents(invoices.filter(i => i.status === 'Paid').map(i => toCents(i.amount || 0))));
+  const totalOutstanding = toDollars(sumCents(invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').map(i => toCents(i.amount || 0))));
 
   async function handleSave() {
     if (!form.invoice_num || !form.amount) { setErrorMsg('Invoice number and amount are required.'); return; }
@@ -105,7 +106,7 @@ export default function InvoicesPage() {
   async function handleAdjustInv(id: string, pct: number) {
     const inv = invoices.find(i => i.id === id);
     if (!inv) return;
-    const newAmt = Math.round(inv.amount * (1 + pct / 100));
+    const newAmt = toDollars(scaleCents(toCents(inv.amount), 1 + pct / 100));
     setInvoices(prev => prev.map(i => i.id === id ? { ...i, amount: newAmt } : i));
     setAdjustId(null);
     try { await fetch(`/api/invoices/${id}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: newAmt }) }); setSuccessMsg(`Adjusted ${pct > 0 ? '+' : ''}${pct}%`); setTimeout(() => setSuccessMsg(''), 3000); } catch { setSuccessMsg('Adjusted locally.'); setTimeout(() => setSuccessMsg(''), 3000); }

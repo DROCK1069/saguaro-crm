@@ -4,6 +4,7 @@
  * Client-side calculator with AZ Davis-Bacon rates (2024).
  */
 import React, { useState, useMemo } from 'react';
+import { toCents, toDollars, extend } from '@/lib/calc';
 
 const BASE = '#F2F2F7';
 const CARD = '#FFFFFF';
@@ -55,12 +56,12 @@ export default function PrevailingWagePage() {
   const rate = useMemo(() => AZ_RATES.find(r => r.trade === selectedTrade) || AZ_RATES[0], [selectedTrade]);
   const hours = isCustom ? (parseFloat(customHours) || 0) : hoursPreset;
 
-  const baseCost = rate.base * hours;
-  const fringeCost = rate.fringe * hours;
-  const totalCost = rate.total * hours;
+  const baseCost = toDollars(extend(hours, toCents(rate.base)));
+  const fringeCost = toDollars(extend(hours, toCents(rate.fringe)));
+  const totalCost = toDollars(extend(hours, toCents(rate.total)));
 
-  const dailyCost = rate.total * 8;
-  const weeklyCost = rate.total * 40;
+  const dailyCost = toDollars(extend(8, toCents(rate.total)));
+  const weeklyCost = toDollars(extend(40, toCents(rate.total)));
 
   const inputStyle: React.CSSProperties = {
     background: 'rgba(255,255,255,0.6)',
@@ -341,8 +342,8 @@ export default function PrevailingWagePage() {
                     <td style={{ padding: '10px 12px', fontSize: 14, color: TEXT, textAlign: 'right', borderBottom: `1px solid ${BORDER}` }}>{fmt(r.base)}</td>
                     <td style={{ padding: '10px 12px', fontSize: 14, color: TEXT, textAlign: 'right', borderBottom: `1px solid ${BORDER}` }}>{fmt(r.fringe)}</td>
                     <td style={{ padding: '10px 12px', fontSize: 14, color: GOLD, fontWeight: 700, textAlign: 'right', borderBottom: `1px solid ${BORDER}` }}>{fmt(r.total)}</td>
-                    <td style={{ padding: '10px 12px', fontSize: 14, color: DIM, textAlign: 'right', borderBottom: `1px solid ${BORDER}` }}>{fmt(r.total * 8)}</td>
-                    <td style={{ padding: '10px 12px', fontSize: 14, color: DIM, textAlign: 'right', borderBottom: `1px solid ${BORDER}` }}>{fmt(r.total * 40)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 14, color: DIM, textAlign: 'right', borderBottom: `1px solid ${BORDER}` }}>{fmt(toDollars(extend(8, toCents(r.total))))}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 14, color: DIM, textAlign: 'right', borderBottom: `1px solid ${BORDER}` }}>{fmt(toDollars(extend(40, toCents(r.total))))}</td>
                   </tr>
                 ))}
               </tbody>

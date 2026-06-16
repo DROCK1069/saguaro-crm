@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { PageWrap, SectionHeader, StatCard, Badge, Btn, Card, CardHeader, CardBody, Table, T } from '@/components/ui/shell';
+import { toCents, toDollars, extend, sumCents, addCents } from '@/lib/calc';
 
 interface EstimateLine {
   csi_code: string;
@@ -38,21 +39,29 @@ export default function EstimatePage() {
       const data = await res.json();
       if (data.takeoff) {
         const t = data.takeoff;
-        const materials: EstimateLine[] = (t.materials || t.line_items || []).map((m: any) => ({
-          csi_code: m.csi_code || m.code || '',
-          description: m.description || m.name || '',
-          quantity: m.quantity || 0,
-          unit: m.unit || 'EA',
-          unit_cost: m.unit_cost || m.unit_price || 0,
-          total: m.total || (m.quantity || 0) * (m.unit_cost || m.unit_price || 0),
-        }));
-        const materialCost = materials.reduce((s, m) => s + m.total, 0);
+        const materials: EstimateLine[] = (t.materials || t.line_items || []).map((m: any) => {
+          const quantity = m.quantity || 0;
+          const unit_cost = m.unit_cost || m.unit_price || 0;
+          // Line extended cost = quantity × unit cost, exact cents (never float qty*price).
+          const lineCents = m.total ? toCents(m.total) : extend(quantity, toCents(unit_cost));
+          return {
+            csi_code: m.csi_code || m.code || '',
+            description: m.description || m.name || '',
+            quantity,
+            unit: m.unit || 'EA',
+            unit_cost,
+            total: toDollars(lineCents),
+          };
+        });
+        const materialCents = sumCents(materials.map(m => toCents(m.total)));
+        const laborCents = toCents(t.labor_cost || 0);
+        const materialCost = toDollars(materialCents);
         setTakeoff({
           id: t.id,
           materials,
-          labor_cost: t.labor_cost || 0,
+          labor_cost: toDollars(laborCents),
           material_cost: materialCost,
-          total_cost: materialCost + (t.labor_cost || 0),
+          total_cost: toDollars(addCents(materialCents, laborCents)),
           square_footage: t.square_footage || t.sqft || 0,
         });
       } else {

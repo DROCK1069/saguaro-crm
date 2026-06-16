@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toCents, toDollars, sumCents } from '@/lib/calc';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -216,7 +217,7 @@ export default function BidPackageDetailPage() {
     </div>
   );
 
-  const totalSov = pkg.sov_items.reduce((s, i) => s + i.total, 0);
+  const totalSov = toDollars(sumCents(pkg.sov_items.map(i => toCents(i.total))));
   const submittedSubs = pkg.invited_subs.filter(s => s.status === 'submitted');
   const submissions = pkg.bid_submissions || [];
 

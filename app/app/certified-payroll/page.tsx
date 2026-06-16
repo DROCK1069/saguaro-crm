@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { toCents, toDollars, extend, sumCents, subCents, scaleCents } from '@/lib/calc';
 
 const GOLD = '#C8881C', BG = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E',
   DIM = '#6E6E73', GREEN = '#22C55E', RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
@@ -123,10 +124,23 @@ function calcWorkerTotals(w: WorkerEntry) {
   const totalST = w.hoursSTPerDay.reduce((a, b) => a + b, 0);
   const totalOT = w.hoursOTPerDay.reduce((a, b) => a + b, 0);
   const totalDT = w.hoursDTPerDay.reduce((a, b) => a + b, 0);
-  const grossPay = (totalST * w.baseRate) + (totalOT * w.baseRate * 1.5) + (totalDT * w.baseRate * 2);
-  const fringeTotal = (totalST + totalOT + totalDT) * w.fringeBenefit;
-  const netPay = grossPay - w.deductions;
-  return { totalST, totalOT, totalDT, grossPay, fringeTotal, netPay, totalHours: totalST + totalOT + totalDT };
+  // Exact-cents wage math: base rate in cents, OT @ 1.5x, DT @ 2x.
+  const baseRateCents = toCents(w.baseRate);
+  const grossPayCents = sumCents([
+    extend(totalST, baseRateCents),
+    extend(totalOT, scaleCents(baseRateCents, 1.5)),
+    extend(totalDT, scaleCents(baseRateCents, 2)),
+  ]);
+  const fringeTotalCents = extend(totalST + totalOT + totalDT, toCents(w.fringeBenefit));
+  const netPayCents = subCents(grossPayCents, toCents(w.deductions));
+  return {
+    totalST, totalOT, totalDT,
+    grossPayCents, fringeTotalCents, netPayCents,
+    grossPay: toDollars(grossPayCents),
+    fringeTotal: toDollars(fringeTotalCents),
+    netPay: toDollars(netPayCents),
+    totalHours: totalST + totalOT + totalDT,
+  };
 }
 
 const statusColor = (s: PayrollStatus) => s === 'Approved' ? GREEN : s === 'Submitted' ? AMBER : DIM;
@@ -199,18 +213,25 @@ export default function CertifiedPayrollPage() {
 
   const periodSummary = useMemo(() => {
     if (!activePeriod) return null;
-    let totalGross = 0, totalNet = 0, totalDeductions = 0, totalFringe = 0, totalHours = 0;
+    const grossCents: number[] = [], netCents: number[] = [], deductionCents: number[] = [], fringeCents: number[] = [];
+    let totalHours = 0;
     let apprenticeCount = 0, journeymanCount = 0;
     activePeriod.workers.forEach(w => {
       const t = calcWorkerTotals(w);
-      totalGross += t.grossPay;
-      totalNet += t.netPay;
-      totalDeductions += w.deductions;
-      totalFringe += t.fringeTotal;
+      grossCents.push(t.grossPayCents);
+      netCents.push(t.netPayCents);
+      deductionCents.push(toCents(w.deductions));
+      fringeCents.push(t.fringeTotalCents);
       totalHours += t.totalHours;
       if (w.isApprentice) apprenticeCount++; else journeymanCount++;
     });
-    return { totalGross, totalNet, totalDeductions, totalFringe, totalHours, apprenticeCount, journeymanCount, workerCount: activePeriod.workers.length };
+    return {
+      totalGross: toDollars(sumCents(grossCents)),
+      totalNet: toDollars(sumCents(netCents)),
+      totalDeductions: toDollars(sumCents(deductionCents)),
+      totalFringe: toDollars(sumCents(fringeCents)),
+      totalHours, apprenticeCount, journeymanCount, workerCount: activePeriod.workers.length,
+    };
   }, [activePeriod]);
 
   const getComplianceStatus = useCallback((w: WorkerEntry): ComplianceStatus => {
@@ -315,7 +336,7 @@ export default function CertifiedPayrollPage() {
     if (!activePeriod) return;
     const worker = activePeriod.workers.find(w => w.id === workerId);
     if (!worker) return;
-    const newRate = Math.round(worker.baseRate * (1 + pct / 100) * 100) / 100;
+    const newRate = toDollars(scaleCents(toCents(worker.baseRate), 1 + pct / 100));
     setPeriods(prev => prev.map(p => p.id !== activePeriod.id ? p : {
       ...p, workers: p.workers.map(w => w.id === workerId ? { ...w, baseRate: newRate } : w),
     }));
@@ -335,15 +356,17 @@ export default function CertifiedPayrollPage() {
     if (!multiProjectView) return [];
     return projects.map(proj => {
       const projPeriods = periods.filter(p => p.projectId === proj.id);
-      let totalWorkers = 0, totalHours = 0, totalGross = 0;
+      let totalWorkers = 0, totalHours = 0;
+      const grossCents: number[] = [];
       projPeriods.forEach(pp => {
         totalWorkers += pp.workers.length;
         pp.workers.forEach(w => {
           const t = calcWorkerTotals(w);
           totalHours += t.totalHours;
-          totalGross += t.grossPay;
+          grossCents.push(t.grossPayCents);
         });
       });
+      const totalGross = toDollars(sumCents(grossCents));
       return { ...proj, periodsCount: projPeriods.length, totalWorkers, totalHours, totalGross,
         statuses: { draft: projPeriods.filter(p => p.status === 'Draft').length, submitted: projPeriods.filter(p => p.status === 'Submitted').length, approved: projPeriods.filter(p => p.status === 'Approved').length } };
     });
@@ -486,8 +509,7 @@ export default function CertifiedPayrollPage() {
               {filteredPeriods.map(period => {
                 const proj = projects.find(p => p.id === period.projectId);
                 const workerCount = period.workers.length;
-                let totalGross = 0;
-                period.workers.forEach(w => { totalGross += calcWorkerTotals(w).grossPay; });
+                const totalGross = toDollars(sumCents(period.workers.map(w => calcWorkerTotals(w).grossPayCents)));
                 const isActive = activePeriodId === period.id;
                 return (
                   <div key={period.id}

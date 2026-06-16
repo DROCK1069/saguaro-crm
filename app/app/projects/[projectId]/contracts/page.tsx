@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { toCents, toDollars, sumCents } from '@/lib/calc';
 
 const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E', GREEN='#3dd68c', RED='#ef4444';
 
@@ -103,7 +104,7 @@ export default function ContractsPage() {
     }
   }
 
-  const total = contracts.reduce((s, c) => s + (c.amount || 0), 0);
+  const total = toDollars(sumCents(contracts.map(c => toCents(c.amount || 0))));
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
 

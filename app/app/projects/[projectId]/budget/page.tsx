@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { WarningCircle, Wallet } from '@phosphor-icons/react';
 import { EmptyState } from '../../../../../components/EmptyState';
 import { Skeleton, SkeletonKPI } from '../../../../../components/ui/Skeleton';
+import { toCents, toDollars, sumCents, subCents, addCents, scaleCents } from '@/lib/calc';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#c03030';
 const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -109,7 +110,8 @@ export default function BudgetPage() {
 
   async function saveEdit(id: string) {
     const amount = parseFloat(editAmount) || 0;
-    setLines(prev => prev.map(l => l.id === id ? { ...l, original_budget: amount, revised_budget: amount + l.approved_cos, forecast_cost: Math.max(l.actual_cost, amount) } : l));
+    const amountCents = toCents(amount);
+    setLines(prev => prev.map(l => l.id === id ? { ...l, original_budget: amount, revised_budget: toDollars(addCents(amountCents, toCents(l.approved_cos))), forecast_cost: toDollars(Math.max(toCents(l.actual_cost), amountCents)) } : l));
     setEditingId(null);
     try {
       await fetch(`/api/projects/${projectId}/budget`, {
@@ -128,8 +130,9 @@ export default function BudgetPage() {
   async function handleAdjust(id: string, pct: number) {
     const line = lines.find(l => l.id === id);
     if (!line) return;
-    const newAmt = Math.round(line.original_budget * (1 + pct / 100));
-    setLines(prev => prev.map(l => l.id === id ? { ...l, original_budget: newAmt, revised_budget: newAmt + l.approved_cos, forecast_cost: Math.max(l.actual_cost, newAmt) } : l));
+    const newAmtCents = scaleCents(toCents(line.original_budget), 1 + pct / 100);
+    const newAmt = toDollars(newAmtCents);
+    setLines(prev => prev.map(l => l.id === id ? { ...l, original_budget: newAmt, revised_budget: toDollars(addCents(newAmtCents, toCents(l.approved_cos))), forecast_cost: toDollars(Math.max(toCents(l.actual_cost), newAmtCents)) } : l));
     setAdjustId(null);
     try {
       await fetch(`/api/projects/${projectId}/budget`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, original_budget: newAmt }) });
@@ -192,14 +195,22 @@ export default function BudgetPage() {
     }
   }
 
-  // KPI calculations
-  const totalOriginal = lines.reduce((s, l) => s + (l.original_budget ?? 0), 0);
-  const totalApprovedCOs = lines.reduce((s, l) => s + (l.approved_cos ?? 0), 0);
-  const totalRevised = lines.reduce((s, l) => s + (l.revised_budget ?? 0), 0);
-  const totalActual = lines.reduce((s, l) => s + (l.actual_cost ?? 0), 0);
-  const totalForecast = lines.reduce((s, l) => s + (l.forecast_cost ?? 0), 0);
-  const totalVariance = totalRevised - totalForecast;
-  const totalCommitted = lines.reduce((s, l) => s + (l.committed_cost ?? 0), 0);
+  // KPI calculations — exact-cents engine (sum in integer cents, convert back to
+  // dollars for display) so totals never drift and match the server.
+  const totalOriginalCents = sumCents(lines.map(l => toCents(l.original_budget ?? 0)));
+  const totalApprovedCOsCents = sumCents(lines.map(l => toCents(l.approved_cos ?? 0)));
+  const totalRevisedCents = sumCents(lines.map(l => toCents(l.revised_budget ?? 0)));
+  const totalActualCents = sumCents(lines.map(l => toCents(l.actual_cost ?? 0)));
+  const totalForecastCents = sumCents(lines.map(l => toCents(l.forecast_cost ?? 0)));
+  const totalCommittedCents = sumCents(lines.map(l => toCents(l.committed_cost ?? 0)));
+  const totalVarianceCents = subCents(totalRevisedCents, totalForecastCents);
+  const totalOriginal = toDollars(totalOriginalCents);
+  const totalApprovedCOs = toDollars(totalApprovedCOsCents);
+  const totalRevised = toDollars(totalRevisedCents);
+  const totalActual = toDollars(totalActualCents);
+  const totalForecast = toDollars(totalForecastCents);
+  const totalVariance = toDollars(totalVarianceCents);
+  const totalCommitted = toDollars(totalCommittedCents);
 
   function rowBg(l: BudgetLine) {
     const actual = l.actual_cost ?? 0;
@@ -366,7 +377,7 @@ export default function BudgetPage() {
               </thead>
               <tbody>
                 {lines.map(l => {
-                  const remaining = (l.revised_budget ?? 0) - (l.actual_cost ?? 0);
+                  const remaining = toDollars(subCents(toCents(l.revised_budget ?? 0), toCents(l.actual_cost ?? 0)));
                   const pct = l.pct_complete ?? 0;
                   const isEditing = editingId === l.id;
                   return (

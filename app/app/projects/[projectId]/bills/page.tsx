@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
 
 const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E', GREEN='#3dd68c', RED='#ef4444';
 
@@ -138,7 +139,7 @@ export default function BillsPage() {
   async function handleAdjustBill(id: string, pct: number) {
     const bill = bills.find(b => b.id === id);
     if (!bill) return;
-    const newAmt = Math.round(bill.amount * (1 + pct / 100));
+    const newAmt = toDollars(scaleCents(toCents(bill.amount), 1 + pct / 100));
     setBills(prev => prev.map(b => b.id === id ? { ...b, amount: newAmt } : b));
     setAdjustId(null);
     try { await fetch(`/api/bills/${id}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: newAmt }) }); setSuccessMsg(`Adjusted ${pct > 0 ? '+' : ''}${pct}%`); setTimeout(() => setSuccessMsg(''), 3000); } catch { setSuccessMsg('Adjusted locally.'); setTimeout(() => setSuccessMsg(''), 3000); }
@@ -156,7 +157,7 @@ export default function BillsPage() {
     try { await fetch(`/api/bills/${id}/delete`, { method: 'DELETE' }); setSuccessMsg('Bill deleted.'); setTimeout(() => setSuccessMsg(''), 3000); } catch { setSuccessMsg('Deleted locally.'); setTimeout(() => setSuccessMsg(''), 3000); }
   }
 
-  const pendingTotal = bills.filter(b => b.status === 'Pending' || b.status === 'Approved').reduce((s, b) => s + (b.amount || 0), 0);
+  const pendingTotal = toDollars(sumCents(bills.filter(b => b.status === 'Pending' || b.status === 'Approved').map(b => toCents(b.amount || 0))));
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
 
