@@ -64,8 +64,12 @@ export async function GET(req: NextRequest) {
     const cosFromChildren = sumOrNull(changeOrders, 'amount');
 
     // DB stores dollars; convert to cents for all arithmetic.
+    // Original contract = first POSITIVE of these columns (|| not ??): most
+    // projects leave several at 0 (not null) and carry the real value in
+    // whichever is non-zero, so ?? would stop at a leading 0 and report a $0
+    // contract. Matches the native app (financials.tsx / change-orders.tsx).
     const originalContractCents = toCents(
-      num(p.original_contract_value ?? p.contract_value ?? p.original_contract ?? p.contract_amount),
+      num(p.original_contract_value) || num(p.contract_value) || num(p.original_contract) || num(p.contract_amount),
     );
     const approvedCosCents =
       cosFromChildren != null ? cosFromChildren : toCents(num(p.approved_change_orders ?? p.net_change_by_co));

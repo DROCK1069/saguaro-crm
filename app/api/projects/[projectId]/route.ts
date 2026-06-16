@@ -44,8 +44,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     const p = project as any;
 
     // Revised contract = original + APPROVED change orders only (exact cents).
+    // Original = first POSITIVE contract column (see project-report/route.ts):
+    // many projects leave contract_amount at 0 and carry the value elsewhere.
     const contractSummary = summarizeContract(
-      toCents(p.contract_amount || 0),
+      toCents(p.original_contract_value || p.contract_value || p.original_contract || p.contract_amount || 0),
       cos.map((co: any) => ({
         id: String(co.id),
         description: String(co.description ?? ''),

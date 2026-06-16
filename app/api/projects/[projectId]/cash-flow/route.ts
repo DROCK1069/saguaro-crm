@@ -33,7 +33,7 @@ export async function GET(
     // Verify project belongs to tenant
     const { data: project, error: pErr } = await db
       .from('projects')
-      .select('id, name, contract_amount, retainage_pct, start_date, end_date, status')
+      .select('id, name, original_contract_value, contract_value, original_contract, contract_amount, retainage_pct, start_date, end_date, status')
       .eq('id', projectId)
       .eq('tenant_id', user.tenantId)
       .single();
@@ -78,8 +78,10 @@ export async function GET(
     const allContracts = (contracts || []) as any[];
     const allCOs = (changeOrders || []) as any[];
 
-    // Contract totals (all money math in integer cents)
-    const contractAmountCents = toCents(p.contract_amount || 0);
+    // Contract totals (all money math in integer cents). Original = first
+    // POSITIVE contract column (see project-report/route.ts) — many projects
+    // leave contract_amount at 0 and carry the value in contract_value.
+    const contractAmountCents = toCents(p.original_contract_value || p.contract_value || p.original_contract || p.contract_amount || 0);
     const retainagePct = p.retainage_pct || 10;
     const approvedCOs = allCOs.filter((co: any) => co.status === 'approved');
     const totalCOAmountCents = sumCents(approvedCOs.map((co: any) => toCents(co.amount || 0)));
