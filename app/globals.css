@@ -440,3 +440,12 @@ tbody td { border-bottom: 1px solid rgba(255,255,255,0.03) !important; }
 [data-landing] h2 { font-size: clamp(18px, 3vw, 28px) !important; }
 [data-landing] h3 { font-size: clamp(15px, 2.5vw, 20px) !important; }
 [data-landing] p { font-size: 14px !important; line-height: 1.6; }
+
+/* FIX: light-theme flip left inputs at color:#F5F5F7 (white) on a white field =
+   invisible typing in every form. Force dark text on a solid white field. */
+input, textarea, select {
+  background-color: #FFFFFF !important;
+  color: #1C1C1E !important;
+  -webkit-text-fill-color: #1C1C1E !important;
+}
+input::placeholder, textarea::placeholder { color: #8E8E93 !important; }
