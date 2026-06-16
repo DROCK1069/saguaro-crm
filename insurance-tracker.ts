@@ -83,18 +83,20 @@ export async function requestCOIHandler(req: NextRequest) {
   const token = (await import('node:crypto')).randomBytes(32).toString('hex');
 
   // Create COI record (pending)
+  // Insert ONLY columns that exist on the live insurance_certificates table.
+  // (The old insert wrote vendor_name/subcontractor_company_id/cert_holder_*/
+  // updated_at — none exist — so every request 42703-failed and no row was made.
+  // Real cols: sub_name, sub_id, status, created_at. expiry_date is now nullable
+  // so a pending request — which has no cert/expiry yet — can be created.)
   const { data: coi, error } = await supabaseAdmin
     .from('insurance_certificates')
     .insert({
-      tenant_id:              tenantId,
-      project_id:             projectId,
-      subcontractor_company_id: subId ?? null,
-      vendor_name:            vendorName,
-      cert_holder_name:       ctx.gc?.name ?? process.env.COMPANY_NAME ?? 'General Contractor',
-      cert_holder_address:    ctx.gc?.address ?? null,
-      status:                 'pending',
-      created_at:             now,
-      updated_at:             now,
+      tenant_id:  tenantId,
+      project_id: projectId,
+      sub_id:     subId ?? null,
+      sub_name:   vendorName,
+      status:     'pending',
+      created_at: now,
     })
     .select('id')
     .single();
@@ -176,12 +178,31 @@ export async function uploadCOIHandler(req: NextRequest) {
   const base64      = buffer.toString('base64');
   const now         = new Date().toISOString();
 
-  // Upload to Supabase Storage
-  const storagePath = `${tenantId}/insurance/${coiId}/${Date.now()}_${file.name}`;
-  await supabaseAdmin.storage.from('documents').upload(storagePath, buffer, {
-    contentType: 'application/pdf',
-    upsert: false,
-  });
+  // Resolve the COI row up-front: gives tenant/project for the storage path,
+  // 404s a bad coiId, and lets us tenant-scope the final write.
+  const { data: coiRow, error: coiRowErr } = await supabaseAdmin
+    .from('insurance_certificates')
+    .select('id, tenant_id, project_id')
+    .eq('id', coiId)
+    .maybeSingle();
+  if (coiRowErr || !coiRow) {
+    return NextResponse.json({ error: 'COI record not found' }, { status: 404 });
+  }
+  const rowTenant = (coiRow.tenant_id as string) || tenantId || 'coi';
+
+  // Upload to the PUBLIC project-files bucket (same as drawings/photos) so the
+  // mobile "View certificate" (Linking.openURL) gets a directly-openable URL —
+  // the old private 'documents' bucket + raw path was not openable.
+  const storagePath = `projects/${rowTenant}/insurance/${coiId}/${Date.now()}_${file.name}`;
+  const { error: storageErr } = await supabaseAdmin.storage
+    .from('project-files')
+    .upload(storagePath, buffer, { contentType: file.type || 'application/pdf', upsert: false });
+  if (storageErr) {
+    console.error('[insurance/upload] storage failed:', storageErr.message);
+    return NextResponse.json({ error: `Storage upload failed: ${storageErr.message}` }, { status: 500 });
+  }
+  const { data: urlData } = supabaseAdmin.storage.from('project-files').getPublicUrl(storagePath);
+  const pdfUrl = urlData?.publicUrl || '';
 
   // Use Claude to extract ACORD 25 fields
   let extracted: Record<string, unknown> = {};
@@ -303,20 +324,33 @@ export async function uploadCOIHandler(req: NextRequest) {
   else if (daysToExpiry !== null && daysToExpiry <= 30) status = 'expiring_soon';
   else status = 'active';
 
-  // Save all extracted data
-  await supabaseAdmin
+  // Persist ONLY columns that exist on the live insurance_certificates table
+  // (the rich ACORD schema this handler was written for was never migrated, so
+  // the old ...extracted/coi_pdf_url/ai_* update 42703-failed and silently lost
+  // the upload). Map the AI-extracted ACORD fields onto the minimal real columns
+  // when present; always persist the public pdf_url + computed status.
+  const upd: Record<string, unknown> = { pdf_url: pdfUrl || null, status, last_checked_at: now };
+  const setIf = (col: string, val: unknown) => { if (val !== undefined && val !== null && val !== '') upd[col] = val; };
+  setIf('carrier',         extracted['gl_insurer']);
+  setIf('policy_number',   extracted['gl_policy_number']);
+  setIf('effective_date',  extracted['gl_effective']);
+  setIf('expiry_date',     extracted['gl_expiry']);
+  setIf('coverage_amount', extracted['gl_each_occurrence'] != null ? Number(extracted['gl_each_occurrence']) : undefined);
+  setIf('sub_name',        extracted['insured_name']);
+  if (Object.keys(extracted).length > 0) upd['policy_type'] = 'General Liability';
+
+  const { data: saved, error: saveErr } = await supabaseAdmin
     .from('insurance_certificates')
-    .update({
-      ...extracted,
-      coi_pdf_url:    storagePath,
-      ai_extracted:   true,
-      ai_confidence:  aiConfidence,
-      ai_flags:       [...aiFlags, ...deficiencies],
-      status,
-      deficiency_notes: deficiencies.length > 0 ? deficiencies.join('; ') : null,
-      updated_at:     now,
-    })
-    .eq('id', coiId);
+    .update(upd as never)
+    .eq('id', coiId)
+    .eq('tenant_id', coiRow.tenant_id as string)
+    .select('id')
+    .maybeSingle();
+  if (saveErr) {
+    console.error('[insurance/upload] save failed:', saveErr.message);
+    return NextResponse.json({ error: `COI save failed: ${saveErr.message}` }, { status: 500 });
+  }
+  if (!saved) return NextResponse.json({ error: 'COI record not found' }, { status: 404 });
 
   return NextResponse.json({
     coiId,
