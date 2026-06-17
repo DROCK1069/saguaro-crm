@@ -152,55 +152,21 @@ export default function AppSidebar({
           aria-label="Saguaro — Dashboard"
           style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none', overflow: 'hidden' }}
         >
-          {/* Brand mark — existing logo image in a clean gold-tinted square */}
-          <span
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 34,
-              width: 34,
-              flexShrink: 0,
-              borderRadius: radius.xl,
-              background: colors.goldDim,
-              border: `1px solid ${colors.goldBorder}`,
-            }}
-          >
+          {/* Brand lockup — badge-only when collapsed, full horizontal lockup
+              (badge + wordmark) when expanded. Single source of truth = the
+              logo artwork, not hand-built text. */}
+          {collapsed ? (
             <img
-              src="/logo-icon.jpg"
-              alt="Saguaro"
-              style={{
-                height: 22,
-                width: 22,
-                objectFit: 'contain',
-                borderRadius: radius.sm,
-                display: 'block',
-              }}
+              src="/logo-badge.png"
+              alt="Saguaro Control Systems"
+              style={{ height: 32, width: 32, objectFit: 'contain', display: 'block' }}
             />
-          </span>
-          {!collapsed && (
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-              <span style={{
-                fontWeight: font.weight.black,
-                fontSize: font.size.xl,
-                letterSpacing: 1.4,
-                background: `linear-gradient(90deg,${colors.gold},${colors.goldLight})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>
-                SAGUARO
-              </span>
-              <span style={{
-                fontSize: '10px',
-                color: colors.textDim,
-                fontWeight: font.weight.semibold,
-                letterSpacing: 1.6,
-                textTransform: 'uppercase',
-                marginTop: 1,
-              }}>
-                Control Systems
-              </span>
-            </span>
+          ) : (
+            <img
+              src="/logo-horizontal.png"
+              alt="Saguaro Control Systems"
+              style={{ height: 30, width: 'auto', objectFit: 'contain', display: 'block' }}
+            />
           )}
         </Link>
       </div>

@@ -37,6 +37,21 @@ export const colors = {
   black:      '#000000',
 } as const;
 
+/* ── Brand palette — sampled directly from the Saguaro logo artwork ────
+ * Use these for brand moments (hero accents, sunset gradients, PDF
+ * letterheads, section dividers, the dark field-app surfaces). The neutral
+ * UI chrome stays on `colors` above; `brand` is the desert identity layer. */
+export const brand = {
+  gold:       '#E8B84B', // wordmark / primary highlight
+  sunset:     '#F2A93B', // bright sun
+  ember:      '#E8732B', // sunset orange
+  terracotta: '#A8431C', // canyon rock
+  canyon:     '#4A1E08', // deep shadow / dark text on warm fills
+  cactus:     '#2E8B3D', // saguaro green (positive / accent, sparing)
+  night:      '#0B1220', // field-app dark surface
+  sand:       '#F7F2E8', // warm light surface
+} as const;
+
 /* ── Spacing (4px grid) ────────────────────────────────────────────── */
 export const space = {
   xs:  4,

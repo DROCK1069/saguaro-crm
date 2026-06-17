@@ -198,13 +198,9 @@ export default function LandingPage() {
             padding: '0 max(24px, 4vw)', height: 56,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            {/* Logo lockup — hexagon mark + wordmark, mirrors the badge */}
-            <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
-              <img src="/apple-touch-icon.png" alt="" width={34} height={34} style={{ borderRadius: 8, display: 'block', boxShadow: '0 1px 4px rgba(0,0,0,0.18)' }} />
-              <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.04 }}>
-                <span style={{ color: '#C8881C', fontWeight: 800, fontSize: 16, letterSpacing: '0.14em' }}>SAGUARO</span>
-                <span style={{ color: '#86868B', fontWeight: 600, fontSize: 7.5, letterSpacing: '0.26em', textTransform: 'uppercase' as const }}>Control Systems</span>
-              </span>
+            {/* Logo lockup — full horizontal badge + wordmark artwork */}
+            <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
+              <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={34} style={{ height: 34, width: 'auto', display: 'block' }} />
             </a>
 
             {/* Desktop menu */}
@@ -580,12 +576,8 @@ export default function LandingPage() {
           </div>
         </div>
         <div style={{ borderTop: '1px solid #E5E5EA', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
-            <img src="/apple-touch-icon.png" alt="" width={28} height={28} style={{ borderRadius: 7, display: 'block' }} />
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.04 }}>
-              <span style={{ color: '#C8881C', fontWeight: 800, fontSize: 15, letterSpacing: '0.12em' }}>SAGUARO</span>
-              <span style={{ color: '#86868B', fontWeight: 600, fontSize: 7, letterSpacing: '0.24em', textTransform: 'uppercase' as const }}>Control Systems</span>
-            </span>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
+            <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={30} style={{ height: 30, width: 'auto', display: 'block' }} />
           </a>
           <span style={{ fontSize: 12, color: DIM }}>&copy; {new Date().getFullYear()} Saguaro Technologies Inc. All rights reserved.</span>
         </div>
