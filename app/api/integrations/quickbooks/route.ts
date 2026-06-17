@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getUser } from '@/lib/supabase-server';
 
 function getSupabase() {
   return createClient(
@@ -9,20 +10,38 @@ function getSupabase() {
 }
 
 const QB_CLIENT_ID     = process.env.QB_CLIENT_ID ?? '';
-const QB_CLIENT_SECRET = process.env.QB_CLIENT_SECRET ?? '';
 const QB_REDIRECT_URI  = process.env.QB_REDIRECT_URI ?? '';
+const QB_CLIENT_SECRET = process.env.QB_CLIENT_SECRET ?? '';
 const QB_SANDBOX       = process.env.QB_SANDBOX === 'true';
 const QB_BASE          = QB_SANDBOX
   ? 'https://sandbox-quickbooks.api.intuit.com'
   : 'https://quickbooks.api.intuit.com';
 const AUTH_BASE = 'https://appcenter.intuit.com/connect/oauth2';
 
+// Helper: read the connection regardless of legacy storage shape (some rows
+// stored tokens top-level, some under settings{}). Always tenant-scoped.
+function tokenOf(row: any): { access_token?: string; realm_id?: string; expires_at?: string } {
+  if (!row) return {};
+  return {
+    access_token: row.access_token ?? row.settings?.access_token,
+    realm_id: row.realm_id ?? row.settings?.realm_id,
+    expires_at: row.token_expires_at ?? row.settings?.expires_at,
+  };
+}
+
 export async function GET(req: NextRequest) {
+  // AUTH + TENANT: these endpoints read tenant financial data and integration
+  // tokens. Previously unauthenticated + service-role with no tenant filter,
+  // which leaked every tenant's pay-app amounts and QB connection state.
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action') ?? 'status';
 
   if (action === 'connect') {
-    // Redirect user to QuickBooks OAuth
+    // The callback resolves the tenant from the authed session (cookies), not
+    // from `state`; state is a CSRF nonce only.
     const scope = 'com.intuit.quickbooks.accounting';
     const state = crypto.randomUUID();
     const url = `${AUTH_BASE}?client_id=${QB_CLIENT_ID}&redirect_uri=${encodeURIComponent(QB_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}`;
@@ -30,28 +49,28 @@ export async function GET(req: NextRequest) {
   }
 
   if (action === 'status') {
-    // Check if we have a stored token
     const { data } = await getSupabase()
       .from('integrations')
-      .select('id, settings')
+      .select('id, access_token, token_expires_at, settings')
       .eq('provider', 'quickbooks')
+      .eq('tenant_id', user.tenantId)
       .maybeSingle();
-    const connected = !!data?.settings?.access_token;
-    const expiresAt = data?.settings?.expires_at ?? null;
-    return NextResponse.json({ connected, expiresAt, sandbox: QB_SANDBOX });
+    const t = tokenOf(data);
+    return NextResponse.json({ connected: !!t.access_token, expiresAt: t.expires_at ?? null, sandbox: QB_SANDBOX });
   }
 
   if (action === 'sync_preview') {
-    // Return what would be synced without actually syncing
     const { data: invoices } = await getSupabase()
       .from('pay_applications')
       .select('id, app_number, net_payment_due, status, project_id')
+      .eq('tenant_id', user.tenantId)
       .in('status', ['approved', 'submitted'])
       .limit(20);
 
     const { data: vendors } = await getSupabase()
       .from('subcontractors')
       .select('id, company_name')
+      .eq('tenant_id', user.tenantId)
       .limit(20);
 
     return NextResponse.json({
@@ -65,11 +84,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
   const body = await req.json().catch(() => ({}));
   const { action } = body as { action: string };
 
   if (action === 'callback') {
-    // Handle OAuth callback — exchange code for tokens
+    // Exchange code for tokens and store them for THIS tenant (resolved from
+    // the authed session — never from a client-supplied field).
     const { code, realmId } = body as { code: string; realmId: string };
     if (!code || !realmId) {
       return NextResponse.json({ error: 'Missing code or realmId' }, { status: 400 });
@@ -92,45 +115,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Token exchange failed' }, { status: 502 });
     }
 
-    const tokens = await tokenRes.json() as {
-      access_token: string;
-      refresh_token: string;
-      expires_in: number;
-    };
-
+    const tokens = await tokenRes.json() as { access_token: string; refresh_token: string; expires_in: number };
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
-    await getSupabase().from('integrations').upsert({
+    // Tenant-scoped upsert via select-then-write (no global onConflict:'provider').
+    const db = getSupabase();
+    const { data: existing } = await db.from('integrations')
+      .select('id').eq('provider', 'quickbooks').eq('tenant_id', user.tenantId).maybeSingle();
+    const row = {
       provider: 'quickbooks',
-      settings: {
-        access_token:  tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_at:    expiresAt,
-        realm_id:      realmId,
-      },
-    }, { onConflict: 'provider' });
+      tenant_id: user.tenantId,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      token_expires_at: expiresAt,
+      realm_id: realmId,
+      status: 'active',
+    };
+    if (existing) await db.from('integrations').update(row).eq('id', existing.id);
+    else await db.from('integrations').insert(row);
 
     return NextResponse.json({ ok: true, expiresAt });
   }
 
   if (action === 'sync') {
-    // Push approved pay apps as invoices to QuickBooks
     const { data: integration } = await getSupabase()
       .from('integrations')
-      .select('settings')
+      .select('access_token, realm_id, settings')
       .eq('provider', 'quickbooks')
+      .eq('tenant_id', user.tenantId)
       .maybeSingle();
 
-    if (!integration?.settings?.access_token) {
+    const t = tokenOf(integration);
+    if (!t.access_token) {
       return NextResponse.json({ error: 'QuickBooks not connected' }, { status: 401 });
     }
 
-    const realmId     = integration.settings.realm_id as string;
-    const accessToken = integration.settings.access_token as string;
+    const realmId     = t.realm_id as string;
+    const accessToken = t.access_token as string;
 
     const { data: payApps } = await getSupabase()
       .from('pay_applications')
       .select('id, app_number, net_payment_due, project_id, projects(name)')
+      .eq('tenant_id', user.tenantId)
       .eq('status', 'approved')
       .is('qbo_invoice_id', null)
       .limit(50);
@@ -139,14 +165,11 @@ export async function POST(req: NextRequest) {
     const errors: string[] = [];
 
     for (const pa of payApps ?? []) {
-      // Create invoice in QB
       const invoicePayload = {
         Line: [{
           Amount: pa.net_payment_due,
           DetailType: 'SalesItemLineDetail',
-          SalesItemLineDetail: {
-            ItemRef: { value: '1', name: 'Services' },
-          },
+          SalesItemLineDetail: { ItemRef: { value: '1', name: 'Services' } },
         }],
         CustomerRef: { value: '1' }, // TODO: map to QB customer by project
         DocNumber: `PAY-${(pa as any).app_number}`,
@@ -168,7 +191,8 @@ export async function POST(req: NextRequest) {
         await getSupabase()
           .from('pay_applications')
           .update({ qbo_invoice_id: qbData.Invoice?.Id })
-          .eq('id', pa.id);
+          .eq('id', pa.id)
+          .eq('tenant_id', user.tenantId);
         synced++;
       } else {
         const errText = await res.text();
@@ -180,7 +204,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'disconnect') {
-    await getSupabase().from('integrations').delete().eq('provider', 'quickbooks');
+    await getSupabase().from('integrations').delete()
+      .eq('provider', 'quickbooks').eq('tenant_id', user.tenantId);
     return NextResponse.json({ ok: true });
   }
 

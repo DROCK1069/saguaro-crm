@@ -62,18 +62,19 @@ export async function GET(req: NextRequest) {
 
     const db = createServerClient();
 
-    // Decode tenant ID from state param, or fall back to cookie-based auth
-    let tenantId = state || '';
-
-    if (!tenantId) {
-      const user = await getUser(req);
-      if (!user) {
-        return NextResponse.redirect(
-          new URL('/app/integrations?error=auth_required', req.url),
-        );
-      }
-      tenantId = user.tenantId;
+    // SECURITY: resolve the tenant from the authenticated session ONLY. The
+    // callback runs in the GC's browser (auth cookie present). This previously
+    // trusted the client-supplied `state` as tenant_id, letting an attacker
+    // bind their QuickBooks tokens to ANY tenant (IDOR). `state` is a CSRF
+    // nonce only — never an identity.
+    void state;
+    const user = await getUser(req);
+    if (!user) {
+      return NextResponse.redirect(
+        new URL('/app/integrations?error=auth_required', req.url),
+      );
     }
+    const tenantId = user.tenantId;
 
     // Upsert integration record
     const { data: existing } = await db
