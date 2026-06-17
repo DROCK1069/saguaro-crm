@@ -4695,13 +4695,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cost_entries_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "cost_entries_budget_line_item_id_fkey"
             columns: ["budget_line_item_id"]
             isOneToOne: false
@@ -4721,13 +4714,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cost_entries_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "cost_entries_project_id_fkey"
@@ -7462,13 +7448,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "drawing_markups_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       drawing_pins: {
@@ -7646,13 +7625,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "drawing_revisions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       drawing_sets: {
@@ -7724,13 +7696,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "drawing_sets_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -9295,13 +9260,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "inspection_records_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "inspection_records_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -9970,13 +9928,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invitations_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "invitations_tenant_id_fkey"
@@ -10911,13 +10862,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lien_waivers_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "lien_waivers_subcontractor_id_fkey"
             columns: ["subcontractor_id"]
             isOneToOne: false
@@ -11240,25 +11184,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "meetings_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "meetings_minutes_approved_by_fkey"
             columns: ["minutes_approved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meetings_minutes_approved_by_fkey"
-            columns: ["minutes_approved_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "meetings_project_id_fkey"
@@ -12997,13 +12927,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "owner_pay_applications_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "owner_pay_applications_prime_contract_id_fkey"
             columns: ["prime_contract_id"]
             isOneToOne: false
@@ -13016,13 +12939,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "owner_pay_applications_submitted_by_fkey"
-            columns: ["submitted_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -13190,13 +13106,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "owner_reports_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "owner_reports_project_id_fkey"
@@ -16058,13 +15967,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "prequal_submissions_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "prequal_submissions_subcontractor_id_fkey"
             columns: ["subcontractor_id"]
             isOneToOne: false
@@ -16617,13 +16519,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prime_contracts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "prime_contracts_project_id_fkey"
@@ -18854,13 +18749,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "punch_list_assigned_to_id_fkey"
-            columns: ["assigned_to_id"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "punch_list_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -19726,13 +19614,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rfi_drawing_pins_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "rfi_drawing_pins_rfi_id_fkey"
@@ -21048,6 +20929,156 @@ export type Database = {
           },
         ]
       }
+      sage_user_profiles: {
+        Row: {
+          annual_volume: string | null
+          avg_messages_per_session: number | null
+          avg_session_duration_minutes: number | null
+          churn_risk: string | null
+          communication_style: string | null
+          company_name: string | null
+          created_at: string | null
+          current_streak_days: number | null
+          current_stress_level: number | null
+          days_since_last_visit: number | null
+          delight_triggers: string[] | null
+          email: string | null
+          first_name: string | null
+          first_seen_at: string | null
+          frustration_triggers: string[] | null
+          id: string
+          language_formality: string | null
+          last_name: string | null
+          last_question_asked: string | null
+          last_seen_at: string | null
+          last_topic: string | null
+          longest_streak_days: number | null
+          open_loops: string[] | null
+          overall_sentiment: string | null
+          pending_follow_up: string | null
+          pending_follow_up_timing: string | null
+          pending_follow_up_urgency: string | null
+          preferred_name: string | null
+          preferred_response_length: string | null
+          prefers_bullet_points: boolean | null
+          primary_markets: string[] | null
+          primary_pain_points: string[] | null
+          primary_specialty: string | null
+          role: string | null
+          sage_notes: string | null
+          sage_observations: string | null
+          satisfaction_trend: number | null
+          satisfaction_with_saguaro: number | null
+          team_size: string | null
+          tenant_id: string | null
+          total_messages_received: number | null
+          total_messages_sent: number | null
+          total_sessions: number | null
+          updated_at: string | null
+          user_id: string
+          why_switched_to_saguaro: string | null
+          years_in_construction: number | null
+        }
+        Insert: {
+          annual_volume?: string | null
+          avg_messages_per_session?: number | null
+          avg_session_duration_minutes?: number | null
+          churn_risk?: string | null
+          communication_style?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          current_stress_level?: number | null
+          days_since_last_visit?: number | null
+          delight_triggers?: string[] | null
+          email?: string | null
+          first_name?: string | null
+          first_seen_at?: string | null
+          frustration_triggers?: string[] | null
+          id?: string
+          language_formality?: string | null
+          last_name?: string | null
+          last_question_asked?: string | null
+          last_seen_at?: string | null
+          last_topic?: string | null
+          longest_streak_days?: number | null
+          open_loops?: string[] | null
+          overall_sentiment?: string | null
+          pending_follow_up?: string | null
+          pending_follow_up_timing?: string | null
+          pending_follow_up_urgency?: string | null
+          preferred_name?: string | null
+          preferred_response_length?: string | null
+          prefers_bullet_points?: boolean | null
+          primary_markets?: string[] | null
+          primary_pain_points?: string[] | null
+          primary_specialty?: string | null
+          role?: string | null
+          sage_notes?: string | null
+          sage_observations?: string | null
+          satisfaction_trend?: number | null
+          satisfaction_with_saguaro?: number | null
+          team_size?: string | null
+          tenant_id?: string | null
+          total_messages_received?: number | null
+          total_messages_sent?: number | null
+          total_sessions?: number | null
+          updated_at?: string | null
+          user_id: string
+          why_switched_to_saguaro?: string | null
+          years_in_construction?: number | null
+        }
+        Update: {
+          annual_volume?: string | null
+          avg_messages_per_session?: number | null
+          avg_session_duration_minutes?: number | null
+          churn_risk?: string | null
+          communication_style?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          current_stress_level?: number | null
+          days_since_last_visit?: number | null
+          delight_triggers?: string[] | null
+          email?: string | null
+          first_name?: string | null
+          first_seen_at?: string | null
+          frustration_triggers?: string[] | null
+          id?: string
+          language_formality?: string | null
+          last_name?: string | null
+          last_question_asked?: string | null
+          last_seen_at?: string | null
+          last_topic?: string | null
+          longest_streak_days?: number | null
+          open_loops?: string[] | null
+          overall_sentiment?: string | null
+          pending_follow_up?: string | null
+          pending_follow_up_timing?: string | null
+          pending_follow_up_urgency?: string | null
+          preferred_name?: string | null
+          preferred_response_length?: string | null
+          prefers_bullet_points?: boolean | null
+          primary_markets?: string[] | null
+          primary_pain_points?: string[] | null
+          primary_specialty?: string | null
+          role?: string | null
+          sage_notes?: string | null
+          sage_observations?: string | null
+          satisfaction_trend?: number | null
+          satisfaction_with_saguaro?: number | null
+          team_size?: string | null
+          tenant_id?: string | null
+          total_messages_received?: number | null
+          total_messages_sent?: number | null
+          total_sessions?: number | null
+          updated_at?: string | null
+          user_id?: string
+          why_switched_to_saguaro?: string | null
+          years_in_construction?: number | null
+        }
+        Relationships: []
+      }
       sandbox_tenants: {
         Row: {
           created_at: string | null
@@ -21262,25 +21293,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "schedule_milestones_completed_by_fkey"
-            columns: ["completed_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "schedule_milestones_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "schedule_milestones_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "schedule_milestones_predecessor_milestone_id_fkey"
@@ -22107,13 +22124,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "spec_sections_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "spec_sections_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -22495,13 +22505,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sub_insurance_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -24701,13 +24704,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "takeoff_revisions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "takeoff_revisions_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -24770,13 +24766,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "takeoff_scope_gaps_acknowledged_by_fkey"
-            columns: ["acknowledged_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "takeoff_scope_gaps_takeoff_id_fkey"
@@ -25510,13 +25499,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "time_entries_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "time_entries_cost_code_id_fkey"
             columns: ["cost_code_id"]
             isOneToOne: false
@@ -25529,13 +25511,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "time_entries_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "time_entries_employee_id_fkey"
@@ -25883,13 +25858,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "toolbox_talks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "toolbox_talks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -26181,13 +26149,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transmittals_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "sage_user_profiles"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "transmittals_project_id_fkey"
@@ -27408,45 +27369,6 @@ export type Database = {
           mrr_cents: number | null
           plan: string | null
           total_renders_this_period: number | null
-        }
-        Relationships: []
-      }
-      sage_user_profiles: {
-        Row: {
-          avatar_url: string | null
-          company: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          role: string | null
-          tenant_id: string | null
-          title: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          company?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          role?: string | null
-          tenant_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          company?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          role?: string | null
-          tenant_id?: string | null
-          title?: string | null
-          updated_at?: string | null
-          user_id?: string | null
         }
         Relationships: []
       }
