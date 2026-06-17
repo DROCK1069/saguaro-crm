@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,8 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ drawings });
+    // drawings/project-files buckets are private — sign the file URLs on read.
+    return NextResponse.json({ drawings: await signFields(drawings, ['file_url', 'url', 'thumbnail_url']) });
   } catch {
     return NextResponse.json({ drawings: [] }, { status: 500 });
   }

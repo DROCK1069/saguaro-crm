@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await q;
     if (error) throw error;
 
-    return NextResponse.json({ certificates: data || [] });
+    // 'project-files' bucket is private — sign COI PDF URLs on read.
+    return NextResponse.json({ certificates: await signFields(data || [], ['pdf_url', 'coi_url', 'certificate_url']) });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: msg, certificates: [] }, { status: 500 });

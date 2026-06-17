@@ -42,3 +42,43 @@ export async function signStoredUrl(
     return stored ?? '';
   }
 }
+
+/**
+ * Bucket-auto-detecting signer for READ paths: takes a stored Supabase PUBLIC
+ * url, parses "<bucket>/<path>" out of it, and returns a short-lived signed
+ * URL. Anything that isn't a recognizable public Supabase URL (already-signed,
+ * foreign, demo://, empty) is returned unchanged. Use this to migrate any read
+ * site to private buckets without hard-coding the bucket name.
+ */
+export async function signUrl(stored: string | null | undefined, ttlSeconds = 3600): Promise<string> {
+  if (!stored) return stored ?? '';
+  const i = stored.indexOf(PUBLIC_MARKER);
+  if (i < 0) return stored; // not a public-bucket URL (signed/foreign/path) — leave as-is
+  const after = stored.slice(i + PUBLIC_MARKER.length); // "<bucket>/<path>"
+  const slash = after.indexOf('/');
+  if (slash < 0) return stored;
+  const bucket = after.slice(0, slash);
+  const path = after.slice(slash + 1);
+  try {
+    const { data, error } = await createServerClient().storage.from(bucket).createSignedUrl(path, ttlSeconds);
+    if (error || !data?.signedUrl) return stored;
+    return data.signedUrl;
+  } catch {
+    return stored;
+  }
+}
+
+/** Map an array of records, signing the given URL field(s) on each. */
+export async function signFields<T extends Record<string, any>>(
+  rows: T[],
+  fields: string[],
+  ttlSeconds = 3600,
+): Promise<T[]> {
+  return Promise.all(
+    rows.map(async (r) => {
+      const out: Record<string, any> = { ...r };
+      for (const f of fields) if (typeof out[f] === 'string') out[f] = await signUrl(out[f], ttlSeconds);
+      return out as T;
+    }),
+  );
+}

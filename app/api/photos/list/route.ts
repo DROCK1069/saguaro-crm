@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ photos: [] }, { status: 401 });
@@ -11,7 +12,8 @@ export async function GET(req: NextRequest) {
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json({ photos: data || [] });
+    // 'project-files' bucket is private — sign photo URLs on read.
+    return NextResponse.json({ photos: await signFields(data || [], ['url', 'thumbnail_url', 'markup_url']) });
   } catch {
     return NextResponse.json({ photos: [] }, { status: 500 });
   }
