@@ -20545,6 +20545,7 @@ export type Database = {
           customer_id: string | null
           detected_tone: string | null
           ended_at: string | null
+          feedback_note: string | null
           id: string
           last_message_at: string | null
           message_count: number | null
@@ -20554,10 +20555,13 @@ export type Database = {
           session_id: string | null
           started_at: string | null
           tenant_id: string
+          thumbs_down: boolean | null
+          thumbs_up: boolean | null
           title: string | null
           tone_history: Json | null
           upsells_offered: Json | null
           user_id: string | null
+          was_helpful: boolean | null
         }
         Insert: {
           conversion_event?: string | null
@@ -20568,6 +20572,7 @@ export type Database = {
           customer_id?: string | null
           detected_tone?: string | null
           ended_at?: string | null
+          feedback_note?: string | null
           id?: string
           last_message_at?: string | null
           message_count?: number | null
@@ -20577,10 +20582,13 @@ export type Database = {
           session_id?: string | null
           started_at?: string | null
           tenant_id: string
+          thumbs_down?: boolean | null
+          thumbs_up?: boolean | null
           title?: string | null
           tone_history?: Json | null
           upsells_offered?: Json | null
           user_id?: string | null
+          was_helpful?: boolean | null
         }
         Update: {
           conversion_event?: string | null
@@ -20591,6 +20599,7 @@ export type Database = {
           customer_id?: string | null
           detected_tone?: string | null
           ended_at?: string | null
+          feedback_note?: string | null
           id?: string
           last_message_at?: string | null
           message_count?: number | null
@@ -20600,10 +20609,13 @@ export type Database = {
           session_id?: string | null
           started_at?: string | null
           tenant_id?: string
+          thumbs_down?: boolean | null
+          thumbs_up?: boolean | null
           title?: string | null
           tone_history?: Json | null
           upsells_offered?: Json | null
           user_id?: string | null
+          was_helpful?: boolean | null
         }
         Relationships: []
       }

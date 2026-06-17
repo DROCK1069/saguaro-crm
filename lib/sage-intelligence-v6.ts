@@ -323,9 +323,8 @@ export async function loadFullIntelligence(
       .from('sage_proactive_insights')
       .select('*')
       .eq('user_id', userId)
-      .eq('delivered', false)
-      .eq('dismissed', false)
-      .order('priority', { ascending: false }),
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
     supabase
       .from('projects')
       .select('id, name, status, contract_amount')
@@ -1476,14 +1475,19 @@ export async function generateProactiveInsights(
       user_id: userId,
       tenant_id: tenantId,
       insight_type: insightType,
-      priority,
-      urgency: priority >= 8 ? 'high' : 'medium',
       title,
-      message: problem.slice(0, 500),
-      action_suggestion: `Review and resolve: "${problem.slice(0, 100)}"`,
-      delivered: false,
-      dismissed: false,
-      expires_at: makeExpiry(priority >= 8 ? 7 : 14),
+      body: problem.slice(0, 500),
+      severity: priority >= 8 ? 'high' : 'medium',
+      status: 'pending',
+      project_id: null,
+      // priority / action / expiry live in metadata (the sage/insights reader
+      // reads metadata->>user_id + priority; status drives pending/dismissed).
+      metadata: {
+        user_id: userId,
+        priority,
+        action_suggestion: `Review and resolve: "${problem.slice(0, 100)}"`,
+        expires_at: makeExpiry(priority >= 8 ? 7 : 14),
+      },
       created_at: now.toISOString(),
     });
   }
@@ -1495,16 +1499,18 @@ export async function generateProactiveInsights(
         user_id: userId,
         tenant_id: tenantId,
         insight_type: 'project_check',
-        priority: 4,
-        urgency: 'low',
         title: `Active Project: ${project.name}`,
-        message: `${project.name} (${project.status}) — $${project.contract_amount.toLocaleString()} contract. Review status and upcoming milestones.`,
-        action_suggestion: `Open ${project.name} to review billing, submittals, and open RFIs`,
-        related_project: project.id,
-        related_amount: project.contract_amount,
-        delivered: false,
-        dismissed: false,
-        expires_at: makeExpiry(14),
+        body: `${project.name} (${project.status}) — $${project.contract_amount.toLocaleString()} contract. Review status and upcoming milestones.`,
+        severity: 'low',
+        status: 'pending',
+        project_id: project.id,
+        metadata: {
+          user_id: userId,
+          priority: 4,
+          action_suggestion: `Open ${project.name} to review billing, submittals, and open RFIs`,
+          related_amount: project.contract_amount,
+          expires_at: makeExpiry(14),
+        },
         created_at: now.toISOString(),
       });
     }
@@ -1633,7 +1639,7 @@ Rules:
     try {
       await supabase
         .from('sage_proactive_insights')
-        .update({ delivered: true, delivered_at: new Date().toISOString() })
+        .update({ status: 'delivered' })
         .eq('id', topInsight.id);
     } catch {
       // Non-fatal
@@ -1876,6 +1882,9 @@ export async function learnFromFeedback(
   userId: string
 ): Promise<void> {
   const supabase = createServerClient();
+  // sage_performance_log.tenant_id is NOT NULL; derive it from the user's profile.
+  const { data: u } = await supabase.from('profiles').select('tenant_id').eq('id', userId).maybeSingle();
+  const tenantId = (u as { tenant_id: string } | null)?.tenant_id ?? null;
 
   try {
     // Update the conversation row
@@ -1891,10 +1900,11 @@ export async function learnFromFeedback(
 
     if (thumbsUp) {
       // ── Positive feedback ────────────────────────────────────────────────
-      await supabase.from('sage_performance_log').insert({
+      if (tenantId) await supabase.from('sage_performance_log').insert({
+        tenant_id: tenantId,
         user_id: userId,
-        metric_type: 'thumbs_up',
-        metric_value: 1,
+        action: 'feedback_thumbs_up',
+        metadata: { metric_value: 1 },
         created_at: new Date().toISOString(),
       });
 
@@ -1918,10 +1928,11 @@ export async function learnFromFeedback(
         .eq('user_id', userId);
     } else {
       // ── Negative feedback ────────────────────────────────────────────────
-      await supabase.from('sage_performance_log').insert({
+      if (tenantId) await supabase.from('sage_performance_log').insert({
+        tenant_id: tenantId,
         user_id: userId,
-        metric_type: 'thumbs_down',
-        metric_value: 0,
+        action: 'feedback_thumbs_down',
+        metadata: { metric_value: 0 },
         created_at: new Date().toISOString(),
       });
 
@@ -1980,7 +1991,7 @@ export async function learnFromFeedback(
           .from('sage_performance_log')
           .select('id')
           .eq('user_id', userId)
-          .eq('metric_type', 'thumbs_down')
+          .eq('action', 'feedback_thumbs_down')
           .gte('created_at', thirtyMinutesAgo);
 
         if (recentDownvotes && recentDownvotes.length >= 2) {
