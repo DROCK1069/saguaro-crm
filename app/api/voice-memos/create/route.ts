@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signUrl } from '@/lib/storage-signing';
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save voice memo', details: insertError.message }, { status: 500 });
     }
 
+    if (memo?.audio_url) (memo as any).audio_url = await signUrl((memo as any).audio_url);
     return NextResponse.json({ memo }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error', details: err.message }, { status: 500 });

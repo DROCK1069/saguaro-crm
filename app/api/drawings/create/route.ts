@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signUrl } from '@/lib/storage-signing';
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
       notes: body.notes || '',
     }).select().single();
     if (error) throw error;
+    if (data?.url) (data as any).url = await signUrl((data as any).url);
     return NextResponse.json({ success: true, drawing: data });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 import { getPortalSession, PORTAL_PERMS } from '@/lib/portal-auth';
+import { signFields } from '@/lib/storage-signing';
 
 /** GET — return project dashboard data */
 export async function GET(req: NextRequest) {
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
         : null,
       budget: budgetSummary,
       phases: phases || [],
-      recentPhotos: photos || [],
+      recentPhotos: await signFields(photos || [], ['url', 'thumbnail_url']),
       changeOrders: changeOrders || [],
       weather,
     });

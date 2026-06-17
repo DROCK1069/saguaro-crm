@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
@@ -24,7 +25,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
       .eq('project_id', projectId)
       .order('sheet_number', { ascending: true });
     if (error) throw error;
-    return NextResponse.json({ drawings: data ?? [] });
+    // drawings/project-files buckets are private — sign URLs on read.
+    return NextResponse.json({ drawings: await signFields(data ?? [], ['url', 'file_url', 'thumbnail_url']) });
   } catch {
     return NextResponse.json({ drawings: [] });
   }

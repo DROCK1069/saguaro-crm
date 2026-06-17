@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
 
 /** GET — List project photos with optional filters */
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
@@ -105,7 +106,8 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       photos.sort((a: { id: string }, b: { id: string }) => (countMap[String(b.id)] || 0) - (countMap[String(a.id)] || 0));
     }
 
-    return NextResponse.json({ photos });
+    // 'project-files' bucket is private — sign photo URLs on read.
+    return NextResponse.json({ photos: await signFields(photos, ['url', 'thumbnail_url', 'markup_url']) });
   } catch (err: unknown) {
     const msg = 'Internal server error';
     console.error('[projects/photos GET]', msg);
