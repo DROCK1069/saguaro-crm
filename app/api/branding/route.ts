@@ -19,7 +19,14 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     company_name: settings.company_name ?? (data as any)?.name ?? '',
     logo_url: settings.logo_url ?? '',
+    primary_color: settings.primary_color ?? '',
   });
+}
+
+// Only persist a plain hex color (#rgb / #rrggbb); anything else is ignored so a
+// stored value can never inject CSS downstream.
+function safeHex(v: unknown): string | null {
+  return typeof v === 'string' && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v.trim()) ? v.trim() : null;
 }
 
 /** PUT /api/branding — saves { company_name, logo_url } to tenants.settings */
@@ -28,8 +35,11 @@ export async function PUT(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const company_name = typeof body.company_name === 'string' ? body.company_name.trim() : undefined;
-  const logo_url     = typeof body.logo_url     === 'string' ? body.logo_url.trim()     : undefined;
+  const company_name  = typeof body.company_name === 'string' ? body.company_name.trim() : undefined;
+  const logo_url      = typeof body.logo_url     === 'string' ? body.logo_url.trim()     : undefined;
+  // primary_color: accept a valid hex, OR an empty string to clear it.
+  const hasColor      = typeof body.primary_color === 'string';
+  const primary_color = hasColor ? (body.primary_color.trim() === '' ? '' : safeHex(body.primary_color)) : undefined;
 
   const db = createServerClient();
 
@@ -44,6 +54,7 @@ export async function PUT(req: NextRequest) {
   const updated  = { ...current };
   if (company_name !== undefined) updated.company_name = company_name;
   if (logo_url     !== undefined) updated.logo_url     = logo_url;
+  if (primary_color !== undefined && primary_color !== null) updated.primary_color = primary_color;
 
   const { error } = await db
     .from('tenants')
@@ -51,5 +62,5 @@ export async function PUT(req: NextRequest) {
     .eq('id', user.tenantId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, company_name: updated.company_name, logo_url: updated.logo_url });
+  return NextResponse.json({ ok: true, company_name: updated.company_name, logo_url: updated.logo_url, primary_color: updated.primary_color });
 }

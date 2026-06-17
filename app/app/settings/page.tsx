@@ -60,8 +60,10 @@ function daysLeft(dateStr: string | null): number {
 export default function SettingsPage() {
   const [sub, setSub] = useState<SubInfo | null>(null);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-  const [branding, setBranding] = useState({ company_name: '', logo_url: '' });
+  const [branding, setBranding] = useState({ company_name: '', logo_url: '', primary_color: '' });
   const [brandingSaving, setBrandingSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [brandingMsg, setBrandingMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const brandingMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -69,7 +71,7 @@ export default function SettingsPage() {
     fetch('/api/billing/subscription').then(r => r.ok ? r.json() : null).then(setSub);
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(setUser);
     fetch('/api/branding').then(r => r.ok ? r.json() : null).then(d => {
-      if (d) setBranding({ company_name: d.company_name ?? '', logo_url: d.logo_url ?? '' });
+      if (d) setBranding({ company_name: d.company_name ?? '', logo_url: d.logo_url ?? '', primary_color: d.primary_color ?? '' });
     });
   }, []);
 
@@ -87,6 +89,28 @@ export default function SettingsPage() {
       setBrandingMsg({ text: 'Save failed.', ok: false });
     } finally {
       setBrandingSaving(false);
+      if (brandingMsgTimer.current) clearTimeout(brandingMsgTimer.current);
+      brandingMsgTimer.current = setTimeout(() => setBrandingMsg(null), 3500);
+    }
+  };
+
+  const uploadLogo = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/branding/logo', { method: 'POST', body: fd });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.logo_url) {
+        setBranding(b => ({ ...b, logo_url: d.logo_url }));
+        setBrandingMsg({ text: 'Logo uploaded.', ok: true });
+      } else {
+        setBrandingMsg({ text: d.error || 'Upload failed.', ok: false });
+      }
+    } catch {
+      setBrandingMsg({ text: 'Upload failed.', ok: false });
+    } finally {
+      setUploading(false);
       if (brandingMsgTimer.current) clearTimeout(brandingMsgTimer.current);
       brandingMsgTimer.current = setTimeout(() => setBrandingMsg(null), 3500);
     }
@@ -188,7 +212,48 @@ export default function SettingsPage() {
                 style={{ width: '100%', maxWidth: 520, background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
               <div style={{ fontSize: 11, color: DIM, marginTop: 5 }}>
-                Accepts PNG or JPG. Upload your logo to Supabase Storage, Imgur, or any public URL.
+                Paste a public URL, or upload a file (PNG, JPG, WEBP, SVG · max 5 MB).
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); e.currentTarget.value = ''; }}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                style={{ marginTop: 10, padding: '8px 16px', background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontWeight: 600, fontSize: 13, cursor: uploading ? 'not-allowed' : 'pointer' }}
+              >
+                {uploading ? 'Uploading…' : 'Upload logo file'}
+              </button>
+            </div>
+
+            {/* Brand color */}
+            <div>
+              <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>BRAND COLOR</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <input
+                  type="color"
+                  value={/^#[0-9a-fA-F]{6}$/.test(branding.primary_color) ? branding.primary_color : '#C8881C'}
+                  onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
+                  style={{ width: 48, height: 40, border: `1px solid ${BORDER}`, borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }}
+                  aria-label="Brand color"
+                />
+                <input
+                  type="text"
+                  value={branding.primary_color}
+                  onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
+                  placeholder="#C8881C"
+                  style={{ width: 130, background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none' }}
+                />
+                {branding.primary_color
+                  ? <button onClick={() => setBranding(b => ({ ...b, primary_color: '' }))} style={{ background: 'none', border: 'none', color: DIM, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>Reset to Saguaro gold</button>
+                  : <span style={{ fontSize: 12, color: DIM }}>Defaults to Saguaro gold</span>}
+              </div>
+              <div style={{ fontSize: 11, color: DIM, marginTop: 5 }}>
+                Applies across your dashboard, portals, and document letterheads on the white-label plan.
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 4 }}>
