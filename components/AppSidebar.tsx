@@ -35,6 +35,7 @@ import {
   Users,
 } from '@phosphor-icons/react';
 import { colors, font, radius, shadow, sidebar as sidebarTokens, z } from '../lib/design-tokens';
+import { useWhiteLabel } from './WhiteLabelProvider';
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 interface NavItem {
@@ -109,6 +110,7 @@ export default function AppSidebar({
   userInitials: string;
 }) {
   const pathname = usePathname();
+  const wl = useWhiteLabel();
   const width = collapsed ? sidebarTokens.widthCollapsed : sidebarTokens.width;
 
   function isActive(href: string) {
@@ -152,10 +154,16 @@ export default function AppSidebar({
           aria-label="Saguaro — Dashboard"
           style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none', overflow: 'hidden' }}
         >
-          {/* Brand lockup — badge-only when collapsed, full horizontal lockup
-              (badge + wordmark) when expanded. Single source of truth = the
-              logo artwork, not hand-built text. */}
-          {collapsed ? (
+          {/* Brand lockup. On the white-label tier (with a logo set) we show the
+              TENANT's logo; otherwise the Saguaro lockup — badge when collapsed,
+              full horizontal lockup when expanded. */}
+          {wl.whiteLabelEnabled && wl.logoUrl ? (
+            <img
+              src={wl.logoUrl}
+              alt={wl.companyName || 'Logo'}
+              style={{ height: collapsed ? 32 : 30, width: collapsed ? 32 : 'auto', maxWidth: collapsed ? 32 : 168, objectFit: 'contain', display: 'block' }}
+            />
+          ) : collapsed ? (
             <img
               src="/logo-badge.png"
               alt="Saguaro Control Systems"

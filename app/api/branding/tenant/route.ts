@@ -23,11 +23,24 @@ export async function GET(req: NextRequest) {
   const tenant = data as any;
   const settings = tenant?.settings ?? {};
 
+  // White-label (app-chrome reskin) is gated to the design add-on tier.
+  let whiteLabelEnabled = false;
+  try {
+    const { data: addon } = await db
+      .from('design_addon_subscriptions')
+      .select('white_label_enabled, status')
+      .eq('tenant_id', user.tenantId)
+      .maybeSingle();
+    whiteLabelEnabled = !!(addon as any)?.white_label_enabled && (addon as any)?.status !== 'canceled';
+  } catch {
+    whiteLabelEnabled = false;
+  }
+
   return NextResponse.json({
     name: settings.company_name ?? tenant?.name ?? '',
     logo_url: settings.logo_url ?? '',
     primary_color: settings.primary_color ?? '',
-    custom_css: settings.custom_css ?? '',
+    white_label_enabled: whiteLabelEnabled,
     settings,
   });
 }

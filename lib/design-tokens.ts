@@ -5,12 +5,16 @@
 
 /* ── Colors ────────────────────────────────────────────────────────── */
 export const colors = {
-  gold:       '#C8881C',
-  goldLight:  '#E0A030',
-  goldDim:    'rgba(200,136,28,.12)',
-  goldBorder: 'rgba(200,136,28,.25)',
-  goldHover:  'rgba(200,136,28,.18)',
-  goldActive: 'rgba(200,136,28,.25)',
+  // Brand gold — resolves through the --brand-primary CSS variable (defined in
+  // globals.css, default = Saguaro #C8881C) so a tenant's white-label color
+  // override reskins every component that uses these tokens. Used only in CSS
+  // contexts (style props / template strings), never as SVG fill/stroke attrs.
+  gold:       'var(--brand-primary)',
+  goldLight:  'var(--brand-primary-strong)',
+  goldDim:    'var(--brand-primary-12)',
+  goldBorder: 'var(--brand-primary-25)',
+  goldHover:  'var(--brand-primary-18)',
+  goldActive: 'var(--brand-primary-25)',
 
   // Apple LIGHT ramp — matches the (light) mobile app: iOS grouped page
   // background #F2F2F7 with #FFFFFF cards/panels and #F2F2F7 grouped insets.

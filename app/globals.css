@@ -13,12 +13,24 @@
   --text-secondary: #6E6E73;
   --text-tertiary: #AEAEB2;
   --text-disabled: #C7C7CC;
-  /* Brand gold — reserved for genuine emphasis */
-  --gold: #C8881C;
-  --gold-bright: #E0A82E;
-  --gold-hover: #B6790F;
-  --gold-soft: rgba(200,136,28,0.12);
-  --gold-ring: rgba(200,136,28,0.35);
+  /* ── Brand primary — the single white-label override point. Defaults to
+     Saguaro gold; WhiteLabelProvider overrides --brand-primary (+ the derived
+     vars) per tenant on the white-label tier. The --gold* aliases below AND
+     design-tokens.ts `colors.gold` all resolve through it, so one override
+     reskins the whole app. ── */
+  --brand-primary: #C8881C;
+  --brand-primary-strong: #E0A030;
+  --brand-primary-hover: #B6790F;
+  --brand-primary-12: rgba(200,136,28,0.12);
+  --brand-primary-18: rgba(200,136,28,0.18);
+  --brand-primary-25: rgba(200,136,28,0.25);
+  --brand-primary-35: rgba(200,136,28,0.35);
+  /* Brand gold aliases — track --brand-primary */
+  --gold: var(--brand-primary);
+  --gold-bright: var(--brand-primary-strong);
+  --gold-hover: var(--brand-primary-hover);
+  --gold-soft: var(--brand-primary-12);
+  --gold-ring: var(--brand-primary-35);
   /* Status */
   --info: #007AFF;
   --success: #34C759;
@@ -42,8 +54,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-base); }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #C8881C; }
-a { color: #C8881C; text-decoration: none; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+a { color: var(--brand-primary); text-decoration: none; }
 button { font-family: inherit; cursor: pointer; transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease; }
 button:hover { border-color: var(--border-strong); }
 button:active { transform: scale(0.98); }

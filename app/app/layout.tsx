@@ -188,6 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <WhiteLabelProvider>
     <div style={{ minHeight: '100vh', background: colors.dark, color: colors.text, fontFamily: font.family }}>
 
       {/* ── Responsive + AI panel styles ──────────────────────────────── */}
@@ -428,5 +429,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </div>
+    </WhiteLabelProvider>
   );
 }
