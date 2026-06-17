@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DocumentGenerator } from '../../../../document-generator';
 import { supabaseAdmin } from '../../../../supabase/admin';
+import { getUser } from '@/lib/supabase-server';
+import { signStoredUrl } from '@/lib/storage-signing';
 
 export async function GET(
   req: NextRequest,
@@ -10,26 +12,33 @@ export async function GET(
   const [segment] = path;
 
   if (segment === 'list') {
+    // AUTH + TENANT: was unauthenticated and scoped by a client-supplied
+    // ?tenantId= (cross-tenant document leak). Tenant comes from the session.
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ documents: [], error: 'unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
-    const tenantId  = searchParams.get('tenantId')  || '';
     const docType   = searchParams.get('type')       || '';
 
     try {
       let query = supabaseAdmin
         .from('generated_documents')
         .select('*')
+        .eq('tenant_id', user.tenantId)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (projectId) query = query.eq('project_id', projectId);
-      if (tenantId)  query = query.eq('tenant_id', tenantId);
       if (docType)   query = query.eq('doc_type', docType);
 
       const { data, error } = await query;
       if (error) throw error;
 
-      return NextResponse.json({ documents: data || [] });
+      // 'documents' bucket is private — sign each URL on read.
+      const documents = await Promise.all(
+        (data || []).map(async (d: any) => ({ ...d, pdf_url: await signStoredUrl('documents', d.pdf_url) })),
+      );
+      return NextResponse.json({ documents });
     } catch {
       return NextResponse.json({ documents: [] });
     }

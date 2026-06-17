@@ -1022,17 +1022,26 @@ export async function saveDocument(
     const { data: urlData } = getSupabaseAdmin().storage.from('documents').getPublicUrl(fileName);
     const pdfUrl = urlData?.publicUrl || '';
 
+    // Real columns only — the previous insert named storage_path/file_size/
+    // snapshot which DON'T exist on generated_documents, so every insert
+    // 42703'd and no generated doc (W-9, pay-app, lien) ever reached the
+    // Documents list. (storage path is derivable from pdf_url when signing.)
     await getSupabaseAdmin().from('generated_documents').insert({
       tenant_id: tenantId || projectId,
       project_id: projectId,
       doc_type: docType,
       pdf_url: pdfUrl,
-      storage_path: fileName,
-      file_size: pdfBytes.length,
-      snapshot,
+      data_snapshot: snapshot,
+      status: 'generated',
     });
 
-    return pdfUrl;
+    // Return a short-lived SIGNED url for immediate viewing — the 'documents'
+    // bucket is private (W-9 SSNs / financial PDFs); later reads re-sign the
+    // stored pdf_url. Falls back to the stored value if signing fails.
+    const { data: signed } = await getSupabaseAdmin().storage
+      .from('documents')
+      .createSignedUrl(fileName, 3600);
+    return signed?.signedUrl || pdfUrl;
   } catch {
     return `demo://generated/${docType}-${Date.now()}.pdf`;
   }

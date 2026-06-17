@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signStoredUrl } from '@/lib/storage-signing';
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -14,7 +15,12 @@ export async function GET(req: NextRequest) {
     if (type) query = query.eq('doc_type', type);
     const { data, error } = await query.limit(100);
     if (error) throw error;
-    return NextResponse.json({ documents: data || [] });
+    // Sign each document URL on read (the 'documents' bucket is private — these
+    // hold W-9 SSNs / pay-app financials). Short-lived signed URLs only.
+    const documents = await Promise.all(
+      (data || []).map(async (d: any) => ({ ...d, pdf_url: await signStoredUrl('documents', d.pdf_url) })),
+    );
+    return NextResponse.json({ documents });
   } catch {
     return NextResponse.json({ documents: [], error: "Internal server error" }, { status: 500 });
   }
