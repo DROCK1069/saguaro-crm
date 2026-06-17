@@ -5,6 +5,7 @@
  */
 import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
 import { createServerClient } from './supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export { PageSizes, StandardFonts, rgb, PDFDocument };
 
@@ -1118,7 +1119,7 @@ export async function saveDocument(
       pdf_url: pdfUrl,
       data_snapshot: snapshot,
       status: 'generated',
-    });
+    } as Database['public']['Tables']['generated_documents']['Insert']);
 
     // Return a short-lived SIGNED url for immediate viewing — the 'documents'
     // bucket is private (W-9 SSNs / financial PDFs); later reads re-sign the

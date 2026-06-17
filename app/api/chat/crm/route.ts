@@ -2177,7 +2177,7 @@ export async function POST(req: NextRequest) {
         pendingCOValue,
         pendingPayApps: pendingPayAppsCount,
         lastPayAppAmount: lastPayApp?.net_payment_due ?? 0,
-      } : undefined,
+      } as unknown as SageContext['currentProject'] : undefined,
       portfolioSummary: {
         activeProjects: activeProjects.length,
         totalContractValue: activeProjects.reduce((sum: number, p: any) => sum + (p.contract_amount ?? 0), 0),

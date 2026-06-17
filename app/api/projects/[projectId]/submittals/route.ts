@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     };
     if (attachmentName) record.file_name = attachmentName;
 
-    const { data, error } = await supabase.from('submittals').insert(record).select().single();
+    const { data, error } = await supabase.from('submittals').insert(record as Database['public']['Tables']['submittals']['Insert']).select().single();
     if (error) throw error;
     return NextResponse.json({ submittal: data }, { status: 201 });
   } catch {

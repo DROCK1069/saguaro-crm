@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     let query = db
       .from('portal_documents')
       .select('*')
-      .eq('project_id', session.project_id)
+      .eq('project_id', session.project_id!)
       .eq('tenant_id', session.tenant_id)
       .contains('visible_to', ['sub'])
       .order('created_at', { ascending: false });

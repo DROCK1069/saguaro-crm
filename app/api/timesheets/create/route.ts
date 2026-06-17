@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUser, createServerClient } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 /**
  * Timesheet / time-clock create.
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('time_entries')
-      .insert(row)
+      .insert(row as Database['public']['Tables']['time_entries']['Insert'])
       .select()
       .single();
 

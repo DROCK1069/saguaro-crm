@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 // Real columns on public.budget_lines that callers may set. Anything outside
 // this set is dropped so the insert/update never references a non-existent
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
 
     const body = await req.json().catch(() => ({}));
     const record = { ...pickBudgetColumns(body), tenant_id: user.tenantId, project_id: params.projectId };
-    const { data, error } = await supabase.from('budget_lines').insert(record).select().single();
+    const { data, error } = await supabase.from('budget_lines').insert(record as Database['public']['Tables']['budget_lines']['Insert']).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, line: data });
   } catch (err) {

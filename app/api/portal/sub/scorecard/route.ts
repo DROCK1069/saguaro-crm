@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     const { data: scorecards, error } = await db
       .from('portal_sub_scorecards')
       .select('*')
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .order('created_at', { ascending: false });
 
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     const { data: subRecord } = await db
       .from('subcontractors')
       .select('rating')
-      .eq('id', session.sub_id)
+      .eq('id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .single();
 
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
     const { data: allCards } = await db
       .from('portal_sub_scorecards')
       .select('quality_score, schedule_score, safety_score, communication_score, overall_score')
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id);
 
     if (allCards && allCards.length > 0) {
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
           .update({
             rating: newOverall,
           })
-          .eq('id', session.sub_id)
+          .eq('id', session.sub_id!)
           .eq('tenant_id', session.tenant_id);
       }
     }

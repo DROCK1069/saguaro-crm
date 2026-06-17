@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { signUrl } from '@/lib/storage-signing';
+import type { Database } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
         audio_url: urlData?.publicUrl || fileName,
         duration_seconds: null,
         transcription,
-      })
+      } as Database['public']['Tables']['voice_memos']['Insert'])
       .select()
       .single();
 

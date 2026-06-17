@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 /**
  * POST /api/recommendations/generate
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
           annual_savings: rec.annual_savings,
           roi_years: rec.roi_years,
           priority: rec.priority,
-        });
+        } as Database['public']['Tables']['customer_recommendations']['Insert']);
         existingKeys.add(key);
         climateCount++;
       }

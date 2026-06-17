@@ -49,13 +49,13 @@ export async function getPortalSession(
 
   // Check permission if required
   if (requiredPermission) {
-    const perms: string[] = session.permissions || [];
+    const perms: string[] = (session.permissions as string[]) || [];
     if (!perms.includes(requiredPermission)) {
       return null;
     }
   }
 
-  return session as PortalSession;
+  return session as unknown as PortalSession;
 }
 
 /** Permission constants */

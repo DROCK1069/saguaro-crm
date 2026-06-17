@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     // Enrich with sub company names and project names
-    const subIds = [...new Set((sessions || []).map(s => s.sub_id).filter(Boolean))];
-    const projectIds = [...new Set((sessions || []).map(s => s.project_id).filter(Boolean))];
+    const subIds = [...new Set((sessions || []).map(s => s.sub_id).filter(Boolean))] as string[];
+    const projectIds = [...new Set((sessions || []).map(s => s.project_id).filter(Boolean))] as string[];
 
     let subMap: Record<string, { company_name: string; contact_name: string }> = {};
     let projectMap: Record<string, string> = {};
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       subIds.length > 0
         ? db.from('subcontractors').select('id, company_name, contact_name').in('id', subIds)
             .then(({ data }) => {
-              subMap = Object.fromEntries((data || []).map(s => [s.id, { company_name: s.company_name, contact_name: s.contact_name }]));
+              subMap = Object.fromEntries((data || []).map(s => [s.id, { company_name: s.company_name, contact_name: s.contact_name }])) as Record<string, { company_name: string; contact_name: string }>;
             })
         : Promise.resolve(),
       projectIds.length > 0
@@ -47,9 +47,9 @@ export async function GET(req: NextRequest) {
 
     const enriched = (sessions || []).map(s => ({
       ...s,
-      company_name: subMap[s.sub_id]?.company_name || null,
-      contact_name: subMap[s.sub_id]?.contact_name || null,
-      project_name: projectMap[s.project_id] || null,
+      company_name: subMap[s.sub_id!]?.company_name || null,
+      contact_name: subMap[s.sub_id!]?.contact_name || null,
+      project_name: projectMap[s.project_id!] || null,
     }));
 
     return NextResponse.json({ sessions: enriched });

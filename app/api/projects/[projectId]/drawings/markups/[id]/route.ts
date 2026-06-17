@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ projectId: string; id: string }> }) {
   const { projectId, id } = await params;
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
 
     const { data, error } = await supabase
       .from('drawing_markup_comments')
-      .insert(row)
+      .insert(row as unknown as Database['public']['Tables']['drawing_markup_comments']['Insert'])
       .select()
       .single();
 

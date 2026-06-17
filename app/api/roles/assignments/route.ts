@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         .from('role_definitions')
         .select('id, name')
         .eq('tenant_id', user.tenantId)
-        .in('id', roleIds);
+        .in('id', roleIds as string[]);
       for (const r of roleDefs ?? []) roleMap.set(r.id, r.name);
     }
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         .from('projects')
         .select('id, name')
         .eq('tenant_id', user.tenantId)
-        .in('id', projectIds);
+        .in('id', projectIds as string[]);
       for (const p of projects ?? []) projectMap.set(p.id, p.name);
     }
 
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
         userName: u?.name ?? 'Unknown',
         email: u?.email ?? '',
         roleId: r.role_id,
-        roleName: roleMap.get(r.role_id) ?? null,
+        roleName: roleMap.get(r.role_id!) ?? null,
         projectId: r.project_id ?? null,
         projectName: r.project_id ? projectMap.get(r.project_id) ?? null : null,
         assignedAt: r.created_at,

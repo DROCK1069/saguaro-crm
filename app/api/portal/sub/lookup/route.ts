@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       const { data: project } = await db
         .from('projects')
         .select('name')
-        .eq('id', session.project_id)
+        .eq('id', session.project_id!)
         .maybeSingle();
 
       return NextResponse.json({
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Sessions found — match by sub email via join
-    const subIds = [...new Set(sessions.map(s => s.sub_id).filter(Boolean))];
+    const subIds = [...new Set(sessions.map(s => s.sub_id).filter(Boolean))] as string[];
     const { data: subs } = await db
       .from('subcontractors')
       .select('id, company_name, contact_name, email')
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     const { data: project } = await db
       .from('projects')
       .select('name')
-      .eq('id', matchedSession.project_id)
+      .eq('id', matchedSession.project_id!)
       .maybeSingle();
 
     return NextResponse.json({

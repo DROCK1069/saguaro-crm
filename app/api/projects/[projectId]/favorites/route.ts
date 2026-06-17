@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
         item_type: body.item_type,
         item_title: body.item_title,
         created_at: new Date().toISOString(),
-      })
+      } as Database['public']['Tables']['favorites']['Insert'])
       .select()
       .single();
     if (error) return NextResponse.json({ favorite: { id: `fav-${Date.now()}`, ...body } });

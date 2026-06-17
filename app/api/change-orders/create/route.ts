@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
       schedule_impact_days: scheduleImpactDays != null ? scheduleImpact : null,
       schedule_impact: scheduleImpact,
       submitted_by: user.id,
-    }).select().single();
+    } as unknown as Database['public']['Tables']['change_orders']['Insert']).select().single();
 
     if (error) throw error;
     return NextResponse.json({ changeOrder: co, success: true });

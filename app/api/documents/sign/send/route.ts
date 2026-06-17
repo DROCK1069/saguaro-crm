@@ -94,11 +94,12 @@ export async function POST(req: NextRequest) {
     const { error: reqErr } = await db
       .from('document_signature_requests')
       .insert({
+        tenant_id: user.tenantId,
         signature_id: sig.id,
         token,
         status: 'pending',
         message: message || null,
-        field_placements: {},
+        field_placements: [],
         sent_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
       });

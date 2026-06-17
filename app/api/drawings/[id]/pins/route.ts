@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, getUser } from '@/lib/supabase-server'
+import type { Database } from '@/lib/database.types'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       created_by: user.id,
     }
 
-    const { data, error } = await db.from('drawing_pins').insert(row).select().single()
+    const { data, error } = await db.from('drawing_pins').insert(row as Database['public']['Tables']['drawing_pins']['Insert']).select().single()
     if (error) throw error
     return NextResponse.json({ pin: data })
   } catch (e: unknown) {

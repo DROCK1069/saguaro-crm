@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 import { onProjectCreated } from '@/lib/triggers';
 
 export async function POST(req: NextRequest) {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
         contractType: body.contractType || 'Lump Sum GMP',
       },
       created_by: user.id,
-    }).select().single();
+    } as unknown as Database['public']['Tables']['projects']['Insert']).select().single();
 
     if (error) throw error;
 

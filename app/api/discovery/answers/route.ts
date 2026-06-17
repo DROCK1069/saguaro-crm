@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     if (question?.options && Array.isArray(question.options)) {
       // Find the selected option
-      const selectedOption = question.options.find(
+      const selectedOption = (question.options as Array<{ value: string; upsell_tags?: string[] }>).find(
         (opt: { value: string; upsell_tags?: string[] }) => opt.value === answer_value,
       );
 

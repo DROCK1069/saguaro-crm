@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const db = createServerClient();
-    const projectId = body.projectId || body.project_id;
+    const projectId = (body.projectId || body.project_id) as string;
 
     // Assign the next per-project item number (punch_list.item_number).
     let item_number = 1;
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await db
       .from('punch_list')
-      .insert(row)
+      .insert(row as Database['public']['Tables']['punch_list']['Insert'])
       .select()
       .single();
 

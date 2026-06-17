@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(
   req: NextRequest,
@@ -76,7 +77,7 @@ export async function POST(
     // Try project_messages first
     const { data, error } = await db
       .from('messages')
-      .insert(row)
+      .insert(row as unknown as Database['public']['Tables']['messages']['Insert'])
       .select()
       .single();
 
@@ -87,7 +88,7 @@ export async function POST(
     // Fallback to messages table
     const { data: data2, error: error2 } = await db
       .from('messages')
-      .insert(row)
+      .insert(row as unknown as Database['public']['Tables']['messages']['Insert'])
       .select()
       .single();
 

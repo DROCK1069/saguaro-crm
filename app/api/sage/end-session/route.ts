@@ -4,6 +4,7 @@ import {
   generateSessionSummary,
   updateUserProfile,
   generateProactiveInsights,
+  type ProjectSnapshot,
 } from '@/lib/sage-intelligence-v6';
 
 interface SessionMessage {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
       user.id,
       user.tenantId,
       summary,
-      activeProjects ?? []
+      (activeProjects ?? []) as unknown as ProjectSnapshot[]
     );
 
     return NextResponse.json({

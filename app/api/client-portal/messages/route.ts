@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (body.attachments !== undefined) row.attachments = body.attachments;
     const { data, error } = await db
       .from('portal_messages')
-      .insert(row)
+      .insert(row as Database['public']['Tables']['portal_messages']['Insert'])
       .select()
       .single();
     if (error) throw error;

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     const { data: docs, error } = await db
       .from('portal_sub_compliance_docs')
       .select('*')
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .order('created_at', { ascending: false });
 

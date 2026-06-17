@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         `*,
          bid_package:bid_package_id(id, title, description, due_date, status)`
       )
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .order('created_at', { ascending: false });
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       .from('portal_sub_bid_invitations')
       .select('*')
       .eq('id', bid_invitation_id)
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .single();
 

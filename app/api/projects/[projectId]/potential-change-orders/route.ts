@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
             negotiation_notes: [],
           },
         },
-      })
+      } as unknown as Database['public']['Tables']['change_orders']['Insert'])
       .select()
       .single();
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     };
     if (descParts.length) insert.description = descParts.join(' | ');
 
-    const { data, error } = await db.from('selections').insert(insert).select().single();
+    const { data, error } = await db.from('selections').insert(insert as Database['public']['Tables']['selections']['Insert']).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, selection: data });
   } catch {

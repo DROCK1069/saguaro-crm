@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
         .from('profiles')
         .select('id, full_name')
         .in('id', userIds);
-      for (const p of profs || []) names[p.id] = p.full_name;
+      for (const p of profs || []) names[p.id] = p.full_name!;
     }
 
     const crew = (data || []).map((r: any) => ({

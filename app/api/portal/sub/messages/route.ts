@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 async function authenticateSubPortal(req: NextRequest) {
   const token =
@@ -37,8 +38,8 @@ export async function GET(req: NextRequest) {
     let query = db
       .from('portal_sub_messages')
       .select('*')
-      .eq('project_id', session.project_id)
-      .eq('sub_id', session.sub_id)
+      .eq('project_id', session.project_id!)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
         sender_type: 'sub',
         content: content.trim(),
         created_at: new Date().toISOString(),
-      })
+      } as Database['public']['Tables']['portal_sub_messages']['Insert'])
       .select()
       .single();
 
@@ -142,7 +143,7 @@ export async function PATCH(req: NextRequest) {
         read_at: new Date().toISOString(),
       })
       .in('id', message_ids)
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .neq('sender_type', 'sub');
 

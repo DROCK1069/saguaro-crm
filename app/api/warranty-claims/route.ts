@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
     };
     const { data, error } = await supabase
       .from('warranty_claims')
-      .insert(insert)
+      .insert(insert as Database['public']['Tables']['warranty_claims']['Insert'])
       .select()
       .single();
     if (error) throw error;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
     const db = createServerClient();
     const { data, error } = await db
       .from('resource_assignments')
-      .insert(row)
+      .insert(row as Database['public']['Tables']['resource_assignments']['Insert'])
       .select()
       .single();
     if (error) throw error;

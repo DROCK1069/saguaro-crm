@@ -443,7 +443,7 @@ export default function DashboardPage() {
               {projects.length > 0 ? (
                 <div style={{ width: '100%', height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={projects.slice(0, 6).map(p => ({
+                    <BarChart data={projects.slice(0, 6).map((p: typeof projects[number] & { budget?: number; contract_value?: number }) => ({
                       name: p.name?.length > 12 ? p.name.slice(0, 12) + '…' : p.name || 'Unnamed',
                       budget: p.budget ?? p.contract_value ?? 0,
                     }))}>
@@ -453,7 +453,7 @@ export default function DashboardPage() {
                         cursor={{ fill: 'rgba(0,0,0,0.04)' }}
                         contentStyle={{ background: RAISED_ALT, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 12, color: TEXT, boxShadow: SHADOW_MD }}
                         labelStyle={{ color: GOLD, fontWeight: 700 }}
-                        formatter={(v: number) => [`$${v.toLocaleString()}`, 'Budget']}
+                        formatter={((v: number) => [`$${v.toLocaleString()}`, 'Budget']) as React.ComponentProps<typeof Tooltip>['formatter']}
                       />
                       <Bar dataKey="budget" fill={GOLD} radius={[4, 4, 0, 0]} maxBarSize={48} />
                     </BarChart>

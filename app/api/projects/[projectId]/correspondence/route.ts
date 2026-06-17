@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       status: body.status || 'draft',
       created_at: new Date().toISOString(),
     };
-    const { data, error } = await supabase.from('correspondence').insert(record).select().single();
+    const { data, error } = await supabase.from('correspondence').insert(record as Database['public']['Tables']['correspondence']['Insert']).select().single();
     if (error) return NextResponse.json({ item: { id: `corr-${Date.now()}`, ...record } });
     return NextResponse.json({ item: data });
   } catch {

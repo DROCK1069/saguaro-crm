@@ -186,7 +186,7 @@ export async function GET(
             // Download photo from storage
             const { data: blob, error: dlErr } = await supabase.storage
               .from('project-files')
-              .download(photo.storage_path);
+              .download(photo.storage_path!);
 
             if (dlErr || !blob) {
               console.warn(`[drone/analyze] Could not download photo ${photo.file_name}`);

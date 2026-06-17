@@ -34,8 +34,8 @@ export async function GET(req: NextRequest) {
     const { data: tasks, error } = await db
       .from('portal_sub_tasks')
       .select('*')
-      .eq('sub_id', session.sub_id)
-      .eq('project_id', session.project_id)
+      .eq('sub_id', session.sub_id!)
+      .eq('project_id', session.project_id!)
       .eq('tenant_id', session.tenant_id)
       .order('start_date', { ascending: true });
 
@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest) {
       .from('portal_sub_tasks')
       .select('id')
       .eq('id', task_id)
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .single();
 

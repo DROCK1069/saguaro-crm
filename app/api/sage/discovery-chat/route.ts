@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -188,7 +189,7 @@ Be conversational, use contractions, and never sound robotic. Keep responses con
                 current_page: page || conversation!.current_page,
                 customer_id: customer_id || conversation!.customer_id,
                 current_project_id: project_id || conversation!.current_project_id,
-              }).eq('id', conversation!.id);
+              } as Database['public']['Tables']['sage_conversations']['Update']).eq('id', conversation!.id as string);
 
               send({
                 done: true,

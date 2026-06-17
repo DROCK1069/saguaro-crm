@@ -5,6 +5,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase-server';
+import type { Database, Json } from '@/lib/database.types';
 import Anthropic from '@anthropic-ai/sdk';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -334,15 +335,15 @@ export async function loadFullIntelligence(
   ]);
 
   const profile = (profileResult.data as SageUserProfile | null) ?? null;
-  const recentSessions = (sessionsResult.data as SageSessionSummary[]) ?? [];
+  const recentSessions = (sessionsResult.data as unknown as SageSessionSummary[]) ?? [];
   const recentMessages = (messagesResult.data as SageConversationMessage[]) ?? [];
   const topKnowledge = (knowledgeResult.data as SageKnowledgeFact[]) ?? [];
-  const pendingInsights = (insightsResult.data as SageProactiveInsight[]) ?? [];
+  const pendingInsights = (insightsResult.data as unknown as SageProactiveInsight[]) ?? [];
   const activeProjects: ProjectSnapshot[] = (projectsResult.data ?? []).map(
-    (p: { id: string; name: string; status: string; contract_amount: number }) => ({
+    (p: { id: string; name: string; status: string | null; contract_amount: number | null }) => ({
       id: p.id,
       name: p.name,
-      status: p.status,
+      status: p.status!,
       contract_amount: p.contract_amount ?? 0,
     })
   );
@@ -1017,7 +1018,7 @@ export async function saveMessageWithIntelligence(
 
   const { data, error } = await supabase
     .from('sage_messages')
-    .insert(insertData)
+    .insert(insertData as Database['public']['Tables']['sage_messages']['Insert'])
     .select('id')
     .single();
 
@@ -1042,7 +1043,7 @@ export async function saveMessageWithIntelligence(
       await supabase.rpc('increment_sage_profile_counter', {
         p_user_id: userId,
         p_column: 'total_messages_sent',
-        p_extra: profileUpdates,
+        p_extra: profileUpdates as Json,
       }).then(async (rpcResult) => {
         // Fallback if rpc doesn't exist
         if (rpcResult.error) {
@@ -1519,12 +1520,12 @@ export async function generateProactiveInsights(
   // Batch insert — skip duplicates gracefully
   if (insightsToInsert.length > 0) {
     try {
-      await supabase.from('sage_proactive_insights').insert(insightsToInsert);
+      await supabase.from('sage_proactive_insights').insert(insightsToInsert as Database['public']['Tables']['sage_proactive_insights']['Insert'][]);
     } catch {
       // Try one at a time as fallback
       for (const insight of insightsToInsert) {
         try {
-          await supabase.from('sage_proactive_insights').insert(insight);
+          await supabase.from('sage_proactive_insights').insert(insight as Database['public']['Tables']['sage_proactive_insights']['Insert']);
         } catch {
           // Skip
         }

@@ -110,7 +110,7 @@ function SagePage() {
       // /api/chat/crm expects a `messages` array (role: user|assistant), not a
       // single `message` string — sending the wrong shape made it 500 ("couldn't connect").
       const history = messages.map(m => ({
-        role: (m.role === 'sage' || m.role === 'assistant') ? 'assistant' : 'user',
+        role: (m.role === 'sage' || (m.role as string) === 'assistant') ? 'assistant' : 'user',
         content: m.content,
       }));
       const res = await fetch('/api/chat/crm', {

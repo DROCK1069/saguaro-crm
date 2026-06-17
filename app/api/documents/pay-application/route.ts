@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateG702, generateG703, saveDocument, resolveBranding } from '@/lib/pdf-engine';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 import {
   toCents,
   toDollars,
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
       total_earned_less_retainage: toDollars(calc.totalEarnedLessRetainage),
       current_payment_due: toDollars(calc.currentPaymentDue),
       net_amount_due: toDollars(calc.currentPaymentDue),
-    }).eq('id', body.payAppId);
+    } as unknown as Database['public']['Tables']['pay_applications']['Update']).eq('id', body.payAppId);
 
     return NextResponse.json({ g702Url, g703Url, success: true });
   } catch {

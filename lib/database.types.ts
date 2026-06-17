@@ -27539,6 +27539,10 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: undefined
       }
+      increment_sage_profile_counter: {
+        Args: { p_column: string; p_extra?: Json; p_user_id: string }
+        Returns: undefined
+      }
       increment_user_points: {
         Args: {
           p_points?: number

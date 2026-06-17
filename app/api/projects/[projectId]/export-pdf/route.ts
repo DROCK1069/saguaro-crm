@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       'correspondence': 'correspondence',
     };
 
-    const table = tableMap[module];
+    const table = tableMap[module] as keyof Database['public']['Tables'] & 'rfis';
     if (!table) return NextResponse.json({ error: 'Invalid module' }, { status: 400 });
 
     let data;

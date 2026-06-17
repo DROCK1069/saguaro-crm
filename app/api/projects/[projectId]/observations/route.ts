@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       status: body.status || 'open',
       created_at: new Date().toISOString(),
     };
-    const { data, error } = await supabase.from('observations').insert(record).select().single();
+    const { data, error } = await supabase.from('observations').insert(record as Database['public']['Tables']['observations']['Insert']).select().single();
     if (error) return NextResponse.json({ observation: { id: `obs-${Date.now()}`, ...record } });
     return NextResponse.json({ observation: data });
   } catch {

@@ -16,6 +16,7 @@
 
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 // Tables that have a direct project_id column
 const TABLES_WITH_PROJECT_ID = new Set([
@@ -211,7 +212,7 @@ async function executeQuery(
     }
   }
 
-  let q = supabase.from(query.table).select(selectStr);
+  let q = supabase.from(query.table as keyof Database['public']['Tables']).select(selectStr);
 
   // Apply tenant isolation — always filter by tenant_id when the table supports it
   if (tenantId && TABLES_WITH_TENANT_ID.has(query.table)) {

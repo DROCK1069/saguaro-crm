@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
       if (commentData) {
         for (const c of commentData) {
           if (!comments[c.markup_id]) comments[c.markup_id] = [];
-          comments[c.markup_id].push(c);
+          comments[c.markup_id].push(c as unknown as (typeof comments)[string][number]);
         }
       }
     }
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
 
     const { data, error } = await supabase
       .from('drawing_markups')
-      .insert(row)
+      .insert(row as unknown as Database['public']['Tables']['drawing_markups']['Insert'])
       .select()
       .single();
 

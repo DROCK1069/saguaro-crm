@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 import { onPayAppCreated } from '@/lib/triggers';
 import { toCents, toDollars, percentOf, subCents, computePayApp } from '@/lib/calc';
 
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
       owner_address: p?.owner_entity?.address || body.ownerAddress,
       architect_name: p?.architect_entity?.name || body.architectName,
       notes: body.notes,
-    }).select().single();
+    } as unknown as Database['public']['Tables']['pay_applications']['Insert']).select().single();
 
     if (error) throw error;
 

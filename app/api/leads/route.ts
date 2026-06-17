@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (body.next_action_date) insert.next_action_date = body.next_action_date;
     else if (body.follow_up_date) insert.next_action_date = body.follow_up_date;
 
-    const { data, error } = await supabase.from('lead_pipeline').insert(insert).select().single();
+    const { data, error } = await supabase.from('lead_pipeline').insert(insert as Database['public']['Tables']['lead_pipeline']['Insert']).select().single();
     if (error) throw error;
     return NextResponse.json({ lead: data }, { status: 201 });
   } catch (e: unknown) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 const SEARCHABLE_TABLES = [
   { table: 'rfis', module: 'RFIs', titleField: 'subject', searchFields: ['subject', 'question'] },
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       tables.map(async ({ table, module, titleField }) => {
         try {
           const { data } = await supabase
-            .from(table)
+            .from(table as keyof Database['public']['Tables'] & 'rfis')
             .select('*')
             .eq('project_id', params.projectId)
             .ilike(titleField, `%${q}%`)

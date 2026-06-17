@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
         amount: body.costImpact ?? body.amount ?? 0,
         schedule_impact: body.scheduleImpact ?? body.schedule_impact ?? 0,
         submitted_by: user.id,
-      })
+      } as Database['public']['Tables']['change_orders']['Insert'])
       .select()
       .single();
 

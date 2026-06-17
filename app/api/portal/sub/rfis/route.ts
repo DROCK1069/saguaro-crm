@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
     let query = db
       .from('portal_sub_rfis')
       .select('*')
-      .eq('sub_id', session.sub_id)
-      .eq('project_id', session.project_id)
+      .eq('sub_id', session.sub_id!)
+      .eq('project_id', session.project_id!)
       .eq('tenant_id', session.tenant_id)
       .order('created_at', { ascending: false });
 
@@ -93,8 +93,8 @@ export async function POST(req: NextRequest) {
     const { count: existingCount } = await db
       .from('portal_sub_rfis')
       .select('id', { count: 'exact', head: true })
-      .eq('project_id', session.project_id)
-      .eq('sub_id', session.sub_id)
+      .eq('project_id', session.project_id!)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id);
 
     const nextNum = (existingCount || 0) + 1;

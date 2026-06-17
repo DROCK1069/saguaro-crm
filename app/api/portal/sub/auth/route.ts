@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const { data: sub } = await db
       .from('subcontractors')
       .select('id, company_name, contact_name, email, phone, trade')
-      .eq('id', session.sub_id)
+      .eq('id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .single();
 
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     const { data: sub } = await db
       .from('subcontractors')
       .select('id, company_name, contact_name, email, phone, trade')
-      .eq('id', session.sub_id)
+      .eq('id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .single();
 

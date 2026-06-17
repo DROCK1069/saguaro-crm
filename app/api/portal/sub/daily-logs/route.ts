@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
     let query = db
       .from('portal_sub_daily_logs')
       .select('*')
-      .eq('sub_id', session.sub_id)
-      .eq('project_id', session.project_id)
+      .eq('sub_id', session.sub_id!)
+      .eq('project_id', session.project_id!)
       .eq('tenant_id', session.tenant_id)
       .order('log_date', { ascending: false })
       .limit(limit);
@@ -167,7 +167,7 @@ export async function PATCH(req: NextRequest) {
       .from('portal_sub_daily_logs')
       .select('id, status')
       .eq('id', log_id)
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .single();
 

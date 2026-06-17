@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
@@ -213,7 +214,7 @@ export async function POST(req: NextRequest) {
     if (photoRecords.length > 0) {
       const { error: insertErr } = await supabase
         .from('drone_photos')
-        .insert(photoRecords);
+        .insert(photoRecords as Database['public']['Tables']['drone_photos']['Insert'][]);
 
       if (insertErr) {
         console.error('[drone/upload] photo records insert error:', insertErr.message);

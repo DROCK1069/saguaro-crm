@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { ok, badRequest, unauthorized, serverError } from '@/lib/api-response';
+import type { Database } from '@/lib/database.types';
 
 /**
  * GET /api/trade-knowledge?trade=electrical&category=installation&keyword=conduit&tags=NEC,grounding
@@ -22,14 +23,14 @@ export async function GET(req: NextRequest) {
 
     let query = db
       .from('trade_knowledge')
-      .select('id, title, trade, category, tags, summary, author, view_count, created_at, updated_at')
+      .select('id, title, trade, category, tags, view_count, created_at, updated_at')
       .eq('tenant_id', user.tenantId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (trade) query = query.eq('trade', trade);
     if (category) query = query.eq('category', category);
-    if (keyword) query = query.or(`title.ilike.%${keyword}%,summary.ilike.%${keyword}%,content.ilike.%${keyword}%`);
+    if (keyword) query = query.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`);
     if (tags) {
       const tagList = tags.split(',').map((t) => t.trim());
       query = query.overlaps('tags', tagList);
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      title, trade, category, content, summary,
+      title, trade, category, content,
       tags, code_references, tools_needed, safety_notes,
       difficulty_level, estimated_time,
     } = body;
@@ -74,17 +75,15 @@ export async function POST(req: NextRequest) {
         trade,
         category: category || 'general',
         content,
-        summary: summary || title,
         tags: tags || [],
         code_references: code_references || [],
         tools_needed: tools_needed || [],
         safety_notes: safety_notes || [],
         difficulty_level: difficulty_level || 'intermediate',
         estimated_time: estimated_time || null,
-        author: user.email || user.id,
         view_count: 0,
         created_by: user.id,
-      })
+      } as unknown as Database['public']['Tables']['trade_knowledge']['Insert'])
       .select()
       .single();
 

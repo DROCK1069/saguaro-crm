@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     if (body.expiry_date !== undefined && body.expiry_date !== '') insert.expiry_date = body.expiry_date;
     if (body.notes !== undefined) insert.notes = body.notes;
 
-    const { data, error } = await db.from('permits').insert(insert).select().single();
+    const { data, error } = await db.from('permits').insert(insert as Database['public']['Tables']['permits']['Insert']).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, permit: data });
   } catch (err: unknown) {

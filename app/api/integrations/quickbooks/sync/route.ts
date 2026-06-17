@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Json } from '@/lib/database.types';
 
 const QB_BASE_URL = 'https://quickbooks.api.intuit.com/v3/company';
 
@@ -43,8 +44,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const realmId = integration.realm_id;
-    const accessToken = integration.access_token;
+    const realmId = integration.realm_id!;
+    const accessToken = integration.access_token!;
     const syncResults: Record<string, { count: number; status: string; details?: string }> = {};
 
     // Process each entity type
@@ -63,8 +64,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Update last_sync_at and save sync history in settings
-    const existingSettings = integration.settings || {};
-    const syncHistory = existingSettings.sync_history || [];
+    const existingSettings = (integration.settings || {}) as Record<string, unknown> & { sync_history?: unknown[] };
+    const syncHistory = (existingSettings.sync_history || []) as unknown[];
     syncHistory.unshift({
       timestamp: new Date().toISOString(),
       direction,
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
       .from('integrations')
       .update({
         last_sync_at: new Date().toISOString(),
-        settings: { ...existingSettings, sync_history: syncHistory },
+        settings: { ...existingSettings, sync_history: syncHistory } as unknown as Json,
         updated_at: new Date().toISOString(),
       })
       .eq('id', integration.id);

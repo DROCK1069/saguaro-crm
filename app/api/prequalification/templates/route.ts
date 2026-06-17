@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
     const { data, error } = await db
       .from('prequalification_templates')
-      .insert({ ...insertRow, tenant_id: user.tenantId })
+      .insert({ ...insertRow, tenant_id: user.tenantId } as Database['public']['Tables']['prequalification_templates']['Insert'])
       .select()
       .single();
     if (error) throw error;

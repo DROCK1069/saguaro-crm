@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, getUser } from '@/lib/supabase-server'
+import type { Database } from '@/lib/database.types'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ she
           data: body.markup_data,
           created_by: user.id,
           updated_by: user.id,
-        })
+        } as Database['public']['Tables']['drawing_markups']['Insert'])
         .select()
         .single()
       data = result.data

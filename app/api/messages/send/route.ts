@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -14,12 +15,11 @@ export async function POST(req: NextRequest) {
 
   const row = {
     tenant_id: user.tenantId,
-    project_id: body.project_id || body.projectId,
-    sender_name: body.sender_name || body.senderName || user.email || 'Field User',
-    content: body.content || body.message || '',
-    is_system: false,
-    metadata: body.metadata || null,
-  };
+    project_id: (body.project_id || body.projectId) as string | undefined,
+    sender_name: (body.sender_name || body.senderName || user.email || 'Field User') as string,
+    content: (body.content || body.message || '') as string,
+    message_type: (body.message_type as string) || 'message',
+  } satisfies Database['public']['Tables']['messages']['Insert'];
 
   try {
     const db = createServerClient();

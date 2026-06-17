@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       talk_date: body.talk_date || new Date().toISOString(),
       content: body.notes || body.content || '',
     };
-    const { data, error } = await db.from('toolbox_talks').insert(row).select().single();
+    const { data, error } = await db.from('toolbox_talks').insert(row as Database['public']['Tables']['toolbox_talks']['Insert']).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, talk: data });
   } catch (e: unknown) {
