@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     const { data: sessions, error } = await db
       .from('portal_client_sessions')
-      .select('id, client_name, client_email, project_id, token, status, expires_at, last_accessed_at, created_at, tenant_id')
+      .select('id, client_name, client_email, project_id, token, status, expires_at, last_login_at, created_at, tenant_id')
       .eq('tenant_id', user.tenantId)
       .order('created_at', { ascending: false })
       .limit(100);

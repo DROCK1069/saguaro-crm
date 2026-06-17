@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         .eq('project_id', projectId)
         .ilike('trade', `%${trade}%`),
       db.from('subcontractors')
-        .select('id, name, email, phone, trade, rating, w9_status')
+        .select('id, company_name, email, phone, trade, rating, w9_status')
         .eq('tenant_id', tenantId)
         .neq('status', 'inactive')
         .ilike('trade', `%${trade}%`)
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
 
       return {
         id: s.id,
-        name: s.name,
+        name: s.company_name,
         email: s.email,
         phone: s.phone,
         trade: s.trade,
