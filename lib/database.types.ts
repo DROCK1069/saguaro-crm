@@ -961,10 +961,12 @@ export type Database = {
           badge_icon: string | null
           badge_name: string
           badge_type: string
+          category: string | null
           data: Json | null
           description: string | null
           earned_at: string | null
           id: string
+          points: number | null
           project_id: string | null
           sub_id: string | null
           tenant_id: string | null
@@ -974,10 +976,12 @@ export type Database = {
           badge_icon?: string | null
           badge_name: string
           badge_type: string
+          category?: string | null
           data?: Json | null
           description?: string | null
           earned_at?: string | null
           id?: string
+          points?: number | null
           project_id?: string | null
           sub_id?: string | null
           tenant_id?: string | null
@@ -987,10 +991,12 @@ export type Database = {
           badge_icon?: string | null
           badge_name?: string
           badge_type?: string
+          category?: string | null
           data?: Json | null
           description?: string | null
           earned_at?: string | null
           id?: string
+          points?: number | null
           project_id?: string | null
           sub_id?: string | null
           tenant_id?: string | null

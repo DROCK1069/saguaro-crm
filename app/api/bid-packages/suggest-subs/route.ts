@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
 
-    const [{ data: performance }, { data: projectSubs }, { data: allTenantSubs }] = await Promise.all([
+    // subcontractors are tenant-scoped (linked to projects via project_subcontractors),
+    // so there's no projects.project_id filter; allTenantSubs is the full candidate
+    // pool for the trade (the old projectSubs query was a broken, redundant subset).
+    const [{ data: performance }, { data: allTenantSubs }] = await Promise.all([
       db.from('sub_performance')
         .select('*')
         .eq('tenant_id', tenantId)
@@ -24,11 +27,7 @@ export async function GET(req: NextRequest) {
         .order('win_rate', { ascending: false })
         .limit(20),
       db.from('subcontractors')
-        .select('*')
-        .eq('project_id', projectId)
-        .ilike('trade', `%${trade}%`),
-      db.from('subcontractors')
-        .select('id, company_name, email, phone, trade, rating, w9_status')
+        .select('id, company_name, email, phone, trade, rating, w9_on_file')
         .eq('tenant_id', tenantId)
         .neq('status', 'inactive')
         .ilike('trade', `%${trade}%`)
@@ -53,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     // Merge project subs + all tenant subs, dedupe by email
     const merged = new Map<string, any>();
-    for (const s of [...(allTenantSubs || []), ...(projectSubs || [])]) {
+    for (const s of (allTenantSubs || [])) {
       if (s.email && !merged.has(s.email)) merged.set(s.email, s);
       else if (!s.email && !merged.has(s.id)) merged.set(s.id, s);
     }
@@ -65,7 +64,7 @@ export async function GET(req: NextRequest) {
       const expiringCerts = activeCerts.filter((c: any) => c.expiry_date <= in30);
       const hasGL = activeCerts.some((c: any) => c.policy_type?.toLowerCase().includes('gl') || c.policy_type?.toLowerCase().includes('general'));
       const hasWC = activeCerts.some((c: any) => c.policy_type?.toLowerCase().includes('wc') || c.policy_type?.toLowerCase().includes('workers'));
-      const w9Ok = s.w9_status === 'submitted' || s.w9_status === 'approved';
+      const w9Ok = s.w9_on_file === true;
 
       // Compliance flags
       const complianceFlags: string[] = [];

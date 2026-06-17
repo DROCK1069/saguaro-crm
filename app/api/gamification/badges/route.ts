@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     // Verify badge definition exists
     const { data: badgeDef, error: defError } = await db
       .from('badges')
-      .select('id, name, points')
+      .select('id, badge_name, points')
       .eq('id', badge_id)
       .single();
 
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
         awarded_by: user.id,
         awarded_at: new Date().toISOString(),
       })
-      .select('*, badges(name, description, icon, category, points)')
+      .select('*, badges(badge_name, description, badge_icon, category, points)')
       .single();
 
     if (error) {
