@@ -20706,6 +20706,114 @@ export type Database = {
         }
         Relationships: []
       }
+      sage_messages: {
+        Row: {
+          contains_complaint: boolean | null
+          contains_deadline: boolean | null
+          contains_dollar_amount: boolean | null
+          contains_math_question: boolean | null
+          contains_personal_info: boolean | null
+          contains_praise: boolean | null
+          contains_project_name: boolean | null
+          contains_risk_indicator: boolean | null
+          content: string | null
+          created_at: string | null
+          feature_context: string | null
+          feedback_note: string | null
+          id: string
+          intent: string | null
+          message_index: number | null
+          page_context: string | null
+          primary_topic: string | null
+          project_id: string | null
+          project_name: string | null
+          requires_calculation: boolean | null
+          requires_draft: boolean | null
+          role: string | null
+          sentiment: string | null
+          sentiment_score: number | null
+          session_id: string | null
+          tenant_id: string | null
+          thumbs_down: boolean | null
+          thumbs_up: boolean | null
+          topic_tags: string[] | null
+          urgency_level: string | null
+          url_path: string | null
+          user_id: string
+          was_helpful: boolean | null
+        }
+        Insert: {
+          contains_complaint?: boolean | null
+          contains_deadline?: boolean | null
+          contains_dollar_amount?: boolean | null
+          contains_math_question?: boolean | null
+          contains_personal_info?: boolean | null
+          contains_praise?: boolean | null
+          contains_project_name?: boolean | null
+          contains_risk_indicator?: boolean | null
+          content?: string | null
+          created_at?: string | null
+          feature_context?: string | null
+          feedback_note?: string | null
+          id?: string
+          intent?: string | null
+          message_index?: number | null
+          page_context?: string | null
+          primary_topic?: string | null
+          project_id?: string | null
+          project_name?: string | null
+          requires_calculation?: boolean | null
+          requires_draft?: boolean | null
+          role?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          session_id?: string | null
+          tenant_id?: string | null
+          thumbs_down?: boolean | null
+          thumbs_up?: boolean | null
+          topic_tags?: string[] | null
+          urgency_level?: string | null
+          url_path?: string | null
+          user_id: string
+          was_helpful?: boolean | null
+        }
+        Update: {
+          contains_complaint?: boolean | null
+          contains_deadline?: boolean | null
+          contains_dollar_amount?: boolean | null
+          contains_math_question?: boolean | null
+          contains_personal_info?: boolean | null
+          contains_praise?: boolean | null
+          contains_project_name?: boolean | null
+          contains_risk_indicator?: boolean | null
+          content?: string | null
+          created_at?: string | null
+          feature_context?: string | null
+          feedback_note?: string | null
+          id?: string
+          intent?: string | null
+          message_index?: number | null
+          page_context?: string | null
+          primary_topic?: string | null
+          project_id?: string | null
+          project_name?: string | null
+          requires_calculation?: boolean | null
+          requires_draft?: boolean | null
+          role?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          session_id?: string | null
+          tenant_id?: string | null
+          thumbs_down?: boolean | null
+          thumbs_up?: boolean | null
+          topic_tags?: string[] | null
+          urgency_level?: string | null
+          url_path?: string | null
+          user_id?: string
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
       sage_performance_log: {
         Row: {
           action: string

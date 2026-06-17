@@ -307,7 +307,7 @@ export async function loadFullIntelligence(
       .order('created_at', { ascending: false })
       .limit(20),
     supabase
-      .from('sage_conversations')
+      .from('sage_messages')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -1016,7 +1016,7 @@ export async function saveMessageWithIntelligence(
   }
 
   const { data, error } = await supabase
-    .from('sage_conversations')
+    .from('sage_messages')
     .insert(insertData)
     .select('id')
     .single();
@@ -1889,7 +1889,7 @@ export async function learnFromFeedback(
   try {
     // Update the conversation row
     await supabase
-      .from('sage_conversations')
+      .from('sage_messages')
       .update({
         thumbs_up: thumbsUp ? true : null,
         thumbs_down: thumbsUp ? null : true,
