@@ -4,6 +4,7 @@
  * instead of a ?code= query param (implicit grant flow).
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
   let body: { access_token?: string; refresh_token?: string; expires_at?: number } = {};
@@ -14,6 +15,20 @@ export async function POST(req: NextRequest) {
   const { access_token, refresh_token, expires_at } = body;
   if (!access_token || !refresh_token) {
     return NextResponse.json({ error: 'Missing tokens' }, { status: 400 });
+  }
+
+  // SECURITY: verify the access token is a real, valid Supabase token BEFORE
+  // persisting it as an HttpOnly session cookie. Previously any client-supplied
+  // string was accepted verbatim (session-fixation primitive). The legitimate
+  // implicit-flow login passes a genuine token, so it still works.
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } },
+  );
+  const { data: { user }, error: verifyError } = await supabase.auth.getUser(access_token);
+  if (verifyError || !user) {
+    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
   }
 
   const response = NextResponse.json({ ok: true });

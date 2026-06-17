@@ -42,10 +42,13 @@ async function getUserFromRequest(req: NextRequest): Promise<{ id: string; tenan
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) return null;
 
+    // profiles is keyed by `id` (= auth user id), NOT `user_id` (matches the
+    // canonical getTenant in lib/supabase-server). Querying the wrong column
+    // silently returned no row, so tenantId fell back to user.id (wrong tenant).
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('tenant_id')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     return {
@@ -332,6 +335,8 @@ export async function GET(
 
   // GET /api/rfis?projectId=...
   if (seg0 === 'rfis' && !seg1) {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
     if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
@@ -340,6 +345,7 @@ export async function GET(
         .from('rfis')
         .select('id, number, title, status, priority, assigned_to, response_due_date, cost_impact_amount, schedule_impact_days, created_at')
         .eq('project_id', projectId)
+        .eq('tenant_id', user.tenantId)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return NextResponse.json({ rfis: data || [] });
@@ -352,6 +358,8 @@ export async function GET(
 
   // GET /api/change-orders?projectId=...
   if (seg0 === 'change-orders' && !seg1) {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
     if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
@@ -360,6 +368,7 @@ export async function GET(
         .from('change_orders')
         .select('id, co_number, title, status, cost_impact, schedule_impact_days, reason, created_at')
         .eq('project_id', projectId)
+        .eq('tenant_id', user.tenantId)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return NextResponse.json({ changeOrders: data || [] });
@@ -380,13 +389,14 @@ export async function GET(
 
   // GET /api/autopilot/alerts?projectId=&tenantId=
   if (seg0 === 'autopilot' && seg1 === 'alerts') {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
-    const tenantId = searchParams.get('tenantId') || '';
     try {
-      let q = supabaseAdmin.from('autopilot_alerts').select('*').eq('dismissed', false).order('created_at', { ascending: false }).limit(50);
+      // Tenant comes from the authed session, NEVER a client-supplied ?tenantId=.
+      let q = supabaseAdmin.from('autopilot_alerts').select('*').eq('dismissed', false).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }).limit(50);
       if (projectId) q = q.eq('project_id', projectId);
-      if (tenantId) q = q.eq('tenant_id', tenantId);
       const { data, error } = await q;
       if (error) throw error;
       return NextResponse.json({ alerts: data ?? [] });
@@ -399,11 +409,13 @@ export async function GET(
 
   // GET /api/takeoffs/latest
   if (seg0 === 'takeoffs' && seg1 === 'latest') {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId');
     if (!projectId) return NextResponse.json({ error: 'projectId query param required' }, { status: 400 });
     try {
-      const { data, error } = await supabaseAdmin.from('takeoffs').select('id, project_id, status, materials').eq('project_id', projectId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const { data, error } = await supabaseAdmin.from('takeoffs').select('id, project_id, status, materials').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       if (!data) return NextResponse.json({ takeoff: null });
       return NextResponse.json({ takeoff: { id: data.id, projectId: data.project_id, status: data.status, materials: data.materials ?? [] } });
@@ -419,6 +431,8 @@ export async function GET(
 
   // GET /api/bid-packages?projectId=...  (list all for a project)
   if (seg0 === 'bid-packages' && !seg1) {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
     if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
@@ -427,6 +441,7 @@ export async function GET(
         .from('bid_packages')
         .select('id, code, name, trade, status, bid_due_date, awarded_to, awarded_amount, created_at')
         .eq('project_id', projectId)
+        .eq('tenant_id', user.tenantId)
         .order('created_at', { ascending: true });
       if (error) throw error;
       return NextResponse.json({ packages: data ?? [] });
@@ -439,9 +454,11 @@ export async function GET(
 
   // GET /api/bid-packages/:id
   if (seg0 === 'bid-packages' && seg1 && !seg2) {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const id = seg1;
     try {
-      const { data, error } = await supabaseAdmin.from('bid_packages').select(`id, code, name, trade, scope, status, bid_due_date, project_id, awarded_to, awarded_amount, created_at, sov_items(*), bid_package_invites(id, sub_id, status, bid_amount, invited_at, responded_at, subs(id, company_name, contact_name, email))`).eq('id', id).single();
+      const { data, error } = await supabaseAdmin.from('bid_packages').select(`id, code, name, trade, scope, status, bid_due_date, project_id, awarded_to, awarded_amount, created_at, sov_items(*), bid_package_invites(id, sub_id, status, bid_amount, invited_at, responded_at, subs(id, company_name, contact_name, email))`).eq('id', id).eq('tenant_id', user.tenantId).single();
       if (error || !data) return NextResponse.json({ error: 'Bid package not found' }, { status: 404 });
       const invitedSubs: InvitedSub[] = (data.bid_package_invites || []).map((inv: any) => ({ id: inv.id, company_name: inv.subs?.company_name || 'Unknown', contact_name: inv.subs?.contact_name || '', email: inv.subs?.email || '', status: inv.status, bid_amount: inv.bid_amount, invited_at: inv.invited_at, responded_at: inv.responded_at }));
       return NextResponse.json({ bidPackage: { ...data, invited_subs: invitedSubs, sov_items: data.sov_items || [] } });
