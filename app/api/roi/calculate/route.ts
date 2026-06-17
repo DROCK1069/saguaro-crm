@@ -109,21 +109,21 @@ export async function POST(req: NextRequest) {
       // Look up annual savings from config
       let annualSavings = 0;
       const savingsCol = SAVINGS_MAP[key];
-      if (savingsCol && config[savingsCol] !== undefined) {
+      if (savingsCol && (config as Record<string, any>)[savingsCol] !== undefined) {
         // For solar, savings is per kW * quantity
-        annualSavings = Number(config[savingsCol]) * (key === 'solar' ? quantity : 1);
+        annualSavings = Number((config as Record<string, any>)[savingsCol]) * (key === 'solar' ? quantity : 1);
       }
 
       // Look up home value increase
       let homeValue = 0;
       const valueCol = VALUE_MAP[key];
-      if (valueCol && config[valueCol] !== undefined) {
+      if (valueCol && (config as Record<string, any>)[valueCol] !== undefined) {
         if (key === 'solar') {
-          homeValue = Number(config[valueCol]) * quantity;
+          homeValue = Number((config as Record<string, any>)[valueCol]) * quantity;
         } else if (key === 'adu') {
-          homeValue = Number(config[valueCol]) * quantity; // quantity = sqft
+          homeValue = Number((config as Record<string, any>)[valueCol]) * quantity; // quantity = sqft
         } else {
-          homeValue = Number(config[valueCol]);
+          homeValue = Number((config as Record<string, any>)[valueCol]);
         }
       }
 

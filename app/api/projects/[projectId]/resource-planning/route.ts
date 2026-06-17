@@ -23,9 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const body = await req.json();
     const { data, error } = await supabase.from('resource_assignments').insert({
       tenant_id: user.tenantId, project_id: body.project_id || params.projectId,
+      resource_name: body.resource_name || body.person_name, // NOT NULL (page model calls it person_name)
       person_name: body.person_name, person_id: body.person_id || null,
-      role: body.role || null, trade: body.trade || null,
-      certifications: body.certifications || [], start_date: body.start_date,
+      role: body.role || null,
+      start_date: body.start_date,
       end_date: body.end_date || null, hours_per_day: body.hours_per_day || 8,
       days_per_week: body.days_per_week || 5, hourly_rate: body.hourly_rate || null,
       status: body.status || 'assigned', notes: body.notes || null, created_by: user.id,

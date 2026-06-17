@@ -28,10 +28,11 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const body = await req.json();
     const { data, error } = await supabase.from('contracts').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
+      party_name: body.party_name || body.vendor_name || 'N/A', // NOT NULL
       contract_number: body.contract_number || null, title: body.title,
       contract_type: body.contract_type || 'subcontract',
       vendor_name: body.vendor_name || null, vendor_email: body.vendor_email || null,
-      description: body.description || null, original_amount: body.original_amount || 0,
+      original_amount: body.original_amount || 0,
       retainage_pct: body.retainage_pct || 10, start_date: body.start_date || null,
       end_date: body.end_date || null, scope_of_work: body.scope_of_work || null,
       status: body.status || 'draft', insurance_required: body.insurance_required ?? true,

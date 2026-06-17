@@ -246,20 +246,19 @@ export async function onSubAdded(subId: string, projectId: string): Promise<void
       const { data: existing } = await client
         .from('w9_requests')
         .select('id')
-        .eq('sub_id', subId)
+        .eq('vendor_email', s.email)
         .eq('project_id', projectId)
-        .single();
+        .maybeSingle();
 
       if (!existing) {
         try {
           await client.from('w9_requests').insert({
             tenant_id: p.tenant_id,
             project_id: projectId,
-            sub_id: subId,
             vendor_name: s.name,
             vendor_email: s.email,
             status: 'pending',
-            sent_at: new Date().toISOString(),
+            token: crypto.randomUUID(), // NOT NULL, no DB default — must be set
           });
 
           await createNotification(

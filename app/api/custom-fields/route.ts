@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const supabase = createServerClient();
     const body = await req.json();
     const { data, error } = await supabase.from('custom_field_definitions').insert({
-      tenant_id: user.tenantId, module: body.module, field_name: body.field_name,
+      tenant_id: user.tenantId, entity_type: body.entity_type ?? body.module, field_name: body.field_name,
       field_label: body.field_label, field_type: body.field_type || 'text',
       options: body.options || [], required: body.required || false,
       default_value: body.default_value || null, sort_order: body.sort_order || 0,

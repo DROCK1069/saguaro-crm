@@ -29,13 +29,12 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const { data, error } = await supabase.from('waste_tracking').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
       ticket_number: body.ticket_number || null, waste_date: body.waste_date,
-      waste_type: body.waste_type, disposal_method: body.disposal_method || 'landfill',
-      quantity: body.quantity, unit: body.unit || 'tons',
+      material_type: body.waste_type, waste_type: body.waste_type, disposal_method: body.disposal_method || 'landfill',
+      weight: body.quantity, unit: body.unit || 'tons',
       hauler_name: body.hauler_name || null, hauler_ticket: body.hauler_ticket || null,
       destination_facility: body.destination_facility || null, cost: body.cost || 0,
-      recycled: body.recycled || false, diverted: body.diverted || false,
       manifest_number: body.manifest_number || null, notes: body.notes || null,
-      photos: body.photos || [], created_by: user.id,
+      created_by: user.id,
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ record: data }, { status: 201 });
