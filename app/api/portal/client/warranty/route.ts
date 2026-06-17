@@ -15,6 +15,10 @@ async function getPortalSession(req: NextRequest) {
     .eq('status', 'active')
     .single();
 
+  if (!session) return null;
+  // Reject EXPIRED tokens. The canonical lib/portal-auth validator does this;
+  // this local copy previously skipped it, so expired portal tokens still worked.
+  if (session.expires_at && new Date(session.expires_at) < new Date()) return null;
   return session;
 }
 

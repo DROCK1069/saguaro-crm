@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import { sendEmail } from '@/lib/email';
 import { checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -35,36 +36,37 @@ export async function POST(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    if (!sessions || sessions.length === 0) {
-      return NextResponse.json(
-        { error: GENERIC_MESSAGE },
-        { status: 200 }
-      );
-    }
-
-    // If multiple, pick the most recent non-expired one
     const now = new Date();
-    const valid = sessions.find(s => !s.expires_at || new Date(s.expires_at) > now);
+    const valid = (sessions || []).find(s => !s.expires_at || new Date(s.expires_at) > now);
 
-    if (!valid) {
-      return NextResponse.json(
-        { error: GENERIC_MESSAGE },
-        { status: 200 }
-      );
+    // SECURITY: never return the token to the caller — anyone who knows a
+    // client's email could otherwise take over the portal. Email the link to
+    // the address on file, and ALWAYS return the same generic message whether
+    // or not a session exists (prevents email enumeration).
+    if (valid) {
+      try {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+        const portalUrl = `${appUrl}/portals/client/${valid.token}`;
+        const { data: project } = await db
+          .from('projects')
+          .select('name')
+          .eq('id', valid.project_id)
+          .maybeSingle();
+        const projectName = project?.name || 'your project';
+        await sendEmail({
+          to: email.toLowerCase().trim(),
+          subject: `Your ${projectName} portal access link`,
+          html: `<p>Hi ${valid.client_name || 'there'},</p>
+           <p>Here is your secure access link for <strong>${projectName}</strong>:</p>
+           <p><a href="${portalUrl}">${portalUrl}</a></p>
+           <p>This link is tied to your project. If you didn't request it, you can safely ignore this email.</p>`,
+        });
+      } catch (e) {
+        console.warn('[portal/client/lookup] email send failed:', e);
+      }
     }
 
-    // Fetch project name for display
-    const { data: project } = await db
-      .from('projects')
-      .select('name')
-      .eq('id', valid.project_id)
-      .maybeSingle();
-
-    return NextResponse.json({
-      token: valid.token,
-      clientName: valid.client_name,
-      projectName: project?.name || 'Your Project',
-    });
+    return NextResponse.json({ message: GENERIC_MESSAGE });
   } catch (err) {
     console.error('[portal/client/lookup]', err);
     return NextResponse.json({ error: 'Lookup failed. Please try again.' }, { status: 500 });

@@ -14,14 +14,14 @@ export default function ClientPortalLogin() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [found, setFound] = useState<{ token: string; clientName: string; projectName: string } | null>(null);
+  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
     setError('');
-    setFound(null);
+    setSent(false);
 
     try {
       const res = await fetch('/api/portal/client/lookup', {
@@ -32,13 +32,11 @@ export default function ClientPortalLogin() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Access not found. Please try again.');
+        setError(data.error || 'Something went wrong. Please try again.');
       } else {
-        setFound(data);
-        // Auto-redirect after 1.5s
-        setTimeout(() => {
-          window.location.href = `/portals/client/${data.token}`;
-        }, 1500);
+        // Secure flow: the portal link is emailed to the address on file —
+        // never returned to the browser (prevents account takeover by email).
+        setSent(true);
       }
     } catch {
       setError('Connection error. Please try again.');
@@ -94,27 +92,23 @@ export default function ClientPortalLogin() {
           View your project status, approve documents, and track financials.
         </p>
 
-        {found ? (
+        {sent ? (
           <div style={{ textAlign: 'center' }}>
             <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(34,197,94,0.12)', border: '1.5px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={24} height={24}>
-                <polyline points="20 6 9 17 4 12"/>
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
               </svg>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 4 }}>
-              Welcome back, {found.clientName}!
+            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
+              Check your email
             </div>
-            <div style={{ fontSize: 13, color: DIM, marginBottom: 16 }}>
-              {found.projectName}
+            <div style={{ fontSize: 13, color: DIM, lineHeight: 1.6 }}>
+              If an active portal exists for <strong>{email}</strong>, we&apos;ve emailed your secure access link. It can take a minute to arrive.
             </div>
-            <div style={{ fontSize: 12, color: DIM }}>Redirecting to your portal…</div>
-            <div style={{ marginTop: 16, height: 3, background: BORDER, borderRadius: 4, overflow: 'hidden' }}>
-              <div style={{ height: '100%', background: GOLD, borderRadius: 4, animation: 'progress 1.4s linear forwards' }} />
+            <div style={{ fontSize: 12, color: DIM, marginTop: 16 }}>
+              Didn&apos;t get it? Contact your general contractor for your portal link.
             </div>
-            <style>{`@keyframes progress { from { width: 0% } to { width: 100% } }`}</style>
-            <a href={`/portals/client/${found.token}`} style={{ display: 'inline-block', marginTop: 12, fontSize: 12, color: GOLD, textDecoration: 'none' }}>
-              Click here if not redirected →
-            </a>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>

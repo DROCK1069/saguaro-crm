@@ -1,16 +1,23 @@
-import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/portal/sub/sessions — list all sub portal sessions for this tenant */
-export async function GET() {
+/** GET /api/portal/sub/sessions — list THIS GC's sub portal sessions.
+ *  Auth + tenant scope required: these rows include portal tokens; an
+ *  unauthenticated/cross-tenant read here previously leaked every tenant's
+ *  tokens (sub impersonation). The token is fine to return to the authed GC
+ *  who owns these portals (the page builds the shareable link from it). */
+export async function GET(req: NextRequest) {
   try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ sessions: [], error: 'unauthorized' }, { status: 401 });
     const db = createServerClient();
 
     const { data: sessions, error } = await db
       .from('portal_sub_sessions')
       .select('id, sub_id, project_id, token, status, last_login_at, created_at, tenant_id')
+      .eq('tenant_id', user.tenantId)
       .order('created_at', { ascending: false })
       .limit(100);
 
