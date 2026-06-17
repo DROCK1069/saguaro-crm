@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateG702, generateG703, saveDocument } from '@/lib/pdf-engine';
+import { generateG702, generateG703, saveDocument, resolveBranding } from '@/lib/pdf-engine';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import {
   toCents,
@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
     const pa = payApp as any;
     const project = pa.projects;
     const rows = (lineItems || []) as any[];
+
+    // Resolve tenant branding once (Saguaro default unless on the white-label tier).
+    const tenantId = user?.tenantId || project?.tenant_id;
+    const branding = await resolveBranding(tenantId);
 
     // ── Money math: everything in exact integer cents via @/lib/calc ──
     // DB stores dollars → convert to cents before any arithmetic, back to
@@ -85,12 +89,14 @@ export async function POST(req: NextRequest) {
       // The engine subtracts prior payments; the old code emitted the raw DB
       // value, which omitted that subtraction.
       currentPaymentDue: toDollars(calc.currentPaymentDue),
+      branding,
     });
 
     const g703Bytes = await generateG703({
       projectName: project?.name || '',
       appNumber: pa.app_number,
       periodTo: pa.period_to || '',
+      branding,
       lineItems: rows.map((i, idx) => {
         const line = calc.lines[idx];
         const sv = sovLines[idx];
@@ -109,7 +115,6 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    const tenantId = user?.tenantId || project?.tenant_id;
     const [g702Url, g703Url] = await Promise.all([
       saveDocument(body.projectId || project?.id, 'g702', g702Bytes, { payAppId: body.payAppId }, tenantId),
       saveDocument(body.projectId || project?.id, 'g703', g703Bytes, { payAppId: body.payAppId }, tenantId),
