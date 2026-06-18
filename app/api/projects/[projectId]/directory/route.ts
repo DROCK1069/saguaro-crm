@@ -32,14 +32,17 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const body = await req.json();
     const supabase = createServerClient();
+    // The contacts table has no created_by column; author attribution has no home here.
+    // tenant_id must be set explicitly because this route uses the service-role client
+    // (the auto_set_tenant_id trigger can't resolve it without an authenticated user).
     const record = {
-      project_id: params.projectId,
       ...body,
-      created_by: user.email,
+      project_id: params.projectId,
+      tenant_id: user.tenantId,
       created_at: new Date().toISOString(),
     };
     const { data, error } = await supabase.from('contacts').insert(record).select().single();
-    if (error) return NextResponse.json({ contact: { id: `dir-${Date.now()}`, ...record } });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ contact: data });
   } catch {
     return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 });
