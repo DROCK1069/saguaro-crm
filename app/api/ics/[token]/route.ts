@@ -85,15 +85,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     }
 
     for (const m of (milestones ?? []) as any[]) {
-      const day = toDate(m.actual_date || m.current_date || m.baseline_date);
+      const rawDay = m.actual_date || m.current_date || m.baseline_date;
+      const day = toDate(rawDay);
       if (!day) continue;
+      const end = plusDay(rawDay); // NOTE: plusDay needs the raw YYYY-MM-DD, not the formatted day
       const flag = m.is_critical_path ? '⚑ ' : '◆ ';
       lines.push(
         'BEGIN:VEVENT',
         `UID:milestone-${m.id}@saguarocontrol.net`,
         `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${day}`,
-        `DTEND;VALUE=DATE:${plusDay(day)}`,
+        `DTEND;VALUE=DATE:${end}`,
         `SUMMARY:${esc(flag + (m.title || 'Milestone'))}`,
         ...(m.status ? [`DESCRIPTION:${esc('Milestone · ' + m.status)}`] : []),
         'END:VEVENT',
