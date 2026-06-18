@@ -45,6 +45,7 @@ export default function InsurancePage() {
   const [fEff,setFEff]         = useState('');
   const [fExp,setFExp]         = useState('');
   const [fAmt,setFAmt]         = useState('');
+  const [fNotes,setFNotes]     = useState('');
 
   const load = useCallback(async()=>{
     setLoading(true); setError('');
@@ -69,11 +70,11 @@ export default function InsurancePage() {
     try{
       const r = await fetch('/api/insurance/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         projectId,subName:fSub,policyType:fType,carrier:fCarrier,policyNo:fPolicy,
-        effectiveDate:fEff,expiryDate:fExp,coverageAmount:parseFloat(fAmt)||0,
+        effectiveDate:fEff,expiryDate:fExp,coverageAmount:parseFloat(fAmt)||0,notes:fNotes,
       })});
       const d = await r.json();
       if(d.error) throw new Error(d.error);
-      setFSub(''); setFType('GL'); setFCarrier(''); setFPolicy(''); setFEff(''); setFExp(''); setFAmt('');
+      setFSub(''); setFType('GL'); setFCarrier(''); setFPolicy(''); setFEff(''); setFExp(''); setFAmt(''); setFNotes('');
       setShowForm(false);
       await load();
     }catch(e:any){
@@ -161,6 +162,10 @@ export default function InsurancePage() {
               <label style={LBL}>Coverage Amount ($)</label>
               <input type="number" value={fAmt} onChange={e=>setFAmt(e.target.value)} placeholder="2000000" min="0" style={INP}/>
             </div>
+            <div style={{gridColumn:'1/-1'}}>
+              <label style={LBL}>Notes</label>
+              <textarea value={fNotes} onChange={e=>setFNotes(e.target.value)} placeholder="Additional-insured status, endorsements, exclusions, waiver of subrogation…" rows={3} style={{...INP,resize:'vertical' as const,minHeight:64,fontFamily:'inherit'}}/>
+            </div>
           </div>
           <div style={{display:'flex',gap:10}}>
             <button onClick={addCert} disabled={saving}
@@ -238,7 +243,10 @@ export default function InsurancePage() {
                   const cid      = c.id||String(idx);
                   return (
                     <tr key={cid} style={{borderBottom:`1px solid rgba(38,51,71,.5)`,background:rowBg}}>
-                      <td style={{padding:'11px 14px',color:TEXT,fontWeight:600}}>{c.sub_name||c.subName||c.vendor_name||'—'}</td>
+                      <td style={{padding:'11px 14px',color:TEXT,fontWeight:600}}>
+                        {c.sub_name||c.subName||c.vendor_name||'—'}
+                        {c.notes ? <div style={{fontSize:11,fontWeight:400,color:DIM,marginTop:3,maxWidth:240,whiteSpace:'normal' as const,lineHeight:1.4}}>{c.notes}</div> : null}
+                      </td>
                       <td style={{padding:'11px 14px'}}>
                         <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(212,160,23,.12)',color:GOLD,textTransform:'uppercase' as const}}>
                           {c.policy_type||c.policyType||'—'}
