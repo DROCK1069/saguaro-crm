@@ -23,6 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
       .select('*')
       .eq('tenant_id', user.tenantId)
       .eq('project_id', projectId)
+      .is('deleted_at', null) // hide records archived from the field app
       .order('rfi_number', { ascending: false });
     if (error) throw error;
 

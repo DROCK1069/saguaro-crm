@@ -28,6 +28,7 @@ export async function GET(
       .from('daily_logs')
       .select('*')
       .eq('project_id', projectId)
+      .is('deleted_at', null) // hide records archived from the field app
       .order('log_date', { ascending: false })
       .limit(limit);
 

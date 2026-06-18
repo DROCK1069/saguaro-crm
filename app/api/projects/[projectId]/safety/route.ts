@@ -8,7 +8,7 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const [incidents, inspections] = await Promise.all([
-      supabase.from('safety_incidents').select('*').eq('project_id', params.projectId).order('incident_date', { ascending: false }),
+      supabase.from('safety_incidents').select('*').eq('project_id', params.projectId).is('deleted_at', null).order('incident_date', { ascending: false }),
       supabase.from('safety_inspections').select('*').eq('project_id', params.projectId).order('inspection_date', { ascending: false }),
     ]);
     if (incidents.error && inspections.error) {

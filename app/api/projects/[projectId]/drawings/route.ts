@@ -22,6 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
       .from('drawings')
       .select('*')
       .eq('project_id', projectId)
+      .is('deleted_at', null) // hide records archived from the field app
       .order('sheet_number', { ascending: true });
     if (error) throw error;
     return NextResponse.json({ drawings: data ?? [] });

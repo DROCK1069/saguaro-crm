@@ -63,7 +63,8 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     let query = supabase
       .from('photos')
       .select('*')
-      .eq('project_id', params.projectId);
+      .eq('project_id', params.projectId)
+      .is('deleted_at', null); // hide records archived from the field app
 
     if (filterIds) {
       query = query.in('id', filterIds);
