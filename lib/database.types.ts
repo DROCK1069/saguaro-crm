@@ -7004,7 +7004,7 @@ export type Database = {
           reminder_count: number | null
           sent_at: string | null
           sent_by: string | null
-          signature_id: string
+          signature_id: string | null
           status: string | null
           tenant_id: string
           token: string
@@ -7027,7 +7027,7 @@ export type Database = {
           reminder_count?: number | null
           sent_at?: string | null
           sent_by?: string | null
-          signature_id: string
+          signature_id?: string | null
           status?: string | null
           tenant_id: string
           token?: string
@@ -7050,7 +7050,7 @@ export type Database = {
           reminder_count?: number | null
           sent_at?: string | null
           sent_by?: string | null
-          signature_id?: string
+          signature_id?: string | null
           status?: string | null
           tenant_id?: string
           token?: string
@@ -7070,7 +7070,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
-          doc_title: string
+          doc_title: string | null
           doc_type: string
           document_id: string | null
           expires_at: string | null
@@ -7099,7 +7099,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
-          doc_title: string
+          doc_title?: string | null
           doc_type: string
           document_id?: string | null
           expires_at?: string | null
@@ -7128,7 +7128,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
-          doc_title?: string
+          doc_title?: string | null
           doc_type?: string
           document_id?: string | null
           expires_at?: string | null

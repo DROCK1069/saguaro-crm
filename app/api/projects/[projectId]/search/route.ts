@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import type { Database } from '@/lib/database.types';
 
@@ -39,8 +40,12 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     await Promise.allSettled(
       tables.map(async ({ table, module, titleField }) => {
         try {
-          const { data } = await supabase
-            .from(table as TableName)
+          // `table` is resolved at runtime from SEARCHABLE_TABLES; typing .from() against
+          // the union of all 277 tables makes tsc instantiate an excessively deep type
+          // (TS2589). Use the non-generic client for this dynamic-table query; the result
+          // shape is narrowed explicitly below.
+          const { data } = await (supabase as unknown as SupabaseClient)
+            .from(table)
             .select('*')
             .eq('project_id', params.projectId)
             .ilike(titleField, `%${q}%`)

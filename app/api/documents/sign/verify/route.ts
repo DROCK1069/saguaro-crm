@@ -34,6 +34,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ valid: false, error: 'Already signed' }, { status: 400 });
   }
 
+  if (!request.signature_id) {
+    return NextResponse.json({ valid: false, error: 'No signature record linked' }, { status: 409 });
+  }
+
   // Get the associated signature record with doc info
   const { data: signature, error: sigErr } = await db
     .from('document_signatures')

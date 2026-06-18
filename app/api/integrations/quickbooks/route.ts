@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getUser } from '@/lib/supabase-server';
 
 function getSupabase() {
   return createClient(
@@ -30,10 +31,13 @@ export async function GET(req: NextRequest) {
   }
 
   if (action === 'status') {
-    // Check if we have a stored token
+    // Check if THIS tenant has a stored token (integration rows are per-tenant).
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { data } = await getSupabase()
       .from('integrations')
       .select('id, settings')
+      .eq('tenant_id', user.tenantId)
       .eq('provider', 'quickbooks')
       .maybeSingle();
     const connected = !!data?.settings?.access_token;
@@ -42,16 +46,20 @@ export async function GET(req: NextRequest) {
   }
 
   if (action === 'sync_preview') {
-    // Return what would be synced without actually syncing
+    // Return what would be synced without actually syncing — scoped to this tenant.
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { data: invoices } = await getSupabase()
       .from('pay_applications')
       .select('id, app_number, net_payment_due, status, project_id')
+      .eq('tenant_id', user.tenantId)
       .in('status', ['approved', 'submitted'])
       .limit(20);
 
     const { data: vendors } = await getSupabase()
       .from('subcontractors')
       .select('id, company_name')
+      .eq('tenant_id', user.tenantId)
       .limit(20);
 
     return NextResponse.json({
@@ -69,7 +77,11 @@ export async function POST(req: NextRequest) {
   const { action } = body as { action: string };
 
   if (action === 'callback') {
-    // Handle OAuth callback — exchange code for tokens
+    // Handle OAuth callback — exchange code for tokens. Must be authenticated so we
+    // can store the integration against the caller's tenant (integrations.tenant_id
+    // is NOT NULL and the service-role client can't auto-resolve it).
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { code, realmId } = body as { code: string; realmId: string };
     if (!code || !realmId) {
       return NextResponse.json({ error: 'Missing code or realmId' }, { status: 400 });
@@ -100,24 +112,38 @@ export async function POST(req: NextRequest) {
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
-    await getSupabase().from('integrations').upsert({
-      provider: 'quickbooks',
-      settings: {
-        access_token:  tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_at:    expiresAt,
-        realm_id:      realmId,
-      },
-    }, { onConflict: 'provider' });
+    const settings = {
+      access_token:  tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at:    expiresAt,
+      realm_id:      realmId,
+    };
+    // Per-tenant upsert via check-then-write (no (tenant_id,provider) unique index exists
+    // for onConflict). tenant_id is required and set explicitly under the service-role client.
+    const db = getSupabase();
+    const { data: existing } = await db
+      .from('integrations')
+      .select('id')
+      .eq('tenant_id', user.tenantId)
+      .eq('provider', 'quickbooks')
+      .maybeSingle();
+    if (existing?.id) {
+      await db.from('integrations').update({ settings }).eq('id', existing.id);
+    } else {
+      await db.from('integrations').insert({ tenant_id: user.tenantId, provider: 'quickbooks', settings });
+    }
 
     return NextResponse.json({ ok: true, expiresAt });
   }
 
   if (action === 'sync') {
-    // Push approved pay apps as invoices to QuickBooks
+    // Push approved pay apps as invoices to QuickBooks — scoped to this tenant.
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { data: integration } = await getSupabase()
       .from('integrations')
       .select('settings')
+      .eq('tenant_id', user.tenantId)
       .eq('provider', 'quickbooks')
       .maybeSingle();
 
@@ -131,6 +157,7 @@ export async function POST(req: NextRequest) {
     const { data: payApps } = await getSupabase()
       .from('pay_applications')
       .select('id, app_number, net_payment_due, project_id, projects(name)')
+      .eq('tenant_id', user.tenantId)
       .eq('status', 'approved')
       .is('qbo_invoice_id', null)
       .limit(50);
@@ -180,7 +207,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'disconnect') {
-    await getSupabase().from('integrations').delete().eq('provider', 'quickbooks');
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    await getSupabase().from('integrations').delete().eq('tenant_id', user.tenantId).eq('provider', 'quickbooks');
     return NextResponse.json({ ok: true });
   }
 

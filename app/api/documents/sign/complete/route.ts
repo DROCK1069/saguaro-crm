@@ -32,6 +32,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Signing link has expired' }, { status: 410 });
   }
 
+  if (!request.signature_id) {
+    return NextResponse.json({ error: 'No signature record is linked to this request' }, { status: 409 });
+  }
+
   // Get IP address from headers
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || req.headers.get('x-real-ip')
