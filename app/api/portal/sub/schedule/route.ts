@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import type { Tables } from '@/lib/database.types';
 
-async function authenticateSubPortal(req: NextRequest) {
+// portal_sub_sessions.sub_id / project_id are nullable in the schema, but a
+// usable sub-portal session is always scoped to both (enforced by the guard in
+// authenticateSubPortal). Refine those two fields to non-null for callers.
+type AuthedSubSession = Omit<
+  Tables<'portal_sub_sessions'>,
+  'sub_id' | 'project_id'
+> & { sub_id: string; project_id: string };
+
+async function authenticateSubPortal(
+  req: NextRequest
+): Promise<AuthedSubSession | null> {
   const token =
     req.nextUrl.searchParams.get('token') ||
     req.headers.get('x-portal-token');
@@ -15,7 +26,15 @@ async function authenticateSubPortal(req: NextRequest) {
     .eq('status', 'active')
     .single();
 
-  return session;
+  // sub_id / project_id are nullable on portal_sub_sessions; a usable sub-portal
+  // session must be scoped to a specific sub and project. Reject incomplete
+  // sessions so callers hit the standard 401 path and downstream .eq() filters
+  // never receive a null scope.
+  if (!session || !session.sub_id || !session.project_id) return null;
+
+  // Reconstruct with the verified non-null scope so the narrowing carries into
+  // the returned type (TS narrows property reads above but not the object itself).
+  return { ...session, sub_id: session.sub_id, project_id: session.project_id };
 }
 
 /** GET — List tasks/phases assigned to this sub */

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -27,13 +28,13 @@ export async function POST(req: NextRequest) {
     const ALLOWED_TEMPLATE_COLUMNS = [
       'name', 'description', 'questions', 'scoring_criteria', 'is_default',
     ];
-    const insertRow: Record<string, any> = {};
+    const insertRow: Partial<TablesInsert<'prequalification_templates'>> = {};
     for (const k of ALLOWED_TEMPLATE_COLUMNS) {
-      if (body[k] !== undefined) insertRow[k] = body[k];
+      if (body[k] !== undefined) (insertRow as Record<string, any>)[k] = body[k];
     }
     const { data, error } = await db
       .from('prequalification_templates')
-      .insert({ ...insertRow, tenant_id: user.tenantId })
+      .insert({ ...insertRow, tenant_id: user.tenantId } as TablesInsert<'prequalification_templates'>)
       .select()
       .single();
     if (error) throw error;

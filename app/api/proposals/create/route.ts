@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (body.pdf_url !== undefined && body.pdf_url !== null) insert.pdf_url = body.pdf_url;
     if (body.notes !== undefined) insert.description = insert.description ?? body.notes;
 
-    const { data, error } = await db.from('proposals').insert(insert).select().single();
+    const { data, error } = await db.from('proposals').insert(insert as TablesInsert<'proposals'>).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, proposal: data });
   } catch (err: unknown) {

@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
     let query = db
       .from('portal_sub_messages')
       .select('*')
-      .eq('project_id', session.project_id)
-      .eq('sub_id', session.sub_id)
+      .eq('project_id', session.project_id!)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -83,15 +83,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Live portal_sub_messages columns: sub_id, project_id, tenant_id,
-    // sender_name, sender_type, content, read_at, created_at. There is no
-    // sender_id / attachments column, and read state is tracked via read_at
-    // (null = unread) rather than a boolean read column.
+    // sender_name (NOT NULL), sender_type, content, read_at, created_at. There
+    // is no sender_id / attachments column, and read state is tracked via
+    // read_at (null = unread) rather than a boolean read column.
     const { data: message, error } = await db
       .from('portal_sub_messages')
       .insert({
         sub_id: session.sub_id,
         project_id: session.project_id,
         tenant_id: session.tenant_id,
+        sender_name: session.sub_contact_name || session.sub_company || 'Subcontractor',
         sender_type: 'sub',
         content: content.trim(),
         created_at: new Date().toISOString(),
@@ -142,7 +143,7 @@ export async function PATCH(req: NextRequest) {
         read_at: new Date().toISOString(),
       })
       .in('id', message_ids)
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', session.sub_id!)
       .eq('tenant_id', session.tenant_id)
       .neq('sender_type', 'sub');
 

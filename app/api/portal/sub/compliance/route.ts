@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // portal_sub_sessions.sub_id is nullable in the live DB; a session with no
+    // sub_id cannot own compliance docs, so return an empty set rather than
+    // querying with a null filter.
+    if (!session.sub_id) {
+      return NextResponse.json({ compliance_docs: [] });
+    }
+
     const db = createServerClient();
 
     const { data: docs, error } = await db

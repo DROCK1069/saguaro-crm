@@ -12,13 +12,16 @@ export async function POST(req: NextRequest) {
     body = {};
   }
 
+  const asString = (v: unknown): string | null =>
+    typeof v === 'string' ? v : v == null ? null : String(v);
+
   const row = {
     tenant_id: user.tenantId,
-    project_id: body.project_id || body.projectId || null,
-    title: body.title || '',
-    body: body.body || body.message || '',
-    type: body.type || 'general',
-    link: body.url || null,
+    project_id: asString(body.project_id ?? body.projectId) || null,
+    title: asString(body.title) || '',
+    body: asString(body.body ?? body.message) || '',
+    type: asString(body.type) || 'general',
+    link: asString(body.url) || null,
     is_read: false,
   };
 

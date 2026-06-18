@@ -87,8 +87,8 @@ Return only raw JSON.`;
     // Optionally store result on sub record
     if (subId) {
       await db.from('subcontractors').update({
-        prequal_score: parsed.score,
-        prequal_verdict: parsed.verdict,
+        prequal_score: parsed.score as number | null,
+        prequal_verdict: parsed.verdict as string | null,
         prequal_at: new Date().toISOString(),
       }).eq('id', subId).eq('tenant_id', tenantId);
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
     const projectId = body.projectId || body.project_id;
     if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
     const supabase = createServerClient();
-    const insert: Record<string, unknown> = {
+    const insert: TablesInsert<'warranty_claims'> = {
       tenant_id: user.tenantId,
       project_id: projectId,
       title: (body.description || '').slice(0, 120) || 'Warranty Claim',

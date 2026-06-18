@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export async function GET(
   req: NextRequest,
@@ -96,7 +97,7 @@ export async function POST(
 
     const { data, error } = await db
       .from('takeoff_measurements')
-      .insert(record)
+      .insert(record as TablesInsert<'takeoff_measurements'>)
       .select()
       .single();
 

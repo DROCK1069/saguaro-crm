@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -29,7 +30,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const db = createServerClient();
     // Whitelist to live portal_messages columns (no portal_type column exists).
-    const row: Record<string, any> = { tenant_id: user.tenantId };
+    // Built as a Partial so we only set fields the client supplied — preserving
+    // the prior behavior where missing NOT NULL columns (sender_name, content)
+    // surface as a DB error rather than being silently defaulted.
+    const row: Partial<TablesInsert<'portal_messages'>> = { tenant_id: user.tenantId };
     if (body.project_id !== undefined) row.project_id = body.project_id;
     if (body.session_id !== undefined) row.session_id = body.session_id;
     if (body.sender_name !== undefined) row.sender_name = body.sender_name;
@@ -38,7 +42,7 @@ export async function POST(req: NextRequest) {
     if (body.attachments !== undefined) row.attachments = body.attachments;
     const { data, error } = await db
       .from('portal_messages')
-      .insert(row)
+      .insert(row as TablesInsert<'portal_messages'>)
       .select()
       .single();
     if (error) throw error;

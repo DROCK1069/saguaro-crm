@@ -26,9 +26,15 @@ export async function GET(
 
     if (error || !data) return notFound('Article not found');
 
-    // Increment view count (fire and forget)
+    // Increment view count (fire and forget).
+    // NOTE: the live `view_count` column is typed `text`, so the generated type
+    // expects a string here even though the app uses it as a numeric counter
+    // (POST sets 0, this route increments). We send a genuine number (Postgres
+    // coerces to text on write, matching existing behavior) and narrow-cast the
+    // payload key to satisfy the string-typed column. See central-review flag.
+    const nextViewCount = (Number(data.view_count) || 0) + 1;
     db.from('trade_knowledge')
-      .update({ view_count: (data.view_count || 0) + 1 })
+      .update({ view_count: nextViewCount as unknown as string })
       .eq('id', id)
       .then(() => { /* non-blocking */ });
 

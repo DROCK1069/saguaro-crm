@@ -14,11 +14,10 @@ export async function POST(req: NextRequest) {
 
   const row = {
     tenant_id: user.tenantId,
-    project_id: body.project_id || body.projectId,
-    sender_name: body.sender_name || body.senderName || user.email || 'Field User',
-    content: body.content || body.message || '',
-    is_system: false,
-    metadata: body.metadata || null,
+    project_id: ((body.project_id || body.projectId) as string | undefined) ?? null,
+    sender_name: String(body.sender_name || body.senderName || user.email || 'Field User'),
+    content: String(body.content || body.message || ''),
+    message_type: 'message',
   };
 
   try {

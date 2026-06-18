@@ -23,8 +23,8 @@ export async function POST(
     const { error } = await db
       .from('rfis')
       .update({
-        answer: body.answer || '',
-        answered_by: body.answered_by || user.email || '',
+        answer: (body.answer as string) || '',
+        answered_by: (body.answered_by as string) || user.email || '',
         status: 'answered',
         answered_at: new Date().toISOString(),
         answered_date: new Date().toISOString().split('T')[0],

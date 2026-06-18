@@ -51,6 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ she
       .eq('tenant_id', user.tenantId)
       .single()
     if (!drawing) return NextResponse.json({ error: 'Drawing not found' }, { status: 404 })
+    if (!drawing.project_id) return NextResponse.json({ error: 'Drawing has no project' }, { status: 400 })
 
     // Upsert — one markup record per drawing.
     const { data: existing } = await db

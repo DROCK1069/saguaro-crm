@@ -16,6 +16,10 @@
 
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+// Union of valid public table names from the live DB schema.
+type PublicTableName = keyof Database['public']['Tables'];
 
 // Tables that have a direct project_id column
 const TABLES_WITH_PROJECT_ID = new Set([
@@ -211,7 +215,9 @@ async function executeQuery(
     }
   }
 
-  let q = supabase.from(query.table).select(selectStr);
+  // query.table is dynamic (Claude-generated); narrow the cast to the typed
+  // table-name union so the relation resolves and .select(dynamic string) matches.
+  let q = supabase.from(query.table as PublicTableName).select(selectStr);
 
   // Apply tenant isolation — always filter by tenant_id when the table supports it
   if (tenantId && TABLES_WITH_TENANT_ID.has(query.table)) {

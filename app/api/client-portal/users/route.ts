@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+type PortalUserInsert = Database['public']['Tables']['portal_users']['Insert'];
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
     const { data, error } = await db
       .from('portal_users')
-      .insert(row)
+      .insert(row as PortalUserInsert)
       .select()
       .single();
     if (error) throw error;

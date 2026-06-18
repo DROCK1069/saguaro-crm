@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
       .from('document_signature_requests')
       .insert({
         signature_id: sig.id,
+        tenant_id: user.tenantId,
         token,
         status: 'pending',
         message: message || null,

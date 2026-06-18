@@ -14,6 +14,7 @@
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
+import type { TablesInsert } from '@/lib/database.types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -291,11 +292,9 @@ Rules:
               bid_instructions:      bidInstructions,
               status:                'open',
               requires_bond:         requiresBond,
-              insurance_requirements: {
-                general_liability:   ai?.ins_gl  ?? ((['03','05','07','22','23','26'].includes(div)) ? 2_000_000 : 1_000_000),
-                auto_liability:      ai?.ins_auto ?? 1_000_000,
-                workers_compensation: ai?.ins_work ?? 500_000,
-              },
+              general_liability:     String(ai?.ins_gl  ?? ((['03','05','07','22','23','26'].includes(div)) ? 2_000_000 : 1_000_000)),
+              auto_liability:        String(ai?.ins_auto ?? 1_000_000),
+              workers_compensation:  String(ai?.ins_work ?? 500_000),
             })
             .select()
             .single();
@@ -427,13 +426,13 @@ Rules:
               change_orders_total:         0,
               prev_completed:              0,
               this_period:                 0,
-              materials_stored:            0,
-              total_completed:             0,
+              materials_stored:            '0',
+              total_completed:             '0',
               percent_complete:            0,
               retainage_percent:           10,
-              retainage_amount:            0,
+              retainage_amount:            '0',
               total_earned_less_retainage: 0,
-              prev_payments:               0,
+              prev_payments:               '0',
               current_payment_due:         0,
               owner_name:                  ownerName,
               owner_address:               ownerAddr,
@@ -446,7 +445,7 @@ Rules:
             sovId = (payApp as any).id as string;
 
             // Build SOV rows grouped by CSI division (one row per division = cleaner G703)
-            const sovRows: Record<string, unknown>[] = [];
+            const sovRows: TablesInsert<'schedule_of_values'>[] = [];
             let lineNum = 1;
 
             for (const [div, items] of divisions) {
@@ -459,14 +458,14 @@ Rules:
                 line_number:      lineNum++,
                 description:      `${div} — ${divName}`,
                 scheduled_value:  divTotal,
-                work_from_prev:   0,
-                work_this_period: 0,
-                materials_stored: 0,
+                prev_completed:   0,
+                this_period:      0,
+                stored_materials: 0,
                 total_completed:  0,
                 percent_complete: 0,
                 balance_to_finish: divTotal,
                 retainage:        0,
-                csi_code:         div,
+                cost_code:        div,
               });
             }
 

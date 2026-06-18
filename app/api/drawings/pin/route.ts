@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -12,15 +13,21 @@ export async function POST(req: NextRequest) {
     body = {};
   }
 
-  const row = {
+  const x = Number(body.x_pct) || 0;
+  const y = Number(body.y_pct) || 0;
+
+  const row: TablesInsert<'drawing_pins'> = {
     tenant_id: user.tenantId,
-    project_id: body.project_id || body.projectId || null,
-    drawing_id: body.drawing_id || body.drawingId || null,
-    x_pct: Number(body.x_pct) || 0,
-    y_pct: Number(body.y_pct) || 0,
-    title: body.title || '',
-    notes: body.note || body.notes || '',
-    pin_type: body.category || 'Other',
+    project_id: String(body.project_id || body.projectId || ''),
+    drawing_id: (body.drawing_id || body.drawingId || null) as string | null,
+    // x/y are legacy NOT NULL columns — mirror the normalized percentage values
+    x,
+    y,
+    x_pct: x,
+    y_pct: y,
+    title: String(body.title || ''),
+    notes: String(body.note || body.notes || ''),
+    pin_type: String(body.category || 'Other'),
   };
 
   try {

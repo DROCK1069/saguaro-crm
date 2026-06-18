@@ -29,13 +29,24 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // portal_sub_sessions.sub_id is nullable in the DB; a session without a
+    // linked sub has no scorecards, so treat it as unauthorized rather than
+    // querying with a null filter.
+    const subId = session.sub_id;
+    if (!subId) {
+      return NextResponse.json(
+        { error: 'Invalid or expired portal token' },
+        { status: 401 }
+      );
+    }
+
     const db = createServerClient();
 
     // Get all scorecards for this sub across projects
     const { data: scorecards, error } = await db
       .from('portal_sub_scorecards')
       .select('*')
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', subId)
       .eq('tenant_id', session.tenant_id)
       .order('created_at', { ascending: false });
 
@@ -82,7 +93,7 @@ export async function GET(req: NextRequest) {
     const { data: subRecord } = await db
       .from('subcontractors')
       .select('rating')
-      .eq('id', session.sub_id)
+      .eq('id', subId)
       .eq('tenant_id', session.tenant_id)
       .single();
 
@@ -109,6 +120,16 @@ export async function POST(req: NextRequest) {
   try {
     const session = await authenticateSubPortal(req);
     if (!session) {
+      return NextResponse.json(
+        { error: 'Invalid or expired portal token' },
+        { status: 401 }
+      );
+    }
+
+    // portal_sub_sessions.sub_id is nullable in the DB; a session without a
+    // linked sub cannot own a scorecard, so reject rather than write/query null.
+    const subId = session.sub_id;
+    if (!subId) {
       return NextResponse.json(
         { error: 'Invalid or expired portal token' },
         { status: 401 }
@@ -157,7 +178,7 @@ export async function POST(req: NextRequest) {
     const { data: scorecard, error } = await db
       .from('portal_sub_scorecards')
       .insert({
-        sub_id: session.sub_id,
+        sub_id: subId,
         project_id: session.project_id,
         tenant_id: session.tenant_id,
         quality_score: quality_score || null,
@@ -179,7 +200,7 @@ export async function POST(req: NextRequest) {
     const { data: allCards } = await db
       .from('portal_sub_scorecards')
       .select('quality_score, schedule_score, safety_score, communication_score, overall_score')
-      .eq('sub_id', session.sub_id)
+      .eq('sub_id', subId)
       .eq('tenant_id', session.tenant_id);
 
     if (allCards && allCards.length > 0) {
@@ -198,7 +219,7 @@ export async function POST(req: NextRequest) {
           .update({
             rating: newOverall,
           })
-          .eq('id', session.sub_id)
+          .eq('id', subId)
           .eq('tenant_id', session.tenant_id);
       }
     }

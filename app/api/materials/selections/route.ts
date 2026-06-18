@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+type MaterialSelectionInsert =
+  Database['public']['Tables']['material_selections']['Insert'];
 
 /**
  * GET /api/materials/selections?customer_id=xxx&project_id=yyy&category=flooring
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await db
       .from('material_selections')
-      .insert(fields)
+      .insert(fields as MaterialSelectionInsert)
       .select()
       .single();
 

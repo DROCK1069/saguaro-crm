@@ -18,16 +18,21 @@ export async function POST(req: NextRequest) {
 
     const rfi_number = `RFI-${String((rawCount || 0) + 1).padStart(3, '0')}`;
 
+    // Coerce dynamic JSON body values to string; returns undefined for any
+    // falsy value so `?? ` reproduces the original `||` fallthrough exactly.
+    const str = (v: unknown): string | undefined =>
+      v ? String(v) : undefined;
+
     const row = {
       tenant_id:    user.tenantId,
-      project_id:   body.projectId   || body.project_id  || null,
+      project_id:   str(body.projectId)   ?? str(body.project_id)  ?? null,
       rfi_number,
-      subject:      body.subject     || '',
-      question:     body.question    || body.description  || '',
-      spec_section: body.specSection || body.spec_section || '',
-      due_date:     body.dueDate     || body.due_date     || null,
+      subject:      str(body.subject)      ?? '',
+      question:     str(body.question)     ?? str(body.description) ?? '',
+      spec_section: str(body.specSection)  ?? str(body.spec_section) ?? '',
+      due_date:     str(body.dueDate)      ?? str(body.due_date)     ?? null,
       status:       'open',
-      submitted_by: user.email       || 'Field User',
+      submitted_by: user.email             || 'Field User',
     };
 
     const { data, error } = await db

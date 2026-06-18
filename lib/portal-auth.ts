@@ -14,8 +14,8 @@ export interface PortalSession {
   status: string;
   permissions: string[];
   expires_at: string | null;
-  last_accessed_at: string | null;
-  created_by: string;
+  last_login_at: string | null;
+  created_by: string | null;
   created_at: string;
 }
 
@@ -47,15 +47,19 @@ export async function getPortalSession(
     return null;
   }
 
+  // `permissions` is a jsonb column (typed as Json); normalize to a string[]
+  const perms: string[] = Array.isArray(session.permissions)
+    ? (session.permissions.filter((p): p is string => typeof p === 'string'))
+    : [];
+
   // Check permission if required
   if (requiredPermission) {
-    const perms: string[] = session.permissions || [];
     if (!perms.includes(requiredPermission)) {
       return null;
     }
   }
 
-  return session as PortalSession;
+  return { ...session, permissions: perms } as PortalSession;
 }
 
 /** Permission constants */

@@ -17,10 +17,10 @@ export async function GET() {
     if (error) throw error;
 
     // Enrich with sub company names and project names
-    const subIds = [...new Set((sessions || []).map(s => s.sub_id).filter(Boolean))];
-    const projectIds = [...new Set((sessions || []).map(s => s.project_id).filter(Boolean))];
+    const subIds = [...new Set((sessions || []).map(s => s.sub_id).filter((id): id is string => Boolean(id)))];
+    const projectIds = [...new Set((sessions || []).map(s => s.project_id).filter((id): id is string => Boolean(id)))];
 
-    let subMap: Record<string, { company_name: string; contact_name: string }> = {};
+    let subMap: Record<string, { company_name: string; contact_name: string | null }> = {};
     let projectMap: Record<string, string> = {};
 
     await Promise.all([
@@ -40,9 +40,9 @@ export async function GET() {
 
     const enriched = (sessions || []).map(s => ({
       ...s,
-      company_name: subMap[s.sub_id]?.company_name || null,
-      contact_name: subMap[s.sub_id]?.contact_name || null,
-      project_name: projectMap[s.project_id] || null,
+      company_name: s.sub_id ? subMap[s.sub_id]?.company_name || null : null,
+      contact_name: s.sub_id ? subMap[s.sub_id]?.contact_name || null : null,
+      project_name: s.project_id ? projectMap[s.project_id] || null : null,
     }));
 
     return NextResponse.json({ sessions: enriched });

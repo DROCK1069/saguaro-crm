@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, getUser } from '@/lib/supabase-server'
+import type { TablesInsert } from '@/lib/database.types'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,12 +51,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .eq('tenant_id', user.tenantId)
       .single()
     if (!drawing) return NextResponse.json({ error: 'Drawing not found' }, { status: 404 })
+    if (!drawing.project_id) return NextResponse.json({ error: 'Drawing is not linked to a project' }, { status: 400 })
 
     const x = Number(x_pct) || 0
     const y = Number(y_pct) || 0
     const et = entity_type || null
 
-    const row: Record<string, unknown> = {
+    const row: TablesInsert<'drawing_pins'> = {
       tenant_id: user.tenantId,
       project_id: drawing.project_id,
       drawing_id: id,

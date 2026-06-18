@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload each photo and create drone_photos records
-    const photoRecords: Record<string, unknown>[] = [];
+    const photoRecords: TablesInsert<'drone_photos'>[] = [];
     let uploadedCount = 0;
 
     for (const photo of photos) {

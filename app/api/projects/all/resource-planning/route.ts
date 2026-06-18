@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,21 +52,23 @@ function toPage(r: DbRow) {
   };
 }
 
+type ResourceAssignmentInsert = TablesInsert<'resource_assignments'>;
+
 export function toDb(body: Record<string, unknown>, tenantId: string) {
-  const row: Record<string, unknown> = {};
-  if (body.person_name !== undefined) row.resource_name = body.person_name;
-  if (body.resource_name !== undefined) row.resource_name = body.resource_name;
-  if (body.role !== undefined) row.role = body.role;
-  if (body.trade !== undefined) row.resource_type = body.trade;
-  if (body.resource_type !== undefined) row.resource_type = body.resource_type;
-  if (body.start_date !== undefined) row.start_date = body.start_date || null;
-  if (body.end_date !== undefined) row.end_date = body.end_date || null;
-  if (body.hours_per_day !== undefined) row.hours_per_day = body.hours_per_day;
-  if (body.hourly_rate !== undefined) row.cost_rate = body.hourly_rate;
-  if (body.cost_rate !== undefined) row.cost_rate = body.cost_rate;
-  if (body.status !== undefined) row.status = body.status;
-  if (body.notes !== undefined) row.notes = body.notes;
-  if (body.project_id !== undefined) row.project_id = body.project_id || null;
+  const row: Partial<ResourceAssignmentInsert> = {};
+  if (body.person_name !== undefined) row.resource_name = body.person_name as string;
+  if (body.resource_name !== undefined) row.resource_name = body.resource_name as string;
+  if (body.role !== undefined) row.role = body.role as string;
+  if (body.trade !== undefined) row.resource_type = body.trade as string;
+  if (body.resource_type !== undefined) row.resource_type = body.resource_type as string;
+  if (body.start_date !== undefined) row.start_date = (body.start_date as string) || null;
+  if (body.end_date !== undefined) row.end_date = (body.end_date as string) || null;
+  if (body.hours_per_day !== undefined) row.hours_per_day = body.hours_per_day as number;
+  if (body.hourly_rate !== undefined) row.cost_rate = body.hourly_rate as number;
+  if (body.cost_rate !== undefined) row.cost_rate = body.cost_rate as number;
+  if (body.status !== undefined) row.status = body.status as string;
+  if (body.notes !== undefined) row.notes = body.notes as string;
+  if (body.project_id) row.project_id = body.project_id as string;
   row.tenant_id = tenantId;
   if (row.resource_type === undefined) row.resource_type = 'labor';
   return row;
@@ -102,7 +105,7 @@ export async function POST(req: NextRequest) {
     const db = createServerClient();
     const { data, error } = await db
       .from('resource_assignments')
-      .insert(row)
+      .insert(row as ResourceAssignmentInsert)
       .select()
       .single();
     if (error) throw error;

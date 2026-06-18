@@ -10,7 +10,7 @@ export async function GET() {
 
     const { data: sessions, error } = await db
       .from('portal_client_sessions')
-      .select('id, client_name, client_email, project_id, token, status, expires_at, last_accessed_at, created_at, tenant_id')
+      .select('id, client_name, client_email, project_id, token, status, expires_at, last_login_at, created_at, tenant_id')
       .order('created_at', { ascending: false })
       .limit(100);
 

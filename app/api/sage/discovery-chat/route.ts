@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Json } from '@/lib/database.types';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -180,7 +181,7 @@ Be conversational, use contractions, and never sound robotic. Keep responses con
               ];
 
               await db.from('sage_conversations').update({
-                messages: updatedMessages,
+                messages: updatedMessages as unknown as Json,
                 messages_count: updatedMessages.length,
                 last_message_at: new Date().toISOString(),
                 detected_tone: detectedTone,
@@ -188,7 +189,7 @@ Be conversational, use contractions, and never sound robotic. Keep responses con
                 current_page: page || conversation!.current_page,
                 customer_id: customer_id || conversation!.customer_id,
                 current_project_id: project_id || conversation!.current_project_id,
-              }).eq('id', conversation!.id);
+              }).eq('id', conversation!.id as string);
 
               send({
                 done: true,

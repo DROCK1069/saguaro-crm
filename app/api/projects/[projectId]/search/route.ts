@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+type TableName = keyof Database['public']['Tables'];
 
 const SEARCHABLE_TABLES = [
   { table: 'rfis', module: 'RFIs', titleField: 'subject', searchFields: ['subject', 'question'] },
   { table: 'punch_list', module: 'Punch List', titleField: 'title', searchFields: ['title', 'description'] },
   { table: 'daily_logs', module: 'Daily Logs', titleField: 'work_performed', searchFields: ['work_performed', 'notes'] },
-  { table: 'inspections', module: 'Inspections', titleField: 'type', searchFields: ['type', 'notes'] },
+  { table: 'inspections', module: 'Inspections', titleField: 'inspection_type', searchFields: ['inspection_type', 'notes'] },
   { table: 'change_orders', module: 'Change Orders', titleField: 'title', searchFields: ['title', 'description'] },
   { table: 'submittals', module: 'Submittals', titleField: 'title', searchFields: ['title', 'description'] },
   { table: 'safety_incidents', module: 'Safety', titleField: 'description', searchFields: ['description', 'location'] },
@@ -37,13 +40,13 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       tables.map(async ({ table, module, titleField }) => {
         try {
           const { data } = await supabase
-            .from(table)
+            .from(table as TableName)
             .select('*')
             .eq('project_id', params.projectId)
             .ilike(titleField, `%${q}%`)
             .limit(10);
           if (data) {
-            data.forEach((item: Record<string, unknown>) => {
+            (data as Array<Record<string, unknown>>).forEach((item) => {
               results.push({
                 module,
                 id: String(item.id || ''),

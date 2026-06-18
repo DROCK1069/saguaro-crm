@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const db = createServerClient();
-    const projectId = body.projectId || body.project_id;
+    const projectId = (body.projectId || body.project_id) as string;
 
     // Assign the next per-project item number (punch_list.item_number).
     let item_number = 1;
@@ -34,14 +34,14 @@ export async function POST(req: NextRequest) {
       project_id:  projectId,
       tenant_id:   user.tenantId,
       item_number,
-      title:       body.title       || '',
-      description: body.description || '',
-      location:    body.location    || '',
-      trade:       body.trade       || 'General Contractor',
-      priority:    body.priority    || 'Medium',
-      status:      body.status      || 'open',
-      due_date:    body.due_date    || null,
-      notes:       body.notes       || '',
+      title:       String(body.title       || ''),
+      description: String(body.description || ''),
+      location:    String(body.location    || ''),
+      trade:       String(body.trade       || 'General Contractor'),
+      priority:    String(body.priority    || 'Medium'),
+      status:      String(body.status      || 'open'),
+      due_date:    (body.due_date as string | null) || null,
+      notes:       String(body.notes       || ''),
     };
 
     const { data, error } = await db
