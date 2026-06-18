@@ -162,6 +162,54 @@ export async function requestCOIHandler(req: NextRequest) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function uploadCOIHandler(req: NextRequest) {
+  // Dashboard MANUAL COI entry posts JSON (the vendor ACORD-25 flow below posts a
+  // multipart file for AI extraction). Insert straight into the live
+  // insurance_certificates schema; tenant is resolved from the project so the
+  // dashboard never has to send it. Only real columns are written.
+  const contentType = req.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) {
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const projectId = String(body['projectId'] ?? '');
+    const subName = String(body['subName'] ?? '').trim();
+    if (!projectId || !subName) {
+      return NextResponse.json({ error: 'projectId and subName are required' }, { status: 400 });
+    }
+    const { data: proj } = await supabaseAdmin
+      .from('projects')
+      .select('tenant_id')
+      .eq('id', projectId)
+      .single();
+    const tenantId = proj?.tenant_id as string | undefined;
+    if (!tenantId) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+
+    const str = (v: unknown) => { const s = String(v ?? '').trim(); return s || null; };
+    const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
+
+    const { data: created, error: insErr } = await supabaseAdmin
+      .from('insurance_certificates')
+      .insert({
+        tenant_id:       tenantId,
+        project_id:      projectId,
+        sub_name:        subName,
+        policy_type:     str(body['policyType']),
+        carrier:         str(body['carrier']),
+        policy_number:   str(body['policyNo']),
+        effective_date:  str(body['effectiveDate']),
+        expiry_date:     str(body['expiryDate']),
+        coverage_amount: num(body['coverageAmount']),
+        notes:           str(body['notes']),
+        status:          'active',
+        last_checked_at: new Date().toISOString(),
+      })
+      .select('id, sub_name, policy_type, carrier, policy_number, effective_date, expiry_date, coverage_amount, notes, status')
+      .single();
+
+    if (insErr || !created) {
+      return NextResponse.json({ error: `Could not save certificate: ${insErr?.message ?? 'unknown'}` }, { status: 500 });
+    }
+    return NextResponse.json({ success: true, cert: created });
+  }
+
   const formData = await req.formData().catch(() => null);
   if (!formData) return NextResponse.json({ error: 'Expected multipart/form-data' }, { status: 400 });
 
