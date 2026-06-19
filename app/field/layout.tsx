@@ -7,7 +7,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { House, Warning, NotePencil, Camera, SquaresFour, Bell } from '@phosphor-icons/react';
+import { House, NotePencil, Camera, SquaresFour, Bell, DotsThreeOutline } from '@phosphor-icons/react';
 import { getQueueCount, getDeadLetterCount, replayQueue, purgeExpired } from '@/lib/field-db';
 import {
   isNative,
@@ -34,11 +34,11 @@ const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 
 const NAV = [
-  { href: '/field',         label: 'Home',   PhIcon: House },
-  { href: '/field/punch',   label: 'Punch',  PhIcon: Warning },
-  { href: '/field/log',     label: 'Log',    PhIcon: NotePencil },
-  { href: '/field/photos',  label: 'Photos', PhIcon: Camera },
-  { href: '/field/more',    label: 'More',   PhIcon: SquaresFour },
+  { href: '/field',        label: 'Home',   PhIcon: House },
+  { href: '/field/tools',  label: 'Tools',  PhIcon: SquaresFour },
+  { href: '/field/photos', label: 'Photos', PhIcon: Camera },
+  { href: '/field/log',    label: 'Log',    PhIcon: NotePencil },
+  { href: '/field/more',   label: 'More',   PhIcon: DotsThreeOutline },
 ];
 
 

@@ -105,7 +105,7 @@ export default function FieldHome() {
           const p = await pr.json();
           const list: Project[] = p.projects || [];
           setProjects(list);
-          const saved = localStorage.getItem('field_active_project');
+          const saved = localStorage.getItem('sag_active_project');
           const found = saved ? list.find((x) => x.id === saved) : null;
           setActive(found || list[0] || null);
         }
@@ -159,7 +159,9 @@ export default function FieldHome() {
 
   const switchProject = (id: string) => {
     const p = projects.find((x) => x.id === id);
-    if (p) { setActive(p); localStorage.setItem('field_active_project', id); setLastLog(null); setOpenRFIs([]); }
+    // Single source of truth shared with the sticky header switcher (sag_active_project).
+    // Reload so the header + all project-scoped data re-read the new project together.
+    if (p) { localStorage.setItem('sag_active_project', id); window.location.reload(); }
   };
 
   const sendSage = async (text: string) => {
