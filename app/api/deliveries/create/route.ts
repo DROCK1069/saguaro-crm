@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     const row = {
       tenant_id:   user.tenantId,
       project_id:  body.projectId || body.project_id,
+      title:       `Delivery from ${body.supplier || 'Unknown Supplier'}`,
       description: body.description || `Delivery from ${body.supplier || 'Unknown'}`,
       location:    body.supplier || 'Unknown Supplier',
       trade:       'delivery',
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
         delivery_time: new Date().toISOString(),
         extra_notes:  body.notes       || '',
       }),
-      photo_urls: body.photoUrls || [],
+      photos: body.photoUrls || [],
     };
 
     const { data, error } = await supabase

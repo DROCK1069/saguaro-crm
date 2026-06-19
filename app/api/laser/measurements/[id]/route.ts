@@ -71,7 +71,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    update.updated_at = new Date().toISOString();
+    // NOTE: laser_measurements has no updated_at column (only created_at),
+    // so we do not stamp updated_at here — writing it would 500 the update.
 
     const { data, error: updateErr } = await supabase
       .from('laser_measurements')

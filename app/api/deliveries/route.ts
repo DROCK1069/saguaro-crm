@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
         qty_received: meta.qty_received || '',
         condition:    meta.condition    || 'Accepted',
         received_by:  meta.received_by  || '',
-        photo_urls:   d.photo_urls      || [],
+        photo_urls:   d.photos          || [],
         created_at:   d.created_at,
       };
     });

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       project_id:    body.project_id    || body.projectId    || null,
       employee_name: (body.employee_name || body.employeeName || user.email || 'Unknown') as string,
       work_date:     body.work_date     || body.workDate     || new Date().toISOString().split('T')[0],
-      hours:         Number(body.hours) || 0,
+      total_hours:   Number(body.hours) || Number(body.total_hours) || 0,
       cost_code:     (body.cost_code     || body.costCode     || 'General Conditions') as string,
       notes:         (body.notes         || '') as string,
     };

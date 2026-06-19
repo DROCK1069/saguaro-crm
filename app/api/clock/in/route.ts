@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
       project_id:    body.projectId || null,
       employee_name: (body.employeeName as string) || user.email || 'Unknown',
       work_date:     new Date().toISOString().split('T')[0],
-      hours:         0,
       cost_code:     'Clock Event',
       notes: JSON.stringify({
         type:           'clock_in',

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const db = createServerClient();
     const { data, error } = await db
       .from('crew_locations')
-      .select('*, profiles(full_name, email, avatar_url)')
+      .select('*')
       .eq('project_id', projectId)
       .eq('tenant_id', user.tenantId)
       .order('updated_at', { ascending: false });
@@ -27,7 +27,34 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch crew locations', details: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ locations: data || [] });
+    const rows = data || [];
+
+    // crew_locations has no FK to profiles, so PostgREST cannot auto-embed.
+    // Fetch the matching profiles separately and attach them under `profiles`
+    // to preserve the response shape consumers expect.
+    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+    let profilesById: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await db
+        .from('profiles')
+        .select('id, full_name, email, avatar_url')
+        .eq('tenant_id', user.tenantId)
+        .in('id', userIds);
+      for (const p of profiles || []) {
+        profilesById[(p as any).id] = {
+          full_name: (p as any).full_name,
+          email: (p as any).email,
+          avatar_url: (p as any).avatar_url,
+        };
+      }
+    }
+
+    const locations = rows.map((r: any) => ({
+      ...r,
+      profiles: profilesById[r.user_id] || null,
+    }));
+
+    return NextResponse.json({ locations });
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error', details: err.message }, { status: 500 });
   }
@@ -48,24 +75,50 @@ export async function POST(req: NextRequest) {
     }
 
     const db = createServerClient();
-    const { data, error } = await db
+
+    const payload = {
+      tenant_id: user.tenantId,
+      project_id,
+      user_id: user.id,
+      latitude,
+      longitude,
+      accuracy_meters: accuracy || null,
+      heading: heading || null,
+      speed: speed || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    // crew_locations has no unique constraint on (tenant_id, project_id, user_id),
+    // so an ON CONFLICT upsert would fail at runtime. Emulate "one row per
+    // user/project/tenant" with an explicit find-then-update-or-insert.
+    const { data: existing, error: lookupError } = await db
       .from('crew_locations')
-      .upsert(
-        {
-          tenant_id: user.tenantId,
-          project_id,
-          user_id: user.id,
-          latitude,
-          longitude,
-          accuracy_meters: accuracy || null,
-          heading: heading || null,
-          speed: speed || null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'tenant_id,project_id,user_id' }
-      )
-      .select()
-      .single();
+      .select('id')
+      .eq('tenant_id', user.tenantId)
+      .eq('project_id', project_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (lookupError) {
+      return NextResponse.json({ error: 'Failed to update location', details: lookupError.message }, { status: 500 });
+    }
+
+    let data: any;
+    let error: any;
+    if (existing) {
+      ({ data, error } = await db
+        .from('crew_locations')
+        .update(payload)
+        .eq('id', (existing as any).id)
+        .select()
+        .single());
+    } else {
+      ({ data, error } = await db
+        .from('crew_locations')
+        .insert(payload)
+        .select()
+        .single());
+    }
 
     if (error) {
       return NextResponse.json({ error: 'Failed to update location', details: error.message }, { status: 500 });

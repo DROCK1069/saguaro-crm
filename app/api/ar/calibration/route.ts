@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       .from('ar_calibrations')
       .select('*')
       .eq('tenant_id', user.tenantId)
-      .order('created_at', { ascending: false });
+      .order('calibrated_at', { ascending: false });
 
     if (floorId) query = query.eq('floor_id', floorId);
     if (projectId) query = query.eq('project_id', projectId);
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       real_distance_mm,
       pixel_distance,
       calibrated_by: user.id,
-      updated_at: new Date().toISOString(),
+      calibrated_at: new Date().toISOString(),
     };
 
     let data;

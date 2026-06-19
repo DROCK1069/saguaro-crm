@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         .eq('tenant_id', user.tenantId)
         .eq('item_type', 'rfi')
         .eq('item_id', item.rfi_id)
-        .eq('resolved', false)
+        .eq('status', 'open')
         .limit(1);
 
       if (!existing || existing.length === 0) {
@@ -92,11 +92,10 @@ export async function POST(req: NextRequest) {
             project_id,
             item_type: 'rfi',
             item_id: item.rfi_id,
-            severity: item.severity,
-            reason: `RFI #${item.rfi_number} open for ${item.hours_open} hours${item.past_due ? ' (past due)' : ''}`,
+            reason: `RFI #${item.rfi_number} (severity: ${item.severity}) open for ${item.hours_open} hours${item.past_due ? ' (past due)' : ''}`,
             assigned_to: item.assigned_to,
             created_by: user.id,
-            resolved: false,
+            status: 'open',
           })
           .select()
           .single();

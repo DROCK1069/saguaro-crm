@@ -8,14 +8,14 @@ export async function GET(req: NextRequest) {
     const db = createServerClient();
     const { data } = await db.from('bid_history').select('*').eq('tenant_id', user.tenantId).order('bid_date', { ascending: false }).limit(50);
     const history = data || [];
-    const wins = history.filter((b: any) => b.won);
+    const wins = history.filter((b: any) => b.outcome === 'won');
     return NextResponse.json({
       history,
       stats: {
         total: history.length,
         wins: wins.length,
         winRate: history.length > 0 ? Math.round(wins.length / history.length * 100) : 0,
-        avgMargin: wins.length > 0 ? wins.reduce((s: number, b: any) => s + (b.margin_percent || 0), 0) / wins.length : 0,
+        avgMargin: wins.length > 0 ? wins.reduce((s: number, b: any) => s + (b.margin_pct || 0), 0) / wins.length : 0,
       },
       source: 'live',
     });

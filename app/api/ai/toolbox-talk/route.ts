@@ -18,12 +18,15 @@ export async function POST(req: NextRequest) {
 
     const db = createServerClient();
 
-    // Fetch active trades from project if not provided
+    // Fetch active trades from project if not provided.
+    // project_users is the per-project member table that carries a `trade` column
+    // (and `company`); project_team has no trade column, so this read targets
+    // project_users to gather the active trades.
     let activeTrades = trades || [];
     if (!trades || trades.length === 0) {
       const { data: teamData } = await db
-        .from('project_team')
-        .select('trade, company_name')
+        .from('project_users')
+        .select('trade, company')
         .eq('project_id', project_id)
         .eq('tenant_id', user.tenantId)
         .not('trade', 'is', null);

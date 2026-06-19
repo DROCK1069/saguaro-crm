@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     if (trade) {
       const { data: articles } = await db
         .from('trade_knowledge')
-        .select('title, summary, content')
+        .select('title, content')
         .eq('tenant_id', user.tenantId)
         .eq('trade', trade)
         .order('views', { ascending: false })
@@ -95,7 +95,12 @@ export async function POST(req: NextRequest) {
 
       if (articles && articles.length > 0) {
         knowledgeContext = '\n\nRelevant knowledge base articles:\n' +
-          articles.map((a: any) => `- ${a.title}: ${a.summary}`).join('\n');
+          articles
+            .map((a: any) => {
+              const blurb = (a.content || '').slice(0, 300);
+              return `- ${a.title}: ${blurb}`;
+            })
+            .join('\n');
       }
     }
 

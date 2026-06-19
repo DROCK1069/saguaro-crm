@@ -17,14 +17,14 @@ export async function GET(req: NextRequest) {
     const db = createServerClient();
     let query = db
       .from('leaderboards')
-      .select('*, profiles(full_name, email, avatar_url)')
+      .select('*')
       .eq('tenant_id', user.tenantId)
       .eq('category', category)
       .order('score', { ascending: false })
       .limit(limit);
 
     if (projectId) query = query.eq('project_id', projectId);
-    if (timeframe !== 'all_time') query = query.eq('timeframe', timeframe);
+    if (timeframe !== 'all_time') query = query.eq('period', timeframe);
 
     const { data, error } = await query;
 
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     const leaderboard = (data || []).map((entry: any, index: number) => ({
       ...entry,
       rank: index + 1,
-      is_current_user: entry.user_id === user.id,
+      is_current_user: entry.entity_id === user.id,
     }));
 
     // Find current user's rank if not in the top results
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         .select('score')
         .eq('tenant_id', user.tenantId)
         .eq('category', category)
-        .eq('user_id', user.id);
+        .eq('entity_id', user.id);
 
       if (projectId) userQuery = userQuery.eq('project_id', projectId);
 

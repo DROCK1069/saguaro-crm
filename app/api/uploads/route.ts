@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
       storage_path: body.storage_path || '',
       category: body.category || 'general',
       uploaded_by: user.id,
-      notes: body.notes || '',
     }).select().single();
     if (error) throw error;
     return NextResponse.json({ success: true, upload: data });
