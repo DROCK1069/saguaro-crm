@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       claimantName: body.claimantName,
       projectName: p?.name || body.projectName,
       projectAddress: p?.address || '',
-      ownerName: p?.owner_entity?.name || '',
+      ownerName: p?.owner_name || p?.owner_entity || '',
       gcName: p?.gc_name || '',
       throughDate: body.throughDate,
       amount: body.amount,

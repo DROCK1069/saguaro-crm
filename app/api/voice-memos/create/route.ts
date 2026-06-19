@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload audio', details: uploadError.message }, { status: 500 });
     }
 
-    const { data: urlData } = db.storage.from('project-files').getPublicUrl(fileName);
+    const audioUrl = await signedUrl(db, 'project-files', fileName);
 
     let transcription: string | null = null;
     if (transcribe && process.env.OPENAI_API_KEY) {
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
         created_by: user.id,
         item_type: itemType ?? 'general',
         item_id: itemId,
-        audio_url: urlData?.publicUrl || fileName,
+        audio_url: audioUrl || fileName,
         duration_seconds: null,
         transcription,
       })

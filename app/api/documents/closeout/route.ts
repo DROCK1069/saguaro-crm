@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const pdfBytes = await generateCloseoutPackage({
       projectName: p?.name || body.projectName,
       projectAddress: p?.address || '',
-      ownerName: p?.owner_entity?.name || '',
+      ownerName: p?.owner_name || p?.owner_entity || '',
       gcName: body.gcName || '',
       completionDate: body.completionDate || new Date().toISOString().split('T')[0],
       contractAmount: p?.contract_amount || 0,
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       checklist,
     });
 
-    const pdfUrl = await saveDocument(body.projectId, 'closeout-package', pdfBytes, body, user?.id || p?.tenant_id);
+    const pdfUrl = await saveDocument(body.projectId, 'closeout-package', pdfBytes, body, p?.tenant_id);
     return NextResponse.json({ pdfUrl, success: true });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

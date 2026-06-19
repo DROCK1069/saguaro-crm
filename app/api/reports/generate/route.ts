@@ -140,9 +140,9 @@ export async function POST(req: NextRequest) {
             l.description ?? '',
             `$${(l.original_budget ?? 0).toLocaleString()}`,
             `$${(l.committed ?? 0).toLocaleString()}`,
-            `$${(l.actual_cost ?? 0).toLocaleString()}`,
-            `$${(l.forecast_cost ?? l.original_budget ?? 0).toLocaleString()}`,
-            `$${((l.original_budget ?? 0) - (l.forecast_cost ?? l.original_budget ?? 0)).toLocaleString()}`,
+            `$${(l.actual ?? 0).toLocaleString()}`,
+            `$${(l.projected ?? l.original_budget ?? 0).toLocaleString()}`,
+            `$${((l.original_budget ?? 0) - (l.projected ?? l.original_budget ?? 0)).toLocaleString()}`,
           ]),
           source: 'live',
         });

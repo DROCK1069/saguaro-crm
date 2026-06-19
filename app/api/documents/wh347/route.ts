@@ -19,11 +19,11 @@ export async function POST(req: NextRequest) {
       employees: body.employees || [],
     });
 
-    const pdfUrl = await saveDocument(body.projectId, 'wh347', pdfBytes, body, user?.id || p?.tenant_id);
+    const pdfUrl = await saveDocument(body.projectId, 'wh347', pdfBytes, body, user?.tenantId || p?.tenant_id);
 
     // Save certified payroll record
     await db.from('certified_payroll').insert({
-      tenant_id: user?.id || p?.tenant_id,
+      tenant_id: user?.tenantId || p?.tenant_id,
       project_id: body.projectId,
       week_ending: body.weekEnding,
       payroll_number: body.payrollNumber || 1,

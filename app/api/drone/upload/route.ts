@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import type { TablesInsert } from '@/lib/database.types';
 import { randomUUID } from 'crypto';
@@ -107,7 +108,6 @@ export async function POST(req: NextRequest) {
 
     // Create drone_jobs record
     const jobId = randomUUID();
-    const jobName = formData.get('job_name') as string || `Drone Flight ${new Date().toLocaleDateString()}`;
 
     const { data: job, error: jobErr } = await supabase
       .from('drone_jobs')
@@ -115,7 +115,6 @@ export async function POST(req: NextRequest) {
         id: jobId,
         project_id: projectId,
         tenant_id: user.tenantId,
-        name: jobName,
         status: 'uploading',
         photo_count: 0,
         uploaded_by: user.id,
@@ -154,9 +153,7 @@ export async function POST(req: NextRequest) {
       // Try to extract GPS from filename
       const gps = extractGpsFromFilename(photo.name);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-files')
-        .getPublicUrl(storagePath);
+      const publicUrl = await signedUrl(supabase, 'project-files', storagePath);
 
       photoRecords.push({
         id: photoId,

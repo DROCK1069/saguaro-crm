@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
 /** GET — List project photos with optional filters */
@@ -20,10 +21,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     // If filtering by entity, get photo_ids from links first
     let linkedPhotoIds: string[] | null = null;
     if (entity_type || entity_id) {
+      // photo_entity_links has no project_id column; project scoping is enforced
+      // by the main photos query (which is filtered by project_id) intersecting these ids.
       let linkQuery = supabase
         .from('photo_entity_links')
-        .select('photo_id')
-        .eq('project_id', params.projectId);
+        .select('photo_id');
       if (entity_type) linkQuery = linkQuery.eq('entity_type', entity_type);
       if (entity_id) linkQuery = linkQuery.eq('entity_id', entity_id);
       const { data: linkData } = await linkQuery;
@@ -36,10 +38,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     // If filtering by tag, get photo_ids from tags
     let taggedPhotoIds: string[] | null = null;
     if (tag) {
+      // photo_tags has no project_id column; project scoping comes from the main
+      // photos query intersecting these photo ids.
       const { data: tagData } = await supabase
         .from('photo_tags')
         .select('photo_id')
-        .eq('project_id', params.projectId)
         .eq('tag', tag);
       taggedPhotoIds = (tagData || []).map((t: { photo_id: string }) => t.photo_id);
       if (taggedPhotoIds.length === 0) {
@@ -93,10 +96,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     // For 'most_linked' sort, fetch link counts and re-sort
     if (sort === 'most_linked' && photos.length > 0) {
       const photoIds = photos.map((p: { id: string }) => String(p.id));
+      // photo_entity_links has no project_id column; restricting to this project's
+      // photo ids (from the project-scoped photos query above) is the project scope.
       const { data: linkCounts } = await supabase
         .from('photo_entity_links')
         .select('photo_id')
-        .eq('project_id', params.projectId)
         .in('photo_id', photoIds);
       const countMap: Record<string, number> = {};
       (linkCounts || []).forEach((l: { photo_id: string }) => {
@@ -149,13 +153,10 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       console.error('[photos upload] storage error:', uploadError.message);
       // Fallback: store record without storage URL
     } else {
-      const { data: urlData } = supabase.storage.from('project-files').getPublicUrl(storagePath);
-      url = urlData?.publicUrl || '';
-      // Generate thumbnail URL via Supabase transform
-      const { data: thumbData } = supabase.storage.from('project-files').getPublicUrl(storagePath, {
-        transform: { width: 300, height: 300, resize: 'cover' },
-      });
-      thumbnailUrl = thumbData?.publicUrl || url;
+      url = await signedUrl(supabase, 'project-files', storagePath);
+      // Private bucket: reuse the signed full-size URL for the thumbnail (transform
+      // params aren't applied to signed URLs here; full-size is correct and viewable).
+      thumbnailUrl = url;
     }
 
     // Insert photo record

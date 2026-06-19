@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { getUser } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -24,21 +25,19 @@ export async function GET(req: NextRequest) {
 
     if (error || !files) return NextResponse.json({ photos: [] });
 
-    const photos = files
+    const photos = await Promise.all(files
       .filter((f) => !f.name.startsWith('.'))
-      .map((f) => {
-        const { data: urlData } = supabase.storage
-          .from('project-files')
-          .getPublicUrl(`projects/${projectId}/photos/${f.name}`);
+      .map(async (f) => {
+        const url = await signedUrl(supabase, 'project-files', `projects/${projectId}/photos/${f.name}`);
         return {
           id: f.id || f.name,
-          url: urlData?.publicUrl || null,
+          url: url || null,
           filename: f.name,
           created_at: f.created_at || new Date().toISOString(),
           category: 'Progress',
           caption: '',
         };
-      });
+      }));
 
     return NextResponse.json({ photos });
   } catch {

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/takeoff-projects/[id]/export/pdf
  *
  * Exports a takeoff project's line-item estimate as a branded PDF.
- * Reads takeoff_projects (by id) + takeoff_line_items (by takeoff_project_id),
+ * Reads takeoff_projects (by id) + takeoff_line_items (by takeoff_id),
  * tenant-scoped, matching the sibling routes in this folder. Reuses the shared
  * PDF builder in lib/report-export.ts. Property access is defensive so it
  * tolerates both line-item column spellings present in the codebase
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       db
         .from('takeoff_line_items')
         .select('*')
-        .eq('takeoff_project_id', id)
+        .eq('takeoff_id', id)
         .eq('tenant_id', user.tenantId)
         .order('sort_order', { ascending: true }),
     ]);

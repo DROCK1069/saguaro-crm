@@ -5,6 +5,8 @@
  */
 import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
 import { createServerClient } from './supabase-server';
+import { signedUrl } from './storage-url';
+import type { Json } from './database.types';
 
 export { PageSizes, StandardFonts, rgb, PDFDocument };
 
@@ -101,8 +103,8 @@ export async function getProjectContext(projectId: string) {
       lastAppNumber,
       contractSumToDate,
       totalCompletedToDate,
-      owner: p?.owner_entity || { name: 'Owner', address: '' },
-      architect: p?.architect_entity || { name: 'Architect', address: '' },
+      owner: { name: p?.owner_name || p?.owner_entity || 'Owner', address: p?.owner_address || '' },
+      architect: { name: p?.architect_name || p?.architect || p?.architect_entity || 'Architect', address: '' },
     };
   } catch {
     return {
@@ -972,17 +974,17 @@ export async function saveDocument(
       .from('documents')
       .upload(fileName, pdfBytes, { contentType: 'application/pdf', upsert: true });
 
-    const { data: urlData } = getSupabaseAdmin().storage.from('documents').getPublicUrl(fileName);
-    const pdfUrl = urlData?.publicUrl || '';
+    // 'documents' is a PRIVATE bucket — sign the URL so it actually resolves.
+    const pdfUrl = await signedUrl(getSupabaseAdmin(), 'documents', fileName);
 
+    // Real generated_documents columns: data_snapshot (jsonb). No storage_path/file_size/snapshot.
+    // tenant_id is nullable — do NOT fall back to projectId (that mis-tags the tenant).
     await getSupabaseAdmin().from('generated_documents').insert({
-      tenant_id: tenantId || projectId,
+      tenant_id: tenantId || null,
       project_id: projectId,
       doc_type: docType,
       pdf_url: pdfUrl,
-      storage_path: fileName,
-      file_size: pdfBytes.length,
-      snapshot,
+      data_snapshot: snapshot as unknown as Json,
     });
 
     return pdfUrl;

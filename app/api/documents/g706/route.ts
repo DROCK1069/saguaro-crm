@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const pdfBytes = await generateG706({
       projectName: p?.name || '',
       projectAddress: p?.address || '',
-      ownerName: p?.owner_entity?.name || '',
+      ownerName: p?.owner_name || p?.owner_entity || '',
       gcName: body.gcName || '',
       gcAddress: p?.address || '',
       finalAmount: body.finalAmount || p?.contract_amount || 0,

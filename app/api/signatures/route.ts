@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
 // GET - List signature requests for a project
@@ -71,7 +72,8 @@ export async function POST(req: NextRequest) {
         action: 'signature_requested',
         entity_type: 'document_signature_request',
         entity_id: sigReq.id,
-        details: { recipientEmail, documentType },
+        // activity_log stores structured payload in `metadata` (jsonb); there is no `details` column
+        metadata: { recipientEmail, documentType },
       });
     } catch { /* non-fatal */ }
 
@@ -111,7 +113,7 @@ export async function PATCH(req: NextRequest) {
       upsert: true,
     });
 
-    const { data: { publicUrl: sigUrl } } = supabase.storage.from('blueprints').getPublicUrl(sigPath);
+    const sigUrl = await signedUrl(supabase, 'blueprints', sigPath);
 
     // Record the signature
     const { data: sig, error: sigErr } = await supabase
