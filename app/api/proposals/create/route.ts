@@ -14,13 +14,21 @@ export async function POST(req: NextRequest) {
     // alongside camelCase projectId. Only persist real proposals columns and
     // scope the row to the tenant. Client-generated `id`/`version`/`created_date`
     // are not columns and must be dropped (the DB assigns id/created_at).
+    // `title` is NOT NULL with no DB default — always supply a value. Use the
+    // provided title, else fall back to the proposal number / client name, else
+    // a generic label so the insert never violates the constraint.
+    const title =
+      (typeof body.title === 'string' && body.title.trim()) ? body.title :
+      (typeof body.proposal_number === 'string' && body.proposal_number.trim()) ? `Proposal ${body.proposal_number}` :
+      (typeof body.client_name === 'string' && body.client_name.trim()) ? `Proposal for ${body.client_name}` :
+      'Untitled Proposal';
     const insert: Record<string, unknown> = {
       tenant_id: user.tenantId,
       project_id: body.project_id ?? body.projectId ?? null,
       created_by: user.id,
       status: body.status ?? 'Draft',
+      title,
     };
-    if (body.title !== undefined) insert.title = body.title;
     if (body.description !== undefined) insert.description = body.description;
     if (body.amount !== undefined) insert.amount = body.amount;
     if (body.total_amount !== undefined) insert.total_amount = body.total_amount;

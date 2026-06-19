@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient } from '@/lib/supabase-server';
 import { getPdfPageCount, generateThumbnail } from '@/lib/blueprint-processor';
 
@@ -95,9 +96,7 @@ export async function POST(
     const pageCount = await pageCountPromise;
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('blueprints')
-      .getPublicUrl(storagePath);
+    const publicUrl = await signedUrl(supabase, 'blueprints', storagePath);
 
     // Thumbnail — truly fire-and-forget, never blocks the upload response
     generateThumbnail(buffer, file.type).then(async (thumb) => {
@@ -107,8 +106,7 @@ export async function POST(
         .from('blueprints')
         .upload(thumbPath, thumb, { contentType: 'image/jpeg', upsert: true });
       if (!thumbErr) {
-        const { data: { publicUrl: thumbUrl } } = supabase.storage
-          .from('blueprints').getPublicUrl(thumbPath);
+        const thumbUrl = await signedUrl(supabase, 'blueprints', thumbPath);
         await supabase.from('takeoffs')
           .update({ thumbnail_url: thumbUrl })
           .eq('id', takeoffId);

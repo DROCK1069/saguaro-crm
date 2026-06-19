@@ -2107,9 +2107,9 @@ export async function POST(req: NextRequest) {
         .order('updated_at', { ascending: false })
         .limit(20),
       db.from('bids')
-        .select('id, project_name, bid_amount, status, due_date, ai_score')
+        .select('id, bidder_name, bidder_company, trade, amount, status, score, created_at')
         .eq('tenant_id', user.tenantId)
-        .order('due_date', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(10),
       db.from('contacts')
         .select('id, name, company, role, email, phone')
@@ -2132,8 +2132,8 @@ export async function POST(req: NextRequest) {
         .order('due_date', { ascending: true })
         .limit(10),
       db.from('profiles')
-        .select('full_name, company_name')
-        .eq('user_id', user.id)
+        .select('full_name, company')
+        .eq('id', user.id)
         .maybeSingle(),
     ]);
 
@@ -2160,7 +2160,7 @@ export async function POST(req: NextRequest) {
       user: {
         name: (userProfile as any)?.full_name || user.email.split('@')[0],
         email: user.email,
-        company: (userProfile as any)?.company_name,
+        company: (userProfile as any)?.company,
       },
       currentProject: currentProjectData ? {
         id: currentProjectData.id,

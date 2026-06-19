@@ -50,12 +50,13 @@ export async function GET(req: NextRequest) {
   const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
   const subIds = subs.map((s: any) => s.id);
 
-  // Fetch all insurance certificates for these subs
+  // Fetch all insurance certificates for these subs.
+  // insurance_certificates links to subcontractors via sub_id (FK), not subcontractor_id.
   const { data: certs } = await db
     .from('insurance_certificates')
-    .select('subcontractor_id, policy_type, expiry_date, status')
+    .select('sub_id, policy_type, expiry_date, status')
     .eq('tenant_id', tenantId)
-    .in('subcontractor_id', subIds);
+    .in('sub_id', subIds);
 
   // Fetch all lien waivers for these subs
   const { data: waivers } = await db
@@ -64,19 +65,16 @@ export async function GET(req: NextRequest) {
     .eq('tenant_id', tenantId)
     .in('subcontractor_id', subIds);
 
-  // Fetch W9 requests
-  const { data: w9s } = await db
-    .from('w9_requests')
-    .select('sub_id, status, submitted_at')
-    .eq('tenant_id', tenantId)
-    .in('sub_id', subIds);
+  // NOTE: w9_requests cannot be joined to subcontractors here — the table has no
+  // subcontractor id column (its only FK is project_id; vendors are keyed by
+  // vendor_name/vendor_email/token). W-9 status is therefore derived from the
+  // subcontractors.w9_on_file boolean below.
 
   const certMap = new Map<string, any[]>();
   const waiverMap = new Map<string, any[]>();
-  const w9Map = new Map<string, any>();
 
   for (const cert of (certs || [])) {
-    const id = (cert as any).subcontractor_id;
+    const id = (cert as any).sub_id;
     if (!certMap.has(id)) certMap.set(id, []);
     certMap.get(id)!.push(cert);
   }
@@ -85,20 +83,14 @@ export async function GET(req: NextRequest) {
     if (!waiverMap.has(id)) waiverMap.set(id, []);
     waiverMap.get(id)!.push(w);
   }
-  for (const w9 of (w9s || [])) {
-    const id = (w9 as any).sub_id;
-    if (!w9Map.has(id) || (w9 as any).submitted_at) w9Map.set(id, w9);
-  }
 
   const scoredSubs = (subs as any[]).map((sub) => {
     const subCerts = certMap.get(sub.id) || [];
     const subWaivers = waiverMap.get(sub.id) || [];
-    const w9 = w9Map.get(sub.id);
 
-    // W-9 status (25 points). subcontractors.w9_on_file is a boolean; fall back to the
-    // w9_requests status when the flag isn't set.
-    const w9Status = sub.w9_on_file ? 'submitted' : (w9?.status || 'not_requested');
-    const w9Score = w9Status === 'submitted' || w9Status === 'approved' ? 25 : w9Status === 'pending' ? 10 : 0;
+    // W-9 status (25 points). Driven by the subcontractors.w9_on_file boolean.
+    const w9Status = sub.w9_on_file ? 'submitted' : 'not_requested';
+    const w9Score = w9Status === 'submitted' ? 25 : 0;
 
     // Insurance status (40 points) — check for active GL and WC certs
     const activeCerts = subCerts.filter((c: any) => c.expiry_date && c.expiry_date >= today);

@@ -21,12 +21,14 @@ import type { Database } from '@/lib/database.types';
 // Union of valid public table names from the live DB schema.
 type PublicTableName = keyof Database['public']['Tables'];
 
-// Tables that have a direct project_id column
+// Tables that have a direct project_id column.
+// NOTE: subcontractors has NO project_id column in the live schema (it is a
+// tenant-level directory), so it must NOT be filtered by project_id.
 const TABLES_WITH_PROJECT_ID = new Set([
   'pay_applications', 'rfis', 'change_orders', 'lien_waivers',
-  'subcontractors', 'insurance_certificates', 'budget_lines',
+  'insurance_certificates', 'budget_lines',
   'daily_logs', 'punch_list', 'takeoffs', 'timesheets',
-  'bid_packages', 'incidents', 'schedule_phases',
+  'bid_packages', 'schedule_phases',
 ]);
 
 // Tables that have a direct tenant_id column
@@ -34,7 +36,7 @@ const TABLES_WITH_TENANT_ID = new Set([
   'projects', 'pay_applications', 'rfis', 'change_orders', 'lien_waivers',
   'subcontractors', 'insurance_certificates', 'budget_lines',
   'daily_logs', 'punch_list', 'takeoffs', 'timesheets',
-  'bid_packages', 'incidents', 'schedule_phases', 'notifications',
+  'bid_packages', 'schedule_phases', 'notifications',
 ]);
 
 export const runtime = 'nodejs';
@@ -88,20 +90,19 @@ NOTE: All tables are already filtered by tenant_id and project_id server-side â€
 
 Available Supabase tables and their queryable columns:
 - projects: id, name, status('active'|'completed'|'bidding'), contract_amount, address, start_date, end_date, created_at
-- pay_applications: id, project_id, app_number, app_number, period_to, status('draft'|'submitted'|'approved'|'paid'), contract_sum, total_completed_stored, current_payment_due, total_retainage, created_at
-- rfis: id, project_id, rfi_number, subject, title, status('open'|'answered'|'closed'), due_date, response_due_date, cost_impact, schedule_impact, created_at
+- pay_applications: id, project_id, app_number, period_to, status('draft'|'submitted'|'approved'|'paid'), contract_sum, total_completed_stored, current_payment_due, total_retainage, created_at
+- rfis: id, project_id, rfi_number, subject, status('open'|'answered'|'closed'), due_date, response_due_date, cost_impact, schedule_impact_days, created_at
 - change_orders: id, project_id, co_number, title, status('pending'|'approved'|'rejected'), cost_impact, schedule_impact, created_at
 - lien_waivers: id, project_id, subcontractor_id, waiver_type, amount, status('pending'|'signed'|'received'), through_date, signed_at, created_at
-- subcontractors: id, project_id, name, trade, contract_amount, status, created_at
-- insurance_certificates: id, project_id, subcontractor_id, policy_type, carrier, policy_number, expiry_date, coverage_amount, status('active'|'expired'), created_at
-- budget_lines: id, project_id, cost_code, description, original_budget, committed_cost, actual_cost, forecast_cost, created_at
+- subcontractors: id, company_name, trade, total_awarded, status, created_at (tenant-level directory; NOT linked to a single project)
+- insurance_certificates: id, project_id, sub_id, sub_name, policy_type, carrier, policy_number, expiry_date, coverage_amount, status('active'|'expired'), created_at
+- budget_lines: id, project_id, cost_code, description, original_budget, committed, actual, projected, variance, percent_complete, created_at
 - daily_logs: id, project_id, log_date, weather, crew_count, work_performed, delays, created_at
 - punch_list: id, project_id, location, description, trade, status('open'|'in_progress'|'complete'), priority('low'|'medium'|'high'), due_date, created_at
 - takeoffs: id, project_id, name, status, total_cost, material_cost, labor_cost, building_area, analyzed_at, created_at
 - timesheets: id, project_id, employee_name, week_ending, hours_regular, hours_overtime, status, created_at
 - bid_packages: id, project_id, name, trade, status('open'|'awarded'|'closed'), due_date, requires_bond, created_at
-- incidents: id, project_id, incident_type, severity, injury_type, osha_reportable, incident_date, created_at
-- schedule_phases: id, project_id, name, planned_start, planned_end, actual_start, actual_end, status, created_at
+- schedule_phases: id, project_id, name, start_date, end_date, percent_complete, status, created_at
 
 Return ONLY raw JSON like this:
 {

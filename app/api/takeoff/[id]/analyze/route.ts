@@ -204,6 +204,12 @@ export async function GET(
           return done();
         }
 
+        // Service-role client bypasses RLS and the auto_set_tenant_id trigger
+        // cannot resolve tenant (auth.uid() is null), so child rows would be
+        // written with tenant_id = NULL. Carry the parent takeoff's tenant_id
+        // explicitly onto every takeoff_materials row we insert.
+        const tenantId = takeoff.tenant_id;
+
         if (!takeoff.storage_path && !takeoff.file_url) {
           await supabase.from('takeoffs').update({ status: 'failed' }).eq('id', takeoffId);
           send('error', { message: 'No blueprint uploaded. Please upload a file first.' });
@@ -354,6 +360,7 @@ export async function GET(
               : rawCode || '00 00 00';
             return {
               takeoff_id:  takeoffId,
+              tenant_id:   tenantId,
               csi_code:    csiCode,
               csi_name:    String(item.nm || '').trim() || 'General',
               description: String(item.d  || '').trim() || 'See specifications',
@@ -377,6 +384,7 @@ export async function GET(
           const salvaged = allRawItems
             .map((item: CompactItem, idx: number) => ({
               takeoff_id:  takeoffId,
+              tenant_id:   tenantId,
               csi_code:    String(item.cd || '00 00 00').trim(),
               csi_name:    String(item.nm || '').trim() || 'General',
               description: String(item.d  || '').trim() || 'See specifications',

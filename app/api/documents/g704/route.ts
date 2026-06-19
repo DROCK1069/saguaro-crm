@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     const pdfBytes = await generateG704({
       projectName: p?.name || body.projectName,
       projectAddress: p?.address || '',
-      ownerName: p?.owner_entity?.name || body.ownerName || '',
-      architectName: p?.architect_entity?.name || body.architectName || '',
+      ownerName: p?.owner_name || p?.owner_entity || body.ownerName || '',
+      architectName: p?.architect_name || p?.architect || p?.architect_entity || body.architectName || '',
       gcName: body.gcName || 'General Contractor',
       contractDate: p?.start_date || '',
       completionDate: body.completionDate || new Date().toISOString().split('T')[0],

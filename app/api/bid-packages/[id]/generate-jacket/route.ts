@@ -34,8 +34,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const pdfBytes = await generateBidJacket({
       projectName: project?.name || p.name,
       projectAddress: project?.address || '',
-      ownerName: project?.owner_entity?.name || '',
-      ownerAddress: project?.owner_entity?.address || '',
+      ownerName: project?.owner_entity || project?.owner_name || '',
+      ownerAddress: project?.owner_address || '',
       gcName: project?.gc_name || 'General Contractor',
       gcAddress: project?.address || '',
       gcLicense: project?.gc_license,

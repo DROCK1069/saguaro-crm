@@ -264,10 +264,11 @@ export async function GET(
               }
 
               // Update individual photo with analysis
+              // drone_photos.ai_analysis is a text column — store JSON as a string.
               await supabase
                 .from('drone_photos')
                 .update({
-                  ai_analysis: parsed,
+                  ai_analysis: JSON.stringify(parsed),
                 })
                 .eq('id', photo.id)
                 .eq('tenant_id', user.tenantId);
@@ -308,8 +309,10 @@ export async function GET(
           .update({
             status: 'complete',
             ai_analysis: aggregatedAnalysis,
-            areas_detected: allAreas.length,
-            safety_concerns: allSafetyConcerns.length,
+            // areas_detected / safety_concerns are jsonb array columns (default []).
+            // Store the detected arrays; the SSE 'result' event still carries the counts.
+            areas_detected: allAreas,
+            safety_concerns: allSafetyConcerns,
             progress_summary: progressSummary,
             analyzed_at: new Date().toISOString(),
           })

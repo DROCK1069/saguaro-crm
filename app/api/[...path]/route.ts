@@ -45,7 +45,7 @@ async function getUserFromRequest(req: NextRequest): Promise<{ id: string; tenan
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('tenant_id')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     return {
@@ -224,11 +224,11 @@ export async function GET(
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!supabaseUrl || !supabaseKey) throw new Error('Supabase not configured');
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data: payApps } = await supabase.from('pay_applications').select('id, application_number, status, project_id, projects(name)').eq('status', 'submitted').limit(5);
+      const { data: payApps } = await supabase.from('pay_applications').select('id, app_number, status, project_id, projects(name)').eq('status', 'submitted').limit(5);
       if (payApps && payApps.length > 0) {
         for (const pa of payApps) {
           const projectName = (pa.projects as { name?: string } | null)?.name ?? 'Unknown Project';
-          items.push({ type: 'pay-app', title: `Pay App #${pa.application_number} Pending`, subtitle: `${projectName} — awaiting approval`, urgency: 'high', actionUrl: `/app/projects/${pa.project_id}/pay-apps`, actionLabel: 'Review' });
+          items.push({ type: 'pay-app', title: `Pay App #${pa.app_number} Pending`, subtitle: `${projectName} — awaiting approval`, urgency: 'high', actionUrl: `/app/projects/${pa.project_id}/pay-apps`, actionLabel: 'Review' });
         }
       }
       const thirtyDaysOut = new Date(); thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
@@ -240,12 +240,13 @@ export async function GET(
           items.push({ type: 'insurance', title: 'COI Expiring Soon', subtitle: `${coi.sub_name} — expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`, urgency: daysLeft <= 7 ? 'high' : 'medium', actionUrl: `/app/projects/${coi.project_id}/insurance`, actionLabel: 'Request Renewal' });
         }
       }
-      const { data: notifications } = await supabase.from('notifications').select('id, type, title, message, entity_id, urgency').eq('read', false).order('created_at', { ascending: false }).limit(5);
+      const { data: notifications } = await supabase.from('notifications').select('id, type, title, message, project_id, priority').eq('read', false).order('created_at', { ascending: false }).limit(5);
       if (notifications && notifications.length > 0) {
         for (const n of notifications) {
           const nType = n.type as ActionItem['type'];
           if (!['pay-app', 'insurance', 'rfi', 'compliance'].includes(nType)) continue;
-          items.push({ type: nType, title: n.title ?? 'Notification', subtitle: n.message ?? '', urgency: (n.urgency as ActionItem['urgency']) ?? 'medium', actionUrl: `/app/projects/${n.entity_id ?? 'unknown'}`, actionLabel: 'View' });
+          const nUrgency: ActionItem['urgency'] = n.priority === 'high' || n.priority === 'urgent' ? 'high' : n.priority === 'low' ? 'low' : 'medium';
+          items.push({ type: nType, title: n.title ?? 'Notification', subtitle: n.message ?? '', urgency: nUrgency, actionUrl: `/app/projects/${n.project_id ?? 'unknown'}`, actionLabel: 'View' });
         }
       }
       items.sort((a, b) => (URGENCY_ORDER[a.urgency] ?? 2) - (URGENCY_ORDER[b.urgency] ?? 2));
@@ -338,7 +339,7 @@ export async function GET(
     try {
       const { data, error } = await supabaseAdmin
         .from('rfis')
-        .select('id, number, title, status, priority, assigned_to, response_due_date, cost_impact_amount, schedule_impact_days, created_at')
+        .select('id, number:rfi_number, title:subject, status, priority, assigned_to, response_due_date, cost_impact_amount:cost_impact, schedule_impact_days, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -384,7 +385,7 @@ export async function GET(
     const projectId = searchParams.get('projectId') || '';
     const tenantId = searchParams.get('tenantId') || '';
     try {
-      let q = supabaseAdmin.from('autopilot_alerts').select('*').eq('dismissed', false).order('created_at', { ascending: false }).limit(50);
+      let q = supabaseAdmin.from('autopilot_alerts').select('*').is('dismissed_at', null).order('created_at', { ascending: false }).limit(50);
       if (projectId) q = q.eq('project_id', projectId);
       if (tenantId) q = q.eq('tenant_id', tenantId);
       const { data, error } = await q;
@@ -403,10 +404,11 @@ export async function GET(
     const projectId = searchParams.get('projectId');
     if (!projectId) return NextResponse.json({ error: 'projectId query param required' }, { status: 400 });
     try {
-      const { data, error } = await supabaseAdmin.from('takeoffs').select('id, project_id, status, materials').eq('project_id', projectId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      // takeoffs has no `materials` column; the extracted material/line-item list lives in `extracted_line_items` (jsonb).
+      const { data, error } = await supabaseAdmin.from('takeoffs').select('id, project_id, status, extracted_line_items').eq('project_id', projectId).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
       if (!data) return NextResponse.json({ takeoff: null });
-      return NextResponse.json({ takeoff: { id: data.id, projectId: data.project_id, status: data.status, materials: data.materials ?? [] } });
+      return NextResponse.json({ takeoff: { id: data.id, projectId: data.project_id, status: data.status, materials: data.extracted_line_items ?? [] } });
     } catch {
       return NextResponse.json({ takeoff: null });
     }
@@ -425,7 +427,7 @@ export async function GET(
     try {
       const { data, error } = await supabaseAdmin
         .from('bid_packages')
-        .select('id, code, name, trade, status, bid_due_date, awarded_to, awarded_amount, created_at')
+        .select('id, code:package_number, name, trade, status, bid_due_date, awarded_to, awarded_amount, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -441,9 +443,9 @@ export async function GET(
   if (seg0 === 'bid-packages' && seg1 && !seg2) {
     const id = seg1;
     try {
-      const { data, error } = await supabaseAdmin.from('bid_packages').select(`id, code, name, trade, scope, status, bid_due_date, project_id, awarded_to, awarded_amount, created_at, sov_items(*), bid_package_invites(id, sub_id, status, bid_amount, invited_at, responded_at, subs(id, company_name, contact_name, email))`).eq('id', id).single();
+      const { data, error } = await supabaseAdmin.from('bid_packages').select(`id, code:package_number, name, trade, scope:scope_of_work, status, bid_due_date, project_id, awarded_to, awarded_amount, created_at, sov_items:bid_package_items(*), bid_package_invites(id, sub_id, status, invited_at, responded_at, company_name, contact_name, sub_email)`).eq('id', id).single();
       if (error || !data) return NextResponse.json({ error: 'Bid package not found' }, { status: 404 });
-      const invitedSubs: InvitedSub[] = (data.bid_package_invites || []).map((inv: any) => ({ id: inv.id, company_name: inv.subs?.company_name || 'Unknown', contact_name: inv.subs?.contact_name || '', email: inv.subs?.email || '', status: inv.status, bid_amount: inv.bid_amount, invited_at: inv.invited_at, responded_at: inv.responded_at }));
+      const invitedSubs: InvitedSub[] = (data.bid_package_invites || []).map((inv: any) => ({ id: inv.id, company_name: inv.company_name || 'Unknown', contact_name: inv.contact_name || '', email: inv.sub_email || '', status: inv.status, bid_amount: null, invited_at: inv.invited_at, responded_at: inv.responded_at }));
       return NextResponse.json({ bidPackage: { ...data, invited_subs: invitedSubs, sov_items: data.sov_items || [] } });
     } catch (err: unknown) {
       const msg = 'Internal server error';
@@ -493,7 +495,7 @@ export async function POST(
       return NextResponse.json({ error: 'Internal server error' }, { status: 400, headers: corsHeaders() });
     }
     const tenantId = authData.user.id;
-    await supabaseAdmin.from('tenants').insert({ id: tenantId, company_name: company, phone: phone || null, role, state: state || null, company_size: size || null, plan: 'trial', trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), created_at: new Date().toISOString() }).then(() => null);
+    await supabaseAdmin.from('tenants').insert({ id: tenantId, name: company, company_name: company, owner_email: email, company_size: size || null, plan: 'trial', trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), created_at: new Date().toISOString() }).then(() => null);
     const { data: sessionData, error: sessionErr } = await supabaseAdmin.auth.signInWithPassword({ email, password });
     if (sessionErr || !sessionData.session) return NextResponse.json({ success: true, message: 'Account created! Please log in.', redirectUrl: `${APP_URL}/login` }, { headers: corsHeaders() });
     return NextResponse.json({ success: true, message: 'Account created successfully!', accessToken: sessionData.session.access_token, refreshToken: sessionData.session.refresh_token, expiresAt: sessionData.session.expires_at, userId: authData.user.id, redirectUrl: `${APP_URL}/onboarding/step-1` }, { headers: corsHeaders() });
@@ -528,9 +530,9 @@ export async function POST(
     try { const body = await req.json(); trade = body.trade || ''; projectId = body.projectId || ''; } catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
     try {
       const tradeKeyword = trade.replace(/^Division \d+ — /, '').toLowerCase();
-      const { data, error } = await supabaseAdmin.from('sub_performance').select('id, name, trade, email, win_rate, last_project, last_project_date, rating').ilike('trade', `%${tradeKeyword}%`).order('win_rate', { ascending: false }).limit(10);
+      const { data, error } = await supabaseAdmin.from('sub_performance').select('id, sub_name, trade, email, win_rate, last_project_date, avg_rating').ilike('trade', `%${tradeKeyword}%`).order('win_rate', { ascending: false }).limit(10);
       if (error) throw error;
-      const subs = (data || []).map((row: { id: string; name: string; trade: string; email: string; win_rate: number; last_project: string; last_project_date: string; rating: number }) => ({ id: row.id, name: row.name, trade: row.trade, email: row.email, winRate: row.win_rate, lastProject: row.last_project, lastProjectDate: row.last_project_date, rating: row.rating }));
+      const subs = (data || []).map((row: { id: string; sub_name: string; trade: string; email: string; win_rate: number; last_project_date: string; avg_rating: number }) => ({ id: row.id, name: row.sub_name, trade: row.trade, email: row.email, winRate: row.win_rate, lastProject: null, lastProjectDate: row.last_project_date, rating: row.avg_rating }));
       return NextResponse.json({ subs });
     } catch (err: unknown) {
       const msg = 'Internal server error';
@@ -561,9 +563,9 @@ export async function POST(
         suggestions = perfData.map((sub: Record<string, unknown>) => ({ id: sub.id as string, name: sub.sub_name as string, trade: sub.trade as string, winRate: sub.win_rate as number | null, lastProjectDate: sub.last_project_date as string | null, email: sub.email as string | null, phone: sub.phone as string | null, suggestedReason: buildSuggestedReason(sub) }));
         source = 'sub_performance';
       } else {
-        const { data: subData, error: subError } = await supabase.from('subcontractors').select('id, name, trade, email, phone, rating').eq('tenant_id', tenantId).ilike('trade', `%${tradeRequired}%`).limit(5);
+        const { data: subData, error: subError } = await supabase.from('subcontractors').select('id, company_name, trade, email, phone, rating').eq('tenant_id', tenantId).ilike('trade', `%${tradeRequired}%`).limit(5);
         if (!subError && subData?.length) {
-          suggestions = subData.map((sub: Record<string, unknown>) => ({ id: sub.id as string, name: sub.name as string, trade: sub.trade as string, winRate: null, lastProjectDate: null, email: sub.email as string | null, phone: sub.phone as string | null, suggestedReason: 'Matching sub in your database' }));
+          suggestions = subData.map((sub: Record<string, unknown>) => ({ id: sub.id as string, name: sub.company_name as string, trade: sub.trade as string, winRate: null, lastProjectDate: null, email: sub.email as string | null, phone: sub.phone as string | null, suggestedReason: 'Matching sub in your database' }));
           source = 'subcontractors';
         }
       }
@@ -615,8 +617,10 @@ export async function POST(
     if (!projectId || !title) return NextResponse.json({ error: 'projectId and title required' }, { status: 400 });
     try {
       const { count } = await supabaseAdmin.from('change_orders').select('*', { count: 'exact', head: true }).eq('project_id', projectId);
-      const coNumber = `CO-${String((count || 0) + 1).padStart(3, '0')}`;
-      const { data, error } = await supabaseAdmin.from('change_orders').insert({ project_id: projectId, co_number: coNumber, title, description: description || '', status: 'pending', cost_impact: Number(costImpact) || 0, schedule_impact_days: Number(scheduleImpactDays) || 0, reason: reason || null, initiated_by: initiatedBy || null }).select().single();
+      // change_orders.co_number is an integer column (NOT NULL) — store the sequence number, not a formatted "CO-001" string.
+      const coNumber = (count || 0) + 1;
+      const costImpactValue = Number(costImpact) || 0;
+      const { data, error } = await supabaseAdmin.from('change_orders').insert({ project_id: projectId, co_number: coNumber, title, description: description || '', status: 'pending', amount: costImpactValue, cost_impact: String(costImpactValue), schedule_impact_days: Number(scheduleImpactDays) || 0, reason: reason || null, initiated_by: initiatedBy || null }).select().single();
       if (error) throw error;
       return NextResponse.json({ success: true, changeOrder: data });
     } catch (err: unknown) {
@@ -694,7 +698,7 @@ export async function POST(
     const alertId = String(body.alertId ?? '');
     if (!alertId) return NextResponse.json({ error: 'alertId required' }, { status: 400 });
     try {
-      await supabaseAdmin.from('autopilot_alerts').update({ dismissed: true, dismissed_at: new Date().toISOString() }).eq('id', alertId);
+      await supabaseAdmin.from('autopilot_alerts').update({ status: 'dismissed', dismissed_at: new Date().toISOString() }).eq('id', alertId);
     } catch (err) { console.error('[api/autopilot/dismiss] failed:', err); }
     return NextResponse.json({ success: true });
   }
@@ -730,7 +734,7 @@ export async function POST(
     };
     const meta = reportMeta[reportType] || { title: reportType, description: '' };
     try {
-      const { error: insertErr } = await supabaseAdmin.from('report_runs').insert({ tenant_id: tenantId || null, project_id: projectId || null, report_type: reportType, format, status: 'completed' });
+      const { error: insertErr } = await supabaseAdmin.from('report_runs').insert({ tenant_id: tenantId || null, project_id: projectId || null, report_type: reportType, status: 'completed' });
       if (insertErr) console.error('[api/reports/generate] report_runs insert failed:', insertErr);
     } catch (err) { console.error('[api/reports/generate] unexpected error:', err); }
     return NextResponse.json({ success: true, reportType, format, title: meta.title, message: `${meta.title} generated successfully.`, downloadUrl: null });

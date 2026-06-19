@@ -59,9 +59,10 @@ export async function POST(
 
   try {
     // POST /api/portals/owner/:token
-    // Live pay_applications columns: status, approval_notes. owner_notes ->
-    // approval_notes. NOTE: there is no owner_approval_token column in the live
-    // schema, so this lookup cannot resolve a row — see flagged item.
+    // Live pay_applications columns (verified): owner_approval_token (text),
+    // status (text), approval_notes (text). The owner portal looks up the row
+    // by owner_approval_token and records the decision into status +
+    // approval_notes. All three columns exist in the live schema.
     if (portalType === 'owner' && token) {
       const body = await req.json();
       const { decision, notes } = body;
@@ -71,10 +72,10 @@ export async function POST(
     }
 
     // POST /api/portals/sub/:token/lien-waiver
-    // Live lien_waivers columns: status, signed_at, signature_method, token.
-    // There is no sign_token column (use token) and no signature_data column
-    // (the captured signature payload is recorded as signature_method='portal'
-    // rather than stored as data, since there is no jsonb column for it).
+    // Live lien_waivers columns (verified): token (uuid), status (text),
+    // signed_at (timestamptz), signature_method (text). The waiver is matched
+    // by token; the captured signature is recorded as signature_method='portal'
+    // because the live schema has no jsonb column for raw signature data.
     if (portalType === 'sub' && token && subPath === 'lien-waiver') {
       await req.json().catch(() => ({}));
       await db.from('lien_waivers').update({ status: 'signed', signed_at: new Date().toISOString(), signature_method: 'portal' }).eq('token', token);

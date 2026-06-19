@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import type { Database } from '@/lib/database.types';
 
@@ -30,8 +31,7 @@ export async function POST(req: NextRequest) {
         .from('project-files')
         .upload(path, buffer, { contentType: file.type || 'application/octet-stream' });
       if (!uploadError && uploadData) {
-        const { data: urlData } = db.storage.from('project-files').getPublicUrl(path);
-        url = urlData?.publicUrl || '';
+        url = await signedUrl(db, 'project-files', path);
       }
     }
 

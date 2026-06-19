@@ -115,8 +115,8 @@ export async function GET(
         const projectName = String(proj.name || takeoff.project_name_detected || 'Project');
         const tenantId   = String(proj.tenant_id || user?.tenantId || '');
         const gcName     = String(proj.gc_name || 'General Contractor');
-        const ownerName  = String(proj.owner_entity?.name || '');
-        const ownerAddr  = String(proj.owner_entity?.address || '');
+        const ownerName  = String(proj.owner_name || proj.owner_entity || '');
+        const ownerAddr  = String(proj.owner_address || '');
         const projAddr   = String(proj.address || '');
         const projState  = String(proj.state || '');
 

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
     const pdfBytes = await generateA312({
       projectName: p?.name || body.projectName,
-      ownerName: p?.owner_entity?.name || body.ownerName || '',
+      ownerName: p?.owner_name || body.ownerName || '',
       gcName: body.gcName || '',
       gcAddress: body.gcAddress || '',
       suretyName: body.suretyName || '',
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       bondType: body.bondType || 'both',
     });
 
-    const pdfUrl = await saveDocument(body.projectId, 'a312-bond', pdfBytes, body, user?.id || p?.tenant_id);
+    const pdfUrl = await saveDocument(body.projectId, 'a312-bond', pdfBytes, body, user?.tenantId || p?.tenant_id);
     return NextResponse.json({ pdfUrl, success: true });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -40,11 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: uploadError?.message || 'Upload failed' }, { status: 500 });
     }
 
-    const { data: urlData } = supabase.storage
-      .from('project-files')
-      .getPublicUrl(storagePath);
-
-    const url = urlData?.publicUrl || null;
+    const url = await signedUrl(supabase, 'project-files', storagePath);
     if (!url) {
       return NextResponse.json({ error: 'Failed to resolve public URL' }, { status: 500 });
     }

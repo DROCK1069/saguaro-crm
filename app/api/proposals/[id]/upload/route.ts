@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signedUrl } from '@/lib/storage-url';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -31,8 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .upload(path, buffer, { contentType: file.type || 'application/pdf' });
     if (uploadError) throw uploadError;
     if (uploadData) {
-      const { data: urlData } = db.storage.from('project-files').getPublicUrl(path);
-      url = urlData?.publicUrl || '';
+      url = await signedUrl(db, 'project-files', path);
     }
 
     const { data, error } = await db

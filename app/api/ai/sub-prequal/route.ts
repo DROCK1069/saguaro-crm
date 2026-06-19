@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (subId) {
     const { data } = await db
       .from('subcontractors')
-      .select('*, insurance_certificates(policy_type, expiry_date, status), w9_requests(status, submitted_at), lien_waivers(status, signed_at)')
+      .select('*, insurance_certificates(policy_type, expiry_date, status)')
       .eq('id', subId)
       .eq('tenant_id', tenantId)
       .single();
@@ -29,12 +29,11 @@ export async function POST(req: NextRequest) {
   const activeCerts = certs.filter((c: any) => c.expiry_date && c.expiry_date >= today);
   const hasGL = activeCerts.some((c: any) => c.policy_type?.toLowerCase().includes('gl') || c.policy_type?.toLowerCase().includes('general'));
   const hasWC = activeCerts.some((c: any) => c.policy_type?.toLowerCase().includes('wc') || c.policy_type?.toLowerCase().includes('workers'));
-  const w9Requests = (sub.w9_requests as any[]) || [];
-  const w9Status = w9Requests.find((w: any) => w.status === 'submitted') ? 'submitted' : w9Requests.length > 0 ? 'pending' : 'not_requested';
+  const w9Status = (sub.w9_on_file as boolean) ? 'submitted' : 'not_requested';
 
   const prompt = `You are a construction prequalification expert. Evaluate this subcontractor and provide a pass/flag/fail verdict.
 
-Subcontractor: ${(sub.name as string) || 'Unknown'}
+Subcontractor: ${(sub.company_name as string) || (sub.name as string) || 'Unknown'}
 Trade: ${(sub.trade as string) || 'Unknown'}
 Contract Amount: $${((sub.contract_amount as number) || 0).toLocaleString()}
 License Number: ${(sub.license_number as string) || 'Not provided'}
