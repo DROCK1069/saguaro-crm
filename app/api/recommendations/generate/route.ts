@@ -1,6 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Tables } from '@/lib/database.types';
+
+type ClimateRecommendation = Tables<'climate_recommendations'>;
 
 /**
  * POST /api/recommendations/generate
@@ -65,7 +68,7 @@ export async function POST(req: NextRequest) {
     if (customer.flood_zone && customer.flood_zone !== 'none') conditions.push('flood_risk');
 
     // Query climate_recommendations matching state or conditions
-    let climateRecs: Array<Record<string, unknown>> = [];
+    let climateRecs: ClimateRecommendation[] = [];
     if (customer.state || conditions.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query: any = db

@@ -11,6 +11,7 @@
  *   onPayAppCreated(id).catch(err => console.error('[auto-doc]', err));
  */
 
+import crypto from 'crypto';
 import { createServerClient } from './supabase-server';
 import { createNotification } from './notifications';
 
@@ -246,20 +247,19 @@ export async function onSubAdded(subId: string, projectId: string): Promise<void
       const { data: existing } = await client
         .from('w9_requests')
         .select('id')
-        .eq('sub_id', subId)
         .eq('project_id', projectId)
-        .single();
+        .eq('vendor_email', s.email)
+        .maybeSingle();
 
       if (!existing) {
         try {
           await client.from('w9_requests').insert({
             tenant_id: p.tenant_id,
             project_id: projectId,
-            sub_id: subId,
             vendor_name: s.name,
             vendor_email: s.email,
             status: 'pending',
-            sent_at: new Date().toISOString(),
+            token: crypto.randomUUID(),
           });
 
           await createNotification(

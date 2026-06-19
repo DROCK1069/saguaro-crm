@@ -23,9 +23,10 @@ export async function GET(req: NextRequest) {
     if (rows.length === 0) return NextResponse.json([]);
 
     // Resolve display names from related tables (best effort).
-    const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)));
-    const roleIds = Array.from(new Set(rows.map((r) => r.role_id).filter(Boolean)));
-    const projectIds = Array.from(new Set(rows.map((r) => r.project_id).filter(Boolean)));
+    const isNonEmpty = (v: string | null): v is string => Boolean(v);
+    const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(isNonEmpty)));
+    const roleIds = Array.from(new Set(rows.map((r) => r.role_id).filter(isNonEmpty)));
+    const projectIds = Array.from(new Set(rows.map((r) => r.project_id).filter(isNonEmpty)));
 
     const userMap = new Map<string, { name: string; email: string }>();
     if (userIds.length > 0) {
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
         userName: u?.name ?? 'Unknown',
         email: u?.email ?? '',
         roleId: r.role_id,
-        roleName: roleMap.get(r.role_id) ?? null,
+        roleName: r.role_id ? roleMap.get(r.role_id) ?? null : null,
         projectId: r.project_id ?? null,
         projectName: r.project_id ? projectMap.get(r.project_id) ?? null : null,
         assignedAt: r.created_at,

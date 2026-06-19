@@ -24,15 +24,18 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
   try {
     const body = await req.json();
     const supabase = createServerClient();
+    // tenant_id is required (NOT NULL) and the service-role client can't auto-resolve it
+    // (the auto_set_tenant_id trigger needs an authenticated user). submitted_by is text.
     const record = {
-      project_id: params.projectId,
       ...body,
+      project_id: params.projectId,
+      tenant_id: user.tenantId,
       submitted_by: user.email,
       status: body.status || 'submitted',
       created_at: new Date().toISOString(),
     };
     const { data, error } = await supabase.from('form_submissions').insert(record).select().single();
-    if (error) return NextResponse.json({ submission: { id: `fs-${Date.now()}`, ...record } });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ submission: data });
   } catch {
     return NextResponse.json({ error: 'Failed to submit form' }, { status: 500 });

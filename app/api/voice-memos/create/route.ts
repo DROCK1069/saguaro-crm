@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         tenant_id: user.tenantId,
         project_id: projectId,
         created_by: user.id,
-        item_type: itemType,
+        item_type: itemType ?? 'general',
         item_id: itemId,
         audio_url: urlData?.publicUrl || fileName,
         duration_seconds: null,

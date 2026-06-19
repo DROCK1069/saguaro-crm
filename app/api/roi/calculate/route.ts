@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+type RoiConfigRow = Database['public']['Tables']['roi_configs']['Row'];
+type RoiConfigKey = keyof RoiConfigRow;
 
 /**
  * Upgrade cost defaults (install cost range) when not specified in roi_configs.
@@ -26,7 +30,7 @@ const UPGRADE_COSTS: Record<string, { cost_low: number; cost_high: number; label
 /**
  * Map upgrade keys to the roi_configs savings column name.
  */
-const SAVINGS_MAP: Record<string, string> = {
+const SAVINGS_MAP: Record<string, RoiConfigKey> = {
   smart_thermostat:   'smart_thermostat_savings',
   smart_lighting:     'smart_lighting_savings',
   solar:              'solar_savings_per_kw',
@@ -40,7 +44,7 @@ const SAVINGS_MAP: Record<string, string> = {
 /**
  * Map upgrade keys to the roi_configs home value column.
  */
-const VALUE_MAP: Record<string, string> = {
+const VALUE_MAP: Record<string, RoiConfigKey> = {
   solar: 'solar_value_per_kw',
   pool:  'pool_value_add',
   adu:   'adu_value_per_sqft',

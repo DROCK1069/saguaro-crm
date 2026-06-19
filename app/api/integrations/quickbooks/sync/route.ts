@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const realmId = integration.realm_id;
-    const accessToken = integration.access_token;
+    const realmId = integration.realm_id ?? '';
+    const accessToken = integration.access_token ?? '';
     const syncResults: Record<string, { count: number; status: string; details?: string }> = {};
 
     // Process each entity type
@@ -62,9 +62,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Update last_sync_at and save sync history in settings
-    const existingSettings = integration.settings || {};
-    const syncHistory = existingSettings.sync_history || [];
+    // Update last_sync_at and save sync history
+    const syncHistory = Array.isArray(integration.sync_history) ? integration.sync_history : [];
     syncHistory.unshift({
       timestamp: new Date().toISOString(),
       direction,
@@ -79,7 +78,7 @@ export async function POST(req: NextRequest) {
       .from('integrations')
       .update({
         last_sync_at: new Date().toISOString(),
-        settings: { ...existingSettings, sync_history: syncHistory },
+        sync_history: syncHistory,
         updated_at: new Date().toISOString(),
       })
       .eq('id', integration.id);

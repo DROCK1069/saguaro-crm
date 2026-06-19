@@ -12,14 +12,34 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const projectId = searchParams.get('projectId') || undefined;
 
-  // Fetch all active subcontractors
+  // subcontractors has no project_id/contract_amount; the project link + amount live on
+  // project_subcontractors. Resolve links first (also drives the optional project filter).
+  let psQuery = db
+    .from('project_subcontractors')
+    .select('subcontractor_id, project_id, contract_amount')
+    .eq('tenant_id', tenantId);
+  if (projectId) psQuery = psQuery.eq('project_id', projectId);
+  const { data: links } = await psQuery;
+  const linkMap = new Map<string, { project_id: string; contract_amount: number }>();
+  for (const l of (links || [])) {
+    const sid = (l as any).subcontractor_id;
+    if (sid && !linkMap.has(sid)) linkMap.set(sid, { project_id: (l as any).project_id, contract_amount: (l as any).contract_amount || 0 });
+  }
+
+  // Fetch active subcontractors (real columns: company_name, w9_on_file — not name/w9_status).
   let subQuery = db
     .from('subcontractors')
-    .select('id, name, trade, email, contract_amount, project_id, w9_status, status')
+    .select('id, company_name, trade, email, w9_on_file, status')
     .eq('tenant_id', tenantId)
     .neq('status', 'inactive')
-    .order('name', { ascending: true });
-  if (projectId) subQuery = subQuery.eq('project_id', projectId);
+    .order('company_name', { ascending: true });
+  if (projectId) {
+    const linkedIds = Array.from(linkMap.keys());
+    if (linkedIds.length === 0) {
+      return NextResponse.json({ subs: [], summary: { total: 0, compliant: 0, at_risk: 0, non_compliant: 0 } });
+    }
+    subQuery = subQuery.in('id', linkedIds);
+  }
   const { data: subs } = await subQuery;
 
   if (!subs || subs.length === 0) {
@@ -75,8 +95,9 @@ export async function GET(req: NextRequest) {
     const subWaivers = waiverMap.get(sub.id) || [];
     const w9 = w9Map.get(sub.id);
 
-    // W-9 status (25 points)
-    const w9Status = sub.w9_status || w9?.status || 'not_requested';
+    // W-9 status (25 points). subcontractors.w9_on_file is a boolean; fall back to the
+    // w9_requests status when the flag isn't set.
+    const w9Status = sub.w9_on_file ? 'submitted' : (w9?.status || 'not_requested');
     const w9Score = w9Status === 'submitted' || w9Status === 'approved' ? 25 : w9Status === 'pending' ? 10 : 0;
 
     // Insurance status (40 points) — check for active GL and WC certs
@@ -94,13 +115,14 @@ export async function GET(req: NextRequest) {
     const score = Math.max(0, Math.min(100, w9Score + insScore + waiverScore));
     const compliance = score >= 80 ? 'compliant' : score >= 50 ? 'at_risk' : 'non_compliant';
 
+    const link = linkMap.get(sub.id);
     return {
       id: sub.id,
-      name: sub.name,
+      name: sub.company_name,
       trade: sub.trade,
       email: sub.email,
-      contract_amount: sub.contract_amount || 0,
-      project_id: sub.project_id,
+      contract_amount: link?.contract_amount || 0,
+      project_id: link?.project_id || projectId || null,
       score,
       compliance,
       w9: { status: w9Status, score: w9Score },

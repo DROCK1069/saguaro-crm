@@ -22,7 +22,7 @@ async function authenticateSubPortal(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const session = await authenticateSubPortal(req);
-    if (!session) {
+    if (!session || !session.sub_id || !session.project_id) {
       return NextResponse.json(
         { error: 'Invalid or expired portal token' },
         { status: 401 }

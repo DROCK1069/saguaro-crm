@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       project_id: string | null;
       severity: string;
       alert_type: string;
-      message: string;
+      title: string;
+      body: string;
       status: string;
     }[] = [];
     const results: string[] = [];
@@ -42,7 +43,8 @@ export async function POST(req: NextRequest) {
           project_id: rfi.project_id,
           severity: 'high',
           alert_type: 'Overdue RFI',
-          message: `RFI "${rfi.subject || rfi.id}" is past due`,
+          title: 'Overdue RFI',
+          body: `RFI "${rfi.subject || rfi.id}" is past due`,
           status: 'open',
         });
       }
@@ -68,7 +70,8 @@ export async function POST(req: NextRequest) {
           project_id: cert.project_id,
           severity: 'medium',
           alert_type: 'Expiring Insurance',
-          message: `${cert.sub_name || 'Certificate'} expires ${cert.expiry_date}`,
+          title: 'Expiring Insurance',
+          body: `${cert.sub_name || 'Certificate'} expires ${cert.expiry_date}`,
           status: 'open',
         });
       }
@@ -92,7 +95,8 @@ export async function POST(req: NextRequest) {
         project_id: projectId || null,
         severity: 'medium',
         alert_type: 'Pending Lien Waivers',
-        message: `${pendingWaivers.length} lien waiver(s) awaiting signature`,
+        title: 'Pending Lien Waivers',
+        body: `${pendingWaivers.length} lien waiver(s) awaiting signature`,
         status: 'open',
       });
     }
@@ -116,7 +120,8 @@ export async function POST(req: NextRequest) {
           project_id: co.project_id,
           severity: 'high',
           alert_type: 'Stale Change Order',
-          message: `Change order "${co.title || co.id}" pending > 14 days`,
+          title: 'Stale Change Order',
+          body: `Change order "${co.title || co.id}" pending > 14 days`,
           status: 'open',
         });
       }
@@ -142,7 +147,8 @@ export async function POST(req: NextRequest) {
           project_id: line.project_id,
           severity: pct >= 100 ? 'high' : 'medium',
           alert_type: pct >= 100 ? 'Budget Exceeded' : 'Budget At Risk',
-          message: `${line.cost_code ? line.cost_code + ' — ' : ''}${line.description || 'Budget line'} at ${pct}% spent`,
+          title: pct >= 100 ? 'Budget Exceeded' : 'Budget At Risk',
+          body: `${line.cost_code ? line.cost_code + ' — ' : ''}${line.description || 'Budget line'} at ${pct}% spent`,
           status: 'open',
         });
       }
@@ -160,11 +166,11 @@ export async function POST(req: NextRequest) {
     const { count: recentRFICount } = await velRfiQ;
 
     if ((recentCOCount || 0) >= 5) {
-      newAlerts.push({ tenant_id: tenantId, project_id: projectId || null, severity: 'medium', alert_type: 'High CO Velocity', message: `${recentCOCount} change orders in 14 days — possible scope creep`, status: 'open' });
+      newAlerts.push({ tenant_id: tenantId, project_id: projectId || null, severity: 'medium', alert_type: 'High CO Velocity', title: 'High CO Velocity', body: `${recentCOCount} change orders in 14 days — possible scope creep`, status: 'open' });
       results.push(`CO velocity spike (${recentCOCount})`);
     }
     if ((recentRFICount || 0) >= 10) {
-      newAlerts.push({ tenant_id: tenantId, project_id: projectId || null, severity: 'medium', alert_type: 'High RFI Velocity', message: `${recentRFICount} RFIs in 14 days — possible design issue`, status: 'open' });
+      newAlerts.push({ tenant_id: tenantId, project_id: projectId || null, severity: 'medium', alert_type: 'High RFI Velocity', title: 'High RFI Velocity', body: `${recentRFICount} RFIs in 14 days — possible design issue`, status: 'open' });
       results.push(`RFI velocity spike (${recentRFICount})`);
     }
 

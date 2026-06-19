@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       status: body.status || 'scheduled',
       created_at: new Date().toISOString(),
     };
-    const { data, error } = await supabase.from('meetings').insert(record).select().single();
+    const { data, error } = await supabase.from('meetings').insert(record as TablesInsert<'meetings'>).select().single();
     if (error) return NextResponse.json({ meeting: { id: `mtg-${Date.now()}`, ...record } });
     return NextResponse.json({ meeting: data });
   } catch {

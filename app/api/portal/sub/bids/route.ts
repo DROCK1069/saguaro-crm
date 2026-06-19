@@ -29,6 +29,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // portal_sub_sessions.sub_id is nullable; a session not linked to a sub has
+    // no bid invitations to list.
+    if (!session.sub_id) {
+      return NextResponse.json({ bids: [] });
+    }
+
     const db = createServerClient();
 
     const { data: bids, error } = await db
@@ -78,6 +84,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'bid_invitation_id is required' },
         { status: 400 }
+      );
+    }
+
+    // portal_sub_sessions.sub_id is nullable; a session not linked to a sub
+    // cannot own any bid invitation.
+    if (!session.sub_id) {
+      return NextResponse.json(
+        { error: 'Bid invitation not found' },
+        { status: 404 }
       );
     }
 

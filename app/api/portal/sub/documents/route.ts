@@ -29,6 +29,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    if (!session.project_id) {
+      return NextResponse.json({ documents: [] });
+    }
+
     const db = createServerClient();
 
     const category = req.nextUrl.searchParams.get('category');

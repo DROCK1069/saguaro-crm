@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+type LeadInsert = Database['public']['Tables']['lead_pipeline']['Insert'];
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
@@ -28,7 +31,7 @@ export async function POST(req: NextRequest) {
     // Fields with no column and no jsonb sink (tags, description, address parts,
     // estimated_start, follow_up_date, custom_fields, created_by) are folded into
     // notes/location/next_action_date where there is a clear home, else dropped.
-    const insert: Record<string, unknown> = {
+    const insert: LeadInsert = {
       tenant_id: user.tenantId,
       company_name: body.company_name ?? body.company ?? null,
       contact_name: body.contact_name ?? body.name ?? null,

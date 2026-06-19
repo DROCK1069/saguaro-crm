@@ -4,6 +4,7 @@ import {
   generateSessionSummary,
   updateUserProfile,
   generateProactiveInsights,
+  type ProjectSnapshot,
 } from '@/lib/sage-intelligence-v6';
 
 interface SessionMessage {
@@ -49,16 +50,23 @@ export async function POST(req: NextRequest) {
     const supabase = createServerClient();
     const { data: activeProjects } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, name, status, contract_amount')
       .eq('tenant_id', user.tenantId)
       .in('status', ['active', 'in_progress'])
       .limit(10);
+
+    const projectSnapshots: ProjectSnapshot[] = (activeProjects ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status ?? '',
+      contract_amount: p.contract_amount ?? 0,
+    }));
 
     await generateProactiveInsights(
       user.id,
       user.tenantId,
       summary,
-      activeProjects ?? []
+      projectSnapshots
     );
 
     return NextResponse.json({

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Json, TablesInsert } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,14 +106,18 @@ export async function POST(req: NextRequest) {
       osha_reference: body.osha_reference || '',
     };
 
-    const row: Record<string, unknown> = {
+    const row: TablesInsert<'toolbox_talks'> = {
       tenant_id: user.tenantId,
-      project_id: body.projectId || body.project_id || null,
+      // project_id is NOT NULL in the live schema; preserve prior behavior of
+      // letting an absent project surface as a DB error rather than defaulting.
+      project_id: body.projectId || body.project_id,
       topic: body.title || 'Safety Talk',
       talk_date: new Date().toISOString().slice(0, 10),
       attendee_count: attendees.length,
       ai_generated_content: JSON.stringify(talkContent),
-      signatures: attendees,
+      // signatures is a jsonb column; attendees is an array of plain
+      // {name, signature} objects, a valid JSON value.
+      signatures: attendees as unknown as Json,
       created_by: user.id,
     };
 

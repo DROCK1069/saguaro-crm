@@ -75,7 +75,9 @@ export async function POST(req: NextRequest) {
       if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
       const [{ data: project }, { data: sub }] = await Promise.all([
-        db.from('projects').select('name').eq('id', session.project_id).maybeSingle(),
+        session.project_id
+          ? db.from('projects').select('name').eq('id', session.project_id).maybeSingle()
+          : Promise.resolve({ data: null }),
         session.sub_id
           ? db.from('subcontractors').select('company_name, contact_name, email').eq('id', session.sub_id).maybeSingle()
           : Promise.resolve({ data: null }),

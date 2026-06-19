@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
       // Owner
       owner_name: body.ownerName || '',
       owner_email: body.ownerEmail || '',
-      owner_entity: body.ownerName ? { name: body.ownerName, email: body.ownerEmail } : {},
+      owner_entity: body.ownerName ? JSON.stringify({ name: body.ownerName, email: body.ownerEmail }) : null,
       // Architect
       architect_name: body.architectName || '',
       architect_email: body.architectEmail || '',
-      architect_entity: body.architectName ? { name: body.architectName, email: body.architectEmail } : {},
+      architect_entity: body.architectName ? JSON.stringify({ name: body.architectName, email: body.architectEmail }) : null,
       // Contract settings
       retainage_pct: body.retainagePct || 10,
       is_public_project: body.publicProject || false,

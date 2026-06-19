@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     // Budget summary from projects table
     const { data: project } = await db
       .from('projects')
-      .select('id, name, status, contract_amount, budget, spent, start_date, end_date, percent_complete')
+      .select('id, name, status, contract_amount, estimated_cost, cost_to_date, start_date, end_date, percent_complete')
       .eq('id', projectId)
       .eq('tenant_id', tenantId)
       .single();
@@ -62,9 +62,9 @@ export async function GET(req: NextRequest) {
     const budgetSummary = project
       ? {
           contract_amount: project.contract_amount || 0,
-          budget: project.budget || 0,
-          spent: project.spent || 0,
-          remaining: (project.budget || 0) - (project.spent || 0),
+          budget: project.estimated_cost || 0,
+          spent: project.cost_to_date || 0,
+          remaining: (project.estimated_cost || 0) - (project.cost_to_date || 0),
           percent_complete: project.percent_complete || 0,
         }
       : null;

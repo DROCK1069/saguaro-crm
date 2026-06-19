@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+type TakeoffProjectInsert = Database['public']['Tables']['takeoff_projects']['Insert'];
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -16,14 +19,14 @@ export async function POST(req: NextRequest) {
     const optionalFields = [
       'description', 'overhead_pct', 'profit_pct', 'contingency_pct', 'notes',
     ];
-    const record: Record<string, any> = {
+    const record: TakeoffProjectInsert = {
       project_id,
       name,
       tenant_id: user.tenantId,
       created_by: user.id,
     };
     for (const k of optionalFields) {
-      if (body[k] !== undefined) record[k] = body[k];
+      if (body[k] !== undefined) (record as Record<string, any>)[k] = body[k];
     }
 
     const db = createServerClient();

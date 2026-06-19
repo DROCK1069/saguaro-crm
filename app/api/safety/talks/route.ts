@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({} as Record<string, any>));
     const db = createServerClient();
-    const row: Record<string, unknown> = {
+    const row: TablesInsert<'toolbox_talks'> = {
       tenant_id: user.tenantId,
       project_id: body.project_id,
       topic: body.topic || '',

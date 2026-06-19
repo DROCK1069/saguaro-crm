@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     for (const rfi of [...allOverdue, ...allPastDue]) {
       if (!escalationIds.has(rfi.id)) {
         escalationIds.add(rfi.id);
-        const createdAt = new Date(rfi.created_at);
+        const createdAt = new Date(rfi.created_at ?? Date.now());
         const hoursOpen = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
         const isPastDue = rfi.due_date && rfi.due_date < today;
 

@@ -7,6 +7,7 @@ import { useProjects } from '@/lib/hooks/useProjects';
 import { useRFIs } from '@/lib/hooks/useRFIs';
 import { useRealtimeDashboard } from '@/lib/useRealtime';
 import { CurrencyDollar, ShieldCheck, ClipboardText, CheckCircle, ChartBar, TrendUp } from '@phosphor-icons/react';
+import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 // Lazy-load Recharts to avoid SSR issues
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false });
@@ -425,14 +426,14 @@ export default function DashboardPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={projects.slice(0, 6).map(p => ({
                       name: p.name?.length > 12 ? p.name.slice(0, 12) + '…' : p.name || 'Unnamed',
-                      budget: p.budget ?? p.contract_value ?? 0,
+                      budget: p.contract_amount ?? 0,
                     }))}>
                       <XAxis dataKey="name" tick={{ fill: DIM, fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.05)' }} tickLine={false} />
                       <YAxis tick={{ fill: DIM, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
                       <Tooltip
                         contentStyle={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12, color: TEXT }}
                         labelStyle={{ color: GOLD, fontWeight: 700 }}
-                        formatter={(v: number) => [`$${v.toLocaleString()}`, 'Budget']}
+                        formatter={(v: ValueType | undefined) => [`$${Number(v).toLocaleString()}`, 'Budget']}
                       />
                       <Bar dataKey="budget" fill={GOLD} radius={[4, 4, 0, 0]} maxBarSize={48} />
                     </BarChart>

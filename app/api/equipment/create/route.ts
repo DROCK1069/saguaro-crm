@@ -14,17 +14,18 @@ export async function POST(req: NextRequest) {
 
   const row = {
     tenant_id: user.tenantId,
-    project_id: body.project_id || body.projectId || null,
-    equipment_name: body.equipment_name || body.equipmentName || '',
-    operator: body.operator || '',
+    project_id: (body.project_id || body.projectId || null) as string | null,
+    equipment_name: String(body.equipment_name || body.equipmentName || ''),
+    operator: String(body.operator || ''),
     hours: Number(body.hours || body.hours_used || body.hoursUsed) || 0,
-    condition: body.condition || 'Good',
-    notes: body.notes || '',
-    log_date:
+    condition: String(body.condition || 'Good'),
+    notes: String(body.notes || ''),
+    log_date: String(
       body.log_date ||
-      body.work_date ||
-      body.workDate ||
-      new Date().toISOString().split('T')[0],
+        body.work_date ||
+        body.workDate ||
+        new Date().toISOString().split('T')[0]
+    ),
   };
 
   try {

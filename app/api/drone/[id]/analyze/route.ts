@@ -183,6 +183,12 @@ export async function GET(
           startHeartbeat(`Analyzing photo ${photoNum}/${photos.length}...`, basePct, 3);
 
           try {
+            if (!photo.storage_path) {
+              console.warn(`[drone/analyze] No storage_path for photo ${photo.file_name}`);
+              stopHeartbeat();
+              continue;
+            }
+
             // Download photo from storage
             const { data: blob, error: dlErr } = await supabase.storage
               .from('project-files')

@@ -10,12 +10,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pr
     const body = await req.json();
     const supabase = createServerClient();
 
-    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (body.markup_data !== undefined) updates.markup_data = body.markup_data;
-    if (body.title !== undefined) updates.title = body.title;
-    if (body.visibility !== undefined) updates.visibility = body.visibility;
+    // Real drawing_markups columns only. The markup payload column is `data` (jsonb),
+    // not `markup_data`; title / visibility / line_width are not columns on this table —
+    // stroke geometry & width live inside the `data` jsonb. updated_by is a uuid column.
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    };
+    if (body.markup_data !== undefined) updates.data = body.markup_data;
     if (body.color !== undefined) updates.color = body.color;
-    if (body.line_width !== undefined) updates.line_width = body.line_width;
+    if (body.page_number !== undefined) updates.page_number = body.page_number;
 
     const { data, error } = await supabase
       .from('drawing_markups')
@@ -67,10 +71,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
       return NextResponse.json({ error: 'comment is required' }, { status: 400 });
     }
 
+    // drawing_markup_comments columns: markup_id, content (NOT NULL), author_name (NOT NULL).
+    // There is no `comment` or `author` column — the body text goes in `content`.
     const row = {
       markup_id: id,
-      comment: body.comment.trim(),
-      author: user.email,
+      content: body.comment.trim(),
       author_name: body.author_name || user.email,
     };
 

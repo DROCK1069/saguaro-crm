@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { TablesInsert } from '@/lib/database.types';
 
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     // cc->cc_names(jsonb). The field page also sends priority/request_read_receipt/
     // reference_links/direction which have no column and no appropriate jsonb bucket
     // (to_names/cc_names/attachments are typed), so they are dropped to avoid a 500.
-    const record: Record<string, unknown> = {
+    const record: TablesInsert<'correspondence'> = {
       project_id: params.projectId,
       tenant_id: user.tenantId,
       subject: body.subject ?? null,

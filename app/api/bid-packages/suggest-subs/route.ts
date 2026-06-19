@@ -16,24 +16,31 @@ export async function GET(req: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
 
-    const [{ data: performance }, { data: projectSubs }, { data: allTenantSubs }] = await Promise.all([
+    const [{ data: performance }, { data: projectSubLinks }, { data: allTenantSubs }] = await Promise.all([
       db.from('sub_performance')
         .select('*')
         .eq('tenant_id', tenantId)
         .ilike('trade', `%${trade}%`)
         .order('win_rate', { ascending: false })
         .limit(20),
+      // subcontractors has no project_id column; the project<->sub link lives in project_subcontractors.
+      db.from('project_subcontractors')
+        .select('subcontractor:subcontractors!project_subcontractors_subcontractor_id_fkey(id, company_name, email, phone, trade, rating, w9_on_file)')
+        .eq('project_id', projectId),
       db.from('subcontractors')
-        .select('*')
-        .eq('project_id', projectId)
-        .ilike('trade', `%${trade}%`),
-      db.from('subcontractors')
-        .select('id, name, email, phone, trade, rating, w9_status')
+        .select('id, company_name, email, phone, trade, rating, w9_on_file')
         .eq('tenant_id', tenantId)
         .neq('status', 'inactive')
         .ilike('trade', `%${trade}%`)
         .limit(50),
     ]);
+
+    // Flatten embedded subcontractor rows from the join table and apply the trade filter
+    // (matches the prior .ilike('trade', ...) behavior of the project-scoped query).
+    const tradeLc = trade.toLowerCase();
+    const projectSubs = (projectSubLinks || [])
+      .map((link: any) => link.subcontractor)
+      .filter((s: any) => s && (!tradeLc || (s.trade || '').toLowerCase().includes(tradeLc)));
 
     // Fetch insurance certs for compliance scoring
     const subIds = (allTenantSubs || []).map((s: any) => s.id);
@@ -51,9 +58,17 @@ export async function GET(req: NextRequest) {
     const perfMap = new Map<string, any>();
     (performance || []).forEach((p: any) => { if (p.sub_id) perfMap.set(p.sub_id, p); });
 
-    // Merge project subs + all tenant subs, dedupe by email
+    // Merge project subs + all tenant subs, dedupe by email.
+    // Normalize real columns to the shape the rest of this route expects:
+    //   company_name -> name, w9_on_file (boolean) -> w9_status string.
     const merged = new Map<string, any>();
-    for (const s of [...(allTenantSubs || []), ...(projectSubs || [])]) {
+    for (const raw of [...(allTenantSubs || []), ...(projectSubs || [])]) {
+      if (!raw) continue;
+      const s = {
+        ...raw,
+        name: raw.company_name,
+        w9_status: raw.w9_on_file ? 'submitted' : 'missing',
+      };
       if (s.email && !merged.has(s.email)) merged.set(s.email, s);
       else if (!s.email && !merged.has(s.id)) merged.set(s.id, s);
     }

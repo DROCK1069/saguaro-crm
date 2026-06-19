@@ -66,11 +66,13 @@ export async function POST(req: NextRequest) {
       }
 
       const session = subSessions[0];
-      const { data: project } = await db
-        .from('projects')
-        .select('name')
-        .eq('id', session.project_id)
-        .maybeSingle();
+      const { data: project } = session.project_id
+        ? await db
+            .from('projects')
+            .select('name')
+            .eq('id', session.project_id)
+            .maybeSingle()
+        : { data: null };
 
       return NextResponse.json({
         token: session.token,
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Sessions found — match by sub email via join
-    const subIds = [...new Set(sessions.map(s => s.sub_id).filter(Boolean))];
+    const subIds = [...new Set(sessions.map(s => s.sub_id).filter((id): id is string => Boolean(id)))];
     const { data: subs } = await db
       .from('subcontractors')
       .select('id, company_name, contact_name, email')
@@ -103,11 +105,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: project } = await db
-      .from('projects')
-      .select('name')
-      .eq('id', matchedSession.project_id)
-      .maybeSingle();
+    const { data: project } = matchedSession.project_id
+      ? await db
+          .from('projects')
+          .select('name')
+          .eq('id', matchedSession.project_id)
+          .maybeSingle()
+      : { data: null };
 
     return NextResponse.json({
       token: matchedSession.token,

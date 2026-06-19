@@ -50,13 +50,17 @@ export async function POST(req: NextRequest) {
       .eq('id', session.id)
       .eq('tenant_id', session.tenant_id);
 
-    // Fetch sub details
-    const { data: sub } = await db
-      .from('subcontractors')
-      .select('id, company_name, contact_name, email, phone, trade')
-      .eq('id', session.sub_id)
-      .eq('tenant_id', session.tenant_id)
-      .single();
+    // Fetch sub details (sub_id is nullable on the session)
+    const sub = session.sub_id
+      ? (
+          await db
+            .from('subcontractors')
+            .select('id, company_name, contact_name, email, phone, trade')
+            .eq('id', session.sub_id)
+            .eq('tenant_id', session.tenant_id)
+            .single()
+        ).data
+      : null;
 
     return NextResponse.json({
       session: {
@@ -90,12 +94,17 @@ export async function GET(req: NextRequest) {
 
     const db = createServerClient();
 
-    const { data: sub } = await db
-      .from('subcontractors')
-      .select('id, company_name, contact_name, email, phone, trade')
-      .eq('id', session.sub_id)
-      .eq('tenant_id', session.tenant_id)
-      .single();
+    // Fetch sub details (sub_id is nullable on the session)
+    const sub = session.sub_id
+      ? (
+          await db
+            .from('subcontractors')
+            .select('id, company_name, contact_name, email, phone, trade')
+            .eq('id', session.sub_id)
+            .eq('tenant_id', session.tenant_id)
+            .single()
+        ).data
+      : null;
 
     return NextResponse.json({
       session: {

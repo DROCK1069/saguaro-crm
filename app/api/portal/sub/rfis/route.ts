@@ -15,7 +15,11 @@ async function authenticateSubPortal(req: NextRequest) {
     .eq('status', 'active')
     .single();
 
-  return session;
+  // sub_id / project_id are nullable on portal_sub_sessions; a session missing
+  // either cannot scope RFI queries, so treat it as unauthenticated.
+  if (!session || !session.sub_id || !session.project_id) return null;
+
+  return session as typeof session & { sub_id: string; project_id: string };
 }
 
 /** GET — List sub's RFIs */

@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // portal_sub_sessions.sub_id and project_id are nullable in the live DB; a
+    // session missing either cannot own scoped daily logs, so return an empty
+    // set rather than querying with a null filter.
+    if (!session.sub_id || !session.project_id) {
+      return NextResponse.json({ daily_logs: [] });
+    }
+
     const db = createServerClient();
 
     const date = req.nextUrl.searchParams.get('date');
@@ -159,6 +166,16 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(
         { error: 'log_id is required' },
         { status: 400 }
+      );
+    }
+
+    // portal_sub_sessions.sub_id is nullable in the live DB; a session with no
+    // sub_id cannot own any daily log, so treat it as not found rather than
+    // querying with a null filter.
+    if (!session.sub_id) {
+      return NextResponse.json(
+        { error: 'Daily log not found' },
+        { status: 404 }
       );
     }
 

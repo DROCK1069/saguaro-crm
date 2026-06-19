@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
+
+type DrawingInsert = Database['public']['Tables']['drawings']['Insert'];
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +42,7 @@ export async function POST(req: NextRequest) {
       (formData.get('sheet_number') as string) ||
       (m ? m[1].toUpperCase().replace(/\s/, '-') : base.slice(0, 24));
 
-    const row: Record<string, unknown> = {
+    const row: DrawingInsert = {
       project_id: projectId,
       tenant_id: user.tenantId,
       name: (formData.get('title') as string) || base,

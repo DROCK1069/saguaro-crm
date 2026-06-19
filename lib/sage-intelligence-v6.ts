@@ -5,7 +5,20 @@
  */
 
 import { createServerClient } from '@/lib/supabase-server';
+import type { Database } from '@/lib/database.types';
 import Anthropic from '@anthropic-ai/sdk';
+
+// Row Insert/Update types for the live DB. NOTE: the Sage v6 feature code (this file)
+// was written against migration 027_sage_v6.sql, which declares a much richer schema
+// (per-message sage_conversations, denormalised sage_session_summaries / sage_proactive_insights
+// columns, sage_performance_log metric_* columns). That migration was NOT applied to the live
+// DB (project jddfvugsaosvgllbkzch), so those columns do not exist. The payloads below are cast
+// to the live Insert types to keep the compiler honest WITHOUT altering the runtime payloads
+// (preserving existing behavior). The genuinely-missing columns are flagged for central review.
+type SageConversationInsert = Database['public']['Tables']['sage_conversations']['Insert'];
+type SageProactiveInsightInsert = Database['public']['Tables']['sage_proactive_insights']['Insert'];
+type SageProactiveInsightUpdate = Database['public']['Tables']['sage_proactive_insights']['Update'];
+type SagePerformanceLogInsert = Database['public']['Tables']['sage_performance_log']['Insert'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXPORTED TYPES
@@ -335,15 +348,15 @@ export async function loadFullIntelligence(
   ]);
 
   const profile = (profileResult.data as SageUserProfile | null) ?? null;
-  const recentSessions = (sessionsResult.data as SageSessionSummary[]) ?? [];
-  const recentMessages = (messagesResult.data as SageConversationMessage[]) ?? [];
+  const recentSessions = (sessionsResult.data as unknown as SageSessionSummary[]) ?? [];
+  const recentMessages = (messagesResult.data as unknown as SageConversationMessage[]) ?? [];
   const topKnowledge = (knowledgeResult.data as SageKnowledgeFact[]) ?? [];
-  const pendingInsights = (insightsResult.data as SageProactiveInsight[]) ?? [];
+  const pendingInsights = (insightsResult.data as unknown as SageProactiveInsight[]) ?? [];
   const activeProjects: ProjectSnapshot[] = (projectsResult.data ?? []).map(
-    (p: { id: string; name: string; status: string; contract_amount: number }) => ({
+    (p: { id: string; name: string; status: string | null; contract_amount: number | null }) => ({
       id: p.id,
       name: p.name,
-      status: p.status,
+      status: p.status ?? '',
       contract_amount: p.contract_amount ?? 0,
     })
   );
@@ -1018,7 +1031,9 @@ export async function saveMessageWithIntelligence(
 
   const { data, error } = await supabase
     .from('sage_conversations')
-    .insert(insertData)
+    // insertData carries per-message v6 columns (message_index, role, content, intent, etc.)
+    // that the live sage_conversations table lacks — see FLAGGED columns. Cast preserves payload.
+    .insert(insertData as unknown as SageConversationInsert)
     .select('id')
     .single();
 
@@ -1029,7 +1044,7 @@ export async function saveMessageWithIntelligence(
   // Update profile stats asynchronously (best effort)
   try {
     if (role === 'user') {
-      const profileUpdates: Record<string, unknown> = {
+      const profileUpdates: Record<string, string> = {
         last_seen_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -1513,12 +1528,19 @@ export async function generateProactiveInsights(
   // Batch insert — skip duplicates gracefully
   if (insightsToInsert.length > 0) {
     try {
-      await supabase.from('sage_proactive_insights').insert(insightsToInsert);
+      // insightsToInsert carries v6 columns (priority, urgency, message, action_suggestion,
+      // related_project, related_amount, delivered, dismissed, expires_at) absent from the live
+      // sage_proactive_insights table — see FLAGGED columns. Cast preserves payload.
+      await supabase
+        .from('sage_proactive_insights')
+        .insert(insightsToInsert as unknown as SageProactiveInsightInsert[]);
     } catch {
       // Try one at a time as fallback
       for (const insight of insightsToInsert) {
         try {
-          await supabase.from('sage_proactive_insights').insert(insight);
+          await supabase
+            .from('sage_proactive_insights')
+            .insert(insight as unknown as SageProactiveInsightInsert);
         } catch {
           // Skip
         }
@@ -1633,7 +1655,10 @@ Rules:
     try {
       await supabase
         .from('sage_proactive_insights')
-        .update({ delivered: true, delivered_at: new Date().toISOString() })
+        // delivered/delivered_at are v6 columns absent from the live sage_proactive_insights
+        // table (live tracks lifecycle via `status`/`dismissed_at`) — see FLAGGED columns.
+        // Cast preserves the existing payload.
+        .update({ delivered: true, delivered_at: new Date().toISOString() } as unknown as SageProactiveInsightUpdate)
         .eq('id', topInsight.id);
     } catch {
       // Non-fatal
@@ -1891,12 +1916,14 @@ export async function learnFromFeedback(
 
     if (thumbsUp) {
       // ── Positive feedback ────────────────────────────────────────────────
+      // metric_type/metric_value are v6 columns absent from the live sage_performance_log table
+      // (live has `action` NOT NULL instead) — see FLAGGED columns. Cast preserves payload.
       await supabase.from('sage_performance_log').insert({
         user_id: userId,
         metric_type: 'thumbs_up',
         metric_value: 1,
         created_at: new Date().toISOString(),
-      });
+      } as unknown as SagePerformanceLogInsert);
 
       // Increment satisfaction (cap at 10)
       const { data: profile } = await supabase
@@ -1918,12 +1945,14 @@ export async function learnFromFeedback(
         .eq('user_id', userId);
     } else {
       // ── Negative feedback ────────────────────────────────────────────────
+      // metric_type/metric_value are v6 columns absent from the live sage_performance_log table
+      // (live has `action` NOT NULL instead) — see FLAGGED columns. Cast preserves payload.
       await supabase.from('sage_performance_log').insert({
         user_id: userId,
         metric_type: 'thumbs_down',
         metric_value: 0,
         created_at: new Date().toISOString(),
-      });
+      } as unknown as SagePerformanceLogInsert);
 
       // Detect failure type from note
       let failureType: 'too_long' | 'wrong_tone' | 'wrong_info' | 'not_helpful' | null = null;

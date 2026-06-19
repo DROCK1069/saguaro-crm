@@ -79,10 +79,12 @@ export async function POST(req: NextRequest) {
     let upsellCount = 0;
 
     if (question?.options && Array.isArray(question.options)) {
+      // `options` is a jsonb column; each option is an app-defined shape
+      // { value, upsell_tags? } stored inside the JSON blob.
+      const options = question.options as Array<{ value: string; upsell_tags?: string[] }>;
+
       // Find the selected option
-      const selectedOption = question.options.find(
-        (opt: { value: string; upsell_tags?: string[] }) => opt.value === answer_value,
-      );
+      const selectedOption = options.find((opt) => opt.value === answer_value);
 
       if (selectedOption?.upsell_tags && selectedOption.upsell_tags.length > 0) {
         // Mark the answer as upsell-triggered

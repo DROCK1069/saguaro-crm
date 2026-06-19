@@ -73,13 +73,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
         tenant_id: user.tenantId,
         project_id: projectId,
         co_number: coNumber,
-        title: body.title,
-        description: body.description ?? null,
-        reason: body.reason ?? null,
+        title: body.title as string,
+        description: (body.description ?? null) as string | null,
+        reason: (body.reason ?? null) as string | null,
         status: 'pending',
         change_type: 'additive',
-        amount: body.costImpact ?? body.amount ?? 0,
-        schedule_impact: body.scheduleImpact ?? body.schedule_impact ?? 0,
+        amount: (body.costImpact ?? body.amount ?? 0) as number,
+        schedule_impact: (body.scheduleImpact ?? body.schedule_impact ?? 0) as number,
         submitted_by: user.id,
       })
       .select()

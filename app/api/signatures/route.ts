@@ -120,6 +120,9 @@ export async function PATCH(req: NextRequest) {
         tenant_id: sigReq.tenant_id,
         request_id: requestId,
         document_id: sigReq.document_id,
+        // doc_type is NOT NULL in the DB; map from the request's document_type
+        // (same data; mirrors the 'general' fallback used when the request is created)
+        doc_type: sigReq.document_type || 'general',
         signer_name: signerName || sigReq.recipient_name,
         signer_email: signerEmail || sigReq.recipient_email,
         signer_ip: signerIp || '',

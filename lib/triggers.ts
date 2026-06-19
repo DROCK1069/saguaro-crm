@@ -328,14 +328,14 @@ export async function onSubAddedToProject(projectId: string, subId: string): Pro
 
     // Send W-9 request if contract > $600
     if ((s.contract_amount || 0) > 600 && s.email && s.w9_status !== 'submitted') {
+      const token = (await import('node:crypto')).randomBytes(32).toString('hex');
       const { data: w9 } = await db.from('w9_requests').insert({
         tenant_id: p.tenant_id,
         project_id: projectId,
-        sub_id: subId,
         vendor_name: s.name,
         vendor_email: s.email,
         status: 'pending',
-        sent_at: new Date().toISOString(),
+        token,
       }).select().single();
       if (w9) {
         await sendW9Request(s.email, s.name, p.name, `${APP_URL}/portals/w9/${(w9 as any).token}`);
@@ -428,7 +428,7 @@ export async function onChangeOrderApproved(changeOrderId: string): Promise<void
     if (c.cost_code) {
       const { data: budgetLine } = await db
         .from('budget_lines')
-        .select('id, committed_cost')
+        .select('id, committed')
         .eq('project_id', project.id)
         .eq('cost_code', c.cost_code)
         .maybeSingle();
@@ -436,7 +436,7 @@ export async function onChangeOrderApproved(changeOrderId: string): Promise<void
         const bl = budgetLine as any;
         await db
           .from('budget_lines')
-          .update({ committed_cost: (bl.committed_cost || 0) + (c.cost_impact || 0) })
+          .update({ committed: (bl.committed || 0) + (c.cost_impact || 0) })
           .eq('id', bl.id);
       }
     }
@@ -481,7 +481,7 @@ export async function onInsuranceExpiring(certId: string, daysLeft: number): Pro
       await sendInsuranceExpiring(gcEmail, sub?.name || 'Subcontractor', project.name, c.policy_type, c.expiry_date, daysLeft);
     }
 
-    await db.from('insurance_certificates').update({ reminder_sent: true, last_reminder: new Date().toISOString() }).eq('id', certId);
+    await db.from('insurance_certificates').update({ last_checked_at: new Date().toISOString() }).eq('id', certId);
     await createNotification(
       project.tenant_id, null, 'insurance_expiring',
       `Insurance expiring in ${daysLeft} days — ${sub?.name || 'Subcontractor'}`,

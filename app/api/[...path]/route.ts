@@ -505,9 +505,14 @@ export async function POST(
     const { projectId, name, code, bidDue, scope } = body;
     if (!projectId || !name) return NextResponse.json({ error: 'projectId and name required' }, { status: 400 });
     try {
+      // Service-role client: the auto_set_tenant_id trigger can't resolve tenant_id
+      // (auth.uid() is null), so derive it from the parent project and set it explicitly.
+      const { data: proj } = await supabaseAdmin.from('projects').select('tenant_id').eq('id', projectId).single();
+      if (!proj?.tenant_id) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
       const { count } = await supabaseAdmin.from('bid_packages').select('*', { count: 'exact', head: true }).eq('project_id', projectId);
       const autoCode = code || `BP-${String((count || 0) + 1).padStart(2, '0')}`;
-      const { data, error } = await supabaseAdmin.from('bid_packages').insert({ project_id: projectId, code: autoCode, name, scope: scope || '', status: 'draft', bid_due_date: bidDue || null }).select().single();
+      // Real bid_packages columns: package_number (not `code`), scope_of_work (not `scope`).
+      const { data, error } = await supabaseAdmin.from('bid_packages').insert({ tenant_id: proj.tenant_id, project_id: projectId, package_number: autoCode, name, scope_of_work: scope || '', status: 'draft', bid_due_date: bidDue || null }).select().single();
       if (error) throw error;
       return NextResponse.json({ success: true, bidPackage: data });
     } catch (err: unknown) {
@@ -737,9 +742,15 @@ export async function POST(
     const { projectId, title, priority, assignedTo, responseDue, drawingRef, specSection, description } = body;
     if (!projectId || !title) return NextResponse.json({ error: 'projectId and title required' }, { status: 400 });
     try {
+      // Service-role client: derive tenant_id from the parent project (the trigger
+      // can't resolve it without an authenticated user) and set it explicitly.
+      const { data: proj } = await supabaseAdmin.from('projects').select('tenant_id').eq('id', projectId).single();
+      if (!proj?.tenant_id) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
       const { count } = await supabaseAdmin.from('rfis').select('*', { count: 'exact', head: true }).eq('project_id', projectId);
-      const number = `RFI-${String((count || 0) + 1).padStart(3, '0')}`;
-      const { data, error } = await supabaseAdmin.from('rfis').insert({ project_id: projectId, number, title, description: description || '', status: 'open', priority: priority || 'normal', assigned_to: assignedTo || null, response_due_date: responseDue || null, drawing_reference: drawingRef || null, spec_section: specSection || null }).select().single();
+      const rfiNumber = `RFI-${String((count || 0) + 1).padStart(3, '0')}`;
+      // Real rfis columns: rfi_number (not `number`), subject (not `title`),
+      // question (NOT NULL, not `description`). title/question are required.
+      const { data, error } = await supabaseAdmin.from('rfis').insert({ tenant_id: proj.tenant_id, project_id: projectId, rfi_number: rfiNumber, subject: title, question: description || title, status: 'open', priority: priority || 'normal', assigned_to: assignedTo || null, response_due_date: responseDue || null, drawing_reference: drawingRef || null, spec_section: specSection || null }).select().single();
       if (error) throw error;
       return NextResponse.json({ success: true, rfi: data });
     } catch (err: unknown) {

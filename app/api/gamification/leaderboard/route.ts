@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       .select('*, profiles(full_name, email, avatar_url)')
       .eq('tenant_id', user.tenantId)
       .eq('category', category)
-      .order('points', { ascending: false })
+      .order('score', { ascending: false })
       .limit(limit);
 
     if (projectId) query = query.eq('project_id', projectId);
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     if (!userEntry) {
       let userQuery = db
         .from('leaderboards')
-        .select('points')
+        .select('score')
         .eq('tenant_id', user.tenantId)
         .eq('category', category)
         .eq('user_id', user.id);
@@ -59,14 +59,14 @@ export async function GET(req: NextRequest) {
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', user.tenantId)
           .eq('category', category)
-          .gt('points', userData.points);
+          .gt('score', userData.score);
 
         if (projectId) rankQuery = rankQuery.eq('project_id', projectId);
 
         const { count } = await rankQuery;
         currentUserRank = {
           rank: (count || 0) + 1,
-          points: userData.points,
+          points: userData.score,
         };
       }
     }
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
       leaderboard,
       category,
       timeframe,
-      current_user_rank: userEntry ? { rank: userEntry.rank, points: userEntry.points } : currentUserRank,
+      current_user_rank: userEntry ? { rank: userEntry.rank, points: userEntry.score } : currentUserRank,
     });
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error', details: err.message }, { status: 500 });

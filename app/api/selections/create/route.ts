@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       body.link ? `Link: ${body.link}` : '',
     ].filter(Boolean);
 
-    const insert: Record<string, unknown> = {
+    const insert = {
       tenant_id: user.tenantId,
       project_id: body.projectId,
       category: body.category || 'Other',
@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
       selected_by: body.selected_by || body.selectedBy || '',
       due_date: body.due_date || null,
       notes: body.notes || '',
+      ...(descParts.length ? { description: descParts.join(' | ') } : {}),
     };
-    if (descParts.length) insert.description = descParts.join(' | ');
 
     const { data, error } = await db.from('selections').insert(insert).select().single();
     if (error) throw error;

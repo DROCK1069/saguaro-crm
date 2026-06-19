@@ -66,12 +66,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
       tenant_id:    user.tenantId,
       project_id:   projectId,
       rfi_number,
-      subject:      body.subject     || '',
-      question:     body.question    || body.description  || '',
-      spec_section: body.specSection || body.spec_section || '',
-      due_date:     body.dueDate     || body.due_date     || null,
+      subject:      (body.subject as string)     || '',
+      question:     (body.question as string)    || (body.description as string)  || '',
+      spec_section: (body.specSection as string) || (body.spec_section as string) || '',
+      due_date:     (body.dueDate as string)     || (body.due_date as string)     || null,
       status:       'open',
-      submitted_by: user.email       || 'Field User',
+      submitted_by: user.email                   || 'Field User',
     };
 
     const { data, error } = await db
