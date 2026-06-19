@@ -94,6 +94,7 @@ function MorePage(){
     {href:`/field/contacts${projectId?`?projectId=${projectId}`:''}`,icon:'users',label:'Team Contacts',desc:'Quick-dial PM, subs, owner',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
     {href:`/field/inspect${projectId?`?projectId=${projectId}`:''}`,icon:'check',label:'Inspections',desc:'19 checklist types with deficiency tracking',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
     {href:`/field/drawings${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'Drawings',desc:'View plans, drop pins on issues',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
+    {href:`/field/takeoff${projectId?`?projectId=${projectId}`:''}`,icon:'chart',label:'AI Takeoff',desc:'Upload a blueprint → instant material & cost estimate',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
     {href:`/field/equipment${projectId?`?projectId=${projectId}`:''}`,icon:'truck',label:'Equipment Log',desc:'Track equipment hours and condition',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/chat${projectId?`?projectId=${projectId}`:''}`,icon:'message',label:'Job Board',desc:'Crew messages and announcements',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
     {href:`/field/sage${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Sage AI',desc:'Ask anything about your project',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
@@ -166,7 +167,7 @@ function MorePage(){
           {[
             { title: '📋 Daily Operations', items: PAGE_LINKS.filter(l => ['/field/clock','/field/schedule','/field/equipment','/field/delivery','/field/meetings'].some(p => l.href.startsWith(p))) },
             { title: '🏗 Quality & Punch', items: PAGE_LINKS.filter(l => ['/field/punch','/field/inspect','/field/observations','/field/commissioning','/field/closeout','/field/coordination','/field/waste'].some(p => l.href.startsWith(p))) },
-            { title: '📄 Documents & Plans', items: PAGE_LINKS.filter(l => ['/field/drawings','/field/docs','/field/specs','/field/submittals','/field/correspondence','/field/forms'].some(p => l.href.startsWith(p))) },
+            { title: '📐 Plans & Estimating', items: PAGE_LINKS.filter(l => ['/field/drawings','/field/takeoff','/field/docs','/field/specs','/field/submittals','/field/correspondence','/field/forms'].some(p => l.href.startsWith(p))) },
             { title: '💰 Financial', items: PAGE_LINKS.filter(l => ['/field/change-orders','/field/contracts','/field/invoices','/field/budget','/field/bids','/field/purchase-orders','/field/tm-tickets','/field/timesheets'].some(p => l.href.startsWith(p))) },
             { title: '⚠️ Safety', items: PAGE_LINKS.filter(l => ['/field/safety','/field/incidents','/field/permits'].some(p => l.href.startsWith(p))) },
             { title: '👥 People & Comms', items: PAGE_LINKS.filter(l => ['/field/contacts','/field/chat','/field/directory','/field/rfis'].some(p => l.href.startsWith(p))) },
