@@ -172,17 +172,17 @@ export default function LandingPage() {
           solutions: {
             label: 'Solutions',
             items: [
-              { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
-              { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/industry/specialty-subcontractors' },
-              { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/industry/residential-remodelers' },
-              { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/industry/commercial-contractors' },
-              { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/industry/roofing-contractors' },
+              { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/signup' },
+              { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/signup' },
+              { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/signup' },
+              { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/signup' },
+              { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/signup' },
             ],
           },
           resources: {
             label: 'Resources',
             items: [
-              { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/app/takeoff' },
+              { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
               { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
               { icon: <BookOpen size={22} weight="duotone" color="#C8881C" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
               { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
