@@ -7,7 +7,8 @@ const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', BORDER='#E5E5EA', DIM='#
 interface Proposal {
   id: string;
   version: string;
-  created_date: string;
+  created_date?: string;
+  created_at?: string;
   amount: number;
   status: string;
   notes: string;
@@ -165,7 +166,7 @@ export default function ProposalPage() {
                 return (
                   <tr key={p.id} style={{ borderBottom: '1px solid rgba(229,229,234,.4)', background: p.status === 'Accepted' ? 'rgba(61,214,140,.04)' : 'transparent' }}>
                     <td style={{ padding: '10px 14px', color: GOLD, fontWeight: 700 }}>{p.version}</td>
-                    <td style={{ padding: '10px 14px', color: DIM }}>{p.created_date}</td>
+                    <td style={{ padding: '10px 14px', color: DIM }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : (p.created_date || '—')}</td>
                     <td style={{ padding: '10px 14px', color: TEXT, fontWeight: 800, fontSize: 14 }}>${p.amount?.toLocaleString()}</td>
                     <td style={{ padding: '10px 14px' }}><span style={{ padding: '3px 10px', borderRadius: 20, background: sc.bg, color: sc.color, fontSize: 11, fontWeight: 700 }}>{p.status}</span></td>
                     <td style={{ padding: '10px 14px', color: DIM }}>{p.notes}</td>

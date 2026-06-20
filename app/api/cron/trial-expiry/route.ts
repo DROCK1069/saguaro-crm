@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
       .from('tenants')
       .select('*')
       .eq('plan', 'trial')
-      .eq('is_active', true)
       .not('trial_ends_at', 'is', null);
 
     let sent = 0;
