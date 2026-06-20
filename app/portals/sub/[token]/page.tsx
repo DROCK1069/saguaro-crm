@@ -96,6 +96,17 @@ export default function SubPortal(){
 
   const headers:Record<string,string>={'Content-Type':'application/json','x-portal-token':token||''};
 
+  // Messages tab refs/effects — hoisted to component body (hooks must not live
+  // inside the renderMessages() helper, which is not a component).
+  const msgEndRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{msgEndRef.current?.scrollIntoView({behavior:'smooth'})},[messages]);
+  useEffect(()=>{
+    const unread=messages.filter((m:any)=>m.sender_type!=='sub'&&!m.read).map((m:any)=>m.id);
+    if(unread.length>0){
+      fetch(`/api/portal/sub/messages?token=${token}`,{method:'PATCH',headers,body:JSON.stringify({message_ids:unread})}).catch(()=>{});
+    }
+  },[messages]);// eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(()=>{
     const on=()=>setIsOnline(true),off=()=>setIsOnline(false);
     window.addEventListener('online',on);window.addEventListener('offline',off);setIsOnline(navigator.onLine);
@@ -807,17 +818,6 @@ export default function SubPortal(){
   /*  MESSAGES TAB                                                     */
   /* ================================================================ */
   const renderMessages=()=>{
-    const msgEndRef=useRef<HTMLDivElement>(null);
-    useEffect(()=>{msgEndRef.current?.scrollIntoView({behavior:'smooth'})},[messages]);
-
-    // Mark unread messages as read
-    useEffect(()=>{
-      const unread=messages.filter((m:any)=>m.sender_type!=='sub'&&!m.read).map((m:any)=>m.id);
-      if(unread.length>0){
-        fetch(`/api/portal/sub/messages?token=${token}`,{method:'PATCH',headers,body:JSON.stringify({message_ids:unread})}).catch(()=>{});
-      }
-    },[messages]);
-
     return(
       <div style={{display:'grid',gap:20}}>
         <div style={card()}>

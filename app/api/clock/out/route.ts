@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         .from('timesheet_entries')
         .insert({
           tenant_id:     user.tenantId,
-          project_id:    body.projectId || null,
+          project_id:    (body.projectId as string) || null,
           employee_name: (body.employeeName as string) || user.email || 'Unknown',
           work_date:     now.toISOString().split('T')[0],
           clock_in:      clockInTime.toISOString(),

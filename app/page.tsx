@@ -125,6 +125,148 @@ const PLANS = [
 ];
 
 /* ===========================
+   MARKETING NAV (own component so hooks are valid)
+   =========================== */
+function MarketingNav() {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // Close on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setOpenMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const menus = {
+    platform: {
+      label: 'Platform',
+      items: [
+        { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, full estimate out in 60 seconds', href: '/app/takeoff' },
+        { icon: <PaintBrush size={22} weight="duotone" color="#C8881C" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
+        { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
+      ],
+    },
+    solutions: {
+      label: 'Solutions',
+      items: [
+        { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/signup' },
+        { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/signup' },
+        { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/signup' },
+        { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/signup' },
+        { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/signup' },
+      ],
+    },
+    resources: {
+      label: 'Resources',
+      items: [
+        { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
+        { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
+        { icon: <BookOpen size={22} weight="duotone" color="#C8881C" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
+        { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
+      ],
+    },
+  };
+
+  return (
+    <nav ref={navRef} style={{
+      position: 'sticky', top: 0, zIndex: 100,
+      background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+      borderBottom: '1px solid rgba(212,160,23,0.12)',
+      padding: '0 max(24px, 4vw)', height: 56,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    }}>
+      {/* Logo lockup — full horizontal badge + wordmark artwork */}
+      <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
+        <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={34} style={{ height: 34, width: 'auto', display: 'block' }} />
+      </a>
+
+      {/* Desktop menu */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
+        {Object.entries(menus).map(([key, menu]) => (
+          <div key={key} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setOpenMenu(openMenu === key ? null : key)}
+              onMouseEnter={() => setOpenMenu(key)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: openMenu === key ? '#C8881C' : '#1C1C1E',
+                fontSize: 13, fontWeight: 500, padding: '8px 14px',
+                display: 'flex', alignItems: 'center', gap: 4,
+                transition: 'color 0.15s ease',
+              }}
+            >
+              {menu.label}
+              <CaretDown size={12} weight="bold" style={{ transform: openMenu === key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+            </button>
+
+            {/* Dropdown panel */}
+            {openMenu === key && (
+              <div
+                onMouseLeave={() => setOpenMenu(null)}
+                style={{
+                  position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+                  width: 420, marginTop: 8,
+                  background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
+                  border: '1px solid rgba(212,160,23,0.15)',
+                  borderRadius: 16, padding: '8px',
+                  boxShadow: '0 2px 6px rgba(28,25,23,0.06), 0 20px 50px rgba(28,25,23,0.14)',
+                  animation: 'navDropFadeIn 0.15s ease',
+                }}
+              >
+                {menu.items.map((item, i) => (
+                  <a key={i} href={item.href} style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '12px 16px', borderRadius: 10,
+                    textDecoration: 'none', transition: 'all 0.15s ease',
+                    borderLeft: '3px solid transparent',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,160,23,0.06)'; e.currentTarget.style.borderLeftColor = '#C8881C'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {item.icon}
+                    </div>
+                    <div>
+                      <div style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
+                      <div style={{ color: '#86868B', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Pricing link */}
+        <a href="/#pricing" style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
+      </div>
+
+      {/* Right side CTAs */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <a href="/login" style={{ color: '#86868B', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</a>
+        <a href="/signup" style={{
+          background: 'linear-gradient(135deg, #C8881C, #C8960F)',
+          color: '#000', fontSize: 13, fontWeight: 700,
+          padding: '8px 20px', borderRadius: 8, textDecoration: 'none',
+          boxShadow: '0 0 20px rgba(212,160,23,0.2)',
+        }}>Start Free</a>
+
+        {/* Mobile hamburger */}
+        <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#1C1C1E', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
+          {mobileOpen ? <X size={24} /> : <List size={24} />}
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+/* ===========================
    MAIN PAGE COMPONENT
    =========================== */
 export default function LandingPage() {
@@ -144,144 +286,7 @@ export default function LandingPage() {
       )}
 
       {/* ══════════ 2. NAV WITH DROPDOWNS ══════════ */}
-      {(() => {
-        const [openMenu, setOpenMenu] = useState<string | null>(null);
-        const [mobileOpen, setMobileOpen] = useState(false);
-        const navRef = useRef<HTMLDivElement>(null);
-
-        // Close on click outside
-        useEffect(() => {
-          const handler = (e: MouseEvent) => {
-            if (navRef.current && !navRef.current.contains(e.target as Node)) {
-              setOpenMenu(null);
-            }
-          };
-          document.addEventListener('mousedown', handler);
-          return () => document.removeEventListener('mousedown', handler);
-        }, []);
-
-        const menus = {
-          platform: {
-            label: 'Platform',
-            items: [
-              { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, full estimate out in 60 seconds', href: '/app/takeoff' },
-              { icon: <PaintBrush size={22} weight="duotone" color="#C8881C" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
-              { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
-            ],
-          },
-          solutions: {
-            label: 'Solutions',
-            items: [
-              { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/signup' },
-              { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/signup' },
-              { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/signup' },
-              { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/signup' },
-              { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/signup' },
-            ],
-          },
-          resources: {
-            label: 'Resources',
-            items: [
-              { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
-              { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
-              { icon: <BookOpen size={22} weight="duotone" color="#C8881C" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
-              { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
-            ],
-          },
-        };
-
-        return (
-          <nav ref={navRef} style={{
-            position: 'sticky', top: 0, zIndex: 100,
-            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-            borderBottom: '1px solid rgba(212,160,23,0.12)',
-            padding: '0 max(24px, 4vw)', height: 56,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            {/* Logo lockup — full horizontal badge + wordmark artwork */}
-            <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
-              <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={34} style={{ height: 34, width: 'auto', display: 'block' }} />
-            </a>
-
-            {/* Desktop menu */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
-              {Object.entries(menus).map(([key, menu]) => (
-                <div key={key} style={{ position: 'relative' }}>
-                  <button
-                    onClick={() => setOpenMenu(openMenu === key ? null : key)}
-                    onMouseEnter={() => setOpenMenu(key)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: openMenu === key ? '#C8881C' : '#1C1C1E',
-                      fontSize: 13, fontWeight: 500, padding: '8px 14px',
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      transition: 'color 0.15s ease',
-                    }}
-                  >
-                    {menu.label}
-                    <CaretDown size={12} weight="bold" style={{ transform: openMenu === key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
-                  </button>
-
-                  {/* Dropdown panel */}
-                  {openMenu === key && (
-                    <div
-                      onMouseLeave={() => setOpenMenu(null)}
-                      style={{
-                        position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-                        width: 420, marginTop: 8,
-                        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-                        border: '1px solid rgba(212,160,23,0.15)',
-                        borderRadius: 16, padding: '8px',
-                        boxShadow: '0 2px 6px rgba(28,25,23,0.06), 0 20px 50px rgba(28,25,23,0.14)',
-                        animation: 'navDropFadeIn 0.15s ease',
-                      }}
-                    >
-                      {menu.items.map((item, i) => (
-                        <a key={i} href={item.href} style={{
-                          display: 'flex', alignItems: 'center', gap: 14,
-                          padding: '12px 16px', borderRadius: 10,
-                          textDecoration: 'none', transition: 'all 0.15s ease',
-                          borderLeft: '3px solid transparent',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,160,23,0.06)'; e.currentTarget.style.borderLeftColor = '#C8881C'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
-                        >
-                          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {item.icon}
-                          </div>
-                          <div>
-                            <div style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
-                            <div style={{ color: '#86868B', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {/* Pricing link */}
-              <a href="/#pricing" style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
-            </div>
-
-            {/* Right side CTAs */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <a href="/login" style={{ color: '#86868B', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</a>
-              <a href="/signup" style={{
-                background: 'linear-gradient(135deg, #C8881C, #C8960F)',
-                color: '#000', fontSize: 13, fontWeight: 700,
-                padding: '8px 20px', borderRadius: 8, textDecoration: 'none',
-                boxShadow: '0 0 20px rgba(212,160,23,0.2)',
-              }}>Start Free</a>
-
-              {/* Mobile hamburger */}
-              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#1C1C1E', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
-                {mobileOpen ? <X size={24} /> : <List size={24} />}
-              </button>
-            </div>
-          </nav>
-        );
-      })()}
+      <MarketingNav />
 
       {/* ══════════ 3. HERO ══════════ */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
