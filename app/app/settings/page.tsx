@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
+import { DeviceMobile } from '@phosphor-icons/react';
 
 const GOLD  = '#F59E0B';
 const DARK  = '#F2F2F7';
@@ -311,7 +312,7 @@ export default function SettingsPage() {
 
       {/* Install App CTA */}
       <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(255,255,255,0) 100%)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 14, padding: '28px 28px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
-        <div style={{ fontSize: 40 }}>📱</div>
+        <div style={{ fontSize: 40 }}><DeviceMobile size={40} weight="duotone" color={GOLD} /></div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 4 }}>Install Saguaro Field on your phone</div>
           <div style={{ fontSize: 13, color: DIM }}>iPhone, Android, iPad, or desktop — no app store needed. Free for your entire team.</div>

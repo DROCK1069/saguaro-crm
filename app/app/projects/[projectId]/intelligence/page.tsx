@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import ErrorBoundary from '../../../../../components/ErrorBoundary';
+import { Brain } from '@phosphor-icons/react';
 
 const GOLD = '#C8881C';
 const DARK = '#F2F2F7';
@@ -187,7 +188,7 @@ function IntelligenceChat() {
       {/* Sidebar */}
       <div style={{ width: 260, background: '#F2F2F7', borderRight: `1px solid ${BORDER}`, padding: '20px 16px', overflowY: 'auto', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🧠</div>
+          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}><Brain size={18} color="#fff" /></div>
           <div>
             <div style={{ color: TEXT, fontWeight: 700, fontSize: '13px' }}>Saguaro Intelligence</div>
             <div style={{ color: DIM, fontSize: '11px' }}>AI Construction Expert</div>

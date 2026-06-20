@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
+import { HouseSimple, HardHat } from '@phosphor-icons/react';
 
 const GOLD = '#C8881C';
 const DARK = '#F2F2F7';
@@ -451,7 +452,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
   if (sessions.length === 0) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>🏠</div>
+        <div style={{ fontSize: 36, marginBottom: 12 }}><HouseSimple size={36} weight="duotone" color={GOLD} /></div>
         <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 6 }}>No client portal access yet</div>
         <div style={{ fontSize: 13, color: DIM, marginBottom: 20 }}>Create access for a client to get started.</div>
         <button onClick={onInvite} style={{ padding: '10px 20px', background: `rgba(212,160,23,0.12)`, border: `1px solid rgba(212,160,23,0.3)`, borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
@@ -523,7 +524,7 @@ function SubTable({ sessions, copied, revoking, resending, resendMsg, onCopy, on
   if (sessions.length === 0) {
     return (
       <div style={{ padding: 48, textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>👷</div>
+        <div style={{ fontSize: 36, marginBottom: 12 }}><HardHat size={36} weight="duotone" color={GOLD} /></div>
         <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 6 }}>No subcontractor portal access yet</div>
         <div style={{ fontSize: 13, color: DIM, marginBottom: 20 }}>Create access for a subcontractor to get started.</div>
         <button onClick={onInvite} style={{ padding: '10px 20px', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: BLUE, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { Bell } from '@phosphor-icons/react';
 
 const GOLD = '#C8881C';
 const DARK = '#F2F2F7';
@@ -186,7 +187,7 @@ export default function NotificationsPage() {
           <div style={{ padding: 40, textAlign: 'center', color: DIM, fontSize: 13 }}>Loading notifications...</div>
         ) : displayed.length === 0 ? (
           <div style={{ padding: 60, textAlign: 'center', color: DIM }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🔔</div>
+            <div style={{ fontSize: 32, marginBottom: 12 }}><Bell size={32} weight="duotone" color={GOLD} /></div>
             <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
               {readFilter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
             </div>

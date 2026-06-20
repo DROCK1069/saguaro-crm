@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { ShieldCheck } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -204,7 +205,7 @@ export default function InsurancePage() {
         {/* Empty */}
         {!loading && certs.length===0 && (
           <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:56,textAlign:'center' as const}}>
-            <div style={{fontSize:40,marginBottom:14}}>🛡️</div>
+            <div style={{fontSize:40,marginBottom:14}}><ShieldCheck size={40} weight="duotone" color={GOLD} /></div>
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No certificates yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Upload COIs for all subcontractors to track expiration dates and maintain compliance.</div>
             <button onClick={()=>setShowForm(true)}

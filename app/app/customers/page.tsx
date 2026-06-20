@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { EmptyState } from '../../../components/EmptyState';
 import { SkeletonRow } from '../../../components/ui/Skeleton';
-import { UsersThree, WarningCircle } from '@phosphor-icons/react';
+import { UsersThree, WarningCircle, HouseSimple, Cactus } from '@phosphor-icons/react';
 import { useToast } from '@/components/Toast';
 
 /* ─── Palette ─── */
@@ -328,7 +328,7 @@ export default function CustomersPage() {
                         height: 80, background: `linear-gradient(135deg, ${GOLD}20, ${CARD})`,
                         borderRadius: 8, marginBottom: 10, display: 'flex',
                         alignItems: 'center', justifyContent: 'center', fontSize: 30,
-                      }}>🏠</div>
+                      }}><HouseSimple size={30} weight="duotone" color={GOLD} /></div>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{ds.room}</div>
                       <div style={{ fontSize: 12, color: DIM }}>{ds.style} | {ds.date}</div>
                     </div>
@@ -374,7 +374,7 @@ export default function CustomersPage() {
                       display: 'flex', gap: 12, padding: '12px 16px',
                       background: `${BG}60`, borderRadius: 10, border: `1px solid ${BORDER}`,
                     }}>
-                      <span style={{ fontSize: 20 }}>🌵</span>
+                      <span style={{ fontSize: 20 }}><Cactus size={20} color={GOLD} /></span>
                       <div>
                         <div style={{ fontSize: 12, color: DIM, marginBottom: 2 }}>{cv.date}</div>
                         <div style={{ fontSize: 13 }}>{cv.preview}</div>

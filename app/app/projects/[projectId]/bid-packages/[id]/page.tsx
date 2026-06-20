@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toCents, toDollars, sumCents } from '@/lib/calc';
+import { Envelope, Trophy } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -212,7 +213,7 @@ export default function BidPackageDetailPage() {
 
   if (!pkg) return (
     <div style={{ padding: 40, textAlign: 'center', color: DIM }}>
-      <div style={{ fontSize: 32, marginBottom: 12 }}>📬</div>
+      <div style={{ marginBottom: 12 }}><Envelope weight="duotone" size={32} color={GOLD} /></div>
       <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Bid package not found</div>
       <button onClick={() => router.push(`/app/projects/${projectId}/bid-packages`)} style={{ padding: '8px 18px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, cursor: 'pointer' }}>← Go Back</button>
     </div>
@@ -286,7 +287,7 @@ export default function BidPackageDetailPage() {
         {/* Awarded banner */}
         {pkg.awarded_to && (
           <div style={{ background: 'rgba(26,138,74,.08)', border: '1px solid rgba(26,138,74,.25)', borderRadius: 10, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 20 }}>🏆</span>
+            <Trophy size={20} color="#1db954" />
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#1db954', marginBottom: 3, letterSpacing: 0.5 }}>Awarded To</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{pkg.awarded_to}{pkg.awarded_amount && <span style={{ color: '#1db954', marginLeft: 12 }}>{fmt(pkg.awarded_amount)}</span>}</div>

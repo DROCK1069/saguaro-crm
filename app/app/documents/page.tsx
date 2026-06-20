@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Skeleton } from '../../../components/ui/Skeleton';
-import { WarningCircle } from '@phosphor-icons/react';
+import { WarningCircle, FilePdf } from '@phosphor-icons/react';
 
 const GOLD = '#C8881C';
 const DARK = '#F2F2F7';
@@ -517,7 +517,8 @@ export default function DocumentsPage() {
                               background: 'none', border: `1px solid ${BORDER}`,
                               borderRadius: 5, color: GOLD, fontSize: 11,
                               padding: '3px 10px', cursor: 'pointer',
-                            }}>📄 WH-347</button>
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                            }}><FilePdf size={11} /> WH-347</button>
                         </td>
                       </tr>
                     );

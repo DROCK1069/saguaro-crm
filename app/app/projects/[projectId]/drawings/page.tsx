@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import { Ruler } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -335,7 +336,7 @@ export default function DrawingsPage(){
           {!loading&&filtered.length===0&&(
             <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,
               padding:56,textAlign:'center'}}>
-              <div style={{fontSize:40,marginBottom:14}}>📐</div>
+              <div style={{fontSize:40,marginBottom:14}}><Ruler size={40} weight="duotone" color={GOLD} /></div>
               <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>
                 {drawings.length===0?'No drawings yet':'No drawings match your filters'}
               </div>

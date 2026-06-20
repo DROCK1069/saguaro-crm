@@ -4,6 +4,7 @@ import {
   PageWrap, SectionHeader, StatCard, Badge, Btn,
   Card, CardHeader, CardBody, Table, ProgressBar, T,
 } from '@/components/ui/shell';
+import { Stack, Ruler, FolderOpen, Robot, Lightbulb } from '@phosphor-icons/react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Project { id: string; name: string; }
@@ -337,7 +338,7 @@ export default function TakeoffPage() {
             {/* Upload Card */}
             <Card>
               <CardHeader>
-                <span style={{ fontSize: 16 }}>🏗️</span>
+                <span style={{ fontSize: 16 }}><Stack size={16} /></span>
                 <span style={{ fontWeight: 600, fontSize: 14, color: T.white }}>New Analysis</span>
               </CardHeader>
               <CardBody>
@@ -364,7 +365,7 @@ export default function TakeoffPage() {
                         transition: 'all 0.2s',
                       }}
                     >
-                      <div style={{ fontSize: 32, marginBottom: 10 }}>📐</div>
+                      <div style={{ fontSize: 32, marginBottom: 10 }}><Ruler size={32} weight="duotone" color={T.gold} /></div>
                       <div style={{ color: T.white, fontWeight: 600, marginBottom: 4, fontSize: 14 }}>
                         Tap to upload a blueprint
                       </div>
@@ -524,7 +525,7 @@ export default function TakeoffPage() {
             {/* Recent Takeoffs list */}
             <Card>
               <CardHeader>
-                <span style={{ fontSize: 14 }}>📁</span>
+                <span style={{ fontSize: 14 }}><FolderOpen size={14} /></span>
                 <span style={{ fontWeight: 600, fontSize: 14, color: T.white }}>Recent Analyses</span>
               </CardHeader>
               <div style={{ maxHeight: 460, overflowY: 'auto' }}>
@@ -588,7 +589,7 @@ export default function TakeoffPage() {
             {!loadingDetail && !selectedTakeoff && (
               <Card style={{ height: 400 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
-                  <div style={{ fontSize: 48 }}>📐</div>
+                  <div style={{ fontSize: 48 }}><Ruler size={48} weight="duotone" color={T.gold} /></div>
                   <div style={{ color: T.white, fontWeight: 600, fontSize: 16 }}>No Takeoff Selected</div>
                   <div style={{ color: T.muted, fontSize: 13, textAlign: 'center', maxWidth: 260 }}>
                     Upload a blueprint to get an AI-powered material and cost estimate
@@ -785,7 +786,7 @@ export default function TakeoffPage() {
                     {selectedTakeoff.summary && (
                       <Card>
                         <CardHeader>
-                          <span>🤖</span>
+                          <span><Robot size={16} /></span>
                           <span style={{ fontWeight: 600, fontSize: 13 }}>AI Summary</span>
                         </CardHeader>
                         <CardBody>
@@ -800,7 +801,7 @@ export default function TakeoffPage() {
                     {selectedTakeoff.recommendations?.length > 0 && (
                       <Card>
                         <CardHeader>
-                          <span>💡</span>
+                          <span><Lightbulb size={16} /></span>
                           <span style={{ fontWeight: 600, fontSize: 13 }}>Estimator Recommendations</span>
                         </CardHeader>
                         <CardBody>

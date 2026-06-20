@@ -9,7 +9,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
-import { MagnifyingGlass, ClipboardText, MapPin, Wrench, Camera, Clock } from '@phosphor-icons/react';
+import { MagnifyingGlass, ClipboardText, MapPin, Wrench, Camera, Clock, Lightning } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -1446,7 +1446,7 @@ function ObservationsPage() {
             ...cardStyle, borderColor: caStatusColor(selected.corrective_action.status) + '66',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ color: AMBER, fontSize: 16 }}>⚡</span>
+              <span style={{ color: AMBER, fontSize: 16 }}><Lightning size={16} color={AMBER} /></span>
               <span style={{ color: TEXT, fontSize: 15, fontWeight: 700, flex: 1 }}>Corrective Action</span>
               <Pill label={selected.corrective_action.status} color={caStatusColor(selected.corrective_action.status)} />
             </div>

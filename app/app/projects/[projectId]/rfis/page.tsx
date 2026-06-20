@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { PageWrap, SectionHeader, StatCard, Badge, Btn, Card, CardHeader, CardBody, Table, T } from '@/components/ui/shell';
 import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/EmptyState';
-import { Question, WarningCircle } from '@phosphor-icons/react';
+import { Question, WarningCircle, Trash } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
 interface RFI {
@@ -273,7 +273,7 @@ export default function RFIsPage() {
                           if (!confirm('Delete this RFI?')) return;
                           setRfis(prev => prev.filter(r => r.id !== rfi.id));
                           try { await fetch(`/api/rfis/${rfi.id}`, { method: 'DELETE' }); } catch { /* optimistic */ }
-                        }} style={{background:'none',border:'none',color:'rgba(239,68,68,.5)',cursor:'pointer',fontSize:12,padding:'2px 6px',marginLeft:4}} title="Delete RFI">🗑️</button>
+                        }} style={{background:'none',border:'none',color:'rgba(239,68,68,.5)',cursor:'pointer',fontSize:12,padding:'2px 6px',marginLeft:4}} title="Delete RFI"><Trash size={12} /></button>
                       </div>,
                     ];
                   })}

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { FilePdf } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -390,7 +391,7 @@ export default function PayrollPage() {
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         {record.pdf_url ? (
-                          <a href={record.pdf_url} target="_blank" rel="noopener noreferrer" style={{ background: 'none', border: `1px solid ${BORDER}`, borderRadius: 5, color: GOLD, fontSize: 11, padding: '3px 10px', textDecoration: 'none', fontWeight: 700 }}>📄 WH-347 PDF</a>
+                          <a href={record.pdf_url} target="_blank" rel="noopener noreferrer" style={{ background: 'none', border: `1px solid ${BORDER}`, borderRadius: 5, color: GOLD, fontSize: 11, padding: '3px 10px', textDecoration: 'none', fontWeight: 700 }}><FilePdf size={12} /> WH-347 PDF</a>
                         ) : (
                           <span style={{ fontSize: 11, color: DIM }}>—</span>
                         )}

@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
+import { Printer } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -358,7 +359,7 @@ function CoordinationPage() {
       <div style={{ padding: '16px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: GOLD }}>Coordination Issues</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleExportPDF} style={headerBtn} title="Export PDF">🖨</button>
+          <button onClick={handleExportPDF} style={headerBtn} title="Export PDF"><Printer size={18} /></button>
           <button onClick={() => { setForm(emptyForm); setFormPhotos([]); setPhotoPreview([]); setView('create'); }} style={{ ...headerBtn, background: GOLD, color: '#1C1C1E' }}>+ New</button>
         </div>
       </div>

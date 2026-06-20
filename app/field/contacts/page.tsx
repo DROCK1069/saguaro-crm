@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { MagnifyingGlass, Users } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -82,7 +83,7 @@ function ContactsPage() {
 
       {/* Search */}
       <div style={{ position: 'relative', marginBottom: 16 }}>
-        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: DIM, fontSize: 16 }}>🔍</span>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: DIM, fontSize: 16 }}><MagnifyingGlass size={16} color={DIM} /></span>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -95,7 +96,7 @@ function ContactsPage() {
         <div style={{ textAlign: 'center', padding: '40px 0', color: DIM }}>Loading team...</div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>👥</div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}><Users size={40} weight="duotone" color={GOLD} /></div>
           <p style={{ margin: 0, fontSize: 14 }}>{team.length === 0 ? 'No team members added to this project yet. Add them in the desktop dashboard.' : 'No results match your search.'}</p>
         </div>
       ) : (

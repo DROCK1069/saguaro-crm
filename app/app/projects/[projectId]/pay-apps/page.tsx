@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import DragHandle, { useDragReorder } from '../../../../../components/DragHandle';
+import { ClipboardText, FilePdf } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -198,7 +199,7 @@ export default function PayAppsPage() {
         {/* Empty */}
         {!loading && payApps.length===0 && (
           <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:56,textAlign:'center'}}>
-            <div style={{fontSize:40,marginBottom:14}}>📋</div>
+            <div style={{marginBottom:14}}><ClipboardText weight="duotone" size={40} color={GOLD} /></div>
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No pay applications yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Create your first AIA G702/G703 pay application to bill the owner.</div>
             <Link
@@ -218,7 +219,7 @@ export default function PayAppsPage() {
               <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',background:'rgba(212,160,23,0.08)',border:`1px solid rgba(212,160,23,0.2)`,borderRadius:8,marginBottom:12}}>
                 <span style={{color:GOLD,fontWeight:700,fontSize:13}}>{bulkSelected.size} selected</span>
                 <button onClick={handleBulkApprove} style={{padding:'6px 14px',background:'rgba(34,197,94,0.15)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:6,color:'#22C55E',fontSize:12,fontWeight:700,cursor:'pointer'}}>✓ Approve All</button>
-                <button onClick={handleBulkExport} style={{padding:'6px 14px',background:'rgba(212,160,23,0.15)',border:`1px solid rgba(212,160,23,0.3)`,borderRadius:6,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer'}}>📄 Export All PDFs</button>
+                <button onClick={handleBulkExport} style={{padding:'6px 14px',background:'rgba(212,160,23,0.15)',border:`1px solid rgba(212,160,23,0.3)`,borderRadius:6,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5}}><FilePdf size={13} /> Export All PDFs</button>
                 <button onClick={()=>setBulkSelected(new Set())} style={{padding:'6px 14px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:6,color:DIM,fontSize:12,cursor:'pointer'}}>Clear</button>
               </div>
             )}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { Robot, Broadcast } from '@phosphor-icons/react';
 
 const BASE = '#F2F2F7';
 const CARD = '#FFFFFF';
@@ -172,7 +173,7 @@ export default function NetworkWizardPage() {
         <span style={{ color: TEXT, fontSize: 12, marginLeft: 4 }}>AI Wizard</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <span style={{ fontSize: 32 }}>🤖</span>
+        <Robot size={32} color={GOLD} />
         <div>
           <h1 style={{ color: TEXT, fontSize: 22, fontWeight: 700, margin: 0 }}>AI Network Wizard</h1>
           <p style={{ color: DIM, fontSize: 13, margin: 0 }}>Describe your site and let AI design your complete network infrastructure.</p>
@@ -404,7 +405,7 @@ export default function NetworkWizardPage() {
               <div style={{ color: TEXT, fontSize: 14, fontWeight: 700, marginBottom: 12 }}>WiFi SSID Recommendations</div>
               {result.wifi_ssids.map((ssid, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: i < result.wifi_ssids.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
-                  <span style={{ fontSize: 18 }}>📡</span>
+                  <Broadcast size={18} color={GOLD} />
                   <div style={{ flex: 1 }}>
                     <span style={{ color: TEXT, fontSize: 13, fontWeight: 600 }}>{ssid.ssid}</span>
                     <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>

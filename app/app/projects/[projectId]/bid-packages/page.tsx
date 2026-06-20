@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, extend } from '@/lib/calc';
+import { Package, FilePdf } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -448,7 +449,7 @@ export default function BidPackagesPage() {
           <div style={{ textAlign: 'center', padding: 60, color: DIM }}>Loading bid packages...</div>
         ) : packages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
+            <div style={{ marginBottom: 12 }}><Package weight="duotone" size={40} color={GOLD} /></div>
             <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 8 }}>No bid packages yet</div>
             <div style={{ fontSize: 13, marginBottom: 20 }}>Create your first bid package to start soliciting subcontractors.</div>
             <button onClick={() => setShowWizard(true)} style={{ padding: '10px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Create Bid Package</button>
@@ -477,7 +478,7 @@ export default function BidPackagesPage() {
                       <td style={{ padding: '12px 14px', color: subs > 0 ? '#1db954' : DIM, textAlign: 'center', fontWeight: subs > 0 ? 700 : 400 }}>{subs}</td>
                       <td style={{ padding: '12px 14px' }}>
                         {pkg.jacket_pdf_url ? (
-                          <a href={pkg.jacket_pdf_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: GOLD, fontWeight: 700, textDecoration: 'none' }}>📄 PDF</a>
+                          <a href={pkg.jacket_pdf_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: GOLD, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}><FilePdf size={12} /> PDF</a>
                         ) : (
                           <span style={{ fontSize: 11, color: DIM }}>—</span>
                         )}

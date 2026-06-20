@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { toCents, toDollars, summarizeContract } from '@/lib/calc';
+import { Robot, ClipboardText, Trash } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const AMBER='#d97706';
@@ -38,7 +39,7 @@ function AIRiskPanel({ result, onClose }: { result: AIRiskResult; onClose: () =>
       <style>{`@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:16}}>🤖</span>
+          <span style={{fontSize:16}}><Robot size={16} /></span>
           <span style={{fontWeight:800,fontSize:14,color:TEXT}}>AI Risk Analysis</span>
           <RiskBadge level={result.risk_level} />
         </div>
@@ -325,7 +326,7 @@ export default function ChangeOrdersPage() {
               onClick={()=>analyzeRisk({title:fTitle,description:fDesc,reason:fReason,cost_impact:parseFloat(fCost)||0,schedule_impact:parseFloat(fSchedule)||0},'form')}
               disabled={(riskLoading&&riskTarget==='form')||!fTitle.trim()}
               style={{padding:'9px 18px',background:'rgba(212,160,23,.1)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,cursor:'pointer',opacity:!fTitle.trim()?0.5:1,display:'flex',alignItems:'center',gap:6}}>
-              {riskLoading&&riskTarget==='form' ? '🤖 Analyzing…' : '🤖 Analyze Risk'}
+              <Robot size={13} />{riskLoading&&riskTarget==='form' ? ' Analyzing…' : ' Analyze Risk'}
             </button>
           </div>
           {riskTarget==='form' && riskError && (
@@ -392,7 +393,7 @@ export default function ChangeOrdersPage() {
         {/* Empty */}
         {!loading && cos.length===0 && (
           <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:56,textAlign:'center' as const}}>
-            <div style={{fontSize:40,marginBottom:14}}>📋</div>
+            <div style={{fontSize:40,marginBottom:14}}><ClipboardText size={40} weight="duotone" color={GOLD} /></div>
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No change orders yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Track scope changes, owner requests, and unforeseen conditions.</div>
             <button onClick={()=>setShowForm(true)}
@@ -456,7 +457,7 @@ export default function ChangeOrdersPage() {
                                 ))}
                                 <div style={{height:1,background:BORDER,margin:'4px 0'}}/>
                                 <div onClick={()=>{if(confirm('Delete this change order?'))handleDeleteCO(co.id);}} style={{padding:'7px 12px',fontSize:12,color:RED,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(192,48,48,.08)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                                  <span style={{fontSize:14}}>🗑️</span>Delete
+                                  <span style={{fontSize:14}}><Trash size={14} /></span>Delete
                                 </div>
                               </div>
                             )}
@@ -492,7 +493,7 @@ export default function ChangeOrdersPage() {
                             }}
                             disabled={riskLoading&&riskTarget===co.id}
                             style={{background:'rgba(212,160,23,.08)',border:`1px solid rgba(212,160,23,.25)`,borderRadius:5,color:GOLD,fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
-                            {riskLoading&&riskTarget===co.id ? '🤖…' : '🤖 Risk'}
+                            <Robot size={11} />{riskLoading&&riskTarget===co.id ? '…' : ' Risk'}
                           </button>
                         </div>
                       </td>

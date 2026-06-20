@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SwipeActionItem } from '@/components/field/SwipeAction';
+import { Trash } from '@phosphor-icons/react';
 
 const GOLD = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -837,7 +838,7 @@ function BidsPage() {
       {deleteConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 340, textAlign: 'center' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
+            <div style={{ fontSize: 36, marginBottom: 12 }}><Trash size={36} weight="duotone" color={GOLD} /></div>
             <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Delete this bid?</div>
             <div style={{ fontSize: 13, color: DIM, marginBottom: 20 }}>This action cannot be undone.</div>
             <div style={{ display: 'flex', gap: 10 }}>

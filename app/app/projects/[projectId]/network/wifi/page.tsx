@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { Broadcast } from '@phosphor-icons/react';
 
 const BASE = '#F2F2F7';
 const CARD = '#FFFFFF';
@@ -327,7 +328,7 @@ export default function WifiManagerPage() {
                   display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
                   background: 'rgba(0,0,0,0.03)', borderRadius: 8, border: `1px solid ${BORDER}`,
                 }}>
-                  <span style={{ fontSize: 22 }}>📡</span>
+                  <Broadcast size={22} color={GOLD} />
                   <div style={{ flex: 1 }}>
                     <div style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>
                       {net.ssid}

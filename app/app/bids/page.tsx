@@ -2,7 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { WarningCircle } from '@phosphor-icons/react';
+import { WarningCircle, Brain, ChartBar, Envelope, Trash, Robot } from '@phosphor-icons/react';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
@@ -233,7 +233,7 @@ function BidsPageInner() {
           <div style={{fontSize:13,color:DIM,marginTop:4}}>AI-scored opportunities and active bid packages</div>
         </div>
         <div style={{display:'flex',gap:10}}>
-          <Link href="/app/intelligence" style={{padding:'9px 16px',background:'rgba(212,160,23,.12)',border:'1px solid rgba(212,160,23,.3)',borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>🧠 Bid Intelligence</Link>
+          <Link href="/app/intelligence" style={{padding:'9px 16px',background:'rgba(212,160,23,.12)',border:'1px solid rgba(212,160,23,.3)',borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6}}><Brain size={14} /> Bid Intelligence</Link>
           <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}} onClick={()=>setShowScore(true)}>+ Score a Bid</button>
         </div>
       </div>
@@ -271,7 +271,7 @@ function BidsPageInner() {
           />
         ) : opportunities.length === 0 ? (
           <div style={{textAlign:'center' as const,padding:60,color:DIM}}>
-            <div style={{fontSize:40,marginBottom:12}}>📊</div>
+            <div style={{fontSize:40,marginBottom:12}}><ChartBar size={40} weight="duotone" color={GOLD} /></div>
             <div style={{fontSize:18,fontWeight:700,color:TEXT,marginBottom:8}}>No Open Bid Packages</div>
             <div style={{marginBottom:20}}>Create bid packages on your projects to track your pipeline here.</div>
             <button onClick={()=>router.push('/app/projects')} style={{padding:'10px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>Go to Projects</button>
@@ -300,7 +300,7 @@ function BidsPageInner() {
 
       {/* ── Active Tab ────────────────────────────────────────────────────────── */}
       {tab==='active'&&<div style={{textAlign:'center' as const,padding:60,color:DIM}}>
-        <div style={{fontSize:40,marginBottom:12}}>📬</div>
+        <div style={{fontSize:40,marginBottom:12}}><Envelope size={40} weight="duotone" color={GOLD} /></div>
         <div style={{fontSize:18,fontWeight:700,color:TEXT,marginBottom:8}}>Bid Packages</div>
         <div style={{marginBottom:20}}>Select a project to view and manage its bid packages.</div>
         <button
@@ -361,7 +361,7 @@ function BidsPageInner() {
         />}
         {/* EMPTY — genuine zero results on a successful load */}
         {!historyLoading&&!historyError&&historyBids.length===0&&<div style={{padding:60,textAlign:'center' as const,color:DIM}}>
-          <div style={{fontSize:32,marginBottom:12}}>📊</div>
+          <div style={{fontSize:32,marginBottom:12}}><ChartBar size={32} weight="duotone" color={GOLD} /></div>
           <div style={{fontSize:16,fontWeight:700,color:TEXT,marginBottom:8}}>No bid history found</div>
           <button onClick={()=>fetchHistory(historyFilter==='all'?undefined:historyFilter)} style={{padding:'8px 18px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Retry</button>
         </div>}
@@ -429,7 +429,7 @@ function BidsPageInner() {
                         ))}
                         <div style={{height:1,background:BORDER,margin:'4px 0'}}/>
                         <div onClick={()=>{setMenuId(null);setDeleteId(b.id);}} style={{padding:'7px 12px',fontSize:12,color:RED,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(239,68,68,.08)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                          <span style={{fontSize:14}}>🗑️</span>Delete Bid
+                          <span style={{fontSize:14}}><Trash size={14} /></span>Delete Bid
                         </div>
                       </div>
                     )}
@@ -461,7 +461,7 @@ function BidsPageInner() {
       {showScore&&<div style={{position:'fixed',inset:0,background:'#F2F2F7',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
         <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:28,width:480,maxWidth:'95vw',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-            <div style={{fontWeight:800,fontSize:17,color:TEXT}}>🤖 Score This Bid</div>
+            <div style={{fontWeight:800,fontSize:17,color:TEXT,display:'flex',alignItems:'center',gap:8}}><Robot size={17} /> Score This Bid</div>
             <button onClick={()=>{setShowScore(false);setScoreResult(null);}} style={{background:'none',border:'none',color:DIM,fontSize:20,cursor:'pointer',lineHeight:1}}>×</button>
           </div>
           {scoreResult ? (

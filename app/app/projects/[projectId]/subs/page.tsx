@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { Handshake, Trash } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -151,7 +152,7 @@ export default function SubsPage() {
         {/* Empty State */}
         {!loading && subs.length === 0 && !showForm && (
           <div style={{background:RAISED,border:`1px dashed ${BORDER}`,borderRadius:12,padding:56,textAlign:'center'}}>
-            <div style={{fontSize:48,marginBottom:14}}>🤝</div>
+            <div style={{fontSize:48,marginBottom:14}}><Handshake size={48} weight="duotone" color={GOLD} /></div>
             <div style={{fontWeight:800,fontSize:18,color:TEXT,marginBottom:8}}>No subcontractors yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24,maxWidth:400,margin:'0 auto 24px'}}>Add your project subcontractors to track contracts, compliance, insurance, and performance scores.</div>
             <button onClick={()=>setShowForm(true)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Add First Subcontractor</button>
@@ -196,7 +197,7 @@ export default function SubsPage() {
                           <button onClick={()=>setDeleteId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>No</button>
                         </div>
                       ) : (
-                        <button onClick={()=>setDeleteId(sub.id)} style={{background:'none',border:'none',color:'rgba(239,68,68,.6)',cursor:'pointer',fontSize:14}} title="Delete">🗑️</button>
+                        <button onClick={()=>setDeleteId(sub.id)} style={{background:'none',border:'none',color:'rgba(239,68,68,.6)',cursor:'pointer',fontSize:14}} title="Delete"><Trash size={14} /></button>
                       )}
                     </td>
                   </tr>

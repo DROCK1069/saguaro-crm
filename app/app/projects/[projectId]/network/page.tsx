@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Globe } from '@phosphor-icons/react';
 
 const BASE = '#F2F2F7';
 const CARD = '#FFFFFF';
@@ -175,7 +176,7 @@ export default function NetworkDashboard() {
       <div style={{ padding: 32, maxWidth: 600, margin: '0 auto' }}>
         <div style={cardStyle}>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🌐</div>
+            <div style={{ marginBottom: 12 }}><Globe weight="duotone" size={48} color={GOLD} /></div>
             <h2 style={{ color: TEXT, fontSize: 22, fontWeight: 700, margin: 0 }}>Set Up Network Module</h2>
             <p style={{ color: DIM, fontSize: 13, marginTop: 8 }}>Configure your low voltage / IT network for this project.</p>
           </div>

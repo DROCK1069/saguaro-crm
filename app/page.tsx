@@ -12,13 +12,13 @@ const GREEN = '#34C759';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
 
+/* Flat, calm card surface — no glassmorphism. Confident whitespace + a
+   single soft warm shadow reads more premium than frosted blur. */
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.85)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid #E8E6E1',
+  background: '#FFFFFF',
+  border: '1px solid #EAE8E4',
   borderRadius: 16,
-  boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 8px 24px rgba(28,25,23,0.06)',
+  boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 6px 20px rgba(28,25,23,0.05)',
 };
 
 /* ── icons (inline SVG) ── */
@@ -289,15 +289,14 @@ export default function LandingPage() {
       <MarketingNav />
 
       {/* ══════════ 3. HERO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(242,242,247,0.97) 0%, rgba(242,242,247,0.95) 45%, rgba(242,242,247,0.55) 100%)', zIndex: 0 }} />
-        {/* Brand: subtle sunset glow echoing the Saguaro badge */}
-        <div style={{ position: 'absolute' as const, top: -140, right: -60, width: 560, height: 560, background: 'radial-gradient(circle, rgba(232,140,40,0.20) 0%, rgba(212,160,23,0.07) 42%, transparent 70%)', zIndex: 0, pointerEvents: 'none' as const }} />
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 24px 56px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const }} className="hero-grid">
+        {/* Brand: a single restrained sunset glow echoing the Saguaro badge */}
+        <div style={{ position: 'absolute' as const, top: -120, right: -80, width: 440, height: 440, background: 'radial-gradient(circle, rgba(212,160,23,0.10) 0%, transparent 68%)', zIndex: 0, pointerEvents: 'none' as const }} />
         {/* left */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.35)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.4, padding: '6px 13px', borderRadius: 999, marginBottom: 20, textTransform: 'uppercase' as const }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(212,160,23,0.6)' }} />AI-POWERED CONSTRUCTION CRM</span>
-          <h1 style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.02em', margin: '0 0 18px', color: TEXT }}>The Smarter CRM Built<br />for General Contractors</h1>
-          <p style={{ color: DIM, fontSize: 16, lineHeight: 1.65, margin: '0 0 28px', maxWidth: 460 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.22)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.2, padding: '6px 13px', borderRadius: 999, marginBottom: 22, textTransform: 'uppercase' as const }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD }} />AI-Powered Construction CRM</span>
+          <h1 style={{ fontSize: 46, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.03em', margin: '0 0 20px', color: TEXT }}>The smarter CRM built<br />for general contractors</h1>
+          <p style={{ color: DIM, fontSize: 17, lineHeight: 1.6, margin: '0 0 30px', maxWidth: 470 }}>AI takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance — so you can focus on building.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
             <Link href="/signup" style={{ background: `linear-gradient(135deg, #E8B420, ${GOLD})`, color: '#1C1917', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(200,136,28,0.25), 0 8px 24px rgba(200,136,28,0.18)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
             <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid #E5E5EA', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -353,19 +352,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── social proof bar ── */}
+      {/* ── capability proof bar — honest product facts, not invented metrics ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '8px 24px 56px' }}>
-        <p style={{ textAlign: 'center' as const, fontSize: 13, color: DIM, marginBottom: 20 }}>Trusted by <span style={{ color: TEXT, fontWeight: 600 }}>200+ general contractors</span> in Arizona</p>
+        <p style={{ textAlign: 'center' as const, fontSize: 13, color: DIM, marginBottom: 20, letterSpacing: '0.01em' }}>Everything a GC needs to bid, build, and bill — in one platform</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="stats-grid">
           {[
-            { val: '12,400+', lbl: 'AI Takeoffs Run' },
-            { val: '580K+', lbl: 'Line Items Generated' },
-            { val: '4.2 hrs', lbl: 'Avg. Time Saved' },
-            { val: '8,900+', lbl: 'Blueprints Analyzed' },
+            { val: '< 60s', lbl: 'Per blueprint takeoff' },
+            { val: 'G702/703', lbl: 'AIA pay apps built in' },
+            { val: '50-state', lbl: 'Lien waivers included' },
+            { val: '⅓', lbl: 'The cost of Procore' },
           ].map(s => (
-            <div key={s.lbl} style={{ ...glass, padding: '20px 24px', textAlign: 'center' as const }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: '#C8881C', letterSpacing: '-0.02em' }}>{s.val}</div>
-              <div style={{ fontSize: 12, color: DIM, marginTop: 6, fontWeight: 500 }}>{s.lbl}</div>
+            <div key={s.lbl} style={{ ...glass, padding: '22px 24px', textAlign: 'center' as const }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#C8881C', letterSpacing: '-0.02em' }}>{s.val}</div>
+              <div style={{ fontSize: 12.5, color: DIM, marginTop: 7, fontWeight: 500 }}>{s.lbl}</div>
             </div>
           ))}
         </div>
@@ -376,7 +375,7 @@ export default function LandingPage() {
 
       {/* ══════════ 4. FEATURE GRID ══════════ */}
       <section id="features" style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 8, color: TEXT }}>Everything You Need. Nothing You Don&apos;t.</h2>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Everything you need. Nothing you don&apos;t.</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 48, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }} className="feature-grid">
           {FEATURES.map(f => (
@@ -397,7 +396,7 @@ export default function LandingPage() {
           {/* left copy */}
           <div style={{ padding: '40px 36px' }}>
             <span style={{ display: 'inline-block', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: GREEN, fontSize: 11, fontWeight: 700, letterSpacing: 1, padding: '4px 10px', borderRadius: 16, marginBottom: 14, textTransform: 'uppercase' as const }}>NEW</span>
-            <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 10, lineHeight: 1.25 }}>Design Your Dream<br />Space with AI</h2>
+            <h2 style={{ fontSize: 26, fontWeight: 800, marginBottom: 10, lineHeight: 1.2, letterSpacing: '-0.02em', color: TEXT }}>Design your dream<br />space with AI</h2>
             <p style={{ color: DIM, fontSize: 14, lineHeight: 1.6, marginBottom: 10 }}>Upload a photo of any room. Our AI generates photorealistic redesigns in seconds. Experiment with styles, materials, and layouts before breaking ground.</p>
             <p style={{ color: DIM, fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>Before &amp; after comparison. Interior and exterior. Residential and commercial.</p>
             <Link href="/design" style={{ background: GREEN, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '11px 24px', borderRadius: 10, display: 'inline-block' }}>Try AI Design Studio &mdash; Free</Link>
@@ -430,8 +429,8 @@ export default function LandingPage() {
 
       {/* ══════════ 6. COMPARISON TABLE ══════════ */}
       <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Why GCs Switch from Procore</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Why GCs switch from Procore</h2>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature, here&apos;s how Saguaro compares — at a third of the price.</p>
         <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 12px 32px rgba(28,25,23,0.07)' }}>
           {/* header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid #E5E5EA' }}>
@@ -460,14 +459,12 @@ export default function LandingPage() {
 
       {/* ══════════ 7. PRICING ══════════ */}
       <section id="pricing" style={{ maxWidth: 1000, margin: '0 auto', padding: '64px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Simple, Transparent Pricing</h2>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Simple, transparent pricing</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
           {PLANS.map(plan => (
             <div key={plan.name} style={{
               background: '#FFFFFF',
-              backdropFilter: 'blur(40px)',
-              WebkitBackdropFilter: 'blur(40px)',
               border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid #E5E5EA',
               borderRadius: 16,
               padding: '28px 24px',
@@ -513,20 +510,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════ 8. TESTIMONIAL ══════════ */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '40px 24px', textAlign: 'center' as const }}>
-        <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 16px 44px rgba(28,25,23,0.08)' }}>
-          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=80" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #C8881C', display: 'block', margin: '0 auto 16px' }} />
-          <blockquote style={{ fontSize: 16, color: TEXT, lineHeight: 1.6, fontStyle: 'italic' as const, margin: '0 0 16px', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
-          <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px' }}>Marcus Torres</p>
-          <p style={{ color: DIM, fontSize: 12, margin: 0 }}>VP of Operations &mdash; Sonoran Builders, Phoenix AZ</p>
-        </div>
+      {/* ══════════ 8. PROMISE — honest pull-quote, no fabricated customer ══════════ */}
+      <section style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }}>
+        <blockquote style={{ fontSize: 26, color: TEXT, lineHeight: 1.4, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
+          The estimating, billing, and field work that used to take five tools and a spreadsheet — done in one place, in a fraction of the time.
+        </blockquote>
+        <p style={{ color: DIM, fontSize: 14, margin: 0 }}>That&apos;s the whole point of Saguaro.</p>
       </section>
 
       {/* ══════════ 9. CTA SECTION ══════════ */}
       <section style={{ maxWidth: 700, margin: '0 auto', padding: '72px 24px 80px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 12 }}>Ready to Build Smarter?</h2>
-        <p style={{ color: DIM, fontSize: 15, marginBottom: 28 }}>Join 200+ general contractors who switched to Saguaro and never looked back.</p>
+        <h2 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, color: TEXT }}>Ready to build smarter?</h2>
+        <p style={{ color: DIM, fontSize: 15, marginBottom: 28 }}>Start your free trial today — no credit card, no sales call, no contract.</p>
         <Link href="/signup" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.3), 0 12px 40px rgba(212,160,23,0.15)', transition: 'all 0.3s ease' }}>Start Your Free Trial</Link>
         <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>No credit card required. 14-day free trial.</p>
       </section>

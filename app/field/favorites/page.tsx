@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Clock } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -452,7 +453,7 @@ function FavoritesRecentsPage() {
         <div style={{ padding: '12px 16px' }}>
           {timeGroups.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: DIM }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🕐</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><Clock size={40} weight="duotone" color={GOLD} /></div>
               <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>No recent activity</p>
               <p style={{ fontSize: 13 }}>Items you view across modules will appear here.</p>
             </div>

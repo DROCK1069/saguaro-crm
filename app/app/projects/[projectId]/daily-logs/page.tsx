@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import { ClipboardText, Thermometer, HardHat } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 const GREEN='#1a8a4a',RED='#c03030',BLUE='#3b82f6';
@@ -227,7 +228,7 @@ export default function DailyLogsPage(){
 
           {!loading&&filtered.length===0&&(
             <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:56,textAlign:'center'}}>
-              <div style={{fontSize:40,marginBottom:14}}>📋</div>
+              <div style={{marginBottom:14}}><ClipboardText weight="duotone" size={40} color={GOLD} /></div>
               <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>
                 {logs.length===0?'No daily logs yet':'No logs match your filters'}
               </div>
@@ -267,8 +268,8 @@ export default function DailyLogsPage(){
                         <div style={{fontSize:12,color:DIM,marginTop:3,display:'flex',gap:12,flexWrap:'wrap'}}>
                           {log.weather&&<span>{log.weather}</span>}
                           {(log.temperature_high||log.temperature_low)&&
-                            <span>🌡️ {log.temperature_high??'?'}° / {log.temperature_low??'?'}°F</span>}
-                          {log.crew_count?<span>👷 {log.crew_count} crew</span>:null}
+                            <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Thermometer size={12} /> {log.temperature_high??'?'}° / {log.temperature_low??'?'}°F</span>}
+                          {log.crew_count?<span style={{display:'inline-flex',alignItems:'center',gap:4}}><HardHat size={12} /> {log.crew_count} crew</span>:null}
                         </div>
                       </div>
                       <div style={{display:'flex',gap:6,flexShrink:0}}>
@@ -441,9 +442,9 @@ export default function DailyLogsPage(){
                   <div style={{display:'flex',gap:16,fontSize:13,color:DIM,flexWrap:'wrap'}}>
                     {selected.weather&&<span>{selected.weather}</span>}
                     {(selected.temperature_high||selected.temperature_low)&&(
-                      <span>🌡️ {selected.temperature_high??'?'}° / {selected.temperature_low??'?'}°F</span>
+                      <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Thermometer size={13} /> {selected.temperature_high??'?'}° / {selected.temperature_low??'?'}°F</span>
                     )}
-                    {selected.crew_count&&<span>👷 {selected.crew_count} crew members</span>}
+                    {selected.crew_count&&<span style={{display:'inline-flex',alignItems:'center',gap:4}}><HardHat size={13} /> {selected.crew_count} crew members</span>}
                   </div>
                 </div>
                 <Section label="Work Performed" value={selected.work_performed}/>

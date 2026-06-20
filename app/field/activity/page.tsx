@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { ClipboardText } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -359,7 +360,7 @@ function ActivityLogPage() {
       {/* Empty state */}
       {!loading && entries.length === 0 && (
         <div style={{ textAlign: 'center', padding: 40, color: DIM }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}><ClipboardText size={40} weight="duotone" color={GOLD} /></div>
           <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>No activity found</p>
           <p style={{ fontSize: 13 }}>
             {hasActiveFilters || search ? 'Try adjusting your filters or search terms.' : 'Activity will appear here as team members make changes.'}

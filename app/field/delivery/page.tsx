@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { Package } from '@phosphor-icons/react';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -183,7 +184,7 @@ function DeliveryPage() {
           <div style={{ textAlign: 'center', padding: '40px 0', color: DIM }}>Loading...</div>
         ) : deliveries.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>📦</div>
+            <div style={{ fontSize: 40, marginBottom: 8 }}><Package size={40} weight="duotone" color={GOLD} /></div>
             <p style={{ margin: 0, fontSize: 14 }}>No deliveries logged yet. Tap &quot;+ Log&quot; to record one.</p>
           </div>
         ) : (

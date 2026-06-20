@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import { ClipboardText } from '@phosphor-icons/react';
 
 const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', RAISED2='#FFFFFF',
       BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E',
@@ -235,7 +236,7 @@ export default function PayAppDetailPage() {
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320, color: DIM }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+        <div style={{ marginBottom: 12 }}><ClipboardText weight="duotone" size={32} color={GOLD} /></div>
         <div>Loading pay application…</div>
       </div>
     </div>

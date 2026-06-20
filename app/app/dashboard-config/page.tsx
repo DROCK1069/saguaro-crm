@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Package, FolderOpen } from '@phosphor-icons/react';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
 const GOLD   = '#C8881C';
@@ -776,7 +777,7 @@ export default function DashboardConfigPage() {
           </div>
           {layout.widgets.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 64, color: DIM, border: `2px dashed ${BORDER}`, borderRadius: 12 }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
+              <div style={{ fontSize: 48, marginBottom: 12 }}><Package size={48} weight="duotone" color={GOLD} /></div>
               <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: TEXT }}>No Widgets Added</div>
               <div style={{ fontSize: 13, marginBottom: 20 }}>Open the Widget Gallery or apply a Preset to get started.</div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
@@ -1059,7 +1060,7 @@ export default function DashboardConfigPage() {
               </div>
             ) : savedLayouts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40, color: DIM }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
+                <div style={{ fontSize: 36, marginBottom: 12 }}><FolderOpen size={36} weight="duotone" color={GOLD} /></div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: TEXT, marginBottom: 6 }}>No Saved Layouts</div>
                 <div style={{ fontSize: 13 }}>Save your current layout to see it here.</div>
               </div>

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useToast } from '../../../../../components/Toast';
-import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning } from '@phosphor-icons/react';
+import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning, Ruler, Robot } from '@phosphor-icons/react';
 
 interface TakeoffItem {
   csiCode: string;
@@ -615,7 +615,7 @@ export default function TakeoffPage() {
             </>
           ) : (
             <>
-              <div style={{ fontSize: 56, marginBottom: 16 }}>📐</div>
+              <div style={{ marginBottom: 16 }}><Ruler size={56} weight="duotone" color={GOLD} /></div>
               <div style={{ color: '#fff', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>
                 Drop blueprint here or click to browse
               </div>
@@ -690,7 +690,7 @@ export default function TakeoffPage() {
 
     return (
       <div style={{ padding: '32px', maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ fontSize: 64, marginBottom: 24 }}>🤖</div>
+        <div style={{ marginBottom: 24 }}><Robot size={64} weight="duotone" color={GOLD} /></div>
         <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
           AI is reading your blueprint
         </h2>

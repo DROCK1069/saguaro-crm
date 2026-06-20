@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import { MapPin, CalendarBlank, User } from '@phosphor-icons/react';
 
 const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#3b82f6';
@@ -305,9 +306,9 @@ export default function PunchListPage(){
                         </div>
                         <div style={{fontSize:12,color:DIM,marginTop:3,display:'flex',gap:12,flexWrap:'wrap'}}>
                           {item.trade&&<span>{item.trade}</span>}
-                          {item.location&&<span>📍 {item.location}</span>}
-                          {item.due_date&&<span>📅 Due {new Date(item.due_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>}
-                          {item.assigned_to&&<span>👤 {item.assigned_to}</span>}
+                          {item.location&&<span style={{display:'inline-flex',alignItems:'center',gap:4}}><MapPin size={12} /> {item.location}</span>}
+                          {item.due_date&&<span style={{display:'inline-flex',alignItems:'center',gap:4}}><CalendarBlank size={12} /> Due {new Date(item.due_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>}
+                          {item.assigned_to&&<span style={{display:'inline-flex',alignItems:'center',gap:4}}><User size={12} /> {item.assigned_to}</span>}
                         </div>
                       </div>
                     </div>

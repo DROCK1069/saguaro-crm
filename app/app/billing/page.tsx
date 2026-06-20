@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Confetti } from '@phosphor-icons/react';
 
 const GOLD   = '#F59E0B';
 const DARK   = '#F2F2F7';
@@ -160,7 +161,7 @@ export default function BillingPage() {
       {/* URL success message */}
       {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('success') === '1' && (
         <div style={{ background: 'rgba(34,197,94,0.1)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 10, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 20 }}>🎉</span>
+          <span style={{ fontSize: 20 }}><Confetti size={20} /></span>
           <div>
             <div style={{ fontWeight: 700, color: GREEN, marginBottom: 2 }}>Payment successful — you&apos;re all set!</div>
             <div style={{ fontSize: 13, color: DIM }}>Your subscription is now active. All features are unlocked.</div>
