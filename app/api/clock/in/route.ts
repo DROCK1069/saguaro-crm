@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { getUser, createServerClient } from '@/lib/supabase-server';
 
 /**
- * Clock In — stores clock event as a timesheet entry with type='clock_in'.
- * The client also stores state in localStorage for offline support.
+ * Clock In — creates a timesheet_entries row with clock_in timestamp.
+ * Uses service-role client so the insert passes RLS.
  */
 export async function POST(req: NextRequest) {
   const user = await getUser(req);
@@ -12,29 +11,26 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const db = createServerClient();
+    const now = new Date();
 
-    const clockIn = {
-      tenant_id:     user.tenantId,
-      project_id:    body.projectId || null,
-      employee_name: (body.employeeName as string) || user.email || 'Unknown',
-      work_date:     new Date().toISOString().split('T')[0],
-      hours:         0,
-      cost_code:     'Clock Event',
-      notes: JSON.stringify({
-        type:           'clock_in',
-        clock_in_time:  new Date().toISOString(),
-        latitude:       body.latitude  || null,
-        longitude:      body.longitude || null,
-      }),
-    };
-
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('timesheet_entries')
-      .insert(clockIn)
+      .insert({
+        tenant_id:     user.tenantId,
+        project_id:    body.projectId || null,
+        employee_name: (body.employeeName as string) || user.email || 'Unknown',
+        work_date:     now.toISOString().split('T')[0],
+        clock_in:      now.toISOString(),
+        total_hours:   0,
+        status:        'clocked_in',
+        cost_code:     'General Conditions',
+        notes: JSON.stringify({
+          type:      'clock_in',
+          latitude:  body.latitude  || null,
+          longitude: body.longitude || null,
+        }),
+      })
       .select()
       .single();
 
@@ -43,14 +39,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       entry: data,
-      clockInTime: new Date().toISOString(),
+      clockInTime: now.toISOString(),
     });
   } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[clock/in] error:', msg);
-    return NextResponse.json(
-      { error: `[clock/in] Database error: ${msg}` },
-      { status: 500 }
-    );
+    console.error('[clock/in] error:', err);
+    return NextResponse.json({ error: 'Clock in failed' }, { status: 500 });
   }
 }
