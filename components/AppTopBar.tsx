@@ -11,6 +11,7 @@ import {
   Bell,
   Star,
   CaretRight,
+  CaretLeft,
   SignOut,
   UserCircle,
   GearSix,
@@ -115,6 +116,38 @@ export default function AppTopBar({
         }}
       >
         <List size={20} />
+      </button>
+
+      {/* Back button — always visible, navigates to previous page */}
+      <button
+        onClick={() => router.back()}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 32,
+          height: 32,
+          background: 'none',
+          border: '1px solid #E5E5EA',
+          color: '#6E6E73',
+          cursor: 'pointer',
+          borderRadius: radius.xl,
+          transition: 'color .15s, background .15s, border-color .15s',
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = '#1C1C1E';
+          e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.14)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = '#6E6E73';
+          e.currentTarget.style.background = 'none';
+          e.currentTarget.style.borderColor = '#E5E5EA';
+        }}
+        aria-label="Go back"
+      >
+        <CaretLeft size={14} weight="bold" />
       </button>
 
       {/* Breadcrumbs */}

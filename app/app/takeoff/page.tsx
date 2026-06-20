@@ -341,7 +341,7 @@ export default function TakeoffPage() {
                 <span style={{ fontWeight: 600, fontSize: 14, color: T.white }}>New Analysis</span>
               </CardHeader>
               <CardBody>
-                {/* IDLE — drag drop zone */}
+                {/* IDLE — upload zone (works on desktop drag-drop AND mobile tap) */}
                 {phase === 'idle' && (
                   <>
                     <div
@@ -366,19 +366,32 @@ export default function TakeoffPage() {
                     >
                       <div style={{ fontSize: 32, marginBottom: 10 }}>📐</div>
                       <div style={{ color: T.white, fontWeight: 600, marginBottom: 4, fontSize: 14 }}>
-                        Drop blueprints here
+                        Tap to upload a blueprint
                       </div>
                       <div style={{ color: T.muted, fontSize: 12, marginBottom: 14 }}>
-                        or click to browse files
+                        or drag &amp; drop on desktop
                       </div>
                       <div style={{ color: T.faint, fontSize: 11 }}>
                         PDF, PNG, JPG, TIFF, WebP · max 50MB
                       </div>
                     </div>
+                    {/* Explicit upload button for mobile — always visible */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        width: '100%', marginTop: 10, padding: '12px 0',
+                        background: T.gold, color: '#000', border: 'none',
+                        borderRadius: 8, fontWeight: 700, fontSize: 14,
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      Choose File
+                    </button>
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept=".pdf,.png,.jpg,.jpeg,.tiff,.tif,.webp"
+                      capture="environment"
                       style={{ display: 'none' }}
                       onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
                     />

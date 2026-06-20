@@ -255,6 +255,38 @@ body, button, input, textarea, select {
 
   /* Tables scroll horizontally */
   [data-table-wrap] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── App-wide mobile grid collapse ──────────────────────────
+     React SSR renders gridTemplateColumns → grid-template-columns
+     in the HTML style attribute, so attribute selectors work. */
+
+  /* 4+ col stat/card grids → 2 cols */
+  .main-content-area div[style*="repeat(4"],
+  .main-content-area div[style*="repeat(5"],
+  .main-content-area div[style*="repeat(6"],
+  .main-content-area div[style*="repeat(7"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* 3-col grids → single col */
+  .main-content-area div[style*="repeat(3, 1fr)"],
+  .main-content-area div[style*="repeat(3,1fr)"],
+  .main-content-area div[style*="1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Sidebar-content splits → stack */
+  .main-content-area div[style*="320px 1fr"],
+  .main-content-area div[style*="280px 1fr"],
+  .main-content-area div[style*="260px 1fr"],
+  .main-content-area div[style*="240px 1fr"],
+  .main-content-area div[style*="1fr 320px"],
+  .main-content-area div[style*="1fr 280px"],
+  .main-content-area div[style*="1fr 340px"],
+  .main-content-area div[style*="1fr 2fr"],
+  .main-content-area div[style*="2fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 480px) {
