@@ -51,6 +51,9 @@ const nextConfig = {
       { source: '/field-app', destination: '/get-the-app', permanent: false },
       // The PWA "Add to Home Screen" install guide is retired — native app only.
       { source: '/field/install', destination: '/get-the-app', permanent: false },
+      // AI Design Studio feature removed — redirect to homepage.
+      { source: '/design', destination: '/', permanent: false },
+      { source: '/design/:path*', destination: '/', permanent: false },
     ];
   },
 };

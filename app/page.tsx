@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Blueprint, Robot, CurrencyDollar, DeviceMobile, PaintBrush, WifiHigh, Cube, Drone, Buildings, Hammer, HouseSimple, Building, ShieldCheck, ChartLine, User, UsersThree, PenNib, Handshake, BookOpen, Calculator, Scales, Wrench, Trophy, CaretDown, List, X } from '@phosphor-icons/react';
+import { Blueprint, Robot, CurrencyDollar, DeviceMobile, WifiHigh, Cube, Drone, Buildings, Hammer, HouseSimple, Building, ShieldCheck, ChartLine, User, UsersThree, PenNib, Handshake, BookOpen, Calculator, Scales, Wrench, Trophy, CaretDown, List, X } from '@phosphor-icons/react';
 import { IntegrationStrip } from '../components/Integrations';
 
 /* ── palette ── */
@@ -78,7 +78,6 @@ const COMPARISON_ROWS: { feature: string; saguaro: 'yes' | 'no' | 'partial'; pro
   { feature: 'Sage AI Assistant', saguaro: 'yes', procore: 'no', buildertrend: 'no' },
   { feature: 'Bid Package Auto-Generation', saguaro: 'yes', procore: 'partial', buildertrend: 'no' },
   { feature: 'Smart Building Module', saguaro: 'yes', procore: 'no', buildertrend: 'no' },
-  { feature: 'Design Studio', saguaro: 'yes', procore: 'no', buildertrend: 'no' },
   { feature: 'Mobile Offline', saguaro: 'yes', procore: 'partial', buildertrend: 'partial' },
   { feature: 'Owner Portal', saguaro: 'yes', procore: 'yes', buildertrend: 'yes' },
   { feature: 'Sub Portal', saguaro: 'yes', procore: 'partial', buildertrend: 'partial' },
@@ -148,7 +147,6 @@ function MarketingNav() {
       label: 'Platform',
       items: [
         { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, full estimate out in 60 seconds', href: '/app/takeoff' },
-        { icon: <PaintBrush size={22} weight="duotone" color="#C8881C" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
         { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
       ],
     },
@@ -390,43 +388,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════ 5. AI DESIGN STUDIO PROMO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
-        <div style={{ ...glass, padding: 0, overflow: 'hidden', display: 'grid', gridTemplateColumns: '1fr 1fr' }} className="design-grid">
-          {/* left copy */}
-          <div style={{ padding: '40px 36px' }}>
-            <span style={{ display: 'inline-block', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: GREEN, fontSize: 11, fontWeight: 700, letterSpacing: 1, padding: '4px 10px', borderRadius: 16, marginBottom: 14, textTransform: 'uppercase' as const }}>NEW</span>
-            <h2 style={{ fontSize: 26, fontWeight: 800, marginBottom: 10, lineHeight: 1.2, letterSpacing: '-0.02em', color: TEXT }}>Design your dream<br />space with AI</h2>
-            <p style={{ color: DIM, fontSize: 14, lineHeight: 1.6, marginBottom: 10 }}>Upload a photo of any room. Our AI generates photorealistic redesigns in seconds. Experiment with styles, materials, and layouts before breaking ground.</p>
-            <p style={{ color: DIM, fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>Before &amp; after comparison. Interior and exterior. Residential and commercial.</p>
-            <Link href="/design" style={{ background: GREEN, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '11px 24px', borderRadius: 10, display: 'inline-block' }}>Try AI Design Studio &mdash; Free</Link>
-          </div>
-          {/* right mockup — before/after */}
-          <div style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
-            <div style={{ display: 'flex', gap: 12, width: '100%' }}>
-              {/* before */}
-              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid #E5E5EA', position: 'relative' as const }}>
-                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: '#F2F2F7', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: DIM, textTransform: 'uppercase' as const, zIndex: 1 }}>Before</div>
-                <div style={{ height: 160 }}>
-                  <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80" alt="Before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
-                </div>
-              </div>
-              {/* after */}
-              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: `1px solid rgba(212,160,23,0.2)`, position: 'relative' as const }}>
-                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: 'rgba(212,160,23,0.15)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: GOLD, textTransform: 'uppercase' as const, zIndex: 1 }}>After &mdash; AI Generated</div>
-                <div style={{ height: 160 }}>
-                  <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80" alt="After renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
-                </div>
-              </div>
-            </div>
-            {/* slider indicator */}
-            <div style={{ position: 'absolute' as const, bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(212,160,23,0.15)', borderRadius: 20, padding: '4px 14px', fontSize: 10, color: GOLD, fontWeight: 600 }}>
-              &larr; Drag to Compare &rarr;
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ══════════ 6. COMPARISON TABLE ══════════ */}
       <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
         <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Why GCs switch from Procore</h2>
@@ -532,7 +493,7 @@ export default function LandingPage() {
           {/* product */}
           <div>
             <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, color: TEXT, marginBottom: 14 }}>Product</h4>
-            {['AI Takeoff', 'Pay Applications', 'Invoicing', 'Lien Waivers', 'Field App', 'Bid Packages', 'Design Studio'].map(l => (
+            {['AI Takeoff', 'Pay Applications', 'Invoicing', 'Lien Waivers', 'Field App', 'Bid Packages'].map(l => (
               <div key={l}><Link href="/#features" style={{ color: DIM, textDecoration: 'none', fontSize: 13, lineHeight: 2 }}>{l}</Link></div>
             ))}
           </div>
@@ -581,7 +542,6 @@ export default function LandingPage() {
           .hero-mockup { display: none !important; }
           .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .feature-grid { grid-template-columns: 1fr !important; }
-          .design-grid { grid-template-columns: 1fr !important; }
           .pricing-grid { grid-template-columns: 1fr !important; }
           .footer-grid { grid-template-columns: repeat(2, 1fr) !important; }
           h1 { font-size: 26px !important; }

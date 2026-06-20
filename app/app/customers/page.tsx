@@ -34,7 +34,7 @@ const STATUS_COLORS: Record<CustomerStatus, string> = {
   lead: BLUE, qualified: AMBER, proposal: GOLD, customer: GREEN, lost: RED,
 };
 const STATUSES: CustomerStatus[] = ['lead', 'qualified', 'proposal', 'customer', 'lost'];
-const SOURCES = ['Website', 'Design Studio', 'Referral', 'Social Media', 'Sage Chat', 'ROI Calculator', 'Direct'];
+const SOURCES = ['Website', 'Referral', 'Social Media', 'Sage Chat', 'ROI Calculator', 'Direct'];
 const STATES_LIST = ['AZ', 'CA', 'CO', 'FL', 'GA', 'IL', 'MA', 'MI', 'MN', 'NC', 'NJ', 'NV', 'NY', 'OH', 'OR', 'PA', 'TX', 'VA', 'WA', 'WI'];
 
 /* ─── Helpers ─── */
@@ -52,7 +52,7 @@ export default function CustomersPage() {
   const [filterSource, setFilterSource] = useState<string>('all');
   const [filterState, setFilterState] = useState<string>('all');
   const [selected, setSelected] = useState<Customer | null>(null);
-  const [detailTab, setDetailTab] = useState<'overview' | 'discovery' | 'recommendations' | 'designs' | 'materials' | 'conversations'>('overview');
+  const [detailTab, setDetailTab] = useState<'overview' | 'discovery' | 'recommendations' | 'materials' | 'conversations'>('overview');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -170,7 +170,7 @@ export default function CustomersPage() {
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
-            {(['overview', 'discovery', 'recommendations', 'designs', 'materials', 'conversations'] as const).map(tab => (
+            {(['overview', 'discovery', 'recommendations', 'materials', 'conversations'] as const).map(tab => (
               <button key={tab} onClick={() => setDetailTab(tab)} style={{
                 padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                 border: `1px solid ${detailTab === tab ? GOLD : BORDER}`,
@@ -314,32 +314,6 @@ export default function CustomersPage() {
             </div>
           )}
 
-          {detailTab === 'designs' && (
-            <div style={{ ...glass, padding: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Design Sessions</h3>
-              {c.design_sessions && c.design_sessions.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
-                  {c.design_sessions.map(ds => (
-                    <div key={ds.id} style={{
-                      padding: 16, background: `${BG}60`, borderRadius: 12,
-                      border: `1px solid ${BORDER}`, textAlign: 'center',
-                    }}>
-                      <div style={{
-                        height: 80, background: `linear-gradient(135deg, ${GOLD}20, ${CARD})`,
-                        borderRadius: 8, marginBottom: 10, display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', fontSize: 30,
-                      }}><HouseSimple size={30} weight="duotone" color={GOLD} /></div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{ds.room}</div>
-                      <div style={{ fontSize: 12, color: DIM }}>{ds.style} | {ds.date}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: DIM, textAlign: 'center', padding: 40 }}>No design sessions recorded.</p>
-              )}
-            </div>
-          )}
-
           {detailTab === 'materials' && (
             <div style={{ ...glass, padding: 24 }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Material Selections</h3>
@@ -473,7 +447,7 @@ export default function CustomersPage() {
           <EmptyState
             icon={<UsersThree size={32} weight="duotone" />}
             title="No customers yet"
-            description="Customer profiles will appear here as leads come in through your design studio, Sage chat, and other sources."
+            description="Customer profiles will appear here as leads come in through Sage chat, your website, and other sources."
           />
         ) : (
         <div style={{ ...glass, overflow: 'auto', padding: 0 }}>

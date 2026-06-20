@@ -38,7 +38,6 @@ const LABELS: Record<string, string> = {
   'daily-logs': 'Daily Logs',
   schedule: 'Schedule',
   customers: 'Customers',
-  design: 'Design Studio',
 };
 
 export default function AppTopBar({
