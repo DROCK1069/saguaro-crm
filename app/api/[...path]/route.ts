@@ -227,7 +227,7 @@ export async function GET(
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!supabaseUrl || !supabaseKey) throw new Error('Supabase not configured');
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data: payApps } = await supabase.from('pay_applications').select('id, application_number, status, project_id, projects(name)').eq('status', 'submitted').limit(5);
+      const { data: payApps } = await supabase.from('pay_applications').select('id, application_number:app_number, status, project_id, projects(name)').eq('status', 'submitted').limit(5);
       if (payApps && payApps.length > 0) {
         for (const pa of payApps) {
           const projectName = (pa.projects as { name?: string } | null)?.name ?? 'Unknown Project';
@@ -339,11 +339,11 @@ export async function GET(
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
-    if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
+    if (!projectId || projectId === 'null' || projectId === 'undefined') return NextResponse.json({ error: 'projectId required' }, { status: 400 });
     try {
       const { data, error } = await supabaseAdmin
         .from('rfis')
-        .select('id, number, title, status, priority, assigned_to, response_due_date, cost_impact_amount, schedule_impact_days, created_at')
+        .select('id, number:rfi_number, title, status, priority, assigned_to, response_due_date, cost_impact_amount, schedule_impact_days, created_at')
         .eq('project_id', projectId)
         .eq('tenant_id', user.tenantId)
         .order('created_at', { ascending: false });
@@ -362,7 +362,7 @@ export async function GET(
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
-    if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
+    if (!projectId || projectId === 'null' || projectId === 'undefined') return NextResponse.json({ error: 'projectId required' }, { status: 400 });
     try {
       const { data, error } = await supabaseAdmin
         .from('change_orders')
@@ -413,7 +413,7 @@ export async function GET(
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId');
-    if (!projectId) return NextResponse.json({ error: 'projectId query param required' }, { status: 400 });
+    if (!projectId || projectId === 'null' || projectId === 'undefined') return NextResponse.json({ error: 'projectId query param required' }, { status: 400 });
     try {
       const { data, error } = await supabaseAdmin.from('takeoffs').select('id, project_id, status, materials').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
@@ -435,7 +435,7 @@ export async function GET(
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId') || '';
-    if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
+    if (!projectId || projectId === 'null' || projectId === 'undefined') return NextResponse.json({ error: 'projectId required' }, { status: 400 });
     try {
       const { data, error } = await supabaseAdmin
         .from('bid_packages')
