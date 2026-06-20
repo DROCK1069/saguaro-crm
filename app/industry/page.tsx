@@ -41,7 +41,7 @@ export default function IndustryIndexPage() {
           {[
             { label: 'Features', href: '/#features' },
             { label: 'Pricing', href: '/pricing' },
-            { label: 'Field App', href: '/field-app' },
+            { label: 'Field App', href: '/get-the-app' },
             { label: 'Compare', href: '/compare' },
           ].map((link) => (
             <a

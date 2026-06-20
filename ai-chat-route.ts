@@ -84,7 +84,7 @@ Saguaro CRM is a fully AI-powered construction management platform that beats Pr
 **Mobile Field App**
 - Daily logs, photos with AI tagging, field issues, inspections, safety, timesheets
 - Works fully offline, syncs when connected
-- No app store needed — progressive web app
+- Native iOS app — download free from the App Store (TestFlight beta now)
 
 **AI Email Intelligence**
 - Auto-replies to RFIs with context from project documents

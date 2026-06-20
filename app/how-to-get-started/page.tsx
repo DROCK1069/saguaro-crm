@@ -194,29 +194,29 @@ export default function HowToGetStartedPage() {
         {/* STEP 3: PHONE */}
         <div className="section">
           <div className="section-label">Step 3 (Recommended)</div>
-          <h2>Install on Your Phone — No App Store Needed</h2>
-          <p className="sub">Saguaro Field is a Progressive Web App (PWA) — it installs directly from your browser onto your phone home screen. Your crew gets GPS clock-in, daily logs, photos, and RFIs — offline-capable.</p>
+          <h2>Get the Saguaro Field App on Your iPhone</h2>
+          <p className="sub">Saguaro Field is a native iOS app — download it free from the App Store onto your iPhone or iPad. Your crew gets GPS clock-in, daily logs, photos, and RFIs, built for the job site.</p>
           <div className="device-grid">
             <div className="device-card">
               <div className="icon">🍎</div>
               <h4>iPhone / iPad</h4>
               <ol>
-                <li>Open <strong>Safari</strong></li>
-                <li>Go to saguarocontrol.net</li>
-                <li>Tap the <strong>Share button</strong> (box with arrow)</li>
-                <li>Tap <strong>"Add to Home Screen"</strong></li>
-                <li>Tap <strong>Add</strong></li>
+                <li>Open the <strong>App Store</strong></li>
+                <li>Search <strong>"Saguaro Field"</strong></li>
+                <li>Tap <strong>Get</strong> to download (it's free)</li>
+                <li>Open the app and log in</li>
+                <li>You're ready for the field</li>
               </ol>
             </div>
             <div className="device-card">
-              <div className="icon">🤖</div>
-              <h4>Android</h4>
+              <div className="icon">🧪</div>
+              <h4>TestFlight Beta</h4>
               <ol>
-                <li>Open <strong>Chrome</strong></li>
-                <li>Go to saguarocontrol.net</li>
-                <li>Tap the <strong>3-dot menu</strong> (top right)</li>
-                <li>Tap <strong>"Add to Home Screen"</strong></li>
-                <li>Tap <strong>Add</strong></li>
+                <li>Install <strong>TestFlight</strong> from the App Store</li>
+                <li>Open your Saguaro invite link</li>
+                <li>Tap <strong>Accept</strong>, then <strong>Install</strong></li>
+                <li>Launch Saguaro Field and log in</li>
+                <li>App Store release coming soon</li>
               </ol>
             </div>
             <div className="device-card">
@@ -225,19 +225,19 @@ export default function HowToGetStartedPage() {
               <ol>
                 <li>Open <strong>Chrome</strong></li>
                 <li>Go to saguarocontrol.net</li>
-                <li>Click the <strong>install icon</strong> in the address bar</li>
-                <li>Click <strong>Install</strong></li>
-                <li>Opens as a standalone app</li>
+                <li>Log in with your account</li>
+                <li>Use the full web platform</li>
+                <li>Works in any modern browser</li>
               </ol>
             </div>
             <div className="device-card">
               <div className="icon">📋</div>
               <h4>For Your Crew</h4>
               <ol>
-                <li>Text or email your crew the URL</li>
-                <li>They follow the same steps above</li>
-                <li>No account needed to view field app</li>
                 <li>Invite them from your dashboard</li>
+                <li>They get a TestFlight or App Store link</li>
+                <li>They download Saguaro Field free</li>
+                <li>They log in and start in the field</li>
                 <li>Free for unlimited crew members</li>
               </ol>
             </div>

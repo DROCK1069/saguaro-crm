@@ -35,7 +35,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/switch-from-procore`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     ...competitorPages,
     { url: `${base}/roi-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.85 },
-    { url: `${base}/field-app`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/get-the-app`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/sandbox`, lastModified: now, changeFrequency: 'monthly', priority: 0.85 },
     { url: `${base}/signup`, lastModified: now, changeFrequency: 'yearly', priority: 0.7 },

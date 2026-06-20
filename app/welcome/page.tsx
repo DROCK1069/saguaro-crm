@@ -86,10 +86,10 @@ export default function WelcomePage() {
               {
                 step: '3',
                 icon: '📱',
-                title: 'Install on your phone',
-                desc: 'Open saguarocontrol.net on your iPhone or Android, tap the share/menu button, then "Add to Home Screen." No App Store needed.',
+                title: 'Get the app on your iPhone',
+                desc: 'Download Saguaro Field free from the App Store on your iPhone or iPad. GPS clock-in, daily logs, photos, and RFIs — right from the job site.',
                 href: '/get-the-app',
-                cta: 'See Install Guide →',
+                cta: 'Get the App →',
                 primary: false,
               },
               {
@@ -123,8 +123,8 @@ export default function WelcomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
             {[
               { icon: '💻', device: 'Desktop / Laptop', how: 'Open your browser → saguarocontrol.net/app' },
-              { icon: '📱', device: 'iPhone / iPad', how: 'Open Safari → Add to Home Screen' },
-              { icon: '🤖', device: 'Android', how: 'Open Chrome → Add to Home Screen' },
+              { icon: '📱', device: 'iPhone / iPad', how: 'Download free from the App Store' },
+              { icon: '🤖', device: 'Android', how: 'Use the web app at saguarocontrol.net' },
               { icon: '🖥️', device: 'Tablet', how: 'Any browser → works full screen' },
             ].map((d, i) => (
               <div key={i} style={{ padding: '14px 16px', background: 'rgba(0,0,0,0.02)', border: `1px solid rgba(229,229,234,0.5)`, borderRadius: 10 }}>

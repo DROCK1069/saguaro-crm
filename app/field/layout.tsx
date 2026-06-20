@@ -84,10 +84,6 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
   const [queueCount, setQueueCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [deadCount, setDeadCount] = useState(0);
-  const [installEvent, setInstallEvent] = useState<Event | null>(null);
-  const [showInstall, setShowInstall] = useState(false);
-  const [isIosWeb, setIsIosWeb] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
   const [pushMsg, setPushMsg] = useState<{ title: string; body: string } | null>(null);
   const [projectName, setProjectName] = useState('');
   const [showProjectPicker, setShowProjectPicker] = useState(false);
@@ -104,15 +100,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
     // 2. Hide splash after layout is ready
     const splashTimer = setTimeout(() => hideSplash().catch(() => {}), 300);
 
-    // 3. Service worker (PWA / web only)
-    if (!native && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-      navigator.serviceWorker.addEventListener('message', (e) => {
-        if (e.data?.type === 'SYNC_NOW') triggerSync();
-      });
-    }
-
-    // 4. Purge stale offline queue items
+    // 3. Purge stale offline queue items
     purgeExpired().catch(() => {});
 
     return () => clearTimeout(splashTimer);
@@ -224,39 +212,6 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
     return cleanup;
   }, [pathname, router]);
 
-  // ── PWA install prompts (web only) ────────────────────────────
-  useEffect(() => {
-    if (native) return;
-    const ua = navigator.userAgent;
-    const ios = /iphone|ipad|ipod/i.test(ua);
-    setIsIosWeb(ios);
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window.navigator as any).standalone === true;
-    setIsStandalone(standalone);
-    if (ios && !standalone) {
-      // Persist dismissal across sessions (localStorage) so "Not now" means
-      // never again — it was sessionStorage, re-popping on every visit.
-      const dismissed = localStorage.getItem('sag_install_dismissed');
-      if (!dismissed) setTimeout(() => setShowInstall(true), 8000);
-    }
-  }, [native]);
-
-  useEffect(() => {
-    if (native) return;
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e); // always capture so the Install button can fire the native prompt
-      // Respect prior dismissal (was unconditional → re-popped on every Chrome/Android
-      // visit and ignored "Not now"). Delay so it never covers the screen on load.
-      if (typeof window !== 'undefined' && localStorage.getItem('sag_install_dismissed')) return;
-      setTimeout(() => setShowInstall(true), 8000);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [native]);
-
   const refreshQueue = async () => {
     try {
       setQueueCount(await getQueueCount());
@@ -270,19 +225,6 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
     try { await replayQueue(); await refreshQueue(); } finally { setSyncing(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncing]);
-
-  const handleInstall = async () => {
-    if (!installEvent) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (installEvent as any).prompt();
-    setShowInstall(false);
-    setInstallEvent(null);
-  };
-
-  const dismissInstall = () => {
-    setShowInstall(false);
-    localStorage.setItem('sag_install_dismissed', '1');
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', background: DARK, color: TEXT, fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', maxWidth: 480, margin: '0 auto' }}>
@@ -410,60 +352,6 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
         </div>
       )}
 
-      {/* ── PWA install modal — web only ── */}
-      {showInstall && !isStandalone && !native && (
-        <>
-          <div onClick={dismissInstall} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', zIndex: 200 }} />
-          <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, background: '#FFFFFF', borderRadius: '20px 20px 0 0', border: '1px solid rgba(212,160,23,.22)', borderBottom: 'none', paddingBottom: 'calc(20px + env(safe-area-inset-bottom))', zIndex: 201, boxShadow: '0 -10px 48px rgba(0,0,0,0.7)' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
-              <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(0,0,0,.14)' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 24px 0' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/icon-192x192.png" alt="Saguaro Field" width={72} height={72} style={{ borderRadius: 18, border: '2px solid rgba(212,160,23,.45)', boxShadow: '0 4px 24px rgba(212,160,23,.28)' }} />
-              <h2 style={{ margin: '12px 0 4px', fontSize: 22, fontWeight: 900, color: TEXT, letterSpacing: -0.5, textAlign: 'center' }}>Install Saguaro Field</h2>
-              <p style={{ margin: 0, fontSize: 14, color: DIM, textAlign: 'center', lineHeight: 1.4 }}>
-                Your crew&apos;s field app — home screen access,<br />instant launch, works without signal.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 8, padding: '14px 24px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              {['Works offline', 'GPS clock-in', 'Instant photos'].map((b) => (
-                <span key={b} style={{ background: 'rgba(212,160,23,.12)', border: '1px solid rgba(212,160,23,.28)', borderRadius: 20, padding: '4px 13px', fontSize: 12, fontWeight: 700, color: GOLD }}>{b}</span>
-              ))}
-            </div>
-            <div style={{ height: 1, background: 'rgba(0,0,0,.07)', margin: '0 24px' }} />
-            {isIosWeb ? (
-              <div style={{ padding: '16px 24px 0' }}>
-                <p style={{ margin: '0 0 14px', fontSize: 13, color: DIM, textAlign: 'center', fontWeight: 600 }}>3 steps in Safari — 15 seconds</p>
-                {[
-                  { Icon: <ShareIcon />, label: 'Tap the Share button', sub: 'Bottom of Safari — box with arrow icon' },
-                  { Icon: <HomeAddIcon />, label: 'Tap "Add to Home Screen"', sub: 'Scroll down in the share sheet' },
-                  { Icon: <CheckIcon />, label: 'Tap "Add" — you\'re done', sub: 'App icon appears on your home screen' },
-                ].map((step, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'center' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(212,160,23,.13)', border: '1.5px solid rgba(212,160,23,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: GOLD }}>{step.Icon}</div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{step.label}</div>
-                      <div style={{ fontSize: 12, color: DIM, marginTop: 2 }}>{step.sub}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ padding: '20px 24px 0' }}>
-                <button onClick={handleInstall} style={{ width: '100%', background: 'linear-gradient(135deg, #C8881C 0%, #EF8C1A 100%)', border: 'none', borderRadius: 14, padding: '16px', color: '#000', fontSize: 17, fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 28px rgba(212,160,23,.5)' }}>
-                  Install App
-                </button>
-                <p style={{ margin: '9px 0 0', textAlign: 'center', fontSize: 12, color: DIM }}>Takes 2 seconds · Works like a native app</p>
-              </div>
-            )}
-            <div style={{ padding: '14px 24px 0', textAlign: 'center' }}>
-              <button onClick={dismissInstall} style={{ background: 'none', border: 'none', color: DIM, fontSize: 14, cursor: 'pointer', padding: '8px 20px' }}>Not now</button>
-            </div>
-          </div>
-        </>
-      )}
-
       {/* ── Offline banner ── */}
       {!online && (
         <div style={{ background: 'rgba(239,68,68,.1)', borderBottom: '1px solid rgba(239,68,68,.2)', padding: '7px 16px', textAlign: 'center', fontSize: 13, color: RED, fontWeight: 600 }}>
@@ -515,15 +403,6 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
-function ShareIcon() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>;
-}
-function HomeAddIcon() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>;
-}
-function CheckIcon() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
-}
 function HomeIcon({ active }: { active: boolean }) {
   return <svg width="25" height="25" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>{!active&&<polyline points="9 22 9 12 15 12 15 22"/>}</svg>;
 }

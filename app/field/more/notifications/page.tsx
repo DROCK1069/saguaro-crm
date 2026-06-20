@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { isNative, registerForPush } from '@/lib/native';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -44,17 +45,6 @@ function savePrefs(prefs: NotificationPrefs) {
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* ok */ }
 }
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
 function NotificationsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -67,8 +57,9 @@ function NotificationsPage() {
   const [statusMsg, setStatusMsg] = useState('');
 
   useEffect(() => {
-    const supported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
-    setPushSupported(supported);
+    // Push is delivered through the native iOS app (Capacitor), not a web
+    // service worker — this is a native app, not a PWA.
+    setPushSupported(isNative());
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setPermissionState(Notification.permission);
     }
@@ -99,7 +90,7 @@ function NotificationsPage() {
     }
 
     if (!pushSupported) {
-      setStatusMsg('Push notifications are not supported in this browser');
+      setStatusMsg('Open the Saguaro Field app on your iPhone to enable push notifications.');
       setTimeout(() => setStatusMsg(''), 4000);
       return;
     }
@@ -107,46 +98,13 @@ function NotificationsPage() {
     setSubscribing(true);
 
     try {
-      const permission = await Notification.requestPermission();
-      setPermissionState(permission);
-
-      if (permission !== 'granted') {
-        setStatusMsg('Notification permission denied. Enable in browser settings.');
-        setTimeout(() => setStatusMsg(''), 4000);
-        setSubscribing(false);
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) {
-        setStatusMsg('Push configuration missing. Contact admin.');
-        setTimeout(() => setStatusMsg(''), 4000);
-        setSubscribing(false);
-        return;
-      }
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
-      });
-
-      // Send subscription to backend
-      const userId = localStorage.getItem('saguaro_user_id') || 'unknown';
-      const res = await fetch('/api/notifications/push-subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: subscription.toJSON(), userId }),
-      });
-
-      if (res.ok) {
-        updatePrefs({ enabled: true });
-        setStatusMsg('Push notifications enabled');
-      } else {
-        setStatusMsg('Failed to register push subscription');
-      }
+      // Native (Capacitor) push — registers the device token with APNs and the
+      // backend. No service worker / web push involved.
+      await registerForPush();
+      updatePrefs({ enabled: true });
+      setStatusMsg('Push notifications enabled');
     } catch (err) {
-      setStatusMsg('Failed to subscribe to push notifications');
+      setStatusMsg('Failed to enable push notifications');
     }
 
     setTimeout(() => setStatusMsg(''), 3500);

@@ -49,6 +49,8 @@ const nextConfig = {
       // The web PWA "field app" page is retired in favor of the one native iOS app
       // (TestFlight). Point the old marketing URL at the canonical app page.
       { source: '/field-app', destination: '/get-the-app', permanent: false },
+      // The PWA "Add to Home Screen" install guide is retired — native app only.
+      { source: '/field/install', destination: '/get-the-app', permanent: false },
     ];
   },
 };

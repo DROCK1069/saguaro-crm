@@ -467,7 +467,7 @@ export default function CityLandingPage({ city }: { city: City }) {
               {[
                 { label: 'Features', href: '/#features' },
                 { label: 'Pricing', href: '/pricing' },
-                { label: 'Field App', href: '/field-app' },
+                { label: 'Field App', href: '/get-the-app' },
                 { label: 'Compare Procore', href: '/compare/procore' },
                 { label: 'ROI Calculator', href: '/roi-calculator' },
                 { label: 'Privacy', href: '/privacy' },

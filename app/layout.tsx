@@ -104,7 +104,6 @@ export const metadata: Metadata = {
     },
   },
 
-  manifest: '/site.webmanifest',
 };
 
 const GA_ID     = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -116,32 +115,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        {/* PWA / Mobile App — iOS, Android, Desktop */}
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Saguaro Field" />
-        <meta name="application-name" content="Saguaro Field" />
-        <meta name="theme-color" content="#C8881C" media="(prefers-color-scheme: dark)" />
+        <meta name="application-name" content="Saguaro" />
         <meta name="theme-color" content="#C8881C" />
-        {/* Apple touch icons — PNG, multiple sizes for iPhone/iPad/Mac */}
+        {/* Favicons + touch icon (plain bookmark icons — not a PWA) */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120x120.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167x167.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        {/* Microsoft Tiles */}
-        <meta name="msapplication-TileColor" content="#C8881C" />
-        <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
-        <meta name="msapplication-config" content="none" />
-        {/* Service Worker registration */}
+        {/* Kill-switch: unregister any previously-installed PWA service worker and
+            wipe its caches. This is a native app, not a PWA. Safe no-op once clean. */}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').catch(function() {});
-            });
+            navigator.serviceWorker.getRegistrations().then(function(rs) {
+              rs.forEach(function(r) { r.unregister(); });
+            }).catch(function() {});
+          }
+          if (window.caches && caches.keys) {
+            caches.keys().then(function(ks) { ks.forEach(function(k) { caches.delete(k); }); }).catch(function() {});
           }
         `}} />
         {/* Google Analytics 4 */}
