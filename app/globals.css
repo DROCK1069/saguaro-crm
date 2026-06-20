@@ -504,3 +504,21 @@ input::placeholder, textarea::placeholder, select::placeholder { color: #A8A29E 
 .tabular-nums { font-variant-numeric: tabular-nums; }
 .text-right { text-align: right; }
 .font-800 { font-weight: 800; }
+
+/* ── Glow card — site-wide premium card hover effect ─────────────────
+   Apply .glow-card to any card element. Subtle amber glow on hover,
+   smooth lift, refined border transition. */
+.glow-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE8E4;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(28,25,23,.06);
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease;
+  cursor: default;
+}
+.glow-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(200,136,28,0.30);
+  box-shadow: 0 8px 30px rgba(200,136,28,0.12), 0 2px 8px rgba(28,25,23,.06);
+}
+

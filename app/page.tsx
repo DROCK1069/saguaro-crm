@@ -370,36 +370,19 @@ export default function LandingPage() {
       <IntegrationStrip />
 
       {/* ══════════ 4. FEATURE GRID ══════════ */}
-      <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Everything You Need. Nothing You Don&apos;t.</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 40, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="feature-grid">
-          {FEATURES.map(f => {
-            const cardImg = f.title.includes('Blueprint') || f.title.includes('Takeoff') ? 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&q=80'
-              : f.title.includes('Sage') || f.title.includes('AI Assistant') ? 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=80'
-              : f.title.includes('Financial') ? 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&q=80'
-              : f.title.includes('Field') || f.title.includes('Mobile') ? 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80'
-              : f.title.includes('Portal') ? 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&q=80'
-              : 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80';
-            return (
-            <div key={f.title} style={{ ...glass, padding: 0, overflow: 'hidden', transition: 'all 0.3s ease', cursor: 'default' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,23,0.25)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)'; }}>
-              <div style={{ height: 160, overflow: 'hidden', borderRadius: '16px 16px 0 0', position: 'relative' as const }}>
-                <img src={cardImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute' as const, inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.25))' }} />
+      <section id="features" style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 24px' }}>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 8, color: TEXT }}>Everything You Need. Nothing You Don&apos;t.</h2>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 48, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }} className="feature-grid">
+          {FEATURES.map(f => (
+            <div key={f.title} className="glow-card" style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(200,136,28,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0 }}>
+                <Icon d={f.icon} />
               </div>
-              <div style={{ padding: '24px 22px' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
-                  <Icon d={f.icon} />
-                </div>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, color: TEXT }}>{f.title}</h3>
-                <p style={{ fontSize: 13, color: DIM, lineHeight: 1.5, margin: '0 0 12px' }}>{f.desc}</p>
-                <Link href={f.href} style={{ fontSize: 12, color: GOLD, fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}>Learn more &rarr;</Link>
-              </div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: TEXT }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: DIM, lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
             </div>
-            );
-          })}
+          ))}
         </div>
       </section>
 
