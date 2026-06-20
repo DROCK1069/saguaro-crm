@@ -1,6 +1,6 @@
 'use client';
 /**
- * AppSidebar — Procore-style persistent left sidebar.
+ * AppSidebar — Premium dark sidebar with amber accents.
  * Collapsible, grouped navigation with icons, badges, and active states.
  */
 import React, { useState, useEffect } from 'react';
@@ -36,6 +36,18 @@ import {
 } from '@phosphor-icons/react';
 import { colors, font, radius, shadow, sidebar as sidebarTokens, z } from '../lib/design-tokens';
 import { useWhiteLabel } from './WhiteLabelProvider';
+
+/* ── Sidebar palette ──────────────────────────────────────────────── */
+const S = {
+  bg:          '#1B1815',
+  bgHover:     '#26221E',
+  text:        '#CFC8BF',
+  textActive:  '#FFFFFF',
+  textSection: '#5F574E',
+  accentBar:   '#E8B420',
+  activeBg:    'linear-gradient(90deg, rgba(200,136,28,.16), rgba(200,136,28,.04))',
+  border:      'rgba(255,255,255,0.06)',
+} as const;
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 interface NavItem {
@@ -127,8 +139,8 @@ export default function AppSidebar({
         left: 0,
         bottom: 0,
         width,
-        background: colors.darkAlt,
-        borderRight: `1px solid ${colors.border}`,
+        background: S.bg,
+        borderRight: `1px solid ${S.border}`,
         display: 'flex',
         flexDirection: 'column',
         zIndex: z.sidebar,
@@ -136,7 +148,7 @@ export default function AppSidebar({
         overflow: 'hidden',
       }}
     >
-      {/* ── Logo + Brand ───────────────────────────────────────────── */}
+      {/* ── Brand area ───────────────────────────────────────────── */}
       <div
         style={{
           height: sidebarTokens.headerHeight,
@@ -145,7 +157,7 @@ export default function AppSidebar({
           justifyContent: collapsed ? 'center' : 'flex-start',
           padding: collapsed ? '0' : '0 16px',
           gap: 11,
-          borderBottom: `1px solid ${colors.border}`,
+          borderBottom: `1px solid ${S.border}`,
           flexShrink: 0,
         }}
       >
@@ -154,27 +166,38 @@ export default function AppSidebar({
           aria-label="Saguaro — Dashboard"
           style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none', overflow: 'hidden' }}
         >
-          {/* Brand lockup. On the white-label tier (with a logo set) we show the
-              TENANT's logo; otherwise the Saguaro lockup — badge when collapsed,
-              full horizontal lockup when expanded. */}
           {wl.whiteLabelEnabled && wl.logoUrl ? (
             <img
               src={wl.logoUrl}
               alt={wl.companyName || 'Logo'}
               style={{ height: collapsed ? 32 : 30, width: collapsed ? 32 : 'auto', maxWidth: collapsed ? 32 : 168, objectFit: 'contain', display: 'block' }}
             />
-          ) : collapsed ? (
-            <img
-              src="/logo-badge.png"
-              alt="Saguaro Control Systems"
-              style={{ height: 32, width: 32, objectFit: 'contain', display: 'block' }}
-            />
           ) : (
-            <img
-              src="/logo-horizontal.png"
-              alt="Saguaro Control Systems"
-              style={{ height: 30, width: 'auto', objectFit: 'contain', display: 'block' }}
-            />
+            <>
+              {/* Amber gradient hex icon */}
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  background: 'linear-gradient(135deg, #E8B420, #C8881C)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="16" height="18" viewBox="0 0 16 18" fill="none">
+                  <path d="M8 0L15.5 4.5V13.5L8 18L0.5 13.5V4.5L8 0Z" fill="rgba(255,255,255,0.9)" />
+                </svg>
+              </div>
+              {!collapsed && (
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, overflow: 'hidden' }}>
+                  <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 15, letterSpacing: '0.02em' }}>SAGUARO</span>
+                  <span style={{ color: S.textSection, fontSize: 9.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Control Systems</span>
+                </div>
+              )}
+            </>
           )}
         </Link>
       </div>
@@ -188,11 +211,11 @@ export default function AppSidebar({
               <div
                 style={{
                   padding: '0 16px 6px 20px',
-                  fontSize: '10px',
-                  fontWeight: font.weight.bold,
-                  color: colors.textFaint,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: S.textSection,
                   textTransform: 'uppercase',
-                  letterSpacing: 1.4,
+                  letterSpacing: 1.2,
                   userSelect: 'none',
                 }}
               >
@@ -200,7 +223,7 @@ export default function AppSidebar({
               </div>
             )}
             {collapsed && sIdx > 0 && (
-              <div style={{ height: 1, background: colors.borderDim, margin: '8px 14px' }} />
+              <div style={{ height: 1, background: S.border, margin: '8px 14px' }} />
             )}
 
             {/* Items */}
@@ -217,14 +240,13 @@ export default function AppSidebar({
                     alignItems: 'center',
                     justifyContent: collapsed ? 'center' : 'flex-start',
                     gap: 11,
-                    height: sidebarTokens.itemHeight,
-                    padding: collapsed ? '0' : '0 12px 0 16px',
-                    margin: '2px 8px',
-                    borderRadius: radius.lg,
-                    fontSize: font.size.md,
-                    fontWeight: active ? font.weight.semibold : font.weight.medium,
-                    color: active ? colors.gold : colors.textMuted,
-                    background: active ? colors.goldDim : 'transparent',
+                    padding: collapsed ? '9px 0' : '9px 11px',
+                    margin: collapsed ? '1px 8px' : '1px 8px',
+                    borderRadius: 9,
+                    fontSize: 13.5,
+                    fontWeight: active ? 600 : 500,
+                    color: active ? S.textActive : S.text,
+                    background: active ? S.activeBg : 'transparent',
                     textDecoration: 'none',
                     transition: 'background .15s ease, color .15s ease',
                     position: 'relative',
@@ -233,29 +255,29 @@ export default function AppSidebar({
                   }}
                   onMouseEnter={(e) => {
                     if (!active) {
-                      e.currentTarget.style.background = 'rgba(0,0,0,.04)';
-                      e.currentTarget.style.color = colors.text;
+                      e.currentTarget.style.background = S.bgHover;
+                      e.currentTarget.style.color = S.textActive;
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!active) {
                       e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = colors.textMuted;
+                      e.currentTarget.style.color = S.text;
                     }
                   }}
                 >
-                  {/* Active indicator — soft gold left rule */}
+                  {/* Active indicator — amber left accent bar */}
                   {active && !collapsed && (
                     <span
                       aria-hidden
                       style={{
                         position: 'absolute',
-                        left: 0,
-                        top: 8,
-                        bottom: 8,
+                        left: -8,
+                        top: 6,
+                        bottom: 6,
                         width: 3,
                         borderRadius: '0 3px 3px 0',
-                        background: colors.gold,
+                        background: S.accentBar,
                       }}
                     />
                   )}
@@ -269,11 +291,11 @@ export default function AppSidebar({
                     <span
                       style={{
                         marginLeft: 'auto',
-                        fontSize: font.size.xs,
-                        fontWeight: font.weight.bold,
-                        background: active ? colors.gold : colors.raisedAlt,
-                        color: active ? colors.dark : colors.textMuted,
-                        borderRadius: radius.full,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: active ? S.accentBar : 'rgba(255,255,255,0.08)',
+                        color: active ? S.bg : S.text,
+                        borderRadius: 9999,
                         padding: '1px 7px',
                         minWidth: 18,
                         textAlign: 'center',
@@ -290,7 +312,7 @@ export default function AppSidebar({
       </nav>
 
       {/* ── Bottom Section (Settings + Collapse) ────────────────────── */}
-      <div style={{ borderTop: `1px solid ${colors.border}`, padding: '8px 0', flexShrink: 0 }}>
+      <div style={{ borderTop: `1px solid ${S.border}`, padding: '8px 0', flexShrink: 0 }}>
         {BOTTOM_ITEMS.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
@@ -304,14 +326,13 @@ export default function AppSidebar({
                 alignItems: 'center',
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 gap: 11,
-                height: sidebarTokens.itemHeight,
-                padding: collapsed ? '0' : '0 12px 0 16px',
-                margin: '2px 8px',
-                borderRadius: radius.lg,
-                fontSize: font.size.md,
-                fontWeight: active ? font.weight.semibold : font.weight.medium,
-                color: active ? colors.gold : colors.textMuted,
-                background: active ? colors.goldDim : 'transparent',
+                padding: collapsed ? '9px 0' : '9px 11px',
+                margin: '1px 8px',
+                borderRadius: 9,
+                fontSize: 13.5,
+                fontWeight: active ? 600 : 500,
+                color: active ? S.textActive : S.text,
+                background: active ? S.activeBg : 'transparent',
                 textDecoration: 'none',
                 transition: 'background .15s ease, color .15s ease',
                 position: 'relative',
@@ -319,14 +340,14 @@ export default function AppSidebar({
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  e.currentTarget.style.background = 'rgba(0,0,0,.04)';
-                  e.currentTarget.style.color = colors.text;
+                  e.currentTarget.style.background = S.bgHover;
+                  e.currentTarget.style.color = S.textActive;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = colors.textMuted;
+                  e.currentTarget.style.color = S.text;
                 }
               }}
             >
@@ -335,12 +356,12 @@ export default function AppSidebar({
                   aria-hidden
                   style={{
                     position: 'absolute',
-                    left: 0,
-                    top: 8,
-                    bottom: 8,
+                    left: -8,
+                    top: 6,
+                    bottom: 6,
                     width: 3,
                     borderRadius: '0 3px 3px 0',
-                    background: colors.gold,
+                    background: S.accentBar,
                   }}
                 />
               )}
@@ -360,25 +381,24 @@ export default function AppSidebar({
             justifyContent: collapsed ? 'center' : 'flex-start',
             gap: 11,
             width: 'calc(100% - 16px)',
-            height: sidebarTokens.itemHeight,
-            padding: collapsed ? '0' : '0 12px 0 16px',
-            margin: '2px 8px 0',
-            borderRadius: radius.lg,
+            padding: collapsed ? '9px 0' : '9px 11px',
+            margin: '1px 8px 0',
+            borderRadius: 9,
             background: 'none',
             border: 'none',
-            color: colors.textDim,
-            fontSize: font.size.md,
-            fontWeight: font.weight.medium,
+            color: S.textSection,
+            fontSize: 13.5,
+            fontWeight: 500,
             cursor: 'pointer',
             transition: 'background .15s ease, color .15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(0,0,0,.04)';
-            e.currentTarget.style.color = colors.text;
+            e.currentTarget.style.background = S.bgHover;
+            e.currentTarget.style.color = S.textActive;
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = colors.textDim;
+            e.currentTarget.style.color = S.textSection;
           }}
         >
           {collapsed ? <CaretRight size={18} style={{ flexShrink: 0 }} /> : <><CaretLeft size={18} style={{ flexShrink: 0 }} /><span>Collapse</span></>}

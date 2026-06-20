@@ -1,17 +1,18 @@
 :root {
-  /* Surfaces — Apple LIGHT: iOS grouped page + white cards */
-  --bg-base: #F2F2F7;
+  /* Surfaces — warm neutral light palette */
+  --bg-base: #FAFAF9;
   --bg-surface: #FFFFFF;
   --bg-surface-2: #FFFFFF;
   --bg-elevated: #FFFFFF;
   /* Hairlines */
   --border-subtle: rgba(0,0,0,0.06);
-  --border-default: #E5E5EA;
-  --border-strong: rgba(0,0,0,0.14);
+  --border-default: #EAE8E4;
+  --border: #EAE8E4;
+  --border-strong: #D6D3D1;
   /* Text */
-  --text-primary: #1C1C1E;
-  --text-secondary: #6E6E73;
-  --text-tertiary: #AEAEB2;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #8A847E;
   --text-disabled: #C7C7CC;
   /* ── Brand primary — the single white-label override point. Defaults to
      Saguaro gold; WhiteLabelProvider overrides --brand-primary (+ the derived
@@ -50,7 +51,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 html { font-size: 14px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif; background: var(--bg-base); color: var(--text-primary); overflow-x: hidden; font-size: 14px; line-height: 1.5; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif; background: var(--bg-base); color: var(--text-primary); overflow-x: hidden; font-size: 14px; line-height: 1.5; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-base); }
 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
@@ -90,8 +91,9 @@ select {
   appearance: none;
   -webkit-appearance: none;
   background-color: #FFFFFF;
-  color: #1C1C1E;
-  border: 1px solid #E5E5EA;
+  color: #1C1917;
+  -webkit-text-fill-color: #1C1917 !important;
+  border: 1px solid #EAE8E4;
   border-radius: 10px;
   padding: 10px 36px 10px 12px;
   font-size: 14px;
@@ -103,10 +105,11 @@ select {
   background-repeat: no-repeat;
   background-position: right 12px center;
 }
-select:hover { border-color: rgba(0,0,0,0.14); background-color: #F2F2F7; }
-select:focus { border-color: #C8881C; box-shadow: 0 0 0 3px rgba(200,136,28,0.12); color: #1C1C1E; }
-select option { background-color: #FFFFFF; color: #1C1C1E; font-size: 14px; padding: 8px 12px; }
-select option:checked, select option:hover { background-color: #F2F2F7; color: #C8881C; }
+select::placeholder { color: #A8A29E !important; }
+select:hover { border-color: var(--border-strong); background-color: #FAFAF9; }
+select:focus { border-color: #C8881C; box-shadow: 0 0 0 3px rgba(200,136,28,0.12); color: #1C1917; }
+select option { background-color: #FFFFFF; color: #1C1917; font-size: 14px; padding: 8px 12px; }
+select option:checked, select option:hover { background-color: #FAFAF9; color: #C8881C; }
 
 /* ── react-datepicker Apple light theme ── */
 .saguaro-calendar {
@@ -218,9 +221,9 @@ label {
   font-size: 11px !important;
 }
 
-/* Professional font stack — Inter-like system fonts */
+/* Professional font stack — Inter-first system fonts */
 body, button, input, textarea, select {
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, system-ui, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -357,17 +360,18 @@ input:focus, textarea:focus, select:focus {
 /* Apple-grade input styling */
 input, textarea {
   background: #FFFFFF;
-  border: 1px solid #E5E5EA;
+  border: 1px solid #EAE8E4;
   border-radius: 10px;
-  color: #1C1C1E;
+  color: #1C1917;
+  -webkit-text-fill-color: #1C1917 !important;
   transition: all 0.2s ease;
 }
 input:hover, textarea:hover {
-  border-color: rgba(0,0,0,0.14);
+  border-color: var(--border-strong);
   background: #FFFFFF;
 }
 input::placeholder, textarea::placeholder {
-  color: var(--text-disabled);
+  color: #A8A29E !important;
 }
 
 /* Status badge colors — iOS system hues on light tints */
@@ -428,8 +432,9 @@ a, button, input, select, textarea {
 /* Apple-grade table rows */
 tr { transition: background 0.15s ease; }
 tr:hover td { background: rgba(0, 0, 0, 0.03) !important; }
-thead th { background: #F2F2F7 !important; border-bottom: 1px solid #E5E5EA !important; }
-tbody td { border-bottom: 1px solid #E5E5EA !important; }
+tbody tr:hover td { background: #FCFBFA !important; }
+thead th { background: #FCFBFA !important; border-bottom: 1px solid #EAE8E4 !important; }
+tbody td { border-bottom: 1px solid #EAE8E4 !important; }
 
 /* Gold accent button utility */
 .btn-gold {
@@ -490,7 +495,12 @@ tbody td { border-bottom: 1px solid #E5E5EA !important; }
    invisible typing in every form. Force dark text on a solid white field. */
 input, textarea, select {
   background-color: #FFFFFF !important;
-  color: #1C1C1E !important;
-  -webkit-text-fill-color: #1C1C1E !important;
+  color: #1C1917 !important;
+  -webkit-text-fill-color: #1C1917 !important;
 }
-input::placeholder, textarea::placeholder { color: #8E8E93 !important; }
+input::placeholder, textarea::placeholder, select::placeholder { color: #A8A29E !important; }
+
+/* ── Utility classes ── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+.text-right { text-align: right; }
+.font-800 { font-weight: 800; }

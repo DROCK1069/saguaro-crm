@@ -1,35 +1,35 @@
 import React from 'react';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
-// Apple light theme — matches the (light) mobile app:
-// iOS grouped page base, white raised surfaces, hairline borders, reserved gold.
+// Warm neutral palette — premium construction CRM direction.
+// Surfaces, hairlines, amber accent, status colours.
 export const T = {
-  bg: '#F2F2F7',
-  surface: '#F2F2F7',
+  bg: '#FAFAF9',
+  surface: '#FAFAF9',
   surface2: '#FFFFFF',
   elevated: '#FFFFFF',
-  border: '#E5E5EA',
-  borderSubtle: 'rgba(0,0,0,0.08)',
-  borderStrong: 'rgba(0,0,0,0.14)',
+  border: '#EAE8E4',
+  borderSubtle: 'rgba(28,25,23,0.06)',
+  borderStrong: 'rgba(28,25,23,0.14)',
   borderGold: 'rgba(200,136,28,0.35)',
   gold: '#C8881C',
-  goldBright: '#E0A030',
-  goldDim: 'rgba(200,136,28,0.12)',
+  goldBright: '#E8B420',
+  goldDim: '#FBF3E2',
   goldMid: 'rgba(200,136,28,0.22)',
-  white: '#1C1C1E',
-  muted: '#6E6E73',
-  faint: '#AEAEB2',
-  green: '#34C759',
-  greenDim: 'rgba(52,199,89,0.12)',
-  red: '#FF3B30',
-  redDim: 'rgba(255,59,48,0.12)',
-  amber: '#FF9500',
-  amberDim: 'rgba(255,149,0,0.12)',
-  blue: '#007AFF',
-  blueDim: 'rgba(0,122,255,0.12)',
-  shadowSm: '0 1px 2px rgba(0,0,0,0.06)',
-  shadowMd: '0 4px 14px rgba(0,0,0,0.08)',
-  shadowLg: '0 16px 44px rgba(0,0,0,0.10)',
+  white: '#1C1917',
+  muted: '#57534E',
+  faint: '#8A847E',
+  green: '#15803D',
+  greenDim: '#EAF5EE',
+  red: '#B42318',
+  redDim: '#FBEDEC',
+  amber: '#B9791A',
+  amberDim: '#FBF3E2',
+  blue: '#1D4ED8',
+  blueDim: '#EAF0FB',
+  shadowSm: '0 1px 2px rgba(28,25,23,.05)',
+  shadowMd: '0 1px 3px rgba(28,25,23,.07), 0 1px 2px rgba(28,25,23,.05)',
+  shadowLg: '0 12px 32px rgba(28,25,23,.10), 0 2px 6px rgba(28,25,23,.05)',
 } as const;
 
 // ─── PageWrap ─────────────────────────────────────────────────────────────────
@@ -56,7 +56,8 @@ export function Card({ children, style }: { children: React.ReactNode; style?: R
     <div
       style={{
         background: T.surface2,
-        borderRadius: 14,
+        borderRadius: 12,
+        border: `1px solid ${T.border}`,
         boxShadow: T.shadowMd,
         overflow: 'hidden',
         ...style,
@@ -72,7 +73,7 @@ export function CardHeader({ children, style }: { children: React.ReactNode; sty
     <div
       style={{
         padding: '16px 20px',
-        borderBottom: `1px solid ${T.borderSubtle}`,
+        borderBottom: `1px solid ${T.border}`,
         display: 'flex',
         alignItems: 'center',
         gap: 12,
@@ -97,11 +98,11 @@ type BadgeColor = 'gold' | 'green' | 'red' | 'amber' | 'blue' | 'muted';
 
 const badgeStyles: Record<BadgeColor, { bg: string; color: string; border: string }> = {
   gold:  { bg: T.goldDim,  color: T.gold,  border: T.borderGold },
-  green: { bg: T.greenDim, color: T.green, border: 'rgba(52,199,89,0.30)' },
-  red:   { bg: T.redDim,   color: T.red,   border: 'rgba(255,59,48,0.30)' },
-  amber: { bg: T.amberDim, color: T.amber, border: 'rgba(255,149,0,0.32)' },
-  blue:  { bg: T.blueDim,  color: T.blue,  border: 'rgba(0,122,255,0.32)' },
-  muted: { bg: '#F2F2F7', color: T.muted, border: T.border },
+  green: { bg: T.greenDim, color: T.green, border: 'rgba(21,128,61,0.25)' },
+  red:   { bg: T.redDim,   color: T.red,   border: 'rgba(180,35,24,0.25)' },
+  amber: { bg: T.amberDim, color: T.amber, border: 'rgba(185,121,26,0.25)' },
+  blue:  { bg: T.blueDim,  color: T.blue,  border: 'rgba(29,78,216,0.25)' },
+  muted: { bg: T.bg,       color: T.faint, border: T.border },
 };
 
 export function Badge({ label, color = 'muted' }: { label: string; color?: BadgeColor }) {
@@ -111,6 +112,7 @@ export function Badge({ label, color = 'muted' }: { label: string; color?: Badge
       style={{
         display: 'inline-flex',
         alignItems: 'center',
+        gap: 5,
         padding: '2px 10px',
         borderRadius: 20,
         fontSize: 11,
@@ -123,6 +125,15 @@ export function Badge({ label, color = 'muted' }: { label: string; color?: Badge
         whiteSpace: 'nowrap',
       }}
     >
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: s.color,
+          flexShrink: 0,
+        }}
+      />
       {label}
     </span>
   );
@@ -135,46 +146,38 @@ export function StatCard({ icon, label, value, sub }: { icon: string; label: str
       style={{
         background: T.surface2,
         border: `1px solid ${T.border}`,
-        borderRadius: 14,
+        borderRadius: 12,
         boxShadow: T.shadowSm,
-        padding: '16px 18px',
+        padding: '18px 20px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 10,
+        gap: 6,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: T.surface,
-            border: `1px solid ${T.borderSubtle}`,
-            fontSize: 15,
-            color: T.muted,
-            flexShrink: 0,
-          }}
-        >
-          {icon}
-        </span>
-        <span
-          style={{
-            fontSize: 11,
-            color: T.muted,
-            fontWeight: 600,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {label}
-        </span>
+      <span
+        style={{
+          fontSize: 11,
+          color: T.faint,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </span>
+      <div
+        style={{
+          fontSize: 25,
+          fontWeight: 800,
+          color: T.white,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
       </div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: T.white, letterSpacing: '-0.02em', lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: T.faint }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -192,8 +195,8 @@ export function SectionHeader({
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
       <div>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: T.white, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{title}</h2>
-        {sub && <p style={{ margin: '6px 0 0', fontSize: 13, color: T.muted, lineHeight: 1.5 }}>{sub}</p>}
+        <h2 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: T.white, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{title}</h2>
+        {sub && <p style={{ margin: '6px 0 0', fontSize: 13.5, color: T.muted, lineHeight: 1.5 }}>{sub}</p>}
       </div>
       {action && <div>{action}</div>}
     </div>
@@ -220,9 +223,21 @@ const btnBase: React.CSSProperties = {
 };
 
 const btnVariants: Record<BtnVariant, React.CSSProperties> = {
-  primary: { background: T.gold, color: '#FFFFFF', boxShadow: T.shadowSm },
-  ghost: { background: T.elevated, color: T.white, border: `1px solid ${T.border}` },
-  danger: { background: T.redDim, color: T.red, border: `1px solid rgba(255,59,48,0.30)` },
+  primary: {
+    background: 'linear-gradient(135deg, #E8B420, #C8881C)',
+    color: '#FFFFFF',
+    boxShadow: '0 4px 14px rgba(200,136,28,.28)',
+  },
+  ghost: {
+    background: T.elevated,
+    color: T.white,
+    border: `1px solid ${T.border}`,
+  },
+  danger: {
+    background: T.redDim,
+    color: T.red,
+    border: `1px solid rgba(180,35,24,0.25)`,
+  },
 };
 
 const btnSizes: Record<BtnSize, React.CSSProperties> = {
@@ -279,7 +294,7 @@ export function ProgressBar({
       style={{
         width: '100%',
         height,
-        background: 'rgba(0,0,0,0.08)',
+        background: 'rgba(28,25,23,0.06)',
         borderRadius: 999,
         overflow: 'hidden',
       }}
@@ -298,28 +313,37 @@ export function ProgressBar({
 }
 
 // ─── Table ────────────────────────────────────────────────────────────────────
-export function Table({ headers, rows }: { headers: string[]; rows: React.ReactNode[][] }) {
+type TableHeader = string | { label: string; align: 'left' | 'right' };
+
+function resolveHeader(h: TableHeader): { label: string; align: 'left' | 'right' } {
+  if (typeof h === 'string') return { label: h, align: 'left' };
+  return h;
+}
+
+export function Table({ headers, rows }: { headers: TableHeader[]; rows: React.ReactNode[][] }) {
+  const resolved = headers.map(resolveHeader);
   return (
     <div style={{ overflowX: 'auto', width: '100%' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr>
-            {headers.map((h, i) => (
+            {resolved.map((h, i) => (
               <th
                 key={i}
                 style={{
                   padding: '10px 12px',
-                  textAlign: 'left',
-                  color: T.muted,
+                  textAlign: h.align,
+                  color: T.faint,
                   fontWeight: 600,
                   fontSize: 11,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   borderBottom: `1px solid ${T.border}`,
+                  background: '#FCFBFA',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {h}
+                {h.label}
               </th>
             ))}
           </tr>
@@ -329,6 +353,12 @@ export function Table({ headers, rows }: { headers: string[]; rows: React.ReactN
             <tr
               key={ri}
               style={{ borderBottom: `1px solid ${T.borderSubtle}` }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLTableRowElement).style.background = '#FCFBFA';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLTableRowElement).style.background = '';
+              }}
             >
               {row.map((cell, ci) => (
                 <td
@@ -337,6 +367,8 @@ export function Table({ headers, rows }: { headers: string[]; rows: React.ReactN
                     padding: '10px 12px',
                     color: T.white,
                     verticalAlign: 'middle',
+                    textAlign: ci < resolved.length ? resolved[ci].align : 'left',
+                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
                   {cell}
@@ -356,6 +388,42 @@ export function Table({ headers, rows }: { headers: string[]; rows: React.ReactN
           )}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ─── EmptyState ───────────────────────────────────────────────────────────────
+export function EmptyState({
+  icon,
+  title,
+  subtitle,
+  action,
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: '48px 24px',
+        gap: 8,
+      }}
+    >
+      {icon && (
+        <div style={{ fontSize: 32, marginBottom: 4, color: T.faint }}>{icon}</div>
+      )}
+      <div style={{ fontSize: 16, fontWeight: 700, color: T.white }}>{title}</div>
+      {subtitle && (
+        <div style={{ fontSize: 13, color: T.faint, maxWidth: 320, lineHeight: 1.5 }}>{subtitle}</div>
+      )}
+      {action && <div style={{ marginTop: 12 }}>{action}</div>}
     </div>
   );
 }
