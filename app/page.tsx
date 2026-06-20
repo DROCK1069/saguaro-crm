@@ -13,12 +13,12 @@ const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.65)',
+  background: 'rgba(255,255,255,0.85)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid #E5E5EA',
+  border: '1px solid #E8E6E1',
   borderRadius: 16,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)',
+  boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 8px 24px rgba(28,25,23,0.06)',
 };
 
 /* ── icons (inline SVG) ── */
@@ -232,7 +232,7 @@ export default function LandingPage() {
                         background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
                         border: '1px solid rgba(212,160,23,0.15)',
                         borderRadius: 16, padding: '8px',
-                        boxShadow: '0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,0,0,0.04)',
+                        boxShadow: '0 2px 6px rgba(28,25,23,0.06), 0 20px 50px rgba(28,25,23,0.14)',
                         animation: 'navDropFadeIn 0.15s ease',
                       }}
                     >
@@ -294,7 +294,7 @@ export default function LandingPage() {
           <h1 style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.02em', margin: '0 0 18px', color: TEXT }}>The Smarter CRM Built<br />for General Contractors</h1>
           <p style={{ color: DIM, fontSize: 16, lineHeight: 1.65, margin: '0 0 28px', maxWidth: 460 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
-            <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,160,23,0.35)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
+            <Link href="/signup" style={{ background: `linear-gradient(135deg, #E8B420, ${GOLD})`, color: '#1C1917', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(200,136,28,0.25), 0 8px 24px rgba(200,136,28,0.18)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
             <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid #E5E5EA', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <svg viewBox="0 0 20 20" width={15} height={15} fill={TEXT}><polygon points="5,3 19,10 5,17" /></svg> Watch Demo
             </Link>
@@ -427,7 +427,7 @@ export default function LandingPage() {
       <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
         <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Why GCs Switch from Procore</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
-        <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.06)' }}>
+        <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 12px 32px rgba(28,25,23,0.07)' }}>
           {/* header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid #E5E5EA' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
@@ -467,7 +467,7 @@ export default function LandingPage() {
               borderRadius: 16,
               padding: '28px 24px',
               position: 'relative' as const,
-              boxShadow: plan.highlighted ? '0 0 60px rgba(212,160,23,0.12), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)' : '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(0,0,0,0.05)',
+              boxShadow: plan.highlighted ? '0 0 0 1px rgba(212,160,23,0.25), 0 2px 4px rgba(28,25,23,0.05), 0 16px 40px rgba(200,136,28,0.14)' : '0 1px 2px rgba(28,25,23,0.04), 0 8px 24px rgba(28,25,23,0.06)',
               display: 'flex',
               flexDirection: 'column' as const,
               transition: 'all 0.3s ease',
@@ -510,7 +510,7 @@ export default function LandingPage() {
 
       {/* ══════════ 8. TESTIMONIAL ══════════ */}
       <section style={{ maxWidth: 700, margin: '0 auto', padding: '40px 24px', textAlign: 'center' as const }}>
-        <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(0,0,0,0.06)' }}>
+        <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 16px 44px rgba(28,25,23,0.08)' }}>
           <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=80" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #C8881C', display: 'block', margin: '0 auto 16px' }} />
           <blockquote style={{ fontSize: 16, color: TEXT, lineHeight: 1.6, fontStyle: 'italic' as const, margin: '0 0 16px', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
           <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px' }}>Marcus Torres</p>
