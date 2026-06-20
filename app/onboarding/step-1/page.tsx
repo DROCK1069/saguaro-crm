@@ -52,7 +52,7 @@ export default function OnboardingStep1() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
             <h1 style={{ fontSize: 28, fontWeight: 900, margin: '0 0 10px', color: TEXT }}>Welcome to Saguaro!</h1>
             <p style={{ color: DIM, fontSize: 15, margin: 0, lineHeight: 1.6 }}>
-              You're all set. Your 30-day free trial starts now — no credit card required.
+              You&apos;re all set. Your 30-day free trial starts now — no credit card required.
             </p>
           </div>
 

@@ -184,7 +184,7 @@ function DeliveryPage() {
         ) : deliveries.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>📦</div>
-            <p style={{ margin: 0, fontSize: 14 }}>No deliveries logged yet. Tap "+ Log" to record one.</p>
+            <p style={{ margin: 0, fontSize: 14 }}>No deliveries logged yet. Tap &quot;+ Log&quot; to record one.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

@@ -263,7 +263,7 @@ export default function CareersPage() {
           )}
 
           <div style={{ textAlign: 'center', marginTop: 40, fontSize: 14, color: C.dim }}>
-            Don't see your role? We're always glad to hear from exceptional people.{' '}
+            Don&apos;t see your role? We&apos;re always glad to hear from exceptional people.{' '}
             <a href="mailto:careers@saguarocontrol.net?subject=Introduction" style={{ color: C.gold, textDecoration: 'none', fontWeight: 700 }}>Introduce yourself →</a>
           </div>
         </section>
@@ -297,7 +297,7 @@ export default function CareersPage() {
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
               Want to see what{' '}
-              <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>you'd be building?</span>
+              <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>you&apos;d be building?</span>
             </h2>
             <p style={{ fontSize: 17, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
               The best way to understand Saguaro is to use it. Spin up a free account and explore AI takeoff, Sage, pay apps, and the field app firsthand.

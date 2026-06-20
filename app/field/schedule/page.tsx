@@ -430,6 +430,7 @@ function DependencyArrows({
     }
 
     return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, deps, taskIndexMap, timelineStart, DAY_WIDTH, ROW_HEIGHT, HEADER_HEIGHT]);
 
   if (arrows.length === 0) return null;

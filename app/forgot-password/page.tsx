@@ -52,7 +52,7 @@ export default function ForgotPasswordPage(){
             <>
               <div style={{textAlign:'center',marginBottom:28}}>
                 <h1 style={{fontSize:24,fontWeight:800,margin:'0 0 8px',color:TEXT}}>Reset your password</h1>
-                <p style={{color:DIM,fontSize:14,margin:0}}>Enter your email and we'll send a reset link</p>
+                <p style={{color:DIM,fontSize:14,margin:0}}>Enter your email and we&apos;ll send a reset link</p>
               </div>
               <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:32}}>
                 {error&&<div style={{background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.3)',borderRadius:8,padding:'10px 14px',marginBottom:20,fontSize:13,color:RED}}>⚠️ {error}</div>}

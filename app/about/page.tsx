@@ -157,7 +157,7 @@ export default function AboutPage() {
                 Saguaro Control was born out of the daily reality of running general-contracting work in the American Southwest — where the saguaro stands tall through brutal conditions, and where a single missed preliminary-notice or lien deadline can wipe out the margin on an entire project.
               </p>
               <p style={{ margin: 0 }}>
-                The contractors we knew were paying Procore prices that ran into thousands of dollars a month, then still exporting everything into spreadsheets to do takeoffs, track certified payroll, and chase down certificates of insurance. The expensive platform did not talk to the cheap tools, and neither one understood the plans. Bids took entire weekends. Pay apps got rejected over formatting. Compliance lived in someone's head.
+                The contractors we knew were paying Procore prices that ran into thousands of dollars a month, then still exporting everything into spreadsheets to do takeoffs, track certified payroll, and chase down certificates of insurance. The expensive platform did not talk to the cheap tools, and neither one understood the plans. Bids took entire weekends. Pay apps got rejected over formatting. Compliance lived in someone&apos;s head.
               </p>
               <p style={{ margin: 0 }}>
                 So we built the platform we wished existed: one place where a plan set becomes a takeoff, a takeoff becomes a bid, a bid becomes a job, and a job runs through pay apps, RFIs, change orders, and 50-state compliance — with an AI assistant named Sage doing the measuring, drafting, and parsing along the way. Flat price. Unlimited users. Live in a day.
@@ -173,7 +173,7 @@ export default function AboutPage() {
         <section style={{ padding: '88px 24px 0', maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
-              Who It's For
+              Who It&apos;s For
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>Built for general contractors</h2>
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>
@@ -245,7 +245,7 @@ export default function AboutPage() {
         {/* The name */}
         <section style={{ padding: '88px 24px 0', maxWidth: 760, margin: '0 auto' }}>
           <div style={{ background: 'linear-gradient(135deg, rgba(212,160,23,0.10) 0%, rgba(11,11,15,0) 100%)', border: `1px solid rgba(212,160,23,0.30)`, borderRadius: 14, padding: '40px 44px', textAlign: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 14 }}>Why "Saguaro"</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 14 }}>Why &quot;Saguaro&quot;</div>
             <p style={{ fontSize: 17, color: C.text, lineHeight: 1.7, margin: 0, fontWeight: 500 }}>
               The saguaro grows slow, stands tall, and survives conditions that kill almost everything around it. It is the icon of building in the desert Southwest — patient, resilient, and unmistakable on the skyline. That is the kind of company, and the kind of software, we set out to build.
             </p>

@@ -217,7 +217,7 @@ export default function CommandPalette({ onScoreBid }: Props) {
         <div ref={listRef} style={{ maxHeight: 420, overflowY: 'auto' }}>
           {filtered.length === 0 && (
             <div style={{ padding: '24px 18px', color: DIM, fontSize: 13, textAlign: 'center' }}>
-              No results for "{query}"
+              No results for &quot;{query}&quot;
             </div>
           )}
 

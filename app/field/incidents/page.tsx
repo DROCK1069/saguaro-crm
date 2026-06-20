@@ -604,7 +604,7 @@ function IncidentsPage() {
                   <div style={{ textAlign: 'center', padding: 40, color: DIM }}>
                     <div style={{ marginBottom: 8 }}><ShieldCheck size={40} weight="duotone" color={DIM} /></div>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>No incidents found</div>
-                    <div style={{ fontSize: 12, marginTop: 4 }}>Tap "+ Report" to log a new incident</div>
+                    <div style={{ fontSize: 12, marginTop: 4 }}>Tap &quot;+ Report&quot; to log a new incident</div>
                   </div>
                 ) : filtered.map(inc => (
                   <div key={inc.id} onClick={() => { setSelectedId(inc.id); setView('detail'); }}

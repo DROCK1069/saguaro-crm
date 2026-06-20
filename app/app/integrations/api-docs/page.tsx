@@ -367,8 +367,8 @@ export default function ApiDocsPage() {
             }}>
               <div style={{ color: GREEN }}>POST /api/integrations/zapier</div>
               <div style={{ marginTop: 8, color: TEXT }}>{'{'}</div>
-              <div style={{ color: TEXT }}>&nbsp;&nbsp;"url": "https://your-server.com/webhooks/saguaro",</div>
-              <div style={{ color: TEXT }}>&nbsp;&nbsp;"events": ["project.created", "invoice.sent"]</div>
+              <div style={{ color: TEXT }}>&nbsp;&nbsp;&quot;url&quot;: &quot;https://your-server.com/webhooks/saguaro&quot;,</div>
+              <div style={{ color: TEXT }}>&nbsp;&nbsp;&quot;events&quot;: [&quot;project.created&quot;, &quot;invoice.sent&quot;]</div>
               <div style={{ color: TEXT }}>{'}'}</div>
             </div>
 
@@ -423,10 +423,10 @@ export default function ApiDocsPage() {
                   fontFamily: 'monospace', fontSize: 11, color: TEXT, lineHeight: 1.8,
                 }}>
                   <div>{'{'}</div>
-                  <div>&nbsp;&nbsp;"event": "project.created",</div>
-                  <div>&nbsp;&nbsp;"timestamp": "2026-03-28T...",</div>
-                  <div>&nbsp;&nbsp;"webhook_id": "whd_abc123",</div>
-                  <div>&nbsp;&nbsp;"data": {'{ ... }'}</div>
+                  <div>&nbsp;&nbsp;&quot;event&quot;: &quot;project.created&quot;,</div>
+                  <div>&nbsp;&nbsp;&quot;timestamp&quot;: &quot;2026-03-28T...&quot;,</div>
+                  <div>&nbsp;&nbsp;&quot;webhook_id&quot;: &quot;whd_abc123&quot;,</div>
+                  <div>&nbsp;&nbsp;&quot;data&quot;: {'{ ... }'}</div>
                   <div>{'}'}</div>
                 </div>
               </div>

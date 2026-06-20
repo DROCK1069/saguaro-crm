@@ -195,7 +195,7 @@ function SagePage() {
       setMessages(prev => [...prev, errMsg]);
       setLoading(false);
     }
-  }, [loading, projectId]);
+  }, [loading, projectId, messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

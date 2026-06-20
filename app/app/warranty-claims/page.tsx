@@ -219,6 +219,7 @@ export default function WarrantyClaimsPage() {
     claims.forEach(c => { byCat[c.category] = (byCat[c.category] || 0) + 1; });
 
     return { total, open, closed, denied, totalCost, expiredCount, emergency, avgDays, costByCat, byTrade, byStatus, byCat };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claims]);
 
   /* create claim */

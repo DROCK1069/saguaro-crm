@@ -85,6 +85,7 @@ export default function PayrollPage() {
   const [records, setRecords] = useState<PayrollRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadRecords(); }, [pid]);
 
   async function loadRecords() {

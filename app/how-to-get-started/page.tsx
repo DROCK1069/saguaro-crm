@@ -202,10 +202,10 @@ export default function HowToGetStartedPage() {
               <h4>iPhone / iPad</h4>
               <ol>
                 <li>Open the <strong>App Store</strong></li>
-                <li>Search <strong>"Saguaro Field"</strong></li>
-                <li>Tap <strong>Get</strong> to download (it's free)</li>
+                <li>Search <strong>&quot;Saguaro Field&quot;</strong></li>
+                <li>Tap <strong>Get</strong> to download (it&apos;s free)</li>
                 <li>Open the app and log in</li>
-                <li>You're ready for the field</li>
+                <li>You&apos;re ready for the field</li>
               </ol>
             </div>
             <div className="device-card">
@@ -248,7 +248,7 @@ export default function HowToGetStartedPage() {
         <div className="section">
           <div className="section-label">Step 4</div>
           <h2>Complete Your 5-Minute Company Setup</h2>
-          <p className="sub">After logging in, Saguaro walks you through a quick setup wizard. Here's what it covers:</p>
+          <p className="sub">After logging in, Saguaro walks you through a quick setup wizard. Here&apos;s what it covers:</p>
           <div className="card">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[

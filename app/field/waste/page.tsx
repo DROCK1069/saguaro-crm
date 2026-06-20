@@ -481,7 +481,7 @@ function WasteTrackingPage() {
             {loading ? (
               <div style={{ textAlign: 'center', color: DIM, padding: 40 }}>Loading records...</div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', color: DIM, padding: 40 }}>No waste records found. Tap "+ New Record" to begin tracking.</div>
+              <div style={{ textAlign: 'center', color: DIM, padding: 40 }}>No waste records found. Tap &quot;+ New Record&quot; to begin tracking.</div>
             ) : (
               filtered.map(r => (
                 <div key={r.id} style={{ ...cardStyle, cursor: 'pointer' }} onClick={() => startEdit(r)}>

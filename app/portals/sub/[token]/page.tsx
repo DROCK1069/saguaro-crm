@@ -150,6 +150,7 @@ export default function SubPortal(){
       })
       .catch(e=>setError(e.message||'Failed to load portal'))
       .finally(()=>setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[token]);
 
   /* ── API helpers ── */

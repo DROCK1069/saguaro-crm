@@ -338,7 +338,7 @@ function ObservationsPage() {
       const stored = localStorage.getItem(`saguaro_filters_obs_${projectId}`);
       if (stored) setSavedPresets(JSON.parse(stored));
     } catch { /* ignore */ }
-  }, []);
+  }, [projectId]);
 
   const persistPresets = (presets: SavedPreset[]) => {
     setSavedPresets(presets);

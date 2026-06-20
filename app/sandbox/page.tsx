@@ -546,7 +546,7 @@ export default function SandboxPage() {
               {/* ── What's in Your Sandbox ── */}
               <div style={{ marginBottom: 32 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: GOLD, marginBottom: 14 }}>
-                  What's in Your Sandbox
+                  What&apos;s in Your Sandbox
                 </div>
                 <div style={{
                   background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,

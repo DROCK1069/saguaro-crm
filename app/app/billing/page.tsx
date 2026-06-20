@@ -162,7 +162,7 @@ export default function BillingPage() {
         <div style={{ background: 'rgba(34,197,94,0.1)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 10, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 20 }}>🎉</span>
           <div>
-            <div style={{ fontWeight: 700, color: GREEN, marginBottom: 2 }}>Payment successful — you're all set!</div>
+            <div style={{ fontWeight: 700, color: GREEN, marginBottom: 2 }}>Payment successful — you&apos;re all set!</div>
             <div style={{ fontSize: 13, color: DIM }}>Your subscription is now active. All features are unlocked.</div>
           </div>
         </div>
@@ -371,10 +371,10 @@ export default function BillingPage() {
           <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%' }}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12, color: TEXT }}>Cancel your subscription?</div>
             <div style={{ fontSize: 14, color: DIM, lineHeight: 1.65, marginBottom: 28 }}>
-              You'll retain access until the end of your current billing period. Your data will be preserved for 30 days after that. You can reactivate anytime.
+              You&apos;ll retain access until the end of your current billing period. Your data will be preserved for 30 days after that. You can reactivate anytime.
             </div>
             <div style={{ background: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 8, padding: '12px 16px', marginBottom: 24, fontSize: 13, color: GOLD }}>
-              Before you go — email us at <strong>support@saguarocontrol.net</strong> and we'll give you 20% off your next 3 months.
+              Before you go — email us at <strong>support@saguarocontrol.net</strong> and we&apos;ll give you 20% off your next 3 months.
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={() => setShowCancel(false)} style={{ flex: 1, padding: '12px 0', background: 'rgba(0,0,0,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Keep My Plan</button>

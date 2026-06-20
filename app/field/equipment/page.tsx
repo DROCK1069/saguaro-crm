@@ -209,12 +209,12 @@ function EquipmentPage() {
       {/* List view */}
       {view === 'list' && (
         loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: DIM }}>Loading today's equipment...</div>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: DIM }}>Loading today&apos;s equipment...</div>
         ) : entries.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 16px', color: DIM }}>
             <div style={{ marginBottom: 12, color: DIM, display: 'flex', justifyContent: 'center' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={48} height={48}><rect x={1} y={3} width={15} height={13}/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx={5.5} cy={18.5} r={2.5}/><circle cx={18.5} cy={18.5} r={2.5}/></svg></div>
             <p style={{ margin: 0, fontSize: 15 }}>No equipment logged today.</p>
-            <p style={{ margin: '6px 0 0', fontSize: 13 }}>Tap "+ Log Equipment" to add a machine or tool.</p>
+            <p style={{ margin: '6px 0 0', fontSize: 13 }}>Tap &quot;+ Log Equipment&quot; to add a machine or tool.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

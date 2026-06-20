@@ -1027,7 +1027,7 @@ export default function CompareProcorePage() {
                   margin: '0 0 24px',
                   fontStyle: 'italic',
                 }}>
-                  "{t.quote}"
+                  &quot;{t.quote}&quot;
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
@@ -1092,7 +1092,7 @@ export default function CompareProcorePage() {
           Start your free trial. No credit card. No annual contract. No sales call required.
         </p>
         <p style={{ fontSize: 14, color: C.dim, marginBottom: 44 }}>
-          We'll help migrate your data from Procore — at no additional cost.
+          We&apos;ll help migrate your data from Procore — at no additional cost.
         </p>
 
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 48 }}>

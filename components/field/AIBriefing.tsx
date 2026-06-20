@@ -199,7 +199,7 @@ export default function AIBriefing({ projectId, onViewAll, onAskSage }: AIBriefi
       <div style={{ padding: '14px 20px 16px' }}>
         {data.items.length === 0 ? (
           <p style={{ margin: 0, fontSize: 13, color: DIM, fontStyle: 'italic' }}>
-            No action items for today. You're all clear!
+            No action items for today. You&apos;re all clear!
           </p>
         ) : (
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>

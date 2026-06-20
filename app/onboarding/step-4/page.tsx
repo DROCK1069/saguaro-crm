@@ -99,7 +99,7 @@ export default function OnboardingStep4() {
         {success ? (
           <div style={{background:RAISED,border:`1px solid rgba(34,197,94,.3)`,borderRadius:16,padding:40,textAlign:'center'}}>
             <div style={{fontSize:56,marginBottom:20}}>🎉</div>
-            <h1 style={{fontSize:28,fontWeight:900,margin:'0 0 12px',color:TEXT}}>You're all set!</h1>
+            <h1 style={{fontSize:28,fontWeight:900,margin:'0 0 12px',color:TEXT}}>You&apos;re all set!</h1>
             <p style={{color:DIM,fontSize:15,margin:'0 0 8px',lineHeight:1.6}}>
               Invites sent. Your team members will receive an email with instructions to create their account.
             </p>

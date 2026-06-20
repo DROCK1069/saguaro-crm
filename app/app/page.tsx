@@ -358,7 +358,7 @@ export default function DashboardPage() {
             <h1 style={{ fontSize: 28, fontWeight: 800, margin: '4px 0', color: TEXT }}>
               {greeting}
             </h1>
-            <div style={{ fontSize: 14, color: DIM }}>Here's what needs your attention today.</div>
+            <div style={{ fontSize: 14, color: DIM }}>Here&apos;s what needs your attention today.</div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <Link href="/app/projects/new" style={{ padding: '10px 18px', background: GOLD, color: '#FFFFFF', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
@@ -522,7 +522,7 @@ export default function DashboardPage() {
         <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', marginBottom: 24, boxShadow: SHADOW_SM }}>
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_SUBTLE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Today's Priority Actions</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Today&apos;s Priority Actions</span>
               <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Items requiring your attention</div>
             </div>
             {!todayLoading && !todayError && todayItems.filter((i: TodayItem) => i.urgency === 'high').length > 0 && (

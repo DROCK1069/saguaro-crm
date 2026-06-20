@@ -987,7 +987,7 @@ export default function DocumentVersionsPage() {
 
             {bulkFiles.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 32, color: C.DIM, fontSize: 13 }}>
-                No files added yet. Click "Add File" to simulate selecting files.
+                No files added yet. Click &quot;Add File&quot; to simulate selecting files.
               </div>
             ) : (
               <div style={{ marginBottom: 16 }}>

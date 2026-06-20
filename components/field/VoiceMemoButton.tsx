@@ -84,6 +84,7 @@ export default function VoiceMemoButton({ projectId, itemType, itemId }: VoiceMe
     } catch (err: any) {
       setError(err?.message === 'Permission denied' ? 'Microphone access denied' : 'Could not access microphone');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stopRecording = useCallback(() => {

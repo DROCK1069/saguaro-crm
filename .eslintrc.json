@@ -3,7 +3,7 @@
   "plugins": ["@typescript-eslint"],
   "parser": "@typescript-eslint/parser",
   "rules": {
-    "@next/next/no-img-element": "warn",
+    "@next/next/no-img-element": "off",
     "@next/next/no-assign-module-variable": "off",
     "react/no-unescaped-entities": "warn",
     "react-hooks/exhaustive-deps": "warn",

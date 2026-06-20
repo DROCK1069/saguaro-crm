@@ -1306,7 +1306,7 @@ export default function ClientPortalPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{h.item_title}</div>
                     <div style={{ fontSize: 12, color: DIM }}>{fmtDate(h.date)} at {fmtTime(h.date)}</div>
-                    {h.notes && <div style={{ fontSize: 12, color: DIM, marginTop: 4, fontStyle: 'italic' }}>"{h.notes}"</div>}
+                    {h.notes && <div style={{ fontSize: 12, color: DIM, marginTop: 4, fontStyle: 'italic' }}>&quot;{h.notes}&quot;</div>}
                   </div>
                   <span style={badgeStyle(statusColor(h.action))}>{h.action}</span>
                 </div>

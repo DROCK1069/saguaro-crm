@@ -150,7 +150,7 @@ function BidsPageInner() {
     if (tab === 'history' && historyBids.length === 0 && !historyError) {
       fetchHistory();
     }
-  }, [tab]);
+  }, [tab, historyBids.length, historyError]);
 
   async function fetchHistory(outcome?: string) {
     setHistoryLoading(true);

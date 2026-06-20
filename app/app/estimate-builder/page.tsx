@@ -1114,7 +1114,7 @@ export default function EstimateBuilderPage() {
         {versions.length < 2 && (
           <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>
             <div style={{ color: DIM, fontSize: 14 }}>Save at least 2 versions to compare estimates side-by-side.</div>
-            <div style={{ color: DIM, fontSize: 12, marginTop: 6 }}>Go to the Estimate tab and click "Save Version" to create snapshots.</div>
+            <div style={{ color: DIM, fontSize: 12, marginTop: 6 }}>Go to the Estimate tab and click &quot;Save Version&quot; to create snapshots.</div>
           </div>
         )}
         {vA && vB && (
@@ -1169,7 +1169,7 @@ export default function EstimateBuilderPage() {
         <div style={{ fontWeight: 700, fontSize: 16, color: GOLD, marginBottom: 12 }}>Version History</div>
         {versions.length === 0 && (
           <div style={{ color: DIM, fontStyle: 'italic', fontSize: 13, textAlign: 'center', padding: 24 }}>
-            No versions saved yet. Go to the Estimate tab and click "Save Version" to create a snapshot.
+            No versions saved yet. Go to the Estimate tab and click &quot;Save Version&quot; to create a snapshot.
           </div>
         )}
         {versions.map((ver, idx) => {
@@ -1302,7 +1302,7 @@ export default function EstimateBuilderPage() {
       {templates.length === 0 && (
         <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>
           <div style={{ color: DIM, fontSize: 14 }}>No templates saved yet.</div>
-          <div style={{ color: DIM, fontSize: 12, marginTop: 6 }}>Enter a name above and click "Save Current as Template" to save the current estimate configuration as a reusable template.</div>
+          <div style={{ color: DIM, fontSize: 12, marginTop: 6 }}>Enter a name above and click &quot;Save Current as Template&quot; to save the current estimate configuration as a reusable template.</div>
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>

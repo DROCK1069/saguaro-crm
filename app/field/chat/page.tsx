@@ -178,7 +178,7 @@ function ChatPage() {
       <div style={{ padding: '18px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 360 }}>
           <div style={{ textAlign: 'center', marginBottom: 12, color: DIM, display: 'flex', justifyContent: 'center' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={40} height={40}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: TEXT, textAlign: 'center' }}>What's your name?</h2>
+          <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: TEXT, textAlign: 'center' }}>What&apos;s your name?</h2>
           <p style={{ margin: '0 0 20px', fontSize: 13, color: DIM, textAlign: 'center' }}>Your name will appear with your messages.</p>
           <input
             value={nameInput}

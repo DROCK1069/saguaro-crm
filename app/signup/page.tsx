@@ -102,7 +102,7 @@ export default function SignupPage(){
         <a href="/login" style={{display:'block',padding:'14px',background:`linear-gradient(135deg,${GOLD},#D97706)`,borderRadius:9,color:'#000',fontWeight:900,fontSize:15,textDecoration:'none',marginBottom:16}}>
           Go to Login →
         </a>
-        <p style={{fontSize:12,color:DIM}}>Didn't get it? Check spam or <button onClick={()=>setSuccess(false)} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',fontSize:12,fontWeight:700}}>try again</button></p>
+        <p style={{fontSize:12,color:DIM}}>Didn&apos;t get it? Check spam or <button onClick={()=>setSuccess(false)} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',fontSize:12,fontWeight:700}}>try again</button></p>
       </div>
     </div>
   );
@@ -170,7 +170,7 @@ export default function SignupPage(){
           {/* Testimonial */}
           <div style={{marginTop:36,padding:'20px 24px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:12}}>
             <p style={{fontSize:13,color:DIM,lineHeight:1.7,marginBottom:12,fontStyle:'italic'}}>
-              "We compared Saguaro to Procore and Buildertrend. Saguaro has everything we need at a fraction of the cost — and the AI features actually work."
+              &quot;We compared Saguaro to Procore and Buildertrend. Saguaro has everything we need at a fraction of the cost — and the AI features actually work.&quot;
             </p>
             <div style={{fontSize:12,fontWeight:700,color:TEXT}}>David K. <span style={{color:DIM,fontWeight:400}}>— Owner, Mid-Size GC, Denver CO</span></div>
           </div>

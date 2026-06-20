@@ -289,6 +289,7 @@ export default function ApprovalWorkflowsPage() {
   /* ── data loading ── */
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = useCallback(async () => {
@@ -678,7 +679,7 @@ export default function ApprovalWorkflowsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {filteredWorkflows.length === 0 && (
             <div style={{ ...card, textAlign: 'center', padding: 48, color: DIM }}>
-              No workflow templates found. Click "+ New Workflow" to create one.
+              No workflow templates found. Click &quot;+ New Workflow&quot; to create one.
             </div>
           )}
           {filteredWorkflows.map(wf => (

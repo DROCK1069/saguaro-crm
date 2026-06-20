@@ -630,7 +630,7 @@ function WarrantyClaimsInner() {
               <span onClick={() => setFilterPriority('all')} style={{ fontSize: 11, color: GOLD, background: GOLD + '22', padding: '2px 8px', borderRadius: 10, cursor: 'pointer' }}>{filterPriority} x</span>
             )}
             {searchQuery && (
-              <span onClick={() => setSearchQuery('')} style={{ fontSize: 11, color: GOLD, background: GOLD + '22', padding: '2px 8px', borderRadius: 10, cursor: 'pointer' }}>"{searchQuery}" x</span>
+              <span onClick={() => setSearchQuery('')} style={{ fontSize: 11, color: GOLD, background: GOLD + '22', padding: '2px 8px', borderRadius: 10, cursor: 'pointer' }}>&quot;{searchQuery}&quot; x</span>
             )}
             <button
               onClick={() => { setFilterStatus('all'); setFilterCategory('all'); setFilterPriority('all'); setSearchQuery(''); }}

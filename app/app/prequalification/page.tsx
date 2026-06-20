@@ -866,7 +866,7 @@ function TemplateBuilderModal({ initial, onSave, onClose }: { initial: Template 
             <button style={{ ...btnS(BLUE, TEXT), padding: '5px 14px', fontSize: 12 }} onClick={() => { setEditQIdx(null); setShowAddQ(true); }}>+ Add Question</button>
           </div>
           {questions.length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center', color: DIM, fontSize: 13, background: BG, borderRadius: 8, border: `1px solid ${BORDER}` }}>No questions yet. Click "+ Add Question" to get started.</div>
+            <div style={{ padding: 20, textAlign: 'center', color: DIM, fontSize: 13, background: BG, borderRadius: 8, border: `1px solid ${BORDER}` }}>No questions yet. Click &quot;+ Add Question&quot; to get started.</div>
           ) : (
             <div style={{ maxHeight: 300, overflowY: 'auto' }}>
               {questions.map((q, i) => (

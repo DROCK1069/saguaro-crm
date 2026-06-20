@@ -37,7 +37,7 @@ export default function WelcomePage() {
           {name ? `You're in, ${name}!` : "You're in!"}
         </h1>
         <p style={{ fontSize: 16, color: DIM, margin: '0 0 40px', lineHeight: 1.7 }}>
-          Your Saguaro account is live. Here's exactly how to access your platform and get your team set up.
+          Your Saguaro account is live. Here&apos;s exactly how to access your platform and get your team set up.
         </p>
 
         {/* ACCESS CALLOUT — most important box */}

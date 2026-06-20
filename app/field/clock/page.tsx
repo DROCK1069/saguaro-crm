@@ -416,7 +416,7 @@ function ClockPage() {
           {/* Today's entries */}
           {todayEntries.length > 0 && (
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px' }}>
-              <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 }}>Today's Entries</p>
+              <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 }}>Today&apos;s Entries</p>
               {todayEntries.map((e, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: i > 0 ? `1px solid ${BORDER}` : 'none' }}>
                   <div>

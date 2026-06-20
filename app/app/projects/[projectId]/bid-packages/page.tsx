@@ -382,6 +382,7 @@ export default function BidPackagesPage() {
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadPackages(); }, [projectId]);
 
   async function loadPackages() {

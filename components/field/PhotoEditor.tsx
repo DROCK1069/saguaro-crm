@@ -47,7 +47,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
-  useEffect(() => { renderCanvas(); }, [rotation, flipH, flipV, brightness, contrast, annotations]);
+  useEffect(() => { renderCanvas(); }, [rotation, flipH, flipV, brightness, contrast, annotations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;

@@ -97,6 +97,7 @@ export default function BidPackageDetailPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadPackage(); }, [id]);
 
   function showToast(msg: string, color: string = '#1db954') {
@@ -413,7 +414,7 @@ export default function BidPackageDetailPage() {
           )}
 
           {pkg.invited_subs.length === 0 ? (
-            <div style={{ padding: 32, textAlign: 'center', color: DIM, fontSize: 13 }}>No subs invited yet. Use "Invite More" to add subcontractors.</div>
+            <div style={{ padding: 32, textAlign: 'center', color: DIM, fontSize: 13 }}>No subs invited yet. Use &quot;Invite More&quot; to add subcontractors.</div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
