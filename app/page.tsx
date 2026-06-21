@@ -269,10 +269,19 @@ function MarketingNav() {
    =========================== */
 export default function LandingPage() {
   const [bannerVisible, setBannerVisible] = useState(true);
-  /* menuOpen state removed — dropdowns handle their own state via IIFE */
+
+  useEffect(() => {
+    const els = document.querySelectorAll('.reveal, .reveal-stagger');
+    if (!els.length) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, []);
 
   return (
-    <div data-landing style={{ background: BG, color: TEXT, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh', overflowX: 'hidden' as const }}>
+    <div data-landing style={{ background: `linear-gradient(180deg, #FAFAF8 0%, ${BG} 30%, #F5F5F0 100%)`, color: TEXT, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh', overflowX: 'hidden' as const }}>
 
       {/* ══════════ 1. TOP BANNER ══════════ */}
       {bannerVisible && (
@@ -287,7 +296,7 @@ export default function LandingPage() {
       <MarketingNav />
 
       {/* ══════════ 3. HERO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 24px 56px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const }} className="hero-grid">
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 24px 56px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const }} className="hero-grid hero-mesh">
         {/* Brand: a single restrained sunset glow echoing the Saguaro badge */}
         <div style={{ position: 'absolute' as const, top: -120, right: -80, width: 440, height: 440, background: 'radial-gradient(circle, rgba(212,160,23,0.10) 0%, transparent 68%)', zIndex: 0, pointerEvents: 'none' as const }} />
         {/* left */}
@@ -296,7 +305,7 @@ export default function LandingPage() {
           <h1 style={{ fontSize: 46, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.03em', margin: '0 0 20px', color: TEXT }}>The smarter CRM built<br />for general contractors</h1>
           <p style={{ color: DIM, fontSize: 17, lineHeight: 1.6, margin: '0 0 30px', maxWidth: 470 }}>AI takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance — so you can focus on building.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
-            <Link href="/signup" style={{ background: `linear-gradient(135deg, #E8B420, ${GOLD})`, color: '#1C1917', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(200,136,28,0.25), 0 8px 24px rgba(200,136,28,0.18)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
+            <Link href="/signup" className="cta-glow" style={{ background: `linear-gradient(135deg, #E8B420, ${GOLD})`, color: '#1C1917', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 6px rgba(200,136,28,0.25), 0 8px 24px rgba(200,136,28,0.18)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
             <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid #E5E5EA', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <svg viewBox="0 0 20 20" width={15} height={15} fill={TEXT}><polygon points="5,3 19,10 5,17" /></svg> Watch Demo
             </Link>
@@ -351,16 +360,16 @@ export default function LandingPage() {
       </section>
 
       {/* ── capability proof bar — honest product facts, not invented metrics ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '8px 24px 56px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '8px 24px 56px' }} className="reveal">
         <p style={{ textAlign: 'center' as const, fontSize: 13, color: DIM, marginBottom: 20, letterSpacing: '0.01em' }}>Everything a GC needs to bid, build, and bill — in one platform</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="stats-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="stats-grid reveal-stagger">
           {[
             { val: '< 60s', lbl: 'Per blueprint takeoff' },
             { val: 'G702/703', lbl: 'AIA pay apps built in' },
             { val: '50-state', lbl: 'Lien waivers included' },
             { val: '⅓', lbl: 'The cost of Procore' },
           ].map(s => (
-            <div key={s.lbl} style={{ ...glass, padding: '22px 24px', textAlign: 'center' as const }}>
+            <div key={s.lbl} className="lift-card" style={{ ...glass, padding: '22px 24px', textAlign: 'center' as const }}>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#C8881C', letterSpacing: '-0.02em' }}>{s.val}</div>
               <div style={{ fontSize: 12.5, color: DIM, marginTop: 7, fontWeight: 500 }}>{s.lbl}</div>
             </div>
@@ -372,10 +381,10 @@ export default function LandingPage() {
       <IntegrationStrip />
 
       {/* ══════════ 4. FEATURE GRID ══════════ */}
-      <section id="features" style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 24px' }}>
+      <section id="features" style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 24px' }} className="reveal">
         <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Everything you need. Nothing you don&apos;t.</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 48, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }} className="feature-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }} className="feature-grid reveal-stagger">
           {FEATURES.map(f => (
             <div key={f.title} className="glow-card" style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(200,136,28,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0 }}>
@@ -389,7 +398,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 6. COMPARISON TABLE ══════════ */}
-      <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
+      <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }} className="reveal">
         <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Why GCs switch from Procore</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature, here&apos;s how Saguaro compares — at a third of the price.</p>
         <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 12px 32px rgba(28,25,23,0.07)' }}>
@@ -402,7 +411,7 @@ export default function LandingPage() {
           </div>
           {/* rows */}
           {COMPARISON_ROWS.map((r, i) => (
-            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid #E5E5EA' : 'none', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
+            <div key={r.feature} className="compare-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid #E5E5EA' : 'none', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent', transition: 'background 0.2s ease' }}>
               <div style={{ padding: '11px 20px', fontSize: 13, color: TEXT }}>{r.feature}</div>
               <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {r.feature === 'Starting Price' ? <PriceLabel v={r.saguaro} /> : <StatusCell v={r.saguaro} />}
@@ -419,12 +428,12 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 7. PRICING ══════════ */}
-      <section id="pricing" style={{ maxWidth: 1000, margin: '0 auto', padding: '64px 24px' }}>
+      <section id="pricing" style={{ maxWidth: 1000, margin: '0 auto', padding: '64px 24px' }} className="reveal">
         <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Simple, transparent pricing</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid reveal-stagger">
           {PLANS.map(plan => (
-            <div key={plan.name} style={{
+            <div key={plan.name} className={`lift-card${plan.highlighted ? ' lift-card-gold' : ''}`} style={{
               background: '#FFFFFF',
               border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid #E5E5EA',
               borderRadius: 16,
@@ -472,7 +481,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 8. PROMISE — honest pull-quote, no fabricated customer ══════════ */}
-      <section style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }}>
+      <section style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }} className="reveal">
         <blockquote style={{ fontSize: 26, color: TEXT, lineHeight: 1.4, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
           The estimating, billing, and field work that used to take five tools and a spreadsheet — done in one place, in a fraction of the time.
         </blockquote>
@@ -480,10 +489,10 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 9. CTA SECTION ══════════ */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '72px 24px 80px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }}>
+      <section style={{ maxWidth: 700, margin: '0 auto', padding: '72px 24px 80px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }} className="reveal">
         <h2 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, color: TEXT }}>Ready to build smarter?</h2>
         <p style={{ color: DIM, fontSize: 15, marginBottom: 28 }}>Start your free trial today — no credit card, no sales call, no contract.</p>
-        <Link href="/signup" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.3), 0 12px 40px rgba(212,160,23,0.15)', transition: 'all 0.3s ease' }}>Start Your Free Trial</Link>
+        <Link href="/signup" className="cta-glow" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.3), 0 12px 40px rgba(212,160,23,0.15)' }}>Start Your Free Trial</Link>
         <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>No credit card required. 14-day free trial.</p>
       </section>
 

@@ -508,20 +508,91 @@ tbody td { border-bottom: 1px solid #EAE8E4 !important; }
   z-index: 0;
 }
 
-/* Scroll-triggered fade in */
-@keyframes fadeInOnScroll {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Scroll-triggered reveal — starts invisible, observer adds .revealed */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
 }
-.fade-section {
-  animation: fadeInOnScroll 0.6s ease-out both;
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Stagger children inside a reveal group */
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.reveal-stagger.revealed > *:nth-child(1) { transition-delay: 0s; }
+.reveal-stagger.revealed > *:nth-child(2) { transition-delay: 0.06s; }
+.reveal-stagger.revealed > *:nth-child(3) { transition-delay: 0.12s; }
+.reveal-stagger.revealed > *:nth-child(4) { transition-delay: 0.18s; }
+.reveal-stagger.revealed > *:nth-child(5) { transition-delay: 0.24s; }
+.reveal-stagger.revealed > *:nth-child(6) { transition-delay: 0.30s; }
+.reveal-stagger.revealed > *:nth-child(7) { transition-delay: 0.36s; }
+.reveal-stagger.revealed > *:nth-child(8) { transition-delay: 0.42s; }
+.reveal-stagger.revealed > *:nth-child(9) { transition-delay: 0.48s; }
+.reveal-stagger.revealed > * {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.reveal-stagger.revealed > * {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-/* ── Landing page specific overrides ── */
-[data-landing] h1 { font-size: clamp(24px, 4vw, 38px) !important; }
-[data-landing] h2 { font-size: clamp(18px, 3vw, 28px) !important; }
-[data-landing] h3 { font-size: clamp(15px, 2.5vw, 20px) !important; }
-[data-landing] p { font-size: 14px !important; line-height: 1.6; }
+/* Hero gradient mesh — subtle warm radials for visual depth */
+.hero-mesh {
+  position: relative;
+}
+.hero-mesh::before {
+  content: '';
+  position: absolute;
+  inset: -60px -80px;
+  background:
+    radial-gradient(ellipse 600px 500px at 15% 30%, rgba(212,160,23,0.09) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 400px at 85% 20%, rgba(200,136,28,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 300px at 50% 90%, rgba(212,160,23,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Stat/pricing card hover lift — extends glow-card pattern to all marketing cards */
+.lift-card {
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.lift-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(28,25,23,0.08), 0 2px 6px rgba(28,25,23,0.04);
+  border-color: rgba(200,136,28,0.20);
+}
+
+/* Pricing card highlighted hover — amber glow */
+.lift-card-gold:hover {
+  box-shadow: 0 12px 40px rgba(200,136,28,0.18), 0 2px 6px rgba(28,25,23,0.04);
+  border-color: rgba(200,136,28,0.45);
+}
+
+/* CTA button pulse glow on hover */
+.cta-glow {
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+.cta-glow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(200,136,28,0.35), 0 12px 40px rgba(200,136,28,0.20);
+}
+
+/* Comparison table row hover */
+[data-landing] .compare-row:hover {
+  background: rgba(200,136,28,0.04) !important;
+}
+
+/* ── Landing page responsive type ── */
+[data-landing] h1 { font-size: clamp(28px, 5vw, 46px) !important; }
+[data-landing] h2 { font-size: clamp(22px, 3.5vw, 30px) !important; }
+[data-landing] h3 { font-size: clamp(14px, 2vw, 16px) !important; }
+[data-landing] p { font-size: clamp(13px, 1.5vw, 15px) !important; line-height: 1.6; }
 
 /* FIX: light-theme flip left inputs at color:#F5F5F7 (white) on a white field =
    invisible typing in every form. Force dark text on a solid white field. */
