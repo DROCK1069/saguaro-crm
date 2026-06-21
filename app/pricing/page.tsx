@@ -3,17 +3,24 @@ import React, { useState } from 'react';
 import { IntegrationStrip } from '@/components/Integrations';
 
 const C = {
-  dark: '#F2F2F7',
+  dark: '#FCF7EE',
   gold: '#C8881C',
   goldBright: '#E8A020',
-  text: '#1C1C1E',
-  dim: '#6E6E73',
-  border: '#E7E5E1',
-  raised: '#F2F2F7',
-  raisedAlt: '#FAFAF8',
-  green: '#34C759',
+  text: '#2A1B06',
+  dim: '#6B5B43',
+  border: '#F0E7D6',
+  raised: '#FFFBF2',
+  raisedAlt: '#FDF3E0',
+  green: '#15803D',
   blue: '#6366F1',
   font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+  pageBg: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)',
+  heroBg: 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)',
+  navBg: 'rgba(255,251,242,0.85)',
+  cardShadow: '0 8px 26px rgba(120,80,20,0.09)',
+  goldBtn: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+  btnText: '#2A1B06',
+  btnShadow: '0 6px 18px rgba(201,138,26,0.28)',
 };
 
 const NAV_LINKS = [
@@ -301,12 +308,12 @@ export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div style={{ minHeight: '100vh', background: C.dark, color: C.text, fontFamily: C.font }}>
+    <div style={{ minHeight: '100vh', background: C.pageBg, color: C.text, fontFamily: C.font }}>
 
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: C.dark,
+        height: 64, background: C.navBg, backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
         borderBottom: `1px solid ${C.border}`,
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
@@ -323,15 +330,18 @@ export default function PricingPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'transparent', border: `1.5px solid ${C.text}`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>Free Trial</a>
+          <a href="/login" style={{ padding: '8px 18px', background: 'transparent', border: `1.5px solid rgba(42,27,6,0.2)`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
+          <a href="/signup" style={{ padding: '8px 18px', background: C.goldBtn, borderRadius: 10, color: C.btnText, fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: C.btnShadow }}>Free Trial</a>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '88px 24px 64px' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', background: C.heroBg, borderBottom: `1px solid ${C.border}`, textAlign: 'center', padding: '88px 24px 64px' }}>
+          <div style={{ position: 'absolute', top: -140, right: -80, width: 580, height: 580, background: 'radial-gradient(circle, rgba(232,168,60,0.26) 0%, rgba(212,160,23,0.10) 40%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: -180, left: -120, width: 480, height: 480, background: 'radial-gradient(circle, rgba(200,136,28,0.12) 0%, transparent 68%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 800, color: C.green, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, display: 'inline-block' }} />
             Free Migration Included on All Plans
@@ -339,7 +349,7 @@ export default function PricingPage() {
 
           <h1 style={{ fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: 800, lineHeight: 1.08, margin: '0 0 20px', letterSpacing: '-0.03em', color: C.text }}>
             One Platform.{' '}
-            <span style={{ color: C.gold }}>
+            <span style={{ background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Your Whole Team.
             </span>
           </h1>
@@ -361,7 +371,7 @@ export default function PricingPage() {
           </div>
 
           {/* Toggle */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: C.raisedAlt, borderRadius: 999, padding: '5px', border: `1px solid ${C.border}`, marginBottom: 16 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(135deg,#FFFBF2,#FDF3E0)', borderRadius: 999, padding: '5px', border: `1px solid ${C.border}`, marginBottom: 16 }}>
             <button onClick={() => setAnnual(false)} style={{ padding: '8px 22px', borderRadius: 999, border: !annual ? `1px solid rgba(200,136,28,0.40)` : '1px solid transparent', background: !annual ? 'rgba(200,136,28,0.12)' : 'transparent', color: !annual ? C.gold : C.dim, fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'background 0.15s, color 0.15s' }}>
               Monthly
             </button>
@@ -373,13 +383,14 @@ export default function PricingPage() {
           <div style={{ fontSize: 13, color: C.dim }}>
             {annual ? 'Billed annually — cancel anytime' : 'Switch to annual and save up to $1,200/yr'}
           </div>
+          </div>
         </section>
 
         {/* How it works strip */}
-        <section style={{ padding: '0 24px 64px', maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ borderTop: `2px solid ${C.text}`, padding: '48px 0 0' }}>
+        <section style={{ padding: '72px 24px', maxWidth: 1100, margin: '0 auto' }}>
+          <div>
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>How it works</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#B07A12', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>How it works</div>
               <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', color: C.text, margin: 0 }}>Start using Saguaro in under 5 minutes</h2>
               <p style={{ fontSize: 16, color: C.dim, margin: '8px 0 0', lineHeight: 1.6 }}>Saguaro is a web platform — nothing to download on your computer. Sign up, log in, and your whole team is live.</p>
             </div>
@@ -394,14 +405,14 @@ export default function PricingPage() {
                   <div style={{ fontSize: 28, marginBottom: 14 }}>
                     {s.icon}
                   </div>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Step {s.step}</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#B07A12', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Step {s.step}</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>{s.title}</div>
                   <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>{s.desc}</div>
                 </div>
               ))}
             </div>
             <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 28, borderTop: `1px solid ${C.border}` }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '14px 40px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 900, fontSize: 15, textDecoration: 'none' }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '14px 40px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 900, fontSize: 15, textDecoration: 'none', boxShadow: C.btnShadow }}>
                 Start Free Trial — No Credit Card →
               </a>
               <div style={{ marginTop: 12, fontSize: 13, color: C.dim }}>
@@ -412,17 +423,17 @@ export default function PricingPage() {
         </section>
 
         {/* Pricing tiers — editorial */}
-        <section style={{ padding: '0 24px 80px', maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 0, alignItems: 'start', borderTop: `2px solid ${C.text}` }}>
+        <section style={{ position: 'relative', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.10), transparent 60%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40, alignItems: 'start', maxWidth: 1100, margin: '0 auto', padding: '80px 24px' }}>
             {PLANS.map((plan, idx) => (
               <div key={plan.name} style={{
                 position: 'relative',
-                borderLeft: idx > 0 ? `1px solid ${C.border}` : 'none',
-                boxShadow: plan.popular ? `inset 0 3px 0 ${C.gold}` : 'none',
+                borderTop: plan.popular ? `3px solid ${C.gold}` : `1px solid rgba(176,122,18,0.16)`,
               }}>
-                <div style={{ padding: '34px 28px 28px' }}>
+                <div style={{ padding: '28px 0 0' }}>
                   {plan.popular && (
-                    <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#B07A12', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
                       Most Popular
                     </div>
                   )}
@@ -435,7 +446,7 @@ export default function PricingPage() {
                   {plan.price_mo > 0 ? (
                     <div style={{ marginBottom: 28 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 4 }}>
-                        <span style={{ fontSize: 52, fontWeight: 900, color: plan.popular ? C.gold : C.text, lineHeight: 1, letterSpacing: '-0.03em' }}>${annual ? plan.price_yr : plan.price_mo}</span>
+                        <span style={{ fontSize: 52, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.03em', ...(plan.popular ? { background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : { color: C.text }) }}>${annual ? plan.price_yr : plan.price_mo}</span>
                         <span style={{ fontSize: 15, color: C.dim, paddingBottom: 8 }}>/mo</span>
                       </div>
                       {annual ? (
@@ -453,10 +464,11 @@ export default function PricingPage() {
 
                   <a href={plan.cta_href} style={{
                     display: 'block', textAlign: 'center', padding: '13px 0',
-                    background: plan.popular ? 'linear-gradient(135deg,#F5C645,#E8A020)' : 'transparent',
-                    border: plan.popular ? '1px solid transparent' : `1.5px solid ${C.text}`,
-                    borderRadius: 10, color: plan.popular ? '#1A1400' : C.text,
+                    background: plan.popular ? 'linear-gradient(135deg,#E8B84B,#C98A1A)' : 'linear-gradient(135deg,#FFFBF2,#FDF3E0)',
+                    border: plan.popular ? '1px solid transparent' : `1.5px solid rgba(42,27,6,0.2)`,
+                    borderRadius: 10, color: plan.popular ? '#2A1B06' : C.text,
                     fontWeight: 800, fontSize: 14, textDecoration: 'none', marginBottom: 28, letterSpacing: 0.3,
+                    boxShadow: plan.popular ? C.btnShadow : 'none',
                   }}>
                     {plan.cta}
                   </a>
@@ -487,10 +499,10 @@ export default function PricingPage() {
         </section>
 
         {/* Migration Banner */}
-        <section style={{ padding: '0 24px 80px', maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ borderTop: `2px solid ${C.text}`, boxShadow: `inset 0 3px 0 ${C.gold}`, padding: '48px 0 0', display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}>
+        <section style={{ padding: '80px 24px', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ borderTop: `3px solid ${C.gold}`, paddingTop: 44, display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 280 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Free Migration — Every Plan</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#B07A12', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Free Migration — Every Plan</div>
               <h2 style={{ fontSize: 34, fontWeight: 800, margin: '0 0 12px', lineHeight: 1.2, letterSpacing: '-0.03em', color: C.text }}>We move you over in 1 day. Free.</h2>
               <p style={{ fontSize: 16, color: C.dim, margin: '0 0 24px', lineHeight: 1.65 }}>
                 Coming from Procore, Buildertrend, CoConstruct, or a spreadsheet? Our team migrates all your projects, contacts, documents, and history. You do nothing. We handle everything.
@@ -505,9 +517,9 @@ export default function PricingPage() {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-              <div style={{ fontSize: 64, fontWeight: 900, color: C.gold, lineHeight: 1 }}>$0</div>
+              <div style={{ fontSize: 64, fontWeight: 900, lineHeight: 1, background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>$0</div>
               <div style={{ fontSize: 14, color: C.dim, textAlign: 'center' }}>Migration fee<br />(always free)</div>
-              <a href="/signup" style={{ padding: '14px 28px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 800, fontSize: 14, textDecoration: 'none', textAlign: 'center' }}>
+              <a href="/signup" style={{ padding: '14px 28px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 800, fontSize: 14, textDecoration: 'none', textAlign: 'center', boxShadow: C.btnShadow }}>
                 Start Free Migration
               </a>
             </div>
@@ -515,7 +527,8 @@ export default function PricingPage() {
         </section>
 
         {/* Add-ons */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 1080, margin: '0 auto' }}>
+        <section style={{ background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', padding: '84px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Add-Ons & Upgrades
@@ -523,9 +536,9 @@ export default function PricingPage() {
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 34px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.03em', color: C.text }}>Power up your plan</h2>
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>Add only what you need. Cancel any add-on anytime.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 36 }}>
             {ADDONS.map(addon => (
-              <div key={addon.name} style={{ borderTop: `1px solid ${C.border}`, padding: '24px 24px 24px 0' }}>
+              <div key={addon.name} style={{ borderTop: '1px solid rgba(176,122,18,0.16)', paddingTop: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 4 }}>{addon.name}</div>
@@ -542,10 +555,11 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
+          </div>
         </section>
 
         {/* Support Tiers */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 1080, margin: '0 auto' }}>
+        <section style={{ padding: '84px 24px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: C.blue, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Support
@@ -553,9 +567,9 @@ export default function PricingPage() {
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 34px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.03em', color: C.text }}>Support for every team size</h2>
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>Basic support is included on all plans. Upgrade for faster response and a dedicated human.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 0, borderTop: `2px solid ${C.text}` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 36 }}>
             {SUPPORT_TIERS.map((tier, idx) => (
-              <div key={tier.name} style={{ borderLeft: idx > 0 ? `1px solid ${C.border}` : 'none', padding: '28px 24px' }}>
+              <div key={tier.name} style={{ borderTop: '1px solid rgba(176,122,18,0.16)', paddingTop: 24 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: tier.color, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tier.name}</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 4 }}>{tier.price}</div>
                 <div style={{ fontSize: 11, color: C.dim, marginBottom: 20 }}>{tier.plans}</div>
@@ -573,7 +587,8 @@ export default function PricingPage() {
         </section>
 
         {/* One-Time Services */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 1080, margin: '0 auto' }}>
+        <section style={{ background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', padding: '84px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: C.green, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               One-Time Services
@@ -581,12 +596,11 @@ export default function PricingPage() {
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 34px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.03em', color: C.text }}>Get up and running fast</h2>
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto', lineHeight: 1.6 }}>Optional professional services. Pay once, get set up right.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 0, borderTop: `2px solid ${C.text}` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 36 }}>
             {SERVICES.map((service, idx) => (
               <div key={service.name} style={{
-                borderLeft: idx > 0 ? `1px solid ${C.border}` : 'none',
-                boxShadow: service.highlight ? `inset 0 3px 0 ${C.gold}` : 'none',
-                padding: '28px 24px', position: 'relative',
+                borderTop: service.highlight ? `3px solid ${C.gold}` : `1px solid rgba(176,122,18,0.16)`,
+                paddingTop: 24, position: 'relative',
               }}>
                 <div style={{ fontSize: 24, marginBottom: 12 }}>{service.icon}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -596,13 +610,14 @@ export default function PricingPage() {
                 <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>{service.description}</div>
                 {service.highlight && (
                   <div style={{ marginTop: 16 }}>
-                    <a href="/signup" style={{ display: 'inline-block', padding: '10px 20px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>
+                    <a href="/signup" style={{ display: 'inline-block', padding: '10px 20px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 800, fontSize: 13, textDecoration: 'none', boxShadow: C.btnShadow }}>
                       Start Free Migration
                     </a>
                   </div>
                 )}
               </div>
             ))}
+          </div>
           </div>
         </section>
 
@@ -614,7 +629,7 @@ export default function PricingPage() {
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 34px)', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: C.text }}>The construction software market — honestly</h2>
           </div>
-          <div>
+          <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${C.text}` }}>
@@ -655,14 +670,15 @@ export default function PricingPage() {
         </section>
 
         {/* Feature Comparison Table */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 1080, margin: '0 auto' }}>
+        <section style={{ background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', padding: '84px 24px' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Full Comparison
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 34px)', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: C.text }}>Everything, side by side</h2>
           </div>
-          <div>
+          <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${C.text}` }}>
@@ -690,6 +706,7 @@ export default function PricingPage() {
               </tbody>
             </table>
           </div>
+          </div>
         </section>
 
         {/* FAQ */}
@@ -698,9 +715,9 @@ export default function PricingPage() {
             <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>FAQ</div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 34px)', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: C.text }}>Frequently asked questions</h2>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderTop: `2px solid ${C.text}` }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderTop: `1px solid ${C.border}` }}>
             {FAQS.map((faq, i) => (
-              <div key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+              <div key={i} style={{ borderBottom: i === FAQS.length - 1 ? 'none' : `1px solid ${C.border}` }}>
                 <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: '100%', textAlign: 'left', padding: '22px 0', background: 'none', border: 'none', color: C.text, fontSize: 16, fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, lineHeight: 1.4, fontFamily: C.font }}>
                   <span>{faq.q}</span>
                   <span style={{ flexShrink: 0, color: C.gold, fontSize: 22, fontWeight: 300, lineHeight: 1 }}>
@@ -719,27 +736,28 @@ export default function PricingPage() {
         <IntegrationStrip />
 
         {/* Final CTA */}
-        <section style={{ padding: '96px 24px', borderTop: `2px solid ${C.text}`, textAlign: 'center' }}>
-          <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.03em', color: C.text }}>
+        <section style={{ position: 'relative', overflow: 'hidden', padding: '96px 24px', background: 'radial-gradient(ellipse at 50% 0%, #251608 0%, #0E0B08 60%)', textAlign: 'center' }}>
+          <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: 900, height: 500, background: 'radial-gradient(ellipse, rgba(232,168,60,0.20) 0%, transparent 68%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.03em', color: '#F5E9D6' }}>
               Ready to stop paying{' '}
-              <span style={{ color: C.gold }}>Procore prices?</span>
+              <span style={{ background: 'linear-gradient(135deg,#E8B84B,#F5C645)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Procore prices?</span>
             </h2>
-            <p style={{ fontSize: 17, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 17, color: '#C9B79A', margin: '0 0 36px', lineHeight: 1.6 }}>
               30-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 800, fontSize: 16, textDecoration: 'none' }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: C.btnShadow }}>
                 Start Free Trial — No CC Required
               </a>
-              <a href="/switch-from-procore" style={{ display: 'inline-block', padding: '15px 36px', background: 'transparent', border: `1.5px solid ${C.text}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              <a href="/switch-from-procore" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.06)', border: `1.5px solid rgba(245,233,214,0.35)`, borderRadius: 10, color: '#F5E9D6', fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 Free Migration Guide
               </a>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {['30 days free', 'Free migration', 'Cancel anytime', 'No per-seat fees', 'Unlimited users'].map(pill => (
-                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(52,199,89,0.08)', border: `1px solid rgba(52,199,89,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: C.green }}>
-                  <CheckIcon size={12} color={C.green} />
+                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(232,168,60,0.12)', border: `1px solid rgba(232,168,60,0.3)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: '#E8B84B' }}>
+                  <CheckIcon size={12} color="#E8B84B" />
                   {pill}
                 </div>
               ))}
@@ -748,7 +766,7 @@ export default function PricingPage() {
         </section>
 
         {/* Footer */}
-        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
+        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: '#FBF8F2' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
               <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', objectFit: 'contain' }} />

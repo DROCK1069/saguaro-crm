@@ -3,17 +3,22 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-const DARK = '#F2F2F7';
+const DARK = 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)';
+const HERO_BG = 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)';
+const SECTION_BG = '#FBF8F2';
+const NAV_BG = 'rgba(255,251,242,0.85)';
+const CARD_BG = '#FFFBF2';
+const CARD_SHADOW = '0 8px 26px rgba(120,80,20,0.09)';
 const GOLD = '#C8881C';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E7E5E1';
-const RAISED = '#FFFFFF';
-const GREEN = '#34C759';
+const TEXT = '#2A1B06';
+const DIM = '#6B5B43';
+const BORDER = '#F0E7D6';
+const RAISED = '#FFFBF2';
+const GREEN = '#15803D';
 const RED = '#ef4444';
 
 const goldGradientText = {
-  background: 'linear-gradient(135deg, #F59E0B 0%, #F5D060 50%, #C8960F 100%)',
+  background: 'linear-gradient(135deg, #D89A1E, #A86A0C)',
   WebkitBackgroundClip: 'text' as const,
   WebkitTextFillColor: 'transparent' as const,
   backgroundClip: 'text' as const,
@@ -39,10 +44,10 @@ export default function SwitchFromProcorePage() {
         body { background: ${DARK}; color: ${TEXT}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .nav-container { display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 68px; }
         .nav-links { display: flex; align-items: center; gap: 12px; }
-        .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px 36px; }
         .comparison-table { width: 100%; border-collapse: collapse; }
-        .steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-        .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px; }
+        .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px 36px; }
         .trust-pills { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 32px; }
         .calc-inputs { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; }
         .savings-display { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; margin-top: 32px; }
@@ -68,48 +73,48 @@ export default function SwitchFromProcorePage() {
           .hero-ctas { flex-direction: column !important; align-items: center !important; }
         }
         .btn-amber {
-          background: linear-gradient(135deg, #F5C645, #E8A020);
-          color: #1A1400;
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          color: #2A1B06;
           font-weight: 700;
           border: none;
           border-radius: 10px;
           cursor: pointer;
           text-decoration: none;
           display: inline-block;
+          box-shadow: 0 6px 18px rgba(201,138,26,0.28);
           transition: transform 0.15s;
         }
         .btn-amber:hover { transform: translateY(-2px); }
         .btn-outline {
-          background: transparent;
+          background: rgba(255,255,255,0.6);
           color: ${TEXT};
-          font-weight: 600;
-          border: 1.5px solid ${TEXT};
+          font-weight: 700;
+          border: 1.5px solid rgba(42,27,6,0.18);
           border-radius: 10px;
           cursor: pointer;
           text-decoration: none;
           display: inline-block;
           transition: background 0.15s;
         }
-        .btn-outline:hover { background: rgba(28,28,30,0.05); }
+        .btn-outline:hover { background: rgba(42,27,6,0.05); }
         .pain-card {
-          border-top: 1px solid ${BORDER};
-          padding: 28px 0 0;
+          border-top: 1px solid rgba(176,122,18,0.16);
+          padding: 24px 4px 0;
         }
         .step-card {
-          border-top: 1px solid ${BORDER};
-          padding: 28px 0 0;
+          padding: 4px 8px 0;
           text-align: center;
           position: relative;
         }
         .testimonial-card {
-          border-top: 1px solid ${BORDER};
-          padding: 28px 0 0;
+          border-top: 1px solid rgba(176,122,18,0.16);
+          padding: 24px 4px 0;
           position: relative;
         }
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { opacity: 1; }
         .calc-input-field {
-          background: #F2F2F7;
+          background: #FFFBF2;
           border: 1px solid ${BORDER};
           border-radius: 8px;
           color: ${TEXT};
@@ -121,14 +126,15 @@ export default function SwitchFromProcorePage() {
           transition: border-color 0.15s;
         }
         .calc-input-field:focus { border-color: ${GOLD}; }
-        .comparison-table tr:nth-child(even) td { background: rgba(229,229,234,0.1); }
-        .comparison-table tr:hover td { background: rgba(245,158,11,0.04); }
+        .comparison-table tr:nth-child(even) td { background: rgba(240,231,214,0.35); }
+        .comparison-table tr:hover td { background: rgba(216,154,30,0.06); }
       `}</style>
 
       {/* ─── STICKY NAV ─── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: DARK,
+        background: NAV_BG,
+        backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
         borderBottom: `1px solid ${BORDER}`,
       }}>
         <div className="nav-container">
@@ -148,20 +154,22 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── HERO ─── */}
       <section style={{
-        background: DARK,
+        position: 'relative', overflow: 'hidden',
+        background: HERO_BG,
         padding: '100px 40px 80px',
         textAlign: 'center',
-        borderBottom: `2px solid ${TEXT}`,
+        borderBottom: `1px solid ${BORDER}`,
       }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        <div style={{ position: 'absolute', top: -160, right: -80, width: 620, height: 620, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12), transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 800, margin: '0 auto' }}>
           {/* Badge */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(245,158,11,0.1)',
-            border: `1px solid rgba(245,158,11,0.3)`,
+            background: 'rgba(200,136,28,0.12)',
+            border: `1px solid rgba(200,136,28,0.32)`,
             borderRadius: 999, padding: '8px 20px',
             fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.08em',
-            color: GOLD, marginBottom: 32,
+            color: '#B07A12', marginBottom: 32,
           }}>
             🔄 PROCORE MIGRATION — WE&apos;LL HANDLE EVERYTHING
           </div>
@@ -210,7 +218,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── PAIN POINTS ─── */}
-      <section className="section-pad" style={{ padding: '88px 40px', background: DARK }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: 'transparent' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -280,7 +288,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── COMPARISON TABLE ─── */}
-      <section id="comparison" className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
+      <section id="comparison" className="section-pad" style={{ padding: '88px 40px', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -372,7 +380,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── MIGRATION STEPS ─── */}
-      <section className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: 'transparent' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -445,7 +453,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── COST CALCULATOR ─── */}
-      <section className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ marginBottom: 48 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -514,8 +522,8 @@ export default function SwitchFromProcorePage() {
               <div className="savings-display">
                 <div style={{
                   flex: 1, minWidth: 140,
-                  borderTop: `1px solid ${BORDER}`,
-                  padding: '20px 16px', textAlign: 'center',
+                  borderTop: '1px solid rgba(176,122,18,0.16)',
+                  padding: '20px 16px 0', textAlign: 'center',
                 }}>
                   <div style={{ color: GREEN, fontSize: '1.8rem', fontWeight: 800 }}>
                     {formatCurrency(annualSavings)}
@@ -524,8 +532,8 @@ export default function SwitchFromProcorePage() {
                 </div>
                 <div style={{
                   flex: 1, minWidth: 140,
-                  borderTop: `1px solid ${BORDER}`,
-                  padding: '20px 16px', textAlign: 'center',
+                  borderTop: '1px solid rgba(176,122,18,0.16)',
+                  padding: '20px 16px 0', textAlign: 'center',
                 }}>
                   <div style={{ color: GREEN, fontSize: '1.8rem', fontWeight: 800 }}>
                     {formatCurrency(fiveYearSavings)}
@@ -534,8 +542,8 @@ export default function SwitchFromProcorePage() {
                 </div>
                 <div style={{
                   flex: 1, minWidth: 140,
-                  borderTop: `1px solid ${BORDER}`,
-                  padding: '20px 16px', textAlign: 'center',
+                  borderTop: '1px solid rgba(176,122,18,0.16)',
+                  padding: '20px 16px 0', textAlign: 'center',
                 }}>
                   <div style={{ ...goldGradientText, fontSize: '1.8rem', fontWeight: 800 }}>
                     {formatCurrency(saguaroMonthlyCost)}
@@ -558,7 +566,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: 'transparent' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -639,40 +647,35 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── FINAL CTA ─── */}
       <section style={{
-        background: DARK,
-        borderTop: `2px solid ${TEXT}`,
+        position: 'relative', overflow: 'hidden',
+        background: 'radial-gradient(ellipse at 50% 0%, #251608, #0E0B08)',
+        borderTop: `1px solid ${BORDER}`,
         borderBottom: `1px solid ${BORDER}`,
         padding: '90px 40px',
         textAlign: 'center',
       }}>
-        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: 900, height: 500, background: 'radial-gradient(ellipse, rgba(232,168,60,0.18) 0%, transparent 68%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto' }}>
           <h2 style={{ fontSize: '2.6rem', fontWeight: 900, marginBottom: 16, lineHeight: 1.2, ...goldGradientText }}>
             Ready to Make the Switch?
           </h2>
-          <p style={{ fontSize: '1.1rem', color: DIM, marginBottom: 40, lineHeight: 1.65 }}>
+          <p style={{ fontSize: '1.1rem', color: '#C9B79A', marginBottom: 40, lineHeight: 1.65 }}>
             Join 500+ GC teams who already did. Free trial, free migration, cancel anytime. We handle every step.
           </p>
 
           <Link href="/signup" style={{
             display: 'inline-block',
-            background: DARK,
-            color: GOLD,
+            background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+            color: '#2A1B06',
             fontWeight: 800,
             fontSize: '1.15rem',
             padding: '18px 44px',
             borderRadius: 12,
             textDecoration: 'none',
-            border: `1.5px solid ${TEXT}`,
+            border: 'none',
+            boxShadow: '0 6px 30px rgba(232,160,32,0.45)',
             transition: 'all 0.15s',
           }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = GOLD;
-              (e.currentTarget as HTMLAnchorElement).style.color = DARK;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = DARK;
-              (e.currentTarget as HTMLAnchorElement).style.color = GOLD;
-            }}
           >
             Start Free Trial
           </Link>
@@ -686,10 +689,10 @@ export default function SwitchFromProcorePage() {
               '✓ Live onboarding call',
             ].map((pill) => (
               <span key={pill} style={{
-                background: 'rgba(34,197,94,0.08)',
-                border: `1px solid rgba(34,197,94,0.2)`,
+                background: 'rgba(245,233,214,0.08)',
+                border: `1px solid rgba(245,233,214,0.2)`,
                 borderRadius: 999, padding: '7px 16px',
-                fontSize: '0.82rem', fontWeight: 600, color: GREEN,
+                fontSize: '0.82rem', fontWeight: 600, color: '#F5E9D6',
               }}>
                 {pill}
               </span>
@@ -700,7 +703,7 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── FOOTER ─── */}
       <footer style={{
-        background: DARK, borderTop: `1px solid ${BORDER}`,
+        background: SECTION_BG, borderTop: `1px solid ${BORDER}`,
         padding: '40px 40px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -727,7 +730,7 @@ export default function SwitchFromProcorePage() {
               </Link>
             ))}
           </div>
-          <p style={{ color: '#475569', fontSize: '0.82rem' }}>
+          <p style={{ color: DIM, fontSize: '0.82rem' }}>
             &copy; {new Date().getFullYear()} Saguaro Construction Software. All rights reserved.
           </p>
         </div>

@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import type { Industry } from '@/lib/industries';
 
-const DARK = '#F2F2F7';
+const PAGE_BG = 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)';
+const HERO_BG = 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)';
+const NAV_BG = 'rgba(255,251,242,0.85)';
 const GOLD = '#C8881C';
 const GOLD_DARK = '#C8881C';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E7E5E1';
-const RAISED = '#FAFAF8';
-const GREEN = '#34C759';
+const TEXT = '#2A1B06';
+const DIM = '#6B5B43';
+const BORDER = '#F0E7D6';
+const GREEN = '#15803D';
 const RED = '#EF4444';
 
 const OLD_WAY_VS_SAGUARO = [
@@ -50,13 +51,14 @@ export default function IndustryLandingPage({ industry }: Props) {
   const headlineLast = headlineLines[headlineLines.length - 1];
 
   return (
-    <div style={{ background: DARK, color: TEXT, minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ background: PAGE_BG, color: TEXT, minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
       {/* ── NAV ── */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        background: DARK,
-        borderBottom: scrolled ? `1px solid ${TEXT}` : `1px solid ${BORDER}`,
+        background: NAV_BG,
+        backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+        borderBottom: `1px solid ${BORDER}`,
         transition: 'all 0.3s ease', height: '58px',
         display: 'flex', alignItems: 'center',
       }}>
@@ -76,19 +78,20 @@ export default function IndustryLandingPage({ industry }: Props) {
                 background: 'linear-gradient(90deg,#C8881C,#E0A030)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               }}>SAGUARO</span>
-              <span style={{ fontSize: '7px', color: '#6E6E73', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
+              <span style={{ fontSize: '7px', color: DIM, letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
             </span>
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="ind-desktop">
             <Link href="/login" style={{
-              padding: '7px 18px', background: 'transparent',
-              border: '1px solid #E5E5EA', borderRadius: '6px',
-              color: 'rgba(28,28,30,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none',
+              padding: '7px 18px', background: 'rgba(255,255,255,0.6)',
+              border: `1px solid ${BORDER}`, borderRadius: '6px',
+              color: TEXT, fontSize: '13px', fontWeight: 500, textDecoration: 'none',
             }}>Log In</Link>
             <Link href="/signup" style={{
-              padding: '7px 18px', background: GOLD_DARK, border: 'none', borderRadius: '6px',
-              color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none',
+              padding: '7px 18px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', border: 'none', borderRadius: '6px',
+              color: '#2A1B06', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textDecoration: 'none',
+              boxShadow: '0 6px 18px rgba(201,138,26,0.28)',
             }}>Free Trial</Link>
           </div>
 
@@ -102,10 +105,10 @@ export default function IndustryLandingPage({ industry }: Props) {
       </nav>
 
       {mobileOpen && (
-        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: DARK, borderBottom: `1px solid ${BORDER}`, padding: '16px' }}>
+        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: '#FFFBF2', borderBottom: `1px solid ${BORDER}`, padding: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Link href="/login" onClick={() => setMobileOpen(false)} style={{ padding: '13px', textAlign: 'center', border: `1px solid ${BORDER}`, borderRadius: '8px', color: TEXT, textDecoration: 'none', fontWeight: 500 }}>Log In</Link>
-            <Link href="/signup" onClick={() => setMobileOpen(false)} style={{ padding: '13px', textAlign: 'center', background: GOLD_DARK, borderRadius: '8px', color: '#000', textDecoration: 'none', fontWeight: 600 }}>Start Free Trial</Link>
+            <Link href="/signup" onClick={() => setMobileOpen(false)} style={{ padding: '13px', textAlign: 'center', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: '8px', color: '#2A1B06', textDecoration: 'none', fontWeight: 700, boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>Start Free Trial</Link>
           </div>
         </div>
       )}
@@ -114,18 +117,20 @@ export default function IndustryLandingPage({ industry }: Props) {
 
       {/* ── HERO ── */}
       <section style={{
+        position: 'relative', overflow: 'hidden',
         padding: '80px 24px 72px',
-        background: DARK,
+        background: HERO_BG,
         textAlign: 'center',
         borderBottom: `1px solid ${BORDER}`,
       }}>
-        <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+        <div style={{ position: 'absolute', top: -160, right: -80, width: 620, height: 620, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12), transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '820px', margin: '0 auto' }}>
           {/* Industry badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '28px' }}>
             <div style={{
-              padding: '5px 14px', background: 'rgba(245,158,11,0.12)',
-              border: '1px solid rgba(245,158,11,0.35)', borderRadius: '100px',
-              fontSize: '12px', fontWeight: 600, letterSpacing: '0.08em', color: GOLD,
+              padding: '5px 14px', background: 'rgba(200,136,28,0.12)',
+              border: '1px solid rgba(200,136,28,0.32)', borderRadius: '100px',
+              fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', color: '#B07A12',
               textTransform: 'uppercase',
             }}>
               {industry.name}
@@ -138,7 +143,7 @@ export default function IndustryLandingPage({ industry }: Props) {
             ))}
             <span style={{
               display: 'block',
-              background: 'linear-gradient(90deg, #F59E0B, #FBBF24, #F59E0B)',
+              background: 'linear-gradient(135deg, #D89A1E, #A86A0C)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>{headlineLast}</span>
           </h1>
@@ -151,17 +156,18 @@ export default function IndustryLandingPage({ industry }: Props) {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '36px' }}>
             <Link href="/signup" style={{
               padding: '14px 32px',
-              background: 'linear-gradient(135deg,#F5C645,#E8A020)',
-              borderRadius: '8px', color: '#1A1400', fontWeight: 700, fontSize: '16px',
+              background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+              borderRadius: '8px', color: '#2A1B06', fontWeight: 700, fontSize: '16px',
               textDecoration: 'none', letterSpacing: '0.01em',
+              boxShadow: '0 6px 18px rgba(201,138,26,0.28)',
             }}>
               Start Free Trial
             </Link>
             <Link href="/sandbox" style={{
               padding: '14px 32px',
-              background: 'transparent',
-              border: `1.5px solid ${TEXT}`,
-              borderRadius: '8px', color: TEXT, fontWeight: 600, fontSize: '16px',
+              background: 'rgba(255,255,255,0.6)',
+              border: `1.5px solid rgba(42,27,6,0.18)`,
+              borderRadius: '8px', color: TEXT, fontWeight: 700, fontSize: '16px',
               textDecoration: 'none',
             }}>
               Try AI Takeoff →
@@ -173,7 +179,7 @@ export default function IndustryLandingPage({ industry }: Props) {
             {TRUST_PILLS.map(pill => (
               <span key={pill} style={{
                 padding: '5px 12px',
-                background: 'transparent',
+                background: 'linear-gradient(135deg,#FFFBF2,#FDF3E0)',
                 border: `1px solid ${BORDER}`,
                 borderRadius: '100px',
                 fontSize: '12px', color: DIM, fontWeight: 500,
@@ -186,7 +192,7 @@ export default function IndustryLandingPage({ industry }: Props) {
       </section>
 
       {/* ── PAIN POINTS ── */}
-      <section style={{ padding: '72px 24px', borderBottom: `1px solid ${BORDER}` }}>
+      <section style={{ padding: '80px 24px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 34px)', fontWeight: 800, margin: '0 0 12px', color: TEXT, letterSpacing: '-0.03em' }}>
@@ -197,11 +203,10 @@ export default function IndustryLandingPage({ industry }: Props) {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '28px' }}>
             {industry.painPoints.map((point, i) => (
               <div key={i} style={{
-                padding: '20px 0 0 18px',
-                borderTop: `1px solid ${BORDER}`,
+                padding: '4px 0 4px 18px',
                 borderLeft: `3px solid ${RED}`,
                 display: 'flex', alignItems: 'flex-start', gap: '14px',
               }}>
@@ -218,7 +223,7 @@ export default function IndustryLandingPage({ industry }: Props) {
       </section>
 
       {/* ── FEATURES GRID ── */}
-      <section style={{ padding: '72px 24px', borderBottom: `1px solid ${BORDER}` }}>
+      <section style={{ padding: '84px 24px', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '52px' }}>
             <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 34px)', fontWeight: 800, margin: '0 0 12px', color: TEXT, letterSpacing: '-0.03em' }}>
@@ -229,19 +234,21 @@ export default function IndustryLandingPage({ industry }: Props) {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '36px' }}>
             {industry.keyFeatures.map((feature, i) => (
               <div key={i} style={{
-                padding: '28px 0 0',
-                borderTop: `1px solid ${BORDER}`,
+                borderTop: '1px solid rgba(176,122,18,0.16)',
+                paddingTop: '28px',
               }}>
                 {/* Icon */}
                 <div style={{
-                  width: '28px', height: '28px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+                  width: '44px', height: '44px', borderRadius: 12,
+                  background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+                  boxShadow: '0 6px 16px rgba(201,138,26,0.3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   marginBottom: '16px',
                 }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                     <path d={industry.iconPath} />
                   </svg>
                 </div>
@@ -254,7 +261,7 @@ export default function IndustryLandingPage({ industry }: Props) {
       </section>
 
       {/* ── TESTIMONIAL ── */}
-      <section style={{ padding: '72px 24px', borderBottom: `1px solid ${BORDER}`, background: RAISED }}>
+      <section style={{ padding: '84px 24px' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', textAlign: 'center' }}>
           {/* 5 stars */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '28px' }}>
@@ -283,7 +290,7 @@ export default function IndustryLandingPage({ industry }: Props) {
               background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})`,
               borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: '16px', color: '#000', flexShrink: 0,
+              fontWeight: 700, fontSize: '16px', color: '#2A1B06', flexShrink: 0,
             }}>
               {industry.testimonialName.charAt(0)}
             </div>
@@ -296,7 +303,7 @@ export default function IndustryLandingPage({ industry }: Props) {
       </section>
 
       {/* ── COMPARISON BAR ── */}
-      <section style={{ padding: '72px 24px', borderBottom: `1px solid ${BORDER}` }}>
+      <section style={{ padding: '84px 24px', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 34px)', fontWeight: 800, margin: '0 0 12px', color: TEXT, letterSpacing: '-0.03em' }}>
@@ -349,16 +356,18 @@ export default function IndustryLandingPage({ industry }: Props) {
 
       {/* ── FINAL CTA ── */}
       <section style={{
+        position: 'relative', overflow: 'hidden',
         padding: '80px 24px',
-        background: DARK,
+        background: 'radial-gradient(ellipse at 50% 0%, #251608, #0E0B08)',
         borderTop: `1px solid ${BORDER}`,
         textAlign: 'center',
       }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.05, color: TEXT, letterSpacing: '-0.03em' }}>
+        <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: 900, height: 500, background: 'radial-gradient(ellipse, rgba(232,168,60,0.18) 0%, transparent 68%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '680px', margin: '0 auto' }}>
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.05, color: '#F5E9D6', letterSpacing: '-0.03em' }}>
             Ready to Run Your {industry.name} Business Smarter?
           </h2>
-          <p style={{ fontSize: '17px', color: DIM, lineHeight: 1.7, margin: '0 0 40px' }}>
+          <p style={{ fontSize: '17px', color: '#C9B79A', lineHeight: 1.7, margin: '0 0 40px' }}>
             Join {industry.name.toLowerCase()} who have eliminated manual takeoffs, paper lien waivers, and disconnected tools.
             One platform. One price. Start today — no credit card required.
           </p>
@@ -366,31 +375,32 @@ export default function IndustryLandingPage({ industry }: Props) {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '24px' }}>
             <Link href="/signup" style={{
               padding: '16px 36px',
-              background: 'linear-gradient(135deg,#F5C645,#E8A020)',
-              borderRadius: '8px', color: '#1A1400', fontWeight: 700, fontSize: '17px',
+              background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+              borderRadius: '8px', color: '#2A1B06', fontWeight: 700, fontSize: '17px',
               textDecoration: 'none', letterSpacing: '0.01em',
+              boxShadow: '0 6px 30px rgba(232,160,32,0.45)',
             }}>
               Start Free Trial
             </Link>
             <Link href="/sandbox" style={{
               padding: '16px 36px',
               background: 'transparent',
-              border: `1.5px solid ${TEXT}`,
-              borderRadius: '8px', color: TEXT, fontWeight: 600, fontSize: '17px',
+              border: `1.5px solid rgba(245,233,214,0.35)`,
+              borderRadius: '8px', color: '#F5E9D6', fontWeight: 600, fontSize: '17px',
               textDecoration: 'none',
             }}>
               Try AI Takeoff First →
             </Link>
           </div>
 
-          <p style={{ fontSize: '13px', color: '#6E6E73', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: '#C9B79A', margin: 0 }}>
             Free for your whole field crew. Download from the App Store.
           </p>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: `1px solid ${BORDER}`, padding: '32px 24px', textAlign: 'center' }}>
+      <footer style={{ borderTop: `1px solid ${BORDER}`, background: '#FBF8F2', padding: '32px 24px', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <Link href="/pricing" style={{ color: DIM, fontSize: '13px', textDecoration: 'none' }}>Pricing</Link>
           <Link href="/compare/procore" style={{ color: DIM, fontSize: '13px', textDecoration: 'none' }}>vs Procore</Link>
@@ -399,7 +409,7 @@ export default function IndustryLandingPage({ industry }: Props) {
           <Link href="/privacy" style={{ color: DIM, fontSize: '13px', textDecoration: 'none' }}>Privacy</Link>
           <Link href="/terms" style={{ color: DIM, fontSize: '13px', textDecoration: 'none' }}>Terms</Link>
         </div>
-        <p style={{ color: '#475569', fontSize: '12px', margin: 0 }}>
+        <p style={{ color: DIM, fontSize: '12px', margin: 0 }}>
           &copy; {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.
         </p>
       </footer>

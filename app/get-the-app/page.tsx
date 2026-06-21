@@ -27,15 +27,19 @@ export default function GetTheAppPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --dark:   #F2F2F7;
-          --gold:   #F59E0B;
-          --text:   #1C1C1E;
-          --dim:    #6E6E73;
-          --border: #E5E5EA;
-          --raised: #FFFFFF;
-          --green:  #22c55e;
-          --gold-dim: rgba(245,158,11,0.12);
-          --gold-glow: rgba(245,158,11,0.25);
+          --dark:   #FCF7EE;
+          --page:   linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%);
+          --hero:   linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2);
+          --gold:   #C8881C;
+          --text:   #2A1B06;
+          --dim:    #6B5B43;
+          --border: #F0E7D6;
+          --raised: #FBF8F2;
+          --card:   #FFFBF2;
+          --card-shadow: 0 8px 26px rgba(120,80,20,0.09);
+          --green:  #15803D;
+          --gold-dim: rgba(200,136,28,0.12);
+          --gold-glow: rgba(216,154,30,0.25);
         }
 
         body { background: var(--dark); }
@@ -49,9 +53,9 @@ export default function GetTheAppPage() {
           align-items: center;
           padding: 0 32px;
           height: 64px;
-          background: rgba(255,255,255,0.92);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(229,229,234,0.6);
+          background: rgba(255,251,242,0.85);
+          backdrop-filter: blur(20px) saturate(150%);
+          border-bottom: 1px solid var(--border);
         }
         .nav-logo { display: flex; align-items: center; text-decoration: none; }
         .nav-logo img { height: 40px;  }
@@ -66,14 +70,15 @@ export default function GetTheAppPage() {
         }
         .nav-login:hover { color: var(--text); }
         .nav-cta {
-          background: var(--gold);
-          color: #1C1C1E;
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          color: #2A1B06;
           text-decoration: none;
           font-size: 13px;
           font-weight: 700;
           padding: 9px 20px;
           border-radius: 8px;
           letter-spacing: .02em;
+          box-shadow: 0 6px 18px rgba(201,138,26,0.28);
           transition: opacity .2s, transform .15s;
         }
         .nav-cta:hover { opacity: .9; transform: translateY(-1px); }
@@ -81,7 +86,7 @@ export default function GetTheAppPage() {
         /* ── PAGE ── */
         .page {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-          background: var(--dark);
+          background: var(--page);
           color: var(--text);
           min-height: 100vh;
         }
@@ -94,19 +99,21 @@ export default function GetTheAppPage() {
           align-items: center;
           overflow: hidden;
           padding: 100px 32px 80px;
+          background: var(--hero);
+          border-bottom: 1px solid var(--border);
         }
         .hero-bg-gold {
           position: absolute;
           bottom: -100px; left: -150px;
           width: 700px; height: 700px;
-          background: radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 65%);
+          background: radial-gradient(circle, rgba(216,154,30,0.16) 0%, transparent 65%);
           pointer-events: none;
         }
         .hero-bg-blue {
           position: absolute;
           top: -80px; right: -100px;
           width: 600px; height: 600px;
-          background: radial-gradient(circle, rgba(229,229,234,0.5) 0%, transparent 65%);
+          background: radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12) 0%, transparent 65%);
           pointer-events: none;
         }
         .hero-inner {
@@ -151,7 +158,7 @@ export default function GetTheAppPage() {
           color: var(--text);
         }
         .hero-h1 .gold-gradient {
-          background: linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%);
+          background: linear-gradient(135deg, #D89A1E, #A86A0C);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -171,8 +178,8 @@ export default function GetTheAppPage() {
           margin-bottom: 40px;
         }
         .btn-primary {
-          background: var(--gold);
-          color: #1C1C1E;
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          color: #2A1B06;
           text-decoration: none;
           font-size: 15px;
           font-weight: 700;
@@ -180,9 +187,9 @@ export default function GetTheAppPage() {
           border-radius: 10px;
           letter-spacing: .01em;
           transition: opacity .2s, transform .15s, box-shadow .2s;
-          box-shadow: 0 4px 20px rgba(245,158,11,0.35);
+          box-shadow: 0 6px 18px rgba(201,138,26,0.28);
         }
-        .btn-primary:hover { opacity: .92; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245,158,11,0.45); }
+        .btn-primary:hover { opacity: .92; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,138,26,0.42); }
         .btn-ghost {
           background: transparent;
           color: var(--text);
@@ -204,7 +211,7 @@ export default function GetTheAppPage() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: rgba(242,242,247,0.8);
+          background: linear-gradient(135deg, #FFFBF2, #FDF3E0);
           border: 1px solid var(--border);
           border-radius: 100px;
           padding: 6px 14px;
@@ -419,9 +426,7 @@ export default function GetTheAppPage() {
 
         /* ── NUMBERS BAR ── */
         .numbers-bar {
-          background: var(--raised);
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
+          background: linear-gradient(180deg,#FBF3E4,#F7EAD4);
           padding: 40px 32px;
         }
         .numbers-inner {
@@ -434,14 +439,14 @@ export default function GetTheAppPage() {
         .stat-item {
           text-align: center;
           padding: 24px 16px;
-          border-radius: 12px;
-          background: rgba(0,0,0,0.02);
-          border: 1px solid var(--border);
         }
         .stat-number {
           font-size: clamp(32px, 4vw, 48px);
           font-weight: 800;
-          color: var(--gold);
+          background: linear-gradient(135deg, #D89A1E, #A86A0C);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
           line-height: 1;
           margin-bottom: 8px;
           letter-spacing: -.02em;
@@ -482,23 +487,18 @@ export default function GetTheAppPage() {
         .feature-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 1px;
-          background: var(--border);
-          border: 1px solid var(--border);
-          border-radius: 16px;
-          overflow: hidden;
+          gap: 40px 36px;
         }
         .feat-card {
-          background: var(--raised);
-          padding: 32px 28px;
-          transition: background .2s;
+          border-top: 1px solid rgba(176,122,18,0.16);
+          padding: 24px 4px 0;
         }
-        .feat-card:hover { background: #F2F2F7; }
         .feat-icon-wrap {
           width: 44px; height: 44px;
-          border-radius: 11px;
-          background: var(--gold-dim);
-          border: 1px solid rgba(245,158,11,0.25);
+          border-radius: 12px;
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          border: none;
+          box-shadow: 0 6px 16px rgba(201,138,26,0.3);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -506,9 +506,9 @@ export default function GetTheAppPage() {
         }
         .feat-icon-wrap svg {
           width: 20px; height: 20px;
-          stroke: var(--gold);
+          stroke: #FFFFFF;
           fill: none;
-          stroke-width: 1.6;
+          stroke-width: 1.8;
           stroke-linecap: round;
           stroke-linejoin: round;
         }
@@ -527,25 +527,16 @@ export default function GetTheAppPage() {
 
         /* ── HOW TO INSTALL ── */
         .install-section {
-          background: var(--raised);
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
+          background: linear-gradient(180deg,#FBF3E4,#F7EAD4);
         }
         .platform-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 20px;
+          gap: 40px;
         }
         .platform-card {
-          background: var(--dark);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 28px;
-          transition: border-color .2s, box-shadow .2s;
-        }
-        .platform-card:hover {
-          border-color: rgba(245,158,11,0.4);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+          border-top: 1px solid rgba(176,122,18,0.16);
+          padding: 28px 4px 0;
         }
         .platform-header {
           display: flex;
@@ -556,8 +547,9 @@ export default function GetTheAppPage() {
         .platform-icon {
           width: 48px; height: 48px;
           border-radius: 12px;
-          background: var(--gold-dim);
-          border: 1px solid rgba(245,158,11,0.2);
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          border: none;
+          box-shadow: 0 6px 16px rgba(201,138,26,0.3);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -565,9 +557,9 @@ export default function GetTheAppPage() {
         }
         .platform-icon svg {
           width: 24px; height: 24px;
-          stroke: var(--gold);
+          stroke: #FFFFFF;
           fill: none;
-          stroke-width: 1.5;
+          stroke-width: 1.6;
           stroke-linecap: round;
           stroke-linejoin: round;
         }
@@ -633,7 +625,7 @@ export default function GetTheAppPage() {
           overflow: hidden;
           border: 1px solid var(--border);
         }
-        .compare-table thead tr { background: #F2F2F7; }
+        .compare-table thead tr { background: linear-gradient(135deg,#FFFBF2,#FDF3E0); }
         .compare-table th {
           padding: 16px 24px;
           font-size: 13px;
@@ -676,14 +668,11 @@ export default function GetTheAppPage() {
         .testimonials-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
+          gap: 40px 36px;
         }
         .testi-card {
-          background: var(--raised);
-          border: 1px solid var(--border);
-          border-left: 3px solid var(--green);
-          border-radius: 12px;
-          padding: 28px 24px;
+          border-top: 1px solid rgba(176,122,18,0.16);
+          padding: 24px 4px 0;
         }
         .testi-quote {
           font-size: 15px;
@@ -700,7 +689,7 @@ export default function GetTheAppPage() {
 
         /* ── FINAL CTA ── */
         .final-cta {
-          background: var(--raised);
+          background: radial-gradient(ellipse at 50% 0%, #251608, #0E0B08);
           border-top: 1px solid var(--border);
         }
         .final-cta-inner {
@@ -712,7 +701,7 @@ export default function GetTheAppPage() {
         .final-h2 {
           font-size: clamp(28px, 4vw, 48px);
           font-weight: 800;
-          color: var(--text);
+          color: #F5E9D6;
           letter-spacing: -.025em;
           margin-bottom: 36px;
           line-height: 1.1;
@@ -720,7 +709,7 @@ export default function GetTheAppPage() {
         .final-sub {
           margin-top: 20px;
           font-size: 14px;
-          color: var(--dim);
+          color: #C9B79A;
         }
         .final-sub a {
           color: var(--gold);
@@ -730,13 +719,13 @@ export default function GetTheAppPage() {
         .trust-note {
           margin-top: 28px;
           font-size: 13px;
-          color: rgba(110,110,115,0.6);
+          color: #C9B79A;
           line-height: 1.6;
         }
 
         /* ── FOOTER ── */
         .footer {
-          background: #FFFFFF;
+          background: #FBF8F2;
           border-top: 1px solid var(--border);
           padding: 48px 32px;
         }
@@ -751,11 +740,11 @@ export default function GetTheAppPage() {
         }
         .footer-left { display:flex;align-items:center;gap:16px; }
         .footer-logo img { height:32px; }
-        .footer-copy { font-size:13px;color:rgba(110,110,115,0.4); }
+        .footer-copy { font-size:13px;color:var(--dim); }
         .footer-links { display:flex;gap:24px;flex-wrap:wrap; }
         .footer-link {
           font-size:13px;
-          color:rgba(110,110,115,0.5);
+          color:var(--dim);
           text-decoration:none;
           transition:color .2s;
         }
@@ -1052,7 +1041,7 @@ export default function GetTheAppPage() {
                   <div className="platform-icon">
                     <svg viewBox="0 0 24 24">
                       <rect x="5" y="1" width="14" height="22" rx="3" />
-                      <circle cx="12" cy="19.5" r="1" fill="#F59E0B" stroke="none" />
+                      <circle cx="12" cy="19.5" r="1" fill="#FFFFFF" stroke="none" />
                       <path d="M9 4h6" />
                     </svg>
                   </div>
@@ -1091,7 +1080,7 @@ export default function GetTheAppPage() {
         {/* (Removed the PWA-vs-App-Store comparison — Saguaro Field is now a native iOS app on TestFlight.) */}
 
         {/* ── TESTIMONIALS ── */}
-        <div style={{ background: 'var(--raised)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
           <div className="section-wrap">
             <div className="section-header">
               <h2 className="section-h2">Field Crews Love It</h2>

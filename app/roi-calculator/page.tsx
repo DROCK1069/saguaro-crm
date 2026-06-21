@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 
-const DARK = '#F2F2F7';
+const DARK = 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)';
+const HERO_BG = 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)';
+const SECTION_BG = '#FBF8F2';
+const NAV_BG = 'rgba(255,251,242,0.85)';
 const GOLD = '#C8881C';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E7E5E1';
-const RAISED = '#FAFAF8';
-const GREEN = '#34C759';
+const TEXT = '#2A1B06';
+const DIM = '#6B5B43';
+const BORDER = '#F0E7D6';
+const RAISED = '#FBF8F2';
+const GREEN = '#15803D';
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -125,8 +128,8 @@ export default function ROICalculatorPage() {
         }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-        <span style={{ color: '#475569', fontSize: 11 }}>{prefix}{min}{suffix}</span>
-        <span style={{ color: '#475569', fontSize: 11 }}>{prefix}{max.toLocaleString()}{suffix}</span>
+        <span style={{ color: DIM, fontSize: 11 }}>{prefix}{min}{suffix}</span>
+        <span style={{ color: DIM, fontSize: 11 }}>{prefix}{max.toLocaleString()}{suffix}</span>
       </div>
     </div>
   );
@@ -218,25 +221,25 @@ export default function ROICalculatorPage() {
           color: ${GOLD};
         }
         .nav-btn-gold {
-          background: ${GOLD};
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
           border: none;
-          color: #000;
+          color: #2A1B06;
           padding: 8px 20px;
           border-radius: 8px;
           cursor: pointer;
           font-size: 14px;
           font-weight: 700;
+          box-shadow: 0 6px 18px rgba(201,138,26,0.28);
           transition: background 0.2s, transform 0.1s;
           text-decoration: none;
           display: inline-block;
         }
         .nav-btn-gold:hover {
-          background: #FBBF24;
           transform: translateY(-1px);
         }
         .cta-btn {
-          background: linear-gradient(135deg, #F5C645, #E8A020);
-          color: #1A1400;
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          color: #2A1B06;
           font-weight: 800;
           font-size: 18px;
           padding: 18px 36px;
@@ -300,7 +303,7 @@ export default function ROICalculatorPage() {
           font-weight: 500;
         }
         .comparison-table tr:hover td {
-          background: rgba(0,0,0,0.02);
+          background: rgba(216,154,30,0.05);
         }
         .trust-pill {
           display: inline-flex;
@@ -353,7 +356,9 @@ export default function ROICalculatorPage() {
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          background: 'rgba(255,255,255,0.92)',
+          background: NAV_BG,
+          backdropFilter: 'blur(20px) saturate(150%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(150%)',
           borderBottom: `1px solid ${BORDER}`,
           padding: '0 24px',
         }}>
@@ -370,16 +375,19 @@ export default function ROICalculatorPage() {
 
         {/* HERO */}
         <section style={{
+          position: 'relative', overflow: 'hidden',
           padding: '80px 24px 64px',
           textAlign: 'center',
-          background: `radial-gradient(ellipse at 50% 0%, rgba(200,136,28,0.08) 0%, transparent 60%)`,
+          background: HERO_BG,
+          borderBottom: `1px solid ${BORDER}`,
         }}>
-          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div style={{ position: 'absolute', top: -160, right: -80, width: 620, height: 620, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12), transparent 60%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto' }}>
             <div style={{
               display: 'inline-block',
-              background: 'rgba(200,136,28,0.10)',
-              border: `1px solid rgba(200,136,28,0.25)`,
-              color: GOLD,
+              background: 'rgba(200,136,28,0.12)',
+              border: `1px solid rgba(200,136,28,0.32)`,
+              color: '#B07A12',
               fontSize: 11,
               fontWeight: 800,
               letterSpacing: '0.18em',
@@ -567,8 +575,11 @@ export default function ROICalculatorPage() {
               <div
                 className="results-card"
                 style={{
-                  borderTop: `2px solid ${TEXT}`,
-                  paddingTop: 28,
+                  background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
+                  border: '1px solid rgba(176,122,18,0.16)',
+                  borderTop: `3px solid ${GOLD}`,
+                  borderRadius: 16,
+                  padding: '28px 26px',
                   transition: 'all 0.3s ease',
                 }}
               >
@@ -579,7 +590,9 @@ export default function ROICalculatorPage() {
                   <div style={{
                     fontSize: 52,
                     fontWeight: 900,
-                    color: GOLD,
+                    background: 'linear-gradient(135deg, #D89A1E, #A86A0C)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
                     lineHeight: 1,
                     letterSpacing: '-0.03em',
                     transition: 'all 0.3s ease',
@@ -656,12 +669,13 @@ export default function ROICalculatorPage() {
 
         {/* HOW WE CALCULATE */}
         <section style={{
-          padding: '80px 24px',
-          background: RAISED,
-          borderTop: `1px solid ${BORDER}`,
-          borderBottom: `1px solid ${BORDER}`,
+          position: 'relative',
+          overflow: 'hidden',
+          padding: '84px 24px',
+          background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
         }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ position: 'absolute', top: -180, left: '50%', transform: 'translateX(-50%)', width: 760, height: 520, background: 'radial-gradient(circle at 50% 0%, rgba(216,154,30,0.10), transparent 62%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <div style={{
                 display: 'inline-block',
@@ -681,7 +695,7 @@ export default function ROICalculatorPage() {
 
             <div
               className="method-grid"
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 40 }}
             >
               {[
                 {
@@ -703,8 +717,8 @@ export default function ROICalculatorPage() {
                 <div
                   key={card.title}
                   style={{
-                    borderTop: `1px solid ${BORDER}`,
-                    padding: '28px 24px 0 0',
+                    borderTop: '1px solid rgba(176,122,18,0.16)',
+                    paddingTop: 28,
                   }}
                 >
                   <div style={{ fontSize: 28, marginBottom: 14 }}>{card.icon}</div>
@@ -741,7 +755,7 @@ export default function ROICalculatorPage() {
           <div>
             <table className="comparison-table">
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr>
                   <th style={{ textAlign: 'left', color: DIM, padding: '16px 20px' }}>Feature</th>
                   <th style={{ color: DIM }}>Manual</th>
                   <th style={{ color: DIM }}>Procore</th>
@@ -773,9 +787,8 @@ export default function ROICalculatorPage() {
 
         {/* FINAL CTA */}
         <section style={{
-          padding: '80px 24px',
-          background: RAISED,
-          borderTop: `1px solid ${BORDER}`,
+          padding: '84px 24px',
+          background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
           textAlign: 'center',
         }}>
           <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -807,7 +820,7 @@ export default function ROICalculatorPage() {
                   required
                   style={{
                     flex: 1,
-                    background: DARK,
+                    background: '#FFFBF2',
                     border: `1px solid ${BORDER}`,
                     borderRadius: 10,
                     padding: '14px 18px',
@@ -847,7 +860,7 @@ export default function ROICalculatorPage() {
         <footer style={{
           borderTop: `1px solid ${BORDER}`,
           padding: '40px 24px',
-          background: DARK,
+          background: SECTION_BG,
         }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20, marginBottom: 28 }}>
@@ -872,14 +885,14 @@ export default function ROICalculatorPage() {
               </div>
             </div>
             <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <p style={{ margin: 0, color: '#475569', fontSize: 13 }}>
+              <p style={{ margin: 0, color: DIM, fontSize: 13 }}>
                 &copy; {new Date().getFullYear()} Saguaro. All rights reserved.
               </p>
               <div style={{ display: 'flex', gap: 20 }}>
                 {[['Privacy Policy', '/privacy'], ['Terms of Service', '/terms']].map(([label, href]) => (
-                  <a key={label} href={href} style={{ color: '#475569', textDecoration: 'none', fontSize: 13 }}
-                    onMouseOver={(e) => (e.currentTarget.style.color = DIM)}
-                    onMouseOut={(e) => (e.currentTarget.style.color = '#475569')}
+                  <a key={label} href={href} style={{ color: DIM, textDecoration: 'none', fontSize: 13 }}
+                    onMouseOver={(e) => (e.currentTarget.style.color = GOLD)}
+                    onMouseOut={(e) => (e.currentTarget.style.color = DIM)}
                   >
                     {label}
                   </a>

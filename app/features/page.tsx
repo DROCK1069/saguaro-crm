@@ -2,17 +2,21 @@ import React from 'react';
 import { IntegrationStrip } from '@/components/Integrations';
 
 const C = {
-  dark: '#F2F2F7',
+  dark: '#FCF7EE',
   gold: '#C8881C',
   goldBright: '#E8A020',
-  text: '#1C1C1E',
-  dim: '#6E6E73',
-  border: '#E7E5E1',
-  raised: '#F2F2F7',
-  raisedAlt: '#FAFAF8',
-  green: '#34C759',
+  text: '#2A1B06',
+  dim: '#6B5B43',
+  border: '#F0E7D6',
+  raised: '#FFFBF2',
+  raisedAlt: '#FDF3E0',
+  green: '#15803D',
   blue: '#6366F1',
   font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+  pageBg: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)',
+  heroBg: 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)',
+  navBg: 'rgba(255,251,242,0.85)',
+  cardShadow: '0 8px 26px rgba(120,80,20,0.09)',
 };
 
 const NAV_LINKS = [
@@ -186,12 +190,12 @@ function CheckIcon({ size = 16, color = C.green }: { size?: number; color?: stri
 
 export default function FeaturesPage() {
   return (
-    <div style={{ minHeight: '100vh', background: C.dark, color: C.text, fontFamily: C.font }}>
+    <div style={{ minHeight: '100vh', background: C.pageBg, color: C.text, fontFamily: C.font }}>
 
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: C.dark,
+        height: 64, background: C.navBg, backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
         borderBottom: `1px solid ${C.border}`,
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
@@ -206,16 +210,19 @@ export default function FeaturesPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'transparent', border: `1.5px solid ${C.text}`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>Free Trial</a>
+          <a href="/login" style={{ padding: '8px 18px', background: 'transparent', border: `1.5px solid rgba(42,27,6,0.2)`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
+          <a href="/signup" style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>Free Trial</a>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '96px 24px 64px' }}>
-          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 24 }}>
+        <section style={{ position: 'relative', overflow: 'hidden', background: C.heroBg, borderBottom: `1px solid ${C.border}`, textAlign: 'center', padding: '96px 24px 64px' }}>
+          <div style={{ position: 'absolute', top: -140, right: -80, width: 580, height: 580, background: 'radial-gradient(circle, rgba(232,168,60,0.26) 0%, rgba(212,160,23,0.10) 40%, transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: -180, left: -120, width: 480, height: 480, background: 'radial-gradient(circle, rgba(200,136,28,0.12) 0%, transparent 68%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: '#B07A12', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 24 }}>
             The Complete Platform
           </div>
           <h1 style={{ fontSize: 'clamp(38px, 6vw, 66px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 20px', letterSpacing: -1.5, maxWidth: 900, marginInline: 'auto' }}>
@@ -227,19 +234,20 @@ export default function FeaturesPage() {
           <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: C.dim, maxWidth: 640, margin: '0 auto 36px', lineHeight: 1.65 }}>
             AI-powered estimating, bidding, billing, field reporting, and compliance — built for general contractors who are tired of stitching together a dozen disconnected tools. One login. Your whole company.
           </p>
-          <a href="/signup" style={{ display: 'inline-block', padding: '15px 40px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 900, fontSize: 16, textDecoration: 'none' }}>
+          <a href="/signup" style={{ display: 'inline-block', padding: '15px 40px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 900, fontSize: 16, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
             Start Free Trial — No Credit Card →
           </a>
           <div style={{ marginTop: 14, fontSize: 13, color: C.dim }}>30 days free · Unlimited users · Free migration</div>
+          </div>
         </section>
 
         {/* Feature sections */}
-        <section style={{ padding: '24px 24px 64px', maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <section style={{ padding: '40px 24px 64px', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 56 }}>
             {FEATURES.map((f, i) => (
               <div key={f.title} id={f.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')} style={{
-                borderTop: `1px solid ${C.border}`,
-                padding: '56px 0',
+                borderTop: '1px solid rgba(176,122,18,0.16)',
+                paddingTop: 40,
                 scrollMarginTop: 84,
                 display: 'grid',
                 gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
@@ -247,15 +255,15 @@ export default function FeaturesPage() {
                 alignItems: 'start',
               }}>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>{f.eyebrow}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#B07A12', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>{f.eyebrow}</div>
                   <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.18, letterSpacing: '-0.03em', color: C.text }}>{f.title}</h2>
                   <p style={{ fontSize: 16, color: C.dim, lineHeight: 1.7, margin: 0 }}>{f.description}</p>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {f.bullets.map(b => (
-                    <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                      <CheckIcon size={18} color={C.gold} />
-                      <span style={{ fontSize: 14, color: C.text, lineHeight: 1.5 }}>{b}</span>
+                    <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <CheckIcon size={18} color={C.green} />
+                      <span style={{ fontSize: 14, color: C.text, lineHeight: 1.5, fontWeight: 500 }}>{b}</span>
                     </div>
                   ))}
                 </div>
@@ -265,15 +273,16 @@ export default function FeaturesPage() {
         </section>
 
         {/* Replaces strip */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ borderTop: `2px solid ${C.text}`, padding: '56px 0 0', textAlign: 'center' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>One Platform Replaces</div>
+        <section style={{ position: 'relative', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.10), transparent 60%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto', padding: '84px 24px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#B07A12', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>One Platform Replaces</div>
             <h2 style={{ fontSize: 'clamp(26px, 4vw, 34px)', fontWeight: 800, margin: '0 0 28px', lineHeight: 1.2, letterSpacing: '-0.03em', color: C.text }}>
               Cancel the stack. Run it all in Saguaro.
             </h2>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {REPLACES.map(item => (
-                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', background: C.raisedAlt, border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 14, color: C.text, fontWeight: 600 }}>
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', background: 'linear-gradient(135deg, #FFFBF2, #FDF3E0)', border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 14, color: C.text, fontWeight: 600 }}>
                   <span style={{ color: '#EF4444', fontWeight: 800, fontSize: 15, lineHeight: 1 }}>&times;</span>
                   {item}
                 </div>
@@ -286,27 +295,28 @@ export default function FeaturesPage() {
         </section>
 
         {/* Final CTA */}
-        <section style={{ padding: '96px 24px', borderTop: `2px solid ${C.text}`, textAlign: 'center' }}>
-          <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.03em', color: C.text }}>
+        <section style={{ position: 'relative', overflow: 'hidden', padding: '96px 24px', background: 'radial-gradient(ellipse at 50% 0%, #251608 0%, #0E0B08 60%)', textAlign: 'center' }}>
+          <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: 900, height: 500, background: 'radial-gradient(ellipse, rgba(232,168,60,0.20) 0%, transparent 68%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.03em', color: '#F5E9D6' }}>
               See every feature{' '}
-              <span style={{ color: C.gold }}>on your own jobs.</span>
+              <span style={{ background: 'linear-gradient(135deg,#E8B84B,#F5C645)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>on your own jobs.</span>
             </h2>
-            <p style={{ fontSize: 17, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 17, color: '#C9B79A', margin: '0 0 36px', lineHeight: 1.6 }}>
               Spin up a free account and run a real project through Saguaro today. 30 days free, free migration, no credit card required.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 800, fontSize: 16, textDecoration: 'none' }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
                 Start Free Trial — No CC Required
               </a>
-              <a href="/compare" style={{ display: 'inline-block', padding: '15px 36px', background: 'transparent', border: `1.5px solid ${C.text}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              <a href="/compare" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.06)', border: `1.5px solid rgba(245,233,214,0.35)`, borderRadius: 10, color: '#F5E9D6', fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 Compare to Procore
               </a>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {['30 days free', 'Free migration', 'Cancel anytime', 'Unlimited users'].map(pill => (
-                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(52,199,89,0.08)', border: `1px solid rgba(52,199,89,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: C.green }}>
-                  <CheckIcon size={12} color={C.green} />
+                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(232,168,60,0.12)', border: `1px solid rgba(232,168,60,0.3)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: '#E8B84B' }}>
+                  <CheckIcon size={12} color="#E8B84B" />
                   {pill}
                 </div>
               ))}
@@ -318,7 +328,7 @@ export default function FeaturesPage() {
         <IntegrationStrip />
 
         {/* Footer */}
-        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
+        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: '#FBF8F2' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
               <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', objectFit: 'contain' }} />

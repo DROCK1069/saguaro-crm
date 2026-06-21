@@ -318,7 +318,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div data-landing style={{ background: `linear-gradient(180deg, #FAFAF8 0%, ${BG} 30%, #F5F5F0 100%)`, color: TEXT, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh', overflowX: 'hidden' as const }}>
+    <div data-landing style={{ background: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)', color: TEXT, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh', overflowX: 'hidden' as const }}>
 
       {/* ══════════ 1. TOP BANNER ══════════ */}
       {bannerVisible && (
@@ -407,19 +407,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════ capability proof — inline figures, divider rules, no boxes ══════════ */}
-      <section style={{ borderTop: '1px solid #E7E5E1', borderBottom: '1px solid #E7E5E1' }} className="reveal">
-        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }} className="stats-row reveal-stagger">
+      {/* ══════════ capability proof — warm gradient KPI tiles ══════════ */}
+      <section className="reveal">
+        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '24px 24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }} className="stats-row reveal-stagger">
             {[
               { val: '< 60s', lbl: 'Per blueprint takeoff' },
               { val: 'G702/703', lbl: 'AIA pay apps built in' },
               { val: '50-state', lbl: 'Lien waivers included' },
               { val: '⅓', lbl: 'The cost of Procore' },
-            ].map((s, i) => (
-              <div key={s.lbl} style={{ padding: '40px 28px', textAlign: 'center' as const, borderLeft: i === 0 ? 'none' : '1px solid #E7E5E1' }}>
-                <div style={{ fontSize: 34, fontWeight: 800, color: GOLD, letterSpacing: '-0.03em' }}>{s.val}</div>
-                <div style={{ fontSize: 13, color: DIM, marginTop: 8, fontWeight: 500 }}>{s.lbl}</div>
+            ].map((s) => (
+              <div key={s.lbl} style={{ padding: '8px 16px', textAlign: 'center' as const }}>
+                <div style={{ fontSize: 34, fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg, #D89A1E, #A86A0C)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{s.val}</div>
+                <div style={{ fontSize: 13, color: '#7A5A1E', marginTop: 8, fontWeight: 500 }}>{s.lbl}</div>
               </div>
             ))}
           </div>
@@ -430,27 +430,31 @@ export default function LandingPage() {
       <IntegrationStrip />
 
       {/* ══════════ 4. FEATURES — editorial grid, hairline rules, no cards ══════════ */}
-      <section id="features" style={{ maxWidth: 1080, margin: '0 auto', padding: '88px 24px 80px' }} className="reveal">
+      <section id="features" style={{ position: 'relative' as const, background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }} className="reveal">
+        <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, height: 320, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.10), transparent 60%)', pointerEvents: 'none' as const }} />
+        <div style={{ position: 'relative' as const, maxWidth: 1100, margin: '0 auto', padding: '84px 24px' }}>
         <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: TEXT, maxWidth: 600 }}>Everything you need.<br />Nothing you don&apos;t.</h2>
         <p style={{ color: DIM, fontSize: 16, marginBottom: 56, maxWidth: 480, lineHeight: 1.6 }}>One platform replaces Procore, spreadsheets, and five other tools.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', columnGap: 48, rowGap: 4 }} className="feature-grid reveal-stagger">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', columnGap: 36, rowGap: 40 }} className="feature-grid reveal-stagger">
           {FEATURES.map(f => (
-            <div key={f.title} style={{ padding: '28px 0', borderTop: `1px solid #E7E5E1`, display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-              <div style={{ color: GOLD }}>
-                <Icon d={f.icon} size={26} />
+            <div key={f.title} style={{ paddingTop: 24, borderTop: '1px solid rgba(176,122,18,0.16)', display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#F5C645,#E8A020)', boxShadow: '0 6px 16px rgba(232,160,32,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1A1400' }}>
+                <Icon d={f.icon} size={24} />
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: TEXT, letterSpacing: '-0.01em' }}>{f.title}</h3>
               <p style={{ fontSize: 13.5, color: DIM, lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
             </div>
           ))}
         </div>
+        </div>
       </section>
 
-      {/* ══════════ 6. COMPARISON — table set into the page, no wrapper box ══════════ */}
-      <section id="compare" style={{ background: '#FAFAF8', borderTop: '1px solid #E7E5E1', borderBottom: '1px solid #E7E5E1' }} className="reveal">
+      {/* ══════════ 6. COMPARISON — table on a soft warm card ══════════ */}
+      <section id="compare" className="reveal">
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '88px 24px' }}>
           <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: TEXT }}>Why GCs switch from Procore</h2>
           <p style={{ color: DIM, fontSize: 16, marginBottom: 44, maxWidth: 460, lineHeight: 1.6 }}>Feature-for-feature, here&apos;s how Saguaro compares — at a third of the price.</p>
+          <div>
           {/* header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: `2px solid ${TEXT}`, paddingBottom: 12 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Feature</div>
@@ -473,6 +477,7 @@ export default function LandingPage() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       </section>
 
@@ -480,15 +485,14 @@ export default function LandingPage() {
       <section id="pricing" style={{ maxWidth: 1040, margin: '0 auto', padding: '88px 24px 80px' }} className="reveal">
         <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: TEXT }}>Simple, transparent pricing</h2>
         <p style={{ color: DIM, fontSize: 16, marginBottom: 8, maxWidth: 460, lineHeight: 1.6 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: `2px solid ${TEXT}`, marginTop: 36 }} className="pricing-grid">
-          {PLANS.map((plan, i) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 40, marginTop: 36 }} className="pricing-grid">
+          {PLANS.map((plan) => (
             <div key={plan.name} style={{
-              padding: '32px 28px 28px',
-              borderLeft: i === 0 ? 'none' : '1px solid #E7E5E1',
+              paddingTop: 28,
+              borderTop: plan.highlighted ? `3px solid ${GOLD}` : '1px solid rgba(176,122,18,0.16)',
               display: 'flex',
               flexDirection: 'column' as const,
               position: 'relative' as const,
-              boxShadow: plan.highlighted ? `inset 0 3px 0 ${GOLD}` : 'none',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                 <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: TEXT, letterSpacing: '-0.01em' }}>{plan.name}</h3>
@@ -519,8 +523,8 @@ export default function LandingPage() {
                 textDecoration: 'none',
                 transition: 'all 0.2s ease',
                 ...(plan.highlighted
-                  ? { background: `linear-gradient(135deg, #F5C645, #E8A020)`, color: '#1A1400', boxShadow: '0 4px 16px rgba(232,160,32,0.28)' }
-                  : { border: `1.5px solid ${TEXT}`, color: TEXT }),
+                  ? { background: `linear-gradient(135deg, #F5C645, #E8A020)`, color: '#1A1400', boxShadow: '0 6px 22px rgba(232,160,32,0.42)' }
+                  : { border: '1.5px solid rgba(28,25,23,0.18)', background: 'rgba(255,255,255,0.7)', color: TEXT }),
               }}>
                 {plan.cta}
               </Link>
@@ -530,9 +534,9 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 8+9. DARK CTA SECTION — bookends the hero ══════════ */}
-      <section style={{ position: 'relative' as const, overflow: 'hidden', background: '#0E0B08', padding: '100px 24px', textAlign: 'center' as const }} className="reveal">
-        {/* warm ambient glow */}
-        <div style={{ position: 'absolute' as const, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 500, background: 'radial-gradient(ellipse, rgba(200,136,28,0.12) 0%, transparent 70%)', pointerEvents: 'none' as const }} />
+      <section style={{ position: 'relative' as const, overflow: 'hidden', background: 'radial-gradient(ellipse at 50% 0%, #251608, #0E0B08)', padding: '100px 24px', textAlign: 'center' as const }} className="reveal">
+        {/* warm gold radial glow overlay */}
+        <div style={{ position: 'absolute' as const, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 500, background: 'radial-gradient(ellipse, rgba(200,136,28,0.18) 0%, transparent 70%)', pointerEvents: 'none' as const }} />
         <div style={{ position: 'relative' as const, zIndex: 1, maxWidth: 650, margin: '0 auto' }}>
           <blockquote style={{ fontSize: 28, color: '#FFFFFF', lineHeight: 1.35, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
             The estimating, billing, and field work that used to take five tools and a spreadsheet — done in one place, in a fraction of the time.
@@ -591,18 +595,16 @@ export default function LandingPage() {
         }
         .desktop-nav { display: flex !important; }
         .mobile-menu-btn { display: none !important; }
+        .compare-row:hover { background: rgba(200,136,28,0.06); }
         @media (max-width: 768px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: block !important; }
           .demo-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
           .feature-grid { grid-template-columns: 1fr !important; }
-          /* stat figures stack with top hairlines instead of side dividers */
+          /* stat tiles stack */
           .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
-          .stats-row > div { border-left: none !important; border-top: 1px solid #E7E5E1 !important; }
-          /* pricing columns stack with top hairlines instead of side dividers */
+          /* pricing tiers stack */
           .pricing-grid { grid-template-columns: 1fr !important; }
-          .pricing-grid > div { border-left: none !important; border-top: 1px solid #E7E5E1 !important; }
-          .pricing-grid > div:first-child { border-top: none !important; }
           .footer-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 480px) {
