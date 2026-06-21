@@ -1,17 +1,17 @@
 import React from 'react';
 
 const C = {
-  dark: '#0B0B0F',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
-  text: '#F5F5F7',
-  dim: '#A1A1AA',
-  border: 'rgba(255,255,255,0.10)',
-  raised: '#131318',
-  raisedAlt: '#1A1A21',
-  green: '#22C55E',
+  dark: '#F2F2F7',
+  gold: '#C8881C',
+  goldBright: '#E8A020',
+  text: '#1C1C1E',
+  dim: '#6E6E73',
+  border: '#E7E5E1',
+  raised: '#FAFAF8',
+  raisedAlt: '#FAFAF8',
+  green: '#34C759',
   blue: '#6366F1',
-  font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+  font: "'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
 };
 
 const NAV_LINKS = [
@@ -83,13 +83,13 @@ export default function AboutPage() {
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: 'rgba(13,17,23,0.9)',
+        height: 64, background: 'rgba(255,255,255,0.85)',
         borderBottom: `1px solid ${C.border}`,
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+          <img src="/logo-horizontal.png" alt="Saguaro CRM" style={{ height: 34, width: 'auto', objectFit: 'contain' }} />
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
           {NAV_LINKS.map(link => (
@@ -99,16 +99,16 @@ export default function AboutPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
+          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(200,136,28,0.10)', border: `1px solid rgba(200,136,28,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
+          <a href="/signup" style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>Free Trial</a>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '96px 24px 64px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
-          <div style={{ display: 'inline-block', padding: '6px 16px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 24 }}>
+        <section style={{ textAlign: 'center', padding: '96px 24px 64px', background: 'linear-gradient(180deg,#FAFAF8,#F2F2F7)' }}>
+          <div style={{ display: 'inline-block', padding: '6px 16px', background: 'rgba(200,136,28,0.10)', border: `1px solid rgba(200,136,28,0.25)`, borderRadius: 999, fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 24 }}>
             About Saguaro Control
           </div>
           <h1 style={{ fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 20px', letterSpacing: -1.5 }}>
@@ -124,7 +124,7 @@ export default function AboutPage() {
 
         {/* Mission */}
         <section style={{ padding: '0 24px 80px', maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '48px 48px', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
+          <div style={{ padding: '8px 0' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 14 }}>Our Mission</div>
             <p style={{ fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 700, lineHeight: 1.45, margin: 0, color: C.text }}>
               Give every general contractor — not just the ENR 400 — the same software firepower the giants have, at a price a regional builder can actually afford, with AI doing the busywork in between.
@@ -136,7 +136,7 @@ export default function AboutPage() {
         <section style={{ padding: '0 24px 88px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 20 }}>
             {STATS.map(stat => (
-              <div key={stat.label} style={{ background: C.raisedAlt, border: `1px solid ${C.border}`, borderRadius: 14, padding: '28px 24px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+              <div key={stat.label} style={{ borderTop: '1px solid #E7E5E1', padding: '28px 24px 28px 0' }}>
                 <div style={{ fontSize: 38, fontWeight: 900, color: C.gold, lineHeight: 1, marginBottom: 10 }}>{stat.value}</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>{stat.label}</div>
                 <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>{stat.sub}</div>
@@ -149,7 +149,7 @@ export default function AboutPage() {
         <section style={{ padding: '72px 24px', background: C.raised, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
           <div style={{ maxWidth: 760, margin: '0 auto' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16, textAlign: 'center' }}>Our Story</div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 32px', letterSpacing: -0.5, textAlign: 'center' }}>
+            <h2 style={{ fontSize: 34, fontWeight: 800, margin: '0 0 32px', letterSpacing: '-0.03em', color: '#1C1C1E', textAlign: 'center' }}>
               It started with a missed lien deadline.
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontSize: 16, color: C.dim, lineHeight: 1.8 }}>
@@ -172,10 +172,10 @@ export default function AboutPage() {
         {/* Who it's for */}
         <section style={{ padding: '88px 24px 0', maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(200,136,28,0.10)', border: `1px solid rgba(200,136,28,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Who It&apos;s For
             </div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>Built for general contractors</h2>
+            <h2 style={{ fontSize: 34, fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.03em', color: '#1C1C1E' }}>Built for general contractors</h2>
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>
               From a one-truck builder getting off spreadsheets to a regional GC running dozens of jobs — if you bid work, run subs, and bill owners, Saguaro is built for you.
             </p>
@@ -186,7 +186,7 @@ export default function AboutPage() {
               { title: 'Established regional builders', body: 'Run estimating, project management, and accounting from a single source of truth instead of five disconnected tools.' },
               { title: 'Teams switching from Procore', body: 'Get the capability without the per-seat, per-module pricing. We migrate you over for free, in about a day.' },
             ].map(item => (
-              <div key={item.title} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '28px 24px' }}>
+              <div key={item.title} style={{ borderTop: '1px solid #E7E5E1', padding: '28px 24px 28px 0' }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 10 }}>{item.title}</div>
                 <div style={{ fontSize: 14, color: C.dim, lineHeight: 1.7 }}>{item.body}</div>
               </div>
@@ -197,17 +197,17 @@ export default function AboutPage() {
         {/* What we built */}
         <section style={{ padding: '88px 24px 0', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(200,136,28,0.10)', border: `1px solid rgba(200,136,28,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               What We Built
             </div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>One platform, end to end</h2>
+            <h2 style={{ fontSize: 34, fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.03em', color: '#1C1C1E' }}>One platform, end to end</h2>
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>
               The whole construction lifecycle — from a plan set to a paid invoice — in a single, AI-powered system.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {CAPABILITIES.map(cap => (
-              <div key={cap.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+              <div key={cap.name} style={{ borderTop: '1px solid #E7E5E1', padding: '28px 24px 28px 0' }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <CheckIcon size={18} color={C.gold} />
                   <div>
@@ -223,17 +223,17 @@ export default function AboutPage() {
         {/* Values */}
         <section style={{ padding: '88px 24px 0', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(34,197,94,0.08)', border: `1px solid rgba(34,197,94,0.2)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.green, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(52,199,89,0.10)', border: `1px solid rgba(52,199,89,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.green, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Why We Build This Way
             </div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>What we stand for</h2>
+            <h2 style={{ fontSize: 34, fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.03em', color: '#1C1C1E' }}>What we stand for</h2>
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>
               Six principles that decide what we build, how we price it, and who we answer to.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
             {VALUES.map((v, i) => (
-              <div key={v.title} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '28px 26px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+              <div key={v.title} style={{ borderTop: '1px solid #E7E5E1', padding: '28px 26px 28px 0' }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: C.gold, marginBottom: 10 }}>{String(i + 1).padStart(2, '0')}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 10, lineHeight: 1.3 }}>{v.title}</div>
                 <div style={{ fontSize: 14, color: C.dim, lineHeight: 1.7 }}>{v.body}</div>
@@ -244,7 +244,7 @@ export default function AboutPage() {
 
         {/* The name */}
         <section style={{ padding: '88px 24px 0', maxWidth: 760, margin: '0 auto' }}>
-          <div style={{ background: 'linear-gradient(135deg, rgba(212,160,23,0.10) 0%, rgba(11,11,15,0) 100%)', border: `1px solid rgba(212,160,23,0.30)`, borderRadius: 14, padding: '40px 44px', textAlign: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
+          <div style={{ borderTop: '1px solid #E7E5E1', padding: '40px 0 0', textAlign: 'center' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 14 }}>Why &quot;Saguaro&quot;</div>
             <p style={{ fontSize: 17, color: C.text, lineHeight: 1.7, margin: 0, fontWeight: 500 }}>
               The saguaro grows slow, stands tall, and survives conditions that kill almost everything around it. It is the icon of building in the desert Southwest — patient, resilient, and unmistakable on the skyline. That is the kind of company, and the kind of software, we set out to build.
@@ -253,7 +253,7 @@ export default function AboutPage() {
         </section>
 
         {/* Final CTA */}
-        <section style={{ marginTop: 96, padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ marginTop: 96, padding: '96px 24px', borderTop: '1px solid #E7E5E1', textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
               Come build with us{' '}
@@ -263,16 +263,16 @@ export default function AboutPage() {
               30-day free trial. Free migration from Procore, Buildertrend, or spreadsheets. No credit card, no per-seat fees, your whole team on one flat rate.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 800, fontSize: 16, textDecoration: 'none' }}>
                 Start Free Trial — No CC Required
               </a>
-              <a href="/features" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              <a href="/features" style={{ display: 'inline-block', padding: '15px 36px', background: 'transparent', border: '1.5px solid #1C1C1E', borderRadius: 10, color: '#1C1C1E', fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 Explore Features
               </a>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {['30 days free', 'Free migration', 'Cancel anytime', 'No per-seat fees', 'Unlimited users'].map(pill => (
-                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(34,197,94,0.07)', border: `1px solid rgba(34,197,94,0.2)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: C.green }}>
+                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(52,199,89,0.10)', border: `1px solid rgba(52,199,89,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: C.green }}>
                   <CheckIcon size={12} color={C.green} />
                   {pill}
                 </div>
@@ -285,7 +285,7 @@ export default function AboutPage() {
         <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+              <img src="/logo-horizontal.png" alt="Saguaro CRM" style={{ height: 30, width: 'auto', objectFit: 'contain' }} />
             </a>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[

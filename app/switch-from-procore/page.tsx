@@ -4,12 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 const DARK = '#F2F2F7';
-const GOLD = '#F59E0B';
+const GOLD = '#C8881C';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
+const BORDER = '#E7E5E1';
 const RAISED = '#FFFFFF';
-const GREEN = '#22c55e';
+const GREEN = '#34C759';
 const RED = '#ef4444';
 
 const goldGradientText = {
@@ -68,56 +68,44 @@ export default function SwitchFromProcorePage() {
           .hero-ctas { flex-direction: column !important; align-items: center !important; }
         }
         .btn-amber {
-          background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-          color: #1C1C1E;
+          background: linear-gradient(135deg, #F5C645, #E8A020);
+          color: #1A1400;
           font-weight: 700;
           border: none;
           border-radius: 10px;
           cursor: pointer;
           text-decoration: none;
           display: inline-block;
-          transition: transform 0.15s, box-shadow 0.15s;
+          transition: transform 0.15s;
         }
-        .btn-amber:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,158,11,0.4); }
+        .btn-amber:hover { transform: translateY(-2px); }
         .btn-outline {
           background: transparent;
           color: ${TEXT};
           font-weight: 600;
-          border: 1px solid ${BORDER};
+          border: 1.5px solid ${TEXT};
           border-radius: 10px;
           cursor: pointer;
           text-decoration: none;
           display: inline-block;
-          transition: border-color 0.15s, background 0.15s;
+          transition: background 0.15s;
         }
-        .btn-outline:hover { border-color: ${GOLD}; background: rgba(245,158,11,0.07); }
+        .btn-outline:hover { background: rgba(28,28,30,0.05); }
         .pain-card {
-          background: ${RAISED};
-          border: 1px solid ${BORDER};
-          border-radius: 14px;
-          padding: 28px;
-          transition: transform 0.15s, border-color 0.15s;
+          border-top: 1px solid ${BORDER};
+          padding: 28px 0 0;
         }
-        .pain-card:hover { transform: translateY(-3px); border-color: rgba(239,68,68,0.4); }
         .step-card {
-          background: ${RAISED};
-          border: 1px solid ${BORDER};
-          border-radius: 14px;
-          padding: 28px 24px;
+          border-top: 1px solid ${BORDER};
+          padding: 28px 0 0;
           text-align: center;
           position: relative;
-          transition: transform 0.15s, border-color 0.15s;
         }
-        .step-card:hover { transform: translateY(-3px); border-color: rgba(245,158,11,0.4); }
         .testimonial-card {
-          background: ${RAISED};
-          border: 1px solid ${BORDER};
-          border-radius: 14px;
-          padding: 28px;
+          border-top: 1px solid ${BORDER};
+          padding: 28px 0 0;
           position: relative;
-          transition: transform 0.15s;
         }
-        .testimonial-card:hover { transform: translateY(-3px); }
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { opacity: 1; }
         .calc-input-field {
@@ -140,8 +128,7 @@ export default function SwitchFromProcorePage() {
       {/* ─── STICKY NAV ─── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(255,255,255,0.95)',
-        backdropFilter: 'blur(16px)',
+        background: DARK,
         borderBottom: `1px solid ${BORDER}`,
       }}>
         <div className="nav-container">
@@ -161,29 +148,12 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── HERO ─── */}
       <section style={{
-        position: 'relative',
         background: DARK,
-        overflow: 'hidden',
         padding: '100px 40px 80px',
         textAlign: 'center',
+        borderBottom: `2px solid ${TEXT}`,
       }}>
-        {/* Atmospheric glow */}
-        <div style={{
-          position: 'absolute', top: '10%', left: '50%',
-          transform: 'translateX(-50%)',
-          width: 700, height: 400,
-          background: 'radial-gradient(ellipse, rgba(245,158,11,0.12) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: 0, left: '50%',
-          transform: 'translateX(-50%)',
-          width: 900, height: 200,
-          background: 'radial-gradient(ellipse, rgba(245,158,11,0.06) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{ position: 'relative', maxWidth: 800, margin: '0 auto' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
           {/* Badge */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -240,7 +210,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── PAIN POINTS ─── */}
-      <section className="section-pad" style={{ padding: '80px 40px', background: RAISED }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: DARK }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -310,7 +280,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── COMPARISON TABLE ─── */}
-      <section id="comparison" className="section-pad" style={{ padding: '80px 40px', background: DARK }}>
+      <section id="comparison" className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -322,30 +292,29 @@ export default function SwitchFromProcorePage() {
             </p>
           </div>
 
-          <div className="comparison-wrapper" style={{ borderRadius: 16, overflow: 'hidden', border: `1px solid ${BORDER}` }}>
+          <div className="comparison-wrapper">
             <table className="comparison-table">
               <thead>
                 <tr>
                   <th style={{
-                    background: RAISED, padding: '16px 24px',
+                    padding: '16px 24px',
                     textAlign: 'left', color: DIM, fontWeight: 600,
                     fontSize: '0.85rem', letterSpacing: '0.06em', textTransform: 'uppercase',
-                    borderBottom: `1px solid ${BORDER}`,
+                    borderBottom: `2px solid ${TEXT}`,
                   }}>
                     Feature
                   </th>
                   <th style={{
-                    background: 'linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.08) 100%)',
                     padding: '16px 24px', textAlign: 'center',
-                    borderBottom: `2px solid ${GOLD}`,
-                    borderLeft: `1px solid rgba(245,158,11,0.3)`,
+                    borderBottom: `2px solid ${TEXT}`,
+                    boxShadow: `inset 0 3px 0 ${GOLD}`,
                   }}>
                     <span style={{ ...goldGradientText, fontWeight: 800, fontSize: '1.05rem' }}>Saguaro</span>
                     <div style={{ fontSize: '0.75rem', color: DIM, fontWeight: 500, marginTop: 2 }}>$299/mo flat</div>
                   </th>
                   <th style={{
-                    background: 'rgba(229,229,234,0.2)', padding: '16px 24px', textAlign: 'center',
-                    borderBottom: `1px solid ${BORDER}`,
+                    padding: '16px 24px', textAlign: 'center',
+                    borderBottom: `2px solid ${TEXT}`,
                     borderLeft: `1px solid ${BORDER}`,
                     color: DIM, fontWeight: 700, fontSize: '1.05rem',
                   }}>
@@ -370,17 +339,14 @@ export default function SwitchFromProcorePage() {
                 ].map(([feature, saguaro, procore, saguaroGood, _]) => (
                   <tr key={feature as string}>
                     <td style={{
-                      padding: '15px 24px', borderBottom: `1px solid ${BORDER}`,
+                      padding: '15px 24px', borderTop: `1px solid ${BORDER}`,
                       color: TEXT, fontWeight: 600, fontSize: '0.9rem',
-                      background: RAISED,
                     }}>
                       {feature as string}
                     </td>
                     <td style={{
                       padding: '15px 24px', textAlign: 'center',
-                      borderBottom: `1px solid rgba(245,158,11,0.15)`,
-                      borderLeft: `1px solid rgba(245,158,11,0.2)`,
-                      background: 'rgba(245,158,11,0.04)',
+                      borderTop: `1px solid ${BORDER}`,
                       fontSize: '0.9rem',
                     }}>
                       <span style={{ color: GREEN, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -389,7 +355,7 @@ export default function SwitchFromProcorePage() {
                     </td>
                     <td style={{
                       padding: '15px 24px', textAlign: 'center',
-                      borderBottom: `1px solid ${BORDER}`,
+                      borderTop: `1px solid ${BORDER}`,
                       borderLeft: `1px solid ${BORDER}`,
                       fontSize: '0.9rem',
                     }}>
@@ -406,7 +372,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── MIGRATION STEPS ─── */}
-      <section className="section-pad" style={{ padding: '80px 40px', background: RAISED }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -479,7 +445,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── COST CALCULATOR ─── */}
-      <section className="section-pad" style={{ padding: '80px 40px', background: DARK }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ marginBottom: 48 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -492,9 +458,8 @@ export default function SwitchFromProcorePage() {
           </div>
 
           <div style={{
-            background: RAISED, border: `1px solid ${BORDER}`,
-            borderRadius: 20, padding: '48px 40px',
-            boxShadow: '0 0 60px rgba(245,158,11,0.06)',
+            borderTop: `2px solid ${TEXT}`,
+            padding: '48px 0 0',
           }}>
             <div className="calc-inputs">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
@@ -527,7 +492,7 @@ export default function SwitchFromProcorePage() {
             </div>
 
             {/* Savings display */}
-            <div style={{ margin: '40px 0 32px', padding: '28px', background: 'rgba(245,158,11,0.07)', borderRadius: 14, border: `1px solid rgba(245,158,11,0.2)` }}>
+            <div style={{ margin: '40px 0 32px', padding: '28px 0 0', borderTop: `1px solid ${BORDER}` }}>
               <div style={{ fontSize: '0.85rem', color: DIM, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
                 You save
               </div>
@@ -549,9 +514,8 @@ export default function SwitchFromProcorePage() {
               <div className="savings-display">
                 <div style={{
                   flex: 1, minWidth: 140,
-                  background: 'rgba(34,197,94,0.06)',
-                  border: `1px solid rgba(34,197,94,0.2)`,
-                  borderRadius: 12, padding: '20px 16px', textAlign: 'center',
+                  borderTop: `1px solid ${BORDER}`,
+                  padding: '20px 16px', textAlign: 'center',
                 }}>
                   <div style={{ color: GREEN, fontSize: '1.8rem', fontWeight: 800 }}>
                     {formatCurrency(annualSavings)}
@@ -560,9 +524,8 @@ export default function SwitchFromProcorePage() {
                 </div>
                 <div style={{
                   flex: 1, minWidth: 140,
-                  background: 'rgba(34,197,94,0.06)',
-                  border: `1px solid rgba(34,197,94,0.2)`,
-                  borderRadius: 12, padding: '20px 16px', textAlign: 'center',
+                  borderTop: `1px solid ${BORDER}`,
+                  padding: '20px 16px', textAlign: 'center',
                 }}>
                   <div style={{ color: GREEN, fontSize: '1.8rem', fontWeight: 800 }}>
                     {formatCurrency(fiveYearSavings)}
@@ -571,9 +534,8 @@ export default function SwitchFromProcorePage() {
                 </div>
                 <div style={{
                   flex: 1, minWidth: 140,
-                  background: 'rgba(245,158,11,0.06)',
-                  border: `1px solid rgba(245,158,11,0.2)`,
-                  borderRadius: 12, padding: '20px 16px', textAlign: 'center',
+                  borderTop: `1px solid ${BORDER}`,
+                  padding: '20px 16px', textAlign: 'center',
                 }}>
                   <div style={{ ...goldGradientText, fontSize: '1.8rem', fontWeight: 800 }}>
                     {formatCurrency(saguaroMonthlyCost)}
@@ -596,7 +558,7 @@ export default function SwitchFromProcorePage() {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className="section-pad" style={{ padding: '80px 40px', background: RAISED }}>
+      <section className="section-pad" style={{ padding: '88px 40px', background: DARK, borderTop: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
@@ -677,21 +639,13 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── FINAL CTA ─── */}
       <section style={{
-        background: `linear-gradient(135deg, #FFFFFF 0%, #F2F2F7 40%, #F2F2F7 60%, #FFFFFF 100%)`,
-        borderTop: `1px solid rgba(245,158,11,0.2)`,
-        borderBottom: `1px solid rgba(245,158,11,0.2)`,
+        background: DARK,
+        borderTop: `2px solid ${TEXT}`,
+        borderBottom: `1px solid ${BORDER}`,
         padding: '90px 40px',
-        position: 'relative', overflow: 'hidden',
         textAlign: 'center',
       }}>
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 800, height: 400,
-          background: 'radial-gradient(ellipse, rgba(245,158,11,0.1) 0%, transparent 65%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <h2 style={{ fontSize: '2.6rem', fontWeight: 900, marginBottom: 16, lineHeight: 1.2, ...goldGradientText }}>
             Ready to Make the Switch?
           </h2>
@@ -708,9 +662,8 @@ export default function SwitchFromProcorePage() {
             padding: '18px 44px',
             borderRadius: 12,
             textDecoration: 'none',
-            border: `2px solid ${GOLD}`,
+            border: `1.5px solid ${TEXT}`,
             transition: 'all 0.15s',
-            boxShadow: `0 0 40px rgba(245,158,11,0.2)`,
           }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLAnchorElement).style.background = GOLD;
@@ -747,7 +700,7 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── FOOTER ─── */}
       <footer style={{
-        background: RAISED, borderTop: `1px solid ${BORDER}`,
+        background: DARK, borderTop: `1px solid ${BORDER}`,
         padding: '40px 40px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>

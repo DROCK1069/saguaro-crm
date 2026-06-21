@@ -3,12 +3,12 @@
 import { useState } from 'react';
 
 const DARK = '#F2F2F7';
-const GOLD = '#F59E0B';
+const GOLD = '#C8881C';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
-const GREEN = '#22c55e';
+const BORDER = '#E7E5E1';
+const RAISED = '#FAFAF8';
+const GREEN = '#34C759';
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -173,18 +173,11 @@ export default function ROICalculatorPage() {
           from { opacity: 0; transform: translateY(32px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.2), 0 0 60px rgba(245,158,11,0.05); }
-          50% { box-shadow: 0 0 30px rgba(245,158,11,0.35), 0 0 80px rgba(245,158,11,0.1); }
-        }
         .hero-headline {
           animation: fadeInUp 0.7s ease both;
         }
         .hero-sub {
           animation: fadeInUp 0.7s 0.15s ease both;
-        }
-        .results-card {
-          animation: glowPulse 4s ease-in-out infinite;
         }
         input[type=range]::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -242,8 +235,8 @@ export default function ROICalculatorPage() {
           transform: translateY(-1px);
         }
         .cta-btn {
-          background: linear-gradient(135deg, ${GOLD}, #FBBF24);
-          color: #000;
+          background: linear-gradient(135deg, #F5C645, #E8A020);
+          color: #1A1400;
           font-weight: 800;
           font-size: 18px;
           padding: 18px 36px;
@@ -252,7 +245,7 @@ export default function ROICalculatorPage() {
           cursor: pointer;
           width: 100%;
           transition: transform 0.15s, box-shadow 0.15s;
-          box-shadow: 0 4px 24px rgba(245,158,11,0.3);
+          box-shadow: 0 4px 16px rgba(232,160,32,0.28);
           letter-spacing: 0.01em;
           text-decoration: none;
           display: block;
@@ -260,7 +253,7 @@ export default function ROICalculatorPage() {
         }
         .cta-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 32px rgba(245,158,11,0.5);
+          box-shadow: 0 8px 24px rgba(232,160,32,0.40);
         }
         .procore-toggle {
           display: flex;
@@ -361,7 +354,6 @@ export default function ROICalculatorPage() {
           top: 0,
           zIndex: 100,
           background: 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(16px)',
           borderBottom: `1px solid ${BORDER}`,
           padding: '0 24px',
         }}>
@@ -380,13 +372,13 @@ export default function ROICalculatorPage() {
         <section style={{
           padding: '80px 24px 64px',
           textAlign: 'center',
-          background: `radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 60%)`,
+          background: `radial-gradient(ellipse at 50% 0%, rgba(200,136,28,0.08) 0%, transparent 60%)`,
         }}>
           <div style={{ maxWidth: 720, margin: '0 auto' }}>
             <div style={{
               display: 'inline-block',
-              background: 'rgba(245,158,11,0.1)',
-              border: `1px solid rgba(245,158,11,0.3)`,
+              background: 'rgba(200,136,28,0.10)',
+              border: `1px solid rgba(200,136,28,0.25)`,
               color: GOLD,
               fontSize: 11,
               fontWeight: 800,
@@ -442,11 +434,9 @@ export default function ROICalculatorPage() {
             {/* LEFT: Inputs */}
             <div>
               <div style={{
-                background: RAISED,
-                border: `1px solid ${BORDER}`,
-                borderRadius: 16,
-                padding: '32px 28px',
-                marginBottom: 16,
+                padding: '0 0 32px',
+                marginBottom: 32,
+                borderBottom: `1px solid ${BORDER}`,
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
                   <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Your Business</h2>
@@ -509,10 +499,7 @@ export default function ROICalculatorPage() {
               </div>
 
               <div style={{
-                background: RAISED,
-                border: `1px solid ${BORDER}`,
-                borderRadius: 16,
-                padding: '32px 28px',
+                padding: 0,
               }}>
                 <h2 style={{ margin: '0 0 24px', fontSize: 20, fontWeight: 700 }}>Operations & Software</h2>
 
@@ -580,10 +567,8 @@ export default function ROICalculatorPage() {
               <div
                 className="results-card"
                 style={{
-                  background: RAISED,
-                  border: `2px solid ${GOLD}`,
-                  borderRadius: 20,
-                  padding: '28px 24px',
+                  borderTop: `2px solid ${TEXT}`,
+                  paddingTop: 28,
                   transition: 'all 0.3s ease',
                 }}
               >
@@ -616,45 +601,36 @@ export default function ROICalculatorPage() {
                 </div>
 
                 <div style={{
-                  background: 'rgba(245,158,11,0.06)',
-                  border: `1px solid rgba(245,158,11,0.15)`,
-                  borderRadius: 12,
-                  padding: 16,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
                   marginBottom: 20,
+                  borderTop: `1px solid ${BORDER}`,
+                  borderBottom: `1px solid ${BORDER}`,
                 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ color: GOLD, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
-                        ${fmt(annualSavings)}
-                      </div>
-                      <div style={{ color: DIM, fontSize: 11, marginTop: 2 }}>per year</div>
+                  <div style={{ textAlign: 'center', padding: '16px 8px', borderRight: `1px solid ${BORDER}` }}>
+                    <div style={{ color: GOLD, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                      ${fmt(annualSavings)}
                     </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ color: GREEN, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
-                        ${fmt(threeYearSavings)}
-                      </div>
-                      <div style={{ color: DIM, fontSize: 11, marginTop: 2 }}>over 3 years</div>
+                    <div style={{ color: DIM, fontSize: 11, marginTop: 2 }}>per year</div>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '16px 8px' }}>
+                    <div style={{ color: GREEN, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                      ${fmt(threeYearSavings)}
                     </div>
+                    <div style={{ color: DIM, fontSize: 11, marginTop: 2 }}>over 3 years</div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginBottom: 20, borderBottom: `1px solid ${BORDER}` }}>
                   <div style={{
-                    flex: 1,
-                    background: DARK,
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 10,
                     padding: '12px 10px',
                     textAlign: 'center',
+                    borderRight: `1px solid ${BORDER}`,
                   }}>
                     <div style={{ color: GREEN, fontSize: 20, fontWeight: 800 }}>{roiPercent}%</div>
                     <div style={{ color: DIM, fontSize: 11, marginTop: 2 }}>ROI</div>
                   </div>
                   <div style={{
-                    flex: 1,
-                    background: DARK,
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 10,
                     padding: '12px 10px',
                     textAlign: 'center',
                   }}>
@@ -663,7 +639,7 @@ export default function ROICalculatorPage() {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 12, padding: '10px 14px', background: 'rgba(34,197,94,0.08)', border: `1px solid rgba(34,197,94,0.2)`, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ marginBottom: 12, padding: '4px 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 14 }}>💡</span>
                   <span style={{ color: DIM, fontSize: 12 }}>
                     Pays for itself in <strong style={{ color: GREEN }}>{paybackDays} days</strong> — Saguaro is just <strong style={{ color: TEXT }}>${saguaroCost}/mo flat</strong>
@@ -698,7 +674,7 @@ export default function ROICalculatorPage() {
               }}>
                 Methodology
               </div>
-              <h2 style={{ fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+              <h2 style={{ fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: TEXT }}>
                 Built on Real GC Data
               </h2>
             </div>
@@ -727,10 +703,8 @@ export default function ROICalculatorPage() {
                 <div
                   key={card.title}
                   style={{
-                    background: DARK,
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 14,
-                    padding: '28px 24px',
+                    borderTop: `1px solid ${BORDER}`,
+                    padding: '28px 24px 0 0',
                   }}
                 >
                   <div style={{ fontSize: 28, marginBottom: 14 }}>{card.icon}</div>
@@ -756,7 +730,7 @@ export default function ROICalculatorPage() {
             }}>
               Feature Comparison
             </div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: TEXT }}>
               {"What's Included in the $299"}
             </h2>
             <p style={{ color: DIM, fontSize: 16, marginTop: 12 }}>
@@ -764,12 +738,7 @@ export default function ROICalculatorPage() {
             </p>
           </div>
 
-          <div style={{
-            background: RAISED,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 16,
-            overflow: 'hidden',
-          }}>
+          <div>
             <table className="comparison-table">
               <thead>
                 <tr style={{ background: '#F2F2F7' }}>
@@ -805,7 +774,7 @@ export default function ROICalculatorPage() {
         {/* FINAL CTA */}
         <section style={{
           padding: '80px 24px',
-          background: `radial-gradient(ellipse at 50% 50%, rgba(245,158,11,0.07) 0%, transparent 70%), ${RAISED}`,
+          background: RAISED,
           borderTop: `1px solid ${BORDER}`,
           textAlign: 'center',
         }}>

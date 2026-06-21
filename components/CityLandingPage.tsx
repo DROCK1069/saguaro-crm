@@ -4,12 +4,12 @@ import { City } from '@/lib/cities';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const DARK = '#F2F2F7';
-const GOLD = '#F59E0B';
+const GOLD = '#C8881C';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
-const GREEN = '#22c55e';
+const BORDER = '#E7E5E1';
+const RAISED = '#FAFAF8';
+const GREEN = '#34C759';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -209,7 +209,7 @@ export default function CityLandingPage({ city }: { city: City }) {
         {/* ── Nav ─────────────────────────────────────────────────────────── */}
         <nav style={{
           position: 'sticky', top: 0, zIndex: 100,
-          background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          background: DARK,
           borderBottom: `1px solid ${BORDER}`, height: '58px',
           display: 'flex', alignItems: 'center',
         }}>
@@ -248,7 +248,7 @@ export default function CityLandingPage({ city }: { city: City }) {
           </div>
 
           {/* Headline */}
-          <h1 style={{ textAlign: 'center', fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ textAlign: 'center', fontSize: 'clamp(36px, 5.5vw, 60px)', fontWeight: 800, lineHeight: 1.05, margin: '0 0 20px', letterSpacing: '-0.03em' }}>
             The Construction CRM Built for{' '}
             <br />
             <span style={{ background: `linear-gradient(90deg, ${GOLD}, #fcd34d)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -265,17 +265,16 @@ export default function CityLandingPage({ city }: { city: City }) {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
             <Link href="/signup" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '14px 28px', background: `linear-gradient(135deg, #C8881C, ${GOLD})`,
-              borderRadius: '8px', color: '#000', fontWeight: 700, fontSize: '15px',
+              padding: '14px 28px', background: 'linear-gradient(135deg,#F5C645,#E8A020)',
+              borderRadius: '8px', color: '#1A1400', fontWeight: 700, fontSize: '15px',
               textDecoration: 'none', letterSpacing: '0.02em',
-              boxShadow: '0 4px 24px rgba(212,160,23,0.35)',
             }}>
               Start Free Trial
             </Link>
             <Link href="/sandbox" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               padding: '14px 28px', background: 'transparent',
-              border: `1px solid ${BORDER}`, borderRadius: '8px',
+              border: `1.5px solid ${TEXT}`, borderRadius: '8px',
               color: TEXT, fontWeight: 600, fontSize: '15px', textDecoration: 'none',
             }}>
               Try AI Takeoff Free
@@ -290,9 +289,8 @@ export default function CityLandingPage({ city }: { city: City }) {
           {/* Local market note */}
           <div style={{
             maxWidth: '720px', margin: '0 auto',
-            background: RAISED, border: `1px solid ${BORDER}`,
-            borderLeft: `3px solid ${GOLD}`, borderRadius: '8px',
-            padding: '16px 20px',
+            borderLeft: `3px solid ${GOLD}`,
+            padding: '4px 0 4px 20px',
             display: 'flex', gap: '12px', alignItems: 'flex-start',
           }}>
             <span style={{ color: GOLD, fontSize: '18px', lineHeight: 1, flexShrink: 0, marginTop: '2px' }}>&#9432;</span>
@@ -317,8 +315,8 @@ export default function CityLandingPage({ city }: { city: City }) {
                 { label: unionStat, sub: 'DOL WH-347, Davis-Bacon wage rates' },
               ].map((item, i) => (
                 <div key={i} style={{
-                  background: DARK, border: `1px solid ${BORDER}`, borderRadius: '10px',
-                  padding: '20px', display: 'flex', flexDirection: 'column', gap: '6px',
+                  borderTop: `1px solid ${BORDER}`,
+                  padding: '20px 0 0', display: 'flex', flexDirection: 'column', gap: '6px',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ color: GREEN, flexShrink: 0 }}><IconCheck /></span>
@@ -337,7 +335,7 @@ export default function CityLandingPage({ city }: { city: City }) {
             <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em', color: GOLD, textTransform: 'uppercase', marginBottom: '12px' }}>
               Everything in one platform
             </p>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: 'clamp(26px, 4vw, 34px)', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: TEXT }}>
               Built for {city.name} GCs
             </h2>
             <p style={{ color: DIM, fontSize: '16px', marginTop: '12px', maxWidth: '540px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
@@ -348,14 +346,11 @@ export default function CityLandingPage({ city }: { city: City }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
             {FEATURES.map((f, i) => (
               <div key={i} style={{
-                background: RAISED, border: `1px solid ${BORDER}`,
-                borderRadius: '12px', padding: '28px',
-                transition: 'border-color 0.2s',
+                borderTop: `1px solid ${BORDER}`, padding: '28px 0 0',
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                   <div style={{
-                    width: '44px', height: '44px', borderRadius: '10px',
-                    background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
+                    width: '28px', height: '28px',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: GOLD, flexShrink: 0,
                   }}>
@@ -385,14 +380,14 @@ export default function CityLandingPage({ city }: { city: City }) {
               <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em', color: GOLD, textTransform: 'uppercase', marginBottom: '12px' }}>
                 The honest comparison
               </p>
-              <h2 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+              <h2 style={{ fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: TEXT }}>
                 How Saguaro Compares for {city.name} GCs
               </h2>
             </div>
 
-            <div style={{ borderRadius: '12px', border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+            <div>
               {/* Header */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: '#F2F2F7', padding: '14px 20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: `2px solid ${TEXT}`, padding: '0 0 12px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#6E6E73', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Feature</span>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#6E6E73', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>Manual / Excel</span>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: GOLD, letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>Saguaro CRM</span>
@@ -401,9 +396,8 @@ export default function CityLandingPage({ city }: { city: City }) {
               {COMPARISON_ROWS(city).map((row, i) => (
                 <div key={i} style={{
                   display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-                  padding: '16px 20px',
-                  borderTop: `1px solid ${BORDER}`,
-                  background: i % 2 === 0 ? DARK : 'rgba(242,242,247,0.6)',
+                  padding: '16px 0',
+                  borderBottom: `1px solid ${BORDER}`,
                   alignItems: 'center',
                 }}>
                   <span style={{ fontSize: '14px', fontWeight: 600, color: TEXT }}>{row.feature}</span>
@@ -426,7 +420,7 @@ export default function CityLandingPage({ city }: { city: City }) {
           <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em', color: GOLD, textTransform: 'uppercase', marginBottom: '16px' }}>
             Ready to get started?
           </p>
-          <h2 style={{ fontSize: 'clamp(26px, 4.5vw, 40px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+          <h2 style={{ fontSize: 'clamp(28px, 4.5vw, 42px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.03em', lineHeight: 1.05, color: TEXT }}>
             Start Free — Built for {city.name}, {city.state} GCs
           </h2>
           <p style={{ color: DIM, fontSize: '16px', maxWidth: '520px', margin: '0 auto 36px', lineHeight: 1.65 }}>
@@ -435,17 +429,16 @@ export default function CityLandingPage({ city }: { city: City }) {
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
             <Link href="/signup" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '15px 32px', background: `linear-gradient(135deg, #C8881C, ${GOLD})`,
-              borderRadius: '8px', color: '#000', fontWeight: 700, fontSize: '15px',
+              padding: '15px 32px', background: 'linear-gradient(135deg,#F5C645,#E8A020)',
+              borderRadius: '8px', color: '#1A1400', fontWeight: 700, fontSize: '15px',
               textDecoration: 'none', letterSpacing: '0.02em',
-              boxShadow: '0 4px 28px rgba(212,160,23,0.4)',
             }}>
               Start Free Trial
             </Link>
             <Link href="/sandbox" style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
               padding: '15px 28px', background: 'transparent',
-              border: `1px solid ${BORDER}`, borderRadius: '8px',
+              border: `1.5px solid ${TEXT}`, borderRadius: '8px',
               color: TEXT, fontWeight: 600, fontSize: '15px', textDecoration: 'none',
             }}>
               Try AI Takeoff Free &rarr;

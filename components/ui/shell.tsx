@@ -51,15 +51,15 @@ export function PageWrap({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
+// Not a floating box — a flat section baked onto the page. No fill, no shadow,
+// no radius. Structure comes from the header rule and internal hairlines.
 export function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div
       style={{
-        background: T.surface2,
-        borderRadius: 12,
-        border: `1px solid ${T.border}`,
-        boxShadow: T.shadowMd,
-        overflow: 'hidden',
+        background: 'transparent',
+        border: 'none',
+        boxShadow: 'none',
         ...style,
       }}
     >
@@ -72,11 +72,12 @@ export function CardHeader({ children, style }: { children: React.ReactNode; sty
   return (
     <div
       style={{
-        padding: '16px 20px',
-        borderBottom: `1px solid ${T.border}`,
+        padding: '0 0 12px',
+        borderBottom: `2px solid ${T.white}`,
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
+        marginBottom: 4,
         ...style,
       }}
     >
@@ -87,7 +88,7 @@ export function CardHeader({ children, style }: { children: React.ReactNode; sty
 
 export function CardBody({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ padding: '20px', ...style }}>
+    <div style={{ padding: '18px 0 0', ...style }}>
       {children}
     </div>
   );
@@ -144,11 +145,9 @@ export function StatCard({ icon, label, value, sub }: { icon: string; label: str
   return (
     <div
       style={{
-        background: T.surface2,
-        border: `1px solid ${T.border}`,
-        borderRadius: 12,
-        boxShadow: T.shadowSm,
-        padding: '18px 20px',
+        background: 'transparent',
+        borderTop: `2px solid ${T.borderStrong}`,
+        padding: '16px 0 0',
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
@@ -167,11 +166,11 @@ export function StatCard({ icon, label, value, sub }: { icon: string; label: str
       </span>
       <div
         style={{
-          fontSize: 25,
+          fontSize: 28,
           fontWeight: 800,
           color: T.white,
-          letterSpacing: '-0.02em',
-          lineHeight: 1.1,
+          letterSpacing: '-0.03em',
+          lineHeight: 1.05,
           fontVariantNumeric: 'tabular-nums',
         }}
       >
@@ -331,15 +330,15 @@ export function Table({ headers, rows }: { headers: TableHeader[]; rows: React.R
               <th
                 key={i}
                 style={{
-                  padding: '10px 12px',
+                  padding: '0 12px 10px',
                   textAlign: h.align,
                   color: T.faint,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   fontSize: 11,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
-                  borderBottom: `1px solid ${T.border}`,
-                  background: '#FCFBFA',
+                  borderBottom: `2px solid ${T.white}`,
+                  background: 'transparent',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -352,9 +351,9 @@ export function Table({ headers, rows }: { headers: TableHeader[]; rows: React.R
           {rows.map((row, ri) => (
             <tr
               key={ri}
-              style={{ borderBottom: `1px solid ${T.borderSubtle}` }}
+              style={{ borderBottom: `1px solid ${T.border}` }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLTableRowElement).style.background = '#FCFBFA';
+                (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(200,136,28,0.05)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLTableRowElement).style.background = '';

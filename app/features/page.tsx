@@ -2,15 +2,15 @@ import React from 'react';
 import { IntegrationStrip } from '@/components/Integrations';
 
 const C = {
-  dark: '#0B0B0F',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
-  text: '#F5F5F7',
-  dim: '#A1A1AA',
-  border: 'rgba(255,255,255,0.10)',
-  raised: '#131318',
-  raisedAlt: '#1A1A21',
-  green: '#22C55E',
+  dark: '#F2F2F7',
+  gold: '#C8881C',
+  goldBright: '#E8A020',
+  text: '#1C1C1E',
+  dim: '#6E6E73',
+  border: '#E7E5E1',
+  raised: '#F2F2F7',
+  raisedAlt: '#FAFAF8',
+  green: '#34C759',
   blue: '#6366F1',
   font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
 };
@@ -191,13 +191,12 @@ export default function FeaturesPage() {
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: 'rgba(13,17,23,0.9)',
+        height: 64, background: C.dark,
         borderBottom: `1px solid ${C.border}`,
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
           {NAV_LINKS.map(link => (
@@ -207,16 +206,16 @@ export default function FeaturesPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
+          <a href="/login" style={{ padding: '8px 18px', background: 'transparent', border: `1.5px solid ${C.text}`, borderRadius: 10, color: C.text, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
+          <a href="/signup" style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>Free Trial</a>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '96px 24px 64px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
-          <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 24 }}>
+        <section style={{ textAlign: 'center', padding: '96px 24px 64px' }}>
+          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 24 }}>
             The Complete Platform
           </div>
           <h1 style={{ fontSize: 'clamp(38px, 6vw, 66px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 20px', letterSpacing: -1.5, maxWidth: 900, marginInline: 'auto' }}>
@@ -228,7 +227,7 @@ export default function FeaturesPage() {
           <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: C.dim, maxWidth: 640, margin: '0 auto 36px', lineHeight: 1.65 }}>
             AI-powered estimating, bidding, billing, field reporting, and compliance — built for general contractors who are tired of stitching together a dozen disconnected tools. One login. Your whole company.
           </p>
-          <a href="/signup" style={{ display: 'inline-block', padding: '15px 40px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 900, fontSize: 16, textDecoration: 'none', boxShadow: '0 4px 14px rgba(212,160,23,0.30)' }}>
+          <a href="/signup" style={{ display: 'inline-block', padding: '15px 40px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 900, fontSize: 16, textDecoration: 'none' }}>
             Start Free Trial — No Credit Card →
           </a>
           <div style={{ marginTop: 14, fontSize: 13, color: C.dim }}>30 days free · Unlimited users · Free migration</div>
@@ -236,23 +235,20 @@ export default function FeaturesPage() {
 
         {/* Feature sections */}
         <section style={{ padding: '24px 24px 64px', maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {FEATURES.map((f, i) => (
               <div key={f.title} style={{
-                background: i % 2 === 0 ? C.raised : C.raisedAlt,
-                border: `1px solid ${C.border}`,
-                borderRadius: 14,
-                padding: '36px 40px',
+                borderTop: `1px solid ${C.border}`,
+                padding: '56px 0',
                 display: 'grid',
                 gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
                 gap: 40,
                 alignItems: 'start',
-                boxShadow: '0 4px 14px rgba(0,0,0,.40)',
               }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>{f.eyebrow}</div>
-                  <h2 style={{ fontSize: 'clamp(22px, 3vw, 30px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.18, letterSpacing: -0.5 }}>{f.title}</h2>
-                  <p style={{ fontSize: 15, color: C.dim, lineHeight: 1.7, margin: 0 }}>{f.description}</p>
+                  <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.18, letterSpacing: '-0.03em', color: C.text }}>{f.title}</h2>
+                  <p style={{ fontSize: 16, color: C.dim, lineHeight: 1.7, margin: 0 }}>{f.description}</p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {f.bullets.map(b => (
@@ -269,46 +265,46 @@ export default function FeaturesPage() {
 
         {/* Replaces strip */}
         <section style={{ padding: '0 24px 96px', maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ background: 'linear-gradient(135deg, rgba(212,160,23,0.10) 0%, rgba(11,11,15,0) 100%)', border: `1px solid rgba(212,160,23,0.30)`, borderRadius: 14, padding: '40px 44px', textAlign: 'center', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
+          <div style={{ borderTop: `2px solid ${C.text}`, padding: '56px 0 0', textAlign: 'center' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>One Platform Replaces</div>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 900, margin: '0 0 28px', lineHeight: 1.2 }}>
+            <h2 style={{ fontSize: 'clamp(26px, 4vw, 34px)', fontWeight: 800, margin: '0 0 28px', lineHeight: 1.2, letterSpacing: '-0.03em', color: C.text }}>
               Cancel the stack. Run it all in Saguaro.
             </h2>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {REPLACES.map(item => (
-                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', background: C.raised, border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 14, color: C.text, fontWeight: 600 }}>
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', background: C.raisedAlt, border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 14, color: C.text, fontWeight: 600 }}>
                   <span style={{ color: '#EF4444', fontWeight: 800, fontSize: 15, lineHeight: 1 }}>&times;</span>
                   {item}
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: 14, color: C.dim, margin: '28px auto 0', maxWidth: 560, lineHeight: 1.65 }}>
+            <p style={{ fontSize: 16, color: C.dim, margin: '28px auto 0', maxWidth: 560, lineHeight: 1.65 }}>
               Stop paying for and reconciling seven tools that don’t talk to each other. Saguaro is one flat subscription with every module included — and we migrate you over for free.
             </p>
           </div>
         </section>
 
         {/* Final CTA */}
-        <section style={{ padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ padding: '96px 24px', borderTop: `2px solid ${C.text}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.03em', color: C.text }}>
               See every feature{' '}
-              <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>on your own jobs.</span>
+              <span style={{ color: C.gold }}>on your own jobs.</span>
             </h2>
             <p style={{ fontSize: 17, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
               Spin up a free account and run a real project through Saguaro today. 30 days free, free migration, no credit card required.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#F5C645,#E8A020)', borderRadius: 10, color: '#1A1400', fontWeight: 800, fontSize: 16, textDecoration: 'none' }}>
                 Start Free Trial — No CC Required
               </a>
-              <a href="/compare" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              <a href="/compare" style={{ display: 'inline-block', padding: '15px 36px', background: 'transparent', border: `1.5px solid ${C.text}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 Compare to Procore
               </a>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {['30 days free', 'Free migration', 'Cancel anytime', 'Unlimited users'].map(pill => (
-                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(34,197,94,0.07)', border: `1px solid rgba(34,197,94,0.2)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: C.green }}>
+                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(52,199,89,0.08)', border: `1px solid rgba(52,199,89,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 600, color: C.green }}>
                   <CheckIcon size={12} color={C.green} />
                   {pill}
                 </div>
@@ -324,7 +320,7 @@ export default function FeaturesPage() {
         <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', objectFit: 'contain' }} />
             </a>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[

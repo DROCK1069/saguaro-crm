@@ -14,12 +14,12 @@ export const metadata: Metadata = {
 };
 
 const DARK = '#F2F2F7';
-const GOLD = '#F59E0B';
+const GOLD = '#C8881C';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
+const BORDER = '#E7E5E1';
 const RAISED = '#FFFFFF';
-const GREEN = '#22c55e';
+const GREEN = '#34C759';
 
 export default function ComparePage() {
   const competitors = Object.values(COMPETITORS);
@@ -30,9 +30,8 @@ export default function ComparePage() {
       {/* NAV */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(255,255,255,0.9)',
+        height: 64, background: DARK,
         borderBottom: `1px solid ${BORDER}`,
-        backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center',
         padding: '0 32px', gap: 32,
       }}>
@@ -64,7 +63,7 @@ export default function ComparePage() {
           <a
             href="/signup"
             style={{
-              background: GOLD, color: '#000', fontSize: 14, fontWeight: 700,
+              background: 'linear-gradient(135deg,#F5C645,#E8A020)', color: '#1A1400', fontSize: 14, fontWeight: 700,
               padding: '8px 20px', borderRadius: 8, textDecoration: 'none',
               letterSpacing: 0.2,
             }}
@@ -98,18 +97,15 @@ export default function ComparePage() {
           </p>
         </section>
 
-        {/* PROCORE FEATURED CARD */}
+        {/* PROCORE FEATURED — editorial */}
         <div style={{ maxWidth: 900, margin: '0 auto 56px', padding: '0 32px' }}>
           <a
             href="/compare/procore"
             style={{
               display: 'block', textDecoration: 'none',
-              background: RAISED,
-              border: `2px solid ${GOLD}`,
-              borderRadius: 16,
-              padding: '36px 40px',
-              boxShadow: `0 0 48px rgba(245,158,11,0.18)`,
-              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              borderTop: `2px solid ${TEXT}`,
+              boxShadow: `inset 0 3px 0 ${GOLD}`,
+              padding: '40px 0 0',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
@@ -148,7 +144,7 @@ export default function ComparePage() {
                   <div style={{ fontSize: 13, color: DIM }}>vs Procore $375–600+/mo per seat</div>
                 </div>
                 <div style={{
-                  background: GOLD, color: '#000', fontWeight: 700, fontSize: 15,
+                  background: 'linear-gradient(135deg,#F5C645,#E8A020)', color: '#1A1400', fontWeight: 700, fontSize: 15,
                   padding: '12px 28px', borderRadius: 10,
                 }}>
                   See Full Comparison
@@ -160,13 +156,13 @@ export default function ComparePage() {
 
         {/* COMPETITOR GRID */}
         <div style={{ maxWidth: 1100, margin: '0 auto 80px', padding: '0 32px' }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: TEXT, margin: '0 0 32px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', color: TEXT, margin: '0 0 32px', textAlign: 'center' }}>
             All Competitors
           </h2>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: 20,
+            gap: 0,
           }}>
             {competitors.map((comp) => (
               <a
@@ -174,11 +170,8 @@ export default function ComparePage() {
                 href={`/compare/${comp.slug}`}
                 style={{
                   display: 'block', textDecoration: 'none',
-                  background: RAISED,
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 12,
+                  borderTop: `1px solid ${BORDER}`,
                   padding: '28px 28px 24px',
-                  transition: 'border-color 0.15s ease',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -217,14 +210,13 @@ export default function ComparePage() {
 
         {/* CTA SECTION */}
         <section style={{
-          background: RAISED,
-          borderTop: `1px solid ${BORDER}`,
+          borderTop: `2px solid ${TEXT}`,
           borderBottom: `1px solid ${BORDER}`,
-          padding: '64px 32px',
+          padding: '88px 32px',
           textAlign: 'center',
         }}>
           <div style={{ maxWidth: 600, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 32, fontWeight: 800, color: TEXT, margin: '0 0 16px' }}>
+            <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', color: TEXT, margin: '0 0 16px' }}>
               Ready to see why GCs are switching?
             </h2>
             <p style={{ fontSize: 18, color: DIM, margin: '0 0 36px', lineHeight: 1.6 }}>
@@ -234,7 +226,7 @@ export default function ComparePage() {
               <a
                 href="/signup"
                 style={{
-                  background: GOLD, color: '#000', fontWeight: 700, fontSize: 16,
+                  background: 'linear-gradient(135deg,#F5C645,#E8A020)', color: '#1A1400', fontWeight: 700, fontSize: 16,
                   padding: '14px 36px', borderRadius: 10, textDecoration: 'none',
                 }}
               >
@@ -245,7 +237,7 @@ export default function ComparePage() {
                 style={{
                   background: 'transparent', color: TEXT, fontWeight: 600, fontSize: 16,
                   padding: '14px 36px', borderRadius: 10, textDecoration: 'none',
-                  border: `1px solid ${BORDER}`,
+                  border: `1.5px solid ${TEXT}`,
                 }}
               >
                 Explore the Sandbox

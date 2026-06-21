@@ -5,13 +5,13 @@ import { useState, useEffect } from 'react';
 import type { Competitor } from '@/lib/competitors';
 
 const DARK = '#F2F2F7';
-const GOLD = '#F59E0B';
+const GOLD = '#C8881C';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
-const GREEN = '#22c55e';
-const RED = '#ef4444';
+const BORDER = '#E7E5E1';
+const RAISED = '#FAFAF8';
+const GREEN = '#34C759';
+const RED = '#EF4444';
 
 // ─── Nav ────────────────────────────────────────────────────────────────────
 
@@ -29,9 +29,8 @@ function Nav() {
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)',
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: scrolled ? '1px solid rgba(245,158,11,0.25)' : `1px solid ${BORDER}`,
+        background: DARK,
+        borderBottom: scrolled ? `1px solid ${TEXT}` : `1px solid ${BORDER}`,
         transition: 'all 0.3s ease', height: '58px',
         display: 'flex', alignItems: 'center',
       }}>
@@ -68,7 +67,7 @@ function Nav() {
       </nav>
 
       {mobileOpen && (
-        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(255,255,255,0.99)', borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px', backdropFilter: 'blur(12px)' }}>
+        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: DARK, borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px' }}>
           <div style={{ padding: '16px' }}>
             <Link href="/login" onClick={() => setMobileOpen(false)}
               style={{ display: 'block', textAlign: 'center', padding: '13px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: '9px', color: TEXT, fontWeight: 600, textDecoration: 'none', fontSize: '15px', marginBottom: '10px' }}>
@@ -208,7 +207,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           SAGUARO VS {competitor.name.toUpperCase()}
         </div>
 
-        <h1 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 900, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-0.02em' }}>
+        <h1 style={{ fontSize: 'clamp(36px,5.5vw,60px)', fontWeight: 900, lineHeight: 1.05, margin: '0 0 20px', letterSpacing: '-0.03em' }}>
           {headlineLines[0]}
           {headlineLines[1] && (
             <>
@@ -226,16 +225,16 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
         <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/signup" style={{
-            padding: '14px 34px', background: `linear-gradient(135deg, ${GOLD}, #FCD34D)`,
-            borderRadius: '9px', color: '#000', fontWeight: 700, fontSize: '15px',
+            padding: '14px 34px', background: 'linear-gradient(135deg,#F5C645,#E8A020)',
+            borderRadius: '9px', color: '#1A1400', fontWeight: 700, fontSize: '15px',
             textDecoration: 'none', letterSpacing: '0.02em',
           }}>
             Start Free Trial
           </Link>
           <a href="#comparison" style={{
             padding: '14px 28px', background: 'transparent',
-            border: `1px solid ${BORDER}`, borderRadius: '9px',
-            color: TEXT, fontWeight: 500, fontSize: '14px', textDecoration: 'none',
+            border: `1.5px solid ${TEXT}`, borderRadius: '9px',
+            color: TEXT, fontWeight: 600, fontSize: '14px', textDecoration: 'none',
           }}>
             See Full Comparison
           </a>
@@ -254,8 +253,8 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
             { value: '1 day setup', label: `vs. ${competitor.setupTime} for ${competitor.name}` },
             { value: `${aiCount} AI feature${aiCount !== 1 ? 's' : ''}`, label: `${competitor.name} doesn't have` },
           ].map((stat, i) => (
-            <div key={i} style={{ padding: '8px 12px' }}>
-              <div style={{ fontSize: '20px', fontWeight: 800, color: GOLD, marginBottom: '4px' }}>{stat.value}</div>
+            <div key={i} style={{ padding: '8px 12px', borderLeft: i > 0 ? `1px solid ${BORDER}` : 'none' }} className="ccp-stat">
+              <div style={{ fontSize: '22px', fontWeight: 800, color: GOLD, marginBottom: '4px', letterSpacing: '-0.02em' }}>{stat.value}</div>
               <div style={{ fontSize: '12px', color: DIM, lineHeight: 1.4 }}>{stat.label}</div>
             </div>
           ))}
@@ -264,30 +263,28 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
       {/* ── Feature comparison table ───────────────────────────────────────── */}
       <section id="comparison" style={{ maxWidth: '1040px', margin: '0 auto', padding: '72px 24px' }}>
-        <h2 style={{ fontSize: 'clamp(24px,3.5vw,38px)', fontWeight: 900, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.01em' }}>
+        <h2 style={{ fontSize: 'clamp(26px,3.5vw,34px)', fontWeight: 900, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.03em', color: TEXT }}>
           Saguaro vs {competitor.name}: Feature by Feature
         </h2>
         <p style={{ color: DIM, textAlign: 'center', marginBottom: '40px', fontSize: '15px' }}>
           {competitor.saguaroAdvantage}
         </p>
 
-        <div style={{ border: `1px solid ${BORDER}`, borderRadius: '14px', overflow: 'hidden' }}>
+        <div>
           {/* Table header */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
-            background: '#F2F2F7', borderBottom: `1px solid ${BORDER}`,
+            borderBottom: `2px solid ${TEXT}`,
           }}>
-            <div style={{ padding: '18px 24px', fontSize: '12px', fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ padding: '0 24px 14px', fontSize: '12px', fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Feature
             </div>
             <div style={{
-              padding: '18px 24px', borderLeft: `1px solid ${BORDER}`, textAlign: 'center',
-              background: 'rgba(245,158,11,0.06)',
-              boxShadow: 'inset 0 0 0 1px rgba(245,158,11,0.12)',
+              padding: '0 24px 14px', textAlign: 'center',
             }}>
               <div style={{ fontWeight: 800, fontSize: '15px', color: GOLD, letterSpacing: '0.04em' }}>SAGUARO</div>
             </div>
-            <div style={{ padding: '18px 24px', borderLeft: `1px solid ${BORDER}`, textAlign: 'center' }}>
+            <div style={{ padding: '0 24px 14px', textAlign: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: '15px', color: DIM }}>{competitor.name}</div>
             </div>
           </div>
@@ -297,8 +294,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
               key={row.feature}
               style={{
                 display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
-                borderBottom: i < rows.length - 1 ? `1px solid ${BORDER}` : 'none',
-                background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)',
+                borderBottom: `1px solid ${BORDER}`,
               }}
             >
               <div style={{ padding: '15px 24px', fontSize: '13px', fontWeight: 600, color: TEXT, display: 'flex', alignItems: 'center' }}>
@@ -307,14 +303,13 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
               {/* Saguaro cell */}
               <div style={{
-                padding: '15px 20px', borderLeft: `1px solid ${BORDER}`,
-                background: row.saguaroWins ? 'rgba(34,197,94,0.04)' : 'rgba(245,158,11,0.04)',
+                padding: '15px 20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}>
                 {row.saguaroWins && <Check />}
                 <span style={{
                   fontSize: '13px', fontWeight: row.saguaroWins ? 600 : 400,
-                  color: row.saguaroWins ? GREEN : TEXT,
+                  color: row.saguaroWins ? GREEN : GOLD,
                   textAlign: 'center',
                 }}>
                   {row.saguaroValue}
@@ -323,7 +318,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
               {/* Competitor cell */}
               <div style={{
-                padding: '15px 20px', borderLeft: `1px solid ${BORDER}`,
+                padding: '15px 20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}>
                 {row.saguaroWins && <Cross />}
@@ -343,21 +338,20 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
       {/* ── Competitor weaknesses ─────────────────────────────────────────── */}
       <section style={{ background: RAISED, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, padding: '72px 24px' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(22px,3vw,34px)', fontWeight: 900, textAlign: 'center', marginBottom: '10px' }}>
+          <h2 style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 900, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.03em', color: TEXT }}>
             Where {competitor.name} Falls Short
           </h2>
           <p style={{ color: DIM, textAlign: 'center', marginBottom: '40px', fontSize: '15px' }}>
             {competitor.name} is best for: {competitor.bestFor}
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
             {competitor.weaknesses.map((weakness, i) => (
               <div
                 key={i}
                 style={{
                   display: 'flex', alignItems: 'flex-start', gap: '14px',
-                  background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)',
-                  borderRadius: '10px', padding: '18px 20px',
+                  borderTop: `1px solid ${BORDER}`, padding: '18px 0',
                 }}
               >
                 <div style={{ marginTop: '1px' }}>
@@ -373,10 +367,9 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
       {/* ── Migration CTA ─────────────────────────────────────────────────── */}
       <section style={{ maxWidth: '800px', margin: '0 auto', padding: '72px 24px' }}>
         <div style={{
-          background: RAISED, border: `1px solid ${BORDER}`,
-          borderRadius: '16px', padding: '48px 40px', textAlign: 'center',
+          borderTop: `2px solid ${TEXT}`, padding: '48px 0 0', textAlign: 'center',
         }}>
-          <h2 style={{ fontSize: 'clamp(22px,3vw,32px)', fontWeight: 900, marginBottom: '12px' }}>
+          <h2 style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 900, marginBottom: '12px', letterSpacing: '-0.03em', color: TEXT }}>
             Ready to Switch from {competitor.name}?
           </h2>
           <p style={{ color: DIM, fontSize: '15px', lineHeight: 1.65, marginBottom: '12px', maxWidth: '560px', margin: '0 auto 12px' }}>
@@ -387,16 +380,16 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           </p>
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href={migrationLink} style={{
-              padding: '14px 32px', background: `linear-gradient(135deg, ${GOLD}, #FCD34D)`,
-              borderRadius: '9px', color: '#000', fontWeight: 700, fontSize: '15px',
+              padding: '14px 32px', background: 'linear-gradient(135deg,#F5C645,#E8A020)',
+              borderRadius: '9px', color: '#1A1400', fontWeight: 700, fontSize: '15px',
               textDecoration: 'none',
             }}>
               Start Free Migration
             </Link>
             <Link href="/signup" style={{
               padding: '14px 26px', background: 'transparent',
-              border: `1px solid ${BORDER}`, borderRadius: '9px',
-              color: TEXT, fontWeight: 500, fontSize: '14px', textDecoration: 'none',
+              border: `1.5px solid ${TEXT}`, borderRadius: '9px',
+              color: TEXT, fontWeight: 600, fontSize: '14px', textDecoration: 'none',
             }}>
               Try Free First
             </Link>
@@ -406,11 +399,11 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
       {/* ── Final CTA ─────────────────────────────────────────────────────── */}
       <section style={{
-        background: `linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)`,
-        borderTop: `1px solid rgba(245,158,11,0.2)`, padding: '80px 24px', textAlign: 'center',
+        background: DARK,
+        borderTop: `2px solid ${TEXT}`, padding: '80px 24px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(26px,4vw,42px)', fontWeight: 900, marginBottom: '14px', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: 'clamp(28px,4vw,42px)', fontWeight: 900, marginBottom: '14px', letterSpacing: '-0.03em', color: TEXT }}>
             The smarter platform for serious GCs.
           </h2>
           <p style={{ color: DIM, fontSize: '16px', marginBottom: '8px', lineHeight: 1.6 }}>
@@ -421,8 +414,8 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           </p>
           <Link href="/signup" style={{
             display: 'inline-block', padding: '16px 44px',
-            background: `linear-gradient(135deg, ${GOLD}, #FCD34D)`,
-            borderRadius: '10px', color: '#000', fontWeight: 800, fontSize: '16px',
+            background: 'linear-gradient(135deg,#F5C645,#E8A020)',
+            borderRadius: '10px', color: '#1A1400', fontWeight: 800, fontSize: '16px',
             textDecoration: 'none', letterSpacing: '0.02em',
           }}>
             Start Free Trial — No CC Required
@@ -470,6 +463,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           .ccp-desktop { display: none !important; }
           .ccp-mobile { display: flex !important; }
           .ccp-stats-grid { grid-template-columns: 1fr !important; }
+          .ccp-stats-grid .ccp-stat { border-left: none !important; }
         }
         @media (max-width: 600px) {
           #comparison > div:last-child > div {
