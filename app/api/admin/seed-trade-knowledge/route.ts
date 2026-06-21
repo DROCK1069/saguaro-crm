@@ -40,8 +40,15 @@ export async function GET(req: NextRequest) {
     const db = createServerClient();
     const articles = seed as SeedArticle[];
 
-    // Idempotent: wipe the existing global library so re-runs stay clean.
-    await db.from('trade_knowledge').delete().eq('is_global', true);
+    // Idempotent + non-destructive: if a global library already exists, do
+    // nothing (never delete). Re-running is a safe no-op.
+    const { count: existing } = await db
+      .from('trade_knowledge')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_global', true);
+    if ((existing || 0) > 0) {
+      return NextResponse.json({ ok: true, skipped: true, existing, message: 'Global library already seeded — no changes made.' });
+    }
 
     const rows = articles.map((x) => ({
       trade: x.trade,
