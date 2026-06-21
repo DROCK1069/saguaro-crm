@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nav Dropdown — 2 Totally New Ideas</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',-apple-system,sans-serif;background:#ECEAE5;color:#1C1917;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:52px 24px 110px}
+  h1{font-size:31px;font-weight:800;letter-spacing:-0.03em;margin:0 0 8px}
+  .sub{color:#6E6E73;font-size:15px;margin:0 0 16px;max-width:620px;line-height:1.6}
+  .block{margin-top:50px}
+  .lbl{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+  .tag{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:4px 11px;border-radius:6px}
+  .tag.c1{background:#1C1917;color:#E8B420;font-family:'JetBrains Mono',monospace}
+  .tag.c2{background:linear-gradient(135deg,#b14d44,#e8a83d);color:#231012}
+  .lbl h2{font-size:19px;font-weight:800;margin:0;letter-spacing:-0.02em}
+  .note{font-size:13.5px;color:#6E6E73;margin:0 0 22px;max-width:700px;line-height:1.55}
+  .stage{padding:34px;border-radius:16px;display:flex;justify-content:center;background:linear-gradient(115deg,#7c5436,#b07a4c 55%,#d39a64)}
+  .stage.dark{background:#0E0B08}
+
+  /* ============================================================
+     CONCEPT 1 — BLUEPRINT / DRAFTING SHEET
+     ============================================================ */
+  .bp{
+    width:460px; background:#FBF8F1; color:#1C1917;
+    border:1px solid #D8CDB8; border-radius:6px; padding:0;
+    box-shadow:0 2px 8px rgba(60,45,20,.12), 0 26px 60px rgba(60,45,20,.24);
+    position:relative; overflow:hidden;
+    background-image:
+      linear-gradient(rgba(200,136,28,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,136,28,.05) 1px, transparent 1px);
+    background-size:22px 22px;
+  }
+  .bp .hd{ display:flex; justify-content:space-between; align-items:center;
+    padding:12px 16px; border-bottom:2px solid #1C1917; background:rgba(251,248,241,.7); }
+  .bp .hd .t{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.12em; color:#1C1917; }
+  .bp .hd .r{ font-family:'JetBrains Mono',monospace; font-size:10px; color:#9A8F76; letter-spacing:.08em; }
+  .bp .body{ padding:6px; }
+  .bp .item{ display:flex; align-items:center; gap:14px; padding:14px 14px; position:relative; cursor:pointer; border:1px solid transparent; transition:all .14s ease; }
+  .bp .item + .item{ border-top:1px dashed #DBD0BA; }
+  .bp .item .num{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:#B7A77E; width:26px; flex-shrink:0; }
+  .bp .item .ic{ width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#1C1917; }
+  .bp .item .ttl{ font-size:14.5px; font-weight:700; letter-spacing:-0.01em; }
+  .bp .item .dsc{ font-size:12px; color:#8A847E; margin-top:1px; }
+  .bp .item .code{ margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#B7A77E; letter-spacing:.06em; flex-shrink:0; }
+  /* hover = drafting "selection" — gold corner brackets + crosshair tint */
+  .bp .item:hover{ background:rgba(200,136,28,.07); border-color:rgba(200,136,28,.35); }
+  .bp .item:hover .ic, .bp .item:hover .code{ color:#C8881C; }
+  .bp .item .br{ position:absolute; width:9px; height:9px; border:2px solid #C8881C; opacity:0; transition:opacity .14s ease; }
+  .bp .item:hover .br{ opacity:1; }
+  .bp .br.tl{ top:5px; left:5px; border-right:none; border-bottom:none; }
+  .bp .br.tr{ top:5px; right:5px; border-left:none; border-bottom:none; }
+  .bp .br.bl{ bottom:5px; left:5px; border-right:none; border-top:none; }
+  .bp .br.brr{ bottom:5px; right:5px; border-left:none; border-top:none; }
+  .bp .ft{ display:flex; justify-content:space-between; padding:9px 16px; border-top:2px solid #1C1917;
+    font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.1em; color:#9A8F76; background:rgba(251,248,241,.7); }
+
+  /* ============================================================
+     CONCEPT 2 — DESERT HORIZON (immersive sunset)
+     ============================================================ */
+  .hz{ width:540px; position:relative; border-radius:14px; overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,.4), 0 30px 70px rgba(0,0,0,.5);
+    background:linear-gradient(to bottom,#1a1338 0%,#3a2459 24%,#6e3563 44%,#b14d44 64%,#d4722a 80%,#e8a83d 100%); }
+  .hz .sun{ position:absolute; right:16%; bottom:24%; width:230px; height:230px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,236,180,.95) 0%, rgba(247,190,90,.5) 30%, transparent 66%); }
+  .hz .ridge{ position:absolute; bottom:0; left:0; width:100%; height:70px; z-index:1;
+    background:linear-gradient(to bottom,#1a0e1a,#14090f); }
+  .hz .scrim{ position:absolute; inset:0; z-index:2; background:linear-gradient(to right, rgba(12,8,20,.74) 0%, rgba(12,8,20,.4) 48%, transparent 78%); }
+  .hz .content{ position:relative; z-index:3; padding:18px 10px; }
+  .hz .eyebrow{ font-size:10px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:#FBE3A8; padding:4px 16px 12px; }
+  .hz .item{ display:flex; align-items:center; gap:14px; padding:13px 16px; border-left:3px solid transparent; cursor:pointer; transition:all .16s ease; }
+  .hz .item:hover{ background:linear-gradient(90deg, rgba(232,168,60,.22), rgba(232,168,60,.02)); border-left-color:#F5C645; transform:translateX(3px); }
+  .hz .ic{ width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,220,150,.25); color:#FBE3A8; transition:all .16s ease; }
+  .hz .item:hover .ic{ box-shadow:0 0 20px rgba(245,198,69,.5); border-color:rgba(245,198,69,.6); color:#fff; }
+  .hz .ttl{ font-size:15px; font-weight:700; color:#fff; letter-spacing:-0.01em; text-shadow:0 1px 8px rgba(0,0,0,.4); }
+  .hz .dsc{ font-size:12px; color:rgba(255,255,255,.7); margin-top:2px; }
+  /* tiny cactus silhouettes on the ridge */
+  .hz .cactus{ position:absolute; bottom:46px; z-index:1; }
+
+  .foot{margin-top:64px;text-align:center;color:#6E6E73;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Two totally new dropdown ideas</h1>
+  <p class="sub">Different from everything so far — and built around what you actually do. Hover the items. Tell me <strong>1</strong> or <strong>2</strong> and I'll wire it into the live nav.</p>
+
+  <!-- CONCEPT 1 -->
+  <div class="block">
+    <div class="lbl"><span class="tag c1">Idea 1</span><h2>Blueprint — drafting sheet</h2></div>
+    <p class="note">The dropdown IS a drawing sheet: faint blueprint grid, a title block at top and bottom, dashed dimension dividers, and monospace drawing codes (TKF, INT, FLD, SGE). Hover snaps gold survey corner-brackets around the item like a CAD selection. Pure construction DNA — nobody else's nav looks like this.</p>
+    <div class="stage">
+      <div class="bp">
+        <div class="hd"><span class="t">PLATFORM — DWG SET</span><span class="r">REV. 2026.1</span></div>
+        <div class="body" id="BP"></div>
+        <div class="ft"><span>SAGUARO CONTROL SYSTEMS</span><span>SHEET 1 OF 1 · SCALE 1:1</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCEPT 2 -->
+  <div class="block">
+    <div class="lbl"><span class="tag c2">Idea 2</span><h2>Desert horizon — immersive sunset</h2></div>
+    <p class="note">The menu opens into the brand world: a real Arizona sunset sky with a glowing sun, a saguaro ridge along the bottom, and the items glowing warm as you hover. White text floats over the scene. It's a mood, not a panel — unmistakably Saguaro and impossible to call &ldquo;bland.&rdquo;</p>
+    <div class="stage dark">
+      <div class="hz">
+        <div class="sun"></div>
+        <svg class="cactus" style="left:64%" width="34" height="74" viewBox="0 0 100 230" fill="none" stroke="#100810" stroke-width="17" stroke-linecap="round"><path d="M50 230 L50 34"/><path d="M50 150 L32 150 L32 102"/><path d="M50 118 L70 118 L70 80"/></svg>
+        <svg class="cactus" style="left:80%" width="26" height="58" viewBox="0 0 100 230" fill="none" stroke="#160a12" stroke-width="17" stroke-linecap="round"><path d="M50 230 L50 60"/><path d="M50 150 L70 150 L70 110"/></svg>
+        <div class="ridge"></div>
+        <div class="scrim"></div>
+        <div class="content">
+          <div class="eyebrow">Platform</div>
+          <div id="HZ"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">Saguaro Control Systems — internal preview · /nav-concepts-c.html</p>
+</div>
+
+<script>
+  const I = {
+    takeoff:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 3v18"/><path d="M13 13l4 4"/></svg>',
+    intel:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V4M16 19v-7M22 19H2"/></svg>',
+    field:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+    sage:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.9L21 11l-6.6 2.1L12 20l-2.4-6.9L3 11l6.6-2.1z"/></svg>'
+  };
+  const ITEMS = [
+    ['takeoff','AI Blueprint Takeoff','Plans in, full estimate out in 60 seconds','TKF'],
+    ['intel','Executive Intelligence','Multi-project command center','INT'],
+    ['field','Field Mobile App','Daily logs, photos, GPS clock-in, offline','FLD'],
+    ['sage','Sage AI Assistant','Ask anything about your projects','SGE'],
+  ];
+  // Blueprint rows
+  document.getElementById('BP').innerHTML = ITEMS.map(([ic,t,d,code],i)=>(
+    '<div class="item"><span class="br tl"></span><span class="br tr"></span><span class="br bl"></span><span class="br brr"></span>'+
+    '<span class="num">0'+(i+1)+'</span><div class="ic">'+I[ic]+'</div>'+
+    '<div><div class="ttl">'+t+'</div><div class="dsc">'+d+'</div></div>'+
+    '<span class="code">DWG-'+code+'</span></div>'
+  )).join('');
+  // Horizon rows
+  document.getElementById('HZ').innerHTML = ITEMS.map(([ic,t,d])=>(
+    '<div class="item"><div class="ic">'+I[ic]+'</div><div><div class="ttl">'+t+'</div><div class="dsc">'+d+'</div></div></div>'
+  )).join('');
+</script>
+</body>
+</html>
