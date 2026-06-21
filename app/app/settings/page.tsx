@@ -23,7 +23,7 @@ const SETTINGS_SECTIONS = [
     title: 'Account & Billing',
     items: [
       { icon: '💳', label: 'Subscription & Plan', desc: 'Manage your plan, upgrade, view invoices', href: '/app/billing', highlight: true },
-      { icon: '📱', label: 'Install Field App', desc: 'Install Saguaro Field on iPhone, Android, iPad, or desktop', href: '/get-the-app' },
+      { icon: '📱', label: 'Get the iOS App', desc: 'Download Saguaro Field for iPhone & iPad from the App Store', href: '/get-the-app' },
       { icon: '🔔', label: 'Notifications', desc: 'Configure email and push notification preferences', href: '/app/notification-settings' },
     ],
   },
@@ -314,11 +314,11 @@ export default function SettingsPage() {
       <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(255,255,255,0) 100%)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 14, padding: '28px 28px', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
         <div style={{ fontSize: 40 }}><DeviceMobile size={40} weight="duotone" color={GOLD} /></div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 4 }}>Install Saguaro Field on your phone</div>
-          <div style={{ fontSize: 13, color: DIM }}>iPhone, Android, iPad, or desktop — no app store needed. Free for your entire team.</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 4 }}>Get Saguaro Field for iPhone &amp; iPad</div>
+          <div style={{ fontSize: 13, color: DIM }}>Download free from the App Store (TestFlight beta now). Free for your entire team.</div>
         </div>
         <a href="/get-the-app" style={{ padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-          Get Install Guide
+          Get the App
         </a>
       </div>
 

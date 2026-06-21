@@ -64,7 +64,7 @@ const CAPABILITIES = [
   { name: 'RFIs & Change Orders', desc: 'Autopilot RFI and change-order workflows that route, track, and log every response so nothing slips through the cracks.' },
   { name: 'Compliance Suite', desc: 'Lien waivers for all 50 states, preliminary notices, WH-347 certified payroll, ACORD 25 insurance tracking, and the OSHA 300 log.' },
   { name: 'Owner & Sub Portals', desc: 'Give owners a clean view of progress and approvals, and give subs a portal to submit pay apps, waivers, and documents.' },
-  { name: 'Saguaro Field App', desc: 'A mobile field app that works offline, installs from the browser with no App Store, and keeps the office and the crew in sync.' },
+  { name: 'Saguaro Field App', desc: 'A native iOS field app that works offline and keeps the office and the crew in sync — free from the App Store for your whole team.' },
 ];
 
 function CheckIcon({ size = 16, color = C.green }: { size?: number; color?: string }) {

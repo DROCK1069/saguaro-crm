@@ -23,7 +23,7 @@ const OLD_WAY_VS_SAGUARO = [
 ];
 
 const TRUST_PILLS = [
-  'No App Store Required',
+  'Native iOS Field App',
   'Works Offline',
   'All 50 States',
   'Free for Your Whole Crew',
@@ -384,7 +384,7 @@ export default function IndustryLandingPage({ industry }: Props) {
           </div>
 
           <p style={{ fontSize: '13px', color: '#6E6E73', margin: 0 }}>
-            Free forever for your field crew. No App Store required.
+            Free for your whole field crew. Download from the App Store.
           </p>
         </div>
       </section>

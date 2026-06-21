@@ -111,8 +111,8 @@ const FEATURES: Feature[] = [
   {
     icon: <IconMobile />,
     title: (city) => `Mobile Field App — Works on ${city.name} Job Sites`,
-    desc: (city) => `Give your ${city.name} crew a native-speed PWA — daily logs, photos, GPS clock-in, punch lists, RFIs, and inspections. Works fully offline. No App Store required.`,
-    pill: 'iOS · Android · Offline',
+    desc: (city) => `Give your ${city.name} crew the native iOS app — daily logs, photos, GPS clock-in, punch lists, RFIs, and inspections. Works fully offline. Download free from the App Store.`,
+    pill: 'iPhone · iPad · Offline',
   },
   {
     icon: <IconChart />,

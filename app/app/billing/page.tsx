@@ -338,11 +338,11 @@ export default function BillingPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>Saguaro Field App</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: TEXT, marginBottom: 6 }}>Install on your phone or tablet</div>
-            <div style={{ fontSize: 13, color: DIM, maxWidth: 480 }}>No app store required. Install directly from your browser on iPhone, Android, iPad, or desktop. Free for every team member on your plan.</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: TEXT, marginBottom: 6 }}>Download for iPhone &amp; iPad</div>
+            <div style={{ fontSize: 13, color: DIM, maxWidth: 480 }}>Get the native Saguaro Field app free from the App Store (TestFlight beta now). Free for every team member on your plan.</div>
           </div>
           <a href="/get-the-app" style={{ padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap', boxShadow: `0 4px 16px rgba(245,158,11,0.3)` }}>
-            Get Install Instructions
+            Get the App
           </a>
         </div>
       </div>

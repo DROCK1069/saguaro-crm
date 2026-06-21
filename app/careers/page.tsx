@@ -57,7 +57,7 @@ const ROLES = [
     team: 'Engineering',
     location: 'Remote (US)',
     type: 'Full-time',
-    desc: 'Own product surfaces end to end across our Next.js + Supabase stack — from AI takeoff and the Sage assistant to pay apps, RFIs, and the field PWA. You ship to production daily.',
+    desc: 'Own product surfaces end to end across our Next.js + Supabase stack — from AI takeoff and the Sage assistant to pay apps, RFIs, and the native iOS field app. You ship to production daily.',
     tags: ['Next.js', 'TypeScript', 'Supabase', 'Postgres'],
   },
   {
@@ -74,7 +74,7 @@ const ROLES = [
     location: 'Remote (US)',
     type: 'Full-time',
     desc: 'Design dense, data-heavy workflows that have to feel simple — pay app schedules of values, lien waiver flows, and a field app used in gloves and sunlight. You will own the design system end to end.',
-    tags: ['Figma', 'Design systems', 'Mobile / PWA'],
+    tags: ['Figma', 'Design systems', 'Mobile / iOS'],
   },
   {
     title: 'Founding Account Executive',

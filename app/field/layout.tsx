@@ -1,7 +1,7 @@
 'use client';
 /**
  * Saguaro Field — Mobile Shell
- * Supports both PWA and Capacitor native (iOS/Android).
+ * The native iOS app (Capacitor) loads this. Not a PWA.
  * Bottom nav: Home · Punch · Log · Photos · More
  */
 import React, { useEffect, useState, useCallback } from 'react';
@@ -92,7 +92,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
   const [activeProjectId, setActiveProjectId] = useState('');
   const native = isNative();
 
-  // ── Capacitor + PWA boot ───────────────────────────────────────
+  // ── Capacitor native boot ──────────────────────────────────────
   useEffect(() => {
     // 1. Status bar: dark content on dark bg
     setStatusBarDark().catch(() => {});

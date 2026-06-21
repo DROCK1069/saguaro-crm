@@ -184,7 +184,7 @@ export default function HowToGetStartedPage() {
                 <h3>Open your browser → go to saguarocontrol.net/app</h3>
                 <p>Works in Chrome, Safari, Edge, Firefox — on Windows, Mac, iPhone, iPad, Android, and Chromebook. No software install. No IT department. Just a browser.</p>
                 <div className="note">
-                  <strong>Bookmark this now:</strong> saguarocontrol.net/app — this is your homepage for everything. Add it to your browser favorites and your phone home screen.
+                  <strong>Bookmark this now:</strong> saguarocontrol.net/app — this is your homepage for everything. Add it to your browser favorites, and get the Saguaro Field app from the App Store on your iPhone &amp; iPad.
                 </div>
               </div>
             </div>
@@ -301,9 +301,9 @@ export default function HowToGetStartedPage() {
           <h2>Common Questions</h2>
           <div className="card" style={{ padding: '8px 28px' }}>
             {[
-              { q: 'Do I need to download or install anything?', a: 'No. Saguaro is entirely web-based. You access it at saguarocontrol.net in any browser. The only optional "install" is adding the site to your phone home screen, which takes 10 seconds.' },
+              { q: 'Do I need to download or install anything?', a: 'On desktop, no — Saguaro is entirely web-based; you access it at saguarocontrol.net in any browser. For the field crew, download the native Saguaro Field app free from the App Store on iPhone & iPad.' },
               { q: 'What browser should I use?', a: 'Chrome or Safari give the best experience. Edge and Firefox also work fully. Internet Explorer is not supported.' },
-              { q: 'Can my field crew use it without a computer?', a: 'Yes — that\'s exactly what the mobile app is for. Add saguarocontrol.net to their iPhone or Android home screen and they can clock in with GPS, submit daily logs, take photos, and file RFIs from the job site.' },
+              { q: 'Can my field crew use it without a computer?', a: 'Yes — that\'s exactly what the mobile app is for. Download the free Saguaro Field app from the App Store on their iPhone & iPad and they can clock in with GPS, submit daily logs, take photos, and file RFIs from the job site.' },
               { q: 'How many users can I add?', a: 'Unlimited. Your flat subscription covers every person at your company — PMs, estimators, supers, field crew, accounting, and owners. We will never charge you per seat.' },
               { q: 'What happens when my trial ends?', a: 'You\'ll be prompted to choose a plan and enter payment info. If you don\'t, your account is paused (not deleted) and your data is preserved for 30 days. No surprise charges.' },
               { q: 'Can I migrate from Procore or Buildertrend?', a: 'Yes — and it\'s free. We migrate your projects, contacts, documents, and history. Our team handles everything and gets you live in 1 business day. Email support@saguarocontrol.net to start.' },

@@ -237,7 +237,7 @@ function NotificationsPage() {
           background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 12,
           padding: '14px', fontSize: 13, color: DIM, lineHeight: 1.5,
         }}>
-          Push notifications are not supported in this browser. For the best experience, use Chrome, Edge, or Firefox on Android, or add this app to your home screen on iOS 16.4+.
+          Push notifications are delivered through the Saguaro Field app on iPhone &amp; iPad. Download it free from the App Store to get jobsite alerts.
         </div>
       )}
 

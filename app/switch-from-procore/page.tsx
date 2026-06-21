@@ -241,8 +241,8 @@ export default function SwitchFromProcorePage() {
               },
               {
                 icon: '📱',
-                title: 'App Store Required for Field Crews',
-                body: 'Procore requires App Store installation, IT approval, and device management. Our field app installs in 30 seconds — no App Store, no IT ticket.',
+                title: 'Per-Seat Field App Licenses',
+                body: 'Procore charges per seat for the field app and requires IT approval and device management. Saguaro Field is a free native iOS app — every crew member gets it from the App Store at no extra cost.',
               },
               {
                 icon: '📄',
@@ -328,7 +328,7 @@ export default function SwitchFromProcorePage() {
                   ['Monthly Cost', '$299 flat (whole team)', '$1,850+ per seat', true, false],
                   ['Setup Time', '1 business day', '4–6 months', true, false],
                   ['AI Blueprint Takeoff', 'Included', 'Not available', true, false],
-                  ['Field App', 'Free, no App Store', 'Requires App Store + IT', true, false],
+                  ['Field App', 'Free native iOS app', 'Per-seat + IT approval', true, false],
                   ['Lien Waivers (50 states)', 'Digital, included', 'PDF manual only', true, false],
                   ['Certified Payroll WH-347', 'Auto-generated', 'Not included', true, false],
                   ['AIA G702/G703 Pay Apps', 'One-click generate', 'Extra cost add-on', true, false],
