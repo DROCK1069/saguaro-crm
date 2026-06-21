@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Saguaro Control Systems — Nav Mega-Dropdown Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --gold: #C8881C;
+    --gold-bright: #E8B420;
+    --espresso: #171008;
+    --espresso-2: #1A1410;
+    --ink: #1C1917;
+    --offwhite: #FCFAF6;
+    --offwhite-2: #F2F2F0;
+    --dim: #8A847E;
+    --green: #34C759;
+    --hairline: rgba(200,136,28,0.22);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--offwhite-2);
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  /* ---------- Page chrome ---------- */
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 32px 120px;
+  }
+
+  .page-head { margin-bottom: 56px; max-width: 760px; }
+  .page-kicker {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gold);
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  }
+  .page-kicker::before {
+    content: ""; width: 26px; height: 1.5px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  }
+  .page-title {
+    font-size: clamp(30px, 4vw, 46px); font-weight: 800;
+    letter-spacing: -0.025em; line-height: 1.04; color: var(--ink);
+  }
+  .page-sub { margin-top: 16px; font-size: 16px; color: #57514a; max-width: 640px; }
+
+  .concept-legend { margin-top: 26px; display: grid; gap: 10px; }
+  .legend-row { display: flex; align-items: baseline; gap: 12px; font-size: 14px; }
+  .legend-row b {
+    font-weight: 700; color: var(--ink); min-width: 200px;
+    display: inline-flex; align-items: baseline; gap: 8px;
+  }
+  .legend-num {
+    font-size: 11px; font-weight: 800; color: var(--gold);
+    border: 1.5px solid var(--hairline); border-radius: 6px;
+    padding: 1px 6px; letter-spacing: 0.04em;
+  }
+  .legend-row span { color: #57514a; }
+
+  /* ---------- Section / stage ---------- */
+  .concept-block { margin-top: 72px; }
+  .concept-label {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+  }
+  .concept-label .cl-num {
+    font-size: 13px; font-weight: 800; color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .concept-label .cl-name { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  .concept-label .cl-tag {
+    font-size: 12px; color: var(--dim); font-weight: 500;
+    border-left: 1.5px solid var(--hairline); padding-left: 14px;
+  }
+
+  /* Desert-toned stage */
+  .stage {
+    position: relative; border-radius: 24px; overflow: hidden;
+    padding: 0 0 64px; min-height: 540px;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .stage--desert {
+    background:
+      radial-gradient(120% 90% at 80% -10%, rgba(232,180,32,0.30), transparent 55%),
+      radial-gradient(90% 70% at 10% 110%, rgba(200,136,28,0.18), transparent 60%),
+      linear-gradient(165deg, #F7EFE0 0%, #EFE3CF 48%, #E7D6BC 100%);
+  }
+  .stage--dark {
+    background:
+      radial-gradient(120% 100% at 85% -20%, rgba(232,180,32,0.22), transparent 50%),
+      radial-gradient(80% 80% at 0% 120%, rgba(200,136,28,0.16), transparent 55%),
+      linear-gradient(165deg, #1F1810 0%, #171008 60%, #120C06 100%);
+  }
+  /* subtle saguaro silhouette texture */
+  .stage::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0 38px, rgba(0,0,0,0.012) 38px 39px);
+    mix-blend-mode: multiply; opacity: 0.5;
+  }
+
+  /* Mock nav bar */
+  .navbar {
+    position: relative; z-index: 5;
+    display: flex; align-items: center; gap: 36px;
+    padding: 20px 34px; backdrop-filter: blur(2px);
+  }
+  .stage--dark .navbar { color: var(--offwhite); }
+  .brand { display: flex; align-items: center; gap: 11px; font-weight: 800;
+    letter-spacing: -0.02em; font-size: 16px; }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(150deg, var(--gold-bright), var(--gold));
+    display: grid; place-items: center;
+    box-shadow: 0 6px 16px rgba(200,136,28,0.35);
+  }
+  .stage--dark .brand { color: var(--offwhite); }
+  .navlinks { display: flex; align-items: center; gap: 6px; font-size: 14.5px; font-weight: 500; }
+  .navlink {
+    padding: 8px 14px; border-radius: 9px; cursor: default;
+    display: inline-flex; align-items: center; gap: 6px;
+    color: inherit; opacity: 0.82; transition: opacity .2s, background .2s;
+  }
+  .navlink.active { opacity: 1; background: rgba(200,136,28,0.12); color: var(--gold); }
+  .stage--dark .navlink.active { background: rgba(232,180,32,0.14); color: var(--gold-bright); }
+  .navlink .chev { transition: transform .25s; }
+  .navlink.active .chev { transform: rotate(180deg); }
+  .nav-spacer { flex: 1; }
+  .nav-cta {
+    font-size: 14px; font-weight: 600; padding: 9px 18px; border-radius: 10px;
+    background: linear-gradient(150deg, var(--gold-bright), var(--gold));
+    color: var(--espresso); box-shadow: 0 8px 20px rgba(200,136,28,0.32);
+  }
+
+  /* Dropdown shell (positioned under nav) */
+  .dd-wrap { position: relative; z-index: 4; padding: 0 34px; }
+  .dropdown {
+    position: relative; margin-top: 6px;
+    animation: ddIn .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes ddIn { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform:none; } }
+
+  /* small reusable bits */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--gold);
+    padding: 4px 10px; border-radius: 999px; background: rgba(200,136,28,0.10);
+    border: 1px solid var(--hairline);
+  }
+  .icon { width: 20px; height: 20px; display: block; }
+  .stamp { font-variant-numeric: tabular-nums; }
+
+  /* =====================================================================
+     CONCEPT 1 — BENTO MEGA-MENU
+     ===================================================================== */
+  .bento {
+    width: min(880px, 100%); background: var(--offwhite);
+    border-radius: 20px; padding: 16px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.7) inset,
+      0 30px 60px -24px rgba(40,28,8,0.45),
+      0 8px 20px -12px rgba(40,28,8,0.25);
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr;
+    grid-auto-rows: 1fr; gap: 12px;
+  }
+  .bento::before {
+    /* gold hairline at top */
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+    opacity: .8;
+  }
+  .b-tile {
+    position: relative; border-radius: 14px; padding: 18px;
+    background: var(--offwhite-2); border: 1px solid rgba(0,0,0,0.045);
+    cursor: pointer; overflow: hidden;
+    transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s, border-color .3s, background .3s;
+    display: flex; flex-direction: column;
+  }
+  .b-tile:hover {
+    transform: translateY(-3px);
+    border-color: var(--hairline);
+    box-shadow: 0 16px 30px -18px rgba(40,28,8,0.45);
+    background: #fff;
+  }
+  .b-tile .b-ico {
+    width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+    background: #fff; border: 1px solid rgba(0,0,0,0.05); color: var(--gold);
+    box-shadow: 0 4px 10px -4px rgba(40,28,8,0.2); margin-bottom: 14px;
+    transition: transform .35s, color .3s;
+  }
+  .b-tile:hover .b-ico { transform: scale(1.06) rotate(-3deg); }
+  .b-tile h4 { font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; }
+  .b-tile p { font-size: 12.5px; color: #5d564e; margin-top: 5px; line-height: 1.45; }
+  .b-tile .arrow {
+    margin-top: auto; padding-top: 12px; color: var(--gold);
+    opacity: 0; transform: translateX(-6px); transition: opacity .3s, transform .3s;
+  }
+  .b-tile:hover .arrow { opacity: 1; transform: none; }
+
+  /* Featured large tile */
+  .b-feature {
+    grid-row: span 2;
+    background: linear-gradient(160deg, var(--espresso-2), #221A0F 70%, #2A2012);
+    color: var(--offwhite); border: 1px solid rgba(232,180,32,0.18);
+  }
+  .b-feature:hover { background: linear-gradient(160deg, #1d160c, #271d10 70%, #322512); }
+  .b-feature .pill { background: rgba(232,180,32,0.14); color: var(--gold-bright); }
+  .b-feature h4 { font-size: 19px; margin-top: 14px; color: #fff; }
+  .b-feature p { color: rgba(252,250,246,0.72); font-size: 13px; max-width: 240px; }
+  .b-feature .b-ico { background: rgba(232,180,32,0.14); border-color: rgba(232,180,32,0.25); color: var(--gold-bright); }
+  /* mini product visual inside feature: takeoff bars */
+  .mini-viz {
+    margin-top: 16px; border-radius: 12px; padding: 12px 14px;
+    background: rgba(0,0,0,0.28); border: 1px solid rgba(232,180,32,0.14);
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .viz-row { display: flex; align-items: center; gap: 10px; }
+  .viz-label { font-size: 10.5px; color: rgba(252,250,246,0.6); width: 64px; flex: none; }
+  .viz-bar { height: 7px; border-radius: 6px; background: rgba(252,250,246,0.10); flex: 1; overflow: hidden; }
+  .viz-bar i {
+    display: block; height: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+    transform-origin: left; animation: grow 1.4s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes grow { from { transform: scaleX(0);} to { transform: scaleX(1);} }
+  .viz-val { font-size: 10.5px; color: var(--gold-bright); font-weight: 700; font-variant-numeric: tabular-nums; width: 44px; text-align: right; }
+
+  .b-foot {
+    grid-column: 2 / span 2; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-radius: 14px; background: #fff;
+    border: 1px solid rgba(0,0,0,0.05); cursor: pointer;
+    transition: border-color .3s, box-shadow .3s;
+  }
+  .b-foot:hover { border-color: var(--hairline); box-shadow: 0 12px 24px -16px rgba(40,28,8,0.4); }
+  .b-foot .bf-left { display: flex; align-items: center; gap: 12px; }
+  .b-foot .bf-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--offwhite-2);
+    display: grid; place-items: center; color: var(--gold); }
+  .b-foot strong { font-size: 13.5px; font-weight: 700; }
+  .b-foot small { font-size: 11.5px; color: var(--dim); display:block; }
+  .b-foot .bf-cta { font-size: 12.5px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 6px; }
+
+  /* =====================================================================
+     CONCEPT 2 — BIG-TYPOGRAPHY EDITORIAL INDEX
+     ===================================================================== */
+  .editorial {
+    width: min(720px, 100%);
+    background: rgba(20,14,8,0.92); color: var(--offwhite);
+    border-radius: 20px; padding: 30px 36px 26px;
+    border: 1px solid rgba(232,180,32,0.16);
+    box-shadow: 0 30px 70px -26px rgba(0,0,0,0.7);
+    backdrop-filter: blur(12px) saturate(1.1);
+  }
+  .ed-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 16px; margin-bottom: 6px;
+    border-bottom: 1px solid rgba(232,180,32,0.16);
+  }
+  .ed-head .pill { background: rgba(232,180,32,0.12); color: var(--gold-bright); }
+  .ed-head .ed-count { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+
+  .ed-item {
+    position: relative; display: flex; align-items: baseline; gap: 18px;
+    padding: 16px 8px 16px 0; cursor: pointer;
+    border-bottom: 1px solid rgba(252,250,246,0.07);
+  }
+  .ed-item:last-child { border-bottom: none; }
+  .ed-num {
+    font-size: 12px; font-weight: 700; color: var(--gold); width: 30px; flex: none;
+    font-variant-numeric: tabular-nums; letter-spacing: .05em;
+    transition: color .3s; padding-top: 10px;
+  }
+  .ed-body { flex: 1; min-width: 0; }
+  .ed-title {
+    font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.0; color: rgba(252,250,246,0.55);
+    transition: color .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1);
+    display: inline-block;
+  }
+  .ed-item:hover .ed-title { color: #fff; transform: translateX(8px); }
+  .ed-item:hover .ed-num { color: var(--gold-bright); }
+  /* sliding one-line description */
+  .ed-desc {
+    overflow: hidden; max-height: 0; opacity: 0;
+    transition: max-height .4s cubic-bezier(.16,1,.3,1), opacity .35s, margin-top .4s;
+    font-size: 13px; color: rgba(252,250,246,0.62); letter-spacing: .01em;
+    transform: translateX(8px);
+  }
+  .ed-item:hover .ed-desc { max-height: 40px; opacity: 1; margin-top: 8px; }
+  /* kinetic gold accent dot */
+  .ed-item .ed-dot {
+    align-self: center; width: 0; height: 0; flex: none; border-radius: 999px;
+    background: linear-gradient(150deg, var(--gold-bright), var(--gold));
+    transition: width .35s cubic-bezier(.16,1,.3,1), height .35s; box-shadow: 0 0 0 rgba(232,180,32,0);
+  }
+  .ed-item:hover .ed-dot { width: 9px; height: 9px; box-shadow: 0 0 16px rgba(232,180,32,0.7); }
+
+  /* =====================================================================
+     CONCEPT 3 — SPLIT MEGA-MENU w/ LIVE PRODUCT VISUAL + SPOTLIGHT SWAP
+     ===================================================================== */
+  .split {
+    width: min(900px, 100%); display: grid; grid-template-columns: 1.05fr 1fr;
+    background: var(--offwhite); border-radius: 20px; overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 30px 64px -26px rgba(40,28,8,0.5), 0 8px 18px -12px rgba(40,28,8,0.22);
+  }
+  /* left: categorized index */
+  .sp-index { padding: 22px 24px; }
+  .sp-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--dim); margin: 4px 0 12px;
+  }
+  .sp-row {
+    display: flex; align-items: center; gap: 13px; padding: 12px 12px; border-radius: 12px;
+    cursor: pointer; transition: background .25s, transform .25s;
+    border: 1px solid transparent;
+  }
+  .sp-row:hover, .sp-row.is-active {
+    background: var(--offwhite-2); border-color: rgba(0,0,0,0.05);
+  }
+  .sp-row.is-active { box-shadow: inset 3px 0 0 var(--gold); }
+  .sp-ico {
+    width: 36px; height: 36px; border-radius: 10px; flex: none; display: grid; place-items: center;
+    background: #fff; border: 1px solid rgba(0,0,0,0.06); color: var(--gold);
+    box-shadow: 0 3px 8px -4px rgba(40,28,8,0.2); transition: transform .3s;
+  }
+  .sp-row:hover .sp-ico, .sp-row.is-active .sp-ico { transform: scale(1.05); }
+  .sp-row h4 { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+  .sp-row p { font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+  .sp-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 14px 8px; }
+
+  /* right: live preview panel that swaps (spotlight) */
+  .sp-preview {
+    position: relative; padding: 24px;
+    background: linear-gradient(160deg, #1C1409, #171008 65%, #120C06);
+    color: var(--offwhite); display: flex; flex-direction: column;
+    border-left: 1px solid rgba(232,180,32,0.14);
+  }
+  /* desert sunset gradient accent at top of preview */
+  .sp-preview::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 120px;
+    background: radial-gradient(120% 140% at 75% -30%, rgba(232,180,32,0.45), rgba(200,136,28,0.12) 45%, transparent 70%);
+    pointer-events: none;
+  }
+  .sp-panel { display: none; position: relative; z-index: 1; flex-direction: column; height: 100%; }
+  .sp-panel.is-on { display: flex; animation: fadeSwap .45s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes fadeSwap { from { opacity: 0; transform: translateY(10px) scale(.99);} to { opacity:1; transform:none;} }
+  .sp-panel .pill { background: rgba(232,180,32,0.14); color: var(--gold-bright); align-self: flex-start; }
+  .sp-panel h3 { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; margin-top: 14px; color: #fff; }
+  .sp-panel .lede { font-size: 13px; color: rgba(252,250,246,0.72); margin-top: 6px; }
+
+  /* live takeoff table mini visual */
+  .takeoff {
+    margin-top: 18px; border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(232,180,32,0.16); background: rgba(0,0,0,0.25);
+  }
+  .takeoff .t-head, .takeoff .t-row {
+    display: grid; grid-template-columns: 1.5fr 0.7fr 0.9fr; align-items: center;
+    padding: 9px 14px; font-size: 11.5px; font-variant-numeric: tabular-nums;
+  }
+  .takeoff .t-head { background: rgba(232,180,32,0.10); color: var(--gold-bright);
+    font-weight: 700; letter-spacing: .03em; text-transform: uppercase; font-size: 10px; }
+  .takeoff .t-row { border-top: 1px solid rgba(252,250,246,0.06); color: rgba(252,250,246,0.86); }
+  .takeoff .t-row span:last-child { text-align: right; color: var(--gold-bright); font-weight: 700; }
+  .takeoff .t-row span:nth-child(2) { color: rgba(252,250,246,0.55); }
+  .t-total {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px; background: rgba(232,180,32,0.10); border-top: 1px solid rgba(232,180,32,0.2);
+    font-size: 12px; font-weight: 800; color: #fff;
+  }
+  .t-total b { color: var(--gold-bright); font-size: 14px; font-variant-numeric: tabular-nums; }
+
+  /* command center mini visual */
+  .cc-grid { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cc-card { border-radius: 11px; padding: 12px 13px; background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(232,180,32,0.12); }
+  .cc-card small { font-size: 10px; color: rgba(252,250,246,0.55); text-transform: uppercase; letter-spacing: .08em; }
+  .cc-card .cc-num { font-size: 22px; font-weight: 800; color: #fff; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .cc-card .cc-num em { font-style: normal; font-size: 12px; color: var(--green); font-weight: 700; margin-left: 6px; }
+
+  /* field app mini visual (phone) */
+  .phone { margin: 16px auto 0; width: 132px; border-radius: 20px; padding: 8px;
+    background: rgba(0,0,0,0.35); border: 1px solid rgba(232,180,32,0.18); }
+  .phone .scr { border-radius: 14px; background: linear-gradient(160deg, #20180d, #161009); padding: 12px; }
+  .phone .ph-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(252,250,246,0.07); }
+  .phone .ph-row:last-child { border-bottom: none; }
+  .phone .dotg { width: 8px; height: 8px; border-radius: 999px; background: var(--green); box-shadow: 0 0 8px rgba(52,199,89,0.6); flex:none; }
+  .phone .ph-row span { font-size: 10px; color: rgba(252,250,246,0.78); }
+
+  /* sage chat mini visual */
+  .chat { margin-top: 18px; display: flex; flex-direction: column; gap: 9px; }
+  .bubble { font-size: 12px; padding: 9px 13px; border-radius: 13px; max-width: 88%; line-height: 1.4; }
+  .bubble.user { align-self: flex-end; background: rgba(232,180,32,0.16); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble.ai { align-self: flex-start; background: rgba(0,0,0,0.3); color: rgba(252,250,246,0.85);
+    border: 1px solid rgba(232,180,32,0.14); border-bottom-left-radius: 4px; }
+  .bubble.ai b { color: var(--gold-bright); }
+
+  .sp-cta { margin-top: auto; padding-top: 18px; }
+  .sp-cta a { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+    color: var(--espresso); background: linear-gradient(150deg, var(--gold-bright), var(--gold));
+    padding: 10px 16px; border-radius: 10px; text-decoration: none;
+    box-shadow: 0 10px 22px -10px rgba(200,136,28,0.6); transition: transform .25s; }
+  .sp-cta a:hover { transform: translateY(-2px); }
+
+  .stage-note {
+    position: absolute; bottom: 18px; left: 34px; right: 34px;
+    font-size: 11.5px; color: rgba(0,0,0,0.4); display: flex; gap: 8px; align-items: center;
+  }
+  .stage--dark .stage-note { color: rgba(252,250,246,0.4); }
+  .stage-note::before { content:""; width: 18px; height: 1px; background: currentColor; opacity: .5; }
+
+  @media (max-width: 880px) {
+    .bento { grid-template-columns: 1fr 1fr; }
+    .b-feature { grid-row: span 1; grid-column: 1 / span 2; }
+    .b-foot { grid-column: 1 / span 2; }
+    .split { grid-template-columns: 1fr; }
+    .navlinks { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <div class="page-kicker">Saguaro Control Systems — Navigation System</div>
+    <h1 class="page-title">Three mega-dropdown concepts for the Platform menu.</h1>
+    <p class="page-sub">Each is a structurally distinct layout — not a recolor. All shown open on a realistic nav stage. No icon-row panels allowed.</p>
+
+    <div class="concept-legend">
+      <div class="legend-row">
+        <b><span class="legend-num">01</span>Bento Grid</b>
+        <span>Mixed-size tiles. One large featured product with a live mini takeoff visual; supporting tiles orbit it.</span>
+      </div>
+      <div class="legend-row">
+        <b><span class="legend-num">02</span>Editorial Index</b>
+        <span>Huge numbered item titles as the hero; tiny labels; a one-line description slides in on hover. Magazine-like.</span>
+      </div>
+      <div class="legend-row">
+        <b><span class="legend-num">03</span>Split Spotlight</b>
+        <span>Categorized index on the left swaps a live mini product visual on the right (takeoff table, command center, field app, chat).</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================= -->
+  <!-- CONCEPT 1 — BENTO (on desert stage) -->
+  <!-- ============================================================= -->
+  <section class="concept-block">
+    <div class="concept-label">
+      <span class="cl-num">01</span>
+      <span class="cl-name">Bento Grid Mega-Menu</span>
+      <span class="cl-tag">Featured tile + orbiting tiles, mixed sizes, live takeoff viz</span>
+    </div>
+
+    <div class="stage stage--desert">
+      <nav class="navbar">
+        <div class="brand"><span class="mark">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#171008" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M12 8h4M12 13h-4"/></svg>
+        </span>Saguaro</div>
+        <div class="navlinks">
+          <span class="navlink active">Platform <svg class="chev icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <span class="navlink">Solutions</span>
+          <span class="navlink">Pricing</span>
+          <span class="navlink">Company</span>
+        </div>
+        <span class="nav-spacer"></span>
+        <span class="nav-cta">Book a demo</span>
+      </nav>
+
+      <div class="dd-wrap">
+        <div class="dropdown">
+          <div class="bento">
+            <!-- Featured large tile -->
+            <div class="b-tile b-feature">
+              <span class="pill">Flagship</span>
+              <span class="b-ico">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/><path d="M13 13l2 2 4-4"/></svg>
+              </span>
+              <h4>AI Blueprint Takeoff</h4>
+              <p>Plans in, full estimate out in 60 seconds.</p>
+              <div class="mini-viz" aria-hidden="true">
+                <div class="viz-row"><span class="viz-label">Concrete</span><span class="viz-bar"><i style="width:84%;animation-delay:.1s"></i></span><span class="viz-val">$48.2k</span></div>
+                <div class="viz-row"><span class="viz-label">Framing</span><span class="viz-bar"><i style="width:62%;animation-delay:.25s"></i></span><span class="viz-val">$31.7k</span></div>
+                <div class="viz-row"><span class="viz-label">Drywall</span><span class="viz-bar"><i style="width:40%;animation-delay:.4s"></i></span><span class="viz-val">$19.4k</span></div>
+                <div class="viz-row"><span class="viz-label">Roofing</span><span class="viz-bar"><i style="width:55%;animation-delay:.55s"></i></span><span class="viz-val">$27.0k</span></div>
+              </div>
+            </div>
+
+            <!-- Tile: Executive -->
+            <div class="b-tile">
+              <span class="b-ico">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-9M20 16v-3"/></svg>
+              </span>
+              <h4>Executive Intelligence</h4>
+              <p>Multi-project command center.</p>
+              <span class="arrow"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+
+            <!-- Tile: Field -->
+            <div class="b-tile">
+              <span class="b-ico">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg>
+              </span>
+              <h4>Field Mobile App</h4>
+              <p>Daily logs, photos, GPS clock-in, offline.</p>
+              <span class="arrow"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+
+            <!-- Foot wide tile: Sage AI -->
+            <div class="b-tile b-foot">
+              <div class="bf-left">
+                <span class="bf-ico">
+                  <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M18 16l.9 2.1L21 19l-2.1.9L18 22l-.9-2.1L15 19l2.1-.9z"/></svg>
+                </span>
+                <div>
+                  <strong>Sage AI Assistant</strong>
+                  <small>Ask anything about your projects</small>
+                </div>
+              </div>
+              <span class="bf-cta">Open Sage <svg class="icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-note">Concept 01 on a warm desert-toned strip. Hover any tile: lift, glow, arrow reveal.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- CONCEPT 2 — EDITORIAL INDEX (on dark stage) -->
+  <!-- ============================================================= -->
+  <section class="concept-block">
+    <div class="concept-label">
+      <span class="cl-num">02</span>
+      <span class="cl-name">Big-Typography Editorial Index</span>
+      <span class="cl-tag">Oversized titles, numbered rules, hover slides description in</span>
+    </div>
+
+    <div class="stage stage--dark">
+      <nav class="navbar">
+        <div class="brand"><span class="mark">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#171008" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M12 8h4M12 13h-4"/></svg>
+        </span>Saguaro</div>
+        <div class="navlinks">
+          <span class="navlink active">Platform <svg class="chev icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <span class="navlink">Solutions</span>
+          <span class="navlink">Pricing</span>
+          <span class="navlink">Company</span>
+        </div>
+        <span class="nav-spacer"></span>
+        <span class="nav-cta">Book a demo</span>
+      </nav>
+
+      <div class="dd-wrap">
+        <div class="dropdown">
+          <div class="editorial">
+            <div class="ed-head">
+              <span class="pill">The Platform</span>
+              <span class="ed-count">04 modules · built for the desert</span>
+            </div>
+
+            <div class="ed-item">
+              <span class="ed-num">01</span>
+              <span class="ed-dot"></span>
+              <div class="ed-body">
+                <span class="ed-title">AI Blueprint Takeoff</span>
+                <div class="ed-desc">Plans in, full estimate out in 60 seconds.</div>
+              </div>
+            </div>
+
+            <div class="ed-item">
+              <span class="ed-num">02</span>
+              <span class="ed-dot"></span>
+              <div class="ed-body">
+                <span class="ed-title">Executive Intelligence</span>
+                <div class="ed-desc">Multi-project command center.</div>
+              </div>
+            </div>
+
+            <div class="ed-item">
+              <span class="ed-num">03</span>
+              <span class="ed-dot"></span>
+              <div class="ed-body">
+                <span class="ed-title">Field Mobile App</span>
+                <div class="ed-desc">Daily logs, photos, GPS clock-in, offline.</div>
+              </div>
+            </div>
+
+            <div class="ed-item">
+              <span class="ed-num">04</span>
+              <span class="ed-dot"></span>
+              <div class="ed-body">
+                <span class="ed-title">Sage AI Assistant</span>
+                <div class="ed-desc">Ask anything about your projects.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-note">Concept 02 on a deep espresso stage. Hover a title: it brightens, nudges right, gold dot ignites, description slides in.</div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- CONCEPT 3 — SPLIT SPOTLIGHT (on desert stage) -->
+  <!-- ============================================================= -->
+  <section class="concept-block">
+    <div class="concept-label">
+      <span class="cl-num">03</span>
+      <span class="cl-name">Split Spotlight Mega-Menu</span>
+      <span class="cl-tag">Index left, live mini product visual swaps on the right</span>
+    </div>
+
+    <div class="stage stage--desert">
+      <nav class="navbar">
+        <div class="brand"><span class="mark">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#171008" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M12 8h4M12 13h-4"/></svg>
+        </span>Saguaro</div>
+        <div class="navlinks">
+          <span class="navlink active">Platform <svg class="chev icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <span class="navlink">Solutions</span>
+          <span class="navlink">Pricing</span>
+          <span class="navlink">Company</span>
+        </div>
+        <span class="nav-spacer"></span>
+        <span class="nav-cta">Book a demo</span>
+      </nav>
+
+      <div class="dd-wrap">
+        <div class="dropdown">
+          <div class="split">
+            <!-- LEFT: index -->
+            <div class="sp-index">
+              <div class="sp-eyebrow">Platform</div>
+
+              <div class="sp-row is-active" data-panel="takeoff">
+                <span class="sp-ico"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/><path d="M13 13l2 2 4-4"/></svg></span>
+                <div><h4>AI Blueprint Takeoff</h4><p>Plans in, estimate out in 60s</p></div>
+              </div>
+
+              <div class="sp-row" data-panel="exec">
+                <span class="sp-ico"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-9M20 16v-3"/></svg></span>
+                <div><h4>Executive Intelligence</h4><p>Multi-project command center</p></div>
+              </div>
+
+              <div class="sp-row" data-panel="field">
+                <span class="sp-ico"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg></span>
+                <div><h4>Field Mobile App</h4><p>Logs, photos, GPS, offline</p></div>
+              </div>
+
+              <div class="sp-row" data-panel="sage">
+                <span class="sp-ico"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/></svg></span>
+                <div><h4>Sage AI Assistant</h4><p>Ask anything about projects</p></div>
+              </div>
+
+              <div class="sp-divider"></div>
+              <div class="sp-eyebrow" style="margin-bottom:6px;">By trade · Solutions (5)</div>
+              <div style="display:flex;flex-wrap:wrap;gap:7px;padding:2px 8px 4px;">
+                <span class="pill" style="text-transform:none;font-weight:600;letter-spacing:0;">General Contractors</span>
+                <span class="pill" style="text-transform:none;font-weight:600;letter-spacing:0;">Specialty Subs</span>
+                <span class="pill" style="text-transform:none;font-weight:600;letter-spacing:0;">Residential Remodelers</span>
+                <span class="pill" style="text-transform:none;font-weight:600;letter-spacing:0;">Commercial</span>
+                <span class="pill" style="text-transform:none;font-weight:600;letter-spacing:0;">Roofing</span>
+              </div>
+            </div>
+
+            <!-- RIGHT: live preview swap -->
+            <div class="sp-preview">
+              <!-- Takeoff -->
+              <div class="sp-panel is-on" data-panel="takeoff">
+                <span class="pill">Live preview</span>
+                <h3>AI Blueprint Takeoff</h3>
+                <p class="lede">Plans in, full estimate out in 60 seconds.</p>
+                <div class="takeoff">
+                  <div class="t-head"><span>Division</span><span>Qty</span><span>Cost</span></div>
+                  <div class="t-row"><span>03 — Concrete</span><span>412 cy</span><span>$48,200</span></div>
+                  <div class="t-row"><span>06 — Framing</span><span>9,800 bf</span><span>$31,700</span></div>
+                  <div class="t-row"><span>09 — Drywall</span><span>22k sf</span><span>$19,400</span></div>
+                  <div class="t-total"><span>Estimated total</span><b>$126,300</b></div>
+                </div>
+              </div>
+
+              <!-- Exec -->
+              <div class="sp-panel" data-panel="exec">
+                <span class="pill">Live preview</span>
+                <h3>Executive Intelligence</h3>
+                <p class="lede">Multi-project command center.</p>
+                <div class="cc-grid">
+                  <div class="cc-card"><small>Active projects</small><div class="cc-num">18</div></div>
+                  <div class="cc-card"><small>On budget</small><div class="cc-num">14<em>+2</em></div></div>
+                  <div class="cc-card"><small>Backlog</small><div class="cc-num">$8.4M</div></div>
+                  <div class="cc-card"><small>Margin</small><div class="cc-num">22%<em>▲</em></div></div>
+                </div>
+              </div>
+
+              <!-- Field -->
+              <div class="sp-panel" data-panel="field">
+                <span class="pill">Live preview</span>
+                <h3>Field Mobile App</h3>
+                <p class="lede">Daily logs, photos, GPS clock-in, offline.</p>
+                <div class="phone">
+                  <div class="scr">
+                    <div class="ph-row"><span class="dotg"></span><span>Clocked in · Lot 14</span></div>
+                    <div class="ph-row"><span class="dotg"></span><span>Daily log submitted</span></div>
+                    <div class="ph-row"><span class="dotg"></span><span>12 photos synced</span></div>
+                    <div class="ph-row"><span class="dotg" style="background:#C8881C;box-shadow:0 0 8px rgba(200,136,28,.6)"></span><span>Offline · queued</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sage -->
+              <div class="sp-panel" data-panel="sage">
+                <span class="pill">Live preview</span>
+                <h3>Sage AI Assistant</h3>
+                <p class="lede">Ask anything about your projects.</p>
+                <div class="chat">
+                  <div class="bubble user">Which jobs are over budget this month?</div>
+                  <div class="bubble ai">Two: <b>Mesa Retail</b> (+6%) and <b>Tucson Phase II</b> (+3%). Want the cost breakdown?</div>
+                  <div class="bubble user">Yes, and flag the cause.</div>
+                </div>
+              </div>
+
+              <div class="sp-cta">
+                <a href="#">Explore the platform
+                  <svg class="icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-note">Concept 03 on desert tones. Hover a left row to spotlight-swap the live visual on the right.</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Concept 3 — spotlight swap on hover/focus of left index rows
+  document.querySelectorAll('.split').forEach(function (split) {
+    var rows = split.querySelectorAll('.sp-row');
+    var panels = split.querySelectorAll('.sp-panel');
+    function activate(key) {
+      rows.forEach(function (r) { r.classList.toggle('is-active', r.dataset.panel === key); });
+      panels.forEach(function (p) { p.classList.toggle('is-on', p.dataset.panel === key); });
+    }
+    rows.forEach(function (row) {
+      row.addEventListener('mouseenter', function () { activate(row.dataset.panel); });
+      row.addEventListener('click', function () { activate(row.dataset.panel); });
+    });
+  });
+</script>
+</body>
+</html>

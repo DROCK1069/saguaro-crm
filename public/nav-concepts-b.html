@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Saguaro — Nav Mega-Dropdown Concepts (Set B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --gold:#C8881C; --bright:#E8B420; --espresso:#171008; --espresso2:#1A1410;
+    --ink:#1C1917; --paper:#FCFAF6; --paper2:#F2F2F0; --dim:#8A847E; --green:#34C759;
+    --mag:#b14d44; --orange:#d4722a;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#E9E7E2; color:var(--ink); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .page{ max-width:1180px; margin:0 auto; padding:56px 28px 140px; }
+
+  /* ---- doc header ---- */
+  .doc-head{ margin-bottom:14px; }
+  .doc-kicker{ display:inline-flex; align-items:center; gap:9px; font-size:11px; font-weight:800;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; }
+  .doc-kicker .dot{ width:7px; height:7px; border-radius:50%; background:linear-gradient(135deg,var(--bright),var(--gold)); box-shadow:0 0 0 4px rgba(200,136,28,.16); }
+  .doc-head h1{ font-size:34px; font-weight:800; letter-spacing:-.035em; margin:0 0 10px; line-height:1.05; }
+  .doc-head p{ font-size:15.5px; color:#5E5A55; margin:0; max-width:680px; line-height:1.6; }
+
+  /* ---- concept scaffold ---- */
+  .concept{ margin-top:66px; }
+  .c-label{ display:flex; align-items:baseline; flex-wrap:wrap; gap:12px; margin-bottom:7px; }
+  .c-num{ font-family:var(--mono); font-size:12px; font-weight:700; color:#fff; background:var(--espresso2);
+    padding:3px 9px; border-radius:6px; letter-spacing:.04em; }
+  .c-label h2{ font-size:22px; font-weight:800; letter-spacing:-.025em; margin:0; }
+  .c-tag{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    padding:4px 10px; border-radius:20px; background:linear-gradient(135deg,var(--bright),var(--gold)); color:#1A1400; }
+  .c-desc{ font-size:14px; color:#65615C; margin:0 0 26px; max-width:760px; line-height:1.6; }
+
+  .stage{ border-radius:20px; padding:46px 40px 60px; position:relative; overflow:hidden; }
+  .stage--light{ background:#F4F2ED; border:1px solid #E3DFD6; }
+  .stage--dark{ background:radial-gradient(120% 140% at 80% -10%, #2a1d10 0%, #171008 55%, #100b06 100%); border:1px solid #2a2118; }
+  /* desert-photo-toned gradient strip (mimics hero photo behind nav) */
+  .stage--desert{
+    background:
+      linear-gradient(180deg, rgba(20,12,6,.42), rgba(20,12,6,.18)),
+      linear-gradient(118deg,#5a3a22 0%,#8a5a30 30%,#b07a3e 52%,#cf9a52 70%,#7a5a86 100%);
+    border:1px solid rgba(120,80,40,.5);
+  }
+  .stage--desert::after{ /* subtle sun haze */
+    content:''; position:absolute; right:8%; top:-30%; width:420px; height:420px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,210,120,.45), rgba(255,210,120,0) 62%); pointer-events:none;
+  }
+  .stage-note{ position:absolute; top:14px; right:18px; font-family:var(--mono); font-size:10.5px; letter-spacing:.05em;
+    color:rgba(255,255,255,.6); text-transform:uppercase; }
+  .stage--light .stage-note{ color:#A8A39B; }
+
+  /* faux nav bar that sits above each dropdown */
+  .navbar{ display:flex; align-items:center; gap:30px; margin-bottom:30px; position:relative; z-index:3; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:-.02em; font-size:15.5px; }
+  .brand .mark{ width:26px; height:26px; }
+  .navlinks{ display:flex; align-items:center; gap:26px; font-size:14px; font-weight:600; }
+  .navlinks span{ color:inherit; opacity:.62; cursor:pointer; transition:opacity .15s; }
+  .navlinks span:hover{ opacity:1; }
+  .navlinks .active{ opacity:1; position:relative; }
+  .navlinks .active::after{ content:''; position:absolute; left:0; right:0; bottom:-22px; height:2px;
+    background:linear-gradient(90deg,var(--bright),var(--gold)); border-radius:2px; }
+  .nav-cta{ margin-left:auto; font-size:13.5px; font-weight:700; padding:9px 17px; border-radius:10px;
+    background:linear-gradient(135deg,var(--bright),var(--gold)); color:#1A1400; cursor:pointer;
+    box-shadow:0 4px 14px rgba(200,136,28,.35); transition:transform .15s; }
+  .nav-cta:hover{ transform:translateY(-1px); }
+  .navbar--ondark{ color:#F3ECE0; }
+  .navbar--onlight{ color:var(--ink); }
+  .caret{ display:inline-block; width:8px; height:8px; border-right:2px solid currentColor; border-bottom:2px solid currentColor;
+    transform:rotate(45deg) translateY(-2px); margin-left:4px; opacity:.7; }
+
+  /* shared dropdown shell positioning */
+  .pop{ position:relative; z-index:2; }
+
+  /* =====================================================================
+     CONCEPT 1 — "CINEMATIC MARQUEE"
+     Dark movie-poster panel: huge featured headline + sunset wash, a
+     vertical filmstrip rail of secondary acts on the right.
+  ===================================================================== */
+  .cine{ width:840px; max-width:100%; border-radius:18px; overflow:hidden; position:relative;
+    background:radial-gradient(130% 120% at 12% 0%, #241608 0%, #18100a 60%, #0e0905 100%);
+    border:1px solid #34281a; box-shadow:0 40px 90px -30px rgba(0,0,0,.7), 0 0 0 1px rgba(232,180,32,.06) inset; }
+  .cine .sunwash{ position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(80% 120% at 0% 120%, rgba(177,77,68,.42), rgba(212,114,42,.20) 38%, rgba(200,136,28,0) 64%); }
+  .cine .grain{ position:absolute; inset:0; opacity:.05; pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.7) .5px, transparent .5px); background-size:4px 4px; }
+  .cine-grid{ display:grid; grid-template-columns:1.35fr .95fr; position:relative; z-index:2; }
+  .cine-feature{ padding:38px 36px 34px; border-right:1px solid rgba(232,180,32,.12); }
+  .cine-eyebrow{ display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:10.5px; font-weight:600;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--bright); margin-bottom:22px; }
+  .cine-eyebrow .pulse{ width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 0 rgba(52,199,89,.6); animation:pulse 2.4s infinite; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(52,199,89,.55);} 70%{box-shadow:0 0 0 9px rgba(52,199,89,0);} 100%{box-shadow:0 0 0 0 rgba(52,199,89,0);} }
+  .cine-feature h3{ margin:0; font-size:40px; line-height:1.0; font-weight:800; letter-spacing:-.04em;
+    color:#FBF3E6; }
+  .cine-feature h3 .glow{ background:linear-gradient(120deg,#E8B420 0%,#d4722a 60%,#b14d44 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .cine-feature p{ margin:18px 0 0; font-size:15px; line-height:1.6; color:#C9BCA9; max-width:330px; }
+  .cine-stat{ margin-top:26px; display:inline-flex; align-items:center; gap:14px; padding:12px 16px; border-radius:13px;
+    background:linear-gradient(135deg, rgba(232,180,32,.14), rgba(177,77,68,.10)); border:1px solid rgba(232,180,32,.24);
+    backdrop-filter:blur(2px); }
+  .cine-stat .big{ font-family:var(--mono); font-size:24px; font-weight:700; color:#FBF3E6; letter-spacing:-.02em; }
+  .cine-stat .small{ font-size:11.5px; color:#B7A794; line-height:1.4; }
+  .cine-stat .small b{ color:var(--green); font-weight:700; }
+  .cine-play{ margin-top:28px; display:inline-flex; align-items:center; gap:11px; cursor:pointer;
+    font-size:13.5px; font-weight:700; color:#1A1400; padding:11px 18px 11px 14px; border-radius:30px;
+    background:linear-gradient(135deg,var(--bright),var(--gold)); box-shadow:0 8px 24px -6px rgba(232,180,32,.5); transition:transform .16s, box-shadow .16s; }
+  .cine-play:hover{ transform:translateY(-2px); box-shadow:0 14px 30px -6px rgba(232,180,32,.6); }
+  .cine-play svg{ width:16px; height:16px; }
+
+  /* filmstrip rail */
+  .cine-rail{ padding:18px 16px; display:flex; flex-direction:column; gap:4px; }
+  .reel{ display:flex; align-items:center; gap:15px; padding:15px 14px; border-radius:13px; cursor:pointer;
+    position:relative; transition:background .18s; }
+  .reel::before{ content:''; position:absolute; left:14px; top:50%; transform:translateY(-50%); width:3px; height:0;
+    background:linear-gradient(var(--bright),var(--gold)); border-radius:3px; transition:height .22s ease; }
+  .reel:hover{ background:rgba(255,255,255,.04); }
+  .reel:hover::before{ height:60%; }
+  .reel:hover .reel-ic{ transform:translateX(6px); border-color:rgba(232,180,32,.5); color:var(--bright); }
+  .reel-ic{ width:40px; height:40px; border-radius:11px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09); color:#D8C9B2;
+    transition:transform .2s ease, border-color .2s, color .2s; }
+  .reel-ic svg{ width:19px; height:19px; }
+  .reel-txt .rt{ font-size:14.5px; font-weight:700; color:#F3EADC; letter-spacing:-.01em; }
+  .reel-txt .rd{ font-size:11.5px; color:#9C8F7C; margin-top:3px; line-height:1.4; }
+  .reel-no{ margin-left:auto; font-family:var(--mono); font-size:11px; color:#6F6555; align-self:flex-start; }
+
+  /* =====================================================================
+     CONCEPT 2 — "COMMAND PALETTE"
+     Spotlight/launcher styled menu: search field, ⌘K cue, grouped
+     results with monospace shortcuts. Techy, light, premium.
+  ===================================================================== */
+  .cmd{ width:620px; max-width:100%; border-radius:16px; background:var(--paper);
+    border:1px solid #E7E1D6; overflow:hidden;
+    box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 30px 70px -24px rgba(60,40,20,.32), 0 4px 12px rgba(60,40,20,.10); }
+  .cmd-search{ display:flex; align-items:center; gap:13px; padding:17px 18px; border-bottom:1px solid #EFE9DD; background:#FBF8F2; }
+  .cmd-search .sx{ width:19px; height:19px; color:var(--gold); flex:0 0 auto; }
+  .cmd-search input{ flex:1; border:0; outline:0; background:transparent; font-family:'Inter',sans-serif;
+    font-size:15.5px; font-weight:500; color:var(--ink); letter-spacing:-.01em; }
+  .cmd-search input::placeholder{ color:#A7A199; }
+  .kbd{ font-family:var(--mono); font-size:11px; font-weight:600; color:#7C766E; background:#fff;
+    border:1px solid #E2DCD0; border-bottom-width:2px; border-radius:6px; padding:3px 7px; }
+  .cmd-body{ padding:9px 9px 12px; }
+  .cmd-group{ font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:#A39A8B; padding:13px 12px 7px; display:flex; align-items:center; gap:8px; }
+  .cmd-group .ln{ flex:1; height:1px; background:#EFE8DB; }
+  .cmd-row{ display:flex; align-items:center; gap:13px; padding:11px 12px; border-radius:10px; cursor:pointer;
+    position:relative; transition:background .14s; }
+  .cmd-row.is-active, .cmd-row:hover{ background:linear-gradient(90deg, rgba(232,180,32,.13), rgba(232,180,32,.04)); }
+  .cmd-row.is-active::before{ content:''; position:absolute; left:0; top:8px; bottom:8px; width:3px; border-radius:3px;
+    background:linear-gradient(var(--bright),var(--gold)); }
+  .cmd-ic{ width:34px; height:34px; border-radius:9px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    background:#F4ECDC; color:var(--gold); border:1px solid #ECE0C9; transition:background .14s,color .14s; }
+  .cmd-ic svg{ width:17px; height:17px; }
+  .cmd-row:hover .cmd-ic, .cmd-row.is-active .cmd-ic{ background:var(--gold); color:#FFF8E8; border-color:var(--gold); }
+  .cmd-main .cm-t{ font-size:14px; font-weight:700; color:var(--ink); letter-spacing:-.01em; }
+  .cmd-main .cm-d{ font-size:12px; color:var(--dim); margin-top:2px; }
+  .cmd-tail{ margin-left:auto; display:flex; align-items:center; gap:6px; }
+  .cmd-tail .chip{ font-family:var(--mono); font-size:10.5px; color:#8C857C; background:#F2EEE5;
+    border:1px solid #E7E0D2; border-radius:5px; padding:2px 6px; }
+  .cmd-enter{ font-family:var(--mono); font-size:11px; color:#B7AF9F; opacity:0; transform:translateX(-4px); transition:.16s; }
+  .cmd-row:hover .cmd-enter, .cmd-row.is-active .cmd-enter{ opacity:1; transform:none; }
+  .cmd-foot{ display:flex; align-items:center; gap:18px; padding:11px 18px; border-top:1px solid #EFE9DD; background:#FBF8F2;
+    font-family:var(--mono); font-size:11px; color:#9A9388; }
+  .cmd-foot .fk{ display:inline-flex; align-items:center; gap:6px; }
+  .cmd-foot .spacer{ margin-left:auto; display:flex; align-items:center; gap:7px; color:var(--gold); font-weight:600; }
+
+  /* =====================================================================
+     CONCEPT 3 — "EDITORIAL POSTER SPLIT"
+     Magazine cover: giant featured statement + image plate on the left,
+     a numbered editorial index on the right. Confident type, on desert hero.
+  ===================================================================== */
+  .poster{ width:920px; max-width:100%; display:grid; grid-template-columns:1fr 1fr; border-radius:18px; overflow:hidden;
+    background:var(--paper); border:1px solid rgba(255,255,255,.4);
+    box-shadow:0 44px 100px -34px rgba(40,22,8,.6), 0 2px 0 rgba(255,255,255,.5) inset; }
+  .poster-art{ position:relative; padding:36px 34px; color:#FBF3E6; overflow:hidden;
+    background:linear-gradient(150deg,#2a1a0e 0%,#3a2410 40%,#5a3418 100%); }
+  .poster-art::before{ content:''; position:absolute; right:-60px; bottom:-80px; width:300px; height:300px; border-radius:50%;
+    background:radial-gradient(circle, rgba(232,180,32,.45), rgba(212,114,42,0) 65%); }
+  .poster-art::after{ /* saguaro silhouette */
+    content:''; position:absolute; right:24px; bottom:0; width:120px; height:180px; opacity:.9;
+    background:
+      linear-gradient(#1c1209,#1c1209) 54px 60px/14px 120px no-repeat,
+      linear-gradient(#1c1209,#1c1209) 30px 90px/14px 50px no-repeat,
+      linear-gradient(#1c1209,#1c1209) 30px 90px/38px 14px no-repeat,
+      linear-gradient(#1c1209,#1c1209) 78px 78px/14px 60px no-repeat,
+      linear-gradient(#1c1209,#1c1209) 78px 78px/26px 14px no-repeat;
+  }
+  .poster-art .pa-kick{ position:relative; z-index:2; font-family:var(--mono); font-size:10.5px; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--bright); margin-bottom:auto; }
+  .poster-art .pa-flow{ position:relative; z-index:2; display:flex; flex-direction:column; height:100%; }
+  .poster-art h3{ position:relative; z-index:2; margin:60px 0 0; font-size:38px; line-height:.98; font-weight:800;
+    letter-spacing:-.04em; max-width:300px; }
+  .poster-art h3 em{ font-style:italic; font-weight:800;
+    background:linear-gradient(110deg,#E8B420,#d4722a); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .poster-art p{ position:relative; z-index:2; margin:16px 0 0; font-size:13.5px; line-height:1.6; color:#D8C7AE; max-width:270px; }
+  .poster-art .pa-link{ position:relative; z-index:2; margin-top:24px; display:inline-flex; align-items:center; gap:9px;
+    font-size:13px; font-weight:700; color:#1A1400; background:var(--bright); align-self:flex-start;
+    padding:10px 16px; border-radius:24px; cursor:pointer; transition:gap .16s, transform .16s; }
+  .poster-art .pa-link:hover{ gap:14px; transform:translateY(-1px); }
+  .poster-art .pa-link svg{ width:15px; height:15px; }
+
+  .poster-index{ padding:30px 30px 26px; display:flex; flex-direction:column; }
+  .poster-index .pi-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px; }
+  .poster-index .pi-head .pi-t{ font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:700; }
+  .poster-index .pi-head .pi-c{ font-family:var(--mono); font-size:10.5px; color:#B6AE9F; }
+  .pi-item{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:16px; padding:16px 6px;
+    border-top:1px solid #EDE6D9; cursor:pointer; transition:padding-left .2s ease; }
+  .pi-item:last-child{ border-bottom:1px solid #EDE6D9; }
+  .pi-item .pi-no{ font-family:var(--mono); font-size:12px; font-weight:600; color:#C2B9A7; transition:color .2s; }
+  .pi-item .pi-body .pi-name{ font-size:17px; font-weight:800; letter-spacing:-.02em; color:var(--ink); transition:transform .2s; }
+  .pi-item .pi-body .pi-sub{ font-size:12px; color:var(--dim); margin-top:2px; }
+  .pi-item .pi-arrow{ width:18px; height:18px; color:#D2C9B7; transform:translateX(-6px); opacity:0; transition:.2s; }
+  .pi-item:hover{ padding-left:14px; }
+  .pi-item:hover .pi-no{ color:var(--gold); }
+  .pi-item:hover .pi-arrow{ opacity:1; transform:none; color:var(--gold); }
+  .pi-foot{ margin-top:auto; padding-top:20px; display:flex; align-items:center; gap:10px; }
+  .pi-foot .pf-av{ display:flex; }
+  .pi-foot .pf-av span{ width:24px; height:24px; border-radius:50%; border:2px solid var(--paper); margin-left:-7px;
+    background:linear-gradient(135deg,var(--bright),var(--gold)); }
+  .pi-foot .pf-av span:first-child{ margin-left:0; }
+  .pi-foot .pf-t{ font-size:12px; color:#6E6A63; }
+  .pi-foot .pf-t b{ color:var(--ink); }
+
+  /* solutions-scale demo (5-item) */
+  .scale-wrap{ margin-top:30px; }
+  .scale-cap{ font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#9A9388; margin:0 0 12px; }
+  .footer{ margin-top:90px; text-align:center; font-size:12.5px; color:#9A938B; }
+  @media (max-width:760px){
+    .cine-grid,.poster{ grid-template-columns:1fr; }
+    .cine-feature{ border-right:0; border-bottom:1px solid rgba(232,180,32,.12); }
+    .cine-feature h3,.poster-art h3{ font-size:32px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- =================== DOC HEADER =================== -->
+  <header class="doc-head">
+    <div class="doc-kicker"><span class="dot"></span> Saguaro Control Systems · Nav Concepts — Set B</div>
+    <h1>Three mega-dropdowns. Zero generic icon-rows.</h1>
+    <p>Each concept is a distinct <b>layout idea</b> — not a recolor. Shown fully open (no hover required), with live micro-interactions. The "vertical list of icon + title + description rows in a rounded panel" pattern is intentionally avoided.</p>
+  </header>
+
+  <!-- =================================================================
+       CONCEPT 1 — CINEMATIC MARQUEE
+  ================================================================== -->
+  <section class="concept">
+    <div class="c-label">
+      <span class="c-num">01</span>
+      <h2>Cinematic Marquee</h2>
+      <span class="c-tag">Movie-poster</span>
+    </div>
+    <p class="c-desc">A dark, sunset-washed panel that reads like a film poster: one oversized glowing headline + a live estimate stat on the left, with a vertical "filmstrip" rail of supporting acts on the right. Shown over the real desert hero.</p>
+
+    <div class="stage stage--desert">
+      <span class="stage-note">over hero photo</span>
+      <nav class="navbar navbar--ondark">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 24 24" fill="none"><path d="M12 2c-.7 0-1.3.6-1.3 1.3v5.1c0 .5-.4.9-.9.9s-.9-.4-.9-.9V6.6c0-.7-.6-1.3-1.3-1.3S6.3 5.9 6.3 6.6v4.2c0 1.7 1.4 3.1 3.1 3.1h.4v7.4c0 .4.3.7.7.7h3c.4 0 .7-.3.7-.7v-4.6h.4c1.7 0 3.1-1.4 3.1-3.1V8.4c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3v1.6c0 .5-.4.9-.9.9s-.9-.4-.9-.9V3.3C13.3 2.6 12.7 2 12 2Z" fill="#E8B420"/></svg>
+          Saguaro
+        </div>
+        <div class="navlinks">
+          <span class="active">Platform <i class="caret"></i></span>
+          <span>Solutions</span><span>Pricing</span><span>Company</span>
+        </div>
+        <div class="nav-cta">Book a demo</div>
+      </nav>
+
+      <div class="pop">
+        <div class="cine">
+          <div class="sunwash"></div><div class="grain"></div>
+          <div class="cine-grid">
+            <!-- featured -->
+            <div class="cine-feature">
+              <div class="cine-eyebrow"><span class="pulse"></span> Now playing · AI Estimating</div>
+              <h3>Plans in.<br><span class="glow">Full estimate out</span><br>in 60 seconds.</h3>
+              <p>Drop a plan set into AI Blueprint Takeoff and watch line items, quantities and pricing assemble themselves.</p>
+              <div class="cine-stat">
+                <div class="big">$137,070</div>
+                <div class="small">estimate generated in <b>38s</b><br>2,140 takeoff items · 0 manual</div>
+              </div>
+              <div><div class="cine-play">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5Z" fill="#1A1400"/></svg>
+                Run a takeoff
+              </div></div>
+            </div>
+            <!-- filmstrip rail -->
+            <div class="cine-rail">
+              <div class="reel">
+                <div class="reel-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 20h8M12 17v3"/><path d="M7 12l2.5-3 2 2.2L15 7l2 4.5"/></svg></div>
+                <div class="reel-txt"><div class="rt">Executive Intelligence</div><div class="rd">Multi-project command center</div></div>
+                <div class="reel-no">02</div>
+              </div>
+              <div class="reel">
+                <div class="reel-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/><circle cx="12" cy="7.5" r="2.2"/><path d="M12 9.7v3"/></svg></div>
+                <div class="reel-txt"><div class="rt">Field Mobile App</div><div class="rd">Logs, photos, GPS clock-in, offline</div></div>
+                <div class="reel-no">03</div>
+              </div>
+              <div class="reel">
+                <div class="reel-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3a7 7 0 0 1 7 7c0 2.2-1 3.6-2.3 4.9-.9.9-1.2 1.5-1.3 2.6H8.6c-.1-1.1-.4-1.7-1.3-2.6C6 13.6 5 12.2 5 10a7 7 0 0 1 7-7Z"/><path d="M9.5 20.5h5M10.5 22.5h3"/></svg></div>
+                <div class="reel-txt"><div class="rt">Sage AI Assistant</div><div class="rd">Ask anything about your projects</div></div>
+                <div class="reel-no">04</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================
+       CONCEPT 2 — COMMAND PALETTE
+  ================================================================== -->
+  <section class="concept">
+    <div class="c-label">
+      <span class="c-num">02</span>
+      <h2>Command Palette</h2>
+      <span class="c-tag">⌘K launcher</span>
+    </div>
+    <p class="c-desc">The menu behaves like a Raycast / Linear command bar: a real search field, keyboard cues, grouped results and monospace shortcut chips. Feels like a power tool, not a brochure. Arrow keys move the active row.</p>
+
+    <div class="stage stage--light">
+      <span class="stage-note">light app chrome</span>
+      <nav class="navbar navbar--onlight">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 24 24" fill="none"><path d="M12 2c-.7 0-1.3.6-1.3 1.3v5.1c0 .5-.4.9-.9.9s-.9-.4-.9-.9V6.6c0-.7-.6-1.3-1.3-1.3S6.3 5.9 6.3 6.6v4.2c0 1.7 1.4 3.1 3.1 3.1h.4v7.4c0 .4.3.7.7.7h3c.4 0 .7-.3.7-.7v-4.6h.4c1.7 0 3.1-1.4 3.1-3.1V8.4c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3v1.6c0 .5-.4.9-.9.9s-.9-.4-.9-.9V3.3C13.3 2.6 12.7 2 12 2Z" fill="#C8881C"/></svg>
+          Saguaro
+        </div>
+        <div class="navlinks" style="color:#1C1917;">
+          <span class="active">Platform <i class="caret"></i></span>
+          <span>Solutions</span><span>Pricing</span><span>Company</span>
+        </div>
+        <div class="nav-cta">Book a demo</div>
+      </nav>
+
+      <div class="pop">
+        <div class="cmd" id="cmd">
+          <div class="cmd-search">
+            <svg class="sx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+            <input id="cmdInput" placeholder="Search the platform…  try “takeoff”, “field”, “sage”" />
+            <span class="kbd">esc</span>
+          </div>
+          <div class="cmd-body">
+            <div class="cmd-group">Platform <span class="ln"></span> 4</div>
+
+            <div class="cmd-row is-active">
+              <div class="cmd-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h9l5 5v13H5z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 16.5h5"/></svg></div>
+              <div class="cmd-main"><div class="cm-t">AI Blueprint Takeoff</div><div class="cm-d">Plans in, full estimate out in 60 seconds</div></div>
+              <div class="cmd-tail"><span class="chip">⌘1</span><span class="cmd-enter">↵</span></div>
+            </div>
+
+            <div class="cmd-row">
+              <div class="cmd-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18"/><path d="M6 21V8l5-3 5 3v13"/><path d="M9 12h2M13 12h2M9 16h2M13 16h2"/></svg></div>
+              <div class="cmd-main"><div class="cm-t">Executive Intelligence</div><div class="cm-d">Multi-project command center</div></div>
+              <div class="cmd-tail"><span class="chip">⌘2</span><span class="cmd-enter">↵</span></div>
+            </div>
+
+            <div class="cmd-row">
+              <div class="cmd-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/><circle cx="12" cy="7.5" r="2"/></svg></div>
+              <div class="cmd-main"><div class="cm-t">Field Mobile App</div><div class="cm-d">Daily logs, photos, GPS clock-in, offline</div></div>
+              <div class="cmd-tail"><span class="chip">⌘3</span><span class="cmd-enter">↵</span></div>
+            </div>
+
+            <div class="cmd-row">
+              <div class="cmd-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a7 7 0 0 1 7 7c0 2.2-1 3.6-2.3 4.9-.9.9-1.2 1.5-1.3 2.6H8.6c-.1-1.1-.4-1.7-1.3-2.6C6 13.6 5 12.2 5 10a7 7 0 0 1 7-7Z"/><path d="M9.5 20.5h5"/></svg></div>
+              <div class="cmd-main"><div class="cm-t">Sage AI Assistant</div><div class="cm-d">Ask anything about your projects</div></div>
+              <div class="cmd-tail"><span class="chip">⌘4</span><span class="cmd-enter">↵</span></div>
+            </div>
+          </div>
+          <div class="cmd-foot">
+            <span class="fk"><span class="kbd">↑</span><span class="kbd">↓</span> navigate</span>
+            <span class="fk"><span class="kbd">↵</span> open</span>
+            <span class="spacer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              Ask Sage instead
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================
+       CONCEPT 3 — EDITORIAL POSTER SPLIT
+  ================================================================== -->
+  <section class="concept">
+    <div class="c-label">
+      <span class="c-num">03</span>
+      <h2>Editorial Poster Split</h2>
+      <span class="c-tag">Magazine split</span>
+    </div>
+    <p class="c-desc">A magazine cover: a giant featured statement and image plate (with a CSS saguaro silhouette + sun) on the left, and a numbered editorial index on the right where rows indent and reveal an arrow on hover. Density meets confidence.</p>
+
+    <div class="stage stage--desert">
+      <span class="stage-note">over hero photo</span>
+      <nav class="navbar navbar--ondark">
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 24 24" fill="none"><path d="M12 2c-.7 0-1.3.6-1.3 1.3v5.1c0 .5-.4.9-.9.9s-.9-.4-.9-.9V6.6c0-.7-.6-1.3-1.3-1.3S6.3 5.9 6.3 6.6v4.2c0 1.7 1.4 3.1 3.1 3.1h.4v7.4c0 .4.3.7.7.7h3c.4 0 .7-.3.7-.7v-4.6h.4c1.7 0 3.1-1.4 3.1-3.1V8.4c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3v1.6c0 .5-.4.9-.9.9s-.9-.4-.9-.9V3.3C13.3 2.6 12.7 2 12 2Z" fill="#E8B420"/></svg>
+          Saguaro
+        </div>
+        <div class="navlinks">
+          <span class="active">Platform <i class="caret"></i></span>
+          <span>Solutions</span><span>Pricing</span><span>Company</span>
+        </div>
+        <div class="nav-cta">Book a demo</div>
+      </nav>
+
+      <div class="pop">
+        <div class="poster">
+          <!-- art plate -->
+          <div class="poster-art">
+            <div class="pa-flow">
+              <div class="pa-kick">The Platform · Issue 04</div>
+              <h3>Build like the <em>desert</em> built itself.</h3>
+              <p>One AI system from first takeoff to final closeout — estimating, command center, field, and Sage.</p>
+              <div class="pa-link">Tour the platform
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </div>
+          <!-- index -->
+          <div class="poster-index">
+            <div class="pi-head"><span class="pi-t">Index — Capabilities</span><span class="pi-c">04</span></div>
+
+            <div class="pi-item">
+              <span class="pi-no">01</span>
+              <div class="pi-body"><div class="pi-name">AI Blueprint Takeoff</div><div class="pi-sub">Plans in, full estimate out in 60 seconds</div></div>
+              <svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </div>
+            <div class="pi-item">
+              <span class="pi-no">02</span>
+              <div class="pi-body"><div class="pi-name">Executive Intelligence</div><div class="pi-sub">Multi-project command center</div></div>
+              <svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </div>
+            <div class="pi-item">
+              <span class="pi-no">03</span>
+              <div class="pi-body"><div class="pi-name">Field Mobile App</div><div class="pi-sub">Daily logs, photos, GPS clock-in, offline</div></div>
+              <svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </div>
+            <div class="pi-item">
+              <span class="pi-no">04</span>
+              <div class="pi-body"><div class="pi-name">Sage AI Assistant</div><div class="pi-sub">Ask anything about your projects</div></div>
+              <svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </div>
+
+            <div class="pi-foot">
+              <div class="pf-av"><span></span><span></span><span></span></div>
+              <div class="pf-t"><b>1,400+ crews</b> running on Saguaro</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- scales to a 5-item Solutions list -->
+    <div class="scale-wrap">
+      <p class="scale-cap">↳ Same poster system, scaled to a 5-item Solutions menu</p>
+      <div class="stage stage--light" style="padding-top:34px;">
+        <span class="stage-note">solutions menu</span>
+        <div class="pop" style="display:flex; justify-content:center;">
+          <div class="poster" style="width:920px;">
+            <div class="poster-art">
+              <div class="pa-flow">
+                <div class="pa-kick">Solutions · By trade</div>
+                <h3>Built for <em>your</em> kind of jobsite.</h3>
+                <p>From single-family remodels to multi-tower commercial — Saguaro adapts to how your trade actually works.</p>
+                <div class="pa-link">See your fit
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+            <div class="poster-index">
+              <div class="pi-head"><span class="pi-t">Index — Industries</span><span class="pi-c">05</span></div>
+              <div class="pi-item"><span class="pi-no">01</span><div class="pi-body"><div class="pi-name">General Contractors</div><div class="pi-sub">Orchestrate every sub & schedule</div></div><svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg></div>
+              <div class="pi-item"><span class="pi-no">02</span><div class="pi-body"><div class="pi-name">Specialty Subcontractors</div><div class="pi-sub">Fast bids, tight scope control</div></div><svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg></div>
+              <div class="pi-item"><span class="pi-no">03</span><div class="pi-body"><div class="pi-name">Residential Remodelers</div><div class="pi-sub">Client-ready estimates in minutes</div></div><svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg></div>
+              <div class="pi-item"><span class="pi-no">04</span><div class="pi-body"><div class="pi-name">Commercial Contractors</div><div class="pi-sub">Multi-project command at scale</div></div><svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg></div>
+              <div class="pi-item"><span class="pi-no">05</span><div class="pi-body"><div class="pi-name">Roofing Contractors</div><div class="pi-sub">Aerial takeoff to signed proposal</div></div><svg class="pi-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">Saguaro Control Systems · Internal design exploration · {2026}</div>
+</div>
+
+<script>
+  // Command-palette: arrow-key navigation + filtering on the second concept.
+  (function(){
+    var cmd = document.getElementById('cmd');
+    if(!cmd) return;
+    var input = document.getElementById('cmdInput');
+    var rows = Array.prototype.slice.call(cmd.querySelectorAll('.cmd-row'));
+    var active = 0;
+    function paint(){
+      var vis = rows.filter(function(r){ return r.style.display !== 'none'; });
+      rows.forEach(function(r){ r.classList.remove('is-active'); });
+      if(vis[active]) vis[active].classList.add('is-active');
+    }
+    function filter(){
+      var q = input.value.trim().toLowerCase();
+      rows.forEach(function(r){
+        var t = r.querySelector('.cm-t').textContent.toLowerCase() + ' ' + r.querySelector('.cm-d').textContent.toLowerCase();
+        r.style.display = (!q || t.indexOf(q) > -1) ? '' : 'none';
+      });
+      active = 0; paint();
+    }
+    input.addEventListener('input', filter);
+    document.addEventListener('keydown', function(e){
+      var vis = rows.filter(function(r){ return r.style.display !== 'none'; });
+      if(e.key === 'ArrowDown'){ active = Math.min(active+1, vis.length-1); paint(); e.preventDefault(); }
+      if(e.key === 'ArrowUp'){ active = Math.max(active-1, 0); paint(); e.preventDefault(); }
+    });
+    rows.forEach(function(r){
+      r.addEventListener('mouseenter', function(){
+        var vis = rows.filter(function(x){ return x.style.display !== 'none'; });
+        active = vis.indexOf(r); paint();
+      });
+    });
+  })();
+</script>
+</body>
+</html>
