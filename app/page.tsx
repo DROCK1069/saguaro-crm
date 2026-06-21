@@ -358,9 +358,6 @@ export default function LandingPage() {
             <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, lineHeight: 1.65, margin: '0 0 36px', maxWidth: 480 }}>The AI-powered CRM that reads blueprints, generates estimates, handles pay apps, and runs your field crew — at a third the cost of Procore.</p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' as const, alignItems: 'center' }}>
               <Link href="/signup" className="cta-glow" style={{ background: 'linear-gradient(135deg, #F5C645 0%, #E8A020 100%)', color: '#1A1400', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '16px 36px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 20px rgba(232,160,32,0.50), 0 12px 40px rgba(232,160,32,0.25)', letterSpacing: '-0.01em' }}>Start Free Trial <span style={{ fontSize: 18 }}>&rarr;</span></Link>
-              <Link href="/#demo" style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '16px 28px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.25)', display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)', transition: 'background 0.2s, border-color 0.2s' }}>
-                <svg viewBox="0 0 20 20" width={14} height={14} fill="rgba(255,255,255,0.9)"><polygon points="6,3 18,10 6,17" /></svg> Watch Demo
-              </Link>
             </div>
             <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 16, letterSpacing: '0.02em' }}>No credit card required &middot; 14-day free trial &middot; Cancel anytime</p>
           </div>
