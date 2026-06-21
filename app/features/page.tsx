@@ -237,9 +237,10 @@ export default function FeaturesPage() {
         <section style={{ padding: '24px 24px 64px', maxWidth: 1080, margin: '0 auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {FEATURES.map((f, i) => (
-              <div key={f.title} style={{
+              <div key={f.title} id={f.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')} style={{
                 borderTop: `1px solid ${C.border}`,
                 padding: '56px 0',
+                scrollMarginTop: 84,
                 display: 'grid',
                 gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
                 gap: 40,
