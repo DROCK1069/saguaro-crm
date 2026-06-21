@@ -12,15 +12,6 @@ const GREEN = '#34C759';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
 
-/* Flat, calm card surface — no glassmorphism. Confident whitespace + a
-   single soft warm shadow reads more premium than frosted blur. */
-const glass: React.CSSProperties = {
-  background: '#FFFFFF',
-  border: '1px solid #EAE8E4',
-  borderRadius: 16,
-  boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 6px 20px rgba(28,25,23,0.05)',
-};
-
 /* ── icons (inline SVG) ── */
 const Icon = ({ d, size = 22 }: { d: string; size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">{d.split('|').map((p, i) => <path key={i} d={p} />)}</svg>
@@ -330,110 +321,108 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Floating product mockup, overlapping the hero ── */}
+      {/* ══════════ AI TAKEOFF — baked into the page, no card ══════════ */}
       <span id="how-it-works" aria-hidden="true" style={{ scrollMarginTop: 72 }} />
-      <div style={{ maxWidth: 820, margin: '-100px auto 0', padding: '0 24px', position: 'relative' as const, zIndex: 5 }}>
-        <div id="demo" style={{ background: '#FFFFFF', borderRadius: 20, overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.28), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', scrollMarginTop: 72 }}>
-          {/* browser chrome */}
-          <div style={{ background: '#F8F7F5', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #EAE8E4' }}>
-            <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FF5F57' }} />
-            <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FEBC2E' }} />
-            <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#28C840' }} />
-            <span style={{ flex: 1, background: 'rgba(0,0,0,0.04)', borderRadius: 7, padding: '5px 14px', fontSize: 12, color: '#999', marginLeft: 10, fontFamily: 'monospace' }}>app.saguaro.build/takeoff</span>
+      <section id="demo" style={{ maxWidth: 1080, margin: '0 auto', padding: '88px 24px 76px', display: 'grid', gridTemplateColumns: '0.82fr 1.18fr', gap: 64, alignItems: 'center', scrollMarginTop: 72 }} className="reveal demo-grid">
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.6, textTransform: 'uppercase' as const, color: GOLD, marginBottom: 18 }}>AI Blueprint Takeoff</div>
+          <h2 style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.035em', lineHeight: 1.05, margin: '0 0 20px', color: TEXT }}>47 line items.<br />38 seconds.</h2>
+          <p style={{ fontSize: 16.5, lineHeight: 1.65, color: DIM, margin: '0 0 26px', maxWidth: 390 }}>Drop in a PDF blueprint. Sage reads every dimension, counts every material, and prices a full estimate before your coffee&apos;s cold — work that takes an estimator half a day.</p>
+          <Link href="/signup" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: GOLD, fontWeight: 700, fontSize: 15, textDecoration: 'none', borderBottom: `2px solid ${GOLD}`, paddingBottom: 3 }}>Run your first takeoff free <span style={{ fontSize: 17 }}>&rarr;</span></Link>
+        </div>
+        {/* line items, set directly onto the page — hairline rules, no box */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingBottom: 14, borderBottom: `2px solid ${TEXT}` }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT, letterSpacing: '-0.01em' }}>AI Takeoff Results</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>38s &middot; 47 items</span>
           </div>
-          {/* mockup content */}
-          <div style={{ padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>AI Takeoff Results</span>
-              <span style={{ fontSize: 11, color: GOLD, fontWeight: 700, background: 'rgba(212,160,23,0.10)', padding: '4px 12px', borderRadius: 20 }}>38s &bull; 47 items</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.8fr 0.6fr 1fr', gap: 0, marginBottom: 4 }}>
-              {['Item', 'Qty', 'Unit', 'Cost'].map(h => (
-                <div key={h} style={{ fontSize: 10, color: '#A0A0A0', fontWeight: 700, textTransform: 'uppercase' as const, padding: '8px 10px', letterSpacing: '0.06em', borderBottom: '2px solid #F0EFEC' }}>{h}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.8fr 0.6fr 1fr', padding: '10px 0 8px' }}>
+            {['Item', 'Qty', 'Unit', 'Cost'].map((h, j) => (
+              <div key={h} style={{ fontSize: 10.5, color: DIM, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.06em', textAlign: j === 0 ? 'left' : 'right' }}>{h}</div>
+            ))}
+          </div>
+          {[
+            ['Concrete Footing', '124', 'CY', '$18,600'],
+            ['#5 Rebar', '2,400', 'LF', '$4,320'],
+            ['CMU 8″ Block', '3,650', 'EA', '$10,950'],
+            ['Rigid Insulation', '4,800', 'SF', '$7,200'],
+            ['Structural Steel', '48', 'TON', '$96,000'],
+          ].map((row, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.8fr 0.6fr 1fr', padding: '13px 0', borderTop: i === 0 ? 'none' : '1px solid #E7E5E1' }}>
+              {row.map((cell, j) => (
+                <div key={j} style={{ fontSize: 14, color: j === 3 ? GOLD : j === 0 ? TEXT : DIM, fontWeight: j === 3 ? 700 : j === 0 ? 600 : 500, fontVariantNumeric: 'tabular-nums', textAlign: j === 0 ? 'left' : 'right' }}>{cell}</div>
               ))}
             </div>
-            {[
-              ['Concrete Footing', '124', 'CY', '$18,600'],
-              ['#5 Rebar', '2,400', 'LF', '$4,320'],
-              ['CMU 8″ Block', '3,650', 'EA', '$10,950'],
-              ['Rigid Insulation', '4,800', 'SF', '$7,200'],
-              ['Structural Steel', '48', 'TON', '$96,000'],
-            ].map((row, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.8fr 0.6fr 1fr', gap: 0, borderBottom: '1px solid #F5F4F2' }}>
-                {row.map((cell, j) => (
-                  <div key={j} style={{ fontSize: 13, color: j === 3 ? GOLD : j === 0 ? TEXT : '#888', padding: '10px', fontWeight: j === 3 ? 700 : j === 0 ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>{cell}</div>
-                ))}
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, padding: '14px 10px 4px', borderTop: '2px solid #F0EFEC' }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>Total Estimate</span>
-              <span style={{ fontSize: 18, fontWeight: 800, color: GOLD }}>$137,070</span>
-            </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 6, paddingTop: 16, borderTop: `2px solid ${TEXT}` }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT, letterSpacing: '-0.01em' }}>Total Estimate</span>
+            <span style={{ fontSize: 26, fontWeight: 800, color: GOLD, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>$137,070</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ── capability proof bar — honest product facts, not invented metrics ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '52px 24px 56px' }} className="reveal">
-        <p style={{ textAlign: 'center' as const, fontSize: 13, color: DIM, marginBottom: 20, letterSpacing: '0.01em' }}>Everything a GC needs to bid, build, and bill — in one platform</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="stats-grid reveal-stagger">
-          {[
-            { val: '< 60s', lbl: 'Per blueprint takeoff' },
-            { val: 'G702/703', lbl: 'AIA pay apps built in' },
-            { val: '50-state', lbl: 'Lien waivers included' },
-            { val: '⅓', lbl: 'The cost of Procore' },
-          ].map(s => (
-            <div key={s.lbl} className="lift-card" style={{ ...glass, padding: '22px 24px', textAlign: 'center' as const }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#C8881C', letterSpacing: '-0.02em' }}>{s.val}</div>
-              <div style={{ fontSize: 12.5, color: DIM, marginTop: 7, fontWeight: 500 }}>{s.lbl}</div>
-            </div>
-          ))}
+      {/* ══════════ capability proof — inline figures, divider rules, no boxes ══════════ */}
+      <section style={{ borderTop: '1px solid #E7E5E1', borderBottom: '1px solid #E7E5E1' }} className="reveal">
+        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }} className="stats-row reveal-stagger">
+            {[
+              { val: '< 60s', lbl: 'Per blueprint takeoff' },
+              { val: 'G702/703', lbl: 'AIA pay apps built in' },
+              { val: '50-state', lbl: 'Lien waivers included' },
+              { val: '⅓', lbl: 'The cost of Procore' },
+            ].map((s, i) => (
+              <div key={s.lbl} style={{ padding: '40px 28px', textAlign: 'center' as const, borderLeft: i === 0 ? 'none' : '1px solid #E7E5E1' }}>
+                <div style={{ fontSize: 34, fontWeight: 800, color: GOLD, letterSpacing: '-0.03em' }}>{s.val}</div>
+                <div style={{ fontSize: 13, color: DIM, marginTop: 8, fontWeight: 500 }}>{s.lbl}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Integration logos — real vendor marks (react-icons), only for shipped integrations */}
       <IntegrationStrip />
 
-      {/* ══════════ 4. FEATURE GRID ══════════ */}
-      <section id="features" style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 24px' }} className="reveal">
-        <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Everything you need. Nothing you don&apos;t.</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 48, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }} className="feature-grid reveal-stagger">
+      {/* ══════════ 4. FEATURES — editorial grid, hairline rules, no cards ══════════ */}
+      <section id="features" style={{ maxWidth: 1080, margin: '0 auto', padding: '88px 24px 80px' }} className="reveal">
+        <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: TEXT, maxWidth: 600 }}>Everything you need.<br />Nothing you don&apos;t.</h2>
+        <p style={{ color: DIM, fontSize: 16, marginBottom: 56, maxWidth: 480, lineHeight: 1.6 }}>One platform replaces Procore, spreadsheets, and five other tools.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', columnGap: 48, rowGap: 4 }} className="feature-grid reveal-stagger">
           {FEATURES.map(f => (
-            <div key={f.title} className="glow-card" style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(200,136,28,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0 }}>
-                <Icon d={f.icon} />
+            <div key={f.title} style={{ padding: '28px 0', borderTop: `1px solid #E7E5E1`, display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+              <div style={{ color: GOLD }}>
+                <Icon d={f.icon} size={26} />
               </div>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: TEXT }}>{f.title}</h3>
-              <p style={{ fontSize: 13, color: DIM, lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: TEXT, letterSpacing: '-0.01em' }}>{f.title}</h3>
+              <p style={{ fontSize: 13.5, color: DIM, lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ══════════ 6. COMPARISON TABLE ══════════ */}
-      <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }} className="reveal">
-        <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Why GCs switch from Procore</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature, here&apos;s how Saguaro compares — at a third of the price.</p>
-        <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 12px 32px rgba(28,25,23,0.07)' }}>
+      {/* ══════════ 6. COMPARISON — table set into the page, no wrapper box ══════════ */}
+      <section id="compare" style={{ background: '#FAFAF8', borderTop: '1px solid #E7E5E1', borderBottom: '1px solid #E7E5E1' }} className="reveal">
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '88px 24px' }}>
+          <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: TEXT }}>Why GCs switch from Procore</h2>
+          <p style={{ color: DIM, fontSize: 16, marginBottom: 44, maxWidth: 460, lineHeight: 1.6 }}>Feature-for-feature, here&apos;s how Saguaro compares — at a third of the price.</p>
           {/* header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid #E5E5EA' }}>
-            <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
-            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 700, color: GOLD, textAlign: 'center' as const }}>Saguaro</div>
-            <div style={{ padding: '14px 12px', fontSize: 13, fontWeight: 700, color: DIM, textAlign: 'center' as const }}>Procore</div>
-            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, opacity: 0.6 }}>Buildertrend</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: `2px solid ${TEXT}`, paddingBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Feature</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: GOLD, textAlign: 'center' as const }}>Saguaro</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const }}>Procore</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, opacity: 0.65 }}>Buildertrend</div>
           </div>
           {/* rows */}
           {COMPARISON_ROWS.map((r, i) => (
-            <div key={r.feature} className="compare-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid #E5E5EA' : 'none', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent', transition: 'background 0.2s ease' }}>
-              <div style={{ padding: '11px 20px', fontSize: 13, color: TEXT }}>{r.feature}</div>
-              <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div key={r.feature} className="compare-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', alignItems: 'center', borderTop: i === 0 ? 'none' : '1px solid #E7E5E1', transition: 'background 0.2s ease' }}>
+              <div style={{ padding: '15px 0', fontSize: 14, color: TEXT, fontWeight: 500 }}>{r.feature}</div>
+              <div style={{ padding: '15px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {r.feature === 'Starting Price' ? <PriceLabel v={r.saguaro} /> : <StatusCell v={r.saguaro} />}
               </div>
-              <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ padding: '15px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {r.feature === 'Starting Price' ? <PriceLabel v={r.procore} /> : <StatusCell v={r.procore} />}
               </div>
-              <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ padding: '15px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {r.feature === 'Starting Price' ? <PriceLabel v={r.buildertrend} /> : <StatusCell v={r.buildertrend} />}
               </div>
             </div>
@@ -441,51 +430,51 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════ 7. PRICING ══════════ */}
-      <section id="pricing" style={{ maxWidth: 1000, margin: '0 auto', padding: '64px 24px' }} className="reveal">
-        <h2 style={{ textAlign: 'center' as const, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 10, color: TEXT }}>Simple, transparent pricing</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid reveal-stagger">
-          {PLANS.map(plan => (
-            <div key={plan.name} className={`lift-card${plan.highlighted ? ' lift-card-gold' : ''}`} style={{
-              background: '#FFFFFF',
-              border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid #E5E5EA',
-              borderRadius: 16,
-              padding: '28px 24px',
-              position: 'relative' as const,
-              boxShadow: plan.highlighted ? '0 0 0 1px rgba(212,160,23,0.25), 0 2px 4px rgba(28,25,23,0.05), 0 16px 40px rgba(200,136,28,0.14)' : '0 1px 2px rgba(28,25,23,0.04), 0 8px 24px rgba(28,25,23,0.06)',
+      {/* ══════════ 7. PRICING — columns split by hairlines, no boxes ══════════ */}
+      <section id="pricing" style={{ maxWidth: 1040, margin: '0 auto', padding: '88px 24px 80px' }} className="reveal">
+        <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: TEXT }}>Simple, transparent pricing</h2>
+        <p style={{ color: DIM, fontSize: 16, marginBottom: 8, maxWidth: 460, lineHeight: 1.6 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: `2px solid ${TEXT}`, marginTop: 36 }} className="pricing-grid">
+          {PLANS.map((plan, i) => (
+            <div key={plan.name} style={{
+              padding: '32px 28px 28px',
+              borderLeft: i === 0 ? 'none' : '1px solid #E7E5E1',
               display: 'flex',
               flexDirection: 'column' as const,
-              transition: 'all 0.3s ease',
+              position: 'relative' as const,
+              boxShadow: plan.highlighted ? `inset 0 3px 0 ${GOLD}` : 'none',
             }}>
-              {plan.highlighted && (
-                <span style={{ position: 'absolute' as const, top: -11, left: '50%', transform: 'translateX(-50%)', background: GOLD, color: '#000', fontSize: 10, fontWeight: 800, padding: '3px 14px', borderRadius: 10, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>Most Popular</span>
-              )}
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{plan.name}</h3>
-              <div style={{ marginBottom: 6 }}>
-                <span style={{ fontSize: 32, fontWeight: 800, color: plan.highlighted ? GOLD : TEXT }}>{plan.price}</span>
-                {plan.period && <span style={{ fontSize: 14, color: DIM }}>{plan.period}</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: TEXT, letterSpacing: '-0.01em' }}>{plan.name}</h3>
+                {plan.highlighted && (
+                  <span style={{ background: 'rgba(200,136,28,0.12)', color: GOLD, fontSize: 9.5, fontWeight: 800, padding: '3px 9px', borderRadius: 4, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>Most Popular</span>
+                )}
               </div>
-              <p style={{ fontSize: 12, color: DIM, marginBottom: 20 }}>{plan.desc}</p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', flex: 1 }}>
+              <div style={{ marginBottom: 8, display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                <span style={{ fontSize: 40, fontWeight: 800, color: plan.highlighted ? GOLD : TEXT, letterSpacing: '-0.03em' }}>{plan.price}</span>
+                {plan.period && <span style={{ fontSize: 15, color: DIM }}>{plan.period}</span>}
+              </div>
+              <p style={{ fontSize: 13, color: DIM, marginBottom: 26, lineHeight: 1.5 }}>{plan.desc}</p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', flex: 1 }}>
                 {plan.features.map(f => (
-                  <li key={f} style={{ fontSize: 13, color: DIM, padding: '5px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <svg viewBox="0 0 16 16" width={14} height={14} fill={plan.highlighted ? GOLD : GREEN}><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.4 6.2-4 4a.7.7 0 0 1-1 0l-1.8-1.8a.7.7 0 1 1 1-1l1.3 1.3 3.5-3.5a.7.7 0 0 1 1 1z" /></svg>
+                  <li key={f} style={{ fontSize: 13.5, color: TEXT, padding: '7px 0', display: 'flex', alignItems: 'flex-start', gap: 9, lineHeight: 1.45 }}>
+                    <svg viewBox="0 0 16 16" width={15} height={15} fill={plan.highlighted ? GOLD : GREEN} style={{ flexShrink: 0, marginTop: 1 }}><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.4 6.2-4 4a.7.7 0 0 1-1 0l-1.8-1.8a.7.7 0 1 1 1-1l1.3 1.3 3.5-3.5a.7.7 0 0 1 1 1z" /></svg>
                     {f}
                   </li>
                 ))}
               </ul>
-              <Link href={plan.name === 'Enterprise' ? '/contact' : '/signup'} style={{
+              <Link href={plan.name === 'Enterprise' ? '/contact' : '/signup'} className={plan.highlighted ? 'cta-glow' : undefined} style={{
                 display: 'block',
                 textAlign: 'center' as const,
-                padding: '11px 0',
+                padding: '13px 0',
                 borderRadius: 10,
                 fontWeight: 700,
-                fontSize: 14,
+                fontSize: 14.5,
                 textDecoration: 'none',
+                transition: 'all 0.2s ease',
                 ...(plan.highlighted
-                  ? { background: GOLD, color: '#000' }
-                  : { border: '1px solid #E5E5EA', color: TEXT }),
+                  ? { background: `linear-gradient(135deg, #F5C645, #E8A020)`, color: '#1A1400', boxShadow: '0 4px 16px rgba(232,160,32,0.28)' }
+                  : { border: `1.5px solid ${TEXT}`, color: TEXT }),
               }}>
                 {plan.cta}
               </Link>
@@ -559,13 +548,19 @@ export default function LandingPage() {
         @media (max-width: 768px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: block !important; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .demo-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
           .feature-grid { grid-template-columns: 1fr !important; }
+          /* stat figures stack with top hairlines instead of side dividers */
+          .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+          .stats-row > div { border-left: none !important; border-top: 1px solid #E7E5E1 !important; }
+          /* pricing columns stack with top hairlines instead of side dividers */
           .pricing-grid { grid-template-columns: 1fr !important; }
+          .pricing-grid > div { border-left: none !important; border-top: 1px solid #E7E5E1 !important; }
+          .pricing-grid > div:first-child { border-top: none !important; }
           .footer-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 480px) {
-          .stats-grid { grid-template-columns: 1fr !important; }
+          .stats-row { grid-template-columns: 1fr !important; }
           .footer-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
