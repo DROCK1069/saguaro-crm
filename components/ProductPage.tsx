@@ -46,7 +46,7 @@ const STAT_GRADS = [
 
 export default function ProductPage({ data }: { data: ProductPageData }) {
   return (
-    <div style={{ background: '#FBF8F2', color: TEXT, minHeight: '100vh', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", overflowX: 'hidden' }}>
+    <div style={{ background: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)', color: TEXT, minHeight: '100vh', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", overflowX: 'hidden' }}>
       <Header />
 
       {/* ── Hero — warm gradient wash + glow ── */}
@@ -92,7 +92,7 @@ export default function ProductPage({ data }: { data: ProductPageData }) {
       {/* ── Feature sections — alternating, with accent icons ── */}
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px 16px' }}>
         {data.sections.map((sec, i) => (
-          <div key={i} style={{ background: i % 2 === 1 ? '#FFFFFF' : 'transparent', borderRadius: 18, border: i % 2 === 1 ? '1px solid #F0E7D6' : 'none', boxShadow: i % 2 === 1 ? '0 6px 22px rgba(120,80,20,0.07)' : 'none', padding: i % 2 === 1 ? '36px 36px' : '24px 0', margin: '14px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 44, alignItems: 'center' }} className="product-section">
+          <div key={i} style={{ background: i % 2 === 1 ? 'linear-gradient(145deg, #FFFDF8, #FFF6E6)' : '#FFFFFF', borderRadius: 18, border: '1px solid #F0E7D6', boxShadow: '0 8px 26px rgba(120,80,20,0.09)', padding: '36px 38px', margin: '18px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 44, alignItems: 'center' }} className="product-section">
             <div>
               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #F5C645, #E8A020)', boxShadow: '0 6px 16px rgba(232,160,32,0.35)', marginBottom: 16 }}>
                 <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="#1A1400" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
@@ -103,7 +103,7 @@ export default function ProductPage({ data }: { data: ProductPageData }) {
             {sec.bullets && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {sec.bullets.map((b) => (
-                  <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'rgba(255,255,255,0.7)', border: '1px solid #F0E7D6', borderRadius: 11, padding: '13px 16px', fontSize: 14.5, color: TEXT, fontWeight: 500 }}>
+                  <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'linear-gradient(135deg, #FFFBF2, #FDF3E0)', border: '1px solid #F2E6CF', borderRadius: 11, padding: '13px 16px', fontSize: 14.5, color: TEXT, fontWeight: 500 }}>
                     <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: 'rgba(21,128,61,0.12)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg viewBox="0 0 16 16" width={13} height={13} fill={GREEN}><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.4 6.2-4 4a.7.7 0 0 1-1 0l-1.8-1.8a.7.7 0 1 1 1-1l1.3 1.3 3.5-3.5a.7.7 0 0 1 1 1z" /></svg>
                     </span>

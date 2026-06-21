@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import type { Competitor } from '@/lib/competitors';
 
-const DARK = '#F2F2F7';
+const DARK = '#FBF6EC';
 const GOLD = '#C8881C';
 const TEXT = '#1C1C1E';
 const DIM = '#6E6E73';
 const BORDER = '#E7E5E1';
-const RAISED = '#FAFAF8';
+const RAISED = '#FFFBF2';
 const GREEN = '#34C759';
 const RED = '#EF4444';
 
@@ -193,7 +193,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
   const migrationLink = competitor.slug === 'procore' ? '/switch-from-procore' : '/signup';
 
   return (
-    <div style={{ minHeight: '100vh', background: DARK, color: TEXT, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 45%, #FBF2E3 100%)', color: TEXT, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Nav />
 
       {/* ── Hero — warm gradient wash + glow ─────────────────────────────── */}
