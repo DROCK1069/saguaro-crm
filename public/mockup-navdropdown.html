@@ -3,122 +3,97 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Nav Dropdown — A/B Preview</title>
+<title>Nav Dropdown — 2 Fresh Designs</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #F2F2F0;
-    color: #1C1917;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 1160px; margin: 0 auto; padding: 48px 24px 100px; }
-  h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 8px; }
-  .sub { color: #6E6E73; font-size: 15px; margin: 0 0 48px; max-width: 620px; line-height: 1.6; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
-  @media (max-width: 820px) { .row { grid-template-columns: 1fr; } }
-  .col-label { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-  .pill { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 11px; border-radius: 6px; }
-  .pill.a { background: #1A1410; color: #E8B420; }
-  .pill.b { background: #1C1917; color: #FFFFFF; }
-  .col h2 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
-  .col p.note { font-size: 13px; color: #6E6E73; margin: 4px 0 0; line-height: 1.5; }
-  /* stage that hints at real context (a strip of the warm hero behind it) */
-  .stage {
-    margin-top: 22px; padding: 28px;
-    border-radius: 14px;
-    background:
-      linear-gradient(180deg, rgba(28,18,12,0.0) 0%, rgba(28,18,12,0.0) 100%),
-      linear-gradient(115deg, #8a5a3c 0%, #b87a4a 45%, #d49a63 100%);
-    display: flex; justify-content: center;
-  }
-  .stage.light { background: #FFFFFF; border: 1px solid #E7E5E1; }
+  body { margin:0; font-family:'Inter',-apple-system,sans-serif; background:#EFEEEB; color:#1C1917; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 24px 110px; }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing:-0.03em; margin:0 0 8px; }
+  .sub { color:#6E6E73; font-size:15px; margin:0 0 12px; max-width:640px; line-height:1.6; }
+  .block { margin-top: 52px; }
+  .lbl { display:flex; align-items:center; gap:11px; margin-bottom:8px; }
+  .tag { font-size:11px; font-weight:800; letter-spacing:0.09em; text-transform:uppercase; padding:4px 11px; border-radius:6px; color:#fff; }
+  .tag.one { background: linear-gradient(135deg,#E8A020,#C8881C); color:#1A1400; }
+  .tag.two { background:#1A1410; color:#E8B420; }
+  .lbl h2 { font-size:19px; font-weight:800; margin:0; letter-spacing:-0.02em; }
+  .note { font-size:13.5px; color:#6E6E73; margin:0 0 22px; max-width:680px; line-height:1.55; }
+  .stage { padding:34px; border-radius:16px; display:flex; justify-content:center;
+           background:linear-gradient(115deg,#7c5436 0%,#b07a4c 50%,#d39a64 100%); }
 
-  /* ============ OPTION A — DARK & DRAMATIC ============ */
-  .dropA {
-    width: 420px; padding: 8px;
-    background: #1A1410;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 28px 60px rgba(0,0,0,0.55);
-  }
-  .dropA .item {
-    display: flex; align-items: center; gap: 14px;
-    padding: 13px 15px; border-radius: 10px;
-    border-left: 3px solid transparent;
-    cursor: pointer; transition: all .15s ease;
-  }
-  .dropA .item:hover {
-    background: rgba(200,136,28,0.14);
-    border-left-color: #E8B420;
-    transform: translateX(2px);
-  }
-  .dropA .ic {
-    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(232,180,32,0.10);
-    border: 1px solid rgba(232,180,32,0.22);
-    color: #E8B420;
-  }
-  .dropA .item:hover .ic { box-shadow: 0 0 18px rgba(232,180,32,0.35); border-color: rgba(232,180,32,0.5); }
-  .dropA .ttl { font-size: 14px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.01em; }
-  .dropA .dsc { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  /* ========= DESIGN 1 — DESERT WARM / SIGNATURE GOLD EDGE ========= */
+  .d1 { width:430px; background:#FCFAF6; border:1px solid #ECE4D7; border-radius:14px;
+        box-shadow:0 2px 8px rgba(60,40,20,.10), 0 26px 60px rgba(60,40,20,.22); overflow:hidden; }
+  .d1 .topbar { height:4px; background:linear-gradient(90deg,#E8B420,#C8881C 55%,#E8B420); }
+  .d1 .inner { padding:8px; }
+  .d1 .item { display:flex; align-items:center; gap:14px; padding:13px 14px; border-radius:10px;
+              border-left:3px solid transparent; cursor:pointer; transition:all .16s ease; position:relative; }
+  .d1 .item + .item::before { content:''; position:absolute; top:0; left:14px; right:14px; height:1px; background:#F1EADE; }
+  .d1 .item:hover { background:linear-gradient(90deg, rgba(200,136,28,.10), rgba(200,136,28,.03)); border-left-color:#C8881C; }
+  .d1 .item:hover::before, .d1 .item:hover + .item::before { background:transparent; }
+  .d1 .ic { width:38px; height:38px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+            background:#F6EFE1; color:#C8881C; transition:all .16s ease; }
+  .d1 .item:hover .ic { background:#C8881C; color:#FFF8E8; }
+  .d1 .ttl { font-size:14.5px; font-weight:700; color:#1C1917; letter-spacing:-0.01em; }
+  .d1 .dsc { font-size:12px; color:#8A847E; margin-top:2px; }
 
-  /* ============ OPTION B — CRISP WHITE EDITORIAL ============ */
-  .dropB {
-    width: 420px; padding: 6px 8px;
-    background: #FFFFFF;
-    border: 1px solid #E7E5E1;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(28,25,23,0.06), 0 20px 50px rgba(28,25,23,0.14);
-  }
-  .dropB .item {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 14px; border-radius: 9px;
-    border-left: 3px solid transparent;
-    cursor: pointer; transition: all .15s ease;
-    position: relative;
-  }
-  .dropB .item + .item::before {
-    content: ''; position: absolute; top: 0; left: 14px; right: 14px;
-    height: 1px; background: #F0EFEC;
-  }
-  .dropB .item:hover { background: rgba(200,136,28,0.06); border-left-color: #C8881C; }
-  .dropB .item:hover::before, .dropB .item:hover + .item::before { background: transparent; }
-  .dropB .ic {
-    width: 30px; height: 30px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    color: #C8881C;
-  }
-  .dropB .ttl { font-size: 14px; font-weight: 700; color: #1C1917; letter-spacing: -0.01em; }
-  .dropB .dsc { font-size: 12px; color: #8A847E; margin-top: 2px; }
+  /* ========= DESIGN 2 — MEGA MENU w/ FEATURED SPOTLIGHT ========= */
+  .d2 { width:600px; display:grid; grid-template-columns:1.25fr 1fr; background:#FFFFFF;
+        border:1px solid #E7E5E1; border-radius:14px; overflow:hidden;
+        box-shadow:0 2px 8px rgba(28,25,23,.06), 0 26px 60px rgba(28,25,23,.18); }
+  .d2 .list { padding:8px; }
+  .d2 .item { display:flex; align-items:center; gap:13px; padding:12px 13px; border-radius:9px;
+              border-left:3px solid transparent; cursor:pointer; transition:all .15s ease; }
+  .d2 .item:hover { background:rgba(200,136,28,.06); border-left-color:#C8881C; }
+  .d2 .ic { width:30px; height:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#C8881C; }
+  .d2 .ttl { font-size:14px; font-weight:700; color:#1C1917; letter-spacing:-0.01em; }
+  .d2 .dsc { font-size:11.5px; color:#8A847E; margin-top:1px; }
+  /* featured spotlight rail */
+  .d2 .feat { position:relative; padding:26px 24px; color:#fff; overflow:hidden;
+              background:#171008; }
+  .d2 .feat::before { content:''; position:absolute; top:-30%; right:-20%; width:280px; height:280px;
+              background:radial-gradient(circle, rgba(232,180,32,.38) 0%, transparent 65%); pointer-events:none; }
+  .d2 .feat .eye { position:relative; font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#E8B420; }
+  .d2 .feat h3 { position:relative; font-size:21px; font-weight:800; letter-spacing:-0.02em; line-height:1.12; margin:12px 0 8px; }
+  .d2 .feat p { position:relative; font-size:12.5px; line-height:1.55; color:rgba(255,255,255,.62); margin:0 0 18px; }
+  .d2 .feat .metric { position:relative; display:flex; align-items:baseline; gap:6px; margin-bottom:18px; }
+  .d2 .feat .metric b { font-size:30px; font-weight:800; color:#E8B420; letter-spacing:-0.03em; }
+  .d2 .feat .metric span { font-size:12px; color:rgba(255,255,255,.55); }
+  .d2 .feat a { position:relative; display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+              background:linear-gradient(135deg,#F5C645,#E8A020); color:#1A1400; font-weight:800; font-size:13px;
+              padding:9px 16px; border-radius:9px; }
 
-  .foot { margin-top: 64px; text-align: center; color: #6E6E73; font-size: 13px; }
+  .foot { margin-top:70px; text-align:center; color:#6E6E73; font-size:13px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Nav dropdown — two directions</h1>
-  <p class="sub">Same menu (Solutions), two treatments. Hover the items to feel the interaction. Tell me <strong>A</strong> or <strong>B</strong> and I'll wire it into the live nav.</p>
+  <h1>Nav dropdown — two fresh directions</h1>
+  <p class="sub">Both shown over a desert-toned strip to mimic the real hero behind them. Hover the items. Tell me <strong>1</strong> or <strong>2</strong> (or mix) and I'll wire it into the live nav.</p>
 
-  <div class="row">
-    <!-- OPTION A -->
-    <div class="col">
-      <div class="col-label"><span class="pill a">Option A</span><h2>Dark &amp; dramatic</h2></div>
-      <p class="note">Deep espresso panel, gold icons that glow on hover, crisp white titles. High-contrast premium mega-menu (Linear / Stripe vibe). Ties to the dark hero + CTA.</p>
-      <div class="stage">
-        <div class="dropA" id="A"></div>
-      </div>
+  <!-- DESIGN 1 -->
+  <div class="block">
+    <div class="lbl"><span class="tag one">Design 1</span><h2>Desert warm — signature gold edge</h2></div>
+    <p class="note">Warm off-white panel (not flat white) with a signature gold gradient bar across the top. Bold gold icons that flip to a filled gold tile on hover, hairline dividers, warm gold sweep on hover. On-brand desert warmth, crisp and premium.</p>
+    <div class="stage">
+      <div class="d1"><div class="topbar"></div><div class="inner" id="D1"></div></div>
     </div>
+  </div>
 
-    <!-- OPTION B -->
-    <div class="col">
-      <div class="col-label"><span class="pill b">Option B</span><h2>Crisp white editorial</h2></div>
-      <p class="note">Solid white, sharp hairline dividers, bold solid-gold icons (no faint chip boxes), near-black titles. Razor-crisp and consistent with the new light editorial site.</p>
-      <div class="stage light">
-        <div class="dropB" id="B"></div>
+  <!-- DESIGN 2 -->
+  <div class="block">
+    <div class="lbl"><span class="tag two">Design 2</span><h2>Mega-menu — featured spotlight</h2></div>
+    <p class="note">A wider two-column mega-menu: clean item list on the left, a dark spotlight rail on the right with a glowing gold accent that promotes a headline feature (AI Takeoff) with a live metric and CTA. This is the premium SaaS pattern (Stripe / Notion) — genuinely eye-catching and gives the menu a reason to feel big.</p>
+    <div class="stage">
+      <div class="d2">
+        <div class="list" id="D2"></div>
+        <div class="feat">
+          <div class="eye">Featured</div>
+          <h3>AI Blueprint Takeoff</h3>
+          <p>Drop a PDF. Sage prices a full estimate before your coffee&apos;s cold.</p>
+          <div class="metric"><b>38s</b><span>· 47 line items</span></div>
+          <a href="#">Try it free &rarr;</a>
+        </div>
       </div>
     </div>
   </div>
@@ -127,13 +102,12 @@
 </div>
 
 <script>
-  // Phosphor-style icons matching the real Solutions menu
   const ICONS = {
-    buildings: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9h0M9 13h0M9 17h0"/></svg>',
-    hammer: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l5 5M10 11l6 6-2 2-6-6M14 7l3-3 4 4-3 3M3 21l5-5"/></svg>',
-    house: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>',
-    building: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 8h0M15 8h0M9 12h0M15 12h0M9 16h0M15 16h0"/></svg>',
-    wrench: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 00-5.2 5.2L3 18v3h3l6.5-6.5a4 4 0 005.2-5.2l-2.7 2.7-2-2 2.7-2.7z"/></svg>'
+    buildings:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9h0M9 13h0M9 17h0"/></svg>',
+    hammer:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l5 5M10 11l6 6-2 2-6-6M14 7l3-3 4 4-3 3M3 21l5-5"/></svg>',
+    house:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>',
+    building:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 8h0M15 8h0M9 12h0M15 12h0M9 16h0M15 16h0"/></svg>',
+    wrench:'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 00-5.2 5.2L3 18v3h3l6.5-6.5a4 4 0 005.2-5.2l-2.7 2.7-2-2 2.7-2.7z"/></svg>'
   };
   const ITEMS = [
     ['buildings','General Contractors','Full project management suite'],
@@ -142,13 +116,10 @@
     ['building','Commercial Contractors','Multi-project portfolios'],
     ['wrench','Roofing Contractors','Roofing-specific workflows'],
   ];
-  function render(id) {
-    return ITEMS.map(([ic,t,d]) =>
-      '<div class="item"><div class="ic">'+ICONS[ic]+'</div><div><div class="ttl">'+t+'</div><div class="dsc">'+d+'</div></div></div>'
-    ).join('');
-  }
-  document.getElementById('A').innerHTML = render('A');
-  document.getElementById('B').innerHTML = render('B');
+  const row = ([ic,t,d]) => '<div class="item"><div class="ic">'+ICONS[ic]+'</div><div><div class="ttl">'+t+'</div><div class="dsc">'+d+'</div></div></div>';
+  document.getElementById('D1').innerHTML = ITEMS.map(row).join('');
+  // design 2 shows 4 items beside the featured rail
+  document.getElementById('D2').innerHTML = ITEMS.slice(0,4).map(row).join('');
 </script>
 </body>
 </html>
