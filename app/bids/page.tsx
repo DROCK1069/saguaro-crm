@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#C8881C',EYEBROW='#B07A12',BORDER='rgba(176,122,18,0.16)',DIM='#6B5B43',TEXT='#2A1B06';
+const PAGE_BG='linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)';
 
 export default function BidsPage() {
   const [tab, setTab] = useState<'active'|'pipeline'|'history'>('active');
@@ -15,15 +16,17 @@ export default function BidsPage() {
   ];
 
   return (
-    <div style={{padding:'24px 28px',maxWidth:1300,margin:'0 auto'}}>
+    <div style={{minHeight:'100vh',background:PAGE_BG,fontFamily:'system-ui,sans-serif'}}>
+      <div style={{padding:'24px 28px',maxWidth:1300,margin:'0 auto'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:24}}>
         <div>
+          <div style={{fontSize:12,fontWeight:700,color:EYEBROW,textTransform:'uppercase' as const,letterSpacing:2,marginBottom:6}}>Bids</div>
           <h1 style={{fontSize:26,fontWeight:800,color:TEXT,margin:0}}>Bid Center</h1>
           <div style={{fontSize:13,color:DIM,marginTop:4}}>AI-scored opportunities and active bid packages</div>
         </div>
         <div style={{display:'flex',gap:10}}>
           <Link href="/app/intelligence" style={{padding:'9px 16px',background:'rgba(212,160,23,.12)',border:'1px solid rgba(212,160,23,.3)',borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>🧠 Bid Intelligence</Link>
-          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Score Opportunity</button>
+          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,#E8B84B,#C98A1A)`,border:'none',borderRadius:8,color:'#2A1B06',fontSize:13,fontWeight:800,cursor:'pointer',boxShadow:'0 6px 18px rgba(201,138,26,0.28)'}}>+ Score Opportunity</button>
         </div>
       </div>
 
@@ -37,37 +40,37 @@ export default function BidsPage() {
       </div>
 
       {tab==='pipeline'&&<div>
-        <div style={{background:'rgba(212,160,23,.06)',border:'1px solid rgba(212,160,23,.2)',borderRadius:10,padding:'14px 18px',marginBottom:20,fontSize:13,color:DIM}}>
+        <div style={{background:'rgba(212,160,23,.08)',border:'1px solid rgba(212,160,23,.22)',borderRadius:10,padding:'14px 18px',marginBottom:20,fontSize:13,color:DIM}}>
           🤖 <strong style={{color:TEXT}}>AI Scores These Automatically</strong> — Each opportunity is scored 0–100 for fit based on your win/loss history. Focus on green (BID) first.
         </div>
         <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
-          <thead><tr style={{background:'#F2F2F7'}}>
+          <thead><tr style={{borderBottom:`2px solid ${BORDER}`}}>
             {['Opportunity','Trade','Est. Value','Fit Score','Win Prob.','Bid Due','AI Recommendation','Actions'].map(h=>(
-              <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
+              <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM}}>{h}</th>
             ))}
           </tr></thead>
           <tbody>{opportunities.map(op=>{
-            const ac = op.action==='bid'?{bg:'rgba(26,138,74,.12)',c:'#3dd68c',label:'✓ BID'}:op.action==='pass'?{bg:'rgba(192,48,48,.12)',c:'#ff7070',label:'✗ PASS'}:{bg:'rgba(212,160,23,.12)',c:GOLD,label:'? INVESTIGATE'};
-            return <tr key={op.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
+            const ac = op.action==='bid'?{bg:'rgba(26,138,74,.12)',c:'#1A8A4A',label:'✓ BID'}:op.action==='pass'?{bg:'rgba(192,48,48,.12)',c:'#C03030',label:'✗ PASS'}:{bg:'rgba(212,160,23,.14)',c:GOLD,label:'? INVESTIGATE'};
+            return <tr key={op.id} style={{borderBottom:`1px solid ${BORDER}`}}>
               <td style={{padding:'12px 14px',color:TEXT,fontWeight:600,maxWidth:240,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{op.title}</td>
               <td style={{padding:'12px 14px',color:DIM}}>{op.trade}</td>
               <td style={{padding:'12px 14px',color:TEXT}}>${op.value.toLocaleString()}</td>
               <td style={{padding:'12px 14px'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <div style={{width:60,height:5,background:'rgba(0,0,0,.06)',borderRadius:3}}>
-                    <div style={{height:'100%',width:`${op.fitScore}%`,background:op.fitScore>=70?'#3dd68c':op.fitScore>=50?GOLD:'#ff7070',borderRadius:3}}/>
+                  <div style={{width:60,height:5,background:'rgba(176,122,18,.14)',borderRadius:3}}>
+                    <div style={{height:'100%',width:`${op.fitScore}%`,background:op.fitScore>=70?'#1A8A4A':op.fitScore>=50?GOLD:'#C03030',borderRadius:3}}/>
                   </div>
-                  <span style={{color:op.fitScore>=70?'#3dd68c':op.fitScore>=50?GOLD:'#ff7070',fontWeight:700}}>{op.fitScore}</span>
+                  <span style={{color:op.fitScore>=70?'#1A8A4A':op.fitScore>=50?GOLD:'#C03030',fontWeight:700}}>{op.fitScore}</span>
                 </div>
               </td>
-              <td style={{padding:'12px 14px',color:op.winPct>=60?'#3dd68c':op.winPct>=40?GOLD:'#ff7070',fontWeight:700}}>{op.winPct}%</td>
+              <td style={{padding:'12px 14px',color:op.winPct>=60?'#1A8A4A':op.winPct>=40?GOLD:'#C03030',fontWeight:700}}>{op.winPct}%</td>
               <td style={{padding:'12px 14px',color:DIM}}>{op.due}</td>
               <td style={{padding:'12px 14px'}}>
                 <span style={{fontSize:10,fontWeight:800,padding:'3px 10px',borderRadius:4,background:ac.bg,color:ac.c,border:`1px solid ${ac.c}33`}}>{ac.label}</span>
               </td>
               <td style={{padding:'12px 14px',display:'flex',gap:6}}>
                 <button style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,padding:'3px 8px',cursor:'pointer'}}>Details</button>
-                {op.action==='bid'&&<button style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>Bid →</button>}
+                {op.action==='bid'&&<button style={{background:`linear-gradient(135deg,#E8B84B,#C98A1A)`,border:'none',borderRadius:5,color:'#2A1B06',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>Bid →</button>}
               </td>
             </tr>;
           })}</tbody>
@@ -85,6 +88,7 @@ export default function BidsPage() {
         <div style={{fontSize:18,fontWeight:700,color:TEXT,marginBottom:8}}>Bid History</div>
         <div>Full bid history with AI post-mortems. <Link href="/app/intelligence" style={{color:GOLD}}>View Bid Intelligence →</Link></div>
       </div>}
+      </div>
     </div>
   );
 }

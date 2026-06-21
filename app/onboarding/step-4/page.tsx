@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#C8881C',DARK='linear-gradient(160deg, #FCF7EE 0%, #F8EFDF 45%, #FBEAD2 100%)',RAISED='#FFFBF2',INPUT_BG='#FFFDF8',BORDER='#F0E7D6',INPUT_BORDER='#EFE4D0',INACTIVE='#EFE4D0',DIM='#6B5B43',TEXT='#2A1B06',RED='#ef4444',GREEN='#22c55e';
 
 const STEPS = [
   { num: 1, label: 'Welcome', done: true },
@@ -13,14 +13,14 @@ const STEPS = [
 const ROLES = ['Admin','Project Manager','Field Supervisor','Estimator','Accounting'];
 
 const inputStyle: React.CSSProperties = {
-  flex:1,padding:'11px 14px',background:'rgba(0,0,0,.04)',
-  border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,
+  flex:1,padding:'11px 14px',background:INPUT_BG,
+  border:`1px solid ${INPUT_BORDER}`,borderRadius:8,color:TEXT,fontSize:14,
   outline:'none',
 };
 
 const selectStyle: React.CSSProperties = {
-  padding:'11px 14px',background:'rgba(0,0,0,.04)',
-  border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,
+  padding:'11px 14px',background:INPUT_BG,
+  border:`1px solid ${INPUT_BORDER}`,borderRadius:8,color:TEXT,fontSize:13,
   outline:'none',minWidth:160,cursor:'pointer',
 };
 
@@ -61,7 +61,7 @@ export default function OnboardingStep4() {
   }
 
   return (
-    <div style={{minHeight:'100vh',background:DARK,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'system-ui,sans-serif',color:TEXT}}>
+    <div style={{minHeight:'100vh',background:DARK,backgroundImage:`radial-gradient(circle at 50% 0%, rgba(216,154,30,0.10), transparent 60%), ${DARK}`,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'system-ui,sans-serif',color:TEXT}}>
       <div style={{width:'100%',maxWidth:560}}>
 
         {/* Logo */}
@@ -80,16 +80,16 @@ export default function OnboardingStep4() {
                 <div style={{
                   width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
                   fontSize:14,fontWeight:800,
-                  background: s.done ? GREEN : s.active ? GOLD : 'rgba(0,0,0,.06)',
-                  color: (s.done||s.active) ? '#1C1C1E' : DIM,
-                  border:`2px solid ${s.done ? GREEN : s.active ? GOLD : BORDER}`,
+                  background: s.done ? GREEN : s.active ? GOLD : INACTIVE,
+                  color: (s.done||s.active) ? '#2A1B06' : DIM,
+                  border:`2px solid ${s.done ? GREEN : s.active ? GOLD : INACTIVE}`,
                 }}>
                   {s.done ? '✓' : s.num}
                 </div>
                 <span style={{fontSize:11,color:s.active?TEXT:DIM,fontWeight:s.active?700:400}}>{s.label}</span>
               </div>
               {i<STEPS.length-1&&(
-                <div style={{flex:1,height:2,background:BORDER,margin:'17px 8px 0'}}/>
+                <div style={{flex:1,height:2,background:INACTIVE,margin:'17px 8px 0'}}/>
               )}
             </React.Fragment>
           ))}
@@ -97,7 +97,7 @@ export default function OnboardingStep4() {
 
         {/* Success state */}
         {success ? (
-          <div style={{background:RAISED,border:`1px solid rgba(34,197,94,.3)`,borderRadius:16,padding:40,textAlign:'center'}}>
+          <div style={{background:RAISED,border:`1px solid rgba(34,197,94,.3)`,borderRadius:16,padding:40,textAlign:'center',boxShadow:'0 8px 26px rgba(120,80,20,0.10)'}}>
             <div style={{fontSize:56,marginBottom:20}}>🎉</div>
             <h1 style={{fontSize:28,fontWeight:900,margin:'0 0 12px',color:TEXT}}>You&apos;re all set!</h1>
             <p style={{color:DIM,fontSize:15,margin:'0 0 8px',lineHeight:1.6}}>
@@ -108,13 +108,13 @@ export default function OnboardingStep4() {
             </p>
             <a
               href="/app"
-              style={{display:'inline-block',padding:'14px 40px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:10,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}
+              style={{display:'inline-block',padding:'14px 40px',background:'linear-gradient(135deg,#E8B84B,#C98A1A)',borderRadius:10,color:'#2A1B06',fontWeight:700,fontSize:15,textDecoration:'none',boxShadow:'0 6px 18px rgba(201,138,26,0.28)'}}
             >
               Go to Dashboard →
             </a>
           </div>
         ) : (
-          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:16,padding:40}}>
+          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:16,padding:40,boxShadow:'0 8px 26px rgba(120,80,20,0.10)'}}>
             <div style={{marginBottom:28}}>
               <div style={{fontSize:11,fontWeight:700,color:GOLD,textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Step 4 of 4</div>
               <h1 style={{fontSize:26,fontWeight:900,margin:'0 0 6px',color:TEXT}}>Invite Your Team</h1>
@@ -163,7 +163,7 @@ export default function OnboardingStep4() {
               <button
                 onClick={handleSendInvites}
                 disabled={loading}
-                style={{padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
+                style={{padding:'14px 0',background:'linear-gradient(135deg,#E8B84B,#C98A1A)',border:'none',borderRadius:10,color:'#2A1B06',fontSize:15,fontWeight:700,cursor:loading?'wait':'pointer',opacity:loading?.7:1,boxShadow:'0 6px 18px rgba(201,138,26,0.28)'}}
               >
                 {loading?'Sending Invites...':'Send Invites'}
               </button>
@@ -181,7 +181,7 @@ export default function OnboardingStep4() {
           </div>
         )}
 
-        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6E6E73'}}>
+        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6B5B43'}}>
           Questions? <a href="mailto:support@saguarocontrol.net" style={{color:DIM}}>support@saguarocontrol.net</a>
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#C8881C',DARK='linear-gradient(160deg, #FCF7EE 0%, #F8EFDF 45%, #FBEAD2 100%)',RAISED='#FFFBF2',INPUT_BG='#FFFDF8',BORDER='#F0E7D6',INPUT_BORDER='#EFE4D0',INACTIVE='#EFE4D0',DIM='#6B5B43',TEXT='#2A1B06',RED='#ef4444',GREEN='#22c55e';
 
 const STEPS = [
   { num: 1, label: 'Welcome', done: true },
@@ -17,12 +17,12 @@ const US_STATES = [
 ];
 
 const inputStyle: React.CSSProperties = {
-  width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',
-  border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,
+  width:'100%',padding:'11px 14px',background:INPUT_BG,
+  border:`1px solid ${INPUT_BORDER}`,borderRadius:8,color:TEXT,fontSize:14,
   outline:'none',boxSizing:'border-box',
 };
 const selectStyle: React.CSSProperties = {
-  ...inputStyle, background:'#FFFFFF', cursor:'pointer',
+  ...inputStyle, background:INPUT_BG, cursor:'pointer',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -62,7 +62,7 @@ export default function OnboardingStep2() {
   }
 
   return (
-    <div style={{minHeight:'100vh',background:DARK,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'system-ui,sans-serif',color:TEXT}}>
+    <div style={{minHeight:'100vh',background:DARK,backgroundImage:`radial-gradient(circle at 50% 0%, rgba(216,154,30,0.10), transparent 60%), ${DARK}`,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'system-ui,sans-serif',color:TEXT}}>
       <div style={{width:'100%',maxWidth:560}}>
 
         {/* Logo */}
@@ -81,23 +81,23 @@ export default function OnboardingStep2() {
                 <div style={{
                   width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
                   fontSize:14,fontWeight:800,
-                  background: s.done ? GREEN : s.active ? GOLD : 'rgba(0,0,0,.06)',
-                  color: (s.done||s.active) ? '#1C1C1E' : DIM,
-                  border:`2px solid ${s.done ? GREEN : s.active ? GOLD : BORDER}`,
+                  background: s.done ? GREEN : s.active ? GOLD : INACTIVE,
+                  color: (s.done||s.active) ? '#2A1B06' : DIM,
+                  border:`2px solid ${s.done ? GREEN : s.active ? GOLD : INACTIVE}`,
                 }}>
                   {s.done ? '✓' : s.num}
                 </div>
                 <span style={{fontSize:11,color:s.active?TEXT:DIM,fontWeight:s.active?700:400}}>{s.label}</span>
               </div>
               {i<STEPS.length-1&&(
-                <div style={{flex:1,height:2,background:BORDER,margin:'17px 8px 0'}}/>
+                <div style={{flex:1,height:2,background:INACTIVE,margin:'17px 8px 0'}}/>
               )}
             </React.Fragment>
           ))}
         </div>
 
         {/* Card */}
-        <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:16,padding:40}}>
+        <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:16,padding:40,boxShadow:'0 8px 26px rgba(120,80,20,0.10)'}}>
           <div style={{marginBottom:28}}>
             <div style={{fontSize:11,fontWeight:700,color:GOLD,textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Step 2 of 4</div>
             <h1 style={{fontSize:26,fontWeight:900,margin:'0 0 6px',color:TEXT}}>Set Up Your Company</h1>
@@ -135,7 +135,7 @@ export default function OnboardingStep2() {
                   <button
                     key={type}
                     onClick={()=>setForm(p=>({...p,companyType:type}))}
-                    style={{padding:'10px 8px',background:form.companyType===type?'rgba(212,160,23,.15)':'rgba(0,0,0,.03)',border:`1px solid ${form.companyType===type?'rgba(212,160,23,.5)':BORDER}`,borderRadius:8,color:form.companyType===type?GOLD:DIM,fontSize:11,fontWeight:form.companyType===type?700:400,cursor:'pointer',textAlign:'center',lineHeight:1.4}}
+                    style={{padding:'10px 8px',background:form.companyType===type?'rgba(201,138,26,.15)':'#FFFDF8',border:`1px solid ${form.companyType===type?'rgba(201,138,26,.5)':INPUT_BORDER}`,borderRadius:8,color:form.companyType===type?GOLD:DIM,fontSize:11,fontWeight:form.companyType===type?700:400,cursor:'pointer',textAlign:'center',lineHeight:1.4}}
                   >
                     {type}
                   </button>
@@ -168,14 +168,14 @@ export default function OnboardingStep2() {
             <button
               onClick={handleNext}
               disabled={loading}
-              style={{marginTop:8,padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
+              style={{marginTop:8,padding:'14px 0',background:'linear-gradient(135deg,#E8B84B,#C98A1A)',border:'none',borderRadius:10,color:'#2A1B06',fontSize:15,fontWeight:700,cursor:loading?'wait':'pointer',opacity:loading?.7:1,boxShadow:'0 6px 18px rgba(201,138,26,0.28)'}}
             >
               {loading?'Saving...':'Continue → First Project'}
             </button>
           </div>
         </div>
 
-        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6E6E73'}}>
+        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6B5B43'}}>
           <a href="/app" style={{color:DIM,textDecoration:'none'}}>Skip setup — go to dashboard</a>
         </div>
       </div>

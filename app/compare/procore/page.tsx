@@ -4,14 +4,16 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 
 const C = {
-  dark: '#F2F2F7',
-  gold: '#F59E0B',
-  text: '#1C1C1E',
-  dim: '#6E6E73',
-  border: '#E5E5EA',
-  raised: '#FFFFFF',
-  green: '#22c55e',
-  red: '#ef4444',
+  // warm band fill (was cold grey #F2F2F7)
+  dark: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
+  gold: '#C8881C',
+  goldBright: '#D89A1E',
+  text: '#2A1B06',
+  dim: '#6B5B43',
+  border: 'rgba(176,122,18,0.16)',
+  raised: 'transparent',
+  green: '#15803D',
+  red: '#EF4444',
 };
 
 const ROWS: {
@@ -128,13 +130,13 @@ export default function CompareProcorePage() {
   const [teamSizeCalc, setTeamSizeCalc] = useState<number>(15);
 
   return (
-    <div style={{ minHeight: '100vh', background: C.dark, color: C.text, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)', color: C.text, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
       {/* ── NAV ── */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(255,255,255,0.85)',
-        borderBottom: `1px solid ${C.border}`,
+        height: 64, background: 'rgba(255,251,242,0.85)',
+        borderBottom: `1px solid #F0E7D6`,
         backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center',
         padding: '0 32px', gap: 32,
@@ -164,7 +166,7 @@ export default function CompareProcorePage() {
           <a href="/login" style={{
             padding: '8px 18px',
             background: 'transparent',
-            border: `1px solid ${C.border}`,
+            border: `1px solid #E6D7BC`,
             borderRadius: 8,
             color: C.text,
             fontSize: 13,
@@ -175,13 +177,14 @@ export default function CompareProcorePage() {
           </a>
           <a href="/signup" style={{
             padding: '9px 20px',
-            background: C.gold,
+            background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
             borderRadius: 8,
-            color: '#1C1C1E',
+            color: '#2A1B06',
             fontSize: 13,
             fontWeight: 800,
             textDecoration: 'none',
             letterSpacing: 0.2,
+            boxShadow: '0 6px 18px rgba(201,138,26,0.28)',
           }}>
             Free Trial
           </a>
@@ -190,8 +193,15 @@ export default function CompareProcorePage() {
 
       {/* ── HERO ── */}
       <div style={{
-        paddingTop: 120,
-        paddingBottom: 72,
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)',
+        borderBottom: '1px solid #F0E7D6',
+      }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12), transparent 60%)', pointerEvents: 'none' }} />
+      <div style={{
+        position: 'relative',
+        zIndex: 1,
         textAlign: 'center',
         padding: '128px 24px 72px',
         maxWidth: 860,
@@ -201,12 +211,12 @@ export default function CompareProcorePage() {
         <div style={{
           display: 'inline-block',
           padding: '6px 18px',
-          background: 'rgba(245,158,11,0.1)',
-          border: `1px solid rgba(245,158,11,0.35)`,
+          background: 'rgba(200,136,28,0.10)',
+          border: `1px solid rgba(200,136,28,0.32)`,
           borderRadius: 100,
           fontSize: 12,
           fontWeight: 700,
-          color: C.gold,
+          color: '#B07A12',
           letterSpacing: 1.2,
           textTransform: 'uppercase',
           marginBottom: 28,
@@ -223,7 +233,7 @@ export default function CompareProcorePage() {
         }}>
           All the Power.{' '}
           <span style={{
-            background: `linear-gradient(135deg, ${C.gold}, #fde68a)`,
+            background: `linear-gradient(135deg, #D89A1E, #A86A0C)`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
@@ -245,23 +255,23 @@ export default function CompareProcorePage() {
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
           <a href="/signup" style={{
             padding: '14px 36px',
-            background: C.gold,
+            background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
             borderRadius: 10,
-            color: '#1C1C1E',
+            color: '#2A1B06',
             fontWeight: 800,
             fontSize: 16,
             textDecoration: 'none',
             letterSpacing: 0.2,
-            boxShadow: `0 0 32px rgba(245,158,11,0.25)`,
+            boxShadow: `0 6px 18px rgba(201,138,26,0.28)`,
           }}>
             Try Saguaro Free →
           </a>
           <a href="/pricing" style={{
             padding: '14px 32px',
             background: 'transparent',
-            border: `1px solid ${C.border}`,
+            border: `1.5px solid #C8881C`,
             borderRadius: 10,
-            color: C.text,
+            color: '#A86A0C',
             fontWeight: 700,
             fontSize: 15,
             textDecoration: 'none',
@@ -278,11 +288,7 @@ export default function CompareProcorePage() {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 1,
-          background: C.border,
-          border: `1px solid ${C.border}`,
-          borderRadius: 14,
-          overflow: 'hidden',
+          gap: 18,
           maxWidth: 720,
           margin: '0 auto',
         }}>
@@ -292,11 +298,14 @@ export default function CompareProcorePage() {
             { stat: 'AI features', label: "Procore doesn't have" },
           ].map((item) => (
             <div key={item.stat} style={{
-              background: C.raised,
               padding: '24px 20px',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: 28, fontWeight: 900, color: C.gold, letterSpacing: -0.5, marginBottom: 4 }}>
+              <div style={{
+                fontSize: 28, fontWeight: 900, letterSpacing: -0.5, marginBottom: 4,
+                background: 'linear-gradient(135deg, #D89A1E, #A86A0C)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>
                 {item.stat}
               </div>
               <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.4 }}>{item.label}</div>
@@ -304,12 +313,13 @@ export default function CompareProcorePage() {
           ))}
         </div>
       </div>
+      </div>
 
       {/* ── QUICK WINS BAR ── */}
       <div style={{
-        background: 'rgba(245,158,11,0.06)',
-        borderTop: `1px solid rgba(245,158,11,0.15)`,
-        borderBottom: `1px solid rgba(245,158,11,0.15)`,
+        background: 'rgba(200,136,28,0.06)',
+        borderTop: `1px solid rgba(200,136,28,0.15)`,
+        borderBottom: `1px solid rgba(200,136,28,0.15)`,
         padding: '18px 24px',
         overflowX: 'auto',
       }}>
@@ -333,12 +343,12 @@ export default function CompareProcorePage() {
               alignItems: 'center',
               gap: 8,
               padding: '8px 18px',
-              background: 'rgba(245,158,11,0.08)',
-              border: `1px solid rgba(245,158,11,0.2)`,
+              background: 'rgba(200,136,28,0.08)',
+              border: `1px solid rgba(200,136,28,0.2)`,
               borderRadius: 100,
               fontSize: 13,
               fontWeight: 600,
-              color: C.gold,
+              color: '#A86A0C',
               whiteSpace: 'nowrap',
             }}>
               <CheckIcon size={13} />
@@ -359,34 +369,28 @@ export default function CompareProcorePage() {
           </p>
         </div>
 
-        <div style={{
-          border: `1px solid ${C.border}`,
-          borderRadius: 16,
-          overflow: 'hidden',
-        }}>
+        <div>
           {/* Table header */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '2fr 1.1fr 1.1fr',
-            background: C.raised,
-            borderBottom: `1px solid ${C.border}`,
+            background: 'linear-gradient(180deg, rgba(216,154,30,0.12), rgba(216,154,30,0.05))',
+            borderBottom: `2px solid rgba(176,122,18,0.4)`,
           }}>
-            <div style={{ padding: '18px 28px', fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 1.2 }}>
+            <div style={{ padding: '18px 28px', fontSize: 11, fontWeight: 700, color: '#B07A12', textTransform: 'uppercase', letterSpacing: 1.2 }}>
               Feature
             </div>
             <div style={{
               padding: '18px 24px',
               textAlign: 'center',
-              borderLeft: `1px solid ${C.border}`,
-              background: 'rgba(245,158,11,0.05)',
+              background: 'rgba(216,154,30,0.10)',
             }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: C.gold }}>Saguaro</div>
-              <div style={{ fontSize: 11, color: C.gold, opacity: 0.7, marginTop: 2 }}>Recommended</div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: '#A86A0C' }}>Saguaro</div>
+              <div style={{ fontSize: 11, color: '#B07A12', opacity: 0.8, marginTop: 2 }}>Recommended</div>
             </div>
             <div style={{
               padding: '18px 24px',
               textAlign: 'center',
-              borderLeft: `1px solid ${C.border}`,
             }}>
               <div style={{ fontWeight: 700, fontSize: 16, color: C.dim }}>Procore</div>
             </div>
@@ -402,8 +406,8 @@ export default function CompareProcorePage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '2fr 1.1fr 1.1fr',
-                  borderBottom: i < ROWS.length - 1 ? `1px solid ${C.border}` : 'none',
-                  background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.012)',
+                  borderBottom: i < ROWS.length - 1 ? `1px solid rgba(176,122,18,0.16)` : 'none',
+                  background: i % 2 === 0 ? 'transparent' : 'rgba(216,154,30,0.035)',
                 }}
               >
                 <div style={{ padding: '16px 28px' }}>
@@ -416,8 +420,7 @@ export default function CompareProcorePage() {
                 {/* Saguaro cell */}
                 <div style={{
                   padding: '16px 24px',
-                  borderLeft: `1px solid ${C.border}`,
-                  background: saguaroGood ? 'rgba(34,197,94,0.04)' : undefined,
+                  background: 'rgba(216,154,30,0.06)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -436,7 +439,6 @@ export default function CompareProcorePage() {
                 {/* Procore cell */}
                 <div style={{
                   padding: '16px 24px',
-                  borderLeft: `1px solid ${C.border}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -459,10 +461,10 @@ export default function CompareProcorePage() {
 
       {/* ── ROI MINI-CALCULATOR ── */}
       <div style={{
-        background: 'linear-gradient(180deg, #FFFFFF 0%, #F2F2F7 100%)',
+        background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
         padding: '64px 24px',
-        borderTop: `1px solid ${C.border}`,
-        borderBottom: `1px solid ${C.border}`,
+        borderTop: `1px solid rgba(176,122,18,0.16)`,
+        borderBottom: `1px solid rgba(176,122,18,0.16)`,
       }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
@@ -471,7 +473,7 @@ export default function CompareProcorePage() {
               fontWeight: 900,
               margin: '0 0 14px',
               letterSpacing: -0.8,
-              background: `linear-gradient(135deg, ${C.gold}, #fde68a)`,
+              background: `linear-gradient(135deg, #D89A1E, #A86A0C)`,
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -497,7 +499,7 @@ export default function CompareProcorePage() {
               <div style={{ position: 'relative' }}>
                 <span style={{
                   position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  fontSize: 15, fontWeight: 700, color: C.gold, pointerEvents: 'none',
+                  fontSize: 15, fontWeight: 700, color: '#B07A12', pointerEvents: 'none',
                 }}>$</span>
                 <input
                   type="number"
@@ -506,8 +508,8 @@ export default function CompareProcorePage() {
                   style={{
                     width: '100%',
                     padding: '14px 16px 14px 30px',
-                    background: 'rgba(242,242,247,0.8)',
-                    border: `1px solid rgba(245,158,11,0.3)`,
+                    background: 'rgba(255,251,242,0.9)',
+                    border: `1px solid rgba(200,136,28,0.3)`,
                     borderRadius: 10,
                     color: C.text,
                     fontSize: 18,
@@ -515,8 +517,8 @@ export default function CompareProcorePage() {
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.boxShadow = `0 0 0 2px rgba(245,158,11,0.15)`; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#C8881C'; e.currentTarget.style.boxShadow = `0 0 0 2px rgba(200,136,28,0.15)`; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(200,136,28,0.3)'; e.currentTarget.style.boxShadow = 'none'; }}
                 />
               </div>
               <button
@@ -524,12 +526,12 @@ export default function CompareProcorePage() {
                 style={{
                   marginTop: 8,
                   padding: '5px 14px',
-                  background: 'rgba(245,158,11,0.1)',
-                  border: `1px solid rgba(245,158,11,0.25)`,
+                  background: 'rgba(200,136,28,0.1)',
+                  border: `1px solid rgba(200,136,28,0.25)`,
                   borderRadius: 100,
                   fontSize: 12,
                   fontWeight: 600,
-                  color: C.gold,
+                  color: '#A86A0C',
                   cursor: 'pointer',
                 }}
               >
@@ -548,8 +550,8 @@ export default function CompareProcorePage() {
                 style={{
                   width: '100%',
                   padding: '14px 16px',
-                  background: 'rgba(242,242,247,0.8)',
-                  border: `1px solid rgba(245,158,11,0.3)`,
+                  background: 'rgba(255,251,242,0.9)',
+                  border: `1px solid rgba(200,136,28,0.3)`,
                   borderRadius: 10,
                   color: C.text,
                   fontSize: 18,
@@ -557,8 +559,8 @@ export default function CompareProcorePage() {
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.boxShadow = `0 0 0 2px rgba(245,158,11,0.15)`; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; e.currentTarget.style.boxShadow = 'none'; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#C8881C'; e.currentTarget.style.boxShadow = `0 0 0 2px rgba(200,136,28,0.15)`; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(200,136,28,0.3)'; e.currentTarget.style.boxShadow = 'none'; }}
               />
               <div style={{ marginTop: 8, fontSize: 12, color: C.dim }}>
                 Saguaro is flat-rate — {teamSizeCalc} users, same price
@@ -570,11 +572,7 @@ export default function CompareProcorePage() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 1,
-            background: C.border,
-            border: `1px solid ${C.border}`,
-            borderRadius: 14,
-            overflow: 'hidden',
+            gap: 16,
             marginBottom: 32,
           }}>
             {[
@@ -598,7 +596,6 @@ export default function CompareProcorePage() {
               },
             ].map((item) => (
               <div key={item.label} style={{
-                background: C.raised,
                 padding: '28px 20px',
                 textAlign: 'center',
               }}>
@@ -608,7 +605,9 @@ export default function CompareProcorePage() {
                 <div style={{
                   fontSize: 'clamp(24px, 3vw, 36px)',
                   fontWeight: 900,
-                  color: item.highlight ? C.gold : C.green,
+                  ...(item.highlight
+                    ? { background: 'linear-gradient(135deg, #D89A1E, #A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }
+                    : { color: C.green }),
                   letterSpacing: -1,
                   lineHeight: 1,
                 }}>
@@ -624,19 +623,19 @@ export default function CompareProcorePage() {
             <a href="/signup" style={{
               display: 'inline-block',
               padding: '15px 40px',
-              background: `linear-gradient(135deg, ${C.gold}, #D97706)`,
+              background: `linear-gradient(135deg,#E8B84B,#C98A1A)`,
               borderRadius: 10,
-              color: '#1C1C1E',
+              color: '#2A1B06',
               fontWeight: 800,
               fontSize: 16,
               textDecoration: 'none',
-              boxShadow: `0 0 32px rgba(245,158,11,0.25)`,
+              boxShadow: `0 6px 18px rgba(201,138,26,0.28)`,
               marginBottom: 16,
             }}>
               Claim This Savings — Start Free →
             </a>
             <div style={{ fontSize: 13, color: C.dim }}>
-              <a href="/roi-calculator" style={{ color: C.gold, textDecoration: 'none', fontWeight: 600 }}>
+              <a href="/roi-calculator" style={{ color: '#A86A0C', textDecoration: 'none', fontWeight: 600 }}>
                 Or see our full ROI calculator →
               </a>
             </div>
@@ -646,9 +645,9 @@ export default function CompareProcorePage() {
 
       {/* ── WHERE WE WIN DEEP DIVE ── */}
       <div style={{
-        background: C.raised,
-        borderTop: `1px solid ${C.border}`,
-        borderBottom: `1px solid ${C.border}`,
+        background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
+        borderTop: `1px solid rgba(176,122,18,0.16)`,
+        borderBottom: `1px solid rgba(176,122,18,0.16)`,
         padding: '80px 24px',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -667,24 +666,24 @@ export default function CompareProcorePage() {
                 key={card.title}
                 onClick={() => setActiveDeep(activeDeep === idx ? null : idx)}
                 style={{
-                  background: C.dark,
-                  border: `1px solid ${activeDeep === idx ? 'rgba(245,158,11,0.5)' : C.border}`,
+                  background: 'rgba(255,251,242,0.6)',
+                  border: `1px solid ${activeDeep === idx ? 'rgba(200,136,28,0.5)' : 'rgba(176,122,18,0.16)'}`,
                   borderRadius: 14,
                   padding: '28px 26px',
                   cursor: 'pointer',
                   transition: 'border-color 0.2s, box-shadow 0.2s',
-                  boxShadow: activeDeep === idx ? `0 0 24px rgba(245,158,11,0.1)` : 'none',
+                  boxShadow: activeDeep === idx ? `0 8px 24px rgba(201,138,26,0.12)` : 'none',
                 }}
               >
                 <div style={{
                   display: 'inline-flex',
                   padding: '6px 12px',
-                  background: 'rgba(245,158,11,0.1)',
-                  border: `1px solid rgba(245,158,11,0.2)`,
+                  background: 'rgba(200,136,28,0.1)',
+                  border: `1px solid rgba(200,136,28,0.2)`,
                   borderRadius: 6,
                   fontSize: 11,
                   fontWeight: 700,
-                  color: C.gold,
+                  color: '#A86A0C',
                   textTransform: 'uppercase',
                   letterSpacing: 0.8,
                   marginBottom: 16,
@@ -710,7 +709,7 @@ export default function CompareProcorePage() {
                     <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.7, margin: 0 }}>{card.procoreBody}</p>
                   </div>
                 )}
-                <div style={{ fontSize: 12, color: C.gold, marginTop: 12 }}>
+                <div style={{ fontSize: 12, color: '#A86A0C', marginTop: 12 }}>
                   {activeDeep === idx ? 'Hide Procore comparison ↑' : 'Compare with Procore →'}
                 </div>
               </div>
@@ -740,11 +739,11 @@ export default function CompareProcorePage() {
         }}>
           {/* Procore card */}
           <div style={{
-            background: C.raised,
-            border: `1px solid ${C.border}`,
+            background: 'rgba(255,251,242,0.55)',
+            border: `1px solid rgba(176,122,18,0.16)`,
             borderRadius: 16,
             padding: '32px 28px',
-            opacity: 0.85,
+            opacity: 0.92,
           }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: C.dim, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 20 }}>
               Procore
@@ -783,14 +782,14 @@ export default function CompareProcorePage() {
               width: 44,
               height: 44,
               borderRadius: '50%',
-              background: C.raised,
-              border: `2px solid ${C.border}`,
+              background: 'rgba(255,251,242,0.9)',
+              border: `2px solid rgba(200,136,28,0.35)`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 13,
               fontWeight: 800,
-              color: C.dim,
+              color: '#A86A0C',
             }}>
               VS
             </div>
@@ -798,13 +797,13 @@ export default function CompareProcorePage() {
 
           {/* Saguaro card */}
           <div style={{
-            background: 'rgba(245,158,11,0.05)',
-            border: `2px solid rgba(245,158,11,0.4)`,
+            background: 'rgba(216,154,30,0.07)',
+            border: `2px solid rgba(200,136,28,0.4)`,
             borderRadius: 16,
             padding: '32px 28px',
-            boxShadow: `0 0 40px rgba(245,158,11,0.08)`,
+            boxShadow: `0 8px 28px rgba(201,138,26,0.14)`,
           }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: C.gold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: '#A86A0C', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 20 }}>
               Saguaro Professional
             </div>
             <div style={{ fontSize: 11, color: C.dim, marginBottom: 20, lineHeight: 1.6 }}>
@@ -851,13 +850,14 @@ export default function CompareProcorePage() {
           </div>
           <a href="/signup" style={{
             padding: '12px 28px',
-            background: C.gold,
+            background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
             borderRadius: 9,
-            color: '#1C1C1E',
+            color: '#2A1B06',
             fontWeight: 800,
             fontSize: 14,
             textDecoration: 'none',
             flexShrink: 0,
+            boxShadow: '0 6px 18px rgba(201,138,26,0.28)',
           }}>
             Start Saving Today →
           </a>
@@ -867,15 +867,12 @@ export default function CompareProcorePage() {
       {/* ── READY TO SWITCH / MIGRATION CTA ── */}
       <div style={{
         padding: '80px 24px',
-        background: C.dark,
+        background: 'transparent',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{
-            background: C.raised,
-            border: `1px solid ${C.border}`,
-            borderTop: `4px solid ${C.gold}`,
-            borderRadius: 16,
-            padding: '56px 48px',
+            padding: '24px 0 0',
+            borderTop: `3px solid rgba(200,136,28,0.5)`,
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 48,
@@ -886,12 +883,12 @@ export default function CompareProcorePage() {
               <div style={{
                 display: 'inline-block',
                 padding: '5px 14px',
-                background: 'rgba(245,158,11,0.12)',
-                border: `1px solid rgba(245,158,11,0.3)`,
+                background: 'rgba(200,136,28,0.12)',
+                border: `1px solid rgba(200,136,28,0.3)`,
                 borderRadius: 100,
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#FCD34D',
+                color: '#B07A12',
                 letterSpacing: 1.2,
                 textTransform: 'uppercase',
                 marginBottom: 20,
@@ -930,16 +927,16 @@ export default function CompareProcorePage() {
 
             {/* RIGHT */}
             <div style={{
-              background: 'rgba(255,255,255,0.7)',
-              border: `1px solid rgba(245,158,11,0.3)`,
+              background: 'rgba(216,154,30,0.06)',
+              border: `1px solid rgba(200,136,28,0.3)`,
               borderRadius: 14,
               padding: '32px 28px',
-              boxShadow: `0 0 40px rgba(245,158,11,0.06)`,
+              boxShadow: `0 8px 28px rgba(201,138,26,0.10)`,
             }}>
               <div style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: C.gold,
+                color: '#A86A0C',
                 textTransform: 'uppercase',
                 letterSpacing: 0.8,
                 marginBottom: 20,
@@ -965,14 +962,14 @@ export default function CompareProcorePage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '14px 24px',
-                background: `linear-gradient(135deg, ${C.gold}, #D97706)`,
+                background: `linear-gradient(135deg,#E8B84B,#C98A1A)`,
                 borderRadius: 9,
-                color: '#1C1C1E',
+                color: '#2A1B06',
                 fontWeight: 800,
                 fontSize: 15,
                 textDecoration: 'none',
                 marginBottom: 12,
-                boxShadow: `0 0 24px rgba(245,158,11,0.2)`,
+                boxShadow: `0 6px 18px rgba(201,138,26,0.28)`,
               }}>
                 Start My Free Migration →
               </a>
@@ -982,9 +979,9 @@ export default function CompareProcorePage() {
                 justifyContent: 'center',
                 padding: '13px 24px',
                 background: 'transparent',
-                border: `1px solid rgba(245,158,11,0.3)`,
+                border: `1px solid rgba(200,136,28,0.4)`,
                 borderRadius: 9,
-                color: C.gold,
+                color: '#A86A0C',
                 fontWeight: 700,
                 fontSize: 14,
                 textDecoration: 'none',
@@ -998,9 +995,9 @@ export default function CompareProcorePage() {
 
       {/* ── TESTIMONIALS ── */}
       <div style={{
-        background: C.raised,
-        borderTop: `1px solid ${C.border}`,
-        borderBottom: `1px solid ${C.border}`,
+        background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
+        borderTop: `1px solid rgba(176,122,18,0.16)`,
+        borderBottom: `1px solid rgba(176,122,18,0.16)`,
         padding: '80px 24px',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -1014,8 +1011,8 @@ export default function CompareProcorePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             {TESTIMONIALS.map((t) => (
               <div key={t.author} style={{
-                background: C.dark,
-                border: `1px solid ${C.border}`,
+                background: 'rgba(255,251,242,0.6)',
+                border: `1px solid rgba(176,122,18,0.16)`,
                 borderRadius: 14,
                 padding: '28px 26px',
               }}>
@@ -1034,13 +1031,13 @@ export default function CompareProcorePage() {
                     width: 40,
                     height: 40,
                     borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${C.gold}, #fde68a)`,
+                    background: `linear-gradient(135deg,#E8B84B,#C98A1A)`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 13,
                     fontWeight: 800,
-                    color: '#1C1C1E',
+                    color: '#2A1B06',
                     flexShrink: 0,
                   }}>
                     {t.initials}
@@ -1060,17 +1057,17 @@ export default function CompareProcorePage() {
       <div style={{
         padding: '96px 24px',
         textAlign: 'center',
-        background: `radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.06) 0%, transparent 70%), ${C.dark}`,
+        background: `radial-gradient(ellipse at 50% 0%, #251608, #0E0B08)`,
       }}>
         <div style={{
           display: 'inline-block',
           padding: '6px 18px',
-          background: 'rgba(245,158,11,0.1)',
-          border: `1px solid rgba(245,158,11,0.3)`,
+          background: 'rgba(216,154,30,0.14)',
+          border: `1px solid rgba(216,154,30,0.4)`,
           borderRadius: 100,
           fontSize: 11,
           fontWeight: 700,
-          color: C.gold,
+          color: '#E8B84B',
           letterSpacing: 1.2,
           textTransform: 'uppercase',
           marginBottom: 24,
@@ -1084,27 +1081,28 @@ export default function CompareProcorePage() {
           margin: '0 0 16px',
           letterSpacing: -1,
           lineHeight: 1.1,
+          color: '#F5E9D6',
         }}>
           Make the Switch Today.
         </h2>
 
-        <p style={{ fontSize: 17, color: C.dim, marginBottom: 8, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 17, color: '#C9B79A', marginBottom: 8, lineHeight: 1.6 }}>
           Start your free trial. No credit card. No annual contract. No sales call required.
         </p>
-        <p style={{ fontSize: 14, color: C.dim, marginBottom: 44 }}>
+        <p style={{ fontSize: 14, color: '#C9B79A', marginBottom: 44 }}>
           We&apos;ll help migrate your data from Procore — at no additional cost.
         </p>
 
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 48 }}>
           <a href="/signup" style={{
             padding: '16px 44px',
-            background: C.gold,
+            background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
             borderRadius: 10,
-            color: '#1C1C1E',
+            color: '#2A1B06',
             fontWeight: 800,
             fontSize: 17,
             textDecoration: 'none',
-            boxShadow: `0 0 48px rgba(245,158,11,0.3)`,
+            boxShadow: `0 6px 18px rgba(201,138,26,0.4)`,
             letterSpacing: 0.2,
           }}>
             Start Free Trial →
@@ -1112,9 +1110,9 @@ export default function CompareProcorePage() {
           <a href="/contact" style={{
             padding: '16px 36px',
             background: 'transparent',
-            border: `1px solid ${C.border}`,
+            border: `1px solid rgba(216,154,30,0.45)`,
             borderRadius: 10,
-            color: C.text,
+            color: '#F5E9D6',
             fontWeight: 700,
             fontSize: 16,
             textDecoration: 'none',
@@ -1123,21 +1121,21 @@ export default function CompareProcorePage() {
           </a>
         </div>
 
-        <div style={{ fontSize: 13, color: C.dim }}>
+        <div style={{ fontSize: 13, color: '#C9B79A' }}>
           Also compare:&nbsp;
-          <a href="/compare/buildertrend" style={{ color: C.gold, textDecoration: 'none', fontWeight: 600 }}>
+          <a href="/compare/buildertrend" style={{ color: '#E8B84B', textDecoration: 'none', fontWeight: 600 }}>
             Saguaro vs Buildertrend
           </a>
         </div>
       </div>
 
       {/* ── MOBILE STICKY CTA ── */}
-      <div className="mobile-sticky-cta" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(255,255,255,0.97)', borderTop: '1px solid rgba(245,158,11,0.3)', padding: '12px 16px', backdropFilter: 'blur(12px)' }}>
+      <div className="mobile-sticky-cta" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(255,251,242,0.97)', borderTop: '1px solid rgba(200,136,28,0.3)', padding: '12px 16px', backdropFilter: 'blur(12px)' }}>
         <div style={{ display: 'flex', gap: 10 }}>
-          <a href="/signup" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, textDecoration: 'none' }}>
+          <a href="/signup" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 8, color: '#2A1B06', fontSize: 14, fontWeight: 800, textDecoration: 'none' }}>
             Start Free Trial
           </a>
-          <a href="/switch-from-procore" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, color: '#F59E0B', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+          <a href="/switch-from-procore" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'rgba(200,136,28,0.1)', border: '1px solid rgba(200,136,28,0.35)', borderRadius: 8, color: '#A86A0C', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
             Free Migration
           </a>
         </div>

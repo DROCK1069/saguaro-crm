@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#F59E0B',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#C8881C',ACCENT='#B07A12',DARK='linear-gradient(160deg, #FCF7EE 0%, #F8EFDF 45%, #FBEAD2 100%)',RAISED='#FFFBF2',INPUT_BG='#FFFDF8',BORDER='#F0E7D6',INPUT_BORDER='#EFE4D0',DIM='#6B5B43',TEXT='#2A1B06',RED='#ef4444',GREEN='#22c55e';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -77,8 +77,8 @@ export default function SignupPage(){
     setLoading(false);
   }
 
-  const inputStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box'};
-  const selectStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box',cursor:'pointer'};
+  const inputStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:INPUT_BG,border:`1px solid ${INPUT_BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box'};
+  const selectStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:INPUT_BG,border:`1px solid ${INPUT_BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box',cursor:'pointer'};
   const labelStyle: React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
 
   if(success) return (
@@ -88,7 +88,7 @@ export default function SignupPage(){
         <h1 style={{fontSize:26,fontWeight:900,color:TEXT,marginBottom:12}}>Check your email</h1>
         <p style={{color:DIM,fontSize:15,lineHeight:1.7,marginBottom:28}}>
           We sent a confirmation link to <strong style={{color:TEXT}}>{form.email}</strong>.<br/>
-          Click it to activate your account — then log in at <strong style={{color:GOLD}}>saguarocontrol.net/login</strong>.
+          Click it to activate your account — then log in at <strong style={{color:ACCENT}}>saguarocontrol.net/login</strong>.
         </p>
         <div style={{background:'rgba(34,197,94,.08)',border:'1px solid rgba(34,197,94,.2)',borderRadius:12,padding:'18px 24px',marginBottom:28,textAlign:'left'}}>
           <div style={{fontSize:13,fontWeight:700,color:TEXT,marginBottom:12}}>What happens next:</div>
@@ -99,7 +99,7 @@ export default function SignupPage(){
             </div>
           ))}
         </div>
-        <a href="/login" style={{display:'block',padding:'14px',background:`linear-gradient(135deg,${GOLD},#D97706)`,borderRadius:9,color:'#000',fontWeight:900,fontSize:15,textDecoration:'none',marginBottom:16}}>
+        <a href="/login" style={{display:'block',padding:'14px',background:'linear-gradient(135deg,#E8B84B,#C98A1A)',borderRadius:9,color:'#2A1B06',fontWeight:700,fontSize:15,textDecoration:'none',marginBottom:16,boxShadow:'0 6px 18px rgba(201,138,26,0.28)'}}>
           Go to Login →
         </a>
         <p style={{fontSize:12,color:DIM}}>Didn&apos;t get it? Check spam or <button onClick={()=>setSuccess(false)} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',fontSize:12,fontWeight:700}}>try again</button></p>
@@ -111,13 +111,13 @@ export default function SignupPage(){
     <div style={{minHeight:'100vh',background:DARK,fontFamily:"system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
       {/* Nav */}
-      <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(255,255,255,0.95)',backdropFilter:'blur(12px)',zIndex:50}}>
+      <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(252,247,238,0.92)',backdropFilter:'blur(12px)',zIndex:50}}>
         <a href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:10}}>
           <img src="/logo-full.jpg" alt="Saguaro" style={{height:34,width:'auto',borderRadius:4}}/>
-          <span style={{fontWeight:900,fontSize:15,background:`linear-gradient(90deg,${GOLD},#FCD34D)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
+          <span style={{fontWeight:900,fontSize:15,background:'linear-gradient(90deg,#C8881C,#E0A030)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
         </a>
         <a href="/login" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>
-          Already have an account? <span style={{color:GOLD}}>Log in →</span>
+          Already have an account? <span style={{color:ACCENT}}>Log in →</span>
         </a>
       </nav>
 
@@ -143,7 +143,7 @@ export default function SignupPage(){
           <div style={{display:'flex',flexDirection:'column',gap:24,marginBottom:40}}>
             {HOW_IT_WORKS.map((s,i)=>(
               <div key={i} style={{display:'flex',gap:16,alignItems:'flex-start'}}>
-                <div style={{width:40,height:40,borderRadius:12,background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <div style={{width:40,height:40,borderRadius:12,background:'rgba(201,138,26,0.08)',border:'1px solid rgba(201,138,26,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   {s.icon}
                 </div>
                 <div>
@@ -236,26 +236,26 @@ export default function SignupPage(){
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} style={{marginTop:8,padding:'14px 0',background:loading?'rgba(245,158,11,.4)':`linear-gradient(135deg,${GOLD},#D97706)`,border:'none',borderRadius:9,color:'#000',fontSize:15,fontWeight:900,cursor:loading?'not-allowed':'pointer'}}>
+              <button type="submit" disabled={loading} style={{marginTop:8,padding:'14px 0',background:loading?'rgba(201,138,26,.4)':'linear-gradient(135deg,#E8B84B,#C98A1A)',border:'none',borderRadius:9,color:'#2A1B06',fontSize:15,fontWeight:700,cursor:loading?'not-allowed':'pointer',boxShadow:loading?'none':'0 6px 18px rgba(201,138,26,0.28)'}}>
                 {loading?'Creating your account…':'Start Free Trial →'}
               </button>
             </form>
 
             {/* What happens next */}
-            <div style={{marginTop:20,padding:'14px 18px',background:'rgba(0,0,0,0.02)',border:`1px solid rgba(229,229,234,0.5)`,borderRadius:8}}>
+            <div style={{marginTop:20,padding:'14px 18px',background:'rgba(201,138,26,0.04)',border:`1px solid rgba(240,231,214,0.8)`,borderRadius:8}}>
               <div style={{fontSize:11,fontWeight:700,color:DIM,letterSpacing:1,textTransform:'uppercase',marginBottom:10}}>After you sign up:</div>
               {['Confirm your email → you\'re in instantly','Log in at saguarocontrol.net — works in any browser','Optional: install on your phone in 30 seconds'].map((t,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:DIM,marginBottom:6}}>
-                  <span style={{width:18,height:18,borderRadius:'50%',background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.2)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:GOLD,flexShrink:0}}>{i+1}</span>
+                  <span style={{width:18,height:18,borderRadius:'50%',background:'rgba(201,138,26,0.1)',border:'1px solid rgba(201,138,26,0.2)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:GOLD,flexShrink:0}}>{i+1}</span>
                   {t}
                 </div>
               ))}
             </div>
 
             <div style={{marginTop:16,textAlign:'center',fontSize:12,color:DIM}}>
-              Already have an account? <a href="/login" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Log in →</a>
+              Already have an account? <a href="/login" style={{color:ACCENT,textDecoration:'none',fontWeight:700}}>Log in →</a>
             </div>
-            <div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#6E6E73'}}>
+            <div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#6B5B43'}}>
               By signing up you agree to our <a href="/terms" style={{color:DIM,textDecoration:'none'}}>Terms</a> and <a href="/privacy" style={{color:DIM,textDecoration:'none'}}>Privacy Policy</a>
             </div>
           </div>

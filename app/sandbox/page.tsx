@@ -3,18 +3,19 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const DARK = '#F2F2F7';
-const GOLD = '#F59E0B';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
-const GREEN = '#22c55e';
+const PAGE_BG = 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)';
+const HERO_BG = 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12), transparent 60%), linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)';
+const GOLD = '#C8881C';
+const EYEBROW = '#B07A12';
+const TEXT = '#2A1B06';
+const DIM = '#6B5B43';
+const BORDER = 'rgba(176,122,18,0.16)';
+const GREEN = '#1A8A4A';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '11px 14px',
-  background: '#FFFFFF',
+  background: 'rgba(255,251,242,0.9)',
   border: `1px solid ${BORDER}`,
   borderRadius: 8,
   color: TEXT,
@@ -128,7 +129,7 @@ export default function SandboxPage() {
           }
         `}</style>
         <div style={{
-          minHeight: '100vh', background: DARK, display: 'flex',
+          minHeight: '100vh', background: PAGE_BG, display: 'flex',
           flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           padding: 24, fontFamily: 'system-ui, -apple-system, sans-serif',
         }}>
@@ -150,11 +151,10 @@ export default function SandboxPage() {
 
             {/* Pre-loaded items */}
             <div style={{
-              background: RAISED, border: `1px solid ${BORDER}`,
-              borderTop: `3px solid ${GOLD}`, borderRadius: 10,
-              padding: '20px 24px', marginBottom: 28, textAlign: 'left',
+              borderTop: `3px solid ${GOLD}`,
+              padding: '20px 4px', marginBottom: 28, textAlign: 'left',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: GOLD, marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: EYEBROW, marginBottom: 14 }}>
                 Pre-loaded in your sandbox
               </div>
               {[
@@ -172,10 +172,10 @@ export default function SandboxPage() {
 
             <Link href="/app" style={{
               display: 'block', padding: '15px 32px',
-              background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
-              color: '#1C1C1E', borderRadius: 9, fontWeight: 900,
+              background: `linear-gradient(135deg, #E8B84B, #C98A1A)`,
+              color: '#2A1B06', borderRadius: 9, fontWeight: 900,
               fontSize: 16, textDecoration: 'none', textAlign: 'center',
-              boxShadow: `0 4px 24px rgba(245,158,11,0.35)`,
+              boxShadow: `0 6px 18px rgba(201,138,26,0.28)`,
               letterSpacing: 0.3,
             }}>
               Enter My Sandbox →
@@ -201,11 +201,11 @@ export default function SandboxPage() {
         }
         .sandbox-input:focus {
           border-color: ${GOLD} !important;
-          box-shadow: 0 0 0 3px rgba(245,158,11,0.12);
+          box-shadow: 0 0 0 3px rgba(201,138,26,0.14);
         }
         .sandbox-cta:hover {
-          filter: brightness(1.07);
-          box-shadow: 0 6px 28px rgba(245,158,11,0.45) !important;
+          filter: brightness(1.05);
+          box-shadow: 0 8px 24px rgba(201,138,26,0.40) !important;
         }
         .sandbox-cta:active {
           transform: translateY(1px);
@@ -246,14 +246,14 @@ export default function SandboxPage() {
       `}</style>
 
       <div style={{
-        minHeight: '100vh', background: DARK,
+        minHeight: '100vh', background: PAGE_BG,
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}>
 
         {/* ── NAV ── */}
         <nav style={{
           position: 'fixed', top: 0, left: 0, right: 0, height: 58,
-          background: 'rgba(255,255,255,0.97)', borderBottom: `1px solid ${BORDER}`,
+          background: 'rgba(255,251,242,0.85)', borderBottom: `1px solid #F0E7D6`,
           display: 'flex', alignItems: 'center', padding: '0 28px',
           gap: 16, zIndex: 100, backdropFilter: 'blur(8px)',
         }}>
@@ -270,7 +270,7 @@ export default function SandboxPage() {
           <Link href="/login" style={{
             fontSize: 13, fontWeight: 700, color: GOLD,
             textDecoration: 'none', padding: '6px 14px',
-            border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 6,
+            border: `1px solid rgba(201,138,26,0.32)`, borderRadius: 6,
           }}>
             Log In →
           </Link>
@@ -288,18 +288,16 @@ export default function SandboxPage() {
             animation: 'fade-in 0.4s ease both',
           }}>
 
-            {/* Form card */}
+            {/* Form */}
             <div style={{
-              background: RAISED, border: `1px solid ${BORDER}`,
-              borderTop: `3px solid ${GOLD}`, borderRadius: 14,
-              padding: '36px 36px 28px 36px',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
+              borderTop: `3px solid ${GOLD}`,
+              padding: '32px 0 8px 0',
               maxWidth: 520,
             }}>
 
               {/* Header */}
               <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: GOLD, marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: EYEBROW, marginBottom: 10 }}>
                   Free 14-Day Trial
                 </div>
                 <h1 style={{ fontSize: 26, fontWeight: 900, color: TEXT, lineHeight: 1.2, margin: 0 }}>
@@ -321,21 +319,21 @@ export default function SandboxPage() {
                       width: 26, height: 26, borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 700,
-                      background: step >= s ? GOLD : 'rgba(0,0,0,0.06)',
-                      color: step >= s ? '#1C1C1E' : DIM,
+                      background: step >= s ? GOLD : 'rgba(176,122,18,0.08)',
+                      color: step >= s ? '#2A1B06' : DIM,
                       border: step >= s ? 'none' : `1px solid ${BORDER}`,
                       transition: 'all 0.2s',
                     }}>
                       {step > s ? (
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                          <polyline points="2,6 5,9 10,3" stroke="#F2F2F7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          <polyline points="2,6 5,9 10,3" stroke="#FCF7EE" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       ) : s}
                     </div>
                     {s < 2 && (
                       <div style={{
                         flex: 1, height: 2, borderRadius: 1,
-                        background: step > s ? GOLD : 'rgba(0,0,0,0.08)',
+                        background: step > s ? GOLD : 'rgba(176,122,18,0.12)',
                         transition: 'background 0.3s',
                       }} />
                     )}
@@ -409,10 +407,10 @@ export default function SandboxPage() {
                       style={{
                         width: '100%', padding: '14px 20px',
                         background: (!firstName || !lastName || !email || !company)
-                          ? 'rgba(245,158,11,0.4)'
-                          : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
+                          ? 'rgba(201,138,26,0.4)'
+                          : `linear-gradient(135deg, #E8B84B, #C98A1A)`,
                         border: 'none', borderRadius: 9,
-                        color: '#1C1C1E', fontSize: 15, fontWeight: 900,
+                        color: '#2A1B06', fontSize: 15, fontWeight: 900,
                         cursor: (!firstName || !lastName || !email || !company) ? 'not-allowed' : 'pointer',
                         marginBottom: 0,
                         transition: 'all 0.15s',
@@ -463,12 +461,12 @@ export default function SandboxPage() {
                       style={{
                         width: '100%', padding: '15px 20px',
                         background: loading
-                          ? 'rgba(245,158,11,0.5)'
-                          : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
+                          ? 'rgba(201,138,26,0.5)'
+                          : `linear-gradient(135deg, #E8B84B, #C98A1A)`,
                         border: 'none', borderRadius: 9,
-                        color: '#1C1C1E', fontSize: 16, fontWeight: 900,
+                        color: '#2A1B06', fontSize: 16, fontWeight: 900,
                         cursor: loading ? 'not-allowed' : 'pointer',
-                        boxShadow: loading ? 'none' : '0 4px 20px rgba(245,158,11,0.3)',
+                        boxShadow: loading ? 'none' : '0 6px 18px rgba(201,138,26,0.28)',
                         marginBottom: 12,
                         transition: 'all 0.15s',
                         letterSpacing: 0.3,
@@ -492,7 +490,7 @@ export default function SandboxPage() {
                 )}
 
                 {/* Legal */}
-                <p style={{ fontSize: 11, color: 'rgba(110,110,115,0.5)', textAlign: 'center', marginTop: 14, marginBottom: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: 11, color: 'rgba(107,91,67,0.7)', textAlign: 'center', marginTop: 14, marginBottom: 0, lineHeight: 1.6 }}>
                   By signing up you agree to our{' '}
                   <Link href="/terms" style={{ color: DIM, textDecoration: 'underline' }}>Terms of Service</Link>.{' '}
                   Cancel anytime.
@@ -538,6 +536,7 @@ export default function SandboxPage() {
           <div className="right-col" style={{
             borderLeft: `1px solid ${BORDER}`,
             padding: '0 0',
+            background: HERO_BG,
             position: 'sticky', top: 58, height: 'calc(100vh - 58px)',
             overflowY: 'auto',
           }}>
@@ -545,12 +544,12 @@ export default function SandboxPage() {
 
               {/* ── What's in Your Sandbox ── */}
               <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: GOLD, marginBottom: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: EYEBROW, marginBottom: 14 }}>
                   What&apos;s in Your Sandbox
                 </div>
                 <div style={{
-                  background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
-                  padding: '20px 22px',
+                  borderTop: `1px solid ${BORDER}`,
+                  padding: '20px 2px',
                 }}>
                   {[
                     { text: 'AI Blueprint Takeoff — 2,400 SF custom home', sub: 'Ran in 47 seconds' },
@@ -574,13 +573,13 @@ export default function SandboxPage() {
               {/* ── Live Activity Feed ── */}
               <div style={{ marginBottom: 32 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: GOLD }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: EYEBROW }}>
                     Live Activity
                   </div>
                   <PulseDot />
                 </div>
                 <div style={{
-                  background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
+                  borderTop: `1px solid ${BORDER}`,
                   overflow: 'hidden',
                 }}>
                   {[
@@ -593,8 +592,8 @@ export default function SandboxPage() {
                       key={name}
                       style={{
                         display: 'flex', alignItems: 'flex-start', gap: 12,
-                        padding: '13px 18px',
-                        borderBottom: i < 3 ? `1px solid rgba(229,229,234,0.5)` : 'none',
+                        padding: '13px 2px',
+                        borderBottom: i < 3 ? `1px solid ${BORDER}` : 'none',
                       }}
                     >
                       <PulseDot />
@@ -603,7 +602,7 @@ export default function SandboxPage() {
                         <span style={{ fontSize: 13, color: DIM }}> from {city} </span>
                         <span style={{ fontSize: 13, color: DIM }}>{action}</span>
                       </div>
-                      <span style={{ fontSize: 11, color: 'rgba(110,110,115,0.4)', whiteSpace: 'nowrap', marginTop: 2 }}>{ago}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(107,91,67,0.6)', whiteSpace: 'nowrap', marginTop: 2 }}>{ago}</span>
                     </div>
                   ))}
                 </div>
@@ -611,30 +610,30 @@ export default function SandboxPage() {
 
               {/* ── Comparison Table ── */}
               <div>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: GOLD, marginBottom: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: EYEBROW, marginBottom: 14 }}>
                   Saguaro vs. The Old Way
                 </div>
                 <div className="comparison-table" style={{
-                  background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
+                  border: `1px solid ${BORDER}`, borderRadius: 12,
                   overflow: 'hidden', fontSize: 13,
                 }}>
                   {/* Header */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(245,158,11,0.06)', borderBottom: `1px solid ${BORDER}` }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', background: 'rgba(201,138,26,0.08)', borderBottom: `1px solid ${BORDER}` }}>
                     <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5 }}></div>
                     <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 0.5, borderLeft: `1px solid ${BORDER}` }}>Saguaro</div>
                     <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5, borderLeft: `1px solid ${BORDER}` }}>Procore Demo</div>
                   </div>
                   {/* Row 1 */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: `1px solid rgba(229,229,234,0.5)` }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: `1px solid ${BORDER}` }}>
                     <div style={{ padding: '12px 14px', color: DIM, fontWeight: 600 }}>Setup time</div>
-                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid rgba(229,229,234,0.5)` }}>60 seconds</div>
-                    <div style={{ padding: '12px 14px', color: 'rgba(110,110,115,0.5)', borderLeft: `1px solid rgba(229,229,234,0.5)` }}>Schedule a call (2–5 days)</div>
+                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid ${BORDER}` }}>60 seconds</div>
+                    <div style={{ padding: '12px 14px', color: 'rgba(107,91,67,0.7)', borderLeft: `1px solid ${BORDER}` }}>Schedule a call (2–5 days)</div>
                   </div>
                   {/* Row 2 */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
                     <div style={{ padding: '12px 14px', color: DIM, fontWeight: 600 }}>What you get</div>
-                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid rgba(229,229,234,0.5)`, lineHeight: 1.4 }}>Full product, real AI, your data</div>
-                    <div style={{ padding: '12px 14px', color: 'rgba(110,110,115,0.5)', borderLeft: `1px solid rgba(229,229,234,0.5)`, lineHeight: 1.4 }}>Guided tour with sales rep</div>
+                    <div style={{ padding: '12px 14px', color: GREEN, fontWeight: 700, borderLeft: `1px solid ${BORDER}`, lineHeight: 1.4 }}>Full product, real AI, your data</div>
+                    <div style={{ padding: '12px 14px', color: 'rgba(107,91,67,0.7)', borderLeft: `1px solid ${BORDER}`, lineHeight: 1.4 }}>Guided tour with sales rep</div>
                   </div>
                 </div>
               </div>

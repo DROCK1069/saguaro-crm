@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444';
+const GOLD='#C8881C',ACCENT='#B07A12',PAGE_BG='linear-gradient(160deg, #FCF7EE 0%, #F8EFDF 45%, #FBEAD2 100%)',RAISED='#FFFBF2',INPUT_BG='#FFFDF8',BORDER='#F0E7D6',INPUT_BORDER='#EFE4D0',DIM='#6B5B43',TEXT='#2A1B06',RED='#ef4444';
 
 export default function LoginPage(){
   const [form, setForm] = useState({email:'',password:''});
@@ -81,8 +81,8 @@ export default function LoginPage(){
     width:'100%',
     padding:'12px 14px',
     paddingRight: field === 'password' ? 44 : 14,
-    background:'rgba(0,0,0,.04)',
-    border:`1.5px solid ${focused === field ? GOLD : BORDER}`,
+    background:INPUT_BG,
+    border:`1.5px solid ${focused === field ? GOLD : INPUT_BORDER}`,
     borderRadius:8,
     color:TEXT,
     fontSize:14,
@@ -94,7 +94,7 @@ export default function LoginPage(){
   const labelStyle: React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
 
   return (
-    <div style={{minHeight:'100vh',background:DARK,display:'flex',flexDirection:'column'}}>
+    <div style={{minHeight:'100vh',background:PAGE_BG,backgroundImage:`radial-gradient(circle at 50% 0%, rgba(216,154,30,0.10), transparent 60%), ${PAGE_BG}`,display:'flex',flexDirection:'column'}}>
       {/* Top nav */}
       <nav style={{padding:'0 24px',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`}}>
         <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10}}>
@@ -104,7 +104,7 @@ export default function LoginPage(){
             <span style={{fontSize:10,color:DIM,letterSpacing:.5,fontWeight:600}}>Control Systems</span>
           </span>
         </a>
-        <a href="/signup" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>No account? <span style={{color:GOLD}}>Start free trial →</span></a>
+        <a href="/signup" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>No account? <span style={{color:ACCENT}}>Start free trial →</span></a>
       </nav>
 
       {/* Main content */}
@@ -120,7 +120,7 @@ export default function LoginPage(){
           </div>
 
           {/* Card */}
-          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:'32px 28px',boxShadow:'0 8px 32px rgba(0,0,0,.25)'}}>
+          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:16,padding:'32px 28px',boxShadow:'0 8px 26px rgba(120,80,20,0.10)'}}>
             {info&&(
               <div style={{background:'rgba(34,197,94,.1)',border:'1px solid rgba(34,197,94,.3)',borderRadius:8,padding:'10px 14px',marginBottom:20,fontSize:13,color:'#22c55e',display:'flex',alignItems:'flex-start',gap:8}}>
                 <span>✅</span><span>{info}</span>
@@ -155,7 +155,7 @@ export default function LoginPage(){
               <div>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
                   <label htmlFor="login-password" style={{...labelStyle,marginBottom:0}}>Password</label>
-                  <a href="/forgot-password" style={{fontSize:11,color:GOLD,textDecoration:'none',fontWeight:600}}>Forgot password?</a>
+                  <a href="/forgot-password" style={{fontSize:11,color:ACCENT,textDecoration:'none',fontWeight:600}}>Forgot password?</a>
                 </div>
                 <div style={{position:'relative'}}>
                   <input
@@ -202,7 +202,7 @@ export default function LoginPage(){
                     transition:'all .15s',cursor:'pointer',flexShrink:0,
                   }}
                 >
-                  {remember && <span style={{color:'#1C1C1E',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>}
+                  {remember && <span style={{color:'#2A1B06',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>}
                 </div>
                 <span style={{fontSize:12,color:DIM,fontWeight:500}}>Remember me on this device</span>
               </label>
@@ -211,17 +211,17 @@ export default function LoginPage(){
               <button type="submit" disabled={loading}
                 style={{
                   marginTop:4,padding:'14px 0',
-                  background:loading?'rgba(212,160,23,.5)':`linear-gradient(135deg,${GOLD},#E0A030)`,
-                  border:'none',borderRadius:9,color:'#1C1C1E',fontSize:15,fontWeight:800,
+                  background:loading?'rgba(201,138,26,.5)':'linear-gradient(135deg,#E8B84B,#C98A1A)',
+                  border:'none',borderRadius:9,color:'#2A1B06',fontSize:15,fontWeight:700,
                   cursor:loading?'not-allowed':'pointer',transition:'all .2s',
                   display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-                  boxShadow: loading ? 'none' : '0 4px 16px rgba(212,160,23,.25)',
+                  boxShadow: loading ? 'none' : '0 6px 18px rgba(201,138,26,0.28)',
                 }}
               >
                 {loading && (
                   <span style={{
                     display:'inline-block',width:16,height:16,
-                    border:'2px solid #E5E5EA',borderTopColor:'#C8881C',
+                    border:'2px solid #F0E7D6',borderTopColor:'#C8881C',
                     borderRadius:'50%',animation:'spin .6s linear infinite',
                   }}/>
                 )}
@@ -230,19 +230,19 @@ export default function LoginPage(){
             </form>
 
             {/* Hint */}
-            <div style={{marginTop:12,textAlign:'center',fontSize:11,color:'rgba(110,110,115,0.7)'}}>
+            <div style={{marginTop:12,textAlign:'center',fontSize:11,color:'rgba(107,91,67,0.7)'}}>
               Press Enter to sign in
             </div>
 
             <div style={{marginTop:16,textAlign:'center',fontSize:12,color:DIM}}>
-              Don&apos;t have an account? <a href="/signup" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Start free trial</a>
+              Don&apos;t have an account? <a href="/signup" style={{color:ACCENT,textDecoration:'none',fontWeight:700}}>Start free trial</a>
             </div>
           </div>
 
           {/* Trust badges */}
           <div style={{marginTop:20,textAlign:'center',display:'flex',justifyContent:'center',gap:20,flexWrap:'wrap'}}>
             {['256-bit SSL','SOC 2','99.9% Uptime'].map(badge => (
-              <span key={badge} style={{fontSize:10,color:'rgba(110,110,115,0.7)',fontWeight:600,letterSpacing:.5,textTransform:'uppercase'}}>
+              <span key={badge} style={{fontSize:10,color:'rgba(107,91,67,0.7)',fontWeight:600,letterSpacing:.5,textTransform:'uppercase'}}>
                 🔒 {badge}
               </span>
             ))}

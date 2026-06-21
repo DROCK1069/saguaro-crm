@@ -1,12 +1,12 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 
-const GOLD  = '#F59E0B';
-const DARK  = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM   = '#6E6E73';
-const TEXT  = '#1C1C1E';
+const GOLD  = '#C8881C';
+const DARK  = 'linear-gradient(160deg, #FCF7EE 0%, #F8EFDF 45%, #FBEAD2 100%)';
+const RAISED = '#FFFBF2';
+const BORDER = '#F0E7D6';
+const DIM   = '#6B5B43';
+const TEXT  = '#2A1B06';
 const GREEN = '#22c55e';
 
 export default function WelcomePage() {
@@ -19,7 +19,7 @@ export default function WelcomePage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: DARK, color: TEXT, fontFamily: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", padding: '40px 24px' }}>
+    <div style={{ minHeight: '100vh', background: DARK, backgroundImage: `radial-gradient(circle at 50% 0%, rgba(216,154,30,0.10), transparent 60%), ${DARK}`, color: TEXT, fontFamily: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", padding: '40px 24px' }}>
 
       {/* Top accent bar */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${GOLD}, #FCD34D, ${GREEN}, ${GOLD})` }} />
@@ -41,20 +41,20 @@ export default function WelcomePage() {
         </p>
 
         {/* ACCESS CALLOUT — most important box */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(255,255,255,0) 100%)', border: `1.5px solid rgba(245,158,11,0.4)`, borderRadius: 16, padding: '28px 32px', marginBottom: 32 }}>
+        <div style={{ background: 'linear-gradient(135deg, rgba(201,138,26,0.10) 0%, rgba(255,255,255,0) 100%)', border: `1.5px solid rgba(201,138,26,0.4)`, borderRadius: 16, padding: '28px 32px', marginBottom: 32 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>How to access your software</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
             Open any browser and go to{' '}
-            <a href="/app" style={{ color: GOLD, textDecoration: 'none', borderBottom: `1px solid rgba(245,158,11,0.4)` }}>saguarocontrol.net/app</a>
+            <a href="/app" style={{ color: '#B07A12', textDecoration: 'none', borderBottom: `1px solid rgba(201,138,26,0.4)` }}>saguarocontrol.net/app</a>
           </div>
           <p style={{ fontSize: 14, color: DIM, margin: '0 0 20px', lineHeight: 1.65 }}>
             Saguaro is a <strong style={{ color: TEXT }}>web-based platform</strong> — there is nothing to download or install on your computer. Just bookmark this address and log in from any device, any time.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <a href="/app" style={{ padding: '12px 28px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 900, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 20px rgba(245,158,11,0.3)` }}>
+            <a href="/app" style={{ padding: '12px 28px', background: 'linear-gradient(135deg, #E8B84B, #C98A1A)', borderRadius: 9, color: '#2A1B06', fontWeight: 700, fontSize: 14, textDecoration: 'none', boxShadow: `0 6px 18px rgba(201,138,26,0.28)` }}>
               Go to My Dashboard →
             </a>
-            <a href="/get-the-app" style={{ padding: '12px 24px', background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: 9, color: TEXT, fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+            <a href="/get-the-app" style={{ padding: '12px 24px', background: '#FFFDF8', border: `1px solid ${BORDER}`, borderRadius: 9, color: TEXT, fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
               Install on Phone
             </a>
           </div>
@@ -102,14 +102,14 @@ export default function WelcomePage() {
                 primary: false,
               },
             ].map((item, i) => (
-              <div key={i} style={{ background: RAISED, border: `1px solid ${item.primary ? 'rgba(245,158,11,0.3)' : BORDER}`, borderRadius: 14, padding: '22px 22px', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 14, right: 14, width: 24, height: 24, borderRadius: '50%', background: 'rgba(245,158,11,0.1)', border: `1px solid rgba(245,158,11,0.25)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: GOLD }}>
+              <div key={i} style={{ background: RAISED, border: `1px solid ${item.primary ? 'rgba(201,138,26,0.35)' : BORDER}`, borderRadius: 14, padding: '22px 22px', position: 'relative', boxShadow: '0 4px 14px rgba(120,80,20,0.06)' }}>
+                <div style={{ position: 'absolute', top: 14, right: 14, width: 24, height: 24, borderRadius: '50%', background: 'rgba(201,138,26,0.1)', border: `1px solid rgba(201,138,26,0.25)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: GOLD }}>
                   {item.step}
                 </div>
                 <div style={{ fontSize: 26, marginBottom: 12 }}>{item.icon}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 6 }}>{item.title}</div>
                 <div style={{ fontSize: 13, color: DIM, lineHeight: 1.6, marginBottom: 16 }}>{item.desc}</div>
-                <a href={item.href} style={{ display: 'inline-block', padding: '8px 16px', background: item.primary ? `linear-gradient(135deg, ${GOLD}, #D97706)` : 'rgba(245,158,11,0.08)', border: item.primary ? 'none' : `1px solid rgba(245,158,11,0.2)`, borderRadius: 7, color: item.primary ? '#000' : GOLD, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                <a href={item.href} style={{ display: 'inline-block', padding: '8px 16px', background: item.primary ? 'linear-gradient(135deg, #E8B84B, #C98A1A)' : 'rgba(201,138,26,0.08)', border: item.primary ? 'none' : `1px solid rgba(201,138,26,0.2)`, borderRadius: 7, color: item.primary ? '#2A1B06' : '#B07A12', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
                   {item.cta}
                 </a>
               </div>
@@ -127,7 +127,7 @@ export default function WelcomePage() {
               { icon: '🤖', device: 'Android', how: 'Use the web app at saguarocontrol.net' },
               { icon: '🖥️', device: 'Tablet', how: 'Any browser → works full screen' },
             ].map((d, i) => (
-              <div key={i} style={{ padding: '14px 16px', background: 'rgba(0,0,0,0.02)', border: `1px solid rgba(229,229,234,0.5)`, borderRadius: 10 }}>
+              <div key={i} style={{ padding: '14px 16px', background: '#FFFDF8', border: `1px solid rgba(240,231,214,0.8)`, borderRadius: 10 }}>
                 <div style={{ fontSize: 22, marginBottom: 8 }}>{d.icon}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 4 }}>{d.device}</div>
                 <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>{d.how}</div>

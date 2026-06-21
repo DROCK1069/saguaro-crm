@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import type { Competitor } from '@/lib/competitors';
 
-const DARK = '#FBF6EC';
+const DARK = 'linear-gradient(180deg,#FBF3E4,#F7EAD4)';
 const GOLD = '#C8881C';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E7E5E1';
-const RAISED = '#FFFBF2';
-const GREEN = '#34C759';
+const EYEBROW = '#B07A12';
+const TEXT = '#2A1B06';
+const DIM = '#6B5B43';
+const BORDER = 'rgba(176,122,18,0.16)';
+const GREEN = '#15803D';
 const RED = '#EF4444';
 
 // ─── Nav ────────────────────────────────────────────────────────────────────
@@ -29,8 +29,10 @@ function Nav() {
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        background: DARK,
-        borderBottom: scrolled ? `1px solid ${TEXT}` : `1px solid ${BORDER}`,
+        background: 'rgba(255,251,242,0.85)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: scrolled ? `1px solid rgba(176,122,18,0.4)` : `1px solid #F0E7D6`,
         transition: 'all 0.3s ease', height: '58px',
         display: 'flex', alignItems: 'center',
       }}>
@@ -46,13 +48,13 @@ function Nav() {
             />
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
               <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#C8881C,#E0A030)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
-              <span style={{ fontSize: '7px', color: '#6E6E73', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
+              <span style={{ fontSize: '7px', color: '#6B5B43', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
             </span>
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="ccp-desktop">
-            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid #E5E5EA', borderRadius: '6px', color: 'rgba(28,28,30,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
-            <Link href="/signup" style={{ padding: '7px 18px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
+            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid #E6D7BC', borderRadius: '6px', color: TEXT, fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}>Log In</Link>
+            <Link href="/signup" style={{ padding: '7px 18px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', border: 'none', borderRadius: '6px', color: '#2A1B06', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>Free Trial</Link>
           </div>
 
           <button
@@ -67,14 +69,14 @@ function Nav() {
       </nav>
 
       {mobileOpen && (
-        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: DARK, borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px' }}>
+        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: '#FBF3E4', borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px' }}>
           <div style={{ padding: '16px' }}>
             <Link href="/login" onClick={() => setMobileOpen(false)}
               style={{ display: 'block', textAlign: 'center', padding: '13px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: '9px', color: TEXT, fontWeight: 600, textDecoration: 'none', fontSize: '15px', marginBottom: '10px' }}>
               Log In
             </Link>
             <Link href="/signup" onClick={() => setMobileOpen(false)}
-              style={{ display: 'block', textAlign: 'center', padding: '13px', background: '#C8881C', borderRadius: '9px', color: '#000', fontWeight: 600, textDecoration: 'none', fontSize: '15px' }}>
+              style={{ display: 'block', textAlign: 'center', padding: '13px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: '9px', color: '#2A1B06', fontWeight: 700, textDecoration: 'none', fontSize: '15px', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
               Start Free Trial
             </Link>
           </div>
@@ -193,7 +195,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
   const migrationLink = competitor.slug === 'procore' ? '/switch-from-procore' : '/signup';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 45%, #FBF2E3 100%)', color: TEXT, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)', color: TEXT, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Nav />
 
       {/* ── Hero — warm gradient wash + glow ─────────────────────────────── */}
@@ -205,7 +207,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '22px',
           padding: '6px 16px', borderRadius: '99px',
           background: 'rgba(200,136,28,0.12)', border: '1px solid rgba(200,136,28,0.32)',
-          fontSize: '11.5px', fontWeight: 800, color: GOLD, letterSpacing: '0.1em', textTransform: 'uppercase',
+          fontSize: '11.5px', fontWeight: 800, color: EYEBROW, letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(200,136,28,0.7)' }} />SAGUARO VS {competitor.name.toUpperCase()}
         </div>
@@ -215,7 +217,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           {headlineLines[1] && (
             <>
               <br />
-              <span style={{ background: `linear-gradient(135deg, ${GOLD}, #FCD34D)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span style={{ background: `linear-gradient(135deg, #D89A1E, #A86A0C)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 {headlineLines[1]}
               </span>
             </>
@@ -228,16 +230,16 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
         <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/signup" style={{
-            padding: '14px 34px', background: 'linear-gradient(135deg,#F5C645,#E8A020)',
-            borderRadius: '9px', color: '#1A1400', fontWeight: 700, fontSize: '15px',
-            textDecoration: 'none', letterSpacing: '0.02em',
+            padding: '14px 34px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+            borderRadius: '9px', color: '#2A1B06', fontWeight: 700, fontSize: '15px',
+            textDecoration: 'none', letterSpacing: '0.02em', boxShadow: '0 6px 18px rgba(201,138,26,0.28)',
           }}>
             Start Free Trial
           </Link>
           <a href="#comparison" style={{
             padding: '14px 28px', background: 'transparent',
-            border: `1.5px solid ${TEXT}`, borderRadius: '9px',
-            color: TEXT, fontWeight: 600, fontSize: '14px', textDecoration: 'none',
+            border: `1.5px solid #C8881C`, borderRadius: '9px',
+            color: '#A86A0C', fontWeight: 700, fontSize: '14px', textDecoration: 'none',
           }}>
             See Full Comparison
           </a>
@@ -278,17 +280,18 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           {/* Table header */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
-            borderBottom: `2px solid ${TEXT}`,
+            background: 'linear-gradient(180deg, rgba(216,154,30,0.12), rgba(216,154,30,0.05))',
+            borderBottom: `2px solid rgba(176,122,18,0.4)`,
           }}>
-            <div style={{ padding: '0 24px 14px', fontSize: '12px', fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ padding: '14px 24px', fontSize: '12px', fontWeight: 700, color: EYEBROW, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Feature
             </div>
             <div style={{
-              padding: '0 24px 14px', textAlign: 'center',
+              padding: '14px 24px', textAlign: 'center', background: 'rgba(216,154,30,0.10)',
             }}>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: GOLD, letterSpacing: '0.04em' }}>SAGUARO</div>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: '#A86A0C', letterSpacing: '0.04em' }}>SAGUARO</div>
             </div>
-            <div style={{ padding: '0 24px 14px', textAlign: 'center' }}>
+            <div style={{ padding: '14px 24px', textAlign: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: '15px', color: DIM }}>{competitor.name}</div>
             </div>
           </div>
@@ -298,7 +301,8 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
               key={row.feature}
               style={{
                 display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
-                borderBottom: `1px solid ${BORDER}`,
+                borderBottom: `1px solid rgba(176,122,18,0.16)`,
+                background: i % 2 === 1 ? 'rgba(216,154,30,0.035)' : 'transparent',
               }}
             >
               <div style={{ padding: '15px 24px', fontSize: '13px', fontWeight: 600, color: TEXT, display: 'flex', alignItems: 'center' }}>
@@ -307,13 +311,13 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
               {/* Saguaro cell */}
               <div style={{
-                padding: '15px 20px',
+                padding: '15px 20px', background: 'rgba(216,154,30,0.06)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}>
                 {row.saguaroWins && <Check />}
                 <span style={{
                   fontSize: '13px', fontWeight: row.saguaroWins ? 600 : 400,
-                  color: row.saguaroWins ? GREEN : GOLD,
+                  color: row.saguaroWins ? GREEN : '#A86A0C',
                   textAlign: 'center',
                 }}>
                   {row.saguaroValue}
@@ -340,7 +344,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
       </section>
 
       {/* ── Competitor weaknesses ─────────────────────────────────────────── */}
-      <section style={{ background: RAISED, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, padding: '72px 24px' }}>
+      <section style={{ background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)', borderTop: `1px solid rgba(176,122,18,0.16)`, borderBottom: `1px solid rgba(176,122,18,0.16)`, padding: '72px 24px' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 900, textAlign: 'center', marginBottom: '10px', letterSpacing: '-0.03em', color: TEXT }}>
             Where {competitor.name} Falls Short
@@ -371,7 +375,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
       {/* ── Migration CTA ─────────────────────────────────────────────────── */}
       <section style={{ maxWidth: '800px', margin: '0 auto', padding: '72px 24px' }}>
         <div style={{
-          borderTop: `2px solid ${TEXT}`, padding: '48px 0 0', textAlign: 'center',
+          borderTop: `2px solid rgba(176,122,18,0.4)`, padding: '48px 0 0', textAlign: 'center',
         }}>
           <h2 style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 900, marginBottom: '12px', letterSpacing: '-0.03em', color: TEXT }}>
             Ready to Switch from {competitor.name}?
@@ -384,16 +388,16 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           </p>
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href={migrationLink} style={{
-              padding: '14px 32px', background: 'linear-gradient(135deg,#F5C645,#E8A020)',
-              borderRadius: '9px', color: '#1A1400', fontWeight: 700, fontSize: '15px',
-              textDecoration: 'none',
+              padding: '14px 32px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+              borderRadius: '9px', color: '#2A1B06', fontWeight: 700, fontSize: '15px',
+              textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)',
             }}>
               Start Free Migration
             </Link>
             <Link href="/signup" style={{
               padding: '14px 26px', background: 'transparent',
-              border: `1.5px solid ${TEXT}`, borderRadius: '9px',
-              color: TEXT, fontWeight: 600, fontSize: '14px', textDecoration: 'none',
+              border: `1.5px solid #C8881C`, borderRadius: '9px',
+              color: '#A86A0C', fontWeight: 700, fontSize: '14px', textDecoration: 'none',
             }}>
               Try Free First
             </Link>
@@ -403,35 +407,35 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
 
       {/* ── Final CTA ─────────────────────────────────────────────────────── */}
       <section style={{
-        background: DARK,
-        borderTop: `2px solid ${TEXT}`, padding: '80px 24px', textAlign: 'center',
+        background: 'radial-gradient(ellipse at 50% 0%, #251608, #0E0B08)',
+        padding: '80px 24px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(28px,4vw,42px)', fontWeight: 900, marginBottom: '14px', letterSpacing: '-0.03em', color: TEXT }}>
+          <h2 style={{ fontSize: 'clamp(28px,4vw,42px)', fontWeight: 900, marginBottom: '14px', letterSpacing: '-0.03em', color: '#F5E9D6' }}>
             The smarter platform for serious GCs.
           </h2>
-          <p style={{ color: DIM, fontSize: '16px', marginBottom: '8px', lineHeight: 1.6 }}>
+          <p style={{ color: '#C9B79A', fontSize: '16px', marginBottom: '8px', lineHeight: 1.6 }}>
             AI takeoff. Lien waivers. Certified payroll. Field app. All in one platform, flat price.
           </p>
-          <p style={{ color: DIM, fontSize: '13px', marginBottom: '36px' }}>
+          <p style={{ color: '#C9B79A', fontSize: '13px', marginBottom: '36px' }}>
             30-day free trial. No credit card required.
           </p>
           <Link href="/signup" style={{
             display: 'inline-block', padding: '16px 44px',
-            background: 'linear-gradient(135deg,#F5C645,#E8A020)',
-            borderRadius: '10px', color: '#1A1400', fontWeight: 800, fontSize: '16px',
-            textDecoration: 'none', letterSpacing: '0.02em',
+            background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
+            borderRadius: '10px', color: '#2A1B06', fontWeight: 800, fontSize: '16px',
+            textDecoration: 'none', letterSpacing: '0.02em', boxShadow: '0 6px 18px rgba(201,138,26,0.4)',
           }}>
             Start Free Trial — No CC Required
           </Link>
-          <div style={{ marginTop: '20px', fontSize: '13px', color: DIM }}>
+          <div style={{ marginTop: '20px', fontSize: '13px', color: '#C9B79A' }}>
             Also compare:{' '}
-            <Link href="/compare/procore" style={{ color: GOLD, textDecoration: 'none' }}>Saguaro vs Procore</Link>
+            <Link href="/compare/procore" style={{ color: '#E8B84B', textDecoration: 'none' }}>Saguaro vs Procore</Link>
             {competitor.slug !== 'buildertrend' && (
-              <>{' · '}<Link href="/compare/buildertrend" style={{ color: GOLD, textDecoration: 'none' }}>vs Buildertrend</Link></>
+              <>{' · '}<Link href="/compare/buildertrend" style={{ color: '#E8B84B', textDecoration: 'none' }}>vs Buildertrend</Link></>
             )}
             {competitor.slug !== 'fieldwire' && (
-              <>{' · '}<Link href="/compare/fieldwire" style={{ color: GOLD, textDecoration: 'none' }}>vs Fieldwire</Link></>
+              <>{' · '}<Link href="/compare/fieldwire" style={{ color: '#E8B84B', textDecoration: 'none' }}>vs Fieldwire</Link></>
             )}
           </div>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#C8881C',DARK='linear-gradient(160deg, #FCF7EE 0%, #F8EFDF 45%, #FBEAD2 100%)',RAISED='#FFFBF2',BORDER='#F0E7D6',INACTIVE='#EFE4D0',DIM='#6B5B43',TEXT='#2A1B06';
 
 const STEPS = [
   { num: 1, label: 'Welcome', active: true },
@@ -18,7 +18,7 @@ export default function OnboardingStep1() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ minHeight: '100vh', background: DARK, backgroundImage: `radial-gradient(circle at 50% 0%, rgba(216,154,30,0.10), transparent 60%), ${DARK}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 640 }}>
 
         {/* Logo */}
@@ -34,20 +34,20 @@ export default function OnboardingStep1() {
           {STEPS.map((s, i) => (
             <React.Fragment key={s.num}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : 'rgba(0,0,0,.06)', color: s.active ? '#1C1C1E' : DIM, border: `2px solid ${s.active ? GOLD : BORDER}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : INACTIVE, color: s.active ? '#2A1B06' : DIM, border: `2px solid ${s.active ? GOLD : INACTIVE}` }}>
                   {s.num}
                 </div>
                 <span style={{ fontSize: 11, color: s.active ? TEXT : DIM, fontWeight: s.active ? 700 : 400 }}>{s.label}</span>
               </div>
               {i < STEPS.length - 1 && (
-                <div style={{ flex: 1, height: 2, background: BORDER, margin: '17px 8px 0' }} />
+                <div style={{ flex: 1, height: 2, background: INACTIVE, margin: '17px 8px 0' }} />
               )}
             </React.Fragment>
           ))}
         </div>
 
         {/* Card */}
-        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 40 }}>
+        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 40, boxShadow: '0 8px 26px rgba(120,80,20,0.10)' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
             <h1 style={{ fontSize: 28, fontWeight: 900, margin: '0 0 10px', color: TEXT }}>Welcome to Saguaro!</h1>
@@ -64,7 +64,7 @@ export default function OnboardingStep1() {
               { icon: '🔒', title: 'Lien Waivers', desc: 'State-specific forms for all 50 states. AZ, CA, TX statutory language included.' },
               { icon: '🤖', title: 'Autopilot', desc: 'Automated RFI routing, change order tracking, and insurance expiry alerts.' },
             ].map(f => (
-              <div key={f.title} style={{ background: 'rgba(0,0,0,.02)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
+              <div key={f.title} style={{ background: '#FFFDF8', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>{f.icon}</div>
                 <div style={{ fontWeight: 700, fontSize: 13, color: TEXT, marginBottom: 4 }}>{f.title}</div>
                 <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>{f.desc}</div>
@@ -76,7 +76,7 @@ export default function OnboardingStep1() {
             <button
               onClick={createDemoProject}
               disabled={loading}
-              style={{ padding: '14px 0', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 10, color: '#1C1C1E', fontSize: 16, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? .7 : 1 }}
+              style={{ padding: '14px 0', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', border: 'none', borderRadius: 10, color: '#2A1B06', fontSize: 16, fontWeight: 700, cursor: loading ? 'wait' : 'pointer', opacity: loading ? .7 : 1, boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}
             >
               {loading ? 'Loading your dashboard...' : 'Go to Dashboard →'}
             </button>
@@ -93,7 +93,7 @@ export default function OnboardingStep1() {
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#6E6E73' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#6B5B43' }}>
           Need help? <a href="mailto:support@saguarocontrol.net" style={{ color: DIM }}>support@saguarocontrol.net</a>
         </div>
       </div>

@@ -2,17 +2,19 @@
 import React, { useState } from 'react';
 
 const C = {
-  dark: '#0B0B0F',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
-  text: '#F5F5F7',
-  dim: '#A1A1AA',
-  border: 'rgba(255,255,255,0.10)',
-  raised: '#131318',
-  raisedAlt: '#1A1A21',
-  green: '#22C55E',
+  dark: 'transparent',
+  pageBg: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)',
+  gold: '#C8881C',
+  goldBright: '#E8B84B',
+  text: '#2A1B06',
+  dim: '#6B5B43',
+  border: 'rgba(176,122,18,0.16)',
+  raised: 'transparent',
+  raisedAlt: 'transparent',
+  green: '#1a8a4a',
   blue: '#6366F1',
-  code: '#0E0E13',
+  eyebrow: '#B07A12',
+  code: '#14110B',
   font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
   mono: "ui-monospace,'SF Mono','JetBrains Mono','Cascadia Code',Menlo,Consolas,monospace",
 };
@@ -156,8 +158,8 @@ function CodeBlock({ code, label }: { code: string; label?: string }) {
     }
   };
   return (
-    <div style={{ background: C.code, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)' }}>
+    <div style={{ background: C.code, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 24px rgba(40,20,5,0.18)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FF5F56', display: 'inline-block' }} />
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FFBD2E', display: 'inline-block' }} />
@@ -166,7 +168,7 @@ function CodeBlock({ code, label }: { code: string; label?: string }) {
         </div>
         <button onClick={copy} style={{
           background: copied ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${copied ? 'rgba(34,197,94,0.30)' : C.border}`,
+          border: `1px solid ${copied ? 'rgba(34,197,94,0.30)' : 'rgba(255,255,255,0.12)'}`,
           borderRadius: 7, color: copied ? C.green : C.dim, fontSize: 11, fontWeight: 700,
           padding: '4px 11px', cursor: 'pointer', fontFamily: C.font, letterSpacing: 0.3,
         }}>
@@ -182,18 +184,18 @@ function CodeBlock({ code, label }: { code: string; label?: string }) {
 
 export default function ApiDocsPage() {
   return (
-    <div style={{ minHeight: '100vh', background: C.dark, color: C.text, fontFamily: C.font }}>
+    <div style={{ minHeight: '100vh', background: C.pageBg, color: C.text, fontFamily: C.font }}>
 
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: 'rgba(13,17,23,0.9)',
-        borderBottom: `1px solid ${C.border}`,
+        height: 64, background: 'rgba(255,251,242,0.85)',
+        borderBottom: '1px solid #F0E7D6',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
           {NAV_LINKS.map(link => (
@@ -205,22 +207,23 @@ export default function ApiDocsPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
+          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(176,122,18,0.10)', border: `1px solid rgba(176,122,18,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
+          <a href="/signup" style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontSize: 13, fontWeight: 700, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>Free Trial</a>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '88px 24px 56px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
+        <section style={{ position: 'relative', textAlign: 'center', padding: '88px 24px 56px', background: 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)' }}>
+          <div style={{ background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12), transparent 60%)', position: 'absolute', inset: 0, pointerEvents: 'none' }} />
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(99,102,241,0.10)', border: `1px solid rgba(99,102,241,0.30)`, borderRadius: 20, fontSize: 12, fontWeight: 700, color: '#818CF8', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#818CF8', display: 'inline-block' }} />
             Developer Preview — REST API v1
           </div>
           <h1 style={{ fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 20px', letterSpacing: -1.5 }}>
             Build on the{' '}
-            <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <span style={{ background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               Saguaro API
             </span>
           </h1>
@@ -228,10 +231,10 @@ export default function ApiDocsPage() {
             A clean, predictable REST API for the entire construction lifecycle — projects, RFIs, pay applications, AI takeoffs, and compliance docs. Push data in, pull it out, and wire Saguaro into your stack.
           </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/signup" style={{ display: 'inline-block', padding: '14px 32px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 15, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+            <a href="/signup" style={{ display: 'inline-block', padding: '14px 32px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
               Request API Access
             </a>
-            <a href="#quickstart" style={{ display: 'inline-block', padding: '14px 32px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
+            <a href="#quickstart" style={{ display: 'inline-block', padding: '14px 32px', background: 'rgba(176,122,18,0.06)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
               Read the Quickstart
             </a>
           </div>
@@ -239,9 +242,9 @@ export default function ApiDocsPage() {
 
         {/* Base URL */}
         <section style={{ padding: '0 24px 72px', maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, padding: '28px 32px', display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)', border: 'none', padding: '28px 32px', display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ minWidth: 240 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Base URL</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: C.eyebrow, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Base URL</div>
               <code style={{ fontFamily: C.mono, fontSize: 16, color: C.text, fontWeight: 600 }}>{BASE_URL}</code>
             </div>
             <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
@@ -262,7 +265,7 @@ export default function ApiDocsPage() {
         {/* Feature grid */}
         <section style={{ padding: '0 24px 96px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(176,122,18,0.10)', border: '1px solid rgba(176,122,18,0.25)', borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.eyebrow, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Why developers like it
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>Designed to feel familiar</h2>
@@ -270,7 +273,7 @@ export default function ApiDocsPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {FEATURES.map(f => (
-              <div key={f.title} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+              <div key={f.title} style={{ borderTop: `1px solid ${C.border}`, padding: '24px 0 0' }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>{f.title}</div>
                 <div style={{ fontSize: 13.5, color: C.dim, lineHeight: 1.65 }}>{f.desc}</div>
               </div>
@@ -281,7 +284,7 @@ export default function ApiDocsPage() {
         {/* Quickstart / Authentication */}
         <section id="quickstart" style={{ padding: '0 24px 96px', maxWidth: 900, margin: '0 auto' }}>
           <div style={{ marginBottom: 40 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(176,122,18,0.10)', border: '1px solid rgba(176,122,18,0.25)', borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.eyebrow, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Quickstart
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 14px', letterSpacing: -0.5 }}>Authentication</h2>
@@ -295,7 +298,7 @@ export default function ApiDocsPage() {
             <CodeBlock label="Authenticate a request" code={REQUEST_SAMPLE} />
           </div>
 
-          <div style={{ background: 'rgba(212,160,23,0.06)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <div style={{ background: 'rgba(176,122,18,0.06)', border: '1px solid rgba(176,122,18,0.25)', borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
             <span style={{ color: C.gold, fontWeight: 900, fontSize: 16, lineHeight: 1.4, flexShrink: 0 }}>!</span>
             <p style={{ margin: 0, fontSize: 13.5, color: C.dim, lineHeight: 1.65 }}>
               Treat your secret key like a password. Never commit it to source control or expose it in client-side code. Use test keys (<code style={{ fontFamily: C.mono, color: C.text }}>sk_test_…</code>) in development and rotate live keys (<code style={{ fontFamily: C.mono, color: C.text }}>sk_live_…</code>) instantly if one leaks.
@@ -315,7 +318,7 @@ export default function ApiDocsPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 56 }}>
             {RESOURCES.map(res => (
-              <div key={res.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 22px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+              <div key={res.name} style={{ borderTop: `1px solid ${C.border}`, padding: '24px 0 0' }}>
                 <div style={{ fontSize: 17, fontWeight: 800, color: C.text, marginBottom: 6 }}>{res.name}</div>
                 <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, marginBottom: 18 }}>{res.blurb}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -371,12 +374,12 @@ export default function ApiDocsPage() {
         {/* Status codes */}
         <section style={{ padding: '0 24px 96px', maxWidth: 900, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(176,122,18,0.10)', border: '1px solid rgba(176,122,18,0.25)', borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.eyebrow, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Errors
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Standard HTTP status codes</h2>
           </div>
-          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
+          <div style={{ background: 'transparent', border: `1px solid ${C.border}`, overflow: 'hidden' }}>
             {ERRORS.map((e, i) => {
               const ok = e.code.startsWith('2');
               return (
@@ -391,34 +394,34 @@ export default function ApiDocsPage() {
         </section>
 
         {/* Final CTA */}
-        <section style={{ padding: '88px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ padding: '88px 24px', background: 'radial-gradient(ellipse at 50% 0%, #251608, #0E0B08)', textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8, color: '#F5E9D6' }}>
               Ready to{' '}
-              <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>build something?</span>
+              <span style={{ background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>build something?</span>
             </h2>
-            <p style={{ fontSize: 17, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 17, color: '#C9B79A', margin: '0 0 36px', lineHeight: 1.6 }}>
               Create a free account, generate a test key from Settings &rarr; Developers, and make your first call in minutes. API access is included on Professional and Enterprise plans.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 700, fontSize: 16, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
                 Request API Access
               </a>
-              <a href="mailto:developers@saguarocontrol.net" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              <a href="mailto:developers@saguarocontrol.net" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,233,214,0.25)', borderRadius: 10, color: '#F5E9D6', fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 Talk to a Developer
               </a>
             </div>
-            <div style={{ fontSize: 13, color: C.dim }}>
-              Questions? Email <a href="mailto:developers@saguarocontrol.net" style={{ color: C.gold, textDecoration: 'none', fontWeight: 600 }}>developers@saguarocontrol.net</a>
+            <div style={{ fontSize: 13, color: '#C9B79A' }}>
+              Questions? Email <a href="mailto:developers@saguarocontrol.net" style={{ color: '#E8B84B', textDecoration: 'none', fontWeight: 600 }}>developers@saguarocontrol.net</a>
             </div>
           </div>
         </section>
 
         {/* Footer */}
-        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
+        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', objectFit: 'contain' }} />
             </a>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[

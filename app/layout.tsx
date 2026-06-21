@@ -190,7 +190,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body style={{ margin: 0, padding: 0, background: '#F2F2F7', color: '#1C1C1E' }}>
+      <body style={{ margin: 0, padding: 0, background: '#FAF6EE', color: '#1C1C1E' }}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

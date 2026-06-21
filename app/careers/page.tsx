@@ -2,16 +2,18 @@
 import React, { useState } from 'react';
 
 const C = {
-  dark: '#0B0B0F',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
-  text: '#F5F5F7',
-  dim: '#A1A1AA',
-  border: 'rgba(255,255,255,0.10)',
-  raised: '#131318',
-  raisedAlt: '#1A1A21',
-  green: '#22C55E',
+  dark: 'transparent',
+  pageBg: 'linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%)',
+  gold: '#C8881C',
+  goldBright: '#E8B84B',
+  text: '#2A1B06',
+  dim: '#6B5B43',
+  border: 'rgba(176,122,18,0.16)',
+  raised: 'transparent',
+  raisedAlt: 'transparent',
+  green: '#1a8a4a',
   blue: '#6366F1',
+  eyebrow: '#B07A12',
   font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
 };
 
@@ -115,18 +117,18 @@ export default function CareersPage() {
   const [hasOpenRoles] = useState(true);
 
   return (
-    <div style={{ minHeight: '100vh', background: C.dark, color: C.text, fontFamily: C.font }}>
+    <div style={{ minHeight: '100vh', background: C.pageBg, color: C.text, fontFamily: C.font }}>
 
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: 'rgba(13,17,23,0.9)',
-        borderBottom: `1px solid ${C.border}`,
+        height: 64, background: 'rgba(255,251,242,0.85)',
+        borderBottom: '1px solid #F0E7D6',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
           {NAV_LINKS.map(link => (
@@ -138,21 +140,22 @@ export default function CareersPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
+          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(176,122,18,0.10)', border: `1px solid rgba(176,122,18,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
+          <a href="/signup" style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontSize: 13, fontWeight: 700, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>Free Trial</a>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '88px 24px 64px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
+        <section style={{ position: 'relative', textAlign: 'center', padding: '88px 24px 64px', background: 'linear-gradient(160deg, #FFFBF2, #FDF3E2, #FBEAD2)' }}>
+          <div style={{ background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.12), transparent 60%)', position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(176,122,18,0.10)', border: `1px solid rgba(176,122,18,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 700, color: C.eyebrow, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
             Careers at Saguaro
           </div>
           <h1 style={{ fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 20px', letterSpacing: -1.5 }}>
             Build the software{' '}
-            <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <span style={{ background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               construction runs on.
             </span>
           </h1>
@@ -160,10 +163,10 @@ export default function CareersPage() {
             We are a small, remote team building the AI-powered platform that runs takeoffs, bids, pay apps, RFIs, and compliance for general contractors. Real product, real users, real ownership.
           </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="#open-roles" style={{ display: 'inline-block', padding: '14px 32px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 15, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+            <a href="#open-roles" style={{ display: 'inline-block', padding: '14px 32px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
               See Open Roles
             </a>
-            <a href="mailto:careers@saguarocontrol.net" style={{ display: 'inline-block', padding: '14px 32px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
+            <a href="mailto:careers@saguarocontrol.net" style={{ display: 'inline-block', padding: '14px 32px', background: 'rgba(176,122,18,0.06)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>
               Email Us Directly
             </a>
           </div>
@@ -172,7 +175,7 @@ export default function CareersPage() {
         {/* Culture / Values */}
         <section style={{ padding: '0 24px 96px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(176,122,18,0.10)', border: `1px solid rgba(176,122,18,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.eyebrow, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               How We Work
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>What we care about</h2>
@@ -182,7 +185,7 @@ export default function CareersPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
             {VALUES.map(v => (
-              <div key={v.title} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '28px 28px', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+              <div key={v.title} style={{ borderTop: `1px solid ${C.border}`, padding: '24px 0 0' }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 10, lineHeight: 1.3 }}>{v.title}</div>
                 <div style={{ fontSize: 14, color: C.dim, lineHeight: 1.7 }}>{v.desc}</div>
               </div>
@@ -192,9 +195,9 @@ export default function CareersPage() {
 
         {/* Perks */}
         <section style={{ padding: '0 24px 96px', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, padding: '44px 40px' }}>
+          <div style={{ padding: '44px 0' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Benefits</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: C.eyebrow, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Benefits</div>
               <h2 style={{ fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 900, color: C.text, margin: 0 }}>Taken care of, so you can do your best work</h2>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
@@ -226,24 +229,24 @@ export default function CareersPage() {
           {hasOpenRoles ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {ROLES.map(role => (
-                <div key={role.title} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '26px 28px', display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap', boxShadow: '0 1px 2px rgba(0,0,0,.4)' }}>
+                <div key={role.title} style={{ borderTop: `1px solid ${C.border}`, padding: '26px 0', display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 280 }}>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, padding: '3px 10px', letterSpacing: 0.5, textTransform: 'uppercase' }}>{role.team}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: C.dim, background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 999, padding: '3px 10px' }}>{role.location}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: C.dim, background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 999, padding: '3px 10px' }}>{role.type}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: C.gold, background: 'rgba(176,122,18,0.10)', border: `1px solid rgba(176,122,18,0.25)`, borderRadius: 999, padding: '3px 10px', letterSpacing: 0.5, textTransform: 'uppercase' }}>{role.team}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: C.dim, background: 'rgba(176,122,18,0.06)', border: `1px solid ${C.border}`, borderRadius: 999, padding: '3px 10px' }}>{role.location}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: C.dim, background: 'rgba(176,122,18,0.06)', border: `1px solid ${C.border}`, borderRadius: 999, padding: '3px 10px' }}>{role.type}</span>
                     </div>
                     <div style={{ fontSize: 19, fontWeight: 800, color: C.text, marginBottom: 8, lineHeight: 1.3 }}>{role.title}</div>
                     <div style={{ fontSize: 14, color: C.dim, lineHeight: 1.65, marginBottom: 14 }}>{role.desc}</div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {role.tags.map(tag => (
-                        <span key={tag} style={{ fontSize: 11, fontWeight: 600, color: C.dim, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.border}`, borderRadius: 6, padding: '3px 9px' }}>{tag}</span>
+                        <span key={tag} style={{ fontSize: 11, fontWeight: 600, color: C.dim, background: 'rgba(176,122,18,0.06)', border: `1px solid ${C.border}`, borderRadius: 6, padding: '3px 9px' }}>{tag}</span>
                       ))}
                     </div>
                   </div>
                   <a
                     href={`mailto:careers@saguarocontrol.net?subject=${encodeURIComponent('Application: ' + role.title)}`}
-                    style={{ flexShrink: 0, padding: '11px 24px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.30)`, borderRadius: 10, color: C.gold, fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}
+                    style={{ flexShrink: 0, padding: '11px 24px', background: 'rgba(176,122,18,0.10)', border: `1px solid rgba(176,122,18,0.30)`, borderRadius: 10, color: C.gold, fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}
                   >
                     Apply →
                   </a>
@@ -251,12 +254,12 @@ export default function CareersPage() {
               ))}
             </div>
           ) : (
-            <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, padding: '56px 40px', textAlign: 'center', maxWidth: 640, margin: '0 auto', boxShadow: '0 4px 14px rgba(0,0,0,.45)' }}>
+            <div style={{ padding: '56px 40px', textAlign: 'center', maxWidth: 640, margin: '0 auto' }}>
               <div style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 12 }}>No open roles right now</div>
               <p style={{ fontSize: 15, color: C.dim, lineHeight: 1.7, margin: '0 0 28px' }}>
                 We hire deliberately and we are between openings at the moment. If you are an engineer, designer, or builder who wants to work on AI for construction, send us a note anyway — we keep great people in mind and reach out when a role opens.
               </p>
-              <a href="mailto:careers@saguarocontrol.net?subject=Introduction" style={{ display: 'inline-block', padding: '13px 32px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 15, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+              <a href="mailto:careers@saguarocontrol.net?subject=Introduction" style={{ display: 'inline-block', padding: '13px 32px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 700, fontSize: 15, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
                 careers@saguarocontrol.net
               </a>
             </div>
@@ -270,9 +273,9 @@ export default function CareersPage() {
 
         {/* Hiring Process */}
         <section style={{ padding: '0 24px 96px', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, padding: '44px 40px' }}>
+          <div style={{ padding: '44px 0' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>The Process</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: C.eyebrow, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>The Process</div>
               <h2 style={{ fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 900, color: C.text, margin: 0 }}>Hiring, the way it should be</h2>
               <p style={{ fontSize: 14, color: C.dim, margin: '10px auto 0', maxWidth: 520, lineHeight: 1.6 }}>
                 No endless loops, no trick questions. Four focused steps, usually wrapped in under two weeks.
@@ -281,7 +284,7 @@ export default function CareersPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 0 }}>
               {HIRING_STEPS.map((s, i, arr) => (
                 <div key={s.step} style={{ padding: '0 28px', borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none' }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(212,160,23,0.10)', border: '1px solid rgba(212,160,23,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: C.gold, marginBottom: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(176,122,18,0.10)', border: '1px solid rgba(176,122,18,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: C.gold, marginBottom: 14 }}>
                     {s.step}
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 6 }}>{s.title}</div>
@@ -293,20 +296,20 @@ export default function CareersPage() {
         </section>
 
         {/* Final CTA */}
-        <section style={{ padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ padding: '96px 24px', background: 'radial-gradient(ellipse at 50% 0%, #251608, #0E0B08)', textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8, color: '#F5E9D6' }}>
               Want to see what{' '}
-              <span style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>you&apos;d be building?</span>
+              <span style={{ background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>you&apos;d be building?</span>
             </h2>
-            <p style={{ fontSize: 17, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 17, color: '#C9B79A', margin: '0 0 36px', lineHeight: 1.6 }}>
               The best way to understand Saguaro is to use it. Spin up a free account and explore AI takeoff, Sage, pay apps, and the field app firsthand.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: 'linear-gradient(135deg,#E8B84B,#C98A1A)', borderRadius: 10, color: '#2A1B06', fontWeight: 700, fontSize: 16, textDecoration: 'none', boxShadow: '0 6px 18px rgba(201,138,26,0.28)' }}>
                 Try the Product Free
               </a>
-              <a href="mailto:careers@saguarocontrol.net" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              <a href="mailto:careers@saguarocontrol.net" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,233,214,0.25)', borderRadius: 10, color: '#F5E9D6', fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 careers@saguarocontrol.net
               </a>
             </div>
@@ -314,10 +317,10 @@ export default function CareersPage() {
         </section>
 
         {/* Footer */}
-        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
+        <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', objectFit: 'contain' }} />
             </a>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[

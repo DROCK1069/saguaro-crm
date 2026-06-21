@@ -11,34 +11,35 @@ export default function HowToGetStartedPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-          --dark: #F2F2F7; --gold: #F59E0B; --text: #1C1C1E;
-          --dim: #6E6E73; --border: #E5E5EA; --raised: #FFFFFF;
-          --green: #22c55e; --font: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          --dark: #FCF7EE; --gold: #C8881C; --text: #2A1B06;
+          --dim: #6B5B43; --border: rgba(176,122,18,0.16); --raised: transparent;
+          --eyebrow: #B07A12;
+          --green: #1a8a4a; --font: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
         }
-        body { background: var(--dark); color: var(--text); font-family: var(--font); }
+        body { min-height: 100vh; background: linear-gradient(180deg, #FCF7EE 0%, #F8EFDF 40%, #FBF2E3 70%, #F7ECDA 100%); color: var(--text); font-family: var(--font); }
         a { color: var(--gold); }
         .nav {
           position: sticky; top: 0; z-index: 100;
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 32px;
-          background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
-          border-bottom: 1px solid var(--border);
+          background: rgba(255,251,242,0.85); backdrop-filter: blur(12px);
+          border-bottom: 1px solid #F0E7D6;
         }
         .logo { font-weight: 900; font-size: 16px; text-decoration: none;
-          background: linear-gradient(90deg, var(--gold), #FCD34D);
+          background: linear-gradient(135deg, #D89A1E, #A86A0C);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .nav-cta {
-          padding: 9px 22px; background: linear-gradient(135deg, var(--gold), #D97706);
-          border-radius: 8px; color: #000; font-weight: 800; font-size: 13px;
-          text-decoration: none;
+          padding: 9px 22px; background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          border-radius: 8px; color: #2A1B06; font-weight: 700; font-size: 13px;
+          text-decoration: none; box-shadow: 0 6px 18px rgba(201,138,26,0.28);
         }
         .container { max-width: 860px; margin: 0 auto; padding: 64px 24px; }
         .hero { text-align: center; margin-bottom: 64px; }
         .badge {
           display: inline-flex; align-items: center; gap: 8px;
-          padding: 6px 16px; background: rgba(245,158,11,0.08);
-          border: 1px solid rgba(245,158,11,0.25); border-radius: 20px;
-          font-size: 12px; font-weight: 700; color: var(--gold);
+          padding: 6px 16px; background: rgba(176,122,18,0.10);
+          border: 1px solid rgba(176,122,18,0.25); border-radius: 20px;
+          font-size: 12px; font-weight: 700; color: var(--eyebrow);
           letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 24px;
         }
         .hero h1 { font-size: clamp(32px,5vw,52px); font-weight: 900; line-height: 1.1; margin-bottom: 16px; letter-spacing: -1px; }
@@ -46,23 +47,24 @@ export default function HowToGetStartedPage() {
 
         .section { margin-bottom: 56px; }
         .section-label {
-          font-size: 11px; font-weight: 800; color: var(--gold);
+          font-size: 11px; font-weight: 800; color: var(--eyebrow);
           letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
         }
         .section h2 { font-size: 24px; font-weight: 900; color: var(--text); margin-bottom: 8px; }
         .section .sub { font-size: 15px; color: var(--dim); line-height: 1.65; margin-bottom: 24px; }
 
         .card {
-          background: var(--raised); border: 1px solid var(--border);
-          border-radius: 14px; padding: 24px 28px; margin-bottom: 16px;
+          background: transparent; border: none;
+          border-top: 1px solid var(--border);
+          border-radius: 0; padding: 24px 0; margin-bottom: 16px;
         }
-        .card-gold { border-color: rgba(245,158,11,0.35); background: linear-gradient(135deg, rgba(245,158,11,0.05), var(--raised)); }
+        .card-gold { border: none; border-top: 1px solid rgba(176,122,18,0.30); background: linear-gradient(180deg, #FBF3E4, #F7EAD4); border-radius: 14px; padding: 24px 28px; }
 
         .step-row { display: flex; gap: 20px; align-items: flex-start; }
         .step-num {
           width: 40px; height: 40px; flex-shrink: 0;
-          border-radius: 50%; background: rgba(245,158,11,0.1);
-          border: 1px solid rgba(245,158,11,0.25);
+          border-radius: 50%; background: rgba(176,122,18,0.10);
+          border: 1px solid rgba(176,122,18,0.22);
           display: flex; align-items: center; justify-content: center;
           font-size: 15px; font-weight: 900; color: var(--gold);
         }
@@ -70,15 +72,15 @@ export default function HowToGetStartedPage() {
         .step-body p { font-size: 14px; color: var(--dim); line-height: 1.65; }
         .step-body .note {
           margin-top: 12px; padding: 10px 14px;
-          background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.15);
+          background: rgba(176,122,18,0.06); border: 1px solid rgba(176,122,18,0.18);
           border-radius: 8px; font-size: 13px; color: var(--dim);
         }
         .step-body .note strong { color: var(--text); }
 
         .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
         .device-card {
-          padding: 18px; background: rgba(0,0,0,0.02);
-          border: 1px solid rgba(229,229,234,0.6); border-radius: 12px;
+          padding: 18px; background: linear-gradient(180deg, #FBF3E4, #F7EAD4);
+          border: 1px solid var(--border); border-radius: 12px;
         }
         .device-card .icon { font-size: 28px; margin-bottom: 10px; }
         .device-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
@@ -86,22 +88,22 @@ export default function HowToGetStartedPage() {
         .device-card li { font-size: 12px; color: var(--dim); line-height: 1.6; margin-bottom: 2px; }
 
         .cta-box {
-          text-align: center; padding: 48px 32px;
-          background: linear-gradient(135deg, rgba(245,158,11,0.06), transparent);
-          border: 1px solid rgba(245,158,11,0.2); border-radius: 16px;
+          text-align: center; padding: 56px 32px;
+          background: radial-gradient(ellipse at 50% 0%, #251608, #0E0B08);
+          border: none; border-radius: 16px;
           margin-bottom: 48px;
         }
-        .cta-box h2 { font-size: 28px; font-weight: 900; margin-bottom: 12px; }
-        .cta-box p { font-size: 15px; color: var(--dim); margin-bottom: 28px; line-height: 1.65; }
+        .cta-box h2 { font-size: 28px; font-weight: 900; margin-bottom: 12px; color: #F5E9D6; }
+        .cta-box p { font-size: 15px; color: #C9B79A; margin-bottom: 28px; line-height: 1.65; }
         .btn-primary {
           display: inline-block; padding: 14px 40px;
-          background: linear-gradient(135deg, var(--gold), #D97706);
-          border-radius: 10px; color: #000; font-weight: 900; font-size: 16px;
-          text-decoration: none; box-shadow: 0 4px 24px rgba(245,158,11,0.3);
+          background: linear-gradient(135deg, #E8B84B, #C98A1A);
+          border-radius: 10px; color: #2A1B06; font-weight: 700; font-size: 16px;
+          text-decoration: none; box-shadow: 0 6px 18px rgba(201,138,26,0.28);
           margin-bottom: 12px;
         }
         .trust-row { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
-        .trust-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); }
+        .trust-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #C9B79A; }
 
         .faq-item { border-bottom: 1px solid var(--border); padding: 20px 0; }
         .faq-item:last-child { border-bottom: none; }
@@ -279,12 +281,12 @@ export default function HowToGetStartedPage() {
               { name: 'Starter', price: '$299/mo', desc: 'Up to 10 projects, 100 AI pages/mo, pay apps, lien waivers, mobile app. Best for small GCs.', href: '/signup' },
               { name: 'Professional', price: '$599/mo', desc: 'Unlimited projects, unlimited AI, certified payroll, bid intelligence, owner portals, all documents.', href: '/signup', popular: true },
             ].map(p => (
-              <div key={p.name} className="card" style={{ borderColor: p.popular ? 'rgba(245,158,11,0.4)' : 'var(--border)' }}>
-                {p.popular && <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--gold)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Most Popular</div>}
+              <div key={p.name} style={{ background: 'linear-gradient(180deg, #FBF3E4, #F7EAD4)', border: p.popular ? '1px solid rgba(201,138,26,0.40)' : '1px solid var(--border)', borderRadius: 14, padding: '24px 28px' }}>
+                {p.popular && <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--eyebrow)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Most Popular</div>}
                 <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>{p.name}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--gold)', marginBottom: 8 }}>{p.price}</div>
+                <div style={{ fontSize: 22, fontWeight: 900, background: 'linear-gradient(135deg,#D89A1E,#A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: 8 }}>{p.price}</div>
                 <p style={{ fontSize: 13, color: 'var(--dim)', lineHeight: 1.6, marginBottom: 16 }}>{p.desc}</p>
-                <a href={p.href} style={{ display: 'block', padding: '10px', textAlign: 'center', background: p.popular ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 'rgba(245,158,11,0.08)', border: p.popular ? 'none' : '1px solid rgba(245,158,11,0.2)', borderRadius: 8, color: p.popular ? '#000' : 'var(--gold)', fontWeight: 800, fontSize: 14, textDecoration: 'none' }}>
+                <a href={p.href} style={{ display: 'block', padding: '10px', textAlign: 'center', background: p.popular ? 'linear-gradient(135deg, #E8B84B, #C98A1A)' : 'rgba(176,122,18,0.08)', border: p.popular ? 'none' : '1px solid rgba(176,122,18,0.25)', borderRadius: 8, color: p.popular ? '#2A1B06' : 'var(--gold)', fontWeight: p.popular ? 700 : 800, fontSize: 14, textDecoration: 'none', boxShadow: p.popular ? '0 6px 18px rgba(201,138,26,0.28)' : 'none' }}>
                   Start Free Trial →
                 </a>
               </div>
