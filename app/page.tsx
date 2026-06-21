@@ -240,16 +240,20 @@ function MarketingNav() {
         {/* Pricing link */}
         <a href="/#pricing" style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
 
-        {/* Single mega-menu panel — grouped columns of text links */}
+        {/* Single mega-menu panel — grouped columns of text links.
+            Outer wrapper starts flush at the nav bottom (top:100%) with a
+            transparent paddingTop "bridge" so moving the mouse from the button
+            to the panel never crosses dead space (keeps the menu open). */}
         {openMenu && menus[openMenu] && (
+          <div style={{ position: 'absolute', top: '100%', left: 0, paddingTop: 14, zIndex: 110 }}>
           <div
             style={{
-              position: 'absolute', top: 'calc(100% + 14px)', left: 0,
+              position: 'relative',
               background: '#FFFFFF', border: '1px solid #EAE8E4', borderRadius: 12,
               boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 16px 44px rgba(28,25,23,0.13)',
               padding: '28px 34px', display: 'flex', gap: 52,
               maxWidth: 'calc(100vw - 48px)',
-              animation: 'navDropFadeIn 0.15s ease', zIndex: 110,
+              animation: 'navDropFadeIn 0.15s ease',
             }}
           >
             {/* gold signature edge */}
@@ -272,6 +276,7 @@ function MarketingNav() {
                 ))}
               </div>
             ))}
+          </div>
           </div>
         )}
       </div>
