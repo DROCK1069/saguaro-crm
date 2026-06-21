@@ -350,36 +350,41 @@ export default function CityLandingPage({ city }: { city: City }) {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '36px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '44px' }}>
             {FEATURES.map((f, i) => (
-              <div key={i} style={{
-                borderTop: '1px solid rgba(176,122,18,0.16)', paddingTop: '28px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                  <div style={{
-                    width: '44px', height: '44px', borderRadius: 12,
-                    background: 'linear-gradient(135deg,#E8B84B,#C98A1A)',
-                    boxShadow: '0 6px 16px rgba(201,138,26,0.3)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#FFFFFF', flexShrink: 0,
-                  }}>
-                    {f.icon}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                      <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: TEXT }}>{f.title(city)}</h3>
-                      <span style={{
-                        fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
-                        background: 'rgba(200,136,28,0.14)', color: '#B07A12',
-                        borderRadius: '4px', padding: '2px 7px',
-                      }}>{f.pill}</span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: '13px', color: DIM, lineHeight: 1.65 }}>{f.desc(city)}</p>
-                  </div>
+              <div key={i} className="cl-feat-item">
+                <span className="cl-feat-num">{String(i + 1).padStart(2, '0')}</span>
+                <div className="cl-feat-icon">
+                  {f.icon}
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 className="cl-feat-title">{f.title(city)}</h3>
+                  <span style={{
+                    fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
+                    background: 'rgba(200,136,28,0.14)', color: '#B07A12',
+                    borderRadius: '4px', padding: '2px 7px',
+                  }}>{f.pill}</span>
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', color: DIM, lineHeight: 1.65 }}>{f.desc(city)}</p>
               </div>
             ))}
           </div>
+
+          <style>{`
+            .cl-feat-item { position: relative; display: flex; flex-direction: column; gap: 13px; padding-top: 26px; text-decoration: none; transition: transform .28s cubic-bezier(.16,1,.3,1); }
+            .cl-feat-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, rgba(216,154,30,0.5), rgba(216,154,30,0.12) 55%, transparent); transition: background .3s ease, box-shadow .3s ease; }
+            .cl-feat-item:hover { transform: translateY(-5px); }
+            .cl-feat-item:hover::before { background: linear-gradient(90deg, #E8A020, rgba(232,160,32,0.4) 70%, transparent); box-shadow: 0 1px 10px rgba(232,160,32,0.5); }
+            .cl-feat-num { position: absolute; top: 22px; right: 2px; font-size: 13px; font-weight: 800; letter-spacing: .1em; color: rgba(176,122,18,0.3); font-variant-numeric: tabular-nums; }
+            .cl-feat-icon { width: 54px; height: 54px; border-radius: 16px; background: linear-gradient(145deg,#F8CE5A,#E89A18); display: flex; align-items: center; justify-content: center; color: #231A05; box-shadow: 0 8px 22px rgba(232,160,32,0.38), inset 0 1px 1px rgba(255,255,255,0.55); transition: transform .28s cubic-bezier(.16,1,.3,1), box-shadow .28s ease; }
+            .cl-feat-item:hover .cl-feat-icon { transform: translateY(-2px) scale(1.07) rotate(-3deg); box-shadow: 0 16px 32px rgba(232,160,32,0.5), inset 0 1px 1px rgba(255,255,255,0.65); }
+            .cl-feat-title { font-size: 17px; font-weight: 700; margin: 0; color: #2A1B06; letter-spacing: -0.01em; transition: color .2s ease; }
+            .cl-feat-item:hover .cl-feat-title { color: #A8700C; }
+            .cl-feat-more { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #B07A12; opacity: .62; transition: opacity .25s ease; }
+            .cl-feat-item:hover .cl-feat-more { opacity: 1; }
+            .cl-feat-more .arr { transition: transform .25s ease; }
+            .cl-feat-item:hover .cl-feat-more .arr { transform: translateX(5px); }
+          `}</style>
         </section>
 
         {/* ── Comparison table ─────────────────────────────────────────────── */}

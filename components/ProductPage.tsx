@@ -94,7 +94,7 @@ export default function ProductPage({ data }: { data: ProductPageData }) {
         {data.sections.map((sec, i) => (
           <div key={i} style={{ background: i % 2 === 1 ? 'linear-gradient(145deg, #FFFDF8, #FFF6E6)' : '#FFFFFF', borderRadius: 18, border: '1px solid #F0E7D6', boxShadow: '0 8px 26px rgba(120,80,20,0.09)', padding: '36px 38px', margin: '18px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 44, alignItems: 'center' }} className="product-section">
             <div>
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #F5C645, #E8A020)', boxShadow: '0 6px 16px rgba(232,160,32,0.35)', marginBottom: 16 }}>
+              <span className="product-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #F5C645, #E8A020)', boxShadow: '0 6px 16px rgba(232,160,32,0.35)', marginBottom: 16 }}>
                 <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="#1A1400" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
               </span>
               <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em', margin: '0 0 14px', color: TEXT }}>{sec.title}</h2>
@@ -153,6 +153,12 @@ export default function ProductPage({ data }: { data: ProductPageData }) {
       </footer>
 
       <style>{`
+        .product-section { transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease; }
+        .product-section:hover { transform: translateY(-4px); box-shadow: 0 18px 44px rgba(120,80,20,0.16); }
+        .product-icon { transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease; }
+        .product-section:hover .product-icon { transform: translateY(-2px) scale(1.07) rotate(-3deg); box-shadow: 0 14px 30px rgba(232,160,32,0.5); }
+        .product-steps > div { transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease; }
+        .product-steps > div:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(120,80,20,0.14); }
         @media (max-width: 820px) {
           .product-hero { grid-template-columns: 1fr !important; }
           .product-section { grid-template-columns: 1fr !important; gap: 20px !important; padding: 24px 20px !important; }

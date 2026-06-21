@@ -192,6 +192,16 @@ export default function FeaturesPage() {
   return (
     <div style={{ minHeight: '100vh', background: C.pageBg, color: C.text, fontFamily: C.font }}>
 
+      <style>{`
+        .featx-row { position: relative; transition: transform .28s cubic-bezier(.16,1,.3,1); }
+        .featx-row::before { content:''; position:absolute; top:0; left:0; width:64px; height:2px; border-radius:2px; background: linear-gradient(90deg,#E8A020, rgba(232,160,32,0.3) 70%, transparent); opacity:.6; transition: width .3s ease, opacity .3s ease; }
+        .featx-row:hover::before { width:120px; opacity:1; }
+        .featx-icon { transition: transform .28s cubic-bezier(.16,1,.3,1), box-shadow .28s ease; }
+        .featx-row:hover .featx-icon { transform: translateY(-2px) scale(1.06) rotate(-3deg); box-shadow: 0 16px 32px rgba(232,160,32,0.5), inset 0 1px 1px rgba(255,255,255,0.65); }
+        .featx-title { transition: color .2s ease; }
+        .featx-row:hover .featx-title { color: #A8700C; }
+      `}</style>
+
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
@@ -245,7 +255,7 @@ export default function FeaturesPage() {
         <section style={{ padding: '40px 24px 64px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 56 }}>
             {FEATURES.map((f, i) => (
-              <div key={f.title} id={f.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')} style={{
+              <div key={f.title} className="featx-row" id={f.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')} style={{
                 borderTop: '1px solid rgba(176,122,18,0.16)',
                 paddingTop: 40,
                 scrollMarginTop: 84,
@@ -255,8 +265,29 @@ export default function FeaturesPage() {
                 alignItems: 'start',
               }}>
                 <div>
+                  <div
+                    className="featx-icon"
+                    aria-hidden="true"
+                    style={{
+                      width: 54,
+                      height: 54,
+                      borderRadius: 16,
+                      background: 'linear-gradient(145deg,#F8CE5A,#E89A18)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#231A05',
+                      boxShadow: '0 8px 22px rgba(232,160,32,0.38), inset 0 1px 1px rgba(255,255,255,0.55)',
+                      fontSize: 20,
+                      fontWeight: 900,
+                      letterSpacing: '-0.02em',
+                      marginBottom: 16,
+                    }}
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#B07A12', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>{f.eyebrow}</div>
-                  <h2 style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.18, letterSpacing: '-0.03em', color: C.text }}>{f.title}</h2>
+                  <h2 className="featx-title" style={{ fontSize: 'clamp(24px, 3vw, 34px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.18, letterSpacing: '-0.03em', color: C.text }}>{f.title}</h2>
                   <p style={{ fontSize: 16, color: C.dim, lineHeight: 1.7, margin: 0 }}>{f.description}</p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
