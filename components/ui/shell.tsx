@@ -51,15 +51,17 @@ export function PageWrap({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
-// Not a floating box — a flat section baked onto the page. No fill, no shadow,
-// no radius. Structure comes from the header rule and internal hairlines.
+// A refined, subtle panel — not a heavy floating card, not invisible either.
+// Light background, thin border, minimal shadow for grounding.
 export function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div
       style={{
-        background: 'transparent',
-        border: 'none',
-        boxShadow: 'none',
+        background: '#FFFFFF',
+        borderRadius: 10,
+        border: `1px solid ${T.border}`,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        overflow: 'hidden',
         ...style,
       }}
     >
@@ -72,12 +74,12 @@ export function CardHeader({ children, style }: { children: React.ReactNode; sty
   return (
     <div
       style={{
-        padding: '0 0 12px',
-        borderBottom: `2px solid ${T.white}`,
+        padding: '14px 18px',
+        borderBottom: `1px solid ${T.border}`,
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        marginBottom: 4,
+        background: '#FAFAF9',
         ...style,
       }}
     >
@@ -88,7 +90,7 @@ export function CardHeader({ children, style }: { children: React.ReactNode; sty
 
 export function CardBody({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ padding: '18px 0 0', ...style }}>
+    <div style={{ padding: '16px 18px', ...style }}>
       {children}
     </div>
   );
@@ -145,9 +147,12 @@ export function StatCard({ icon, label, value, sub }: { icon: string; label: str
   return (
     <div
       style={{
-        background: 'transparent',
-        borderTop: `2px solid ${T.borderStrong}`,
-        padding: '16px 0 0',
+        background: '#FFFFFF',
+        border: `1px solid ${T.border}`,
+        borderRadius: 10,
+        borderTop: `3px solid ${T.gold}`,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        padding: '16px 18px',
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
@@ -330,15 +335,15 @@ export function Table({ headers, rows }: { headers: TableHeader[]; rows: React.R
               <th
                 key={i}
                 style={{
-                  padding: '0 12px 10px',
+                  padding: '10px 12px',
                   textAlign: h.align,
                   color: T.faint,
                   fontWeight: 700,
                   fontSize: 11,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
-                  borderBottom: `2px solid ${T.white}`,
-                  background: 'transparent',
+                  borderBottom: `1px solid ${T.border}`,
+                  background: '#FAFAF9',
                   whiteSpace: 'nowrap',
                 }}
               >
