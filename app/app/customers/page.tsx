@@ -6,13 +6,15 @@ import { UsersThree, WarningCircle, HouseSimple, Cactus } from '@phosphor-icons/
 import { useToast } from '@/components/Toast';
 
 /* ─── Palette ─── */
-const BG = '#F2F2F7', CARD = '#FFFFFF', GOLD = '#C8881C', GREEN = '#34C759';
-const BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73', DARK = '#F2F2F7';
-const RED = '#FF3B30', AMBER = '#FF9500', BLUE = '#007AFF', PURPLE = '#AF52DE';
+const BG = '#FAFAF9', CARD = '#FFFFFF', GOLD = '#C8881C', GREEN = '#15803D';
+const BORDER = '#EAE8E4', TEXT = '#1C1917', DIM = '#57534E', DARK = '#FAFAF9';
+const RED = '#B42318', AMBER = '#FF9500', BLUE = '#007AFF', PURPLE = '#AF52DE';
+const STRONG = '#1C1917';
 
+/* Flat editorial section — no box: transparent, hairline top rule, square. */
 const glass: React.CSSProperties = {
-  background: `${CARD}CC`, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-  border: `1px solid ${BORDER}`, borderRadius: 16,
+  background: 'transparent',
+  borderTop: `1px solid ${BORDER}`,
 };
 
 /* ─── Types ─── */
@@ -146,7 +148,7 @@ export default function CustomersPage() {
           </button>
 
           {/* Header Card */}
-          <div style={{ ...glass, padding: 24, marginBottom: 20 }}>
+          <div style={{ borderTop: `2px solid ${STRONG}`, padding: '20px 0 24px', marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
               <div>
                 <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>{c.name}</h1>
@@ -159,7 +161,7 @@ export default function CustomersPage() {
                   border: `1px solid ${STATUS_COLORS[c.status]}40`, textTransform: 'capitalize',
                 }}>{c.status}</div>
                 <div style={{
-                  width: 48, height: 48, borderRadius: 12, background: `${scoreColor(c.lead_score)}15`,
+                  width: 48, height: 48, borderRadius: 8, background: `${scoreColor(c.lead_score)}15`,
                   border: `2px solid ${scoreColor(c.lead_score)}`, display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   fontSize: 18, fontWeight: 800, color: scoreColor(c.lead_score),
@@ -185,8 +187,8 @@ export default function CustomersPage() {
           {detailTab === 'overview' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
               {/* Geo Info */}
-              <div style={{ ...glass, padding: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD }}>Location & Geo</h3>
+              <div style={{ ...glass, padding: '16px 0' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Location & Geo</h3>
                 <div style={{ display: 'grid', gap: 10 }}>
                   {[
                     ['City', c.city || '\u2014'],
@@ -205,8 +207,8 @@ export default function CustomersPage() {
               </div>
 
               {/* Lead Score Breakdown */}
-              <div style={{ ...glass, padding: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD }}>Lead Score Breakdown</h3>
+              <div style={{ ...glass, padding: '16px 0' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Lead Score Breakdown</h3>
                 {Object.entries(sb).map(([key, val]) => (
                   <div key={key} style={{ marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -224,8 +226,8 @@ export default function CustomersPage() {
               </div>
 
               {/* Actions */}
-              <div style={{ ...glass, padding: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD }}>Actions</h3>
+              <div style={{ ...glass, padding: '16px 0' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: GOLD, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Actions</h3>
                 <div style={{ display: 'grid', gap: 10 }}>
                   <button onClick={() => { assignToProject(c); }} disabled={assigning} style={{
                     padding: '12px 16px', background: `${GOLD}20`, border: `1px solid ${GOLD}40`,
@@ -250,14 +252,14 @@ export default function CustomersPage() {
           )}
 
           {detailTab === 'discovery' && (
-            <div style={{ ...glass, padding: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Discovery Answers</h3>
+            <div style={{ ...glass, padding: '20px 0' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Discovery Answers</h3>
               {c.discovery_answers && Object.keys(c.discovery_answers).length > 0 ? (
                 <div style={{ display: 'grid', gap: 10 }}>
                   {Object.entries(c.discovery_answers).map(([key, val]) => (
                     <div key={key} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                      background: `${BG}60`, borderRadius: 10, border: `1px solid ${BORDER}`,
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
+                      background: 'transparent', borderBottom: `1px solid ${BORDER}`,
                     }}>
                       <span style={{ fontSize: 20 }}>
                         {key === 'project_type' ? '🏗️' : key === 'budget' ? '💰' : key === 'priorities' ? '🎯' :
@@ -283,14 +285,14 @@ export default function CustomersPage() {
           )}
 
           {detailTab === 'recommendations' && (
-            <div style={{ ...glass, padding: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Recommendations</h3>
+            <div style={{ ...glass, padding: '20px 0' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Recommendations</h3>
               {c.recommendations && c.recommendations.length > 0 ? (
                 <div style={{ display: 'grid', gap: 10 }}>
                   {c.recommendations.map(rec => (
                     <div key={rec.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                      background: `${BG}60`, borderRadius: 10, border: `1px solid ${BORDER}`,
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
+                      background: 'transparent', borderBottom: `1px solid ${BORDER}`,
                     }}>
                       <span style={{
                         fontSize: 18,
@@ -315,14 +317,14 @@ export default function CustomersPage() {
           )}
 
           {detailTab === 'materials' && (
-            <div style={{ ...glass, padding: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Material Selections</h3>
+            <div style={{ ...glass, padding: '20px 0' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Material Selections</h3>
               {c.material_selections && c.material_selections.length > 0 ? (
                 <div style={{ display: 'grid', gap: 10 }}>
                   {c.material_selections.map((ms, i) => (
                     <div key={i} style={{
-                      display: 'flex', justifyContent: 'space-between', padding: '12px 16px',
-                      background: `${BG}60`, borderRadius: 10, border: `1px solid ${BORDER}`,
+                      display: 'flex', justifyContent: 'space-between', padding: '12px 0',
+                      background: 'transparent', borderBottom: `1px solid ${BORDER}`,
                     }}>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600 }}>{ms.name}</div>
@@ -339,14 +341,14 @@ export default function CustomersPage() {
           )}
 
           {detailTab === 'conversations' && (
-            <div style={{ ...glass, padding: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Sage Conversations</h3>
+            <div style={{ ...glass, padding: '20px 0' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Sage Conversations</h3>
               {c.conversations && c.conversations.length > 0 ? (
                 <div style={{ display: 'grid', gap: 10 }}>
                   {c.conversations.map((cv, i) => (
                     <div key={i} style={{
-                      display: 'flex', gap: 12, padding: '12px 16px',
-                      background: `${BG}60`, borderRadius: 10, border: `1px solid ${BORDER}`,
+                      display: 'flex', gap: 12, padding: '12px 0',
+                      background: 'transparent', borderBottom: `1px solid ${BORDER}`,
                     }}>
                       <span style={{ fontSize: 20 }}><Cactus size={20} color={GOLD} /></span>
                       <div>
@@ -371,7 +373,7 @@ export default function CustomersPage() {
     <div style={{ minHeight: '100vh', background: BG, color: TEXT, padding: 20 }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12, paddingBottom: 16, borderBottom: `2px solid ${STRONG}` }}>
           <div>
             <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
               Customer <span style={{ color: GOLD }}>CRM</span>
@@ -450,7 +452,7 @@ export default function CustomersPage() {
             description="Customer profiles will appear here as leads come in through Sage chat, your website, and other sources."
           />
         ) : (
-        <div style={{ ...glass, overflow: 'auto', padding: 0 }}>
+        <div style={{ background: 'transparent', overflow: 'auto', padding: 0 }}>
           {loading ? (
             <div style={{ padding: 8 }}>
               {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
@@ -460,7 +462,7 @@ export default function CustomersPage() {
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
               <thead>
-                <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
+                <tr style={{ borderBottom: `2px solid ${STRONG}` }}>
                   {['Name', 'Email', 'State', 'Status', 'Score', 'Source', 'Created'].map(h => (
                     <th key={h} style={{
                       padding: '12px 14px', textAlign: 'left', fontSize: 12,
@@ -476,11 +478,11 @@ export default function CustomersPage() {
                     onClick={() => { setSelected(c); setDetailTab('overview'); }}
                     style={{
                       borderBottom: `1px solid ${BORDER}`,
-                      background: idx % 2 === 0 ? 'transparent' : `${BG}30`,
+                      background: 'transparent',
                       cursor: 'pointer', transition: 'background .15s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = `${GOLD}08`)}
-                    onMouseLeave={e => (e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : `${BG}30`)}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,136,28,0.05)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     <td style={{ padding: '12px 14px', fontSize: 14, fontWeight: 600 }}>{c.name}</td>
                     <td style={{ padding: '12px 14px', fontSize: 13, color: DIM }}>{c.email}</td>

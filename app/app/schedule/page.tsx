@@ -176,10 +176,10 @@ export default function SchedulePage() {
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 14, borderBottom: '2px solid #1C1917' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: font.size['3xl'], fontWeight: font.weight.black, color: colors.text }}>Schedule</h1>
-          <p style={{ margin: '4px 0 0', fontSize: font.size.md, color: colors.textMuted }}>Manage project tasks, track progress, and monitor deadlines.</p>
+          <h1 style={{ margin: 0, fontSize: font.size['3xl'], fontWeight: font.weight.black, letterSpacing: '-0.02em', color: '#1C1917' }}>Schedule</h1>
+          <p style={{ margin: '4px 0 0', fontSize: font.size.md, color: '#57534E' }}>Manage project tasks, track progress, and monitor deadlines.</p>
         </div>
         <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: colors.gold, border: 'none', borderRadius: radius.lg, color: colors.dark, fontSize: font.size.md, fontWeight: font.weight.black, cursor: 'pointer' }}>
           <Plus size={16} weight="bold" /> New Task

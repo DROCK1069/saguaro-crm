@@ -6,7 +6,8 @@ import { WarningCircle, Brain, ChartBar, Envelope, Trash, Robot } from '@phospho
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#3dd68c';
+const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#EAE8E4',DIM='#57534E',TEXT='#1C1C1E',RED='#B42318',GREEN='#15803D';
+const PAGE_BG='#FAFAF9',HAIRLINE='#EAE8E4',STRONG='#1C1C1E',DIM2='#8A847E',HOVER='rgba(200,136,28,0.05)';
 
 interface BidRecord {
   id: string;
@@ -278,13 +279,13 @@ function BidsPageInner() {
           </div>
         ) : (
           <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
-            <thead><tr style={{background:'#F2F2F7'}}>
+            <thead><tr style={{background:'transparent'}}>
               {['Package Name','Trade','Status','Bid Due','Actions'].map(h=>(
-                <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
+                <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'.06em',color:DIM2,borderBottom:`2px solid ${STRONG}`}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{opportunities.map(op=>(
-              <tr key={op.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
+              <tr key={op.id} style={{borderBottom:`1px solid ${HAIRLINE}`,transition:'background .1s'}} onMouseEnter={e=>(e.currentTarget.style.background=HOVER)} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
                 <td style={{padding:'12px 14px',color:TEXT,fontWeight:600}}>{op.name}</td>
                 <td style={{padding:'12px 14px',color:DIM}}>{op.trade}</td>
                 <td style={{padding:'12px 14px'}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(26,95,168,.12)',color:'#4a9de8',textTransform:'uppercase' as const}}>{op.status}</span></td>
@@ -325,9 +326,9 @@ function BidsPageInner() {
               {l:'Win Rate',v:(historyStats.winRate ?? 0)+'%',c:(historyStats.winRate ?? 0)>=50?'#3dd68c':GOLD},
               {l:'Avg Margin',v:(historyStats.avgMargin ?? 0).toFixed(1)+'%',c:GOLD},
             ].map(k=>(
-              <div key={k.l} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'14px 16px'}}>
-                <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,color:DIM,marginBottom:5}}>{k.l}</div>
-                <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
+              <div key={k.l} style={{background:'transparent',borderTop:'2px solid rgba(28,25,23,0.14)',padding:'14px 0'}}>
+                <div style={{fontSize:28,fontWeight:800,letterSpacing:'-0.03em',color:k.c}}>{k.v}</div>
+                <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'.06em',color:DIM2,marginTop:5}}>{k.l}</div>
               </div>
             ))}
           </div>
@@ -366,9 +367,9 @@ function BidsPageInner() {
           <button onClick={()=>fetchHistory(historyFilter==='all'?undefined:historyFilter)} style={{padding:'8px 18px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Retry</button>
         </div>}
         {!historyLoading&&!historyError&&historyBids.length>0&&<table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
-          <thead><tr style={{background:'#F2F2F7'}}>
+          <thead><tr style={{background:'transparent'}}>
             {['Project','Type','Bid Date','Bid Amount','Margin %','Location','Outcome','Awarded To'].map(h=>(
-              <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
+              <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'.06em',color:DIM2,borderBottom:`2px solid ${STRONG}`}}>{h}</th>
             ))}
           </tr></thead>
           <tbody>{historyBids.map(b=>{
@@ -379,7 +380,7 @@ function BidsPageInner() {
               : b.outcome==='pending'
               ? {bg:'rgba(212,160,23,.12)',c:GOLD}
               : {bg:'rgba(143,163,192,.1)',c:DIM};
-            return <tr key={b.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
+            return <tr key={b.id} style={{borderBottom:`1px solid ${HAIRLINE}`,transition:'background .1s'}} onMouseEnter={e=>(e.currentTarget.style.background=HOVER)} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
               <td style={{padding:'12px 14px',color:TEXT,fontWeight:600,maxWidth:220,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{b.project_name}</td>
               <td style={{padding:'12px 14px',color:DIM}}>{b.project_type}</td>
               <td style={{padding:'12px 14px',color:DIM}}>{b.bid_date}</td>
@@ -467,14 +468,14 @@ function BidsPageInner() {
           {scoreResult ? (
             <div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
-                <div style={{background:DARK,border:`1px solid ${BORDER}`,borderRadius:10,padding:'16px 18px',textAlign:'center' as const}}>
-                  <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,color:DIM,marginBottom:6}}>Fit Score</div>
-                  <div style={{fontSize:36,fontWeight:900,color:scoreResult.fitScore>=70?'#3dd68c':scoreResult.fitScore>=50?GOLD:'#ff7070'}}>{scoreResult.fitScore}</div>
-                  <div style={{fontSize:11,color:DIM}}>out of 100</div>
+                <div style={{background:'transparent',borderTop:'2px solid rgba(28,25,23,0.14)',padding:'14px 0',textAlign:'center' as const}}>
+                  <div style={{fontSize:30,fontWeight:800,letterSpacing:'-0.03em',color:scoreResult.fitScore>=70?GREEN:scoreResult.fitScore>=50?GOLD:RED}}>{scoreResult.fitScore}</div>
+                  <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'.06em',color:DIM2,marginTop:5}}>Fit Score</div>
+                  <div style={{fontSize:11,color:DIM2,marginTop:2}}>out of 100</div>
                 </div>
-                <div style={{background:DARK,border:`1px solid ${BORDER}`,borderRadius:10,padding:'16px 18px',textAlign:'center' as const}}>
-                  <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,color:DIM,marginBottom:6}}>Win Probability</div>
-                  <div style={{fontSize:36,fontWeight:900,color:scoreResult.winPct>=60?'#3dd68c':scoreResult.winPct>=40?GOLD:'#ff7070'}}>{scoreResult.winPct}%</div>
+                <div style={{background:'transparent',borderTop:'2px solid rgba(28,25,23,0.14)',padding:'14px 0',textAlign:'center' as const}}>
+                  <div style={{fontSize:30,fontWeight:800,letterSpacing:'-0.03em',color:scoreResult.winPct>=60?GREEN:scoreResult.winPct>=40?GOLD:RED}}>{scoreResult.winPct}%</div>
+                  <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'.06em',color:DIM2,marginTop:5}}>Win Probability</div>
                 </div>
               </div>
               <div style={{background:'rgba(212,160,23,.08)',border:'1px solid rgba(212,160,23,.25)',borderRadius:8,padding:'12px 16px',marginBottom:20,fontSize:14,fontWeight:700,color:GOLD,textAlign:'center' as const}}>{scoreResult.recommendation}</div>

@@ -213,9 +213,9 @@ export default function InvoicingPage() {
   };
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto', background: '#FAFAF9' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #1C1917' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: font.size['3xl'], fontWeight: font.weight.black, color: colors.text }}>Invoicing</h1>
           <p style={{ margin: '4px 0 0', fontSize: font.size.md, color: colors.textMuted }}>Manage invoices, track payments, and send to vendors.</p>
@@ -234,7 +234,7 @@ export default function InvoicingPage() {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,.1)', border: `1px solid rgba(239,68,68,.3)`, borderRadius: radius.md, color: colors.red, fontSize: font.size.md, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: '12px 0', borderTop: `2px solid #B42318`, color: '#B42318', fontSize: font.size.md, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Warning size={16} /> {error}
         </div>
       )}

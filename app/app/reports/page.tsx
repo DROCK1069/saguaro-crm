@@ -5,13 +5,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 const GOLD   = '#C8881C';
 const DARK   = '#F2F2F7';
 const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
+const BORDER = '#EAE8E4';
+const DIM    = '#57534E';
 const TEXT   = '#1C1C1E';
-const GREEN  = '#22C55E';
+const GREEN  = '#15803D';
 const YELLOW = '#F59E0B';
-const RED    = '#EF4444';
+const RED    = '#B42318';
 const BLUE   = '#3B82F6';
+const PAGE_BG  = '#FAFAF9';
+const HAIRLINE = '#EAE8E4';
+const STRONG   = '#1C1C1E';
+const DIM2     = '#8A847E';
+const HOVER    = 'rgba(200,136,28,0.05)';
 
 // ── Type definitions ───────────────────────────────────────────
 interface ReportColumn {
@@ -370,10 +375,9 @@ export default function ReportsPage() {
 
       {/* ── Sage Chat Bar ── */}
       <div style={{
-        background: RAISED,
-        border: `1px solid ${BORDER}`,
-        borderRadius: 14,
-        padding: '16px 20px',
+        background: 'transparent',
+        borderTop: `1px solid ${HAIRLINE}`,
+        padding: '16px 0',
         marginBottom: 16,
       }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -498,9 +502,8 @@ export default function ReportsPage() {
           {/* Loading / Progress state */}
           {pageState === 'loading' && (
             <div style={{
-              background: RAISED,
-              border: `1px solid ${BORDER}`,
-              borderRadius: 14,
+              background: 'transparent',
+              borderTop: `1px solid ${HAIRLINE}`,
               padding: '40px 32px',
               textAlign: 'center',
               marginBottom: 20,
@@ -546,17 +549,14 @@ export default function ReportsPage() {
           {/* Results table */}
           {pageState === 'results' && reportResult && (
             <div style={{
-              background: RAISED,
-              border: `1px solid ${BORDER}`,
-              borderRadius: 14,
-              overflow: 'hidden',
+              background: 'transparent',
               marginBottom: 20,
             }}>
               {/* Results header */}
               <div style={{
-                padding: '16px 20px',
-                borderBottom: `1px solid ${BORDER}`,
-                background: '#F2F2F7',
+                padding: '0 0 14px 0',
+                borderBottom: `2px solid ${STRONG}`,
+                background: 'transparent',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
@@ -623,14 +623,14 @@ export default function ReportsPage() {
                 <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
-                      <tr style={{ background: DARK }}>
+                      <tr style={{ background: PAGE_BG }}>
                         {reportResult.columns.map(col => (
                           <th key={col.key} style={{
                             padding: '11px 16px',
                             textAlign: ['currency', 'number', 'percent'].includes(col.type) ? 'right' : 'left',
                             fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-                            letterSpacing: 0.6, color: DIM,
-                            borderBottom: `1px solid ${BORDER}`,
+                            letterSpacing: 0.6, color: DIM2,
+                            borderBottom: `2px solid ${STRONG}`,
                             whiteSpace: 'nowrap',
                           }}>
                             {col.label}
@@ -653,10 +653,12 @@ export default function ReportsPage() {
                           <tr
                             key={ri}
                             style={{
-                              background: ri % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)',
-                              borderBottom: `1px solid ${BORDER}`,
+                              background: 'transparent',
+                              borderBottom: `1px solid ${HAIRLINE}`,
                               transition: 'background .1s',
                             }}
+                            onMouseEnter={e => (e.currentTarget.style.background = HOVER)}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
                             {reportResult.columns.map((col, ci) => (
                               <td key={col.key} style={{
@@ -710,8 +712,8 @@ export default function ReportsPage() {
           {(pageState === 'idle' || pageState === 'results') && (
             <div>
               {pageState === 'idle' && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: DIM, letterSpacing: 1, textTransform: 'uppercase' }}>
+                <div style={{ marginBottom: 16, paddingBottom: 10, borderBottom: `2px solid ${STRONG}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, letterSpacing: 1, textTransform: 'uppercase' }}>
                     Standard Reports
                   </div>
                   <div style={{ fontSize: 12, color: DIM, marginTop: 2 }}>
@@ -720,8 +722,8 @@ export default function ReportsPage() {
                 </div>
               )}
               {pageState === 'results' && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: DIM, letterSpacing: 1, textTransform: 'uppercase' }}>
+                <div style={{ marginBottom: 14, paddingBottom: 10, borderBottom: `2px solid ${STRONG}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, letterSpacing: 1, textTransform: 'uppercase' }}>
                     Run Another Report
                   </div>
                 </div>
@@ -738,10 +740,9 @@ export default function ReportsPage() {
                     onMouseEnter={() => setHoveredCard(r.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                     style={{
-                      background: hoveredCard === r.id ? `${GOLD}0a` : RAISED,
-                      border: `1px solid ${hoveredCard === r.id ? GOLD + '44' : BORDER}`,
-                      borderRadius: 12,
-                      padding: '14px 16px',
+                      background: hoveredCard === r.id ? HOVER : 'transparent',
+                      borderTop: `1px solid ${HAIRLINE}`,
+                      padding: '14px 8px',
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: 12,
@@ -751,9 +752,8 @@ export default function ReportsPage() {
                     }}
                   >
                     <div style={{
-                      width: 36, height: 36, borderRadius: 9,
-                      background: hoveredCard === r.id ? `${GOLD}22` : 'rgba(0,0,0,0.05)',
-                      border: `1px solid ${hoveredCard === r.id ? GOLD + '44' : BORDER}`,
+                      width: 36, height: 36,
+                      background: 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 17, flexShrink: 0,
                       transition: 'all .15s',
@@ -781,12 +781,10 @@ export default function ReportsPage() {
           <div style={{
             width: 240,
             flexShrink: 0,
-            background: RAISED,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 12,
-            padding: '14px 16px',
+            background: 'transparent',
+            padding: '0 0 14px 0',
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: DIM, marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: TEXT, marginBottom: 12, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>
               Recent Reports
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -799,15 +797,14 @@ export default function ReportsPage() {
                     runSageReport(item.query);
                   }}
                   style={{
-                    background: 'rgba(0,0,0,0.03)',
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 8,
-                    padding: '9px 11px',
+                    background: 'transparent',
+                    borderTop: `1px solid ${HAIRLINE}`,
+                    padding: '9px 4px',
                     cursor: 'pointer',
-                    transition: 'border-color .15s',
+                    transition: 'background .15s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = GOLD + '44')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER)}
+                  onMouseEnter={e => (e.currentTarget.style.background = HOVER)}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <div style={{ fontSize: 12, fontWeight: 600, color: TEXT, marginBottom: 3, lineHeight: 1.3 }}>
                     {item.title}

@@ -8,23 +8,24 @@ import { toCents, toDollars, sumCents, subCents, summarizeContract } from '@/lib
 import EmptyState from '@/components/EmptyState';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
+// Flat EDITORIAL palette — no floating cards; content on the page, hairline rules + a strong rule under titles.
+const GOLD='#C8881C',PAGE_BG='#FAFAF9',DARK='#FAFAF9',RAISED='transparent',HAIRLINE='#EAE8E4',BORDER='#EAE8E4',STRONG='#1C1917',DIM='#57534E',DIM2='#8A847E',TEXT='#1C1917',GREEN='#15803D',RED='#B42318';
 const fmt = (n:number|null|undefined) => '$'+((n ?? 0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 const fmtPct = (a:number|null|undefined,b:number|null|undefined) => (b ?? 0)>0?(((a ?? 0)/(b as number))*100).toFixed(1)+'%':'0%';
 
 function KPI({label,value,sub}:{label:string,value:string,sub?:string}){
-  return <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'16px 18px'}}>
-    <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:1,color:DIM,marginBottom:6}}>{label}</div>
-    <div style={{fontSize:22,fontWeight:800,color:TEXT,lineHeight:1}}>{value}</div>
-    {sub&&<div style={{fontSize:11,color:DIM,marginTop:4}}>{sub}</div>}
+  return <div style={{background:'transparent',borderTop:`2px solid rgba(28,25,23,0.14)`,padding:'12px 0 0'}}>
+    <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:1,color:DIM2,marginBottom:8}}>{label}</div>
+    <div style={{fontSize:29,fontWeight:800,color:TEXT,lineHeight:1,letterSpacing:'-0.03em'}}>{value}</div>
+    {sub&&<div style={{fontSize:11,color:DIM,marginTop:6}}>{sub}</div>}
   </div>;
 }
 function Card({title,children,action}:{title:string,children:React.ReactNode,action?:React.ReactNode}){
-  return <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,overflow:'hidden',marginBottom:18}}>
-    <div style={{padding:'12px 18px',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+  return <div style={{background:'transparent',marginBottom:28}}>
+    <div style={{padding:'0 0 8px',borderBottom:`2px solid ${STRONG}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
       <span style={{fontWeight:700,fontSize:14,color:TEXT}}>{title}</span>{action}
     </div>
-    <div style={{padding:18}}>{children}</div>
+    <div style={{padding:'14px 0 0'}}>{children}</div>
   </div>;
 }
 
@@ -83,17 +84,17 @@ export default function OverviewPage(){
   // LOADING — skeleton placeholders, never computed zeros or an empty state.
   if(loading) return (
     <div>
-      <div style={{padding:'18px 24px',borderBottom:`1px solid ${BORDER}`,background:DARK}}>
+      <div style={{padding:'18px 24px',borderBottom:`2px solid ${STRONG}`,background:DARK}}>
         <Skeleton width={260} height={22} style={{marginBottom:8}}/>
         <Skeleton width={180} height={12}/>
       </div>
-      <div style={{padding:24}}>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14,marginBottom:24}}>
+      <div style={{padding:24,background:PAGE_BG}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:24,marginBottom:32}}>
           {[0,1,2,3,4].map(i=><SkeletonKPI key={i}/>)}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
           {[0,1].map(col=>(
-            <div key={col} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:18}}>
+            <div key={col} style={{background:'transparent',borderTop:`2px solid ${STRONG}`,padding:'14px 0 0'}}>
               <Skeleton width="40%" height={14} style={{marginBottom:16}}/>
               {[0,1,2,3,4,5].map(i=><Skeleton key={i} height={13} style={{marginBottom:12}}/>)}
             </div>
@@ -155,10 +156,10 @@ export default function OverviewPage(){
   const budgetVariance = toDollars(subCents(toCents(budgetHealth.forecastCost), toCents(budgetHealth.originalBudget)));
   const budgetPct = budgetHealth.originalBudget > 0 ? (budgetHealth.actualCost / budgetHealth.originalBudget * 100).toFixed(1) : '0';
 
-  return <div>
-    <div style={{padding:'18px 24px',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',justifyContent:'space-between',background:DARK}}>
+  return <div style={{background:PAGE_BG}}>
+    <div style={{padding:'18px 24px 14px',borderBottom:`2px solid ${STRONG}`,display:'flex',alignItems:'center',justifyContent:'space-between',background:PAGE_BG}}>
       <div>
-        <h2 style={{margin:0,fontSize:20,fontWeight:800,color:TEXT}}>{p.name}</h2>
+        <h2 style={{margin:0,fontSize:20,fontWeight:800,color:TEXT,letterSpacing:'-0.02em'}}>{p.name}</h2>
         <div style={{fontSize:12,color:DIM,marginTop:3}}>{[p.address,p.city,p.state].filter(Boolean).join(', ')}</div>
       </div>
       <div style={{display:'flex',gap:10,alignItems:'center'}}>
@@ -170,8 +171,8 @@ export default function OverviewPage(){
       <span style={{fontSize:16}}>{scanMsg.includes('failed') ? '✕' : '✓'}</span>
       {scanMsg}
     </div>}
-    <div style={{padding:24}}>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14,marginBottom:24}}>
+    <div style={{padding:24,background:PAGE_BG}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:24,marginBottom:32}}>
         <KPI label="Contract to Date" value={fmt(contractToDate)} sub={approvedCOs>0?'+'+fmt(approvedCOs)+' in COs':'No change orders'}/>
         <KPI label="Billed to Date" value={fmt(billedToDate)} sub={fmtPct(billedToDate,contractToDate)+' complete'}/>
         <KPI label="Paid to Date" value={fmt(paidToDate)} sub={payApps.filter((pa:any)=>pa.status==='paid').length+' payment(s)'}/>
@@ -179,27 +180,27 @@ export default function OverviewPage(){
         <KPI label="Days Remaining" value={daysRemaining>0?String(daysRemaining):'—'} sub={p.end_date?'Due '+p.end_date:'No end date set'}/>
       </div>
 
-      {overdueRFIs.length>0&&<div style={{background:'rgba(192,48,48,.06)',border:'1px solid rgba(192,48,48,.25)',borderRadius:10,padding:'14px 18px',marginBottom:18,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+      {overdueRFIs.length>0&&<div style={{background:'rgba(180,35,24,.06)',borderLeft:`3px solid ${RED}`,borderTop:`1px solid ${HAIRLINE}`,padding:'14px 16px',marginBottom:24,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <span style={{fontWeight:700,color:TEXT,fontSize:14}}>⚠ {overdueRFIs.length} overdue RFI(s) need a response</span>
         <Link href={'/app/projects/'+projectId+'/rfis'} style={{fontSize:12,color:GOLD,textDecoration:'none',fontWeight:700}}>View RFIs →</Link>
       </div>}
 
-      {alerts.length>0&&<div style={{background:'rgba(212,160,23,.04)',border:'1px solid rgba(212,160,23,.2)',borderRadius:10,padding:'14px 18px',marginBottom:18}}>
-        <div style={{fontWeight:700,fontSize:13,color:GOLD,marginBottom:10}}>Autopilot Alerts</div>
+      {alerts.length>0&&<div style={{background:'transparent',marginBottom:28}}>
+        <div style={{padding:'0 0 8px',borderBottom:`2px solid ${STRONG}`,fontWeight:700,fontSize:13,color:TEXT}}>Autopilot Alerts</div>
         {alerts.slice(0,3).map((a:any)=>(
-          <div key={a.id} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'6px 0',borderBottom:'1px solid rgba(229,229,234,.3)'}}>
+          <div key={a.id} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 0',borderBottom:`1px solid ${HAIRLINE}`}}>
             <div style={{width:6,height:6,borderRadius:'50%',background:GOLD,marginTop:5,flexShrink:0}}/>
             <div><div style={{fontSize:13,color:TEXT,fontWeight:600}}>{a.title}</div><div style={{fontSize:11,color:DIM,marginTop:1}}>{a.message}</div></div>
-            <div style={{marginLeft:'auto',fontSize:10,color:DIM,whiteSpace:'nowrap' as const}}>{new Date(a.created_at).toLocaleDateString()}</div>
+            <div style={{marginLeft:'auto',fontSize:10,color:DIM2,whiteSpace:'nowrap' as const}}>{new Date(a.created_at).toLocaleDateString()}</div>
           </div>
         ))}
       </div>}
 
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:32}}>
         <div>
           <Card title="Project Details">
             {[['Status',p.status||'active'],['Type',p.project_type||'—'],['State',p.state||'—'],['Owner',p.owner_entity?.name||'—'],['Architect',p.architect_entity?.name||'—'],['Start Date',p.start_date||'—'],['End Date',p.end_date||'—'],['GC License',p.gc_license||'—'],['Prevailing Wage',p.prevailing_wage?'Yes':'No'],['Public Project',p.is_public_project?'Yes':'No']].map(([l,v]:any)=>(
-              <div key={l} style={{display:'flex',padding:'7px 0',borderBottom:'1px solid rgba(229,229,234,.4)',fontSize:13}}>
+              <div key={l} style={{display:'flex',padding:'7px 0',borderBottom:'1px solid #EAE8E4',fontSize:13}}>
                 <span style={{minWidth:150,color:DIM,fontWeight:600}}>{l}</span>
                 <span style={{color:TEXT,textTransform:'capitalize' as const}}>{v}</span>
               </div>
@@ -211,12 +212,12 @@ export default function OverviewPage(){
                 <span style={{color:DIM}}>Actual vs. Budget</span>
                 <span style={{color:budgetVariance>0?RED:GREEN,fontWeight:700}}>{budgetPct}% spent</span>
               </div>
-              <div style={{height:8,background:'rgba(229,229,234,.6)',borderRadius:4,overflow:'hidden'}}>
+              <div style={{height:8,background:'rgba(28,25,23,0.08)',borderRadius:4,overflow:'hidden'}}>
                 <div style={{height:'100%',background:parseFloat(budgetPct)>90?RED:parseFloat(budgetPct)>75?GOLD:GREEN,width:Math.min(100,parseFloat(budgetPct))+'%',borderRadius:4,transition:'width .3s'}}/>
               </div>
             </div>
             {[['Original Budget',fmt(budgetHealth.originalBudget)],['Committed Cost',fmt(budgetHealth.committedCost)],['Actual Cost',fmt(budgetHealth.actualCost)],['Forecast',fmt(budgetHealth.forecastCost)],['Variance',fmt(Math.abs(budgetVariance))+(budgetVariance>0?' over':' under')]].map(([l,v]:any)=>(
-              <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(229,229,234,.3)',fontSize:12}}>
+              <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid #EAE8E4',fontSize:12}}>
                 <span style={{color:DIM}}>{l}</span>
                 <span style={{color:l==='Variance'?(budgetVariance>0?RED:GREEN):TEXT,fontWeight:600}}>{v}</span>
               </div>
@@ -226,27 +227,27 @@ export default function OverviewPage(){
         <div>
           <Card title="Financial Summary" action={<Link href={'/app/projects/'+projectId+'/pay-apps'} style={{fontSize:11,color:GOLD,textDecoration:'none'}}>All Pay Apps →</Link>}>
             {[['Original Contract',fmt(p.original_contract||p.contract_amount||0)],['Change Orders','+'+fmt(approvedCOs)],['Contract to Date',fmt(contractToDate)],['Billed to Date',fmt(billedToDate)+' ('+fmtPct(billedToDate,contractToDate)+')'],['Retainage Held',fmt(retainageHeld)],['Total Paid',fmt(paidToDate)],['Balance Due',fmt(balanceDue)]].map(([l,v]:any)=>(
-              <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(229,229,234,.4)',fontSize:13}}>
+              <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid #EAE8E4',fontSize:13}}>
                 <span style={{color:DIM}}>{l}</span><span style={{color:TEXT,fontWeight:600}}>{v}</span>
               </div>
             ))}
           </Card>
           {punchSummary.total>0&&<Card title="Punch List" action={<Link href={'/app/projects/'+projectId+'/punch-list'} style={{fontSize:11,color:GOLD,textDecoration:'none'}}>View All →</Link>}>
-            <div style={{display:'flex',gap:16,marginBottom:12}}>
-              <div style={{flex:1,textAlign:'center' as const,padding:'10px 0',background:'rgba(192,48,48,.06)',borderRadius:8,border:'1px solid rgba(192,48,48,.2)'}}>
-                <div style={{fontSize:22,fontWeight:800,color:RED}}>{punchSummary.open}</div>
-                <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,marginTop:3}}>Open</div>
+            <div style={{display:'flex',gap:24,marginBottom:14}}>
+              <div style={{flex:1,padding:'10px 0 0',borderTop:`2px solid rgba(180,35,24,0.30)`}}>
+                <div style={{fontSize:29,fontWeight:800,color:RED,letterSpacing:'-0.03em',lineHeight:1}}>{punchSummary.open}</div>
+                <div style={{fontSize:10,fontWeight:700,color:DIM2,textTransform:'uppercase' as const,letterSpacing:.6,marginTop:6}}>Open</div>
               </div>
-              <div style={{flex:1,textAlign:'center' as const,padding:'10px 0',background:'rgba(26,138,74,.06)',borderRadius:8,border:'1px solid rgba(26,138,74,.2)'}}>
-                <div style={{fontSize:22,fontWeight:800,color:GREEN}}>{punchSummary.complete}</div>
-                <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,marginTop:3}}>Complete</div>
+              <div style={{flex:1,padding:'10px 0 0',borderTop:`2px solid rgba(21,128,61,0.30)`}}>
+                <div style={{fontSize:29,fontWeight:800,color:GREEN,letterSpacing:'-0.03em',lineHeight:1}}>{punchSummary.complete}</div>
+                <div style={{fontSize:10,fontWeight:700,color:DIM2,textTransform:'uppercase' as const,letterSpacing:.6,marginTop:6}}>Complete</div>
               </div>
-              <div style={{flex:1,textAlign:'center' as const,padding:'10px 0',background:'rgba(229,229,234,.4)',borderRadius:8,border:`1px solid ${BORDER}`}}>
-                <div style={{fontSize:22,fontWeight:800,color:TEXT}}>{punchSummary.total}</div>
-                <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,marginTop:3}}>Total</div>
+              <div style={{flex:1,padding:'10px 0 0',borderTop:`2px solid rgba(28,25,23,0.14)`}}>
+                <div style={{fontSize:29,fontWeight:800,color:TEXT,letterSpacing:'-0.03em',lineHeight:1}}>{punchSummary.total}</div>
+                <div style={{fontSize:10,fontWeight:700,color:DIM2,textTransform:'uppercase' as const,letterSpacing:.6,marginTop:6}}>Total</div>
               </div>
             </div>
-            {punchSummary.total>0&&<div style={{height:8,background:'rgba(229,229,234,.6)',borderRadius:4,overflow:'hidden'}}>
+            {punchSummary.total>0&&<div style={{height:8,background:'rgba(28,25,23,0.08)',borderRadius:4,overflow:'hidden'}}>
               <div style={{height:'100%',background:GREEN,width:(punchSummary.complete/punchSummary.total*100).toFixed(1)+'%',borderRadius:4}}/>
             </div>}
           </Card>}
@@ -255,7 +256,7 @@ export default function OverviewPage(){
               const planned = phase.planned_end;
               const actual = phase.actual_end||phase.forecast_end;
               const late = planned&&actual&&actual>planned&&phase.status!=='complete';
-              return <div key={phase.id} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:'1px solid rgba(229,229,234,.3)'}}>
+              return <div key={phase.id} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:'1px solid #EAE8E4'}}>
                 <div style={{width:8,height:8,borderRadius:'50%',flexShrink:0,background:phase.status==='complete'?GREEN:late?RED:phase.status==='in_progress'?GOLD:DIM}}/>
                 <div style={{flex:1,fontSize:13,color:TEXT,fontWeight:600}}>{phase.name}</div>
                 <div style={{fontSize:11,color:late?RED:DIM}}>{phase.planned_end||'—'}</div>
@@ -267,7 +268,7 @@ export default function OverviewPage(){
             {subs.length===0
               ?<div style={{color:DIM,fontSize:13,textAlign:'center',padding:'12px 0'}}>No subs yet. <Link href={'/app/projects/'+projectId+'/team'} style={{color:GOLD}}>Add subs →</Link></div>
               :subs.slice(0,4).map((sub:any)=>(
-                <div key={sub.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid rgba(229,229,234,.3)'}}>
+                <div key={sub.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid #EAE8E4'}}>
                   <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(212,160,23,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,flexShrink:0,color:GOLD}}>{sub.name?.[0]||'?'}</div>
                   <div style={{flex:1}}><div style={{fontSize:13,color:TEXT,fontWeight:600}}>{sub.name}</div><div style={{fontSize:11,color:DIM}}>{sub.trade} — {fmt(sub.contract_amount||0)}</div></div>
                   <span style={{fontSize:10,padding:'2px 6px',borderRadius:4,background:sub.status==='active'?'rgba(26,138,74,.15)':'rgba(148,163,184,.1)',color:sub.status==='active'?GREEN:DIM,fontWeight:700}}>{sub.status}</span>

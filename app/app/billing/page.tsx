@@ -4,14 +4,15 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Confetti } from '@phosphor-icons/react';
 
-const GOLD   = '#F59E0B';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
+const GOLD   = '#C8881C';
+const DARK   = '#FAFAF9';
+const RAISED = 'transparent';
+const BORDER = '#EAE8E4';
+const DIM    = '#57534E';
 const TEXT   = '#1C1C1E';
-const GREEN  = '#22c55e';
-const RED    = '#ef4444';
+const GREEN  = '#15803D';
+const RED    = '#B42318';
+const STRONG = '#1C1C1E';
 
 interface Subscription {
   plan_name: string;
@@ -53,11 +54,11 @@ const PLANS = [
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; bg: string; color: string }> = {
-    trialing:  { label: 'Free Trial',  bg: 'rgba(245,158,11,0.12)', color: GOLD },
-    active:    { label: 'Active',      bg: 'rgba(34,197,94,0.12)',  color: GREEN },
-    past_due:  { label: 'Past Due',    bg: 'rgba(239,68,68,0.12)',  color: RED },
-    canceled:  { label: 'Canceled',    bg: 'rgba(110,110,115,0.1)', color: DIM },
-    paused:    { label: 'Paused',      bg: 'rgba(110,110,115,0.1)', color: DIM },
+    trialing:  { label: 'Free Trial',  bg: 'rgba(200,136,28,0.12)', color: GOLD },
+    active:    { label: 'Active',      bg: 'rgba(21,128,61,0.12)',  color: GREEN },
+    past_due:  { label: 'Past Due',    bg: 'rgba(180,35,24,0.12)',  color: RED },
+    canceled:  { label: 'Canceled',    bg: 'rgba(87,83,78,0.1)',    color: DIM },
+    paused:    { label: 'Paused',      bg: 'rgba(87,83,78,0.1)',    color: DIM },
   };
   const s = map[status] ?? map.active;
   return (
@@ -160,8 +161,8 @@ export default function BillingPage() {
 
       {/* URL success message */}
       {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('success') === '1' && (
-        <div style={{ background: 'rgba(34,197,94,0.1)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 10, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 20 }}><Confetti size={20} /></span>
+        <div style={{ borderTop: `2px solid ${GREEN}`, padding: '16px 0', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 20, color: GREEN }}><Confetti size={20} /></span>
           <div>
             <div style={{ fontWeight: 700, color: GREEN, marginBottom: 2 }}>Payment successful — you&apos;re all set!</div>
             <div style={{ fontSize: 13, color: DIM }}>Your subscription is now active. All features are unlocked.</div>
@@ -171,7 +172,7 @@ export default function BillingPage() {
 
       {/* Current Plan Card */}
       {loading ? (
-        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '28px 32px', marginBottom: 28 }}>
+        <div style={{ borderTop: `1px solid ${BORDER}`, padding: '28px 0', marginBottom: 28 }}>
           <Skeleton width={110} height={11} style={{ marginBottom: 12 }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
             <Skeleton width={180} height={26} />
@@ -191,7 +192,7 @@ export default function BillingPage() {
           />
         </div>
       ) : sub ? (
-        <div style={{ background: RAISED, border: `1px solid ${sub.status === 'past_due' ? RED : BORDER}`, borderRadius: 14, padding: '28px 32px', marginBottom: 28 }}>
+        <div style={{ borderTop: `2px solid ${sub.status === 'past_due' ? RED : STRONG}`, padding: '20px 0 28px', marginBottom: 28 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>Current Plan</div>
@@ -247,7 +248,7 @@ export default function BillingPage() {
           )}
         </div>
       ) : (
-        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '28px 32px', marginBottom: 28 }}>
+        <div style={{ borderTop: `2px solid ${STRONG}`, padding: '20px 0 28px', marginBottom: 28 }}>
           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>No active subscription</div>
           <div style={{ fontSize: 14, color: DIM }}>Choose a plan below to get started.</div>
         </div>
@@ -256,7 +257,7 @@ export default function BillingPage() {
       {/* Plan Selection */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>
             {sub?.status === 'trialing' ? 'Upgrade Your Plan' : 'Change Plan'}
           </h2>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(0,0,0,0.04)', borderRadius: 8, padding: '3px', border: `1px solid ${BORDER}` }}>
@@ -274,18 +275,17 @@ export default function BillingPage() {
             const isUpgrade = plan.id === 'professional' && currentPlanName.includes('starter');
             return (
               <div key={plan.id} style={{
-                background: plan.popular ? 'linear-gradient(180deg, #FFFFFF, #FFFFFF)' : RAISED,
-                border: `1.5px solid ${isCurrent ? GREEN : plan.popular ? GOLD : BORDER}`,
-                borderRadius: 14, overflow: 'hidden', position: 'relative',
-                boxShadow: plan.popular ? `0 0 40px rgba(245,158,11,0.08)` : 'none',
+                background: 'transparent',
+                borderTop: `2px solid ${isCurrent ? GREEN : plan.popular ? GOLD : 'rgba(28,25,23,0.14)'}`,
+                overflow: 'hidden', position: 'relative',
               }}>
                 {plan.popular && !isCurrent && (
-                  <div style={{ background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: '#1C1C1E', letterSpacing: 2, textTransform: 'uppercase' }}>Most Popular</div>
+                  <div style={{ textAlign: 'left', padding: '8px 0 0', fontSize: 10, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase' }}>Most Popular</div>
                 )}
                 {isCurrent && (
-                  <div style={{ background: 'rgba(34,197,94,0.15)', borderBottom: `1px solid rgba(34,197,94,0.25)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: GREEN, letterSpacing: 2, textTransform: 'uppercase' }}>Current Plan</div>
+                  <div style={{ textAlign: 'left', padding: '8px 0 0', fontSize: 10, fontWeight: 800, color: GREEN, letterSpacing: 2, textTransform: 'uppercase' }}>Current Plan</div>
                 )}
-                <div style={{ padding: '24px 22px' }}>
+                <div style={{ padding: '16px 0 24px' }}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: plan.popular ? GOLD : DIM, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>{plan.name}</div>
                   <div style={{ fontSize: 12, color: DIM, marginBottom: 16 }}>{plan.tagline}</div>
 
@@ -334,7 +334,7 @@ export default function BillingPage() {
       </div>
 
       {/* Install App Section */}
-      <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '28px 32px', marginTop: 32 }}>
+      <div style={{ borderTop: `1px solid ${BORDER}`, padding: '28px 0', marginTop: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>Saguaro Field App</div>
@@ -348,8 +348,8 @@ export default function BillingPage() {
       </div>
 
       {/* FAQ */}
-      <div style={{ marginTop: 32 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Billing FAQ</h2>
+      <div style={{ marginTop: 32, borderTop: `1px solid ${BORDER}`, paddingTop: 28 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16, paddingBottom: 8, borderBottom: `2px solid ${STRONG}` }}>Billing FAQ</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {[
             { q: 'When does my free trial end?', a: 'Your 30-day free trial gives you full access to all Professional features. No credit card is required until you decide to subscribe.' },
@@ -358,7 +358,7 @@ export default function BillingPage() {
             { q: 'What happens if my payment fails?', a: 'We\'ll retry your card 3 times over 7 days and email you each time. If payment still fails, your account is paused but your data is preserved for 30 days.' },
             { q: 'Do you offer refunds?', a: 'We offer a full refund within 7 days of your first payment. After that, we don\'t offer refunds but you can cancel anytime and retain access until your period ends.' },
           ].map((faq, i, arr) => (
-            <div key={i} style={{ padding: '18px 0', borderBottom: i < arr.length - 1 ? `1px solid rgba(229,229,234,0.6)` : 'none' }}>
+            <div key={i} style={{ padding: '18px 0', borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : 'none' }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: TEXT, marginBottom: 6 }}>{faq.q}</div>
               <div style={{ fontSize: 13, color: DIM, lineHeight: 1.65 }}>{faq.a}</div>
             </div>

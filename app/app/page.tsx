@@ -64,17 +64,16 @@ function KPI({
     <div
       onClick={onClick}
       style={{
-        background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14,
-        padding: '18px 20px', cursor: onClick || href ? 'pointer' : 'default',
-        boxShadow: SHADOW_SM,
-        transition: 'border-color .18s, box-shadow .18s, transform .12s',
+        background: 'transparent', borderTop: `2px solid rgba(28,25,23,0.14)`,
+        padding: '16px 4px 4px', cursor: onClick || href ? 'pointer' : 'default',
+        transition: 'border-color .18s, transform .12s',
       }}
-      onMouseEnter={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = 'rgba(0,0,0,0.14)'; t.style.boxShadow = SHADOW_LG; t.style.transform = 'translateY(-2px)'; } }}
-      onMouseLeave={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderColor = BORDER; t.style.boxShadow = SHADOW_SM; t.style.transform = 'translateY(0)'; } }}
+      onMouseEnter={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderTopColor = GOLD; } }}
+      onMouseLeave={e => { if (onClick || href) { const t = e.currentTarget as HTMLDivElement; t.style.borderTopColor = 'rgba(28,25,23,0.14)'; } }}
     >
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: DIM, marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, color: color ?? TEXT, lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: DIM, marginTop: 6 }}>{sub}</div>}
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: DIM, marginBottom: 9 }}>{label}</div>
+      <div style={{ fontSize: 30, fontWeight: 800, color: color ?? TEXT, lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em' }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: DIM, marginTop: 7 }}>{sub}</div>}
     </div>
   );
   if (href) return <Link href={href} style={{ textDecoration: 'none' }}>{inner}</Link>;
@@ -388,7 +387,7 @@ export default function DashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 28 }}>
           {statsLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
+              <div key={i} style={{ background: 'transparent', borderTop: `2px solid ${BORDER}`, padding: '20px 0 0' }}>
                 <div className="skeleton-pulse" style={{ height: 10, width: '60%', borderRadius: 4, background: BORDER, marginBottom: 10 }} />
                 <div className="skeleton-pulse" style={{ height: 28, width: '45%', borderRadius: 4, background: BORDER, marginBottom: 6 }} />
                 <div className="skeleton-pulse" style={{ height: 10, width: '70%', borderRadius: 4, background: BORDER }} />
@@ -433,7 +432,7 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, marginBottom: 28 }}>
 
             {/* Project Budget Chart */}
-            <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
+            <div style={{ background: 'transparent', borderTop: `2px solid ${BORDER}`, padding: '20px 0 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(200,136,28,0.12)' }}>
                   <ChartBar size={17} weight="duotone" color={GOLD} />
@@ -467,7 +466,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Portfolio Status Donut */}
-            <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
+            <div style={{ background: 'transparent', borderTop: `2px solid ${BORDER}`, padding: '20px 0 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(200,136,28,0.12)' }}>
                   <TrendUp size={17} weight="duotone" color={GOLD} />
@@ -519,7 +518,7 @@ export default function DashboardPage() {
         )}
 
         {/* Today's Priority Actions */}
-        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', marginBottom: 24, boxShadow: SHADOW_SM }}>
+        <div style={{ background: 'transparent', borderTop: `2px solid ${BORDER}`, overflow: 'hidden', marginBottom: 24 }}>
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_SUBTLE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Today&apos;s Priority Actions</span>
@@ -557,7 +556,7 @@ export default function DashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 20 }}>
 
           {/* Active Projects */}
-          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', boxShadow: SHADOW_SM }}>
+          <div style={{ background: 'transparent', borderTop: `2px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_SUBTLE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Active Projects</span>
               <Link href="/app/projects" style={{ fontSize: 12, fontWeight: 600, color: GOLD, textDecoration: 'none' }}>All Projects →</Link>
@@ -608,7 +607,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Open RFIs */}
-          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', boxShadow: SHADOW_SM }}>
+          <div style={{ background: 'transparent', borderTop: `2px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_SUBTLE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Open RFIs</span>
               <Link href="/app/projects" style={{ fontSize: 12, fontWeight: 600, color: GOLD, textDecoration: 'none' }}>View Projects →</Link>

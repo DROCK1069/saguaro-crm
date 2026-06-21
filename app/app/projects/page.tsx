@@ -4,18 +4,24 @@ import Link from 'next/link';
 import { FolderOpen, MagnifyingGlass, Plus, ArrowRight } from '@phosphor-icons/react';
 import { colors, radius, shadow } from '../../../lib/design-tokens';
 
-// Reconciled to the design-token ramp (no more bluish slab literals).
-const GOLD=colors.gold,RAISED=colors.raised,BORDER=colors.border,DIM=colors.textMuted,TEXT=colors.text;
-const SUNKEN=colors.dark;            // inset stat tiles on a raised card
-const BORDER_STRONG='rgba(255,255,255,0.16)';
+// Flat EDITORIAL palette — no boxes, content on the page separated by hairline rules.
+const GOLD='#C8881C';
+const TEXT='#1C1917';
+const DIM='#57534E';
+const DIM2='#8A847E';
+const HAIRLINE='#EAE8E4';
+const STRONG='#1C1917';
+const PAGE_BG='#FAFAF9';
+const GREEN='#15803D';
+const RED='#B42318';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 function statusStyle(s:string):{bg:string,c:string}{
-  if(s==='active')    return {bg:'rgba(34,197,94,.12)',c:colors.green};
-  if(s==='bidding')   return {bg:'rgba(212,160,23,.14)',c:GOLD};
-  if(s==='planning')  return {bg:'rgba(99,102,241,.14)',c:colors.blue};
-  if(s==='closed'||s==='complete') return {bg:'rgba(255,255,255,.06)',c:colors.textDim};
-  return {bg:'rgba(255,255,255,.06)',c:colors.textDim};
+  if(s==='active')    return {bg:'rgba(21,128,61,.10)',c:GREEN};
+  if(s==='bidding')   return {bg:'rgba(200,136,28,.14)',c:GOLD};
+  if(s==='planning')  return {bg:'rgba(99,102,241,.12)',c:colors.blue};
+  if(s==='closed'||s==='complete') return {bg:'rgba(28,25,23,.05)',c:DIM};
+  return {bg:'rgba(28,25,23,.05)',c:DIM};
 }
 
 export default function ProjectsPage() {
@@ -47,9 +53,9 @@ export default function ProjectsPage() {
   });
 
   return (
-    <div style={{padding:'28px 32px',maxWidth:1400,margin:'0 auto'}}>
+    <div style={{padding:'28px 32px',maxWidth:1400,margin:'0 auto',background:PAGE_BG}}>
       {/* Header */}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:28,flexWrap:'wrap',gap:14}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20,paddingBottom:14,borderBottom:`2px solid ${STRONG}`,flexWrap:'wrap',gap:14}}>
         <div>
           <h1 style={{margin:0,fontSize:24,fontWeight:700,lineHeight:1.2,letterSpacing:'-0.02em',color:TEXT}}>Projects</h1>
           <div style={{fontSize:13,color:DIM,marginTop:6}}>
@@ -58,20 +64,20 @@ export default function ProjectsPage() {
         </div>
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
           <div style={{position:'relative',display:'flex',alignItems:'center'}}>
-            <MagnifyingGlass size={15} weight="bold" color={colors.textDim} style={{position:'absolute',left:12,pointerEvents:'none'}}/>
+            <MagnifyingGlass size={15} weight="bold" color={DIM2} style={{position:'absolute',left:12,pointerEvents:'none'}}/>
             <input
               value={search}
               onChange={e=>setSearch(e.target.value)}
               placeholder="Search projects…"
-              style={{padding:'9px 14px 9px 34px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:radius.xl,color:TEXT,fontSize:13,outline:'none',width:220}}
-              onFocus={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.boxShadow=`0 0 0 3px rgba(212,160,23,.12)`}}
-              onBlur={e=>{e.currentTarget.style.borderColor=BORDER;e.currentTarget.style.boxShadow='none'}}
+              style={{padding:'9px 14px 9px 34px',background:'#FFFFFF',border:`1px solid ${HAIRLINE}`,borderRadius:radius.lg,color:TEXT,fontSize:13,outline:'none',width:220}}
+              onFocus={e=>{e.currentTarget.style.borderColor=GOLD;e.currentTarget.style.boxShadow=`0 0 0 3px rgba(200,136,28,.12)`}}
+              onBlur={e=>{e.currentTarget.style.borderColor=HAIRLINE;e.currentTarget.style.boxShadow='none'}}
             />
           </div>
           <select
             value={statusFilter}
             onChange={e=>setStatusFilter(e.target.value)}
-            style={{padding:'9px 12px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:radius.xl,color:TEXT,fontSize:13,cursor:'pointer',outline:'none'}}
+            style={{padding:'9px 12px',background:'#FFFFFF',border:`1px solid ${HAIRLINE}`,borderRadius:radius.lg,color:TEXT,fontSize:13,cursor:'pointer',outline:'none'}}
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -91,21 +97,21 @@ export default function ProjectsPage() {
 
       {/* Error */}
       {error && (
-        <div style={{background:'rgba(239,68,68,.10)',border:`1px solid rgba(239,68,68,.28)`,borderRadius:radius.xl,padding:'12px 16px',marginBottom:20,color:colors.red,fontSize:13}}>
+        <div style={{background:'rgba(180,35,24,.08)',border:`1px solid rgba(180,35,24,.28)`,borderRadius:radius.lg,padding:'12px 16px',marginBottom:20,color:RED,fontSize:13}}>
           {error}
         </div>
       )}
 
       {/* Loading skeletons */}
       {loading && (
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(360px,1fr))',gap:18}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(360px,1fr))',gap:0}}>
           {[1,2,3,4].map(i=>(
-            <div key={i} style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:22,height:190,boxShadow:shadow.sm,animation:'pulse 1.6s ease-in-out infinite'}}>
-              <div style={{height:16,background:colors.raisedAlt,borderRadius:6,marginBottom:10,width:'60%'}}/>
-              <div style={{height:12,background:colors.raisedAlt,borderRadius:6,marginBottom:18,width:'40%'}}/>
+            <div key={i} style={{borderTop:`1px solid ${HAIRLINE}`,padding:'22px 18px',height:190,animation:'pulse 1.6s ease-in-out infinite'}}>
+              <div style={{height:16,background:HAIRLINE,borderRadius:6,marginBottom:10,width:'60%'}}/>
+              <div style={{height:12,background:HAIRLINE,borderRadius:6,marginBottom:18,width:'40%'}}/>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                <div style={{height:52,background:SUNKEN,border:`1px solid ${colors.borderDim}`,borderRadius:radius.lg}}/>
-                <div style={{height:52,background:SUNKEN,border:`1px solid ${colors.borderDim}`,borderRadius:radius.lg}}/>
+                <div style={{height:52,borderTop:`2px solid rgba(28,25,23,0.14)`}}/>
+                <div style={{height:52,borderTop:`2px solid rgba(28,25,23,0.14)`}}/>
               </div>
             </div>
           ))}
@@ -116,16 +122,15 @@ export default function ProjectsPage() {
       {!loading && filtered.length===0 && (
         <div style={{
           display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',
-          padding:'64px 24px',background:RAISED,border:`1px solid ${BORDER}`,
-          borderRadius:14,boxShadow:shadow.sm,maxWidth:520,margin:'0 auto',
+          padding:'64px 24px',maxWidth:520,margin:'0 auto',
         }}>
           <div style={{
             width:64,height:64,borderRadius:radius['2xl'],display:'flex',alignItems:'center',justifyContent:'center',
-            background:'rgba(212,160,23,.10)',border:`1px solid rgba(212,160,23,.20)`,marginBottom:20,
+            background:'rgba(200,136,28,.10)',border:`1px solid rgba(200,136,28,.20)`,marginBottom:20,
           }}>
             {projects.length===0
               ? <FolderOpen size={30} weight="duotone" color={GOLD}/>
-              : <MagnifyingGlass size={28} weight="bold" color={colors.textDim}/>}
+              : <MagnifyingGlass size={28} weight="bold" color={DIM2}/>}
           </div>
           <div style={{fontSize:18,fontWeight:700,color:TEXT,marginBottom:8}}>
             {projects.length===0 ? 'No projects yet' : 'No projects match your filters'}
@@ -146,15 +151,15 @@ export default function ProjectsPage() {
 
       {/* Grid */}
       {!loading && filtered.length>0 && (
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(360px,1fr))',gap:18}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(360px,1fr))',columnGap:32,rowGap:0}}>
           {filtered.map((p:any)=>{
             const st = statusStyle(p.status||'');
             const contract = Number(p.contract_amount||0);
             return (
               <div key={p.id}
-                style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:22,boxShadow:shadow.sm,transition:'border-color .18s,box-shadow .18s,transform .18s',cursor:'pointer'}}
-                onMouseEnter={e=>{const t=e.currentTarget as HTMLElement;t.style.borderColor=BORDER_STRONG;t.style.boxShadow=shadow.md;t.style.transform='translateY(-2px)'}}
-                onMouseLeave={e=>{const t=e.currentTarget as HTMLElement;t.style.borderColor=BORDER;t.style.boxShadow=shadow.sm;t.style.transform='none'}}
+                style={{background:'transparent',borderTop:`1px solid ${HAIRLINE}`,padding:'22px 4px',transition:'background .18s',cursor:'pointer'}}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background='rgba(200,136,28,0.05)'}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background='transparent'}}
               >
                 {/* Name + badge */}
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
@@ -168,20 +173,20 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* Stats */}
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
-                  <div style={{background:SUNKEN,border:`1px solid ${colors.borderDim}`,borderRadius:radius.lg,padding:'10px 12px'}}>
-                    <div style={{fontSize:10,color:colors.textDim,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.6,marginBottom:4}}>Contract Value</div>
-                    <div style={{fontSize:15,fontWeight:700,color:contract>0?GOLD:colors.textDim}}>{contract>0?fmt(contract):'—'}</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+                  <div style={{borderTop:`2px solid rgba(28,25,23,0.14)`,paddingTop:8}}>
+                    <div style={{fontSize:10,color:DIM2,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.6,marginBottom:4}}>Contract Value</div>
+                    <div style={{fontSize:15,fontWeight:700,color:contract>0?GOLD:DIM2}}>{contract>0?fmt(contract):'—'}</div>
                   </div>
-                  <div style={{background:SUNKEN,border:`1px solid ${colors.borderDim}`,borderRadius:radius.lg,padding:'10px 12px'}}>
-                    <div style={{fontSize:10,color:colors.textDim,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.6,marginBottom:4}}>Type</div>
+                  <div style={{borderTop:`2px solid rgba(28,25,23,0.14)`,paddingTop:8}}>
+                    <div style={{fontSize:10,color:DIM2,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.6,marginBottom:4}}>Type</div>
                     <div style={{fontSize:14,fontWeight:600,color:TEXT,textTransform:'capitalize' as const}}>{(p.project_type||'—').replace(/_/g,' ')}</div>
                   </div>
                 </div>
 
                 {/* Footer */}
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span style={{fontSize:11,color:colors.textDim}}>
+                  <span style={{fontSize:11,color:DIM2}}>
                     {p.start_date ? new Date(p.start_date).toLocaleDateString('en-US',{month:'short',year:'numeric'}) : 'No start date'}
                   </span>
                   <Link
@@ -195,13 +200,13 @@ export default function ProjectsPage() {
             );
           })}
 
-          {/* New Project Card */}
+          {/* New Project CTA */}
           <Link href="/app/projects/new" style={{textDecoration:'none'}}>
-            <div style={{background:'rgba(212,160,23,.04)',border:`1px dashed rgba(212,160,23,.3)`,borderRadius:14,padding:40,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,minHeight:190,transition:'background .18s,border-color .18s'}}
-              onMouseEnter={e=>{const t=e.currentTarget as HTMLElement;t.style.background='rgba(212,160,23,.08)';t.style.borderColor='rgba(212,160,23,.5)'}}
-              onMouseLeave={e=>{const t=e.currentTarget as HTMLElement;t.style.background='rgba(212,160,23,.04)';t.style.borderColor='rgba(212,160,23,.3)'}}
+            <div style={{background:'transparent',borderTop:`1px solid ${HAIRLINE}`,padding:'22px 4px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,minHeight:190,transition:'background .18s'}}
+              onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background='rgba(200,136,28,0.05)'}}
+              onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background='transparent'}}
             >
-              <div style={{width:50,height:50,borderRadius:radius['2xl'],background:'rgba(212,160,23,.14)',display:'flex',alignItems:'center',justifyContent:'center',color:GOLD}}>
+              <div style={{width:50,height:50,borderRadius:radius['2xl'],background:'rgba(200,136,28,.14)',display:'flex',alignItems:'center',justifyContent:'center',color:GOLD}}>
                 <Plus size={24} weight="bold"/>
               </div>
               <div style={{fontWeight:700,color:GOLD,fontSize:15}}>New Project</div>
