@@ -117,6 +117,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta charSet="utf-8" />
         <meta name="application-name" content="Saguaro" />
         <meta name="theme-color" content="#C8881C" />
+        {/* Inter font — modern, professional, great for SaaS */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
         {/* Favicons + touch icon (plain bookmark icons — not a PWA) */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />

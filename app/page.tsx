@@ -264,18 +264,6 @@ function MarketingNav() {
   );
 }
 
-/* Saguaro cactus silhouette — the classic trunk + two upswept arms, drawn
-   with round-capped strokes for the iconic rounded look. */
-function Saguaro({ h = 200, color = '#1a0e16', style }: { h?: number; color?: string; style?: React.CSSProperties }) {
-  return (
-    <svg viewBox="0 0 100 230" width={h * 0.46} height={h} style={style} fill="none" stroke={color} strokeWidth={17} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M50 230 L50 34" />
-      <path d="M50 150 L32 150 L32 102" />
-      <path d="M50 118 L70 118 L70 80" />
-    </svg>
-  );
-}
-
 /* ===========================
    MAIN PAGE COMPONENT
    =========================== */
@@ -293,7 +281,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div data-landing style={{ background: `linear-gradient(180deg, #FAFAF8 0%, ${BG} 30%, #F5F5F0 100%)`, color: TEXT, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh', overflowX: 'hidden' as const }}>
+    <div data-landing style={{ background: `linear-gradient(180deg, #FAFAF8 0%, ${BG} 30%, #F5F5F0 100%)`, color: TEXT, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh', overflowX: 'hidden' as const }}>
 
       {/* ══════════ 1. TOP BANNER ══════════ */}
       {bannerVisible && (
@@ -307,83 +295,79 @@ export default function LandingPage() {
       {/* ══════════ 2. NAV WITH DROPDOWNS ══════════ */}
       <MarketingNav />
 
-      {/* ══════════ 3. HERO — cinematic Arizona desert sunset ══════════ */}
-      <section style={{ position: 'relative' as const, width: '100%', overflow: 'hidden', minHeight: 560, display: 'flex', alignItems: 'center' }}>
-        {/* ── Sky: layered sunset gradient ── */}
-        <div style={{ position: 'absolute' as const, inset: 0, zIndex: 0, background: 'linear-gradient(to bottom, #1a1338 0%, #38245c 22%, #6e3563 42%, #b14d44 60%, #d4722a 76%, #e8a83d 92%, #f0c266 100%)' }} />
-        {/* ── Sun glow near the horizon ── */}
-        <div style={{ position: 'absolute' as const, left: '62%', top: '46%', width: 520, height: 520, transform: 'translate(-50%,-50%)', zIndex: 0, background: 'radial-gradient(circle, rgba(255,236,180,0.95) 0%, rgba(247,190,90,0.55) 22%, rgba(232,140,40,0.18) 45%, transparent 68%)', pointerEvents: 'none' as const }} />
-        {/* ── Distant mountain ridge ── */}
-        <svg viewBox="0 0 1440 200" preserveAspectRatio="none" style={{ position: 'absolute' as const, bottom: 96, left: 0, width: '100%', height: 150, zIndex: 0, opacity: 0.55 }} aria-hidden="true">
-          <path d="M0 200 L0 120 L180 70 L360 130 L540 60 L760 140 L980 80 L1180 150 L1440 90 L1440 200 Z" fill="#3a2148" />
-        </svg>
-        <svg viewBox="0 0 1440 160" preserveAspectRatio="none" style={{ position: 'absolute' as const, bottom: 96, left: 0, width: '100%', height: 110, zIndex: 0, opacity: 0.75 }} aria-hidden="true">
-          <path d="M0 160 L0 110 L260 60 L520 120 L780 70 L1040 130 L1300 80 L1440 120 L1440 160 Z" fill="#2a1530" />
-        </svg>
-        {/* ── Foreground desert floor ── */}
-        <div style={{ position: 'absolute' as const, bottom: 0, left: 0, width: '100%', height: 110, zIndex: 1, background: 'linear-gradient(to bottom, #1a0e1a 0%, #14090f 100%)' }} />
-        {/* ── Saguaro cacti silhouettes (foreground) ── */}
-        <Saguaro h={150} color="#160a12" style={{ position: 'absolute', bottom: 74, left: '6%', zIndex: 2, opacity: 0.9 }} />
-        <Saguaro h={230} color="#100810" style={{ position: 'absolute', bottom: 70, left: '15%', zIndex: 2 }} />
-        <Saguaro h={120} color="#1a0c14" style={{ position: 'absolute', bottom: 78, right: '9%', zIndex: 2, opacity: 0.85 }} />
-        <Saguaro h={190} color="#100810" style={{ position: 'absolute', bottom: 72, right: '3%', zIndex: 2 }} />
-        {/* ── Readability scrim: darker on the left, fading right ── */}
-        <div style={{ position: 'absolute' as const, inset: 0, zIndex: 2, background: 'linear-gradient(to right, rgba(12,8,20,0.62) 0%, rgba(12,8,20,0.32) 45%, rgba(12,8,20,0.05) 75%, transparent 100%)', pointerEvents: 'none' as const }} />
+      {/* ══════════ 3. HERO — full-bleed Arizona desert photography ══════════ */}
+      <section style={{ position: 'relative' as const, width: '100%', overflow: 'hidden', minHeight: 620, display: 'flex', alignItems: 'center' }}>
+        {/* ── Real desert sunset photograph ── */}
+        <div style={{ position: 'absolute' as const, inset: 0, zIndex: 0 }}>
+          <img
+            src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920&q=85&auto=format"
+            alt=""
+            aria-hidden="true"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 40%' }}
+          />
+        </div>
+        {/* ── Cinematic gradient overlay: dark left → clear right (shows desert on right) ── */}
+        <div style={{ position: 'absolute' as const, inset: 0, zIndex: 1, background: 'linear-gradient(105deg, rgba(10,6,14,0.92) 0%, rgba(10,6,14,0.78) 35%, rgba(10,6,14,0.45) 60%, rgba(10,6,14,0.18) 80%, transparent 100%)' }} />
+        {/* ── Bottom vignette for smooth transition to content below ── */}
+        <div style={{ position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 200, zIndex: 1, background: 'linear-gradient(to top, rgba(10,6,14,0.95) 0%, transparent 100%)' }} />
+        {/* ── Warm gold glow accent near horizon ── */}
+        <div style={{ position: 'absolute' as const, bottom: '15%', right: '20%', width: 600, height: 400, zIndex: 1, background: 'radial-gradient(ellipse, rgba(232,168,60,0.15) 0%, transparent 70%)', pointerEvents: 'none' as const }} />
 
         {/* ── Content ── */}
-        <div style={{ position: 'relative' as const, zIndex: 3, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '96px 24px 130px' }}>
-          <div style={{ maxWidth: 620 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,220,140,0.14)', border: '1px solid rgba(255,220,140,0.35)', color: '#FBE3A8', fontSize: 11, fontWeight: 700, letterSpacing: 1.2, padding: '6px 13px', borderRadius: 999, marginBottom: 22, textTransform: 'uppercase' as const, backdropFilter: 'blur(4px)' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FBE3A8', boxShadow: '0 0 8px rgba(251,227,168,0.8)' }} />AI-Powered Construction CRM</span>
-            <h1 style={{ fontSize: 54, fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.03em', margin: '0 0 20px', color: '#FFFFFF', textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>The smarter CRM built<br />for general contractors</h1>
-            <p style={{ color: 'rgba(255,255,255,0.92)', fontSize: 18, lineHeight: 1.6, margin: '0 0 32px', maxWidth: 510, textShadow: '0 1px 12px rgba(0,0,0,0.35)' }}>AI takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance — so you can focus on building.</p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
-              <Link href="/signup" className="cta-glow" style={{ background: `linear-gradient(135deg, #F5C645, #E0991A)`, color: '#1C1917', textDecoration: 'none', fontWeight: 800, fontSize: 15, padding: '14px 32px', borderRadius: 11, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 4px 18px rgba(224,153,26,0.45), 0 10px 34px rgba(224,153,26,0.30)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
-              <Link href="/#demo" style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '14px 28px', borderRadius: 11, border: '1px solid rgba(255,255,255,0.45)', display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(6px)' }}>
-                <svg viewBox="0 0 20 20" width={15} height={15} fill="#FFFFFF"><polygon points="5,3 19,10 5,17" /></svg> Watch Demo
+        <div style={{ position: 'relative' as const, zIndex: 2, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '120px 24px 160px' }}>
+          <div style={{ maxWidth: 640 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,220,140,0.12)', border: '1px solid rgba(255,220,140,0.30)', color: '#F5D990', fontSize: 11, fontWeight: 700, letterSpacing: 1.2, padding: '6px 14px', borderRadius: 999, marginBottom: 24, textTransform: 'uppercase' as const, backdropFilter: 'blur(8px)' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F5D990', boxShadow: '0 0 10px rgba(245,217,144,0.7)' }} />AI-Powered Construction CRM</span>
+            <h1 style={{ fontSize: 56, fontWeight: 800, lineHeight: 1.04, letterSpacing: '-0.035em', margin: '0 0 22px', color: '#FFFFFF' }}>Build smarter.<br />Bid faster.<br />Get paid.</h1>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, lineHeight: 1.65, margin: '0 0 36px', maxWidth: 480 }}>The AI-powered CRM that reads blueprints, generates estimates, handles pay apps, and runs your field crew — at a third the cost of Procore.</p>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' as const, alignItems: 'center' }}>
+              <Link href="/signup" className="cta-glow" style={{ background: 'linear-gradient(135deg, #F5C645 0%, #E8A020 100%)', color: '#1A1400', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '16px 36px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 20px rgba(232,160,32,0.50), 0 12px 40px rgba(232,160,32,0.25)', letterSpacing: '-0.01em' }}>Start Free Trial <span style={{ fontSize: 18 }}>&rarr;</span></Link>
+              <Link href="/#demo" style={{ color: 'rgba(255,255,255,0.9)', textDecoration: 'none', fontWeight: 600, fontSize: 15, padding: '16px 28px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.25)', display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)', transition: 'background 0.2s, border-color 0.2s' }}>
+                <svg viewBox="0 0 20 20" width={14} height={14} fill="rgba(255,255,255,0.9)"><polygon points="6,3 18,10 6,17" /></svg> Watch Demo
               </Link>
             </div>
+            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 16, letterSpacing: '0.02em' }}>No credit card required &middot; 14-day free trial &middot; Cancel anytime</p>
           </div>
         </div>
       </section>
 
-      {/* ── Floating product mockup, overlapping the hero's base ── */}
-      <span id="how-it-works" aria-hidden="true" style={{ position: 'absolute' as const, scrollMarginTop: 72 }} />
-      <div style={{ maxWidth: 760, margin: '-86px auto 0', padding: '0 24px', position: 'relative' as const, zIndex: 4 }}>
-        <div id="demo" style={{ background: '#FFFFFF', border: '1px solid #EAE8E4', borderRadius: 16, overflow: 'hidden', boxShadow: '0 24px 60px rgba(28,25,23,0.22), 0 4px 12px rgba(28,25,23,0.08)', scrollMarginTop: 72 }}>
+      {/* ── Floating product mockup, overlapping the hero ── */}
+      <span id="how-it-works" aria-hidden="true" style={{ scrollMarginTop: 72 }} />
+      <div style={{ maxWidth: 820, margin: '-100px auto 0', padding: '0 24px', position: 'relative' as const, zIndex: 5 }}>
+        <div id="demo" style={{ background: '#FFFFFF', borderRadius: 20, overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.28), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', scrollMarginTop: 72 }}>
           {/* browser chrome */}
-          <div style={{ background: '#F7F6F4', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #EAE8E4' }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: GOLD }} />
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: GREEN }} />
-            <span style={{ flex: 1, background: 'rgba(0,0,0,0.05)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: DIM, marginLeft: 8 }}>app.saguaro.build/takeoff</span>
+          <div style={{ background: '#F8F7F5', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #EAE8E4' }}>
+            <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FF5F57' }} />
+            <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#FEBC2E' }} />
+            <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#28C840' }} />
+            <span style={{ flex: 1, background: 'rgba(0,0,0,0.04)', borderRadius: 7, padding: '5px 14px', fontSize: 12, color: '#999', marginLeft: 10, fontFamily: 'monospace' }}>app.saguaro.build/takeoff</span>
           </div>
           {/* mockup content */}
-          <div style={{ padding: 22 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>AI Takeoff Results</span>
-              <span style={{ fontSize: 11, color: GOLD, fontWeight: 600, background: 'rgba(212,160,23,0.12)', padding: '3px 10px', borderRadius: 12 }}>38s &bull; 47 items</span>
+          <div style={{ padding: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>AI Takeoff Results</span>
+              <span style={{ fontSize: 11, color: GOLD, fontWeight: 700, background: 'rgba(212,160,23,0.10)', padding: '4px 12px', borderRadius: 20 }}>38s &bull; 47 items</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1, marginBottom: 2 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.8fr 0.6fr 1fr', gap: 0, marginBottom: 4 }}>
               {['Item', 'Qty', 'Unit', 'Cost'].map(h => (
-                <div key={h} style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, padding: '6px 8px', background: 'rgba(0,0,0,0.03)' }}>{h}</div>
+                <div key={h} style={{ fontSize: 10, color: '#A0A0A0', fontWeight: 700, textTransform: 'uppercase' as const, padding: '8px 10px', letterSpacing: '0.06em', borderBottom: '2px solid #F0EFEC' }}>{h}</div>
               ))}
             </div>
             {[
               ['Concrete Footing', '124', 'CY', '$18,600'],
               ['#5 Rebar', '2,400', 'LF', '$4,320'],
-              ['CMU 8" Block', '3,650', 'EA', '$10,950'],
+              ['CMU 8″ Block', '3,650', 'EA', '$10,950'],
               ['Rigid Insulation', '4,800', 'SF', '$7,200'],
               ['Structural Steel', '48', 'TON', '$96,000'],
             ].map((row, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1, marginBottom: 1 }}>
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.8fr 0.6fr 1fr', gap: 0, borderBottom: '1px solid #F5F4F2' }}>
                 {row.map((cell, j) => (
-                  <div key={j} style={{ fontSize: 12, color: j === 3 ? GOLD : j === 0 ? TEXT : DIM, padding: '7px 8px', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent', fontWeight: j === 3 ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>{cell}</div>
+                  <div key={j} style={{ fontSize: 13, color: j === 3 ? GOLD : j === 0 ? TEXT : '#888', padding: '10px', fontWeight: j === 3 ? 700 : j === 0 ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>{cell}</div>
                 ))}
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, padding: '10px 8px', borderTop: `1px solid rgba(212,160,23,0.2)` }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: TEXT }}>Total Estimate</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: GOLD }}>$137,070</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, padding: '14px 10px 4px', borderTop: '2px solid #F0EFEC' }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>Total Estimate</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: GOLD }}>$137,070</span>
             </div>
           </div>
         </div>
@@ -510,20 +494,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════ 8. PROMISE — honest pull-quote, no fabricated customer ══════════ */}
-      <section style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px', textAlign: 'center' as const }} className="reveal">
-        <blockquote style={{ fontSize: 26, color: TEXT, lineHeight: 1.4, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
-          The estimating, billing, and field work that used to take five tools and a spreadsheet — done in one place, in a fraction of the time.
-        </blockquote>
-        <p style={{ color: DIM, fontSize: 14, margin: 0 }}>That&apos;s the whole point of Saguaro.</p>
-      </section>
-
-      {/* ══════════ 9. CTA SECTION ══════════ */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '72px 24px 80px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }} className="reveal">
-        <h2 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 12, color: TEXT }}>Ready to build smarter?</h2>
-        <p style={{ color: DIM, fontSize: 15, marginBottom: 28 }}>Start your free trial today — no credit card, no sales call, no contract.</p>
-        <Link href="/signup" className="cta-glow" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.3), 0 12px 40px rgba(212,160,23,0.15)' }}>Start Your Free Trial</Link>
-        <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>No credit card required. 14-day free trial.</p>
+      {/* ══════════ 8+9. DARK CTA SECTION — bookends the hero ══════════ */}
+      <section style={{ position: 'relative' as const, overflow: 'hidden', background: '#0E0B08', padding: '100px 24px', textAlign: 'center' as const }} className="reveal">
+        {/* warm ambient glow */}
+        <div style={{ position: 'absolute' as const, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 500, background: 'radial-gradient(ellipse, rgba(200,136,28,0.12) 0%, transparent 70%)', pointerEvents: 'none' as const }} />
+        <div style={{ position: 'relative' as const, zIndex: 1, maxWidth: 650, margin: '0 auto' }}>
+          <blockquote style={{ fontSize: 28, color: '#FFFFFF', lineHeight: 1.35, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 18px' }}>
+            The estimating, billing, and field work that used to take five tools and a spreadsheet — done in one place, in a fraction of the time.
+          </blockquote>
+          <p style={{ color: 'rgba(255,255,255,0.50)', fontSize: 15, margin: '0 0 40px' }}>That&apos;s the whole point of Saguaro.</p>
+          <Link href="/signup" className="cta-glow" style={{ background: 'linear-gradient(135deg, #F5C645 0%, #E8A020 100%)', color: '#1A1400', textDecoration: 'none', fontWeight: 800, fontSize: 17, padding: '18px 48px', borderRadius: 14, display: 'inline-block', boxShadow: '0 4px 24px rgba(232,160,32,0.50), 0 16px 48px rgba(232,160,32,0.25)', letterSpacing: '-0.01em' }}>Start Your Free Trial</Link>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 14 }}>No credit card required &middot; 14-day free trial &middot; Cancel anytime</p>
+        </div>
       </section>
 
       {/* ══════════ 10. FOOTER ══════════ */}
