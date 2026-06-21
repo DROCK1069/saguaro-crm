@@ -40,17 +40,16 @@ export async function GET(req: NextRequest) {
     const db = createServerClient();
     const articles = seed as SeedArticle[];
 
-    // Idempotent + non-destructive: if a global library already exists, do
-    // nothing (never delete). Re-running is a safe no-op.
-    const { count: existing } = await db
+    // Non-destructive + idempotent by title: insert only articles whose title is
+    // not already present in the global library. Never deletes or updates.
+    const { data: existingRows } = await db
       .from('trade_knowledge')
-      .select('id', { count: 'exact', head: true })
+      .select('title')
       .eq('is_global', true);
-    if ((existing || 0) > 0) {
-      return NextResponse.json({ ok: true, skipped: true, existing, message: 'Global library already seeded — no changes made.' });
-    }
+    const existingTitles = new Set((existingRows || []).map((r: { title: string }) => r.title));
+    const fresh = articles.filter((x) => !existingTitles.has(x.title));
 
-    const rows = articles.map((x) => ({
+    const rows = fresh.map((x) => ({
       trade: x.trade,
       category: x.category,
       title: x.title,
@@ -82,7 +81,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: errors.length === 0,
-      total: rows.length,
+      seedFileTotal: articles.length,
+      alreadyPresent: existingTitles.size,
+      newToInsert: rows.length,
       inserted,
       byTrade,
       errors,
