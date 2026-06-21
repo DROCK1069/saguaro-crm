@@ -196,15 +196,18 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
     <div style={{ minHeight: '100vh', background: DARK, color: TEXT, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Nav />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section style={{ textAlign: 'center', padding: '72px 24px 64px', maxWidth: '860px', margin: '0 auto' }}>
+      {/* ── Hero — warm gradient wash + glow ─────────────────────────────── */}
+      <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, #FFFBF2 0%, #FDF3E2 45%, #FBEAD2 100%)', borderBottom: `1px solid #ECE7DD` }}>
+      <div style={{ position: 'absolute', top: -160, right: '8%', width: 560, height: 560, background: 'radial-gradient(circle, rgba(232,168,60,0.30) 0%, rgba(212,160,23,0.10) 40%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -220, left: '6%', width: 480, height: 480, background: 'radial-gradient(circle, rgba(200,136,28,0.14) 0%, transparent 68%)', pointerEvents: 'none' }} />
+      <section style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '76px 24px 70px', maxWidth: '860px', margin: '0 auto' }}>
         <div style={{
-          display: 'inline-block', marginBottom: '20px',
-          padding: '5px 16px', borderRadius: '99px',
-          background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
-          fontSize: '11px', fontWeight: 700, color: GOLD, letterSpacing: '0.12em', textTransform: 'uppercase',
+          display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '22px',
+          padding: '6px 16px', borderRadius: '99px',
+          background: 'rgba(200,136,28,0.12)', border: '1px solid rgba(200,136,28,0.32)',
+          fontSize: '11.5px', fontWeight: 800, color: GOLD, letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>
-          SAGUARO VS {competitor.name.toUpperCase()}
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(200,136,28,0.7)' }} />SAGUARO VS {competitor.name.toUpperCase()}
         </div>
 
         <h1 style={{ fontSize: 'clamp(36px,5.5vw,60px)', fontWeight: 900, lineHeight: 1.05, margin: '0 0 20px', letterSpacing: '-0.03em' }}>
@@ -244,18 +247,19 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           No credit card required. 30-day free trial. Cancel anytime.
         </div>
       </section>
+      </div>
 
-      {/* ── Win stats bar ─────────────────────────────────────────────────── */}
-      <div style={{ background: RAISED, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, padding: '28px 24px' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px', textAlign: 'center' }} className="ccp-stats-grid">
+      {/* ── Win stats bar — gradient tiles ────────────────────────────────── */}
+      <div style={{ padding: '40px 24px 8px' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '18px', textAlign: 'center' }} className="ccp-stats-grid">
           {[
-            { value: savings, label: 'vs. per-seat or high-priced plans' },
-            { value: '1 day setup', label: `vs. ${competitor.setupTime} for ${competitor.name}` },
-            { value: `${aiCount} AI feature${aiCount !== 1 ? 's' : ''}`, label: `${competitor.name} doesn't have` },
+            { value: savings, label: 'vs. per-seat or high-priced plans', g: 'linear-gradient(150deg, #FFF6E2, #FDEAC4)' },
+            { value: '1 day setup', label: `vs. ${competitor.setupTime} for ${competitor.name}`, g: 'linear-gradient(150deg, #FBEFDC, #F6DCB6)' },
+            { value: `${aiCount} AI feature${aiCount !== 1 ? 's' : ''}`, label: `${competitor.name} doesn't have`, g: 'linear-gradient(150deg, #FFF1E0, #FBD9AE)' },
           ].map((stat, i) => (
-            <div key={i} style={{ padding: '8px 12px', borderLeft: i > 0 ? `1px solid ${BORDER}` : 'none' }} className="ccp-stat">
-              <div style={{ fontSize: '22px', fontWeight: 800, color: GOLD, marginBottom: '4px', letterSpacing: '-0.02em' }}>{stat.value}</div>
-              <div style={{ fontSize: '12px', color: DIM, lineHeight: 1.4 }}>{stat.label}</div>
+            <div key={i} style={{ padding: '26px 22px', borderRadius: 16, background: stat.g, border: '1px solid rgba(200,136,28,0.18)', boxShadow: '0 8px 22px rgba(200,136,28,0.10)' }} className="ccp-stat">
+              <div style={{ fontSize: '30px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.03em', background: 'linear-gradient(135deg, #D89A1E, #A86A0C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{stat.value}</div>
+              <div style={{ fontSize: '13px', color: '#7A5A1E', lineHeight: 1.4, fontWeight: 600 }}>{stat.label}</div>
             </div>
           ))}
         </div>
