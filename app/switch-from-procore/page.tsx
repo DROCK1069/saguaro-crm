@@ -139,7 +139,7 @@ export default function SwitchFromProcorePage() {
       }}>
         <div className="nav-container">
           <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 48 }} />
+            <img src="/logo-horizontal.png" alt="Saguaro" style={{ height: 48 }} />
           </Link>
           <div className="nav-links">
             <Link href="/login" className="btn-outline" style={{ padding: '9px 20px', fontSize: '0.9rem' }}>
@@ -709,7 +709,7 @@ export default function SwitchFromProcorePage() {
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ marginBottom: 24 }}>
             <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 40 }} />
+              <img src="/logo-horizontal.png" alt="Saguaro" style={{ height: 40 }} />
             </Link>
           </div>
           <div className="footer-links" style={{ marginBottom: 20 }}>

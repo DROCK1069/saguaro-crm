@@ -113,7 +113,7 @@ export default function SignupPage(){
       {/* Nav */}
       <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(252,247,238,0.92)',backdropFilter:'blur(12px)',zIndex:50}}>
         <a href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:10}}>
-          <img src="/logo-full.jpg" alt="Saguaro" style={{height:34,width:'auto',borderRadius:4}}/>
+          <img src="/logo-horizontal.png" alt="Saguaro" style={{height:34,width:'auto',borderRadius:4}}/>
           <span style={{fontWeight:900,fontSize:15,background:'linear-gradient(90deg,#C8881C,#E0A030)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
         </a>
         <a href="/login" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>

@@ -98,7 +98,7 @@ export default function LoginPage(){
       {/* Top nav */}
       <nav style={{padding:'0 24px',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`}}>
         <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10}}>
-          <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{height:36,width:'auto',objectFit:'contain',borderRadius:4}} />
+          <img src="/logo-horizontal.png" alt="Saguaro Control Systems" style={{height:36,width:'auto',objectFit:'contain',borderRadius:4}} />
           <span style={{display:'flex',flexDirection:'column',lineHeight:1.15}}>
             <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:`linear-gradient(90deg,${GOLD},#E0A030)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
             <span style={{fontSize:10,color:DIM,letterSpacing:.5,fontWeight:600}}>Control Systems</span>
@@ -113,7 +113,7 @@ export default function LoginPage(){
           {/* Header */}
           <div style={{textAlign:'center',marginBottom:28}}>
             <div style={{display:'flex',justifyContent:'center',marginBottom:16}}>
-              <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{height:56,width:'auto',objectFit:'contain',borderRadius:6}} />
+              <img src="/logo-horizontal.png" alt="Saguaro Control Systems" style={{height:56,width:'auto',objectFit:'contain',borderRadius:6}} />
             </div>
             <h1 style={{fontSize:26,fontWeight:800,margin:'0 0 6px',color:TEXT}}>Welcome back</h1>
             <p style={{color:DIM,fontSize:14,margin:0}}>Sign in to your Saguaro account</p>

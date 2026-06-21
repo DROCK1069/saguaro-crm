@@ -199,7 +199,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@type": "SoftwareApplication",
               "name": "Saguaro CRM",
               "url": "https://saguarocontrol.net",
-              "logo": "https://saguarocontrol.net/logo-full.jpg",
+              "logo": "https://saguarocontrol.net/logo-horizontal.png",
               "image": "https://saguarocontrol.net/og-image.jpg",
               "description": "AI-powered construction CRM for general contractors. Blueprint takeoff, pay applications, lien waivers, bid intelligence.",
               "applicationCategory": "BusinessApplication",
@@ -224,7 +224,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "@type": "Organization",
                 "name": "Saguaro Control Systems",
                 "url": "https://saguarocontrol.net",
-                "logo": "https://saguarocontrol.net/logo-full.jpg",
+                "logo": "https://saguarocontrol.net/logo-horizontal.png",
                 "address": {
                   "@type": "PostalAddress",
                   "addressLocality": "Phoenix",

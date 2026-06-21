@@ -364,7 +364,7 @@ export default function ROICalculatorPage() {
         }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
             <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 48 }} />
+              <img src="/logo-horizontal.png" alt="Saguaro" style={{ height: 48 }} />
             </a>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <a href="/login" className="nav-btn-outline">Log In</a>
@@ -865,7 +865,7 @@ export default function ROICalculatorPage() {
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20, marginBottom: 28 }}>
               <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-                <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 40 }} />
+                <img src="/logo-horizontal.png" alt="Saguaro" style={{ height: 40 }} />
               </a>
               <div className="footer-links" style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
                 {[

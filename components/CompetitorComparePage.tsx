@@ -42,7 +42,7 @@ function Nav() {
         }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
             <img
-              src="/logo-full.jpg"
+              src="/logo-horizontal.png"
               alt="Saguaro Control Systems"
               style={{ height: '36px', width: 'auto', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
             />

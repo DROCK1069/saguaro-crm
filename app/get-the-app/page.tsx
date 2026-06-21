@@ -788,7 +788,7 @@ export default function GetTheAppPage() {
         {/* ── NAV ── */}
         <nav className="nav">
           <a href="/" className="nav-logo">
-            <img src="/logo-full.jpg" alt="Saguaro" height={40} style={{ }} />
+            <img src="/logo-horizontal.png" alt="Saguaro" height={40} style={{ }} />
           </a>
           <div className="nav-spacer" />
           <a href="/login" className="nav-login">Log In</a>
@@ -1126,7 +1126,7 @@ export default function GetTheAppPage() {
           <div className="footer-inner">
             <div className="footer-left">
               <div className="footer-logo">
-                <img src="/logo-full.jpg" alt="Saguaro" height={32} style={{ }} />
+                <img src="/logo-horizontal.png" alt="Saguaro" height={32} style={{ }} />
               </div>
               <span className="footer-copy">© {new Date().getFullYear()} Saguaro Control. All rights reserved.</span>
             </div>

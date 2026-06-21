@@ -29,7 +29,7 @@ export default function IndustryIndexPage() {
       }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
           <Image
-            src="/logo-full.jpg"
+            src="/logo-horizontal.png"
             alt="Saguaro"
             width={132}
             height={44}
