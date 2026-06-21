@@ -133,31 +133,69 @@ function MarketingNav() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const menus = {
+  const menus: Record<string, { label: string; groups: { heading: string; links: { label: string; href: string }[] }[] }> = {
     platform: {
       label: 'Platform',
-      items: [
-        { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, full estimate out in 60 seconds', href: '/app/takeoff' },
-        { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
+      groups: [
+        { heading: 'Preconstruction', links: [
+          { label: 'AI Blueprint Takeoff', href: '/signup' },
+          { label: 'Bid Packages', href: '/signup' },
+          { label: 'Bid Intelligence', href: '/signup' },
+          { label: 'Estimating & Proposals', href: '/signup' },
+        ] },
+        { heading: 'Financials', links: [
+          { label: 'AIA Pay Applications', href: '/signup' },
+          { label: 'Invoicing', href: '/signup' },
+          { label: 'Lien Waivers', href: '/signup' },
+          { label: 'Certified Payroll', href: '/signup' },
+        ] },
+        { heading: 'Field & Intelligence', links: [
+          { label: 'Field Mobile App', href: '/get-the-app' },
+          { label: 'Daily Logs & Photos', href: '/signup' },
+          { label: 'RFIs & Submittals', href: '/signup' },
+          { label: 'Executive Intelligence', href: '/intelligence' },
+          { label: 'Sage AI Assistant', href: '/signup' },
+        ] },
       ],
     },
     solutions: {
       label: 'Solutions',
-      items: [
-        { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/signup' },
-        { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/signup' },
-        { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/signup' },
-        { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/signup' },
-        { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/signup' },
+      groups: [
+        { heading: 'By Trade', links: [
+          { label: 'General Contractors', href: '/signup' },
+          { label: 'Specialty Subcontractors', href: '/signup' },
+          { label: 'Residential Remodelers', href: '/signup' },
+          { label: 'Commercial Contractors', href: '/signup' },
+          { label: 'Roofing Contractors', href: '/signup' },
+        ] },
+        { heading: 'By Need', links: [
+          { label: 'Estimating & Bidding', href: '/signup' },
+          { label: 'Project Management', href: '/signup' },
+          { label: 'Billing & Compliance', href: '/signup' },
+          { label: 'Field Operations', href: '/signup' },
+        ] },
       ],
     },
     resources: {
       label: 'Resources',
-      items: [
-        { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
-        { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
-        { icon: <BookOpen size={22} weight="duotone" color="#C8881C" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
-        { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
+      groups: [
+        { heading: 'Learn', links: [
+          { label: 'How It Works', href: '/how-it-works' },
+          { label: 'Help Center', href: '/help-center' },
+          { label: 'Changelog', href: '/changelog' },
+          { label: 'Get the iOS App', href: '/get-the-app' },
+        ] },
+        { heading: 'Compare', links: [
+          { label: 'Compare to Procore', href: '/compare/procore' },
+          { label: 'ROI Calculator', href: '/roi-calculator' },
+          { label: 'Switch from Procore', href: '/switch-from-procore' },
+        ] },
+        { heading: 'Company', links: [
+          { label: 'About', href: '/about' },
+          { label: 'Owner & Sub Portals', href: '/portals/client' },
+          { label: 'API Docs', href: '/api-docs' },
+          { label: 'Contact', href: '/contact' },
+        ] },
       ],
     },
   };
@@ -175,65 +213,67 @@ function MarketingNav() {
         <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={34} style={{ height: 34, width: 'auto', display: 'block' }} />
       </a>
 
-      {/* Desktop menu */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
+      {/* Desktop menu — Procore/Buildertrend-style grouped mega-menu */}
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}
+        className="desktop-nav"
+        onMouseLeave={() => setOpenMenu(null)}
+      >
         {Object.entries(menus).map(([key, menu]) => (
-          <div key={key} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setOpenMenu(openMenu === key ? null : key)}
-              onMouseEnter={() => setOpenMenu(key)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: openMenu === key ? '#C8881C' : '#1C1C1E',
-                fontSize: 13, fontWeight: 500, padding: '8px 14px',
-                display: 'flex', alignItems: 'center', gap: 4,
-                transition: 'color 0.15s ease',
-              }}
-            >
-              {menu.label}
-              <CaretDown size={12} weight="bold" style={{ transform: openMenu === key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
-            </button>
-
-            {/* Dropdown panel */}
-            {openMenu === key && (
-              <div
-                onMouseLeave={() => setOpenMenu(null)}
-                style={{
-                  position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-                  width: 420, marginTop: 8,
-                  background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-                  border: '1px solid rgba(212,160,23,0.15)',
-                  borderRadius: 16, padding: '8px',
-                  boxShadow: '0 2px 6px rgba(28,25,23,0.06), 0 20px 50px rgba(28,25,23,0.14)',
-                  animation: 'navDropFadeIn 0.15s ease',
-                }}
-              >
-                {menu.items.map((item, i) => (
-                  <a key={i} href={item.href} style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '12px 16px', borderRadius: 10,
-                    textDecoration: 'none', transition: 'all 0.15s ease',
-                    borderLeft: '3px solid transparent',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,160,23,0.06)'; e.currentTarget.style.borderLeftColor = '#C8881C'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
-                  >
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {item.icon}
-                    </div>
-                    <div>
-                      <div style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
-                      <div style={{ color: '#86868B', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            key={key}
+            onClick={() => setOpenMenu(openMenu === key ? null : key)}
+            onMouseEnter={() => setOpenMenu(key)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: openMenu === key ? '#C8881C' : '#1C1C1E',
+              fontSize: 13, fontWeight: 500, padding: '8px 14px',
+              display: 'flex', alignItems: 'center', gap: 4,
+              transition: 'color 0.15s ease',
+            }}
+          >
+            {menu.label}
+            <CaretDown size={12} weight="bold" style={{ transform: openMenu === key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+          </button>
         ))}
 
         {/* Pricing link */}
         <a href="/#pricing" style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
+
+        {/* Single mega-menu panel — grouped columns of text links */}
+        {openMenu && menus[openMenu] && (
+          <div
+            style={{
+              position: 'absolute', top: 'calc(100% + 14px)', left: 0,
+              background: '#FFFFFF', border: '1px solid #EAE8E4', borderRadius: 12,
+              boxShadow: '0 1px 2px rgba(28,25,23,0.04), 0 16px 44px rgba(28,25,23,0.13)',
+              padding: '28px 34px', display: 'flex', gap: 52,
+              maxWidth: 'calc(100vw - 48px)',
+              animation: 'navDropFadeIn 0.15s ease', zIndex: 110,
+            }}
+          >
+            {/* gold signature edge */}
+            <span style={{ position: 'absolute', top: 0, left: 18, right: 18, height: 3, background: 'linear-gradient(90deg,#E8B420,#C8881C)', borderRadius: '0 0 3px 3px' }} />
+            {menus[openMenu].groups.map((group) => (
+              <div key={group.heading} style={{ minWidth: 168 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#C8881C', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid #EFEDE8' }}>
+                  {group.heading}
+                </div>
+                {group.links.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    style={{ display: 'block', color: '#1C1C1E', fontSize: 14, fontWeight: 500, padding: '8px 0', textDecoration: 'none', transition: 'color 0.12s, transform 0.12s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#C8881C'; e.currentTarget.style.transform = 'translateX(3px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#1C1C1E'; e.currentTarget.style.transform = 'translateX(0)'; }}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Right side CTAs */}
