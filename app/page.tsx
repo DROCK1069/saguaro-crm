@@ -277,8 +277,8 @@ export default function LandingPage() {
       {/* ══════════ 1. TOP BANNER ══════════ */}
       {bannerVisible && (
         <div style={{ background: 'linear-gradient(90deg, rgba(212,160,23,0.12) 0%, rgba(212,160,23,0.05) 100%)', borderBottom: '1px solid rgba(212,160,23,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, position: 'relative' as const }}>
-          <span style={{ color: GOLD, fontWeight: 600 }}>Procore users: Switch in 1 day — Free migration included.</span>
-          <Link href="/roi-calculator" style={{ color: GOLD, textDecoration: 'underline', fontWeight: 500 }}>Calculate your savings &rarr;</Link>
+          <span style={{ color: GOLD, fontWeight: 600 }}>AI reads your blueprints in 60 seconds. Estimating, billing, and field ops &mdash; one platform.</span>
+          <Link href="/signup" style={{ color: GOLD, textDecoration: 'underline', fontWeight: 500 }}>Try it free &rarr;</Link>
           <button onClick={() => setBannerVisible(false)} style={{ position: 'absolute' as const, right: 16, background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 18, lineHeight: 1 }} aria-label="Dismiss banner">&times;</button>
         </div>
       )}
