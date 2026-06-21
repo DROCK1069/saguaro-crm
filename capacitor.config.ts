@@ -81,6 +81,10 @@ const config: CapacitorConfig = {
     // Scroll elastic behaviour matches native feel
     scrollEnabled: true,
     backgroundColor: '#07101C',
+    // Tag the WebView UA so the server reliably detects the native app
+    // (mirrors the Android appendUserAgent below). The middleware uses this
+    // to keep the native field shell while bouncing desktop browsers to /app.
+    appendUserAgent: 'SaguaroField/1.0',
     // Required capability entries go in ios/App/App/Info.plist
     infoPlist: {
       NSCameraUsageDescription:

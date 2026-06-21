@@ -94,6 +94,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // The /field/* routes are the MOBILE field-app shell — they exist for the
+  // native iOS app and phone browsers. A desktop browser must never land on
+  // that cramped mobile shell (it reads like a broken PWA). Bounce desktop
+  // visitors to the real desktop CRM. Native app + mobile web keep /field.
+  if (pathname === '/field' || pathname.startsWith('/field/')) {
+    const ua = request.headers.get('user-agent') || '';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|Capacitor|SaguaroField/i.test(ua);
+    if (!isMobile) {
+      return NextResponse.redirect(new URL('/app', request.url));
+    }
+  }
+
   // Always allow public paths
   if (isPublic(pathname)) return NextResponse.next();
 
