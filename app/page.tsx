@@ -358,6 +358,15 @@ export default function LandingPage() {
             <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, lineHeight: 1.65, margin: '0 0 36px', maxWidth: 480 }}>The AI-powered CRM that reads blueprints, generates estimates, handles pay apps, and runs your field crew — at a third the cost of Procore.</p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' as const, alignItems: 'center' }}>
               <Link href="/signup" className="cta-glow" style={{ background: 'linear-gradient(135deg, #F5C645 0%, #E8A020 100%)', color: '#1A1400', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '16px 36px', borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 20px rgba(232,160,32,0.50), 0 12px 40px rgba(232,160,32,0.25)', letterSpacing: '-0.01em' }}>Start Free Trial <span style={{ fontSize: 18 }}>&rarr;</span></Link>
+              <a href="https://testflight.apple.com/join/jg7jdtwx" target="_blank" rel="noopener noreferrer" className="tf-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 11, textDecoration: 'none', padding: '12px 18px 12px 12px', borderRadius: 14 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(160deg, #3FD0FF 0%, #1FA0FF 45%, #0A6CFF 100%)', boxShadow: '0 4px 16px rgba(20,140,255,0.55), inset 0 1px 1px rgba(255,255,255,0.45)', flexShrink: 0 }}>
+                  <svg viewBox="0 0 24 24" width={21} height={21} fill="none"><path d="M12 2.6c-1.1 2.9-3.2 5-6.1 6.1 2.9 1.1 5 3.2 6.1 6.1 1.1-2.9 3.2-5 6.1-6.1-2.9-1.1-5-3.2-6.1-6.1z" fill="#FFFFFF"/><circle cx="12" cy="18.7" r="2.5" fill="#FFFFFF"/></svg>
+                </span>
+                <span style={{ display: 'flex', flexDirection: 'column' as const, lineHeight: 1.15 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 600, letterSpacing: '0.02em' }}>Now in beta —</span>
+                  <span style={{ color: '#FFFFFF', fontSize: 15.5, fontWeight: 700, letterSpacing: '-0.01em' }}>Available on TestFlight</span>
+                </span>
+              </a>
             </div>
             <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 16, letterSpacing: '0.02em' }}>No credit card required &middot; 14-day free trial &middot; Cancel anytime</p>
           </div>
@@ -593,6 +602,10 @@ export default function LandingPage() {
         .desktop-nav { display: flex !important; }
         .mobile-menu-btn { display: none !important; }
         .compare-row:hover { background: rgba(200,136,28,0.06); }
+        /* ── Baked-in TestFlight link (no card fill) ── */
+        .tf-link { border: 1px solid rgba(255,255,255,0.18); transition: border-color .22s ease, transform .22s cubic-bezier(.16,1,.3,1); }
+        .tf-link:hover { border-color: rgba(110,200,255,0.6); transform: translateY(-2px); }
+        .tf-link svg, .tf-link span { transition: none; }
         /* ── Modern feature items ── */
         .feat-item { position: relative; display: flex; flex-direction: column; gap: 13px; padding-top: 26px; text-decoration: none; transition: transform .28s cubic-bezier(.16,1,.3,1); }
         .feat-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, rgba(216,154,30,0.5), rgba(216,154,30,0.12) 55%, transparent); transition: background .3s ease, box-shadow .3s ease; }
