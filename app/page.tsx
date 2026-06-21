@@ -431,19 +431,19 @@ export default function LandingPage() {
 
       {/* ══════════ 4. FEATURES — editorial grid, hairline rules, no cards ══════════ */}
       <section id="features" style={{ position: 'relative' as const, background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }} className="reveal">
-        <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, height: 320, background: 'radial-gradient(circle at 80% 0%, rgba(216,154,30,0.10), transparent 60%)', pointerEvents: 'none' as const }} />
+        <div style={{ position: 'absolute' as const, inset: 0, background: 'radial-gradient(circle at 82% 4%, rgba(232,168,40,0.16), transparent 46%), radial-gradient(circle at 8% 96%, rgba(216,154,30,0.10), transparent 50%)', pointerEvents: 'none' as const }} />
         <div style={{ position: 'relative' as const, maxWidth: 1100, margin: '0 auto', padding: '84px 24px' }}>
         <h2 style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: TEXT, maxWidth: 600 }}>Everything you need.<br />Nothing you don&apos;t.</h2>
         <p style={{ color: DIM, fontSize: 16, marginBottom: 56, maxWidth: 480, lineHeight: 1.6 }}>One platform replaces Procore, spreadsheets, and five other tools.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', columnGap: 36, rowGap: 40 }} className="feature-grid reveal-stagger">
-          {FEATURES.map(f => (
-            <div key={f.title} style={{ paddingTop: 24, borderTop: '1px solid rgba(176,122,18,0.16)', display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#F5C645,#E8A020)', boxShadow: '0 6px 16px rgba(232,160,32,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1A1400' }}>
-                <Icon d={f.icon} size={24} />
-              </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: TEXT, letterSpacing: '-0.01em' }}>{f.title}</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', columnGap: 44, rowGap: 52 }} className="feature-grid reveal-stagger">
+          {FEATURES.map((f, i) => (
+            <Link key={f.title} href={f.href} className="feat-item">
+              <span className="feat-num">{String(i + 1).padStart(2, '0')}</span>
+              <div className="feat-icon"><Icon d={f.icon} size={26} /></div>
+              <h3 className="feat-title">{f.title}</h3>
               <p style={{ fontSize: 13.5, color: DIM, lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
-            </div>
+              <span className="feat-more">Learn more <span className="arr">&rarr;</span></span>
+            </Link>
           ))}
         </div>
         </div>
@@ -596,6 +596,20 @@ export default function LandingPage() {
         .desktop-nav { display: flex !important; }
         .mobile-menu-btn { display: none !important; }
         .compare-row:hover { background: rgba(200,136,28,0.06); }
+        /* ── Modern feature items ── */
+        .feat-item { position: relative; display: flex; flex-direction: column; gap: 13px; padding-top: 26px; text-decoration: none; transition: transform .28s cubic-bezier(.16,1,.3,1); }
+        .feat-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, rgba(216,154,30,0.5), rgba(216,154,30,0.12) 55%, transparent); transition: background .3s ease, box-shadow .3s ease; }
+        .feat-item:hover { transform: translateY(-5px); }
+        .feat-item:hover::before { background: linear-gradient(90deg, #E8A020, rgba(232,160,32,0.4) 70%, transparent); box-shadow: 0 1px 10px rgba(232,160,32,0.5); }
+        .feat-num { position: absolute; top: 22px; right: 2px; font-size: 13px; font-weight: 800; letter-spacing: .1em; color: rgba(176,122,18,0.3); font-variant-numeric: tabular-nums; }
+        .feat-icon { width: 54px; height: 54px; border-radius: 16px; background: linear-gradient(145deg,#F8CE5A,#E89A18); display: flex; align-items: center; justify-content: center; color: #231A05; box-shadow: 0 8px 22px rgba(232,160,32,0.38), inset 0 1px 1px rgba(255,255,255,0.55); transition: transform .28s cubic-bezier(.16,1,.3,1), box-shadow .28s ease; }
+        .feat-item:hover .feat-icon { transform: translateY(-2px) scale(1.07) rotate(-3deg); box-shadow: 0 16px 32px rgba(232,160,32,0.5), inset 0 1px 1px rgba(255,255,255,0.65); }
+        .feat-title { font-size: 17px; font-weight: 700; margin: 0; color: #2A1B06; letter-spacing: -0.01em; transition: color .2s ease; }
+        .feat-item:hover .feat-title { color: #A8700C; }
+        .feat-more { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #B07A12; opacity: .62; transition: opacity .25s ease; }
+        .feat-item:hover .feat-more { opacity: 1; }
+        .feat-more .arr { transition: transform .25s ease; }
+        .feat-item:hover .feat-more .arr { transform: translateX(5px); }
         @media (max-width: 768px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: block !important; }
