@@ -29,7 +29,7 @@ const FEATURES = [
     icon: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z|M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z',
     title: 'AI Blueprint Takeoff',
     desc: 'Upload any PDF blueprint. Sage reads dimensions, calculates materials, and generates a full bid estimate in under 60 seconds.',
-    href: '/app/takeoff',
+    href: '/product/ai-takeoff',
   },
   {
     icon: 'M12 2a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z',
@@ -41,7 +41,7 @@ const FEATURES = [
     icon: 'M12 1v22|M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
     title: 'Financial Suite',
     desc: 'AIA G702/G703 pay apps, invoicing, lien waivers for all 50 states, and certified payroll — generated automatically.',
-    href: '/#pricing',
+    href: '/product/pay-applications',
   },
   {
     icon: 'M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z|M12 18h.01',
@@ -138,12 +138,13 @@ function MarketingNav() {
       label: 'Platform',
       groups: [
         { heading: 'Preconstruction', links: [
-          { label: 'AI Blueprint Takeoff', href: '/features#ai-blueprint-takeoff' },
-          { label: 'Bid Management & Intelligence', href: '/features#bid-management-intelligence' },
+          { label: 'AI Blueprint Takeoff', href: '/product/ai-takeoff' },
+          { label: 'Bid Intelligence', href: '/product/bid-intelligence' },
           { label: 'Sage AI Assistant', href: '/features#sage-ai-assistant' },
         ] },
         { heading: 'Financials', links: [
-          { label: 'AIA Pay Applications', href: '/features#pay-applications-g702-g703' },
+          { label: 'AIA Pay Applications', href: '/product/pay-applications' },
+          { label: 'Lien Waivers', href: '/product/lien-waivers' },
           { label: 'Financials & Reporting', href: '/features#financials-reporting' },
           { label: 'Executive Intelligence', href: '/intelligence' },
         ] },
@@ -168,9 +169,9 @@ function MarketingNav() {
           { label: 'Roofing Contractors', href: '/industry/roofing-contractors' },
         ] },
         { heading: 'By Need', links: [
-          { label: 'Estimating & Bidding', href: '/features#ai-blueprint-takeoff' },
+          { label: 'Estimating & Bidding', href: '/product/ai-takeoff' },
           { label: 'Project Management', href: '/features#rfis-change-orders' },
-          { label: 'Billing & Compliance', href: '/features#pay-applications-g702-g703' },
+          { label: 'Billing & Compliance', href: '/product/pay-applications' },
           { label: 'Field Operations', href: '/features#daily-logs-field-app-saguaro-field' },
         ] },
       ],
