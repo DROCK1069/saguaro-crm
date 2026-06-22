@@ -32,7 +32,7 @@ export default function SwitchFromProcorePage() {
   const [teamSize, setTeamSize] = useState(15);
   const [procoreMonthly, setProcoreMonthly] = useState(1850);
 
-  const saguaroMonthlyCost = 299;
+  const saguaroMonthlyCost = 799;
   const savings = procoreMonthly - saguaroMonthlyCost;
   const annualSavings = savings * 12;
   const fiveYearSavings = savings * 60;
@@ -318,7 +318,7 @@ export default function SwitchFromProcorePage() {
                     boxShadow: `inset 0 3px 0 ${GOLD}`,
                   }}>
                     <span style={{ ...goldGradientText, fontWeight: 800, fontSize: '1.05rem' }}>Saguaro</span>
-                    <div style={{ fontSize: '0.75rem', color: DIM, fontWeight: 500, marginTop: 2 }}>$299/mo flat</div>
+                    <div style={{ fontSize: '0.75rem', color: DIM, fontWeight: 500, marginTop: 2 }}>$799/mo flat</div>
                   </th>
                   <th style={{
                     padding: '16px 24px', textAlign: 'center',
@@ -333,7 +333,7 @@ export default function SwitchFromProcorePage() {
               </thead>
               <tbody>
                 {[
-                  ['Monthly Cost', '$299 flat (whole team)', '$1,850+ per seat', true, false],
+                  ['Monthly Cost', '$799 flat (whole team)', '$1,850+ per seat', true, false],
                   ['Setup Time', '1 business day', '4–6 months', true, false],
                   ['AI Blueprint Takeoff', 'Included', 'Not available', true, false],
                   ['Field App', 'Free native iOS app', 'Per-seat + IT approval', true, false],

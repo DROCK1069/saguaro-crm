@@ -34,8 +34,8 @@ const NAV_LINKS = [
 const PLANS = [
   {
     name: 'Starter',
-    price_mo: 299,
-    price_yr: 249,
+    price_mo: 399,
+    price_yr: 333,
     tagline: 'For small GCs getting off spreadsheets',
     popular: false,
     cta: 'Start Free Trial',
@@ -63,8 +63,8 @@ const PLANS = [
   },
   {
     name: 'Professional',
-    price_mo: 599,
-    price_yr: 499,
+    price_mo: 799,
+    price_yr: 666,
     tagline: 'For growing GCs managing multiple projects',
     popular: true,
     cta: 'Start Free Trial',
@@ -85,6 +85,42 @@ const PLANS = [
       'Bid Intelligence + Jacket Generator',
       'Free migration from any platform',
       'Priority chat + email support (4hr response)',
+    ],
+    not_included: [
+      'White Label your brand/domain',
+      'Custom API integrations',
+      'SAML SSO',
+      'Dedicated account manager',
+    ],
+  },
+  {
+    name: 'Business',
+    price_mo: 1299,
+    price_yr: 1083,
+    tagline: 'For larger GCs & multi-crew operations',
+    popular: false,
+    cta: 'Start Free Trial',
+    cta_href: '/signup',
+    highlight: 'Best for 50+ person teams',
+    features: [
+      'Unlimited active projects',
+      'Unlimited users',
+      'Unlimited AI Takeoff pages',
+      'All AIA Documents (G702–G706, A310, A312)',
+      'All 4 Lien Waiver types — all 50 states',
+      'Certified Payroll WH-347 + DOL wage lookup',
+      'ACORD 25 Insurance Tracker + COI Parser',
+      'OSHA 300 Log',
+      'Preliminary Notices AZ/CA/TX',
+      'Owner & Sub Portals',
+      'Autopilot RFI/CO automation',
+      'Bid Intelligence + Jacket Generator',
+      'Free migration from any platform',
+      'Priority SLA — 99.9% uptime',
+      'QuickBooks sync included',
+      'Advanced analytics & reporting',
+      'Dedicated onboarding',
+      'Phone + priority chat support (1hr response)',
     ],
     not_included: [
       'White Label your brand/domain',
@@ -264,7 +300,7 @@ const COMPETITOR_COMPARISON = [
   { name: 'CoConstruct', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
   { name: 'Fieldwire', price: '$54–$104/user/mo', model: 'Per user', migration: false, flatPrice: false },
   { name: 'Contractor Foreman', price: '$49–$299/mo', model: 'Flat (basic features)', migration: false, flatPrice: true },
-  { name: 'Saguaro CRM', price: '$299–$599/mo', model: 'Flat, unlimited users', migration: true, flatPrice: true, isSaguaro: true },
+  { name: 'Saguaro CRM', price: '$399–$1,299/mo', model: 'Flat, unlimited users', migration: true, flatPrice: true, isSaguaro: true },
 ];
 
 const FAQS = [
@@ -274,7 +310,7 @@ const FAQS = [
   { q: 'Can I upgrade or downgrade my plan anytime?', a: 'Yes. Upgrade immediately and get prorated credit. Downgrade at the end of your billing cycle. No penalties, no fees.' },
   { q: 'Do you support prevailing wage projects?', a: 'Yes. The WH-347 Certified Payroll generator connects to the DOL Davis-Bacon wage API and validates every worker\'s hourly rate against current prevailing wages for their trade and county.' },
   { q: 'Which states are supported for lien waivers?', a: 'All 50 states. AZ, CA, TX, NV, FL, CO, WA, OR, UT, and NM use state-specific statutory language. All other states use our attorney-reviewed generic form.' },
-  { q: 'What is annual billing and how much do I save?', a: 'Annual billing locks in your rate for 12 months and saves you ~17%: Starter drops from $299 to $249/mo ($600 saved), Professional drops from $599 to $499/mo ($1,200 saved). Billed as one upfront payment.' },
+  { q: 'What is annual billing and how much do I save?', a: 'Annual billing locks in your rate for 12 months and saves you ~17% — essentially 2 months free: Starter drops from $399 to $333/mo (~$800/yr saved), Professional drops from $799 to $666/mo (~$1,600/yr saved). Billed as one upfront payment.' },
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime from your billing settings. Monthly plans retain access until end of period. Annual plans are non-refundable but can be paused.' },
   { q: 'What is the White Label add-on?', a: 'Your GC firm or software company can use Saguaro under your own brand, domain, and logo. Each of your clients receives their own sandboxed account. Available as an add-on or included in Enterprise.' },
   { q: 'Do you integrate with QuickBooks?', a: 'QuickBooks sync is available as an add-on ($99/mo) or included in Enterprise. Budget line items, pay applications, and change orders sync bidirectionally with your QuickBooks company file.' },
@@ -360,9 +396,9 @@ export default function PricingPage() {
           {/* Competitor savings callout */}
           <div style={{ display: 'inline-flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 36 }}>
             {[
-              { from: 'Procore', save: 'Save $3,150+/mo' },
-              { from: 'Buildertrend', save: 'Save $200–$500/mo' },
-              { from: 'Autodesk', save: 'Save $1,900+/mo' },
+              { from: 'Procore', save: 'Save $2,950+/mo' },
+              { from: 'Buildertrend', save: 'Save up to $300/mo' },
+              { from: 'Autodesk', save: 'Save $1,700+/mo' },
             ].map(item => (
               <div key={item.from} style={{ padding: '6px 14px', background: 'rgba(200,136,28,0.08)', border: `1px solid rgba(200,136,28,0.25)`, borderRadius: 999, fontSize: 12, color: C.gold, fontWeight: 600 }}>
                 vs {item.from} — {item.save}
@@ -381,7 +417,7 @@ export default function PricingPage() {
             </button>
           </div>
           <div style={{ fontSize: 13, color: C.dim }}>
-            {annual ? 'Billed annually — cancel anytime' : 'Switch to annual and save up to $1,200/yr'}
+            {annual ? 'Billed annually — cancel anytime' : 'Switch to annual and save up to $2,500/yr'}
           </div>
           </div>
         </section>

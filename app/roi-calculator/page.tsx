@@ -50,7 +50,7 @@ export default function ROICalculatorPage() {
   const adminMoneySaved = adminSaved * hourlyRate;
   const totalMonthlySaved =
     takeoffMoneySaved + lienWaiverMoneySaved + payAppMoneySaved + certPayrollMoneySaved + adminMoneySaved;
-  const saguaroCost = 399;
+  const saguaroCost = 799;
   const softwareSavings = Math.max(0, effectiveSoftwareCost - saguaroCost);
   const totalNetSavings = totalMonthlySaved + softwareSavings;
   const annualSavings = totalNetSavings * 12;
@@ -711,7 +711,7 @@ export default function ROICalculatorPage() {
                 {
                   icon: '💻',
                   title: 'Software Comparison',
-                  desc: "Procore pricing from public data and verified customer contracts. Saguaro is $299/mo flat — no per-seat fees, no add-ons, no surprise invoices. Your current spend overrides defaults.",
+                  desc: "Procore pricing from public data and verified customer contracts. Saguaro is $799/mo flat — no per-seat fees, no add-ons, no surprise invoices. Your current spend overrides defaults.",
                 },
               ].map((card) => (
                 <div
@@ -745,7 +745,7 @@ export default function ROICalculatorPage() {
               Feature Comparison
             </div>
             <h2 style={{ fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: '-0.03em', color: TEXT }}>
-              {"What's Included in the $299"}
+              {"What's Included in the $799"}
             </h2>
             <p style={{ color: DIM, fontSize: 16, marginTop: 12 }}>
               Everything you need. No per-seat pricing. No hidden add-ons.
@@ -759,7 +759,7 @@ export default function ROICalculatorPage() {
                   <th style={{ textAlign: 'left', color: DIM, padding: '16px 20px' }}>Feature</th>
                   <th style={{ color: DIM }}>Manual</th>
                   <th style={{ color: DIM }}>Procore</th>
-                  <th style={{ color: GOLD, borderBottom: `2px solid ${GOLD}` }}>Saguaro $299/mo</th>
+                  <th style={{ color: GOLD, borderBottom: `2px solid ${GOLD}` }}>Saguaro $799/mo</th>
                 </tr>
               </thead>
               <tbody>

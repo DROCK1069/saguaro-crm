@@ -23,7 +23,7 @@ const ROWS: {
   saguaroWin: boolean | 'neutral';
   note?: string;
 }[] = [
-  { feature: 'Starting Price', saguaro: '$199/mo', procore: '$375–600/mo+', saguaroWin: true, note: 'Procore pricing requires annual contract and implementation fees' },
+  { feature: 'Starting Price', saguaro: '$399/mo', procore: '$375–600/mo+', saguaroWin: true, note: 'Procore pricing requires annual contract and implementation fees' },
   { feature: 'Annual Contract Required', saguaro: 'Month-to-month', procore: 'Annual required', saguaroWin: true, note: 'Cancel Saguaro anytime — no penalty, no lock-in' },
   { feature: 'Setup Time', saguaro: '< 1 day', procore: '3–6 months', saguaroWin: true, note: 'Procore requires a dedicated implementation team and onboarding process' },
   { feature: 'Per-Seat Pricing', saguaro: 'Flat rate', procore: 'Per user (costs grow)', saguaroWin: true, note: 'Add 50 users on Saguaro — same price. Procore charges per seat.' },
@@ -58,7 +58,7 @@ const DEEP_DIVE = [
   },
   {
     title: 'Pricing That Grows With You',
-    body: 'One flat monthly rate. Add 50 users and 50 projects — same price. No annual contract. Cancel anytime. Start free with no credit card required. Starter at $299/mo, Professional at $599/mo.',
+    body: 'One flat monthly rate. Add 50 users and 50 projects — same price. No annual contract. Cancel anytime. Start free with no credit card required. Starter at $399/mo, Professional at $799/mo.',
     procoreBody: "Procore's per-user, per-module pricing scales sharply as your team grows. Annual contracts are required. Total cost of ownership for a mid-size GC typically exceeds $50,000–$80,000/year when add-ons and implementation are included.",
   },
 ];
@@ -560,19 +560,19 @@ export default function CompareProcorePage() {
             {[
               {
                 label: 'Monthly Savings',
-                value: Math.max(0, procoreCost - 399),
+                value: Math.max(0, procoreCost - 799),
                 suffix: '/mo',
                 highlight: true,
               },
               {
                 label: 'Annual Savings',
-                value: Math.max(0, (procoreCost - 399) * 12),
+                value: Math.max(0, (procoreCost - 799) * 12),
                 suffix: '/yr',
                 highlight: false,
               },
               {
                 label: '3-Year Savings',
-                value: Math.max(0, (procoreCost - 399) * 36),
+                value: Math.max(0, (procoreCost - 799) * 36),
                 suffix: ' total',
                 highlight: false,
               },
@@ -792,7 +792,7 @@ export default function CompareProcorePage() {
               Team of 25 users, 15 active projects
             </div>
             <div style={{ fontSize: 42, fontWeight: 900, color: C.green, letterSpacing: -1, marginBottom: 4 }}>
-              $299
+              $799
               <span style={{ fontSize: 16, fontWeight: 500, color: C.dim }}>/mo</span>
             </div>
             <div style={{ fontSize: 12, color: C.dim, marginBottom: 24 }}>All features included. No add-ons.</div>
@@ -828,7 +828,7 @@ export default function CompareProcorePage() {
         }}>
           <div>
             <div style={{ fontSize: 13, color: C.dim, marginBottom: 2 }}>Estimated annual savings vs Procore</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: C.green, letterSpacing: -0.5 }}>$17,412 / year</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: C.green, letterSpacing: -0.5 }}>$12,612 / year</div>
           </div>
           <a href="/signup" style={{
             padding: '12px 28px',
