@@ -88,23 +88,16 @@ const ROLE_PRESETS: { name: string; desc: string; color: string; perms: Permissi
 
 const ROLE_COLORS = [GOLD, BLUE, GREEN, RED, AMBER, PURPLE, '#EC4899', '#14B8A6', '#F97316'];
 
-const MOCK_USERS = [
-  { id: 'u1', name: 'Chad Derocher', email: 'chad@tntcyber.com' },
-  { id: 'u2', name: 'Maria Gonzalez', email: 'maria@tntcyber.com' },
-  { id: 'u3', name: 'James Whitfield', email: 'james@tntcyber.com' },
-  { id: 'u4', name: 'Samantha Lee', email: 'sam@tntcyber.com' },
-  { id: 'u5', name: 'Derek Miles', email: 'derek@tntcyber.com' },
-  { id: 'u6', name: 'Priya Patel', email: 'priya@tntcyber.com' },
-  { id: 'u7', name: 'Tom Nakamura', email: 'tom@tntcyber.com' },
-  { id: 'u8', name: 'Linda Carson', email: 'linda@tntcyber.com' },
-];
+interface DirectoryUser {
+  id: string;
+  name: string;
+  email: string;
+}
 
-const MOCK_PROJECTS = [
-  { id: 'p1', name: 'Scottsdale Office Tower' },
-  { id: 'p2', name: 'Mesa Retail Center' },
-  { id: 'p3', name: 'Tempe Mixed-Use' },
-  { id: 'p4', name: 'Chandler Medical Plaza' },
-];
+interface DirectoryProject {
+  id: string;
+  name: string;
+}
 
 /* ── style helpers ── */
 const btn = (bg: string, color = TEXT): React.CSSProperties => ({
@@ -193,6 +186,8 @@ export default function RolesPermissionsPage() {
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<UserAssignment[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [users, setUsers] = useState<DirectoryUser[]>([]);
+  const [projects, setProjects] = useState<DirectoryProject[]>([]);
 
   /* create / edit role modal */
   const [showRoleModal, setShowRoleModal] = useState(false);
@@ -221,10 +216,12 @@ export default function RolesPermissionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [rolesRes, assignRes, auditRes] = await Promise.allSettled([
+      const [rolesRes, assignRes, auditRes, teamRes, projectsRes] = await Promise.allSettled([
         fetch('/api/roles'),
         fetch('/api/roles/assignments'),
         fetch('/api/roles/audit'),
+        fetch('/api/team'),
+        fetch('/api/projects'),
       ]);
 
       /* If API not available, fall back to mock data */
@@ -315,6 +312,38 @@ export default function RolesPermissionsPage() {
         ];
       }
       setAudit(loadedAudit);
+
+      /* Real team directory for the user picker. Defensive about response
+         shape; on empty/failed fetch the dropdown simply shows no options. */
+      if (teamRes.status === 'fulfilled' && teamRes.value.ok) {
+        const raw = await teamRes.value.json();
+        const arr = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.members)
+            ? raw.members
+            : Array.isArray(raw?.team)
+              ? raw.team
+              : [];
+        setUsers(
+          arr.map((u: Record<string, unknown>) => ({
+            id: String(u.id ?? ''),
+            name: String(u.name ?? u.full_name ?? u.email ?? 'Unknown'),
+            email: String(u.email ?? ''),
+          })),
+        );
+      }
+
+      /* Real project list for the scope picker. */
+      if (projectsRes.status === 'fulfilled' && projectsRes.value.ok) {
+        const raw = await projectsRes.value.json();
+        const arr = Array.isArray(raw) ? raw : Array.isArray(raw?.projects) ? raw.projects : [];
+        setProjects(
+          arr.map((p: Record<string, unknown>) => ({
+            id: String(p.id ?? ''),
+            name: String(p.name ?? 'Untitled Project'),
+          })),
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load roles data.');
     } finally {
@@ -417,9 +446,9 @@ export default function RolesPermissionsPage() {
 
   const assignRole = async () => {
     if (!assignUserId || !assignRoleId) return;
-    const user = MOCK_USERS.find(u => u.id === assignUserId);
+    const user = users.find(u => u.id === assignUserId);
     const role = roles.find(r => r.id === assignRoleId);
-    const project = assignProjectId ? MOCK_PROJECTS.find(p => p.id === assignProjectId) : null;
+    const project = assignProjectId ? projects.find(p => p.id === assignProjectId) : null;
     if (!user || !role) return;
     const newAssign: UserAssignment = {
       id: `a-${Date.now()}`, userId: user.id, userName: user.name, email: user.email,
@@ -979,7 +1008,7 @@ export default function RolesPermissionsPage() {
           <label style={labelStyle()}>User</label>
           <select value={assignUserId} onChange={e => setAssignUserId(e.target.value)} style={inputStyle()}>
             <option value="">Select user...</option>
-            {MOCK_USERS.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+            {users.map(u => <option key={u.id} value={u.id}>{u.email ? `${u.name} (${u.email})` : u.name}</option>)}
           </select>
         </div>
         <div style={{ marginBottom: 16 }}>
@@ -993,7 +1022,7 @@ export default function RolesPermissionsPage() {
           <label style={labelStyle()}>Project Scope (optional)</label>
           <select value={assignProjectId} onChange={e => setAssignProjectId(e.target.value)} style={inputStyle()}>
             <option value="">Global (all projects)</option>
-            {MOCK_PROJECTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <p style={{ color: DIM, fontSize: 11, marginTop: 4 }}>Leave as Global to apply this role across all projects.</p>
         </div>

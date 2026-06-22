@@ -52,12 +52,65 @@ interface PayrollPeriod {
   notes: string;
 }
 
-const MOCK_PROJECTS: Project[] = [
-  { id: 'p1', name: 'Federal Courthouse Renovation', number: 'PRJ-2026-001', location: 'Phoenix, AZ', contractNumber: 'FC-2026-0412' },
-  { id: 'p2', name: 'Highway I-17 Bridge Repair', number: 'PRJ-2026-002', location: 'Flagstaff, AZ', contractNumber: 'DOT-2026-0087' },
-  { id: 'p3', name: 'VA Medical Center Expansion', number: 'PRJ-2026-003', location: 'Tucson, AZ', contractNumber: 'VA-2026-0193' },
-  { id: 'p4', name: 'Army Corps Flood Control', number: 'PRJ-2026-004', location: 'Yuma, AZ', contractNumber: 'USACE-2026-0051' },
-];
+// Raw row shapes returned by the real backend APIs.
+interface ProjectRow {
+  id: string;
+  name: string | null;
+  project_number: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+interface PayrollPeriodRow {
+  id: string;
+  project_id: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  status: string | null;
+  total_hours: number | null;
+  total_amount: number | null;
+  notes: string | null;
+}
+
+function mapProject(row: ProjectRow): Project {
+  const locationParts = [row.city, row.state].filter(Boolean);
+  const location = locationParts.length ? locationParts.join(', ') : (row.address || '');
+  const number = row.project_number || row.id;
+  return {
+    id: row.id,
+    name: row.name || 'Untitled Project',
+    number,
+    location,
+    // The projects table has no dedicated contract-number column; the closest
+    // real identifier is the project number.
+    contractNumber: number,
+  };
+}
+
+function mapStatus(raw: string | null): PayrollStatus {
+  const s = (raw || '').toLowerCase();
+  if (s === 'approved' || s === 'certified') return 'Approved';
+  if (s === 'submitted') return 'Submitted';
+  return 'Draft';
+}
+
+function mapPeriod(row: PayrollPeriodRow): PayrollPeriod {
+  return {
+    id: row.id,
+    projectId: row.project_id || '',
+    // WH-347 is keyed on the week-ending date; map from the period end date.
+    weekEnding: (row.period_end || row.period_start || '').slice(0, 10),
+    status: mapStatus(row.status),
+    // No per-worker rows are exposed by the payroll backend (payroll_periods is
+    // period-level only), so workers start empty until added in a draft.
+    workers: [],
+    complianceSigned: mapStatus(row.status) !== 'Draft',
+    signedBy: '',
+    signedDate: '',
+    notes: row.notes || '',
+  };
+}
 
 const DAVIS_BACON_RATES: DavisBaconRate[] = [
   { trade: 'Electrician', classification: 'Journeyman', baseRate: 52.30, fringeBenefit: 18.45, totalRate: 70.75 },
@@ -97,27 +150,6 @@ function getWeekEnding(offset: number): string {
   const diff = (6 - day + 7) % 7;
   d.setDate(d.getDate() + diff + offset * 7);
   return d.toISOString().split('T')[0];
-}
-
-function createMockWorkers(): WorkerEntry[] {
-  return [
-    { id: 'w1', name: 'Marcus Rivera', ssn: '***-**-4521', trade: 'Electrician', classification: 'Journeyman', hoursSTPerDay: [8, 8, 8, 8, 8, 0, 0], hoursOTPerDay: [0, 0, 2, 0, 0, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0], baseRate: 52.30, fringeBenefit: 18.45, deductions: 285.00, isApprentice: false },
-    { id: 'w2', name: 'James Chen', ssn: '***-**-7834', trade: 'Electrician', classification: 'Apprentice 1st Year', hoursSTPerDay: [8, 8, 8, 8, 8, 0, 0], hoursOTPerDay: [0, 0, 0, 0, 0, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0], baseRate: 26.15, fringeBenefit: 18.45, deductions: 142.50, isApprentice: true, apprenticeRatio: '1:3' },
-    { id: 'w3', name: 'Roberto Gutierrez', ssn: '***-**-2198', trade: 'Carpenter', classification: 'Journeyman', hoursSTPerDay: [8, 8, 8, 8, 8, 4, 0], hoursOTPerDay: [0, 0, 0, 2, 0, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0], baseRate: 45.60, fringeBenefit: 16.80, deductions: 310.00, isApprentice: false },
-    { id: 'w4', name: 'Angela Thompson', ssn: '***-**-6743', trade: 'Laborer', classification: 'Skilled', hoursSTPerDay: [8, 8, 8, 8, 8, 0, 0], hoursOTPerDay: [0, 0, 0, 0, 0, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0], baseRate: 36.20, fringeBenefit: 14.50, deductions: 198.00, isApprentice: false },
-    { id: 'w5', name: 'Derek Washington', ssn: '***-**-9012', trade: 'Ironworker', classification: 'Journeyman', hoursSTPerDay: [8, 8, 8, 8, 8, 0, 0], hoursOTPerDay: [2, 0, 2, 0, 2, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0], baseRate: 54.10, fringeBenefit: 22.30, deductions: 345.00, isApprentice: false },
-    { id: 'w6', name: 'Sofia Martinez', ssn: '***-**-3456', trade: 'Carpenter', classification: 'Apprentice 1st Year', hoursSTPerDay: [8, 8, 8, 8, 8, 0, 0], hoursOTPerDay: [0, 0, 0, 0, 0, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0], baseRate: 22.80, fringeBenefit: 16.80, deductions: 120.00, isApprentice: true, apprenticeRatio: '1:4' },
-  ];
-}
-
-function createMockPeriods(): PayrollPeriod[] {
-  return [
-    { id: 'pp1', projectId: 'p1', weekEnding: getWeekEnding(0), status: 'Draft', workers: createMockWorkers(), complianceSigned: false, signedBy: '', signedDate: '', notes: '' },
-    { id: 'pp2', projectId: 'p1', weekEnding: getWeekEnding(-1), status: 'Submitted', workers: createMockWorkers().slice(0, 4), complianceSigned: true, signedBy: 'John Mitchell', signedDate: getWeekEnding(-1), notes: '' },
-    { id: 'pp3', projectId: 'p1', weekEnding: getWeekEnding(-2), status: 'Approved', workers: createMockWorkers().slice(0, 3), complianceSigned: true, signedBy: 'John Mitchell', signedDate: getWeekEnding(-2), notes: '' },
-    { id: 'pp4', projectId: 'p2', weekEnding: getWeekEnding(0), status: 'Draft', workers: createMockWorkers().slice(2, 5), complianceSigned: false, signedBy: '', signedDate: '', notes: '' },
-    { id: 'pp5', projectId: 'p3', weekEnding: getWeekEnding(-1), status: 'Approved', workers: createMockWorkers().slice(0, 2), complianceSigned: true, signedBy: 'Sarah Davis', signedDate: getWeekEnding(-1), notes: '' },
-  ];
 }
 
 function calcWorkerTotals(w: WorkerEntry) {
@@ -165,9 +197,10 @@ const card: React.CSSProperties = {
 
 export default function CertifiedPayrollPage() {
   const [loading, setLoading] = useState(true);
-  const [projects] = useState<Project[]>(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [periods, setPeriods] = useState<PayrollPeriod[]>([]);
+  const [creatingPeriod, setCreatingPeriod] = useState(false);
   const [activePeriodId, setActivePeriodId] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState<PayrollStatus | 'All'>('All');
@@ -193,13 +226,41 @@ export default function CertifiedPayrollPage() {
     hoursSTPerDay: [0, 0, 0, 0, 0, 0, 0], hoursOTPerDay: [0, 0, 0, 0, 0, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0],
   });
 
+  // Load tenant-scoped projects once for the project selector.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPeriods(createMockPeriods());
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/projects?limit=500');
+        const data = (await res.json()) as { projects?: ProjectRow[] };
+        if (!cancelled) setProjects((data.projects || []).map(mapProject));
+      } catch {
+        if (!cancelled) setProjects([]);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  // Load real payroll periods whenever the selected project changes.
+  const loadPeriods = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const qs = selectedProjectId !== 'all' ? `?projectId=${encodeURIComponent(selectedProjectId)}` : '';
+      const res = await fetch(`/api/payroll/list${qs}`);
+      const data = (await res.json()) as { payrollPeriods?: PayrollPeriodRow[] };
+      setPeriods((data.payrollPeriods || []).map(mapPeriod));
+    } catch {
+      setPeriods([]);
+      setError('Failed to load payroll periods.');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    void loadPeriods();
+  }, [loadPeriods]);
 
   const filteredPeriods = useMemo(() => {
     return periods.filter(p => {
@@ -234,6 +295,45 @@ export default function CertifiedPayrollPage() {
     };
   }, [activePeriod]);
 
+  // Create a real payroll period via the backend generate endpoint.
+  const handleCreatePeriod = useCallback(async () => {
+    if (selectedProjectId === 'all') {
+      setError('Select a project before creating a payroll period.');
+      return;
+    }
+    setCreatingPeriod(true);
+    setError(null);
+    const periodEnd = getWeekEnding(weekOffset);
+    // Davis-Bacon weeks run Saturday -> Friday; derive the start from the end.
+    const startDate = new Date(periodEnd + 'T12:00:00');
+    startDate.setDate(startDate.getDate() - 6);
+    const periodStart = startDate.toISOString().split('T')[0];
+    try {
+      const res = await fetch('/api/payroll/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: selectedProjectId,
+          period_start: periodStart,
+          period_end: periodEnd,
+          status: 'draft',
+        }),
+      });
+      const data = (await res.json()) as { error?: string; payrollPeriod?: PayrollPeriodRow };
+      if (data.error || !data.payrollPeriod) {
+        setError(data.error || 'Failed to create payroll period.');
+        return;
+      }
+      const created = mapPeriod(data.payrollPeriod);
+      setPeriods(prev => [created, ...prev]);
+      setActivePeriodId(created.id);
+    } catch {
+      setError('Failed to create payroll period.');
+    } finally {
+      setCreatingPeriod(false);
+    }
+  }, [selectedProjectId, weekOffset]);
+
   const getComplianceStatus = useCallback((w: WorkerEntry): ComplianceStatus => {
     const dbRate = DAVIS_BACON_RATES.find(r => r.trade === w.trade && r.classification === w.classification);
     if (!dbRate) return 'Pending';
@@ -254,7 +354,7 @@ export default function CertifiedPayrollPage() {
     const worker: WorkerEntry = {
       id: 'w' + Date.now(),
       name: newWorker.name || '',
-      ssn: '***-**-' + Math.floor(1000 + Math.random() * 9000),
+      ssn: '***-**-****',
       trade: newWorker.trade || '',
       classification: newWorker.classification || '',
       hoursSTPerDay: newWorker.hoursSTPerDay || [0, 0, 0, 0, 0, 0, 0],
@@ -487,15 +587,9 @@ export default function CertifiedPayrollPage() {
         <div style={{ ...card, padding: 0 }}>
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, margin: 0 }}>Payroll Periods ({filteredPeriods.length})</h2>
-            <button style={btn(GOLD)} onClick={() => {
-              if (selectedProjectId === 'all') { setError('Select a project before creating a payroll period.'); return; }
-              const newPeriod: PayrollPeriod = {
-                id: 'pp' + Date.now(), projectId: selectedProjectId, weekEnding: getWeekEnding(weekOffset),
-                status: 'Draft', workers: [], complianceSigned: false, signedBy: '', signedDate: '', notes: '',
-              };
-              setPeriods(prev => [newPeriod, ...prev]);
-              setActivePeriodId(newPeriod.id);
-            }}>+ New Period</button>
+            <button style={btn(GOLD)} disabled={creatingPeriod} onClick={() => { void handleCreatePeriod(); }}>
+              {creatingPeriod ? 'Creating...' : '+ New Period'}
+            </button>
           </div>
 
           {filteredPeriods.length === 0 ? (
@@ -925,9 +1019,9 @@ export default function CertifiedPayrollPage() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16, fontSize: 12, borderBottom: '2px solid #333', paddingBottom: 14 }}>
-                <div><span style={{ color: '#666' }}>Contractor/Subcontractor: </span><strong>TNT Cyber Solutions</strong></div>
+                <div><span style={{ color: '#666' }}>Contractor/Subcontractor: </span><strong>{'—'}</strong></div>
                 <div><span style={{ color: '#666' }}>Contract #: </span><strong>{proj?.contractNumber}</strong></div>
-                <div><span style={{ color: '#666' }}>Payroll No: </span><strong>{activePeriod.id.replace('pp', '')}</strong></div>
+                <div><span style={{ color: '#666' }}>Payroll No: </span><strong>{activePeriod.id.slice(0, 8)}</strong></div>
                 <div><span style={{ color: '#666' }}>Project: </span><strong>{proj?.name}</strong></div>
                 <div><span style={{ color: '#666' }}>Location: </span><strong>{proj?.location}</strong></div>
                 <div><span style={{ color: '#666' }}>Week Ending: </span><strong>{activePeriod.weekEnding}</strong></div>

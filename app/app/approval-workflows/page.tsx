@@ -86,7 +86,48 @@ interface DashboardStat {
 
 const MODULES: Module[] = ['Change Orders', 'Pay Apps', 'Purchase Orders', 'Invoices', 'Budget Transfers'];
 const ROLES = ['Project Manager', 'Superintendent', 'Controller', 'VP Operations', 'CEO', 'Owner'];
-const USERS = ['John Smith', 'Jane Doe', 'Mike Johnson', 'Sarah Williams', 'Tom Brown', 'Lisa Davis'];
+
+interface TeamMember { id: string; name: string; email: string; role: string | null }
+
+/* ── API row shapes (snake_case from the backend) ── */
+interface WorkflowRow {
+  id: string;
+  name: string;
+  module: string | null;
+  steps: ApprovalStep[] | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+interface RequestRow {
+  id: string;
+  workflow_id: string | null;
+  workflow_name: string | null;
+  module: string | null;
+  item_name: string | null;
+  item_amount: number | null;
+  requested_by: string | null;
+  requested_at: string;
+  current_step: number;
+  total_steps: number;
+  status: 'pending' | 'approved' | 'rejected';
+  history: HistoryEntryRow[] | null;
+}
+interface HistoryEntryRow {
+  action: 'approved' | 'rejected';
+  decidedBy: string;
+  decidedAt: string;
+  comment: string;
+}
+interface DelegationRow {
+  id: string;
+  from_user: string | null;
+  to_user: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  reason: string | null;
+  active: boolean;
+}
 
 /* ── helpers ── */
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -100,90 +141,101 @@ const fmtDateTime = (d: string) => {
   catch { return d; }
 };
 
-/* ── mock data generators ── */
-function generateMockWorkflows(): Workflow[] {
-  return [
-    {
-      id: uid(), name: 'Standard CO Approval', module: 'Change Orders', enabled: true,
-      steps: [
-        { id: uid(), order: 1, name: 'PM Review', approverType: 'role', approverValue: 'Project Manager', required: true, autoApproveThreshold: 500, conditionalMinAmount: null },
-        { id: uid(), order: 2, name: 'VP Sign-off', approverType: 'role', approverValue: 'VP Operations', required: true, autoApproveThreshold: null, conditionalMinAmount: 5000 },
-        { id: uid(), order: 3, name: 'Executive Approval', approverType: 'role', approverValue: 'CEO', required: true, autoApproveThreshold: null, conditionalMinAmount: 25000 },
-      ],
-      createdAt: '2025-11-15T10:00:00Z', updatedAt: '2026-01-20T14:30:00Z',
-    },
-    {
-      id: uid(), name: 'Pay App Review', module: 'Pay Apps', enabled: true,
-      steps: [
-        { id: uid(), order: 1, name: 'Field Verification', approverType: 'role', approverValue: 'Superintendent', required: true, autoApproveThreshold: null, conditionalMinAmount: null },
-        { id: uid(), order: 2, name: 'Accounting Review', approverType: 'role', approverValue: 'Controller', required: true, autoApproveThreshold: null, conditionalMinAmount: null },
-      ],
-      createdAt: '2025-12-01T09:00:00Z', updatedAt: '2026-02-10T11:15:00Z',
-    },
-    {
-      id: uid(), name: 'PO Approval Chain', module: 'Purchase Orders', enabled: true,
-      steps: [
-        { id: uid(), order: 1, name: 'Buyer Approval', approverType: 'user', approverValue: 'Jane Doe', required: true, autoApproveThreshold: 1000, conditionalMinAmount: null },
-        { id: uid(), order: 2, name: 'Finance Check', approverType: 'role', approverValue: 'Controller', required: true, autoApproveThreshold: null, conditionalMinAmount: 10000 },
-      ],
-      createdAt: '2026-01-05T08:00:00Z', updatedAt: '2026-03-01T16:45:00Z',
-    },
-    {
-      id: uid(), name: 'Invoice Processing', module: 'Invoices', enabled: false,
-      steps: [
-        { id: uid(), order: 1, name: 'PM Approval', approverType: 'role', approverValue: 'Project Manager', required: true, autoApproveThreshold: 2000, conditionalMinAmount: null },
-      ],
-      createdAt: '2026-02-01T12:00:00Z', updatedAt: '2026-02-28T09:30:00Z',
-    },
-    {
-      id: uid(), name: 'Budget Transfer Review', module: 'Budget Transfers', enabled: true,
-      steps: [
-        { id: uid(), order: 1, name: 'Controller Review', approverType: 'role', approverValue: 'Controller', required: true, autoApproveThreshold: null, conditionalMinAmount: null },
-        { id: uid(), order: 2, name: 'VP Approval', approverType: 'role', approverValue: 'VP Operations', required: false, autoApproveThreshold: null, conditionalMinAmount: 15000 },
-      ],
-      createdAt: '2026-01-20T07:00:00Z', updatedAt: '2026-03-05T13:00:00Z',
-    },
-  ];
+/* ── API row → view-model mappers ── */
+const asModule = (m: string | null | undefined): Module =>
+  (MODULES.includes(m as Module) ? (m as Module) : 'Change Orders');
+
+function mapWorkflow(r: WorkflowRow): Workflow {
+  return {
+    id: r.id,
+    name: r.name,
+    module: asModule(r.module),
+    enabled: !!r.active,
+    steps: Array.isArray(r.steps)
+      ? r.steps.map((s, i) => ({
+          id: s.id || uid(),
+          order: s.order ?? i + 1,
+          name: s.name ?? '',
+          approverType: s.approverType === 'user' ? 'user' : 'role',
+          approverValue: s.approverValue ?? '',
+          required: s.required ?? true,
+          autoApproveThreshold: s.autoApproveThreshold ?? null,
+          conditionalMinAmount: s.conditionalMinAmount ?? null,
+        }))
+      : [],
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
 }
 
-function generateMockPending(): PendingApproval[] {
-  return [
-    { id: uid(), workflowId: '', workflowName: 'Standard CO Approval', module: 'Change Orders', itemName: 'CO #0042 - Extra Foundation Work', itemAmount: 18500, requestedBy: 'Mike Johnson', requestedAt: '2026-03-10T09:15:00Z', currentStep: 2, totalSteps: 3, status: 'pending' },
-    { id: uid(), workflowId: '', workflowName: 'Pay App Review', module: 'Pay Apps', itemName: 'Pay App #7 - March 2026', itemAmount: 145000, requestedBy: 'Sarah Williams', requestedAt: '2026-03-08T14:00:00Z', currentStep: 1, totalSteps: 2, status: 'pending' },
-    { id: uid(), workflowId: '', workflowName: 'PO Approval Chain', module: 'Purchase Orders', itemName: 'PO #318 - Steel Beams', itemAmount: 32000, requestedBy: 'Tom Brown', requestedAt: '2026-03-11T11:30:00Z', currentStep: 2, totalSteps: 2, status: 'pending' },
-    { id: uid(), workflowId: '', workflowName: 'Standard CO Approval', module: 'Change Orders', itemName: 'CO #0043 - Electrical Reroute', itemAmount: 4200, requestedBy: 'Jane Doe', requestedAt: '2026-03-12T08:00:00Z', currentStep: 1, totalSteps: 3, status: 'pending' },
-    { id: uid(), workflowId: '', workflowName: 'Budget Transfer Review', module: 'Budget Transfers', itemName: 'BT-015 - Contingency to Electrical', itemAmount: 22000, requestedBy: 'Lisa Davis', requestedAt: '2026-03-09T16:45:00Z', currentStep: 1, totalSteps: 2, status: 'pending' },
-    { id: uid(), workflowId: '', workflowName: 'Invoice Processing', module: 'Invoices', itemName: 'INV-2088 - Lumber Supply Co', itemAmount: 8750, requestedBy: 'John Smith', requestedAt: '2026-03-11T07:20:00Z', currentStep: 1, totalSteps: 1, status: 'pending' },
-  ];
+function mapPending(r: RequestRow): PendingApproval {
+  return {
+    id: r.id,
+    workflowId: r.workflow_id ?? '',
+    workflowName: r.workflow_name ?? '',
+    module: asModule(r.module),
+    itemName: r.item_name ?? '',
+    itemAmount: Number(r.item_amount ?? 0),
+    requestedBy: r.requested_by ?? '',
+    requestedAt: r.requested_at,
+    currentStep: r.current_step ?? 1,
+    totalSteps: r.total_steps ?? 1,
+    status: r.status,
+  };
 }
 
-function generateMockHistory(): ApprovalHistoryEntry[] {
-  return [
-    { id: uid(), workflowName: 'Standard CO Approval', module: 'Change Orders', itemName: 'CO #0040 - Plumbing Revision', itemAmount: 6800, action: 'approved', decidedBy: 'You', decidedAt: '2026-03-07T10:00:00Z', comment: 'Approved per field report.' },
-    { id: uid(), workflowName: 'Pay App Review', module: 'Pay Apps', itemName: 'Pay App #6 - February 2026', itemAmount: 132000, action: 'approved', decidedBy: 'You', decidedAt: '2026-03-04T15:30:00Z', comment: 'All line items verified.' },
-    { id: uid(), workflowName: 'PO Approval Chain', module: 'Purchase Orders', itemName: 'PO #310 - HVAC Units', itemAmount: 48000, action: 'rejected', decidedBy: 'You', decidedAt: '2026-03-02T09:00:00Z', comment: 'Quote expired; need updated pricing.' },
-    { id: uid(), workflowName: 'Standard CO Approval', module: 'Change Orders', itemName: 'CO #0039 - Grading Adjustment', itemAmount: 3500, action: 'approved', decidedBy: 'You', decidedAt: '2026-02-28T11:45:00Z', comment: '' },
-    { id: uid(), workflowName: 'Budget Transfer Review', module: 'Budget Transfers', itemName: 'BT-012 - Landscaping Realloc', itemAmount: 8000, action: 'approved', decidedBy: 'You', decidedAt: '2026-02-25T14:00:00Z', comment: 'Owner approved reallocation.' },
-    { id: uid(), workflowName: 'Invoice Processing', module: 'Invoices', itemName: 'INV-1022 - Concrete Supply', itemAmount: 15600, action: 'approved', decidedBy: 'You', decidedAt: '2026-02-20T08:15:00Z', comment: '' },
-    { id: uid(), workflowName: 'PO Approval Chain', module: 'Purchase Orders', itemName: 'PO #305 - Rebar Shipment', itemAmount: 21400, action: 'approved', decidedBy: 'You', decidedAt: '2026-02-18T13:30:00Z', comment: 'Verified against budget.' },
-    { id: uid(), workflowName: 'Standard CO Approval', module: 'Change Orders', itemName: 'CO #0037 - Window Upgrade', itemAmount: 12200, action: 'rejected', decidedBy: 'You', decidedAt: '2026-02-15T09:00:00Z', comment: 'Not in scope; needs owner approval first.' },
-  ];
+function mapHistory(r: RequestRow): ApprovalHistoryEntry[] {
+  const entries = Array.isArray(r.history) ? r.history : [];
+  return entries.map((h) => ({
+    id: uid(),
+    workflowName: r.workflow_name ?? '',
+    module: asModule(r.module),
+    itemName: r.item_name ?? '',
+    itemAmount: Number(r.item_amount ?? 0),
+    action: h.action === 'rejected' ? 'rejected' : 'approved',
+    decidedBy: h.decidedBy ?? 'You',
+    decidedAt: h.decidedAt ?? r.requested_at,
+    comment: h.comment ?? '',
+  }));
 }
 
-function generateMockDashboard(): DashboardStat[] {
-  return [
-    { module: 'Change Orders', pending: 4, approved: 18, rejected: 2, avgDays: 2.3 },
-    { module: 'Pay Apps', pending: 2, approved: 7, rejected: 0, avgDays: 3.1 },
-    { module: 'Purchase Orders', pending: 3, approved: 22, rejected: 5, avgDays: 1.8 },
-    { module: 'Invoices', pending: 1, approved: 34, rejected: 3, avgDays: 1.2 },
-    { module: 'Budget Transfers', pending: 2, approved: 9, rejected: 1, avgDays: 2.7 },
-  ];
+function mapDelegation(r: DelegationRow): Delegation {
+  return {
+    id: r.id,
+    fromUser: r.from_user ?? 'You',
+    toUser: r.to_user ?? '',
+    startDate: r.start_date ?? '',
+    endDate: r.end_date ?? '',
+    reason: r.reason ?? '',
+    active: !!r.active,
+  };
 }
 
-function generateMockDelegations(): Delegation[] {
-  return [
-    { id: uid(), fromUser: 'You', toUser: 'Jane Doe', startDate: '2026-03-20', endDate: '2026-03-27', reason: 'Vacation - Spring Break', active: false },
-  ];
+/* Derive per-module dashboard stats from real request rows. */
+function deriveDashboard(requests: RequestRow[]): DashboardStat[] {
+  return MODULES.map((module) => {
+    const rows = requests.filter((r) => asModule(r.module) === module);
+    let pending = 0, approved = 0, rejected = 0;
+    let turnaroundSum = 0, turnaroundCount = 0;
+    for (const r of rows) {
+      if (r.status === 'pending') pending++;
+      else if (r.status === 'approved') approved++;
+      else if (r.status === 'rejected') rejected++;
+      const decisions = Array.isArray(r.history) ? r.history : [];
+      const last = decisions[decisions.length - 1];
+      if (last?.decidedAt && r.requested_at) {
+        const days = (new Date(last.decidedAt).getTime() - new Date(r.requested_at).getTime()) / 86400000;
+        if (days >= 0) { turnaroundSum += days; turnaroundCount++; }
+      }
+    }
+    return {
+      module,
+      pending,
+      approved,
+      rejected,
+      avgDays: turnaroundCount > 0 ? turnaroundSum / turnaroundCount : 0,
+    };
+  });
 }
 
 /* ── shared styles ── */
@@ -249,6 +301,10 @@ export default function ApprovalWorkflowsPage() {
   const [historyLog, setHistoryLog] = useState<ApprovalHistoryEntry[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStat[]>([]);
   const [delegations, setDelegations] = useState<Delegation[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  /* real user directory for approver / delegation pickers */
+  const USERS = useMemo(() => teamMembers.map((m) => m.name).filter(Boolean), [teamMembers]);
 
   /* wizard state */
   const [showWizard, setShowWizard] = useState(false);
@@ -296,12 +352,34 @@ export default function ApprovalWorkflowsPage() {
     setLoading(true);
     setError(null);
     try {
-      await new Promise(r => setTimeout(r, 600));
-      setWorkflows(generateMockWorkflows());
-      setPendingApprovals(generateMockPending());
-      setHistoryLog(generateMockHistory());
-      setDashboardStats(generateMockDashboard());
-      setDelegations(generateMockDelegations());
+      const [teamRes, wfRes, reqRes, delRes] = await Promise.all([
+        fetch('/api/team'),
+        fetch('/api/approval-workflows'),
+        fetch('/api/approval-requests'),
+        fetch('/api/approval-delegations'),
+      ]);
+
+      const teamJson = teamRes.ok ? await teamRes.json() : { members: [] };
+      const wfJson = wfRes.ok ? await wfRes.json() : { workflows: [] };
+      const reqJson = reqRes.ok ? await reqRes.json() : { requests: [] };
+      const delJson = delRes.ok ? await delRes.json() : { delegations: [] };
+
+      const members: TeamMember[] = Array.isArray(teamJson.members) ? teamJson.members : [];
+      const wfRows: WorkflowRow[] = Array.isArray(wfJson.workflows) ? wfJson.workflows : [];
+      const reqRows: RequestRow[] = Array.isArray(reqJson.requests) ? reqJson.requests : [];
+      const delRows: DelegationRow[] = Array.isArray(delJson.delegations) ? delJson.delegations : [];
+
+      setTeamMembers(members);
+      setWorkflows(wfRows.map(mapWorkflow));
+      setPendingApprovals(reqRows.filter(r => r.status === 'pending').map(mapPending));
+      setHistoryLog(
+        reqRows
+          .filter(r => r.status !== 'pending')
+          .flatMap(mapHistory)
+          .sort((a, b) => new Date(b.decidedAt).getTime() - new Date(a.decidedAt).getTime())
+      );
+      setDashboardStats(deriveDashboard(reqRows));
+      setDelegations(delRows.map(mapDelegation));
     } catch {
       setError('Failed to load approval workflow data. Please try again.');
     } finally {
@@ -352,14 +430,24 @@ export default function ApprovalWorkflowsPage() {
     setShowWizard(true);
   };
 
-  const cloneWorkflow = (wf: Workflow) => {
-    const cloned: Workflow = {
-      ...wf, id: uid(), name: wf.name + ' (Copy)',
-      steps: wf.steps.map(s => ({ ...s, id: uid() })),
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    };
-    setWorkflows(prev => [...prev, cloned]);
-    showToast('Workflow cloned successfully.');
+  const cloneWorkflow = async (wf: Workflow) => {
+    try {
+      const res = await fetch('/api/approval-workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: wf.name + ' (Copy)',
+          module: wf.module,
+          active: wf.enabled,
+          steps: wf.steps.map(s => ({ ...s, id: uid() })),
+        }),
+      });
+      if (!res.ok) throw new Error('clone failed');
+      await loadData();
+      showToast('Workflow cloned successfully.');
+    } catch {
+      showToast('Failed to clone workflow.');
+    }
   };
 
   const addWizardStep = () => {
@@ -392,70 +480,132 @@ export default function ApprovalWorkflowsPage() {
 
   const saveWorkflow = async () => {
     if (!wfName.trim() || wfSteps.length === 0) return;
-    const now = new Date().toISOString();
-    if (editingWorkflow) {
-      setWorkflows(prev => prev.map(w => w.id === editingWorkflow.id
-        ? { ...w, name: wfName, module: wfModule, steps: wfSteps, updatedAt: now }
-        : w
-      ));
-      showToast('Workflow updated successfully.');
-    } else {
-      const newWf: Workflow = {
-        id: uid(), name: wfName, module: wfModule, enabled: true,
-        steps: wfSteps, createdAt: now, updatedAt: now,
-      };
-      setWorkflows(prev => [...prev, newWf]);
-      showToast('Workflow created successfully.');
+    try {
+      if (editingWorkflow) {
+        const res = await fetch(`/api/approval-workflows/${editingWorkflow.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: wfName, module: wfModule, steps: wfSteps }),
+        });
+        if (!res.ok) throw new Error('update failed');
+        showToast('Workflow updated successfully.');
+      } else {
+        const res = await fetch('/api/approval-workflows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: wfName, module: wfModule, active: true, steps: wfSteps }),
+        });
+        if (!res.ok) throw new Error('create failed');
+        showToast('Workflow created successfully.');
+      }
+      setShowWizard(false);
+      await loadData();
+    } catch {
+      showToast('Failed to save workflow.');
     }
-    setShowWizard(false);
   };
 
-  const toggleWorkflow = (id: string) => {
-    setWorkflows(prev => prev.map(w => {
-      if (w.id !== id) return w;
-      const next = { ...w, enabled: !w.enabled, updatedAt: new Date().toISOString() };
-      showToast(`${next.name} ${next.enabled ? 'enabled' : 'disabled'}.`);
-      return next;
-    }));
+  const toggleWorkflow = async (id: string) => {
+    const wf = workflows.find(w => w.id === id);
+    if (!wf) return;
+    const nextEnabled = !wf.enabled;
+    try {
+      const res = await fetch(`/api/approval-workflows/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: nextEnabled }),
+      });
+      if (!res.ok) throw new Error('toggle failed');
+      setWorkflows(prev => prev.map(w => w.id === id
+        ? { ...w, enabled: nextEnabled, updatedAt: new Date().toISOString() }
+        : w));
+      showToast(`${wf.name} ${nextEnabled ? 'enabled' : 'disabled'}.`);
+    } catch {
+      showToast('Failed to update workflow.');
+    }
   };
 
-  const deleteWorkflow = (wf: Workflow) => {
-    setWorkflows(prev => prev.filter(w => w.id !== wf.id));
-    setDeleteConfirm(null);
-    showToast(`"${wf.name}" deleted.`);
+  const deleteWorkflow = async (wf: Workflow) => {
+    try {
+      const res = await fetch(`/api/approval-workflows/${wf.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('delete failed');
+      setWorkflows(prev => prev.filter(w => w.id !== wf.id));
+      setDeleteConfirm(null);
+      showToast(`"${wf.name}" deleted.`);
+    } catch {
+      showToast('Failed to delete workflow.');
+    }
   };
 
   /* ── approval actions ── */
-  const handleApprovalAction = (action: 'approved' | 'rejected') => {
+  const handleApprovalAction = async (action: 'approved' | 'rejected') => {
     if (!actionModal) return;
-    const entry: ApprovalHistoryEntry = {
-      id: uid(), workflowName: actionModal.workflowName, module: actionModal.module,
-      itemName: actionModal.itemName, itemAmount: actionModal.itemAmount,
+    const pa = actionModal;
+    const historyEntry = {
       action, decidedBy: 'You', decidedAt: new Date().toISOString(), comment: actionComment,
     };
-    setHistoryLog(prev => [entry, ...prev]);
-    setPendingApprovals(prev => prev.filter(p => p.id !== actionModal.id));
-    setActionModal(null);
-    setActionComment('');
-    showToast(`Item ${action}.`);
+    // Approving a non-final step advances the chain but stays pending.
+    const advance = action === 'approved' && pa.currentStep < pa.totalSteps;
+    const body: Record<string, unknown> = { historyEntry };
+    if (action === 'rejected') {
+      body.status = 'rejected';
+    } else if (advance) {
+      body.status = 'pending';
+      body.current_step = pa.currentStep + 1;
+    } else {
+      body.status = 'approved';
+    }
+    try {
+      const res = await fetch(`/api/approval-requests/${pa.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('action failed');
+      setActionModal(null);
+      setActionComment('');
+      await loadData();
+      showToast(advance ? `Step approved; advanced to step ${pa.currentStep + 1}.` : `Item ${action}.`);
+    } catch {
+      showToast('Failed to record decision.');
+    }
   };
 
   /* ── delegation actions ── */
-  const saveDelegation = () => {
+  const saveDelegation = async () => {
     if (!delToUser || !delStart || !delEnd) return;
-    const d: Delegation = {
-      id: uid(), fromUser: 'You', toUser: delToUser,
-      startDate: delStart, endDate: delEnd, reason: delReason, active: true,
-    };
-    setDelegations(prev => [...prev, d]);
-    setShowDelegationModal(false);
-    setDelToUser(''); setDelStart(''); setDelEnd(''); setDelReason('');
-    showToast('Delegation created.');
+    try {
+      const res = await fetch('/api/approval-delegations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_user: delToUser, start_date: delStart, end_date: delEnd,
+          reason: delReason, active: true,
+        }),
+      });
+      if (!res.ok) throw new Error('create failed');
+      setShowDelegationModal(false);
+      setDelToUser(''); setDelStart(''); setDelEnd(''); setDelReason('');
+      await loadData();
+      showToast('Delegation created.');
+    } catch {
+      showToast('Failed to create delegation.');
+    }
   };
 
-  const revokeDelegation = (id: string) => {
-    setDelegations(prev => prev.map(d => d.id === id ? { ...d, active: false } : d));
-    showToast('Delegation revoked.');
+  const revokeDelegation = async (id: string) => {
+    try {
+      const res = await fetch(`/api/approval-delegations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: false }),
+      });
+      if (!res.ok) throw new Error('revoke failed');
+      setDelegations(prev => prev.map(d => d.id === id ? { ...d, active: false } : d));
+      showToast('Delegation revoked.');
+    } catch {
+      showToast('Failed to revoke delegation.');
+    }
   };
 
   /* ── workflow diagram render ── */
@@ -1086,7 +1236,7 @@ export default function ApprovalWorkflowsPage() {
                           <select style={selectStyle} value={step.approverType}
                             onChange={e => updateWizardStep(step.id, {
                               approverType: e.target.value as 'role' | 'user',
-                              approverValue: e.target.value === 'role' ? ROLES[0] : USERS[0],
+                              approverValue: e.target.value === 'role' ? ROLES[0] : (USERS[0] ?? ''),
                             })}>
                             <option value="role">Role</option>
                             <option value="user">Specific User</option>
