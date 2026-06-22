@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FolderOpen, MagnifyingGlass, Plus, ArrowRight } from '@phosphor-icons/react';
 import { colors, radius, shadow } from '../../../lib/design-tokens';
+import SelectMenu from '../../../components/ui/SelectMenu';
 
 // Flat EDITORIAL palette — no boxes, content on the page separated by hairline rules.
 const GOLD='#C8881C';
@@ -74,18 +75,20 @@ export default function ProjectsPage() {
               onBlur={e=>{e.currentTarget.style.borderColor=HAIRLINE;e.currentTarget.style.boxShadow='none'}}
             />
           </div>
-          <select
+          <SelectMenu
+            aria-label="Filter by status"
             value={statusFilter}
-            onChange={e=>setStatusFilter(e.target.value)}
-            style={{padding:'9px 12px',background:'#FFFFFF',border:`1px solid ${HAIRLINE}`,borderRadius:radius.lg,color:TEXT,fontSize:13,cursor:'pointer',outline:'none'}}
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="planning">Planning</option>
-            <option value="bidding">Bidding</option>
-            <option value="complete">Complete</option>
-            <option value="closed">Closed</option>
-          </select>
+            onChange={setStatusFilter}
+            triggerStyle={{borderColor:HAIRLINE,color:TEXT,borderRadius:radius.lg}}
+            options={[
+              {value:'all',label:'All Status'},
+              {value:'active',label:'Active'},
+              {value:'planning',label:'Planning'},
+              {value:'bidding',label:'Bidding'},
+              {value:'complete',label:'Complete'},
+              {value:'closed',label:'Closed'},
+            ]}
+          />
           <Link
             href="/app/projects/new"
             style={{display:'inline-flex',alignItems:'center',gap:7,padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},${colors.goldLight})`,color:colors.darkAlt,borderRadius:radius.xl,fontWeight:700,fontSize:13,textDecoration:'none',boxShadow:shadow.sm}}

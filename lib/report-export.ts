@@ -298,7 +298,7 @@ export async function buildPdf(
   const FOOTER_H   = 20;
 
   const brandName = companyName?.trim() || 'SAGUARO CRM';
-  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Phoenix' });
 
   function computeColWidths(cols: ReportColumn[], contentW: number): number[] {
     const BASE = 10;
