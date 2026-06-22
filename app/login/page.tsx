@@ -96,15 +96,11 @@ export default function LoginPage(){
   return (
     <div style={{minHeight:'100vh',background:PAGE_BG,backgroundImage:`radial-gradient(circle at 50% 0%, rgba(216,154,30,0.10), transparent 60%), ${PAGE_BG}`,display:'flex',flexDirection:'column'}}>
       {/* Top nav */}
-      <nav style={{padding:'0 24px',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`}}>
-        <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10}}>
-          <img src="/logo-horizontal.png" alt="Saguaro Control Systems" style={{height:36,width:'auto',objectFit:'contain',borderRadius:4}} />
-          <span style={{display:'flex',flexDirection:'column',lineHeight:1.15}}>
-            <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:`linear-gradient(90deg,${GOLD},#E0A030)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
-            <span style={{fontSize:10,color:DIM,letterSpacing:.5,fontWeight:600}}>Control Systems</span>
-          </span>
+      <nav style={{padding:'0 16px',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,gap:12}}>
+        <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10,flexShrink:0}}>
+          <img src="/logo-horizontal.png" alt="Saguaro Control Systems" style={{height:32,width:'auto',objectFit:'contain'}} />
         </a>
-        <a href="/signup" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>No account? <span style={{color:ACCENT}}>Start free trial →</span></a>
+        <a href="/signup" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600,whiteSpace:'nowrap'}}><span style={{color:ACCENT}}>Start free trial →</span></a>
       </nav>
 
       {/* Main content */}
