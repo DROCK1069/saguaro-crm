@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Saguaro vs Procore — Feature & Price Comparison 2025',
-  description: 'See how Saguaro compares to Procore: AI takeoff, flat pricing, lien waivers in 50 states, certified payroll, 1-day setup vs 6 months. Starting at $199/mo vs $1,850+/mo.',
+  description: 'See how Saguaro compares to Procore: AI takeoff, flat pricing, lien waivers in 50 states, certified payroll, 1-day setup vs 6 months. Starting at $399/mo vs $1,850+/mo.',
   keywords: ['saguaro vs procore', 'procore comparison', 'procore alternative 2025', 'procore competitor', 'construction project management software comparison'],
   openGraph: {
     title: 'Saguaro vs Procore: Full Feature & Price Comparison',

@@ -247,7 +247,7 @@ export async function sendTrialExpiring(to: string, userName: string, daysLeft: 
     </h2>
     ${p(`Hi ${userName},`)}
     ${p(`Your Saguaro free trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Upgrade now to keep all your projects, documents, and AI features.`)}
-    ${p('Plans start at $199/month — save 30% when you upgrade before your trial ends.')}
+    ${p('Plans start at $399/month — save 30% when you upgrade before your trial ends.')}
     ${btn('Upgrade Now — Keep Everything', upgradeUrl)}
     ${p('<small style="color:#9ca3af;">Questions? Reply to this email and our team will help.</small>')}
   `));

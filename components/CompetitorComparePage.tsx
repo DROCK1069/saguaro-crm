@@ -157,7 +157,7 @@ function buildRows(c: Competitor): TableRow[] {
   ): TableRow => ({ feature, saguaroValue, competitorValue, saguaroWins, tie });
 
   return [
-    row('Starting Price', '$199/mo flat', c.startingPrice, false, true),
+    row('Starting Price', '$399/mo flat', c.startingPrice, false, true),
     row('Contract Required', 'Month-to-month', c.annualRequired ? 'Annual required' : 'Month-to-month', c.annualRequired, !c.annualRequired),
     row('Setup Time', '< 1 day', c.setupTime, true),
     row('Per-Seat Pricing', 'No — flat rate', c.perSeat ? 'Yes — costs grow with team' : 'No', c.perSeat, !c.perSeat),

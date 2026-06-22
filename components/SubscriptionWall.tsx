@@ -153,8 +153,8 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
         {!isPastDue && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 28 }}>
             {[
-              { id: 'starter', name: 'Starter', price: '$299', sub: '/mo · up to 10 projects' },
-              { id: 'professional', name: 'Professional', price: '$599', sub: '/mo · unlimited everything', popular: true },
+              { id: 'starter', name: 'Starter', price: '$399', sub: '/mo · up to 10 projects' },
+              { id: 'professional', name: 'Professional', price: '$799', sub: '/mo · unlimited everything', popular: true },
             ].map(plan => (
               <div key={plan.id} style={{
                 background: CARD,

@@ -57,7 +57,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     heroHeadline: 'Everything Buildertrend Does,\nPlus the AI Buildertrend Doesn\'t Have',
     heroSubheadline: 'Saguaro gives you AI blueprint takeoff, lien waivers in all 50 states, certified payroll, and a field app that works offline — none of which Buildertrend offers.',
     metaTitle: 'Saguaro vs Buildertrend — Full Comparison 2025',
-    metaDescription: 'Buildertrend vs Saguaro: See how AI takeoff, lien waivers, certified payroll, and offline mode stack up. Starting at $199/mo vs Buildertrend\'s $499/mo.',
+    metaDescription: 'Buildertrend vs Saguaro: See how AI takeoff, lien waivers, certified payroll, and offline mode stack up. Starting at $399/mo vs Buildertrend\'s $499/mo.',
     searchKeywords: ['buildertrend alternative', 'buildertrend vs saguaro', 'buildertrend competitor', 'buildertrend replacement'],
   },
   coconstruct: {

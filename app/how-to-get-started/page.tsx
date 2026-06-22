@@ -278,8 +278,8 @@ export default function HowToGetStartedPage() {
           <p className="sub">Your 30-day free trial gives you full access to everything. No credit card is required to start. When your trial ends, choose a plan to keep access.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
             {[
-              { name: 'Starter', price: '$299/mo', desc: 'Up to 10 projects, 100 AI pages/mo, pay apps, lien waivers, mobile app. Best for small GCs.', href: '/signup' },
-              { name: 'Professional', price: '$599/mo', desc: 'Unlimited projects, unlimited AI, certified payroll, bid intelligence, owner portals, all documents.', href: '/signup', popular: true },
+              { name: 'Starter', price: '$399/mo', desc: 'Up to 10 projects, 100 AI pages/mo, pay apps, lien waivers, mobile app. Best for small GCs.', href: '/signup' },
+              { name: 'Professional', price: '$799/mo', desc: 'Unlimited projects, unlimited AI, certified payroll, bid intelligence, owner portals, all documents.', href: '/signup', popular: true },
             ].map(p => (
               <div key={p.name} style={{ background: 'linear-gradient(180deg, #FBF3E4, #F7EAD4)', border: p.popular ? '1px solid rgba(201,138,26,0.40)' : '1px solid var(--border)', borderRadius: 14, padding: '24px 28px' }}>
                 {p.popular && <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--eyebrow)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Most Popular</div>}

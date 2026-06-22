@@ -126,7 +126,7 @@ export default function ComparePage() {
                   Saguaro vs. Procore
                 </h2>
                 <p style={{ fontSize: 16, color: DIM, margin: '0 0 24px', lineHeight: 1.5 }}>
-                  Procore starts at $375–600/mo+ per seat with a 3–6 month implementation. Saguaro is $199/mo flat for your whole team, live today.
+                  Procore starts at $375–600/mo+ per seat with a 3–6 month implementation. Saguaro is $399/mo flat for your whole team, live today.
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                   {['AI Takeoff Included', 'Lien Waivers All 50 States', 'Certified Payroll WH-347', 'Flat Rate Pricing', 'Go Live Today'].map((feat) => (
@@ -144,7 +144,7 @@ export default function ComparePage() {
               }}>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 13, color: DIM, marginBottom: 4 }}>Saguaro starting price</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: GOLD }}>$199/mo</div>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: GOLD }}>$399/mo</div>
                   <div style={{ fontSize: 13, color: DIM }}>vs Procore $375–600+/mo per seat</div>
                 </div>
                 <div style={{

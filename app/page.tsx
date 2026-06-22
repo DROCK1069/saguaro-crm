@@ -79,7 +79,7 @@ const StatusCell = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
   v === 'yes' ? <CheckIcon /> : v === 'partial' ? <PartialIcon /> : <XIcon />;
 
 const PriceLabel = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
-  v === 'yes' ? <span style={{ color: GREEN, fontWeight: 600, fontSize: 13 }}>$49/mo</span>
+  v === 'yes' ? <span style={{ color: GREEN, fontWeight: 600, fontSize: 13 }}>$399/mo</span>
     : v === 'partial' ? <span style={{ color: GOLD, fontWeight: 600, fontSize: 13 }}>$399/mo</span>
     : <span style={{ color: '#EF4444', fontWeight: 600, fontSize: 13 }}>$1,000+/mo</span>;
 
@@ -87,7 +87,7 @@ const PriceLabel = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
 const PLANS = [
   {
     name: 'Starter',
-    price: '$49',
+    price: '$399',
     period: '/mo',
     desc: 'Perfect for small GCs getting started',
     features: ['3 active projects', 'AI Takeoff (5/mo)', 'Pay apps & invoicing', 'Lien waivers', 'Mobile field app', 'Email support'],
@@ -96,7 +96,7 @@ const PLANS = [
   },
   {
     name: 'Professional',
-    price: '$99',
+    price: '$799',
     period: '/mo',
     desc: 'For growing contractors who need it all',
     features: ['Unlimited projects', 'Unlimited AI Takeoffs', 'Sage AI Assistant', 'Bid package manager', 'Client & sub portals', 'Certified payroll', 'Priority support'],
