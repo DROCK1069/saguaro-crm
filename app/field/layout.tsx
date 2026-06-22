@@ -4,7 +4,7 @@
  * The native iOS app (Capacitor) loads this. Not a PWA.
  * Bottom nav: Home · Punch · Log · Photos · More
  */
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { House, Warning, NotePencil, Camera, SquaresFour, Bell } from '@phosphor-icons/react';
@@ -91,6 +91,18 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
   const [showMenu, setShowMenu] = useState(false);
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
   const [activeProjectId, setActiveProjectId] = useState('');
+  // Anchor coords for the project dropdown. iOS WebKit mispositions
+  // position:absolute inside a position:sticky header (it floats to the
+  // bottom of the screen), so we render the dropdown as position:fixed
+  // using the button's measured on-screen rect instead.
+  const projBtnRef = useRef<HTMLButtonElement>(null);
+  const [ddRect, setDdRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const openProjectPicker = () => {
+    const r = projBtnRef.current?.getBoundingClientRect();
+    if (r) setDdRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    setShowProjectPicker(v => !v);
+    hapticLight().catch(() => {});
+  };
   const native = isNative();
 
   // ── Capacitor native boot ──────────────────────────────────────
@@ -261,7 +273,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
         </div>
         {/* Project switcher row */}
         <div style={{ padding: '0 14px 6px', position: 'relative' }}>
-          <button onClick={() => { setShowProjectPicker(!showProjectPicker); hapticLight().catch(() => {}); }}
+          <button ref={projBtnRef} onClick={openProjectPicker}
             style={{ background: 'rgba(0,0,0,.04)', border: '1px solid #E5E5EA', borderRadius: 8, padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 6, width: '100%', cursor: 'pointer', color: TEXT }}>
             <span style={{ display: 'flex', alignItems: 'center' }}><House size={16} weight="duotone" color={GOLD} /></span>
             <span style={{ flex: 1, textAlign: 'left', fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -270,8 +282,8 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
             <span style={{ fontSize: 10, color: DIM, transform: showProjectPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
           </button>
           {/* Project dropdown */}
-          {showProjectPicker && projects.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 14, right: 14, background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 100, maxHeight: 240, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,.6)' }}>
+          {showProjectPicker && projects.length > 0 && ddRect && (
+            <div style={{ position: 'fixed', top: ddRect.top, left: ddRect.left, width: ddRect.width, background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 100, maxHeight: 'min(320px, 60vh)', overflowY: 'auto', boxShadow: '0 12px 32px rgba(0,0,0,.22)' }}>
               {projects.map(p => (
                 <button key={p.id} onClick={() => switchProject(p.id)}
                   style={{ width: '100%', padding: '10px 14px', background: p.id === activeProjectId ? 'rgba(212,160,23,.1)' : 'transparent', border: 'none', borderBottom: `1px solid #E5E5EA`, color: p.id === activeProjectId ? GOLD : TEXT, fontSize: 13, fontWeight: p.id === activeProjectId ? 700 : 400, textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
