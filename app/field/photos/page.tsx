@@ -116,16 +116,22 @@ function PhotosInner() {
 
   /* ── Photo capture ── */
   const handleTakePhoto = async () => {
-    if (isNative()) {
-      const result = await takePhoto({ source: 'camera', quality: 85 });
-      if (result) {
-        setCapturedFile(result.file);
-        setCapturedPreview(result.dataUrl);
-        hapticLight();
-        fillGPS();
+    try {
+      if (isNative()) {
+        const result = await takePhoto({ source: 'camera', quality: 85 });
+        if (result) {
+          setCapturedFile(result.file);
+          setCapturedPreview(result.dataUrl);
+          hapticLight();
+          fillGPS();
+        }
+        // result === null means the user cancelled or the camera was unavailable — stay quiet on cancel.
+      } else {
+        fileRef.current?.click();
       }
-    } else {
-      fileRef.current?.click();
+    } catch (err) {
+      hapticError();
+      setToast('Couldn’t open the camera. Check that camera access is allowed for Saguaro Field in your device Settings.');
     }
   };
 
