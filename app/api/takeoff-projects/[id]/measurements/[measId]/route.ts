@@ -21,7 +21,8 @@ export async function GET(
     if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     return NextResponse.json({ measurement: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/measurements/[measId]] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -57,7 +58,8 @@ export async function PATCH(
     if (error) throw error;
 
     return NextResponse.json({ measurement: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/measurements/[measId]] PATCH', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -81,7 +83,8 @@ export async function DELETE(
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/measurements/[measId]] DELETE', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

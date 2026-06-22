@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
 import type { Database } from '@/lib/database.types';
 
 export async function GET(
@@ -21,8 +22,15 @@ export async function GET(
 
     if (error) throw error;
 
-    return NextResponse.json({ sheets: data || [] });
-  } catch {
+    // `blueprints` bucket is private — sign the stored URLs so the viewer can load them.
+    const sheets = await signFields(
+      (data || []) as Record<string, any>[],
+      ['file_url', 'thumbnail_url'],
+    );
+
+    return NextResponse.json({ sheets });
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/sheets] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -66,7 +74,8 @@ export async function POST(
     if (error) throw error;
 
     return NextResponse.json({ sheet: data }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/sheets] POST', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

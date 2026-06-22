@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ takeoffProject: data }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/create] POST', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

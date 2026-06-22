@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { getPdfPageCount, generateThumbnail } from '@/lib/blueprint-processor';
+import { signUrl } from '@/lib/storage-signing';
 import type { Database } from '@/lib/database.types';
 
 export const runtime = 'nodejs';
@@ -44,11 +45,13 @@ export async function POST(
     const { id, sheetId } = await params;
     const supabase = createServerClient();
 
-    // Verify the sheet belongs to the tenant.
+    // Verify the sheet belongs to the tenant AND to the takeoff project in the URL.
     const { data: sheet } = await supabase
       .from('takeoff_sheets')
       .select('id, tenant_id, takeoff_project_id')
       .eq('id', sheetId)
+      .eq('takeoff_project_id', id)
+      .eq('tenant_id', user.tenantId)
       .single<Pick<SheetRow, 'id' | 'tenant_id' | 'takeoff_project_id'>>();
 
     if (!sheet || sheet.tenant_id !== user.tenantId) {
@@ -158,7 +161,17 @@ export async function POST(
 
     if (updateErr) throw updateErr;
 
-    return NextResponse.json({ sheet: updated });
+    // `blueprints` is a private bucket: we persist the canonical public-style URL
+    // but must hand the client a signed URL it can actually render.
+    const signed = updated
+      ? {
+          ...updated,
+          file_url: await signUrl(updated.file_url),
+          thumbnail_url: await signUrl(updated.thumbnail_url),
+        }
+      : updated;
+
+    return NextResponse.json({ sheet: signed });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Upload failed';
     console.error('[takeoff-sheets/upload]', err);

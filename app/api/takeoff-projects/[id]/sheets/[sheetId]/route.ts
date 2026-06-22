@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signUrl } from '@/lib/storage-signing';
 
 export async function GET(
   req: NextRequest,
@@ -21,8 +22,16 @@ export async function GET(
 
     if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    return NextResponse.json({ sheet: data });
-  } catch {
+    // Private `blueprints` bucket — sign URLs for the client.
+    const sheet = {
+      ...data,
+      file_url: await signUrl(data.file_url),
+      thumbnail_url: await signUrl(data.thumbnail_url),
+    };
+
+    return NextResponse.json({ sheet });
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/sheets/[sheetId]] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -59,7 +68,8 @@ export async function PATCH(
     if (error) throw error;
 
     return NextResponse.json({ sheet: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/sheets/[sheetId]] PATCH', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -84,7 +94,8 @@ export async function DELETE(
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/sheets/[sheetId]] DELETE', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

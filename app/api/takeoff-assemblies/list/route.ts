@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ assemblies: data || [] });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-assemblies/list] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { lineItemWriteFields, normalizeLineItem } from '@/lib/takeoff-line-item';
 
 export async function GET(
   req: NextRequest,
@@ -21,7 +22,7 @@ export async function GET(
 
     if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    return NextResponse.json({ lineItem: data });
+    return NextResponse.json({ lineItem: normalizeLineItem(data) });
   } catch (err) {
     console.error('[takeoff-projects/[id]/line-items/[itemId]] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -38,34 +39,7 @@ export async function PATCH(
 
   try {
     const body = await req.json();
-    // Fields that map directly to real columns on takeoff_line_items
-    const directFields = [
-      'description', 'csi_code', 'csi_division', 'csi_description',
-      'category', 'quantity', 'unit', 'notes', 'sort_order',
-    ];
-    // Generic cost aliases -> real column names (per codebase export-route convention)
-    const costAliasMap: Record<string, string> = {
-      unit_cost: 'unit_material_cost',
-      material_cost: 'total_material',
-      labor_cost: 'total_labor',
-      equipment_cost: 'total_equipment',
-    };
-    const fields: Record<string, any> = {};
-    for (const k of directFields) {
-      if (body[k] !== undefined) fields[k] = body[k];
-    }
-    for (const [alias, col] of Object.entries(costAliasMap)) {
-      if (body[alias] !== undefined) fields[col] = body[alias];
-    }
-
-    // Fields with no dedicated column are folded into the metadata jsonb.
-    const metaFields = [
-      'sheet_id', 'assembly_id', 'cost_code_id', 'measurement_type', 'markup_pct',
-    ];
-    const metaPatch: Record<string, any> = {};
-    for (const k of metaFields) {
-      if (body[k] !== undefined) metaPatch[k] = body[k];
-    }
+    const { fields, metaPatch } = lineItemWriteFields(body);
 
     const db = createServerClient();
 
@@ -82,6 +56,10 @@ export async function PATCH(
       fields.metadata = { ...((current?.metadata as Record<string, any>) || {}), ...metaPatch };
     }
 
+    if (Object.keys(fields).length === 0) {
+      return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 });
+    }
+
     const { data, error } = await db
       .from('takeoff_line_items')
       .update(fields)
@@ -93,7 +71,7 @@ export async function PATCH(
 
     if (error) throw error;
 
-    return NextResponse.json({ lineItem: data });
+    return NextResponse.json({ lineItem: normalizeLineItem(data) });
   } catch (err) {
     console.error('[takeoff-projects/[id]/line-items/[itemId]] PATCH', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

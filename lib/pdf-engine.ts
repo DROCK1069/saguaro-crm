@@ -706,6 +706,24 @@ export async function generateBidJacket(input: {
   requiresBond: boolean;
   insuranceRequirements?: { gl?: number; wc?: string; auto?: number };
 }): Promise<Uint8Array> {
+  // Normalize input so a missing/undefined field never crashes the whole jacket
+  // (.toUpperCase()/.split()/.slice() on undefined would throw and abort the PDF).
+  input = {
+    ...input,
+    projectName:    input.projectName    || 'Project',
+    projectAddress: input.projectAddress || '',
+    ownerName:      input.ownerName       || 'Owner',
+    ownerAddress:   input.ownerAddress    || '',
+    gcName:         input.gcName          || 'General Contractor',
+    gcAddress:      input.gcAddress       || '',
+    tradeName:      input.tradeName       || 'Trade',
+    dueDate:        input.dueDate         || '',
+    scopeNarrative: input.scopeNarrative  || 'Scope of work per contract documents.',
+    csiSections:    Array.isArray(input.csiSections) ? input.csiSections : [],
+    lineItems:      Array.isArray(input.lineItems)   ? input.lineItems   : [],
+    requiresBond:   !!input.requiresBond,
+  };
+
   const doc = await PDFDocument.create();
   const { reg, bold } = await baseFonts(doc);
 
@@ -1101,9 +1119,10 @@ export async function saveDocument(
 ): Promise<string> {
   try {
     const fileName = `${projectId}/${docType}-${Date.now()}.pdf`;
-    await getSupabaseAdmin().storage
+    const { error: uploadErr } = await getSupabaseAdmin().storage
       .from('documents')
       .upload(fileName, pdfBytes, { contentType: 'application/pdf', upsert: true });
+    if (uploadErr) console.error('[pdf-engine] storage upload error:', uploadErr);
 
     const { data: urlData } = getSupabaseAdmin().storage.from('documents').getPublicUrl(fileName);
     const pdfUrl = urlData?.publicUrl || '';
@@ -1128,7 +1147,8 @@ export async function saveDocument(
       .from('documents')
       .createSignedUrl(fileName, 3600);
     return signed?.signedUrl || pdfUrl;
-  } catch {
+  } catch (err) {
+    console.error('[pdf-engine] saveDocument failed:', err);
     return `demo://generated/${docType}-${Date.now()}.pdf`;
   }
 }

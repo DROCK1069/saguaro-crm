@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
+import { normalizeLineItems } from '@/lib/takeoff-line-item';
 
 export async function GET(
   req: NextRequest,
@@ -26,8 +28,10 @@ export async function GET(
         .eq('tenant_id', user.tenantId)
         .order('sort_order', { ascending: true }),
       db
+        // takeoff_line_items has NO FK to takeoff_assemblies, so an embedded
+        // join would make PostgREST 400. Select the row columns only.
         .from('takeoff_line_items')
-        .select('*, takeoff_assemblies(*)')
+        .select('*')
         .eq('takeoff_id', id)
         .eq('tenant_id', user.tenantId)
         .order('sort_order', { ascending: true }),
@@ -39,10 +43,17 @@ export async function GET(
     if (sheetsRes.error) throw sheetsRes.error;
     if (lineItemsRes.error) throw lineItemsRes.error;
 
+    // The `blueprints` bucket is private — sign the stored public URLs so the
+    // viewer's <img> can actually load them.
+    const sheets = await signFields(
+      (sheetsRes.data || []) as Record<string, any>[],
+      ['file_url', 'thumbnail_url'],
+    );
+
     return NextResponse.json({
       takeoffProject: projectRes.data,
-      sheets: sheetsRes.data || [],
-      lineItems: lineItemsRes.data || [],
+      sheets,
+      lineItems: normalizeLineItems((lineItemsRes.data || []) as Record<string, any>[]),
     });
   } catch (err) {
     console.error('[takeoff-projects/[id]] GET', err);

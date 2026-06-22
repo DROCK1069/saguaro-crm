@@ -21,7 +21,8 @@ export async function GET(
     if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     return NextResponse.json({ assembly: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-assemblies/[id]] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -58,7 +59,8 @@ export async function PATCH(
     if (error) throw error;
 
     return NextResponse.json({ assembly: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-assemblies/[id]] PATCH', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -82,7 +84,8 @@ export async function DELETE(
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-assemblies/[id]] DELETE', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

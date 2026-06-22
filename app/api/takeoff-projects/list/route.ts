@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ takeoffProjects: data || [] });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/list] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

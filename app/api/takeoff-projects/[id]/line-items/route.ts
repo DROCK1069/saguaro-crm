@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { lineItemWriteFields, normalizeLineItem, normalizeLineItems } from '@/lib/takeoff-line-item';
 import type { Database } from '@/lib/database.types';
 
 export async function GET(
@@ -29,7 +30,7 @@ export async function GET(
     const { data, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ lineItems: data || [] });
+    return NextResponse.json({ lineItems: normalizeLineItems(data || []) });
   } catch (err) {
     console.error('[takeoff-projects/[id]/line-items] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -52,40 +53,14 @@ export async function POST(
       return NextResponse.json({ error: 'description is required' }, { status: 400 });
     }
 
-    // Fields that map directly to real columns on takeoff_line_items
-    const directFields = [
-      'csi_code', 'csi_division', 'csi_description', 'category',
-      'quantity', 'unit', 'notes', 'sort_order',
-    ];
-    // Generic cost aliases -> real column names (per codebase export-route convention:
-    // unit_cost==unit_material_cost, material_cost==total_material, etc.)
-    const costAliasMap: Record<string, string> = {
-      unit_cost: 'unit_material_cost',
-      material_cost: 'total_material',
-      labor_cost: 'total_labor',
-      equipment_cost: 'total_equipment',
-    };
+    const { fields, metaPatch } = lineItemWriteFields(body);
     const record: Record<string, any> = {
+      ...fields,
       description,
       takeoff_id: id,
       tenant_id: user.tenantId,
     };
-    for (const k of directFields) {
-      if (body[k] !== undefined) record[k] = body[k];
-    }
-    for (const [alias, col] of Object.entries(costAliasMap)) {
-      if (body[alias] !== undefined) record[col] = body[alias];
-    }
-
-    // Fields with no dedicated column are folded into the metadata jsonb.
-    const metaFields = [
-      'sheet_id', 'assembly_id', 'cost_code_id', 'measurement_type', 'markup_pct',
-    ];
-    const metadata: Record<string, any> = {};
-    for (const k of metaFields) {
-      if (body[k] !== undefined) metadata[k] = body[k];
-    }
-    if (Object.keys(metadata).length > 0) record.metadata = metadata;
+    if (Object.keys(metaPatch).length > 0) record.metadata = metaPatch;
 
     const db = createServerClient();
     const { data, error } = await db
@@ -96,7 +71,7 @@ export async function POST(
 
     if (error) throw error;
 
-    return NextResponse.json({ lineItem: data }, { status: 201 });
+    return NextResponse.json({ lineItem: normalizeLineItem(data) }, { status: 201 });
   } catch (err) {
     console.error('[takeoff-projects/[id]/line-items] POST', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

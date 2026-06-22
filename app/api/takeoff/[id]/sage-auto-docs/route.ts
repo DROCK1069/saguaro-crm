@@ -11,7 +11,7 @@
  * All fields are populated with correct project name, dates, and trade-specific content.
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import type { Database } from '@/lib/database.types';
@@ -60,8 +60,16 @@ export async function GET(
 ) {
   const encoder = new TextEncoder();
   const supabase = createServerClient();
-  const user = await getUser(req).catch(() => null);
   const { id: takeoffId } = await params;
+
+  // Require an authenticated user and scope all work to their tenant — matches
+  // the other takeoff routes (analyze/upload/to-estimate). EventSource sends
+  // same-origin cookies, so getUser(req) resolves the session here.
+  const user = await getUser(req);
+  if (!user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+  const userTenantId = user.tenantId;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -80,12 +88,19 @@ export async function GET(
         // ── 1. Load takeoff + materials ─────────────────────────────────────
         send('progress', { step: 1, pct: 5, message: 'Loading takeoff data...' });
 
-        // Two separate queries — avoid FK join (can fail with PGRST200)
-        const { data: takeoff } = await supabase
+        // Two separate queries — avoid FK join (can fail with PGRST200).
+        // Scope to the caller's tenant so one tenant can't generate docs from
+        // another tenant's takeoff.
+        const { data: takeoff, error: takeoffErr } = await supabase
           .from('takeoffs')
           .select('*')
           .eq('id', takeoffId)
+          .eq('tenant_id', userTenantId)
           .single();
+
+        if (takeoffErr) {
+          console.error('[sage-auto-docs] takeoff load error:', takeoffErr);
+        }
 
         if (!takeoff || takeoff.status !== 'complete') {
           send('error', { message: 'Takeoff not found or not yet complete. Run the analysis first.' });
@@ -113,7 +128,9 @@ export async function GET(
 
         const proj = (project || {}) as Record<string, any>;
         const projectName = String(proj.name || takeoff.project_name_detected || 'Project');
-        const tenantId   = String(proj.tenant_id || user?.tenantId || '');
+        // Always write the authenticated caller's tenant — never trust a stray
+        // project row's tenant_id for inserts.
+        const tenantId   = userTenantId || String(proj.tenant_id || '');
         const gcName     = String(proj.gc_name || 'General Contractor');
         const ownerName  = String(proj.owner_entity?.name || '');
         const ownerAddr  = String(proj.owner_entity?.address || '');
@@ -140,14 +157,13 @@ export async function GET(
 
         send('progress', { step: 2, pct: 10, message: `Sage is writing ${divisions.length} bid packages...` });
 
-        // ── 4. Check Anthropic key ───────────────────────────────────────────
-        if (!process.env.ANTHROPIC_API_KEY) {
-          send('error', { message: 'AI service not configured. Add ANTHROPIC_API_KEY.' });
-          return done();
+        // ── 4. Anthropic key (optional) ──────────────────────────────────────
+        // A missing key is NOT fatal — we fall back to rule-based scope/instructions
+        // below so a usable set of documents is still produced.
+        const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+        if (!hasAnthropicKey) {
+          send('progress', { step: 2, pct: 12, message: 'AI not configured — using rule-based defaults' });
         }
-
-        const { default: Anthropic } = await import('@anthropic-ai/sdk');
-        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
         // ── 5. Batch Sage AI call — write ALL package content at once ────────
         //    Compact format keeps token usage low; we cover all divisions in 1 call.
@@ -203,6 +219,11 @@ Rules:
 
         let aiHeartbeat: ReturnType<typeof setInterval> | null = null;
         try {
+          if (!hasAnthropicKey) throw new Error('ANTHROPIC_API_KEY not set');
+
+          const { default: Anthropic } = await import('@anthropic-ai/sdk');
+          const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
           aiHeartbeat = setInterval(() => {
             send('progress', { step: 2, pct: 15 + Math.floor(Math.random() * 10), message: 'Sage is writing bid package content...' });
           }, 5000);
@@ -240,16 +261,25 @@ Rules:
         }
 
         // Remove any existing packages for this project before regenerating (idempotent)
-        const { data: existingPkgs } = await supabase
+        const { data: existingPkgs, error: existingErr } = await supabase
           .from('bid_packages')
           .select('id')
-          .eq('project_id', takeoff.project_id);
+          .eq('project_id', takeoff.project_id)
+          .eq('tenant_id', tenantId);
+
+        if (existingErr) console.error('[sage-auto-docs] load existing packages error:', existingErr);
 
         if (existingPkgs && existingPkgs.length > 0) {
           send('progress', { step: 3, pct: 32, message: `Replacing ${existingPkgs.length} existing packages...` });
           const existingIds = existingPkgs.map((p: { id: string }) => p.id);
-          await supabase.from('bid_package_items').delete().in('bid_package_id', existingIds);
-          await supabase.from('bid_packages').delete().eq('project_id', takeoff.project_id);
+          const { error: delItemsErr } = await supabase.from('bid_package_items').delete().in('bid_package_id', existingIds);
+          if (delItemsErr) console.error('[sage-auto-docs] delete existing items error:', delItemsErr);
+          const { error: delPkgsErr } = await supabase
+            .from('bid_packages')
+            .delete()
+            .eq('project_id', takeoff.project_id)
+            .eq('tenant_id', tenantId);
+          if (delPkgsErr) console.error('[sage-auto-docs] delete existing packages error:', delPkgsErr);
         }
 
         send('progress', { step: 3, pct: 35, message: `Creating ${divisions.length} bid packages in database...` });
@@ -308,21 +338,31 @@ Rules:
 
           const pkgId = (pkg as any).id as string;
 
-          // Insert line items
+          // Insert line items — compute totals server-side (qty*rate) so a
+          // missing/undefined total_cost never writes NaN/null.
           if (items.length > 0) {
-            await supabase.from('bid_package_items').insert(
-              items.map(item => ({
-                tenant_id:      tenantId,
-                bid_package_id: pkgId,
-                description:    item.description,
-                quantity:       item.quantity,
-                unit:           item.unit,
-                unit_price:     item.unit_cost,
-                total_amount:   item.total_cost,
-                csi_code:       item.csi_code,
-                notes:          '',
-              }))
+            const { error: itemsErr } = await supabase.from('bid_package_items').insert(
+              items.map((item, idx) => {
+                const qty   = Number(item.quantity) || 0;
+                const rate  = Number(item.unit_cost) || 0;
+                const total = Number.isFinite(Number(item.total_cost)) && Number(item.total_cost) > 0
+                  ? Number(item.total_cost)
+                  : qty * rate;
+                return {
+                  tenant_id:      tenantId,
+                  bid_package_id: pkgId,
+                  description:    item.description || `Item ${idx + 1}`,
+                  quantity:       qty,
+                  unit:           item.unit || 'EA',
+                  unit_price:     rate,
+                  total_amount:   total,
+                  csi_code:       item.csi_code,
+                  sort_order:     idx,
+                  notes:          '',
+                };
+              })
             );
+            if (itemsErr) console.error('[sage-auto-docs] line items insert error:', itemsErr);
           }
 
           createdPackages.push({ id: pkgId, name: packageName, div, total });
@@ -376,12 +416,18 @@ Rules:
                 tenantId
               );
 
-              await supabase
-                .from('bid_packages')
-                .update({ jacket_pdf_url: pdfUrl })
-                .eq('id', pkg.id);
-
-              jacketsGenerated++;
+              // Only persist a real storage URL — saveDocument returns a
+              // demo:// placeholder when the upload failed; don't store that.
+              if (pdfUrl && !String(pdfUrl).startsWith('demo://')) {
+                const { error: jacketUpdateErr } = await supabase
+                  .from('bid_packages')
+                  .update({ jacket_pdf_url: pdfUrl, jacket_generated_at: new Date().toISOString() })
+                  .eq('id', pkg.id);
+                if (jacketUpdateErr) console.error('[sage-auto-docs] jacket url update error:', jacketUpdateErr);
+                jacketsGenerated++;
+              } else {
+                console.error('[sage-auto-docs] jacket upload returned placeholder URL for pkg', pkg.id);
+              }
 
               send('progress', {
                 step: 4,
@@ -460,18 +506,28 @@ Rules:
                 line_number:      lineNum++,
                 description:      `${div} — ${divName}`,
                 scheduled_value:  divTotal,
-                work_from_prev:   0,
-                work_this_period: 0,
-                materials_stored: 0,
+                // Real schedule_of_values columns — the previous insert used
+                // work_from_prev / work_this_period / materials_stored / csi_code,
+                // none of which exist on this table, so the whole insert 42703'd
+                // and no SOV rows were ever created.
+                prev_completed:   0,
+                this_period:      0,
+                stored_materials: 0,
                 total_completed:  0,
                 percent_complete: 0,
                 balance_to_finish: divTotal,
                 retainage:        0,
-                csi_code:         div,
+                cost_code:        div,
+                trade:            divName,
               });
             }
 
-            await supabase.from('schedule_of_values').insert(sovRows as Database['public']['Tables']['schedule_of_values']['Insert'][]);
+            const { error: sovInsertErr } = await supabase
+              .from('schedule_of_values')
+              .insert(sovRows as Database['public']['Tables']['schedule_of_values']['Insert'][]);
+            if (sovInsertErr) console.error('[sage-auto-docs] SOV rows insert error:', sovInsertErr);
+          } else if (payErr) {
+            console.error('[sage-auto-docs] pay application insert error:', payErr);
           }
         } catch (sovErr) {
           console.error('[sage-auto-docs] SOV error:', sovErr);

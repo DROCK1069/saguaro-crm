@@ -105,8 +105,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         'Content-Disposition': `attachment; filename="${fileName}"`,
       },
     });
-  } catch {
-    console.error('[takeoff-projects/[id]/export/excel] export failed');
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/export/excel] export failed', err);
     return NextResponse.json({ error: 'Export failed' }, { status: 500 });
   }
 }

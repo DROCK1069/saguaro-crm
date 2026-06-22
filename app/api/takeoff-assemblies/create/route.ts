@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ assembly: data }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-assemblies/create] POST', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

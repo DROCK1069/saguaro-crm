@@ -84,6 +84,20 @@ export async function POST(
       return NextResponse.json({ error: 'Line item not found in this project' }, { status: 404 });
     }
 
+    // Verify the sheet belongs to this takeoff project and tenant too — both
+    // line_item_id and sheet_id are NOT NULL on takeoff_measurements.
+    const { data: sheet, error: sheetError } = await db
+      .from('takeoff_sheets')
+      .select('id')
+      .eq('id', sheet_id)
+      .eq('takeoff_project_id', id)
+      .eq('tenant_id', user.tenantId)
+      .single();
+
+    if (sheetError || !sheet) {
+      return NextResponse.json({ error: 'Sheet not found in this project' }, { status: 404 });
+    }
+
     const optionalFields = ['raw_value', 'scaled_value', 'unit', 'label', 'color'];
     const record: Record<string, any> = {
       line_item_id,
