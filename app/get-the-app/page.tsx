@@ -1079,26 +1079,26 @@ export default function GetTheAppPage() {
 
         {/* (Removed the PWA-vs-App-Store comparison — Saguaro Field is now a native iOS app on TestFlight.) */}
 
-        {/* ── TESTIMONIALS ── */}
+        {/* ── BUILT FOR THE FIELD ── */}
         <div style={{ background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)' }}>
           <div className="section-wrap">
             <div className="section-header">
-              <h2 className="section-h2">Field Crews Love It</h2>
-              <p className="section-sub">From superintendents to foremen — real feedback from the job site.</p>
+              <h2 className="section-h2">Built for the Job Site</h2>
+              <p className="section-sub">Designed around how superintendents and foremen actually work in the field.</p>
             </div>
 
             <div className="testimonials-grid">
               <div className="testi-card">
-                <p className="testi-quote">&quot;I had the whole crew of 14 on the beta in under 10 minutes — just texted them the TestFlight link. The GPS clock-in alone saves me an hour of timesheet chasing every Friday.&quot;</p>
-                <div className="testi-author">Jake T., Superintendent — Mesa, AZ</div>
+                <p className="testi-quote">Get a whole crew onto the beta in minutes — just text them the TestFlight link. GPS clock-in is built to end the Friday timesheet chase.</p>
+                <div className="testi-author">Fast crew onboarding · GPS clock-in</div>
               </div>
               <div className="testi-card">
-                <p className="testi-quote">&quot;The offline mode is huge. We work in basements and dead zones constantly. With Procore we lost data. With this we lose nothing.&quot;</p>
-                <div className="testi-author">Maria S., Foreman — Las Vegas, NV</div>
+                <p className="testi-quote">Full offline mode is built for basements and dead zones. The app keeps working with no signal and syncs everything the moment you reconnect — so nothing is lost.</p>
+                <div className="testi-author">Works offline · Automatic sync</div>
               </div>
               <div className="testi-card">
-                <p className="testi-quote">&quot;My foremen submit daily logs and photos before they even leave the job site. I used to beg for them on Fridays.&quot;</p>
-                <div className="testi-author">Carlos M., Project Manager — San Antonio, TX</div>
+                <p className="testi-quote">Foremen submit daily logs and photos before they leave the site. No more chasing paperwork on Fridays — the office sees it instantly.</p>
+                <div className="testi-author">Daily logs · Real-time office visibility</div>
               </div>
             </div>
           </div>

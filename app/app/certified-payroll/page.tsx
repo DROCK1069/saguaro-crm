@@ -62,15 +62,18 @@ interface ProjectRow {
   state: string | null;
 }
 
-interface PayrollPeriodRow {
+// A certified_payroll row as returned by /api/certified-payroll. The per-worker
+// rows live in the `entries` jsonb column and store the page's WorkerEntry shape
+// verbatim, so the round-trip is lossless.
+interface CertifiedPayrollRow {
   id: string;
   project_id: string | null;
-  period_start: string | null;
-  period_end: string | null;
+  week_ending: string | null;
   status: string | null;
-  total_hours: number | null;
-  total_amount: number | null;
-  notes: string | null;
+  entries: WorkerEntry[] | null;
+  statement_of_compliance: boolean | null;
+  signed_by: string | null;
+  signed_at: string | null;
 }
 
 function mapProject(row: ProjectRow): Project {
@@ -95,20 +98,44 @@ function mapStatus(raw: string | null): PayrollStatus {
   return 'Draft';
 }
 
-function mapPeriod(row: PayrollPeriodRow): PayrollPeriod {
+// Normalize a stored worker entry back into the page's WorkerEntry shape,
+// filling defaults for any missing fields so the table renders safely.
+function mapWorker(raw: Partial<WorkerEntry> & { id?: string }): WorkerEntry {
+  const seven = (a?: number[]) => {
+    const arr = Array.isArray(a) ? a.slice(0, 7) : [];
+    while (arr.length < 7) arr.push(0);
+    return arr;
+  };
+  return {
+    id: raw.id || 'w' + Math.random().toString(36).slice(2),
+    name: raw.name || '',
+    ssn: raw.ssn || '***-**-****',
+    trade: raw.trade || '',
+    classification: raw.classification || '',
+    hoursSTPerDay: seven(raw.hoursSTPerDay),
+    hoursOTPerDay: seven(raw.hoursOTPerDay),
+    hoursDTPerDay: seven(raw.hoursDTPerDay),
+    baseRate: raw.baseRate || 0,
+    fringeBenefit: raw.fringeBenefit || 0,
+    deductions: raw.deductions || 0,
+    isApprentice: raw.isApprentice || false,
+    apprenticeRatio: raw.apprenticeRatio,
+  };
+}
+
+function mapPeriod(row: CertifiedPayrollRow): PayrollPeriod {
+  const status = mapStatus(row.status);
   return {
     id: row.id,
     projectId: row.project_id || '',
-    // WH-347 is keyed on the week-ending date; map from the period end date.
-    weekEnding: (row.period_end || row.period_start || '').slice(0, 10),
-    status: mapStatus(row.status),
-    // No per-worker rows are exposed by the payroll backend (payroll_periods is
-    // period-level only), so workers start empty until added in a draft.
-    workers: [],
-    complianceSigned: mapStatus(row.status) !== 'Draft',
-    signedBy: '',
-    signedDate: '',
-    notes: row.notes || '',
+    weekEnding: (row.week_ending || '').slice(0, 10),
+    status,
+    // The certified_payroll.entries jsonb column holds the worker rows.
+    workers: (row.entries || []).map(mapWorker),
+    complianceSigned: !!row.statement_of_compliance,
+    signedBy: row.signed_by || '',
+    signedDate: (row.signed_at || '').slice(0, 10),
+    notes: '',
   };
 }
 
@@ -241,15 +268,16 @@ export default function CertifiedPayrollPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load real payroll periods whenever the selected project changes.
+  // Load real certified_payroll records whenever the selected project changes.
+  // These records ARE the WH-347 "payroll periods" the UI lists.
   const loadPeriods = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const qs = selectedProjectId !== 'all' ? `?projectId=${encodeURIComponent(selectedProjectId)}` : '';
-      const res = await fetch(`/api/payroll/list${qs}`);
-      const data = (await res.json()) as { payrollPeriods?: PayrollPeriodRow[] };
-      setPeriods((data.payrollPeriods || []).map(mapPeriod));
+      const res = await fetch(`/api/certified-payroll${qs}`);
+      const data = (await res.json()) as { records?: CertifiedPayrollRow[] };
+      setPeriods((data.records || []).map(mapPeriod));
     } catch {
       setPeriods([]);
       setError('Failed to load payroll periods.');
@@ -257,6 +285,50 @@ export default function CertifiedPayrollPage() {
       setLoading(false);
     }
   }, [selectedProjectId]);
+
+  // Persist a period's worker entries + recomputed totals to the backend via PUT.
+  // Used by every worker mutation so edits survive a reload.
+  const persistEntries = useCallback(async (period: PayrollPeriod) => {
+    const grossCents: number[] = [], netCents: number[] = [], deductionCents: number[] = [];
+    period.workers.forEach(w => {
+      const t = calcWorkerTotals(w);
+      grossCents.push(t.grossPayCents);
+      netCents.push(t.netPayCents);
+      deductionCents.push(toCents(w.deductions));
+    });
+    try {
+      const res = await fetch(`/api/certified-payroll/${period.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entries: period.workers,
+          total_gross: toDollars(sumCents(grossCents)),
+          total_deductions: toDollars(sumCents(deductionCents)),
+          total_net: toDollars(sumCents(netCents)),
+        }),
+      });
+      if (!res.ok) setError('Failed to save changes.');
+    } catch {
+      setError('Failed to save changes.');
+    }
+  }, []);
+
+  // Persist status / compliance-signing changes via PUT.
+  const persistStatus = useCallback(async (
+    periodId: string,
+    fields: { status?: string; statement_of_compliance?: boolean; signed_by?: string; signed_at?: string | null },
+  ) => {
+    try {
+      const res = await fetch(`/api/certified-payroll/${periodId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      });
+      if (!res.ok) setError('Failed to save changes.');
+    } catch {
+      setError('Failed to save changes.');
+    }
+  }, []);
 
   useEffect(() => {
     void loadPeriods();
@@ -295,7 +367,7 @@ export default function CertifiedPayrollPage() {
     };
   }, [activePeriod]);
 
-  // Create a real payroll period via the backend generate endpoint.
+  // Create a real WH-347 draft via the certified_payroll endpoint.
   const handleCreatePeriod = useCallback(async () => {
     if (selectedProjectId === 'all') {
       setError('Select a project before creating a payroll period.');
@@ -303,28 +375,31 @@ export default function CertifiedPayrollPage() {
     }
     setCreatingPeriod(true);
     setError(null);
-    const periodEnd = getWeekEnding(weekOffset);
-    // Davis-Bacon weeks run Saturday -> Friday; derive the start from the end.
-    const startDate = new Date(periodEnd + 'T12:00:00');
-    startDate.setDate(startDate.getDate() - 6);
-    const periodStart = startDate.toISOString().split('T')[0];
+    const weekEnding = getWeekEnding(weekOffset);
+    const proj = projects.find(p => p.id === selectedProjectId);
+    // Next sequential payroll number for this project's existing periods.
+    const payrollNumber = periods.filter(p => p.projectId === selectedProjectId).length + 1;
     try {
-      const res = await fetch('/api/payroll/generate', {
+      const res = await fetch('/api/certified-payroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_id: selectedProjectId,
-          period_start: periodStart,
-          period_end: periodEnd,
+          week_ending: weekEnding,
+          payroll_number: payrollNumber,
+          project_name: proj?.name || null,
+          project_number: proj?.number || null,
+          project_location: proj?.location || null,
+          entries: [],
           status: 'draft',
         }),
       });
-      const data = (await res.json()) as { error?: string; payrollPeriod?: PayrollPeriodRow };
-      if (data.error || !data.payrollPeriod) {
+      const data = (await res.json()) as { error?: string; record?: CertifiedPayrollRow };
+      if (data.error || !data.record) {
         setError(data.error || 'Failed to create payroll period.');
         return;
       }
-      const created = mapPeriod(data.payrollPeriod);
+      const created = mapPeriod(data.record);
       setPeriods(prev => [created, ...prev]);
       setActivePeriodId(created.id);
     } catch {
@@ -332,7 +407,7 @@ export default function CertifiedPayrollPage() {
     } finally {
       setCreatingPeriod(false);
     }
-  }, [selectedProjectId, weekOffset]);
+  }, [selectedProjectId, weekOffset, projects, periods]);
 
   const getComplianceStatus = useCallback((w: WorkerEntry): ComplianceStatus => {
     const dbRate = DAVIS_BACON_RATES.find(r => r.trade === w.trade && r.classification === w.classification);
@@ -365,28 +440,37 @@ export default function CertifiedPayrollPage() {
       deductions: newWorker.deductions || 0,
       isApprentice: newWorker.isApprentice || false,
     };
-    setPeriods(prev => prev.map(p => p.id === activePeriod.id ? { ...p, workers: [...p.workers, worker] } : p));
+    const updated = { ...activePeriod, workers: [...activePeriod.workers, worker] };
+    setPeriods(prev => prev.map(p => p.id === activePeriod.id ? updated : p));
+    void persistEntries(updated);
     setShowAddWorker(false);
     setNewWorker({ name: '', trade: '', classification: '', baseRate: 0, fringeBenefit: 0, deductions: 0, isApprentice: false, hoursSTPerDay: [0, 0, 0, 0, 0, 0, 0], hoursOTPerDay: [0, 0, 0, 0, 0, 0, 0], hoursDTPerDay: [0, 0, 0, 0, 0, 0, 0] });
-  }, [activePeriod, newWorker]);
+  }, [activePeriod, newWorker, persistEntries]);
 
   const handleDeleteWorker = useCallback((workerId: string) => {
     if (!activePeriod) return;
-    setPeriods(prev => prev.map(p => p.id === activePeriod.id ? { ...p, workers: p.workers.filter(w => w.id !== workerId) } : p));
-  }, [activePeriod]);
+    const updated = { ...activePeriod, workers: activePeriod.workers.filter(w => w.id !== workerId) };
+    setPeriods(prev => prev.map(p => p.id === activePeriod.id ? updated : p));
+    void persistEntries(updated);
+  }, [activePeriod, persistEntries]);
 
   const handleStatusChange = useCallback((periodId: string, newStatus: PayrollStatus) => {
+    const dbStatus = newStatus.toLowerCase();
+    const signedAt = newStatus === 'Submitted' ? new Date().toISOString() : undefined;
     setPeriods(prev => prev.map(p => {
       if (p.id !== periodId) return p;
       const updated = { ...p, status: newStatus };
       if (newStatus === 'Submitted') { updated.signedDate = new Date().toISOString().split('T')[0]; }
       return updated;
     }));
-  }, []);
+    void persistStatus(periodId, { status: dbStatus, ...(signedAt ? { signed_at: signedAt } : {}) });
+  }, [persistStatus]);
 
   const handleComplianceSign = useCallback((periodId: string, signerName: string) => {
-    setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, complianceSigned: true, signedBy: signerName, signedDate: new Date().toISOString().split('T')[0] } : p));
-  }, []);
+    const signedAt = new Date().toISOString();
+    setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, complianceSigned: true, signedBy: signerName, signedDate: signedAt.split('T')[0] } : p));
+    void persistStatus(periodId, { statement_of_compliance: true, signed_by: signerName, signed_at: signedAt });
+  }, [persistStatus]);
 
   const handleExport = useCallback((format: 'pdf' | 'excel') => {
     setExportingFormat(format);
@@ -426,9 +510,9 @@ export default function CertifiedPayrollPage() {
   function handleEditRate(workerId: string) {
     const newRate = parseFloat(editVal);
     if (isNaN(newRate) || newRate < 0 || !activePeriod) return;
-    setPeriods(prev => prev.map(p => p.id !== activePeriod.id ? p : {
-      ...p, workers: p.workers.map(w => w.id === workerId ? { ...w, baseRate: newRate } : w),
-    }));
+    const updated = { ...activePeriod, workers: activePeriod.workers.map(w => w.id === workerId ? { ...w, baseRate: newRate } : w) };
+    setPeriods(prev => prev.map(p => p.id !== activePeriod.id ? p : updated));
+    void persistEntries(updated);
     setEditId(null);
   }
 
@@ -437,9 +521,9 @@ export default function CertifiedPayrollPage() {
     const worker = activePeriod.workers.find(w => w.id === workerId);
     if (!worker) return;
     const newRate = toDollars(scaleCents(toCents(worker.baseRate), 1 + pct / 100));
-    setPeriods(prev => prev.map(p => p.id !== activePeriod.id ? p : {
-      ...p, workers: p.workers.map(w => w.id === workerId ? { ...w, baseRate: newRate } : w),
-    }));
+    const updated = { ...activePeriod, workers: activePeriod.workers.map(w => w.id === workerId ? { ...w, baseRate: newRate } : w) };
+    setPeriods(prev => prev.map(p => p.id !== activePeriod.id ? p : updated));
+    void persistEntries(updated);
     setAdjustId(null);
   }
 
@@ -789,7 +873,11 @@ export default function CertifiedPayrollPage() {
                             {activePeriod.status === 'Draft' && (
                               <div style={{ display: 'flex', gap: 4 }}>
                                 <button style={{ ...btn(RAISED), padding: '4px 8px', fontSize: 11 }}
-                                  onClick={e => { e.stopPropagation(); setEditingWorkerId(isEditing ? null : worker.id); }}>
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    if (isEditing) { setEditingWorkerId(null); void persistEntries(activePeriod); }
+                                    else { setEditingWorkerId(worker.id); }
+                                  }}>
                                   {isEditing ? 'Done' : 'Edit'}
                                 </button>
                                 <button style={{ ...btn(RAISED), padding: '4px 8px', fontSize: 11, color: RED }}

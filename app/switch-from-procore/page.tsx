@@ -565,80 +565,63 @@ export default function SwitchFromProcorePage() {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS ─── */}
+      {/* ─── WHAT CHANGES WHEN YOU SWITCH ─── */}
       <section className="section-pad" style={{ padding: '88px 40px', background: 'transparent' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: 12, color: TEXT }}>
-              From Procore to Saguaro: Real Stories
+              What Changes When You Switch
             </h2>
             <div style={{ width: 60, height: 4, background: `linear-gradient(90deg, ${GOLD}, #F5D060)`, borderRadius: 2, margin: '0 auto' }} />
             <p style={{ color: DIM, marginTop: 16, fontSize: '1.05rem' }}>
-              Hear directly from GC teams who made the move.
+              The everyday wins GC teams get after moving off Procore.
             </p>
           </div>
 
           <div className="testimonials-grid">
             {[
               {
-                quote: 'We were paying Procore $2,200/month and had to hire a consultant just to set it up. With Saguaro, I had my whole team running in one afternoon. The AI takeoff alone saves us 4 hours per bid.',
-                name: 'David K.',
-                title: 'Owner',
-                location: 'Denver, CO',
-                tag: 'Switched from Procore',
-                initials: 'DK',
+                body: 'No consultant and no months-long rollout. Get your whole team running in an afternoon — and AI takeoff is built to save hours on every bid.',
+                title: 'Up and running fast',
+                tag: 'Same-day setup',
               },
               {
-                quote: 'The certified payroll feature sold me. Procore doesn\'t even offer it. We do 8–10 prevailing wage jobs a year — this saves us $3,000 in admin time every single month.',
-                name: 'Marcus T.',
-                title: 'Project Manager',
-                location: 'Phoenix, AZ',
-                tag: 'Prevailing Wage GC',
-                initials: 'MT',
+                body: 'Certified payroll is built in — something Procore does not offer. Run 8–10 prevailing wage jobs a year and cut the WH-347 admin that used to eat hours each month.',
+                title: 'Certified payroll included',
+                tag: 'Prevailing wage ready',
               },
               {
-                quote: 'I was nervous about switching mid-year. Their migration team moved everything over on a Friday. Monday morning, we were fully running on Saguaro. My crew loves the field app.',
-                name: 'Carlos M.',
-                title: 'Superintendent',
-                location: 'San Antonio, TX',
-                tag: 'Mid-Year Migration',
-                initials: 'CM',
+                body: 'Switch mid-year without the stress. Our migration team moves your projects, contacts, and documents over a weekend, and your crew gets a field app they will actually use.',
+                title: 'Painless migration',
+                tag: 'Free data migration',
               },
             ].map((t) => (
-              <div key={t.name} className="testimonial-card">
+              <div key={t.title} className="testimonial-card">
                 <div style={{
-                  fontSize: '3rem', lineHeight: 1, color: GOLD, opacity: 0.3,
-                  fontFamily: 'Georgia, serif', marginBottom: 16,
+                  width: 44, height: 44, borderRadius: 12,
+                  background: `linear-gradient(135deg, ${GOLD}, #D97706)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 18,
                 }}>
-                  &ldquo;
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </div>
-                <p style={{ color: TEXT, fontSize: '0.95rem', lineHeight: 1.7, marginBottom: 24, fontStyle: 'italic' }}>
-                  &ldquo;{t.quote}&rdquo;
+                <h3 style={{ fontWeight: 800, color: TEXT, fontSize: '1.05rem', margin: '0 0 12px', lineHeight: 1.3 }}>
+                  {t.title}
+                </h3>
+                <p style={{ color: DIM, fontSize: '0.95rem', lineHeight: 1.7, marginBottom: 18 }}>
+                  {t.body}
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${GOLD}, #D97706)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 800, fontSize: '0.9rem', color: '#1C1C1E', flexShrink: 0,
-                  }}>
-                    {t.initials}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, color: TEXT, fontSize: '0.95rem' }}>{t.name}</div>
-                    <div style={{ color: DIM, fontSize: '0.82rem' }}>{t.title} · {t.location}</div>
-                  </div>
-                  <div style={{ marginLeft: 'auto' }}>
-                    <span style={{
-                      background: 'rgba(245,158,11,0.1)',
-                      border: `1px solid rgba(245,158,11,0.25)`,
-                      borderRadius: 999, padding: '4px 10px',
-                      fontSize: '0.72rem', fontWeight: 600, color: GOLD,
-                    }}>
-                      {t.tag}
-                    </span>
-                  </div>
-                </div>
+                <span style={{
+                  display: 'inline-block',
+                  background: 'rgba(245,158,11,0.1)',
+                  border: `1px solid rgba(245,158,11,0.25)`,
+                  borderRadius: 999, padding: '4px 10px',
+                  fontSize: '0.72rem', fontWeight: 600, color: GOLD,
+                }}>
+                  {t.tag}
+                </span>
               </div>
             ))}
           </div>

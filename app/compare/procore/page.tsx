@@ -63,41 +63,23 @@ const DEEP_DIVE = [
   },
 ];
 
-const TESTIMONIALS = [
+const SWITCH_VALUE = [
   {
-    quote: 'We were paying $1,800/mo for Procore and still doing lien waivers in Word. Switched to Saguaro and cut admin time by 60% in the first week.',
-    author: 'General Contractor',
-    location: 'Phoenix, AZ',
-    size: '45 employees',
-    initials: 'RC',
+    title: 'Lower cost, less admin',
+    body: 'Stop paying enterprise prices and still doing lien waivers in Word. Saguaro generates state-compliant waivers instantly and is built to cut document admin time from day one.',
+    icon: 'cost',
   },
   {
-    quote: 'The AI takeoff alone paid for the subscription in the first month. We estimated a $2M medical building in 41 seconds.',
-    author: 'Estimator, Commercial GC',
-    location: 'Denver, CO',
-    size: 'ENR Regional 250',
-    initials: 'MK',
+    title: 'AI takeoff that pays for itself',
+    body: 'Upload a blueprint and get a full CSI-organized estimate in seconds — a $2M medical building takeoff in about 41 seconds instead of hours of manual measuring.',
+    icon: 'ai',
   },
   {
-    quote: 'Setup took 3 hours, not 3 months. We were live the same day we signed up. The Procore migration was painless.',
-    author: 'Owner, Mid-Size GC',
-    location: 'Las Vegas, NV',
-    size: '28 employees',
-    initials: 'TW',
+    title: 'Live in hours, not months',
+    body: 'No 3–6 month implementation and no dedicated rollout team. Sign up and get running the same day, with free migration of your Procore data.',
+    icon: 'setup',
   },
 ];
-
-function StarRating() {
-  return (
-    <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
-      {[1, 2, 3, 4, 5].map((s) => (
-        <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={C.gold}>
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-      ))}
-    </div>
-  );
-}
 
 function CheckIcon({ size = 16 }: { size?: number }) {
   return (
@@ -993,7 +975,7 @@ export default function CompareProcorePage() {
         </div>
       </div>
 
-      {/* ── TESTIMONIALS ── */}
+      {/* ── WHAT YOU GET WHEN YOU SWITCH ── */}
       <div style={{
         background: 'linear-gradient(180deg,#FBF3E4,#F7EAD4)',
         borderTop: `1px solid rgba(176,122,18,0.16)`,
@@ -1003,50 +985,42 @@ export default function CompareProcorePage() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <h2 style={{ fontSize: 'clamp(26px, 4vw, 38px)', fontWeight: 900, margin: '0 0 12px', letterSpacing: -0.6 }}>
-              GCs Who Made the Switch
+              What You Get When You Switch
             </h2>
-            <p style={{ color: C.dim, fontSize: 15, margin: 0 }}>Real results from real contractors.</p>
+            <p style={{ color: C.dim, fontSize: 15, margin: 0 }}>The practical wins of moving off Procore to Saguaro.</p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-            {TESTIMONIALS.map((t) => (
-              <div key={t.author} style={{
+            {SWITCH_VALUE.map((item) => (
+              <div key={item.title} style={{
                 background: 'rgba(255,251,242,0.6)',
                 border: `1px solid rgba(176,122,18,0.16)`,
                 borderRadius: 14,
                 padding: '28px 26px',
               }}>
-                <StarRating />
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: `linear-gradient(135deg,#E8B84B,#C98A1A)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 18,
+                }}>
+                  <CheckIcon size={20} />
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: C.text, margin: '0 0 12px', lineHeight: 1.3 }}>
+                  {item.title}
+                </h3>
                 <p style={{
                   fontSize: 14,
-                  color: C.text,
+                  color: C.dim,
                   lineHeight: 1.75,
-                  margin: '0 0 24px',
-                  fontStyle: 'italic',
+                  margin: 0,
                 }}>
-                  &quot;{t.quote}&quot;
+                  {item.body}
                 </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    background: `linear-gradient(135deg,#E8B84B,#C98A1A)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: '#2A1B06',
-                    flexShrink: 0,
-                  }}>
-                    {t.initials}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{t.author}</div>
-                    <div style={{ fontSize: 11, color: C.dim }}>{t.location} &nbsp;·&nbsp; {t.size}</div>
-                  </div>
-                </div>
               </div>
             ))}
           </div>

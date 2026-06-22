@@ -167,12 +167,12 @@ export default function SignupPage(){
             ))}
           </div>
 
-          {/* Testimonial */}
+          {/* Why teams choose Saguaro */}
           <div style={{marginTop:36,padding:'20px 24px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:12}}>
-            <p style={{fontSize:13,color:DIM,lineHeight:1.7,marginBottom:12,fontStyle:'italic'}}>
-              &quot;We compared Saguaro to Procore and Buildertrend. Saguaro has everything we need at a fraction of the cost — and the AI features actually work.&quot;
+            <div style={{fontSize:11,fontWeight:700,color:GOLD,letterSpacing:1,textTransform:'uppercase',marginBottom:8}}>Why teams choose Saguaro</div>
+            <p style={{fontSize:13,color:DIM,lineHeight:1.7,margin:0}}>
+              Everything a GC needs at a fraction of the cost of Procore or Buildertrend — AI takeoff, AIA pay apps, lien waivers in all 50 states, and a free mobile field app, in one platform.
             </p>
-            <div style={{fontSize:12,fontWeight:700,color:TEXT}}>David K. <span style={{color:DIM,fontWeight:400}}>— Owner, Mid-Size GC, Denver CO</span></div>
           </div>
         </div>
 

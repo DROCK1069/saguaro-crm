@@ -268,45 +268,36 @@ export default function IndustryLandingPage({ industry }: Props) {
         </div>
       </section>
 
-      {/* ── TESTIMONIAL ── */}
+      {/* ── BUILT FOR <INDUSTRY> ── */}
       <section style={{ padding: '84px 24px' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', textAlign: 'center' }}>
-          {/* 5 stars */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '28px' }}>
-            {[...Array(5)].map((_, i) => (
-              <svg key={i} width="20" height="20" viewBox="0 0 24 24" fill={GOLD} stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            ))}
+          <div style={{
+            display: 'inline-block',
+            padding: '5px 14px',
+            background: 'rgba(216,154,30,0.10)',
+            border: `1px solid rgba(216,154,30,0.32)`,
+            borderRadius: 100,
+            fontSize: '12px',
+            fontWeight: 700,
+            color: GOLD_DARK,
+            letterSpacing: '1.2px',
+            textTransform: 'uppercase',
+            marginBottom: '24px',
+          }}>
+            Built for {industry.name}
           </div>
 
           <blockquote style={{
-            margin: '0 0 32px',
+            margin: '0 auto',
+            maxWidth: '640px',
             padding: '4px 0 4px 28px',
             borderLeft: `4px solid ${GOLD}`,
             textAlign: 'left',
           }}>
-            <p style={{ fontSize: 'clamp(16px, 2vw, 19px)', color: TEXT, lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>
-              &ldquo;{industry.testimonialQuote}&rdquo;
+            <p style={{ fontSize: 'clamp(16px, 2vw, 19px)', color: TEXT, lineHeight: 1.7, margin: 0, fontWeight: 600 }}>
+              {industry.testimonialQuote}
             </p>
           </blockquote>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
-            {/* Avatar initials */}
-            <div style={{
-              width: '44px', height: '44px',
-              background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})`,
-              borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: '16px', color: '#2A1B06', flexShrink: 0,
-            }}>
-              {industry.testimonialName.charAt(0)}
-            </div>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, color: TEXT, fontSize: '15px' }}>{industry.testimonialName}</div>
-              <div style={{ color: DIM, fontSize: '13px' }}>{industry.testimonialTitle}</div>
-            </div>
-          </div>
         </div>
       </section>
 

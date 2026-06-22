@@ -320,6 +320,17 @@ export default function TakeoffPage() {
     ? Math.round(completed.reduce((s, t) => s + (t.confidence || 0), 0) / completed.length)
     : 0;
   const totalBidValue = completed.reduce((s, t) => s + (t.total_cost || 0), 0);
+  // Real avg processing time: analyzed_at - created_at across completed takeoffs that have both.
+  const timed = completed.filter(t => t.created_at && t.analyzed_at);
+  const avgProcessingSec = timed.length
+    ? Math.round(timed.reduce((s, t) => {
+        const secs = (new Date(t.analyzed_at).getTime() - new Date(t.created_at).getTime()) / 1000;
+        return s + (secs > 0 && secs < 3600 ? secs : 0);
+      }, 0) / timed.length)
+    : 0;
+  const avgProcessingStr = avgProcessingSec >= 60
+    ? `${Math.floor(avgProcessingSec / 60)}m ${avgProcessingSec % 60}s`
+    : `${avgProcessingSec}s`;
   const totalBidStr = totalBidValue >= 1_000_000
     ? `$${(totalBidValue / 1_000_000).toFixed(1)}M`
     : totalBidValue >= 1000
@@ -347,7 +358,7 @@ export default function TakeoffPage() {
           <StatCard icon="📋" label="This Month" value={String(thisMonthComplete.length)} sub="completed takeoffs" />
           <StatCard icon="🎯" label="Avg Confidence" value={completed.length ? `${avgConfidence}%` : '—'} sub="across all analyses" />
           <StatCard icon="💰" label="Total Bid Value" value={completed.length ? totalBidStr : '—'} sub="sum of complete takeoffs" />
-          <StatCard icon="⚡" label="Avg Processing" value="~47s" sub="per blueprint analysis" />
+          <StatCard icon="⚡" label="Avg Processing" value={timed.length ? avgProcessingStr : '—'} sub="per blueprint analysis" />
         </div>
 
         {/* Main 2-col layout */}
