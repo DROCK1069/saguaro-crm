@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '../../../../../components/Toast';
 import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning, Ruler, Robot } from '@phosphor-icons/react';
 
@@ -77,6 +77,7 @@ const BORDER = 'rgba(255,255,255,0.05)';
 
 export default function TakeoffPage() {
   const { projectId } = useParams() as { projectId: string };
+  const router = useRouter();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -420,6 +421,25 @@ export default function TakeoffPage() {
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Export failed', 'error');
     } finally {
+      setGenerating(null);
+    }
+  };
+
+  // ── Bridge AI takeoff → editable Estimate Workspace ──
+  const handleOpenInEstimate = async () => {
+    if (!takeoffId) return;
+    setGenerating('estimate');
+    try {
+      const res = await fetch(`/api/takeoff/${takeoffId}/to-estimate`, { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error || 'Failed to open in estimate workspace');
+      }
+      const { takeoffProjectId } = await res.json();
+      if (!takeoffProjectId) throw new Error('No estimate returned');
+      router.push(`/app/projects/${projectId}/takeoff/estimate?tp=${takeoffProjectId}`);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to open in estimate workspace', 'error');
       setGenerating(null);
     }
   };
@@ -1136,6 +1156,10 @@ export default function TakeoffPage() {
           <button onClick={exportXLS} disabled={!!generating}
             style={{ padding: '11px 22px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: '#22C55E', fontWeight: 600, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'xls') ? 0.5 : 1 }}>
             {generating === 'xls' ? 'Generating...' : <><FileXls size={16} weight="duotone" color="#22C55E" style={{marginRight:4, verticalAlign:'middle'}} /> Export Excel</>}
+          </button>
+          <button onClick={handleOpenInEstimate} disabled={!!generating || !takeoffId}
+            style={{ padding: '11px 22px', background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.35)', borderRadius: 8, color: '#60A5FA', fontWeight: 600, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'estimate') ? 0.5 : 1 }}>
+            {generating === 'estimate' ? 'Opening...' : <><Table size={16} weight="duotone" color="#60A5FA" style={{marginRight:4, verticalAlign:'middle'}} /> Open in Estimate Workspace <ArrowRight size={14} weight="bold" color="#60A5FA" style={{marginLeft:2, verticalAlign:'middle'}} /></>}
           </button>
         </div>
         {/* Secondary actions */}

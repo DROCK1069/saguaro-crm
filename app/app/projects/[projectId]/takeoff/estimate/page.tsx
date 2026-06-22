@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useDragReorder } from '../../../../../../components/DragHandle';
 import BulkActionBar from '../../../../../../components/BulkActionBar';
 import PresenceIndicator from '../../../../../../components/PresenceIndicator';
@@ -39,6 +39,10 @@ interface Sheet {
   discipline: string;
   sheet_number: string;
   thumbnail_url: string | null;
+  file_url: string | null;
+  page_number: number | null;
+  width_px: number | null;
+  height_px: number | null;
 }
 
 interface LineItem {
@@ -118,6 +122,9 @@ const emptyLineItem: Omit<LineItem, 'id' | 'takeoff_project_id'> = {
 
 function EstimatePage() {
   const { projectId } = useParams() as { projectId: string };
+  const searchParams = useSearchParams();
+  // Optional ?tp= — preselect this takeoff_project (e.g. from the AI takeoff bridge).
+  const preselectTpId = searchParams.get('tp');
 
   const [project, setProject] = useState<Project | null>(null);
   const [takeoffProjects, setTakeoffProjects] = useState<TakeoffProject[]>([]);
@@ -141,7 +148,10 @@ function EstimatePage() {
   const [profit, setProfit] = useState(0);
   const [contingency, setContingency] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [uploadingSheet, setUploadingSheet] = useState(false);
   const editRef = useRef<HTMLInputElement>(null);
+  const sheetFileRef = useRef<HTMLInputElement>(null);
 
   // Fetch project info
   useEffect(() => {
@@ -156,15 +166,20 @@ function EstimatePage() {
     fetch(`/api/takeoff-projects/list?project_id=${projectId}`)
       .then(r => r.json())
       .then(d => {
-        const list = d.takeoffProjects || d || [];
+        const list: TakeoffProject[] = d.takeoffProjects || d || [];
         setTakeoffProjects(list);
         if (list.length > 0 && !selectedTakeoff) {
-          selectTakeoff(list[0]);
+          // Preselect the takeoff_project from ?tp= if it exists in the list,
+          // otherwise fall back to the most recent (first) one.
+          const preselect = preselectTpId
+            ? list.find((tp) => tp.id === preselectTpId)
+            : undefined;
+          selectTakeoff(preselect || list[0]);
         }
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, preselectTpId]);
 
   useEffect(() => { loadTakeoffProjects(); }, [loadTakeoffProjects]);
 
@@ -211,6 +226,7 @@ function EstimatePage() {
   const selectSheet = (s: Sheet) => {
     setSelectedSheet(s);
     setSelectedItem(null);
+    setZoom(1);
     loadLineItems(s.id);
   };
 
@@ -252,6 +268,37 @@ function EstimatePage() {
     setNewSheetName('');
     setNewSheetDiscipline('General');
     selectSheet(s);
+  };
+
+  // Upload a plan (PDF or image) to an existing sheet.
+  const uploadSheetFile = async (file: File) => {
+    if (!selectedTakeoff || !selectedSheet) return;
+    setUploadingSheet(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(
+        `/api/takeoff-projects/${selectedTakeoff.id}/sheets/${selectedSheet.id}/upload`,
+        { method: 'POST', body: fd },
+      );
+      const d = await res.json();
+      if (!res.ok || !d.sheet) throw new Error(d.error || 'Upload failed');
+      const updated = d.sheet as Sheet;
+      setSheets(prev => prev.map(s => (s.id === updated.id ? { ...s, ...updated } : s)));
+      setSelectedSheet(prev => (prev && prev.id === updated.id ? { ...prev, ...updated } : prev));
+      setZoom(1);
+    } catch (err) {
+      console.error('[uploadSheetFile]', err);
+      alert(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingSheet(false);
+    }
+  };
+
+  const onSheetFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) uploadSheetFile(f);
+    e.target.value = '';
   };
 
   // Inline edit save
@@ -538,14 +585,90 @@ function EstimatePage() {
             </div>
           ) : (
             <>
-              {/* Sheet Viewer Placeholder */}
+              {/* Sheet Viewer */}
+              <input
+                ref={sheetFileRef}
+                type="file"
+                accept="application/pdf,image/*"
+                style={{ display: 'none' }}
+                onChange={onSheetFileChange}
+              />
               <div style={{
-                height: 260, background: RAISED, borderBottom: `1px solid ${BORDER}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8,
+                height: 340, background: RAISED, borderBottom: `1px solid ${BORDER}`,
+                display: 'flex', flexDirection: 'column', position: 'relative',
               }}>
-                <div style={{ fontSize: 14, color: DIM }}>Sheet Viewer</div>
-                <div style={{ fontSize: 18, fontWeight: 600, color: TEXT }}>{selectedSheet.name}</div>
-                <div style={{ fontSize: 12, color: DIM }}>PDF viewer will be rendered here</div>
+                {/* Viewer toolbar */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
+                  borderBottom: `1px solid ${BORDER}`,
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{selectedSheet.name}</span>
+                  <div style={{ flex: 1 }} />
+                  {selectedSheet.file_url && (
+                    <>
+                      <button
+                        onClick={() => setZoom(z => Math.max(0.25, +(z - 0.25).toFixed(2)))}
+                        title="Zoom out"
+                        style={{ background: DARK, color: TEXT, border: `1px solid ${BORDER}`, borderRadius: 4, width: 26, height: 26, fontSize: 14, cursor: 'pointer' }}
+                      >&minus;</button>
+                      <span style={{ fontSize: 11, color: DIM, minWidth: 38, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+                      <button
+                        onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))}
+                        title="Zoom in"
+                        style={{ background: DARK, color: TEXT, border: `1px solid ${BORDER}`, borderRadius: 4, width: 26, height: 26, fontSize: 14, cursor: 'pointer' }}
+                      >+</button>
+                      <button
+                        onClick={() => setZoom(1)}
+                        title="Fit"
+                        style={{ background: DARK, color: TEXT, border: `1px solid ${BORDER}`, borderRadius: 4, padding: '0 10px', height: 26, fontSize: 11, cursor: 'pointer' }}
+                      >Fit</button>
+                      <button
+                        onClick={() => sheetFileRef.current?.click()}
+                        disabled={uploadingSheet}
+                        style={{ background: GOLD, color: '#000', border: 'none', borderRadius: 4, padding: '0 12px', height: 26, fontSize: 11, fontWeight: 600, cursor: uploadingSheet ? 'default' : 'pointer', opacity: uploadingSheet ? 0.6 : 1 }}
+                      >Replace</button>
+                    </>
+                  )}
+                </div>
+
+                {/* Viewer body */}
+                {uploadingSheet ? (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+                    <div style={{
+                      width: 32, height: 32, border: `3px solid ${BORDER}`, borderTopColor: GOLD,
+                      borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+                    }} />
+                    <div style={{ fontSize: 12, color: DIM }}>Uploading plan&hellip;</div>
+                    <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+                  </div>
+                ) : selectedSheet.file_url ? (
+                  <div
+                    style={{ flex: 1, overflow: 'auto', position: 'relative', background: DARK }}
+                    onWheel={(e) => {
+                      if (!e.ctrlKey && !e.metaKey) return;
+                      e.preventDefault();
+                      setZoom(z => Math.min(4, Math.max(0.25, +(z - Math.sign(e.deltaY) * 0.1).toFixed(2))));
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedSheet.file_url}
+                      alt={selectedSheet.name}
+                      style={{ display: 'block', width: `${zoom * 100}%`, height: 'auto', maxWidth: 'none' }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ fontSize: 40, opacity: 0.15 }}>&#128196;</div>
+                    <div style={{ fontSize: 13, color: DIM }}>No plan uploaded for this sheet</div>
+                    <button
+                      onClick={() => sheetFileRef.current?.click()}
+                      style={{ background: GOLD, color: '#000', border: 'none', borderRadius: 4, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Upload plan (PDF or photo)
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Line Items Table */}

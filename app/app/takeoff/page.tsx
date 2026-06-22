@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   PageWrap, SectionHeader, StatCard, Badge, Btn,
   Card, CardHeader, CardBody, Table, ProgressBar, T,
@@ -116,8 +117,10 @@ const STEPS = [
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TakeoffPage() {
+  const router = useRouter();
   const [takeoffs, setTakeoffs] = useState<Takeoff[]>([]);
   const [selectedTakeoff, setSelectedTakeoff] = useState<Takeoff | null>(null);
+  const [openingEstimate, setOpeningEstimate] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -179,6 +182,24 @@ export default function TakeoffPage() {
     loadTakeoffs();
     loadProjects();
   }, [loadTakeoffs]);
+
+  // ── Bridge AI takeoff → editable Estimate Workspace ─────────────────────────
+  async function handleOpenInEstimate() {
+    if (!selectedTakeoff) return;
+    setOpeningEstimate(true);
+    try {
+      const res = await fetch(`/api/takeoff/${selectedTakeoff.id}/to-estimate`, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((json as { error?: string }).error || 'Failed to open in estimate workspace');
+      const takeoffProjectId = (json as { takeoffProjectId?: string }).takeoffProjectId;
+      if (!takeoffProjectId) throw new Error('No estimate returned');
+      router.push(`/app/projects/${selectedTakeoff.project_id}/takeoff/estimate?tp=${takeoffProjectId}`);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to open in estimate workspace');
+      setPhase('error');
+      setOpeningEstimate(false);
+    }
+  }
 
   // ── File handling ─────────────────────────────────────────────────────────
   function handleFile(file: File) {
@@ -643,7 +664,17 @@ export default function TakeoffPage() {
                         >
                           Export CSV
                         </Btn>
-                        <Btn variant="primary" size="sm" onClick={resetUpload}>
+                        {selectedTakeoff.status === 'complete' && (
+                          <Btn
+                            variant="primary"
+                            size="sm"
+                            onClick={handleOpenInEstimate}
+                            disabled={openingEstimate}
+                          >
+                            {openingEstimate ? 'Opening…' : 'Open in Estimate Workspace →'}
+                          </Btn>
+                        )}
+                        <Btn variant="ghost" size="sm" onClick={resetUpload}>
                           New Analysis
                         </Btn>
                       </div>
