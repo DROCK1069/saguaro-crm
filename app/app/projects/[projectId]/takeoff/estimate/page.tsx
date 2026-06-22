@@ -472,9 +472,9 @@ function EstimatePage() {
       </div>
 
       {/* BODY */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="est-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* LEFT SIDEBAR */}
-        <div style={{ width: 300, borderRight: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="est-sidebar" style={{ width: 300, borderRight: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Sheets */}
           <div style={{ padding: '12px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, color: DIM }}>Sheets</span>
@@ -511,6 +511,8 @@ function EstimatePage() {
             {sheets.map(s => (
               <div
                 key={s.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => selectSheet(s)}
                 style={{
                   padding: '10px 16px',
@@ -558,6 +560,8 @@ function EstimatePage() {
                 {assemblies.map(a => (
                   <div
                     key={a.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => applyAssembly(a)}
                     style={{
                       padding: '8px 16px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}`,
@@ -577,7 +581,7 @@ function EstimatePage() {
         </div>
 
         {/* MAIN AREA */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="est-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {!selectedSheet ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
               <div style={{ fontSize: 48, opacity: 0.15 }}>&#128196;</div>
@@ -801,7 +805,7 @@ function EstimatePage() {
 
         {/* RIGHT PANEL */}
         {rightOpen && selectedItem && detailDraft && (
-          <div style={{ width: 280, borderLeft: `1px solid ${BORDER}`, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div className="est-detail" style={{ width: 280, borderLeft: `1px solid ${BORDER}`, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '12px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, color: DIM }}>Item Details</span>
               <button onClick={() => setRightOpen(false)} style={{ background: 'transparent', color: DIM, border: 'none', cursor: 'pointer', fontSize: 18 }}>&#10005;</button>
@@ -919,6 +923,34 @@ function EstimatePage() {
           </button>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .est-body { flex-direction: column !important; }
+          .est-sidebar {
+            width: 100% !important;
+            border-right: none !important;
+            border-bottom: 1px solid ${BORDER};
+            max-height: 160px;
+            overflow-y: auto !important;
+            flex-shrink: 0;
+          }
+          .est-main { min-height: 260px; }
+          .est-detail {
+            width: 100% !important;
+            border-left: none !important;
+            border-top: 1px solid ${BORDER};
+            position: fixed !important;
+            bottom: 0; left: 0; right: 0;
+            max-height: 55vh;
+            overflow-y: auto !important;
+            z-index: 100;
+            background: ${RAISED};
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+            border-radius: 16px 16px 0 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
