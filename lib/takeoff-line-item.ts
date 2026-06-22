@@ -17,25 +17,22 @@ const num = (v: unknown): number => {
   return isNaN(n) ? 0 : n;
 };
 
-// UI alias -> real column on takeoff_line_items
-const COST_ALIASES: Record<string, string> = {
-  unit_cost: 'unit_material_cost',
-  material_cost: 'total_material',
-  labor_cost: 'total_labor',
-  equipment_cost: 'total_equipment',
-};
-
 // Direct UI fields that map 1:1 onto real columns
 const DIRECT_FIELDS = [
   'description', 'csi_code', 'csi_division', 'csi_description',
   'category', 'quantity', 'unit', 'notes', 'sort_order',
 ];
 
-// UI fields with no dedicated column — persisted in metadata jsonb
+// UI fields with no dedicated column — persisted in metadata jsonb.
+// NOTE: material_cost/labor_cost/equipment_cost/extended_cost are EXTENDED
+// totals in the UI; total_material/total_labor/total_equipment/total_sub are
+// GENERATED columns in the DB (qty * unit_*), so we never write them — we
+// write the unit_* columns and let the DB compute the totals, and we also
+// stash the raw UI values in metadata for an exact reload round-trip.
 const META_FIELDS = [
   'sheet_id', 'assembly_id', 'cost_code_id', 'measurement_type', 'markup_pct',
   'extended_cost', 'labor_hours', 'crew_size', 'duration', 'division',
-  'subcontractor',
+  'subcontractor', 'material_cost', 'labor_cost', 'equipment_cost', 'unit_cost',
 ];
 
 /**
@@ -51,9 +48,15 @@ export function lineItemWriteFields(body: Record<string, any>): {
   for (const k of DIRECT_FIELDS) {
     if (body[k] !== undefined) fields[k] = body[k];
   }
-  for (const [alias, col] of Object.entries(COST_ALIASES)) {
-    if (body[alias] !== undefined) fields[col] = body[alias];
-  }
+  // Write only WRITABLE unit_* columns; the DB computes total_* (generated).
+  const qty = num(body.quantity);
+  if (body.unit_cost !== undefined) fields.unit_material_cost = num(body.unit_cost);
+  else if (body.material_cost !== undefined && qty > 0) fields.unit_material_cost = num(body.material_cost) / qty;
+  // UI labor_cost/equipment_cost are extended totals -> store as per-unit so the
+  // generated total_labor/total_equipment (qty * unit) match the entered amount.
+  if (body.labor_cost !== undefined) fields.unit_labor_cost = qty > 0 ? num(body.labor_cost) / qty : num(body.labor_cost);
+  if (body.equipment_cost !== undefined) fields.unit_equipment_cost = qty > 0 ? num(body.equipment_cost) / qty : num(body.equipment_cost);
+
   const metaPatch: Record<string, any> = {};
   for (const k of META_FIELDS) {
     if (body[k] !== undefined) metaPatch[k] = body[k];
@@ -71,9 +74,11 @@ export function normalizeLineItem(row: Record<string, any>): Record<string, any>
 
   const unit_cost = num(row.unit_material_cost ?? meta.unit_cost);
   const quantity = num(row.quantity);
-  const material_cost = num(row.total_material ?? meta.material_cost);
-  const labor_cost = num(row.total_labor ?? meta.labor_cost);
-  const equipment_cost = num(row.total_equipment ?? meta.equipment_cost);
+  // Prefer the raw UI values stashed in metadata (exact round-trip); fall back
+  // to the DB's generated total_* columns (qty * unit_*).
+  const material_cost = num(meta.material_cost ?? row.total_material);
+  const labor_cost = num(meta.labor_cost ?? row.total_labor);
+  const equipment_cost = num(meta.equipment_cost ?? row.total_equipment);
   const extended_cost = num(meta.extended_cost) || (quantity * unit_cost);
 
   return {

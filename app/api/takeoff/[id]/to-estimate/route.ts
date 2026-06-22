@@ -95,12 +95,11 @@ export async function POST(
       quantity: m.quantity,
       unit: m.unit,
       unit_material_cost: m.unit_cost,
-      total_material: m.total_cost,
       unit_labor_cost: m.labor_unit_cost || 0,
-      total_labor: m.total_labor_cost || 0,
       sort_order: m.sort_order || 0,
       category: m.csi_division,
-      metadata: { source_material_id: m.id },
+      // total_material / total_labor are GENERATED columns (qty * unit) — never written.
+      metadata: { source_material_id: m.id, material_cost: m.total_cost, labor_cost: m.total_labor_cost || 0 },
     }));
 
     // 5. Bulk insert in batches.
