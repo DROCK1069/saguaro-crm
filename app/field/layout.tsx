@@ -57,6 +57,7 @@ const MENU: { group: string; items: { href: string; label: string }[] }[] = [
     { href: '/field/submittals', label: 'Submittals' },
     { href: '/field/docs',       label: 'Documents' },
     { href: '/field/inspect',    label: 'Inspections' },
+    { href: '/field/takeoff',    label: 'AI Takeoff' },
   ] },
   { group: 'Coordination', items: [
     { href: '/field/schedule',      label: 'Schedule' },

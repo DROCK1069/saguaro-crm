@@ -15,14 +15,15 @@ export async function GET(
       .from('takeoff_line_items')
       .select('*')
       .eq('id', itemId)
-      .eq('takeoff_project_id', id)
+      .eq('takeoff_id', id)
       .eq('tenant_id', user.tenantId)
       .single();
 
     if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     return NextResponse.json({ lineItem: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/line-items/[itemId]] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -75,7 +76,7 @@ export async function PATCH(
         .from('takeoff_line_items')
         .select('metadata')
         .eq('id', itemId)
-        .eq('takeoff_project_id', id)
+        .eq('takeoff_id', id)
         .eq('tenant_id', user.tenantId)
         .single();
       fields.metadata = { ...((current?.metadata as Record<string, any>) || {}), ...metaPatch };
@@ -85,7 +86,7 @@ export async function PATCH(
       .from('takeoff_line_items')
       .update(fields)
       .eq('id', itemId)
-      .eq('takeoff_project_id', id)
+      .eq('takeoff_id', id)
       .eq('tenant_id', user.tenantId)
       .select()
       .single();
@@ -93,7 +94,8 @@ export async function PATCH(
     if (error) throw error;
 
     return NextResponse.json({ lineItem: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/line-items/[itemId]] PATCH', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -112,13 +114,14 @@ export async function DELETE(
       .from('takeoff_line_items')
       .delete()
       .eq('id', itemId)
-      .eq('takeoff_project_id', id)
+      .eq('takeoff_id', id)
       .eq('tenant_id', user.tenantId);
 
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/line-items/[itemId]] DELETE', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

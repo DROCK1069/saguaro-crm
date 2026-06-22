@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 import { processBlueprint } from '@/lib/blueprint-processor';
 
 export const runtime = 'nodejs';
@@ -155,12 +155,28 @@ interface TakeoffResult {
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const encoder = new TextEncoder();
   const supabase = createServerClient();
   const { id: takeoffId } = await params;
+
+  // ── AUTH + TENANT GATE (before opening the SSE stream) ──────────────────────
+  // EventSource sends cookies same-origin, so getUser(req) works here.
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
+  // Verify the takeoff belongs to the caller's tenant before doing any work.
+  const { data: ownerCheck } = await supabase
+    .from('takeoffs')
+    .select('tenant_id')
+    .eq('id', takeoffId)
+    .single();
+
+  if (!ownerCheck || ownerCheck.tenant_id !== user.tenantId) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
 
   const stream = new ReadableStream({
     async start(controller) {

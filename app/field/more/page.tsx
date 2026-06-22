@@ -150,7 +150,7 @@ function MorePage(){
   const DESKTOP=[
     {icon:'folder',label:'All Projects',href:'/app/projects'},{icon:'dollar',label:'Bids',href:'/app/bids'},
     {icon:'document',label:'Documents',href:'/app/documents'},{icon:'chart',label:'Reports',href:'/app/reports'},
-    {icon:'sparkle',label:'AI Autopilot',href:'/app/autopilot'},{icon:'plan',label:'AI Takeoff',href:'/app/takeoff'},
+    {icon:'sparkle',label:'AI Autopilot',href:'/app/autopilot'},{icon:'plan',label:'AI Takeoff',href:'/field/takeoff'},
   ];
 
   return(

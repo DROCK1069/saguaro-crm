@@ -1,9 +1,11 @@
-import { NextRequest } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 import { ok, badRequest, serverError } from '@/lib/api-response';
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     const supabase = createServerClient();
     const { projectId } = await req.json();
     if (!projectId) return badRequest('projectId required');
@@ -21,6 +23,7 @@ export async function POST(req: NextRequest) {
       .from('takeoffs')
       .insert({
         project_id: projectId,
+        tenant_id: user.tenantId,
         status: 'pending',
         name: `Takeoff ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
       })

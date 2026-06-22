@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 import { getPdfPageCount, generateThumbnail } from '@/lib/blueprint-processor';
 
 export const runtime = 'nodejs';
@@ -26,6 +26,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     const supabase = createServerClient();
     const { id: takeoffId } = await params;
 
@@ -58,14 +60,20 @@ export async function POST(
       );
     }
 
-    // Get takeoff to find project_id
+    // Get takeoff to find project_id, and verify tenant ownership.
     const { data: takeoff } = await supabase
       .from('takeoffs')
-      .select('project_id')
+      .select('project_id, tenant_id')
       .eq('id', takeoffId)
       .single();
 
     if (!takeoff) {
+      return NextResponse.json({ error: 'Takeoff not found' }, { status: 404 });
+    }
+
+    // Tenant scoping: only the owning tenant may upload. Legacy rows with a
+    // null tenant_id are claimed by the uploader's tenant during the update below.
+    if (takeoff.tenant_id && takeoff.tenant_id !== user.tenantId) {
       return NextResponse.json({ error: 'Takeoff not found' }, { status: 404 });
     }
 
@@ -126,6 +134,11 @@ export async function POST(
       file_size: file.size,
       status: 'uploaded',
     };
+
+    // Claim legacy rows (null tenant_id) for the uploader's tenant.
+    if (!takeoff.tenant_id) {
+      updatePayload.tenant_id = user.tenantId;
+    }
 
     if (pageCount > 0) {
       updatePayload.page_count = pageCount;

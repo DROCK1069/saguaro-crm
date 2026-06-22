@@ -1,11 +1,13 @@
-import { NextRequest } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 import { ok, serverError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     const supabase = createServerClient();
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId');
@@ -15,6 +17,7 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from('takeoffs')
       .select('*')
+      .eq('tenant_id', user.tenantId)
       .order('created_at', { ascending: false })
       .limit(limit);
 

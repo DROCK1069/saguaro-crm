@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 import * as XLSX from 'xlsx';
 
 export const runtime = 'nodejs';
@@ -18,17 +18,21 @@ const CSI_DIVISION_NAMES: Record<string, string> = {
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+
   const { id: takeoffId } = await params;
   const supabase = createServerClient();
 
-  // 1. Load takeoff summary
+  // 1. Load takeoff summary (scoped to caller's tenant)
   const { data: takeoff, error: tErr } = await supabase
     .from('takeoffs')
     .select('*')
     .eq('id', takeoffId)
+    .eq('tenant_id', user.tenantId)
     .single();
 
   if (tErr || !takeoff) {

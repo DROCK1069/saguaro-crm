@@ -15,20 +15,23 @@ export async function GET(
 
   try {
     const db = createServerClient();
-    let query = db
+    const query = db
       .from('takeoff_line_items')
       .select('*')
-      .eq('takeoff_project_id', id)
+      .eq('takeoff_id', id)
       .eq('tenant_id', user.tenantId)
       .order('sort_order', { ascending: true });
 
-    if (sheetId) query = query.eq('sheet_id', sheetId);
+    // Line items are not directly tied to a sheet (no sheet_id column on
+    // takeoff_line_items), so a sheet_id query param is intentionally ignored.
+    void sheetId;
 
     const { data, error } = await query;
     if (error) throw error;
 
     return NextResponse.json({ lineItems: data || [] });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/line-items] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -94,7 +97,8 @@ export async function POST(
     if (error) throw error;
 
     return NextResponse.json({ lineItem: data }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/line-items] POST', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,20 +1,23 @@
-import { NextRequest } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
 import { ok, notFound, serverError } from '@/lib/api-response';
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     const supabase = createServerClient();
     const { id } = await params;
 
-    // Query takeoff without FK join to avoid PGRST200 errors
+    // Query takeoff without FK join to avoid PGRST200 errors. Scope to tenant.
     const { data: takeoff, error: takeoffErr } = await supabase
       .from('takeoffs')
       .select('*')
       .eq('id', id)
+      .eq('tenant_id', user.tenantId)
       .single();
 
     if (takeoffErr || !takeoff) {

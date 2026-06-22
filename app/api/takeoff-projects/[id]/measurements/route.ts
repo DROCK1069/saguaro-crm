@@ -21,7 +21,7 @@ export async function GET(
     const { data: lineItems, error: liError } = await db
       .from('takeoff_line_items')
       .select('id')
-      .eq('takeoff_project_id', id)
+      .eq('takeoff_id', id)
       .eq('tenant_id', user.tenantId);
 
     if (liError) throw liError;
@@ -45,7 +45,8 @@ export async function GET(
     if (error) throw error;
 
     return NextResponse.json({ measurements: data || [] });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/measurements] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -75,7 +76,7 @@ export async function POST(
       .from('takeoff_line_items')
       .select('id')
       .eq('id', line_item_id)
-      .eq('takeoff_project_id', id)
+      .eq('takeoff_id', id)
       .eq('tenant_id', user.tenantId)
       .single();
 
@@ -104,7 +105,8 @@ export async function POST(
     if (error) throw error;
 
     return NextResponse.json({ measurement: data }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]/measurements] POST', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

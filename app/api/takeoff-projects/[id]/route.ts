@@ -28,7 +28,7 @@ export async function GET(
       db
         .from('takeoff_line_items')
         .select('*, takeoff_assemblies(*)')
-        .eq('takeoff_project_id', id)
+        .eq('takeoff_id', id)
         .eq('tenant_id', user.tenantId)
         .order('sort_order', { ascending: true }),
     ]);
@@ -44,7 +44,8 @@ export async function GET(
       sheets: sheetsRes.data || [],
       lineItems: lineItemsRes.data || [],
     });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]] GET', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -82,7 +83,8 @@ export async function PATCH(
     if (error) throw error;
 
     return NextResponse.json({ takeoffProject: data });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]] PATCH', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -106,7 +108,8 @@ export async function DELETE(
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[takeoff-projects/[id]] DELETE', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/takeoff-projects/[id]/export/excel
  *
  * Exports a takeoff project's line-item estimate as an .xlsx workbook.
- * Reads takeoff_projects (by id) + takeoff_line_items (by takeoff_project_id),
+ * Reads takeoff_projects (by id) + takeoff_line_items (by takeoff_id),
  * tenant-scoped, matching the sibling routes in this folder. Reuses the shared
  * XLSX builder in lib/report-export.ts (same engine as the report export).
  * Property access is defensive across the two line-item column spellings used
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       db
         .from('takeoff_line_items')
         .select('*')
-        .eq('takeoff_project_id', id)
+        .eq('takeoff_id', id)
         .eq('tenant_id', user.tenantId)
         .order('sort_order', { ascending: true }),
     ]);
