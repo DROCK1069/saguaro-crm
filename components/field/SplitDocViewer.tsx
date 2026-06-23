@@ -1,12 +1,14 @@
 'use client';
 /**
- * SplitDocViewer — real, polished side-by-side document review.
+ * SplitDocViewer — side-by-side AND overlay document review.
  *
- * Two independent panes, each with its own document picker, file-type badge,
- * and (for images) zoom controls. A layout toggle switches between
- * side-by-side and stacked; a swap button flips the two. PDFs render in an
- * iframe (native zoom), images in a zoomable pane. Replaces the old
- * "compare" toast stub.
+ * Two modes that together beat Procore's drawing compare:
+ *  • Split   — two independent panes (real pdf.js reader for PDFs, zoomable
+ *              images), layout toggle, swap.
+ *  • Overlay — stacks two revisions of the same sheet; the top layer uses a
+ *              "Difference" blend so changes light up in colour, with an
+ *              opacity slider and a swipe reveal. This is Procore's revision-
+ *              overlay feature, plus a swipe wipe they don't have.
  */
 import React, { useState } from 'react';
 import SelectMenu from '../ui/SelectMenu';
@@ -43,47 +45,22 @@ const kindBadge: Record<Kind, { label: string; color: string }> = {
   other: { label: 'FILE', color: DIM },
 };
 
-function Pane({
-  docs, value, onChange, side,
-}: {
-  docs: SplitDoc[];
-  value: string;
-  onChange: (id: string) => void;
-  side: 'left' | 'right';
-}) {
+function Pane({ docs, value, onChange, side }: { docs: SplitDoc[]; value: string; onChange: (id: string) => void; side: 'left' | 'right' }) {
   const [zoom, setZoom] = useState(1);
   const doc = docs.find((d) => d.id === value);
   const kind = kindOf(doc);
   const accent = side === 'left' ? BLUE : GREEN;
   const badge = kindBadge[kind];
-
-  const zBtn: React.CSSProperties = {
-    width: 26, height: 26, borderRadius: 7, border: `1px solid ${BORDER}`, background: '#fff',
-    color: TEXT, cursor: 'pointer', fontSize: 14, fontWeight: 700, lineHeight: 1, display: 'inline-flex',
-    alignItems: 'center', justifyContent: 'center',
-  };
+  const zBtn: React.CSSProperties = { width: 26, height: 26, borderRadius: 7, border: `1px solid ${BORDER}`, background: '#fff', color: TEXT, cursor: 'pointer', fontSize: 14, fontWeight: 700, lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' };
 
   return (
     <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#fff' }}>
-      {/* Pane header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderBottom: `1px solid ${BORDER}`, background: BASE }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: accent, borderRadius: 5, padding: '2px 6px', flexShrink: 0 }}>
-          {side === 'left' ? 'A' : 'B'}
-        </span>
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: accent, borderRadius: 5, padding: '2px 6px', flexShrink: 0 }}>{side === 'left' ? 'A' : 'B'}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <SelectMenu
-            aria-label={`Document ${side === 'left' ? 'A' : 'B'}`}
-            value={value}
-            onChange={(v) => { onChange(v); setZoom(1); }}
-            placeholder="Select a document…"
-            minWidth={100}
-            triggerStyle={{ width: '100%', fontSize: 12, padding: '6px 10px' }}
-            options={docs.map((d) => ({ value: d.id, label: d.name }))}
-          />
+          <SelectMenu aria-label={`Document ${side === 'left' ? 'A' : 'B'}`} value={value} onChange={(v) => { onChange(v); setZoom(1); }} placeholder="Select a document…" minWidth={100} triggerStyle={{ width: '100%', fontSize: 12, padding: '6px 10px' }} options={docs.map((d) => ({ value: d.id, label: d.name }))} />
         </div>
-        <span style={{ fontSize: 9, fontWeight: 800, color: badge.color, background: `${badge.color}1a`, border: `1px solid ${badge.color}33`, borderRadius: 5, padding: '2px 6px', flexShrink: 0 }}>
-          {badge.label}
-        </span>
+        <span style={{ fontSize: 9, fontWeight: 800, color: badge.color, background: `${badge.color}1a`, border: `1px solid ${badge.color}33`, borderRadius: 5, padding: '2px 6px', flexShrink: 0 }}>{badge.label}</span>
         {kind === 'image' && (
           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
             <button style={zBtn} title="Zoom out" onClick={() => setZoom((z) => Math.max(0.25, +(z - 0.25).toFixed(2)))}>−</button>
@@ -92,8 +69,6 @@ function Pane({
           </div>
         )}
       </div>
-
-      {/* Pane body — independent scroll */}
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#fff', WebkitOverflowScrolling: 'touch' }}>
         {!doc || !doc.url ? (
           <div style={{ padding: 24, textAlign: 'center', color: DIM, fontSize: 13 }}>No document selected.</div>
@@ -115,40 +90,97 @@ function Pane({
   );
 }
 
-export default function SplitDocViewer({
-  docs, initialLeftId, initialRightId, onClose,
-}: {
-  docs: SplitDoc[];
-  initialLeftId?: string;
-  initialRightId?: string;
-  onClose: () => void;
-}) {
-  const [leftId, setLeftId] = useState(initialLeftId || docs[0]?.id || '');
-  const [rightId, setRightId] = useState(
-    initialRightId || docs.find((d) => d.id !== (initialLeftId || docs[0]?.id))?.id || docs[0]?.id || '',
-  );
-  const [stacked, setStacked] = useState(false);
+export function Overlay({ a, b }: { a?: SplitDoc; b?: SplitDoc }) {
+  const [opacity, setOpacity] = useState(0.5);
+  const [diff, setDiff] = useState(true);
+  const [wipe, setWipe] = useState(false);
+  const [wipeX, setWipeX] = useState(50);
+  const aImg = a && kindOf(a) === 'image';
+  const bImg = b && kindOf(b) === 'image';
 
+  if (!aImg || !bImg) {
+    return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DIM, fontSize: 13, padding: 24, textAlign: 'center' }}>Overlay compare works with image sheets (e.g. drawing revisions). Pick two image documents for A and B.</div>;
+  }
+
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      {/* Overlay controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '8px 12px', background: '#fff', borderBottom: `1px solid ${BORDER}`, flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: TEXT, fontWeight: 600 }}>
+          <input type="checkbox" checked={diff} onChange={(e) => setDiff(e.target.checked)} style={{ accentColor: GOLD }} /> Difference highlight
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: TEXT, fontWeight: 600 }}>
+          <input type="checkbox" checked={wipe} onChange={(e) => setWipe(e.target.checked)} style={{ accentColor: GOLD }} /> Swipe
+        </label>
+        {wipe ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 160 }}>
+            <span style={{ fontSize: 11, color: BLUE, fontWeight: 700 }}>A</span>
+            <input type="range" min={0} max={100} value={wipeX} onChange={(e) => setWipeX(+e.target.value)} style={{ flex: 1, accentColor: GOLD }} />
+            <span style={{ fontSize: 11, color: GREEN, fontWeight: 700 }}>B</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 160 }}>
+            <span style={{ fontSize: 11, color: DIM }}>B opacity</span>
+            <input type="range" min={0} max={100} value={Math.round(opacity * 100)} onChange={(e) => setOpacity(+e.target.value / 100)} style={{ flex: 1, accentColor: GOLD }} />
+            <span style={{ fontSize: 11, color: DIM, width: 34, textAlign: 'right' }}>{Math.round(opacity * 100)}%</span>
+          </div>
+        )}
+      </div>
+      {/* Overlay canvas */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#fff', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 1000 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={a!.url} alt={a!.name} style={{ width: '100%', display: 'block' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={b!.url}
+            alt={b!.name}
+            style={{
+              position: 'absolute', top: 0, left: 0, width: '100%', display: 'block',
+              opacity: wipe ? 1 : opacity,
+              mixBlendMode: diff && !wipe ? 'difference' : 'normal',
+              clipPath: wipe ? `inset(0 0 0 ${wipeX}%)` : undefined,
+            }}
+          />
+          {wipe && <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${wipeX}%`, width: 2, background: GOLD, boxShadow: '0 0 6px rgba(200,136,28,.7)' }} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SplitDocViewer({ docs, initialLeftId, initialRightId, onClose }: { docs: SplitDoc[]; initialLeftId?: string; initialRightId?: string; onClose: () => void }) {
+  const [leftId, setLeftId] = useState(initialLeftId || docs[0]?.id || '');
+  const [rightId, setRightId] = useState(initialRightId || docs.find((d) => d.id !== (initialLeftId || docs[0]?.id))?.id || docs[0]?.id || '');
+  const [stacked, setStacked] = useState(false);
+  const [mode, setMode] = useState<'split' | 'overlay'>('split');
+
+  const left = docs.find((d) => d.id === leftId);
+  const right = docs.find((d) => d.id === rightId);
   const swap = () => { setLeftId(rightId); setRightId(leftId); };
 
-  const hBtn: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8,
-    border: `1px solid ${BORDER}`, background: '#fff', color: TEXT, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-  };
+  const hBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fff', color: TEXT, fontSize: 12, fontWeight: 600, cursor: 'pointer' };
+  const seg = (active: boolean): React.CSSProperties => ({ padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: active ? GOLD : 'transparent', color: active ? '#000' : DIM });
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: BASE, display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${BORDER}`, background: '#fff', flexShrink: 0 }}>
-        <span style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>Side-by-Side Review</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${BORDER}`, background: '#fff', flexShrink: 0, gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>Compare</span>
+          <div style={{ display: 'inline-flex', border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden' }}>
+            <button style={seg(mode === 'split')} onClick={() => setMode('split')}>Side&nbsp;by&nbsp;side</button>
+            <button style={seg(mode === 'overlay')} onClick={() => setMode('overlay')}>Overlay</button>
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setStacked((s) => !s)} style={hBtn} title={stacked ? 'Side by side' : 'Stack'}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              {stacked ? (<><rect x="3" y="4" width="8" height="16" rx="1" /><rect x="13" y="4" width="8" height="16" rx="1" /></>) : (<><rect x="4" y="3" width="16" height="8" rx="1" /><rect x="4" y="13" width="16" height="8" rx="1" /></>)}
-            </svg>
-            {stacked ? 'Columns' : 'Stack'}
-          </button>
-          <button onClick={swap} style={hBtn} title="Swap">
+          {mode === 'split' && (
+            <button onClick={() => setStacked((s) => !s)} style={hBtn} title={stacked ? 'Side by side' : 'Stack'}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{stacked ? (<><rect x="3" y="4" width="8" height="16" rx="1" /><rect x="13" y="4" width="8" height="16" rx="1" /></>) : (<><rect x="4" y="3" width="16" height="8" rx="1" /><rect x="4" y="13" width="16" height="8" rx="1" /></>)}</svg>
+              {stacked ? 'Columns' : 'Stack'}
+            </button>
+          )}
+          <button onClick={swap} style={hBtn} title="Swap A/B">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
             Swap
           </button>
@@ -156,12 +188,30 @@ export default function SplitDocViewer({
         </div>
       </div>
 
-      {/* Panes */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: stacked ? 'column' : 'row' }}>
-        <Pane docs={docs} value={leftId} onChange={setLeftId} side="left" />
-        <div style={{ background: BORDER, flexShrink: 0, ...(stacked ? { height: 1, width: '100%' } : { width: 1, height: '100%' }) }} />
-        <Pane docs={docs} value={rightId} onChange={setRightId} side="right" />
-      </div>
+      {/* Document pickers for overlay mode (split has them per-pane) */}
+      {mode === 'overlay' && (
+        <div style={{ display: 'flex', gap: 8, padding: '8px 12px', background: BASE, borderBottom: `1px solid ${BORDER}`, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 160 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: BLUE, borderRadius: 5, padding: '2px 6px' }}>A</span>
+            <div style={{ flex: 1 }}><SelectMenu aria-label="Overlay A" value={leftId} onChange={setLeftId} minWidth={120} triggerStyle={{ width: '100%', fontSize: 12 }} options={docs.map((d) => ({ value: d.id, label: d.name }))} /></div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 160 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: GREEN, borderRadius: 5, padding: '2px 6px' }}>B</span>
+            <div style={{ flex: 1 }}><SelectMenu aria-label="Overlay B" value={rightId} onChange={setRightId} minWidth={120} triggerStyle={{ width: '100%', fontSize: 12 }} options={docs.map((d) => ({ value: d.id, label: d.name }))} /></div>
+          </div>
+        </div>
+      )}
+
+      {/* Body */}
+      {mode === 'split' ? (
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: stacked ? 'column' : 'row' }}>
+          <Pane docs={docs} value={leftId} onChange={setLeftId} side="left" />
+          <div style={{ background: BORDER, flexShrink: 0, ...(stacked ? { height: 1, width: '100%' } : { width: 1, height: '100%' }) }} />
+          <Pane docs={docs} value={rightId} onChange={setRightId} side="right" />
+        </div>
+      ) : (
+        <Overlay a={left} b={right} />
+      )}
     </div>
   );
 }

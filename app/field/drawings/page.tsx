@@ -122,6 +122,9 @@ function DrawingsPage() {
   const currentStrokeRef = useRef<StrokePoint[]>([]);
   const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
 
+  // Export marked-up PDF
+  const [exportingPdf, setExportingPdf] = useState(false);
+
   // Save markup form
   const [showSaveForm, setShowSaveForm] = useState(false);
   const [markupTitle, setMarkupTitle] = useState('');
@@ -464,6 +467,51 @@ function DrawingsPage() {
   useEffect(() => { redrawOverlays(); }, [redrawOverlays]);
 
   // ── Push undo state ──
+  // Export the sheet with all markups burned in as a flattened PDF.
+  const handleExportMarkedPdf = useCallback(async () => {
+    if (!selectedDrawing) return;
+    setExportingPdf(true);
+    try {
+      const w = canvasSize.w || imgRef.current?.naturalWidth || 1600;
+      const h = canvasSize.h || imgRef.current?.naturalHeight || 1200;
+      const tmp = document.createElement('canvas');
+      tmp.width = w; tmp.height = h;
+      const ctx = tmp.getContext('2d');
+      if (ctx) {
+        if (overlayCanvasRef.current) ctx.drawImage(overlayCanvasRef.current, 0, 0, w, h);
+        if (canvasRef.current) ctx.drawImage(canvasRef.current, 0, 0, w, h);
+        const r = Math.max(8, w * 0.008);
+        pins.forEach((p) => {
+          ctx.beginPath();
+          ctx.arc(p.x_pct * w, p.y_pct * h, r, 0, Math.PI * 2);
+          ctx.fillStyle = CATEGORY_COLORS[p.category] || DIM;
+          ctx.fill();
+          ctx.lineWidth = Math.max(2, w * 0.002);
+          ctx.strokeStyle = '#fff';
+          ctx.stroke();
+        });
+      }
+      const overlay = tmp.toDataURL('image/png');
+      const res = await fetch('/api/markup/flatten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl: selectedDrawing.file_url, overlay, title: selectedDrawing.name, fileName: selectedDrawing.name }),
+      });
+      if (!res.ok) throw new Error('export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(selectedDrawing.name || 'sheet').replace(/[^a-z0-9_\-]+/gi, '-')}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Could not export the marked-up PDF. Please try again.');
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [selectedDrawing, canvasSize, pins]);
+
   const pushUndo = useCallback(() => {
     setUndoStack(prev => [...prev, { strokes: currentStrokes, shapes: currentShapes, texts: currentTexts, pins: currentPins }]);
     setRedoStack([]);
@@ -1040,6 +1088,15 @@ function DrawingsPage() {
           {activeTool === 'measure' && 'Drag to measure between two points'}
           {activeTool === 'eraser' && 'Tap on markup elements to erase them'}
         </p>}
+
+        {/* Export marked-up PDF */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <button onClick={handleExportMarkedPdf} disabled={exportingPdf}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: exportingPdf ? BORDER : GOLD, color: exportingPdf ? DIM : '#000', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 800, fontSize: 13, cursor: exportingPdf ? 'default' : 'pointer' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            {exportingPdf ? 'Exporting…' : 'Export PDF (with markups)'}
+          </button>
+        </div>
 
         {/* ── Drawing image with overlay canvases ── */}
         <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: `1px solid ${BORDER}`, background: '#000', marginBottom: 14 }}>
