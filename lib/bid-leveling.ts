@@ -15,8 +15,8 @@ export interface Bid {
   bidder_company: string;
   amount: number;
   alternate_amounts?: Record<string, number> | null;
-  inclusions?: string | null;
-  exclusions?: string | null;
+  inclusions?: string | string[] | null;
+  exclusions?: string | string[] | null;
   bond_included?: boolean;
   score?: number | null;
   submitted_at?: string | null;
@@ -62,9 +62,12 @@ export function levelBids(raw: Bid[]): LevelingResult {
     // Price score: 100 for lowest, linearly down to 0 at 2x the low bid
     const priceScore = low > 0 ? Math.max(0, 100 * (1 - (b.amount - low) / low)) : 50;
 
-    // Scope: penalize missing inclusions or having exclusions
-    const hasInclusions = (b.inclusions || '').trim().length > 10;
-    const hasExclusions = (b.exclusions || '').trim().length > 5;
+    // Scope: penalize missing inclusions or having exclusions.
+    // Coerce defensively — callers may pass arrays or null.
+    const inclusionsStr = Array.isArray(b.inclusions) ? b.inclusions.join('; ') : String(b.inclusions ?? '');
+    const exclusionsStr = Array.isArray(b.exclusions) ? b.exclusions.join('; ') : String(b.exclusions ?? '');
+    const hasInclusions = inclusionsStr.trim().length > 10;
+    const hasExclusions = exclusionsStr.trim().length > 5;
     const scopeScore = (hasInclusions ? 60 : 30) + (hasExclusions ? 0 : 40);
 
     // Qualifications: bond and pre-existing score
