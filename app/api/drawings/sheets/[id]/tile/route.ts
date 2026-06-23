@@ -28,13 +28,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { files, levels, tileCount } = await generateDziTiles(buf);
     const baseDir = `tiles/${id}`;
-    let dziUrl = '';
     for (const f of files) {
       const path = `${baseDir}/${f.rel}`;
       await db.storage.from('blueprints').upload(path, f.buffer, { contentType: f.contentType, upsert: true });
-      if (f.rel.endsWith('.dzi')) dziUrl = db.storage.from('blueprints').getPublicUrl(path).data.publicUrl;
     }
 
+    // The `blueprints` bucket is private, so tiles are streamed back through an
+    // authenticated proxy (GET /tile/[...path]) — never a public storage URL.
+    const dziUrl = `/api/drawings/sheets/${id}/tile/sheet.dzi`;
     await db.from('drawing_sheets').update({ dzi_url: dziUrl, tile_status: 'complete' }).eq('id', id);
     return NextResponse.json({ dziUrl, levels, tileCount });
   } catch (err) {
