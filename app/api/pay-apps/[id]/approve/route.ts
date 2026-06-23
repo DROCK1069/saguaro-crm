@@ -11,7 +11,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { error } = await db
       .from('pay_applications')
       .update({ status: 'approved', approved_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId);
     if (error) throw error;
     onPayAppApproved(id).catch(console.error);
     return NextResponse.json({ success: true });

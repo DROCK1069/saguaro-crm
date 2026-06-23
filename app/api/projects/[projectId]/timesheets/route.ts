@@ -9,15 +9,37 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     const { data: project } = await supabase.from('projects').select('id').eq('id', params.projectId).eq('tenant_id', user.tenantId).single();
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     const url = new URL(req.url);
-    const week = url.searchParams.get('week');
-    const status = url.searchParams.get('status');
-    let q = supabase.from('timesheets').select('*').eq('project_id', params.projectId);
-    if (week) q = q.eq('week_ending', week);
+    const status = url.searchParams.get('status'); // 'week' is filtered client-side by the page
+    // Read the canonical time table the mobile field app writes (time_entries) — the old code read
+    // `timesheets`, so every mobile clock-in was stranded and never appeared for approval. Map the
+    // columns to what the approval page renders (date / regular_hrs / ot_hrs / employee / status).
+    let q = supabase
+      .from('time_entries')
+      .select('*')
+      .eq('project_id', params.projectId)
+      .eq('tenant_id', user.tenantId);
     if (status) q = q.eq('status', status);
     const { data, error } = await q.order('work_date', { ascending: false });
     if (error) throw error;
-    return NextResponse.json({ timesheets: data ?? [] });
-  } catch { return NextResponse.json({ timesheets: [] }); }
+    const rows = (data ?? []) as any[];
+    const empIds = [...new Set(rows.map((r) => r.employee_id).filter(Boolean))];
+    const names: Record<string, string> = {};
+    if (empIds.length) {
+      const { data: emps } = await supabase.from('employees').select('*').in('id', empIds);
+      for (const e of (emps ?? []) as any[]) {
+        names[e.id] = e.name || [e.first_name, e.last_name].filter(Boolean).join(' ') || e.email || '';
+      }
+    }
+    const entries = rows.map((r) => ({
+      ...r,
+      employee: names[r.employee_id] || r.employee_name || '—',
+      date: r.work_date,
+      regular_hrs: Number(r.regular_hours ?? r.hours_worked ?? 0),
+      ot_hrs: Number(r.overtime_hours ?? 0),
+      status: r.status || 'pending',
+    }));
+    return NextResponse.json({ entries, timesheets: entries });
+  } catch { return NextResponse.json({ entries: [], timesheets: [] }); }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {

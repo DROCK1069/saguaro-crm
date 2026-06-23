@@ -21,18 +21,25 @@ export async function POST(req: NextRequest) {
     // Get next application number
     const { data: lastApp } = await db
       .from('pay_applications')
-      .select('app_number')
+      .select('app_number, total_completed_stored, total_earned_less_retainage')
       .eq('project_id', projectId)
+      .eq('tenant_id', user.tenantId)
       .order('app_number', { ascending: false })
       .limit(1)
       .single();
-    const appNumber = ((lastApp as any)?.app_number || 0) + 1;
+    const prior = lastApp as any;
+    const appNumber = (prior?.app_number || 0) + 1;
 
     // Accept both camelCase and snake_case for the keys the mobile form sends.
     const periodTo = body.periodTo ?? body.period_to ?? null;
     const periodFrom = body.periodFrom ?? body.period_from ?? null;
     const retainagePercent = Number(body.retainagePercent ?? body.retainage_percent ?? 10) || 0;
-    const prevPaymentsDollars = Number(body.prevPayments ?? body.prev_payments ?? 0) || 0;
+    // AIA roll-forward: G702 line 7 (LESS PREVIOUS CERTIFICATES) of app N = line 6 (TOTAL EARNED
+    // LESS RETAINAGE) of app N-1, and prior completed-to-date carries forward. The mobile lump-sum
+    // form sends NEITHER, so without deriving these from the prior pay app the deduction is always
+    // 0 → every owner pay app after #1 over-bills. Client values still win when supplied.
+    const prevCompletedDollars = Number(body.prevCompleted ?? body.prev_completed ?? prior?.total_completed_stored ?? 0) || 0;
+    const prevPaymentsDollars = Number(body.prevPayments ?? body.prev_payments ?? prior?.total_earned_less_retainage ?? 0) || 0;
 
     // ── Derive every money field with the exact-cents calc engine. The server is
     // the source of truth — client-sent totals are never trusted. When a schedule
@@ -77,14 +84,16 @@ export async function POST(req: NextRequest) {
         cost_code: rawLines[i].csiCode ?? rawLines[i].csi_code,
       }));
     } else {
-      const workCents = toCents(Number(body.workCompleted ?? body.work_completed ?? body.thisPeriod ?? 0) || 0);
-      const retCents = percentOf(workCents, retainagePercent);
-      const earnedCents = subCents(workCents, retCents);
-      const dueCents = subCents(earnedCents, toCents(prevPaymentsDollars));
+      // Lump-sum path (mobile): "work this period" + cumulative roll-forward from the prior app.
+      const thisPeriodCents = toCents(Number(body.workCompleted ?? body.work_completed ?? body.thisPeriod ?? 0) || 0);
+      const totalCompletedCents = toCents(prevCompletedDollars) + thisPeriodCents; // completed & stored TO DATE
+      const retCents = percentOf(totalCompletedCents, retainagePercent);
+      const earnedCents = subCents(totalCompletedCents, retCents);
+      const dueCents = subCents(earnedCents, toCents(prevPaymentsDollars)); // less previous certificates
       m = {
         contractSumToDate: Number(body.contractSumToDate) || p?.contract_amount || 0,
-        thisPeriod: toDollars(workCents),
-        totalCompletedStored: toDollars(workCents),
+        thisPeriod: toDollars(thisPeriodCents),
+        totalCompletedStored: toDollars(totalCompletedCents),
         percentComplete: Number(body.percentComplete) || 0,
         totalRetainage: toDollars(retCents),
         totalEarnedLessRetainage: toDollars(earnedCents),
@@ -102,7 +111,7 @@ export async function POST(req: NextRequest) {
       contract_sum: body.contractSum || p?.contract_amount || 0,
       change_orders_total: body.changeOrdersTotal || 0,
       contract_sum_to_date: m.contractSumToDate,
-      prev_completed: body.prevCompleted || 0,
+      prev_completed: prevCompletedDollars,
       this_period: m.thisPeriod,
       stored_materials: body.materialsStored || 0,
       total_completed_stored: m.totalCompletedStored,
