@@ -500,11 +500,13 @@ export default function CertifiedPayrollPage() {
         net: toDollars(sumCents(activePeriod.workers.map(w => calcWorkerTotals(w).netPayCents))),
       };
       const apiFormat = format === 'excel' ? 'xlsx' : 'pdf';
+      const projName = projects.find(p => p.id === activePeriod.projectId)?.name || 'Certified Payroll (WH-347)';
       const res = await fetch('/api/certified-payroll/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           format: apiFormat,
+          company: projName,
           title: `Certified Payroll (WH-347) — Week Ending ${activePeriod.weekEnding}`,
           rows,
           totals,
@@ -525,7 +527,7 @@ export default function CertifiedPayrollPage() {
     } finally {
       setExportingFormat(null);
     }
-  }, [activePeriod]);
+  }, [activePeriod, projects]);
 
   const handleUpdateWorkerHours = useCallback((workerId: string, dayIndex: number, type: 'ST' | 'OT' | 'DT', value: number) => {
     if (!activePeriod) return;

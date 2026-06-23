@@ -32,30 +32,31 @@ export async function POST(req: NextRequest) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let body: { format?: string; title?: string; rows?: Record<string, unknown>[]; totals?: Record<string, number> };
+  let body: { format?: string; title?: string; company?: string; rows?: Record<string, unknown>[]; totals?: Record<string, number> };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }); }
 
   const format = body.format === 'pdf' ? 'pdf' : body.format === 'csv' ? 'csv' : 'xlsx';
   const rows = Array.isArray(body.rows) ? body.rows : [];
   const totals = body.totals && typeof body.totals === 'object' ? body.totals : undefined;
   const title = (body.title || 'Certified Payroll — WH-347').toString();
+  const company = (body.company || 'Certified Payroll Report (WH-347)').toString();
   const fileBase = `${safeFilename(title)}-${todayStamp()}`;
 
   if (format === 'csv') {
-    const csv = buildCsv(COLUMNS, rows, title, totals);
+    const csv = buildCsv(COLUMNS, rows, title, totals, company);
     return new NextResponse(csv, {
       headers: { 'Content-Type': EXPORT_CONTENT_TYPE.csv, 'Content-Disposition': `attachment; filename="${fileBase}.csv"` },
     });
   }
 
   if (format === 'pdf') {
-    const pdf = await buildPdf(COLUMNS, rows, title, totals);
+    const pdf = await buildPdf(COLUMNS, rows, title, totals, undefined, company);
     return new NextResponse(Buffer.from(pdf), {
       headers: { 'Content-Type': EXPORT_CONTENT_TYPE.pdf, 'Content-Disposition': `attachment; filename="${fileBase}.pdf"` },
     });
   }
 
-  const xlsx = buildXlsx(COLUMNS, rows, title, totals);
+  const xlsx = buildXlsx(COLUMNS, rows, title, totals, company);
   return new NextResponse(new Uint8Array(xlsx), {
     headers: { 'Content-Type': EXPORT_CONTENT_TYPE.xlsx, 'Content-Disposition': `attachment; filename="${fileBase}.xlsx"` },
   });
