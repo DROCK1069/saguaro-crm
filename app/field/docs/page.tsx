@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import SplitDocViewer from '@/components/field/SplitDocViewer';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -606,6 +607,9 @@ function DocsPage() {
   const [showUploadVersion, setShowUploadVersion] = useState(false);
   const [versionNotes, setVersionNotes] = useState('');
 
+  // Side-by-side split review
+  const [showSplit, setShowSplit] = useState(false);
+
   // NEW: Document info state
   const [showDocInfo, setShowDocInfo] = useState(false);
   const [docTags, setDocTags] = useState<Record<string, string[]>>({});
@@ -992,8 +996,9 @@ function DocsPage() {
   }
 
   function handleCompareVersions(v1: number, v2: number) {
-    showToast(`Comparing v${v1} and v${v2} - opening side by side view`);
-    // In a real app, this would open a comparison viewer
+    // Open the real side-by-side review viewer (was a toast stub).
+    void v1; void v2;
+    setShowSplit(true);
   }
 
   // NEW: Tag handlers
@@ -1072,6 +1077,13 @@ function DocsPage() {
               </svg>
             </button>
 
+            {files.length > 0 && (
+              <button onClick={() => setShowSplit(true)} style={iconBtn} title="Side-by-Side Review">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={18} height={18}>
+                  <rect x={3} y={4} width={8} height={16} rx={1}/><rect x={13} y={4} width={8} height={16} rx={1}/>
+                </svg>
+              </button>
+            )}
             <button onClick={() => setFullScreen(!fullScreen)} style={iconBtn} title="Full Screen">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={18} height={18}>
                 {fullScreen ? (<><polyline points="4 14 4 20 10 20"/><polyline points="20 10 20 4 14 4"/><line x1={14} y1={10} x2={21} y2={3}/><line x1={3} y1={21} x2={10} y2={14}/></>) : (<><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1={21} y1={3} x2={14} y2={10}/><line x1={3} y1={21} x2={10} y2={14}/></>)}
@@ -1093,6 +1105,15 @@ function DocsPage() {
 
         {toast && (
           <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: 'rgba(34,197,94,.12)', border: '1px solid rgba(34,197,94,.3)', borderRadius: 10, color: GREEN, fontSize: 12, textAlign: 'center' }}>{toast}</div>
+        )}
+
+        {/* Real side-by-side document review (two real files, independent panes) */}
+        {showSplit && (
+          <SplitDocViewer
+            docs={files.map((f) => ({ id: f.id, name: getFileName(f), url: getFileUrl(f), mime: f.mime_type || f.type }))}
+            initialLeftId={selected?.id}
+            onClose={() => setShowSplit(false)}
+          />
         )}
 
         {/* Upload New Version panel */}
