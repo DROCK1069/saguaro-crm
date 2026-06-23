@@ -1141,6 +1141,26 @@ function SchedulePage() {
       <h1 style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 800, color: TEXT }}>Schedule</h1>
       <p style={{ margin: '0 0 14px', fontSize: 13, color: DIM }}>{projectName}</p>
 
+      {/* Import P6 (.xer) / MS Project (.xml) / CSV — runs CPM server-side */}
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: GOLD, color: '#fff', fontWeight: 700, fontSize: 13, padding: '8px 14px', borderRadius: 10, cursor: 'pointer', marginBottom: 14 }}>
+        Import schedule (XER / MSP / CSV)
+        <input type="file" accept=".xer,.xml,.csv,.txt" style={{ display: 'none' }} onChange={async (e) => {
+          const file = e.target.files?.[0]; if (!file || !projectId) return;
+          setSavedMsg('Importing & running CPM…');
+          try {
+            const content = await file.text();
+            const r = await fetch(`/api/projects/${projectId}/schedule/import`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content, filename: file.name }),
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || 'Import failed');
+            setSavedMsg(`Imported ${d.imported} tasks · ${d.project_duration_days}d · ${d.critical_path_length} on critical path`);
+            setTimeout(() => window.location.reload(), 1200);
+          } catch (err) { setSavedMsg(`Queued/Failed: ${(err as Error).message}`); }
+        }} />
+      </label>
+
       {!online && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, color: RED, fontWeight: 600 }}>Offline — updates will sync when reconnected</div>}
 
       {savedMsg && (

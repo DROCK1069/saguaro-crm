@@ -281,13 +281,14 @@ function TimesheetsInner() {
     fetchEntries();
   }
 
+  // Uses the multi-level approval state machine (submit → foreman → PM) which
+  // also locks in gross pay from the worker's union rate class on PM approval.
   async function handleApprove(ids: string[]) {
     for (const id of ids) {
-      await apiCall(`${base}/${id}`, 'PATCH', {
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        approved_by: 'Current User',
-      });
+      const entry = entries.find((e) => e.id === id);
+      // foreman-level if still 'submitted', else PM-level finalization
+      const action = entry?.status === 'foreman_approved' ? 'pm_approve' : 'foreman_approve';
+      await apiCall(`${base}/${id}/approve`, 'POST', { action });
     }
     showToast(`${ids.length} entry(ies) approved`);
     setActionModal(null);
@@ -296,10 +297,7 @@ function TimesheetsInner() {
 
   async function handleReject(ids: string[], reason: string) {
     for (const id of ids) {
-      await apiCall(`${base}/${id}`, 'PATCH', {
-        status: 'rejected',
-        rejection_reason: reason,
-      });
+      await apiCall(`${base}/${id}/approve`, 'POST', { action: 'reject', reason });
     }
     showToast(`${ids.length} entry(ies) rejected`);
     setRejectionReason('');
