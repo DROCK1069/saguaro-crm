@@ -26,18 +26,21 @@ interface SearchModule {
   icon: 'rfi' | 'punch' | 'log' | 'inspect' | 'co' | 'submittal' | 'safety' | 'doc' | 'photo' | 'meeting' | 'tm';
 }
 
+// NOTE: ids here MUST match the ids in the search API (route.ts). The old list
+// used ids the API didn't recognize, so every search returned nothing.
 const MODULES: SearchModule[] = [
   { id: 'rfis', label: 'RFIs', route: '/field/rfis', icon: 'rfi' },
-  { id: 'punch_lists', label: 'Punch Lists', route: '/field/punch', icon: 'punch' },
+  { id: 'punch', label: 'Punch List', route: '/field/punch', icon: 'punch' },
   { id: 'daily_logs', label: 'Daily Logs', route: '/field/log', icon: 'log' },
   { id: 'inspections', label: 'Inspections', route: '/field/inspect', icon: 'inspect' },
   { id: 'change_orders', label: 'Change Orders', route: '/field/change-orders', icon: 'co' },
   { id: 'submittals', label: 'Submittals', route: '/field/submittals', icon: 'submittal' },
   { id: 'safety', label: 'Safety', route: '/field/safety', icon: 'safety' },
-  { id: 'documents', label: 'Documents', route: '/field/docs', icon: 'doc' },
-  { id: 'photos', label: 'Photos', route: '/field/photos', icon: 'photo' },
   { id: 'meetings', label: 'Meetings', route: '/field/meetings', icon: 'meeting' },
   { id: 'tm_tickets', label: 'T&M Tickets', route: '/field/tm-tickets', icon: 'tm' },
+  { id: 'observations', label: 'Observations', route: '/field/observations', icon: 'doc' },
+  { id: 'correspondence', label: 'Correspondence', route: '/field/correspondence', icon: 'doc' },
+  { id: 'trade_guide', label: 'Trade Guide', route: '/field/trade-guide', icon: 'doc' },
 ];
 
 interface SearchResult {

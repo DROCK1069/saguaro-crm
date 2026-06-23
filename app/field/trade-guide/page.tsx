@@ -76,6 +76,26 @@ export default function TradeGuidePage() {
 
   useEffect(() => { fetchArticles(); }, [fetchArticles]);
 
+  // Deep-link: when arriving from global search (…/trade-guide?id=<articleId>),
+  // fetch that specific article and open it directly. Uses window.location to
+  // avoid needing a Suspense boundary around useSearchParams.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const articleId = sp.get('article') || sp.get('id');
+    if (!articleId) return;
+    let cancelled = false;
+    fetch('/api/trade-guide/articles')
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return;
+        const found = (d.articles || []).find((a: Article) => a.id === articleId);
+        if (found) setSelectedArticle(found);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [chatMessages]);
