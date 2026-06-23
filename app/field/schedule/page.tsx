@@ -1141,17 +1141,24 @@ function SchedulePage() {
       <h1 style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 800, color: TEXT }}>Schedule</h1>
       <p style={{ margin: '0 0 14px', fontSize: 13, color: DIM }}>{projectName}</p>
 
-      {/* Import P6 (.xer) / MS Project (.xml) / CSV — runs CPM server-side */}
+      {/* Import P6 (.xer) / MS Project (.xml/.mpp) / CSV — runs CPM server-side */}
       <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: GOLD, color: '#fff', fontWeight: 700, fontSize: 13, padding: '8px 14px', borderRadius: 10, cursor: 'pointer', marginBottom: 14 }}>
-        Import schedule (XER / MSP / CSV)
-        <input type="file" accept=".xer,.xml,.csv,.txt" style={{ display: 'none' }} onChange={async (e) => {
+        Import schedule (XER / MPP / XML / CSV)
+        <input type="file" accept=".xer,.xml,.csv,.txt,.mpp" style={{ display: 'none' }} onChange={async (e) => {
           const file = e.target.files?.[0]; if (!file || !projectId) return;
           setSavedMsg('Importing & running CPM…');
           try {
-            const content = await file.text();
+            const isBinary = file.name.toLowerCase().endsWith('.mpp');
+            let payload: Record<string, unknown>;
+            if (isBinary) {
+              const buf = await file.arrayBuffer();
+              payload = { content: btoa(String.fromCharCode(...new Uint8Array(buf))), binary: true, filename: file.name };
+            } else {
+              payload = { content: await file.text(), filename: file.name };
+            }
             const r = await fetch(`/api/projects/${projectId}/schedule/import`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ content, filename: file.name }),
+              body: JSON.stringify(payload),
             });
             const d = await r.json();
             if (!r.ok) throw new Error(d.error || 'Import failed');

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { parseSchedule } from '@/lib/schedule-import';
+import { parseMPP, isMPP } from '@/lib/mpp-import';
 import { computeCPM } from '@/lib/cpm';
 
 export const runtime = 'nodejs';
@@ -21,7 +22,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
   const body = await req.json().catch(() => ({}));
   if (!body.content) return NextResponse.json({ error: 'content required' }, { status: 400 });
 
-  const parsed = parseSchedule(String(body.content), body.filename || '');
+  // .mpp binary: client sends base64; text formats send raw string
+  let parsed;
+  if (body.binary) {
+    const buf = Buffer.from(body.content, 'base64');
+    if (!isMPP(buf)) return NextResponse.json({ error: 'Not a valid .mpp file' }, { status: 422 });
+    parsed = await parseMPP(buf);
+  } else {
+    parsed = parseSchedule(String(body.content), body.filename || '');
+  }
   if (!parsed.length) return NextResponse.json({ error: 'No tasks found in file' }, { status: 422 });
 
   const cpm = computeCPM(parsed);
