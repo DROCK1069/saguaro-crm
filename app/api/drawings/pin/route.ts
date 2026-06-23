@@ -13,15 +13,28 @@ export async function POST(req: NextRequest) {
     body = {};
   }
 
+  const entityType = String(body.entity_type || body.entityType || '').toLowerCase();
+  const entityId = (body.entity_id || body.entityId) ? String(body.entity_id || body.entityId) : '';
+
   const row = {
     tenant_id: user.tenantId,
     project_id: body.project_id || body.projectId || null,
     drawing_id: body.drawing_id || body.drawingId || null,
     x_pct: Number(body.x_pct) || 0,
     y_pct: Number(body.y_pct) || 0,
+    // x/y are NOT NULL legacy columns — set them from the normalized coords
+    // (this also fixes pins silently failing to persist server-side).
+    x: Number(body.x_pct) || 0,
+    y: Number(body.y_pct) || 0,
     title: body.title || '',
     notes: body.note || body.notes || '',
     pin_type: body.category || 'Other',
+    // Link the pin to a real record (RFI / punch / observation / daily log).
+    entity_type: entityType || null,
+    entity_id: entityId || null,
+    rfi_id: entityType === 'rfi' && entityId ? entityId : null,
+    punch_item_id: entityType === 'punch' && entityId ? entityId : null,
+    daily_log_id: entityType === 'daily_log' && entityId ? entityId : null,
   };
 
   try {

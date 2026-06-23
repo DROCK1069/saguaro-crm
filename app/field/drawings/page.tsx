@@ -27,7 +27,7 @@ const CATEGORY_COLORS: Record<string, string> = { RFI: BLUE, Punch: RED, Safety:
 type MarkupTool = 'pen' | 'pin' | 'text' | 'rect' | 'circle' | 'arrow' | 'measure' | 'eraser';
 
 interface Drawing { id: string; sheet: string; name: string; description: string; file_url: string; thumbnail_url?: string; }
-interface DrawingPin { id: string; drawing_id: string; x_pct: number; y_pct: number; title: string; note: string; category: string; created_at: string; }
+interface DrawingPin { id: string; drawing_id: string; x_pct: number; y_pct: number; title: string; note: string; category: string; created_at: string; entity_type?: string | null; entity_id?: string | null; }
 interface PendingPin { x_pct: number; y_pct: number; }
 
 interface StrokePoint { x: number; y: number; }
@@ -97,6 +97,10 @@ function DrawingsPage() {
   const [pinTitle, setPinTitle] = useState('');
   const [pinNote, setPinNote] = useState('');
   const [pinCategory, setPinCategory] = useState('Other');
+  // Link a pin to a real record (RFI / Punch / Observation)
+  const [linkType, setLinkType] = useState('');
+  const [linkId, setLinkId] = useState('');
+  const [linkOpts, setLinkOpts] = useState<{ value: string; label: string }[]>([]);
   const [savingPin, setSavingPin] = useState(false);
   const [selectedPin, setSelectedPin] = useState<DrawingPin | null>(null);
 
@@ -801,25 +805,42 @@ function DrawingsPage() {
     setPinCategory('Other');
   };
 
-  const cancelPin = () => { setPendingPin(null); setShowPinForm(false); };
+  const resetLink = () => { setLinkType(''); setLinkId(''); setLinkOpts([]); };
+  const cancelPin = () => { setPendingPin(null); setShowPinForm(false); resetLink(); };
+
+  // Load existing records of a type so a pin can be linked to a real RFI/Punch/Observation.
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const loadLinkOptions = async (type: string) => {
+    setLinkId(''); setLinkOpts([]);
+    if (!type || !projectId) return;
+    const ep = type === 'rfi' ? 'rfis' : type === 'punch' ? 'punch-list' : 'observations';
+    try {
+      const r = await fetch(`/api/projects/${projectId}/${ep}`);
+      const d = await r.json();
+      const list: any[] = d.rfis || d.punchItems || d.items || d.observations || d.punchList || d.data || (Array.isArray(d) ? d : []);
+      setLinkOpts(list.slice(0, 80).map((x: any) => ({ value: String(x.id), label: (String(x.number ? '#' + x.number + ' ' : '') + String(x.subject || x.title || x.description || x.name || x.id || '')).slice(0, 60) || 'Untitled' })));
+    } catch { setLinkOpts([]); }
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const submitPin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pinTitle.trim() || !pendingPin || !selectedDrawing) return;
     setSavingPin(true);
-    const payload = { drawing_id: selectedDrawing.id, projectId, x_pct: pendingPin.x_pct, y_pct: pendingPin.y_pct, title: pinTitle.trim(), note: pinNote.trim(), category: pinCategory };
+    const payload = { drawing_id: selectedDrawing.id, projectId, x_pct: pendingPin.x_pct, y_pct: pendingPin.y_pct, title: pinTitle.trim(), note: pinNote.trim(), category: pinCategory, entity_type: linkType || undefined, entity_id: linkId || undefined };
     try {
       if (!online) throw new Error('offline');
       const res = await fetch('/api/drawings/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const d = await res.json();
-      const newPin: DrawingPin = d.pin || { id: `local-${Date.now()}`, drawing_id: selectedDrawing.id, ...pendingPin, title: pinTitle.trim(), note: pinNote.trim(), category: pinCategory, created_at: new Date().toISOString() };
+      const newPin: DrawingPin = d.pin || { id: `local-${Date.now()}`, drawing_id: selectedDrawing.id, ...pendingPin, title: pinTitle.trim(), note: pinNote.trim(), category: pinCategory, created_at: new Date().toISOString(), entity_type: linkType || null, entity_id: linkId || null };
       setPins(prev => [...prev, newPin]);
     } catch {
       await enqueue({ url: '/api/drawings/pin', method: 'POST', body: JSON.stringify(payload), contentType: 'application/json', isFormData: false });
-      setPins(prev => [...prev, { id: `local-${Date.now()}`, drawing_id: selectedDrawing.id, ...pendingPin, title: pinTitle.trim(), note: pinNote.trim(), category: pinCategory, created_at: new Date().toISOString() }]);
+      setPins(prev => [...prev, { id: `local-${Date.now()}`, drawing_id: selectedDrawing.id, ...pendingPin, title: pinTitle.trim(), note: pinNote.trim(), category: pinCategory, created_at: new Date().toISOString(), entity_type: linkType || null, entity_id: linkId || null }]);
     }
     setPendingPin(null);
     setShowPinForm(false);
+    resetLink();
     setSavingPin(false);
   };
 
@@ -1214,6 +1235,15 @@ function DrawingsPage() {
             </div>
             <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: TEXT }}>{selectedPin.title}</p>
             {selectedPin.note && <p style={{ margin: 0, fontSize: 13, color: DIM, lineHeight: 1.4 }}>{selectedPin.note}</p>}
+            {selectedPin.entity_type && selectedPin.entity_id && (
+              <button onClick={() => {
+                const t = String(selectedPin.entity_type);
+                const route = t === 'rfi' ? '/field/rfis' : t === 'punch' ? '/field/punch' : '/field/observations';
+                window.location.href = `${route}?projectId=${projectId || ''}&id=${selectedPin.entity_id}`;
+              }} style={{ marginTop: 10, width: '100%', background: 'rgba(59,130,246,.12)', border: `1px solid ${BLUE}`, borderRadius: 10, padding: '10px', color: BLUE, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
+                View linked {String(selectedPin.entity_type).toUpperCase()} →
+              </button>
+            )}
           </div>
         )}
 
@@ -1240,6 +1270,21 @@ function DrawingsPage() {
                   }}>{cat}</button>
                 ))}
               </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, color: DIM, marginBottom: 6 }}>Link to record (optional)</label>
+              <select value={linkType} onChange={e => { setLinkType(e.target.value); loadLinkOptions(e.target.value); }} style={inp}>
+                <option value="">No link</option>
+                <option value="rfi">RFI</option>
+                <option value="punch">Punch item</option>
+                <option value="observation">Observation</option>
+              </select>
+              {linkType && (
+                <select value={linkId} onChange={e => setLinkId(e.target.value)} style={{ ...inp, marginTop: 8 }}>
+                  <option value="">{linkOpts.length ? `Select ${linkType}…` : 'No records found'}</option>
+                  {linkOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" onClick={cancelPin} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
