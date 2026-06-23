@@ -653,29 +653,44 @@ function DocsPage() {
     setFolderTree(tree);
   }, [files]);
 
-  // Generate mock version data for documents
-  useEffect(() => {
-    const vMap: Record<string, VersionEntry[]> = {};
-    files.forEach((f) => {
-      const vCount = Math.floor(Math.random() * 3) + 1;
-      const entries: VersionEntry[] = [];
-      for (let i = 1; i <= vCount; i++) {
-        const daysAgo = (vCount - i) * 7 + Math.floor(Math.random() * 5);
-        const d = new Date();
-        d.setDate(d.getDate() - daysAgo);
-        entries.push({
-          version: i,
-          uploadedBy: ['John Smith', 'Sarah Chen', 'Mike Davis', 'Lisa Brown'][Math.floor(Math.random() * 4)],
-          date: d.toISOString(),
-          fileSize: getFileSize(f) + Math.floor(Math.random() * 50000),
-          changeNotes: i === 1 ? 'Initial upload' : ['Updated dimensions', 'Revised per comments', 'Corrected specifications', 'Added details'][Math.floor(Math.random() * 4)],
-          isCurrent: i === vCount,
-        });
+  // Load REAL version history for the selected document from the
+  // document_versions table (replaces the old Math.random mock). Falls back to
+  // the file's own real baseline (its actual upload date/size) — never random.
+  const loadVersions = useCallback(async (doc: DocFile) => {
+    const baseline: VersionEntry = {
+      version: 1,
+      uploadedBy: 'Original upload',
+      date: getFileDate(doc),
+      fileSize: getFileSize(doc),
+      changeNotes: 'Original version',
+      isCurrent: true,
+    };
+    try {
+      const res = await fetch(`/api/projects/${projectId}/files/${doc.id}/versions`);
+      const data = res.ok ? await res.json() : { versions: [] };
+      const rows: Array<{ version_number: number; generated_by?: string; notes?: string; created_at?: string }> = data.versions || [];
+      if (rows.length === 0) {
+        setDocVersions((prev) => ({ ...prev, [doc.id]: [baseline] }));
+        return;
       }
-      vMap[f.id] = entries;
-    });
-    setDocVersions(vMap);
-  }, [files]);
+      const maxV = Math.max(...rows.map((r) => r.version_number));
+      const entries: VersionEntry[] = rows.map((r) => ({
+        version: r.version_number,
+        uploadedBy: r.generated_by || 'Unknown',
+        date: r.created_at || getFileDate(doc),
+        fileSize: 0,
+        changeNotes: r.notes || (r.version_number === 1 ? 'Original version' : ''),
+        isCurrent: r.version_number === maxV,
+      }));
+      setDocVersions((prev) => ({ ...prev, [doc.id]: entries }));
+    } catch {
+      setDocVersions((prev) => ({ ...prev, [doc.id]: [baseline] }));
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (selected) loadVersions(selected);
+  }, [selected, loadVersions]);
 
   useEffect(() => {
     if (!projectId) { setLoading(false); return; }
@@ -963,28 +978,28 @@ function DocsPage() {
     fileInputRef.current?.click();
   }
 
-  function handleVersionFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleVersionFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !selected) return;
-    // Simulate version creation
-    const existingVersions = docVersions[selected.id] || [];
-    const nextVersion = existingVersions.length > 0 ? Math.max(...existingVersions.map((v) => v.version)) + 1 : 1;
-    // Mark old versions as not current
-    const updated = existingVersions.map((v) => ({ ...v, isCurrent: false }));
-    updated.push({
-      version: nextVersion,
-      uploadedBy: 'Current User',
-      date: new Date().toISOString(),
-      fileSize: file.size,
-      changeNotes: versionNotes || 'New version uploaded',
-      isCurrent: true,
-    });
-    setDocVersions((prev) => ({ ...prev, [selected.id]: updated }));
+    const doc = selected;
     setShowUploadVersion(false);
+    const notes = versionNotes || 'New version uploaded';
     setVersionNotes('');
-    showToast(`Version v${nextVersion} uploaded successfully`);
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
+    try {
+      // Persist a real version row in document_versions, then reload from the API.
+      const res = await fetch(`/api/projects/${projectId}/files/${doc.id}/versions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) throw new Error('Version create failed');
+      await loadVersions(doc);
+      const j = await res.json().catch(() => ({}));
+      showToast(`Version v${j?.version?.version_number ?? ''} saved`);
+    } catch {
+      showToast('Could not save version. Please try again.');
+    }
   }
 
   function handleRevertVersion(version: number) {

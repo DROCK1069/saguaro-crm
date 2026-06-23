@@ -472,13 +472,60 @@ export default function CertifiedPayrollPage() {
     void persistStatus(periodId, { statement_of_compliance: true, signed_by: signerName, signed_at: signedAt });
   }, [persistStatus]);
 
-  const handleExport = useCallback((format: 'pdf' | 'excel') => {
+  const handleExport = useCallback(async (format: 'pdf' | 'excel') => {
+    if (!activePeriod || activePeriod.workers.length === 0) {
+      alert('No payroll workers to export for this period.');
+      return;
+    }
     setExportingFormat(format);
-    setTimeout(() => {
+    try {
+      const rows = activePeriod.workers.map(w => {
+        const t = calcWorkerTotals(w);
+        return {
+          name: w.name || 'Unnamed',
+          classification: `${w.trade || ''} ${w.classification || ''}`.trim() || '—',
+          st: t.totalST,
+          ot: t.totalOT,
+          dt: t.totalDT,
+          rate: w.baseRate,
+          gross: t.grossPay,
+          fringe: t.fringeTotal,
+          deductions: w.deductions,
+          net: t.netPay,
+        };
+      });
+      const totals = {
+        gross: toDollars(sumCents(activePeriod.workers.map(w => calcWorkerTotals(w).grossPayCents))),
+        fringe: toDollars(sumCents(activePeriod.workers.map(w => calcWorkerTotals(w).fringeTotalCents))),
+        net: toDollars(sumCents(activePeriod.workers.map(w => calcWorkerTotals(w).netPayCents))),
+      };
+      const apiFormat = format === 'excel' ? 'xlsx' : 'pdf';
+      const res = await fetch('/api/certified-payroll/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          format: apiFormat,
+          title: `Certified Payroll (WH-347) — Week Ending ${activePeriod.weekEnding}`,
+          rows,
+          totals,
+        }),
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `certified-payroll-${activePeriod.weekEnding || new Date().toISOString().slice(0, 10)}.${apiFormat === 'xlsx' ? 'xlsx' : 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Export failed. Please try again.');
+    } finally {
       setExportingFormat(null);
-      alert(`${format.toUpperCase()} export generated successfully. In production this would trigger a file download.`);
-    }, 1500);
-  }, []);
+    }
+  }, [activePeriod]);
 
   const handleUpdateWorkerHours = useCallback((workerId: string, dayIndex: number, type: 'ST' | 'OT' | 'DT', value: number) => {
     if (!activePeriod) return;

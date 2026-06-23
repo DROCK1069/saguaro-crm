@@ -5,6 +5,7 @@
  * Real API data from /api/bim/upload and /api/bim/[id].
  */
 import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
+import ModelViewer3D from '@/components/field/ModelViewer3D';
 
 const BASE = '#F2F2F7';
 const CARD = '#FFFFFF';
@@ -34,6 +35,8 @@ interface BimModel {
   status: 'pending' | 'processing' | 'complete' | 'failed';
   element_count: number;
   uploaded_at: string;
+  glb_url?: string | null;
+  original_url?: string | null;
   elements?: BimElement[];
 }
 
@@ -346,7 +349,18 @@ function BimViewerPage() {
         {selectedModel.status === 'complete' && (
           <>
             <div style={{ ...glass, overflow: 'hidden', marginBottom: 12, position: 'relative' }}>
-              <canvas ref={canvasRef} style={{ width: '100%', height: 180, display: 'block' }} />
+              {selectedModel.glb_url ? (
+                <ModelViewer3D src={selectedModel.glb_url} alt={selectedModel.name} height={260} />
+              ) : (
+                <div style={{ padding: '28px 20px', textAlign: 'center', color: DIM, fontSize: 13, lineHeight: 1.6 }}>
+                  <div style={{ marginBottom: 8 }}>A 3D preview appears here once this model is converted to GLB.</div>
+                  {selectedModel.original_url && (
+                    <a href={selectedModel.original_url} target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}>
+                      Download original model →
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Stats bar */}
