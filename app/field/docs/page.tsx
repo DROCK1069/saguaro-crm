@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import SplitDocViewer from '@/components/field/SplitDocViewer';
+import PDFViewer from '@/components/field/PDFViewer';
 
 const GOLD   = '#C8881C';
 const RAISED = '#FFFFFF';
@@ -1222,7 +1223,7 @@ function DocsPage() {
         {/* Document viewer */}
         <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'auto', touchAction: markupMode ? 'none' : 'auto' }}>
           {fileType === 'pdf' && url && (
-            <iframe src={url} style={{ width: '100%', height: '100%', minHeight: fullScreen ? '100%' : '70vh', border: 'none', background: '#fff' }} />
+            <PDFViewer url={url} fileName={getFileName(selected)} height={fullScreen ? '100%' : '78vh'} />
           )}
           {fileType === 'image' && url && (
             <img src={url} alt={getFileName(selected)} style={{ width: '100%', height: 'auto', display: 'block' }} />

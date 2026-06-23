@@ -10,6 +10,7 @@
  */
 import React, { useState } from 'react';
 import SelectMenu from '../ui/SelectMenu';
+import PDFViewer from './PDFViewer';
 
 export interface SplitDoc {
   id: string;
@@ -97,7 +98,7 @@ function Pane({
         {!doc || !doc.url ? (
           <div style={{ padding: 24, textAlign: 'center', color: DIM, fontSize: 13 }}>No document selected.</div>
         ) : kind === 'pdf' ? (
-          <iframe title={doc.name} src={doc.url} style={{ width: '100%', height: '100%', minHeight: '60vh', border: 'none', background: '#fff' }} />
+          <PDFViewer url={doc.url} fileName={doc.name} height="100%" />
         ) : kind === 'image' ? (
           <div style={{ minHeight: '100%', display: 'flex', justifyContent: 'center', padding: 8 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
