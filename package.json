@@ -60,6 +60,7 @@
     "date-fns": "^3.3.0",
     "mustache": "^4.2.0",
     "next": "^14.0.0",
+    "openseadragon": "^4.1.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
     "posthog-js": "^1.360.0",

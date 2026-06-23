@@ -66,6 +66,8 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }); }
   if (!body.fileUrl || !body.projectId) return NextResponse.json({ error: 'fileUrl and projectId required' }, { status: 400 });
 
+  const db = createServerClient() as any;
+  let jobId: string | null = null;
   try {
     const srcRes = await fetch(body.fileUrl, { signal: AbortSignal.timeout(30000) });
     if (!srcRes.ok) throw new Error('source fetch failed');
@@ -73,15 +75,21 @@ export async function POST(req: NextRequest) {
 
     const { PDFDocument } = await import('pdf-lib');
     const src = await PDFDocument.load(pdfBuf, { ignoreEncryption: true });
-    const total = Math.min(src.getPageCount(), 60); // cap per request
+    const total = Math.min(src.getPageCount(), 500); // async-friendly cap
 
-    const db = createServerClient();
     const { data: set, error: setErr } = await db.from('drawing_sets').insert({
       tenant_id: user.tenantId, project_id: body.projectId,
       name: body.setName || 'Drawing Set', total_sheets: total,
       upload_complete: false, upload_started_at: new Date().toISOString(),
     }).select().single();
     if (setErr || !set) throw setErr || new Error('set create failed');
+
+    const { data: job } = await db.from('drawing_split_jobs').insert({
+      tenant_id: user.tenantId, project_id: body.projectId, drawing_set_id: set.id,
+      file_url: body.fileUrl, set_name: body.setName || 'Drawing Set',
+      status: 'processing', total_pages: total, processed_pages: 0,
+    }).select('id').single();
+    jobId = job?.id || null;
 
     const sharp = await getSharp();
     const sheets: any[] = [];
@@ -139,11 +147,14 @@ export async function POST(req: NextRequest) {
 
       if (prior) await db.from('drawing_sheets').update({ is_current: false, superseded_by: row.id }).eq('id', prior.id);
       sheets.push(row);
+      if (jobId) await db.from('drawing_split_jobs').update({ processed_pages: sheets.length, updated_at: new Date().toISOString() }).eq('id', jobId);
     }
 
     await db.from('drawing_sets').update({ upload_complete: true, upload_completed_at: new Date().toISOString() }).eq('id', set.id);
-    return NextResponse.json({ set, sheetsCreated: sheets.length, sheets });
+    if (jobId) await db.from('drawing_split_jobs').update({ status: 'complete', processed_pages: sheets.length, updated_at: new Date().toISOString() }).eq('id', jobId);
+    return NextResponse.json({ jobId, set, sheetsCreated: sheets.length, sheets });
   } catch (err) {
+    if (jobId) { try { await db.from('drawing_split_jobs').update({ status: 'failed', error: String(err).slice(0, 300), updated_at: new Date().toISOString() }).eq('id', jobId); } catch { /* */ } }
     console.error('[drawings/auto-split]', err);
     return NextResponse.json({ error: 'Auto-split failed' }, { status: 500 });
   }
