@@ -1,13 +1,13 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 const CSI_DIVISIONS: Record<string, string> = {
   '01': 'General Requirements',
@@ -112,7 +112,8 @@ function AssemblyLibraryContent() {
       const res = await fetch('/api/takeoff-assemblies/list');
       if (res.ok) {
         const data = await res.json();
-        setAssemblies(data.assemblies || data || []);
+        // Guard the shape — a non-array here would crash the next assemblies.filter().
+        setAssemblies(Array.isArray(data.assemblies) ? data.assemblies : (Array.isArray(data) ? data : []));
       }
     } catch {
       // silent
@@ -236,9 +237,11 @@ function AssemblyLibraryContent() {
     }
   };
 
-  const { totalMaterial, totalLabor, totalCost } = calcTotals(form);
+  const { totalMaterial, totalLabor, totalCost } = useMemo(() => calcTotals(form), [form]);
 
-  const filtered = assemblies.filter(a => {
+  // Memoized so the full assembly grid isn't re-filtered + re-rendered on every
+  // unrelated render (e.g. side-panel edits); only recomputes when inputs change.
+  const filtered = useMemo(() => (Array.isArray(assemblies) ? assemblies : []).filter(a => {
     if (search) {
       const q = search.toLowerCase();
       if (
@@ -250,7 +253,7 @@ function AssemblyLibraryContent() {
     if (filterDivision && a.csi_division !== filterDivision) return false;
     if (filterCategory && a.category !== filterCategory) return false;
     return true;
-  });
+  }), [assemblies, search, filterDivision, filterCategory]);
 
   const inputStyle: React.CSSProperties = {
     width: '100%',

@@ -7,16 +7,16 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD = '#C8881C';
-const CARD = '#FFFFFF';
-const BASE = '#F2F2F7';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const CARD = '#0F172A';
+const BASE = '#0d1117';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
-const BORDER = '#E5E5EA';
+const BORDER = 'rgba(255,255,255,0.12)';
 
 function hr(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);
@@ -56,10 +56,10 @@ const ACTIVITY_CONFIG: Record<ActivityStatus, { color: string; label: string }> 
 };
 
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.7)',
+  background: 'rgba(15,23,42,0.7)',
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
-  border: '1px solid rgba(0,0,0,0.06)',
+  border: '1px solid rgba(255,255,255,0.12)',
   borderRadius: 16,
 };
 
@@ -245,7 +245,7 @@ function CrewMapPage() {
           onClick={toggleSharing}
           style={{
             width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-            background: sharing ? GREEN : 'rgba(0,0,0,0.1)',
+            background: sharing ? GREEN : 'rgba(255,255,255,0.15)',
             position: 'relative', transition: 'background 0.3s',
           }}
         >
@@ -287,10 +287,10 @@ function CrewMapPage() {
           {[1, 2, 3, 4, 5].map(i => (
             <div key={i} style={{ ...glass, padding: 16, height: 64, animation: 'pulse 1.5s ease-in-out infinite' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,0.04)' }} />
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ background: 'rgba(0,0,0,0.04)', borderRadius: 6, height: 14, width: '50%', marginBottom: 6 }} />
-                  <div style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, height: 10, width: '30%' }} />
+                  <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 6, height: 14, width: '50%', marginBottom: 6 }} />
+                  <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 6, height: 10, width: '30%' }} />
                 </div>
               </div>
             </div>
@@ -366,10 +366,10 @@ function CrewCard({ member, activity, timeAgo }: { member: CrewMember; activity:
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.7)',
+      background: 'rgba(15,23,42,0.7)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      border: '1px solid rgba(0,0,0,0.06)',
+      border: '1px solid rgba(255,255,255,0.12)',
       borderRadius: 16,
       padding: '12px 14px',
       display: 'flex', alignItems: 'center', gap: 12,
@@ -388,21 +388,21 @@ function CrewCard({ member, activity, timeAgo }: { member: CrewMember; activity:
         <div style={{
           position: 'absolute', bottom: -1, right: -1,
           width: 12, height: 12, borderRadius: '50%',
-          background: cfg.color, border: '2px solid #E5E5EA',
+          background: cfg.color, border: '2px solid rgba(255,255,255,0.12)',
           boxShadow: `0 0 4px ${cfg.color}`,
         }} />
       </div>
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#1C1C1E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6E6E73' }}>{member.trade || 'Unassigned'}</p>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#FFFFFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#CBD5E1' }}>{member.trade || 'Unassigned'}</p>
       </div>
 
       {/* Time */}
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
         <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: cfg.color }}>{cfg.label}</p>
-        <p style={{ margin: '2px 0 0', fontSize: 10, color: '#6E6E73' }}>{timeAgo(member.updated_at)}</p>
+        <p style={{ margin: '2px 0 0', fontSize: 10, color: '#CBD5E1' }}>{timeAgo(member.updated_at)}</p>
       </div>
     </div>
   );
@@ -410,7 +410,7 @@ function CrewCard({ member, activity, timeAgo }: { member: CrewMember; activity:
 
 export default function FieldCrewMapPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <CrewMapPage />
     </Suspense>
   );

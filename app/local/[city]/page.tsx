@@ -12,9 +12,9 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { city } = await params;
   const data = CITIES.find(c => c.slug === city);
-  if (!data) return { title: 'Construction Software | Saguaro CRM' };
+  if (!data) return { title: 'Construction Software | Saguaro Control Systems' };
   return {
-    title: `Construction Software for ${data.name}, ${data.stateAbbr} | Saguaro CRM`,
+    title: `Construction Software for ${data.name}, ${data.stateAbbr} | Saguaro Control Systems`,
     description: `The best construction management software for general contractors in ${data.name}, ${data.state}. AI blueprint takeoff, lien waivers, certified payroll, field app. Start free.`,
     keywords: [
       `construction software ${data.name}`,
@@ -24,7 +24,7 @@ export async function generateMetadata(
       `contractor management software ${data.state}`,
     ],
     openGraph: {
-      title: `Construction Software for ${data.name}, ${data.stateAbbr} — Saguaro CRM`,
+      title: `Construction Software for ${data.name}, ${data.stateAbbr} — Saguaro Control Systems`,
       description: `AI takeoff, lien waivers, certified payroll — built for GCs in ${data.name}. Start free, no credit card.`,
       url: `https://saguarocontrol.net/local/${city}`,
     },

@@ -7,7 +7,7 @@ import { EmptyState } from '../../../../../components/EmptyState';
 import { Skeleton, SkeletonKPI } from '../../../../../components/ui/Skeleton';
 import { toCents, toDollars, sumCents, subCents, addCents, scaleCents } from '@/lib/calc';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#c03030';
 const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (a: number | null | undefined, b: number | null | undefined) => (b ?? 0) > 0 ? (((a ?? 0) / (b as number)) * 100).toFixed(1) + '%' : '0%';
 
@@ -216,12 +216,12 @@ export default function BudgetPage() {
     const actual = l.actual_cost ?? 0;
     const revised = l.revised_budget ?? 0;
     if (actual > revised) return 'rgba(192,48,48,.08)';
-    if (revised > 0 && actual / revised > 0.9) return 'rgba(212,160,23,.06)';
+    if (revised > 0 && actual / revised > 0.9) return 'rgba(245, 158, 11,.06)';
     return 'transparent';
   }
 
   const inputStyle: React.CSSProperties = {
-    padding: '8px 10px', background: DARK, border: `1px solid ${BORDER}`,
+    padding: '8px 10px', background: '#16243A', border: `1px solid ${BORDER}`,
     borderRadius: 6, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box', width: '100%',
   };
 
@@ -239,7 +239,7 @@ export default function BudgetPage() {
           </div>
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 18 }}>
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: i < 5 ? `1px solid rgba(229,229,234,.5)` : 'none' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: i < 5 ? `1px solid rgba(255,255,255,0.12)` : 'none' }}>
                 <Skeleton width={70} height={14} />
                 <Skeleton width="32%" height={14} />
                 <div style={{ flex: 1 }} />
@@ -298,14 +298,14 @@ export default function BudgetPage() {
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={() => setShowAddForm(v => !v)}
-            style={{ padding: '8px 16px', background: 'rgba(212,160,23,.12)', border: '1px solid rgba(212,160,23,.3)', borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+            style={{ padding: '8px 16px', background: 'rgba(245, 158, 11,.12)', border: '1px solid rgba(245, 158, 11,.3)', borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
           >
             + Add Line
           </button>
           <button
             onClick={exportReport}
             disabled={exporting}
-            style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: exporting ? 'wait' : 'pointer', opacity: exporting ? 0.7 : 1 }}
+            style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: exporting ? 'wait' : 'pointer', opacity: exporting ? 0.7 : 1 }}
           >
             {exporting ? 'Exporting...' : 'Export'}
           </button>
@@ -347,7 +347,7 @@ export default function BudgetPage() {
                 <input value={addForm.original_budget} onChange={e => setAddForm(f => ({ ...f, original_budget: e.target.value }))} placeholder="0" type="number" min="0" required style={inputStyle} />
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add</button>
+                <button type="submit" style={{ padding: '8px 16px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Add</button>
                 <button type="button" onClick={() => setShowAddForm(false)} style={{ padding: '8px 12px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
@@ -369,7 +369,7 @@ export default function BudgetPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr style={{ background: '#0d1117' }}>
                   {['Cost Code', 'Description', 'Orig. Budget', 'Approved COs', 'Revised Budget', 'Committed', 'Actual Cost', '% Complete', 'Remaining', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Cost Code' || h === 'Description' || h === 'Actions' ? 'left' : 'right', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
@@ -381,7 +381,7 @@ export default function BudgetPage() {
                   const pct = l.pct_complete ?? 0;
                   const isEditing = editingId === l.id;
                   return (
-                    <tr key={l.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)`, background: rowBg(l) }}>
+                    <tr key={l.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.12)`, background: rowBg(l) }}>
                       <td style={{ padding: '11px 14px', color: GOLD, fontWeight: 700, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{l.cost_code}</td>
                       <td style={{ padding: '11px 14px', color: TEXT, fontWeight: 500, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.description}</td>
                       <td style={{ padding: '11px 14px', textAlign: 'right', color: TEXT }}>
@@ -390,7 +390,7 @@ export default function BudgetPage() {
                             value={editAmount}
                             onChange={e => setEditAmount(e.target.value)}
                             type="number"
-                            style={{ width: 110, padding: '4px 8px', background: DARK, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }}
+                            style={{ width: 110, padding: '4px 8px', background: '#16243A', border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }}
                             autoFocus
                           />
                         ) : fmt(l.original_budget)}
@@ -401,7 +401,7 @@ export default function BudgetPage() {
                       <td style={{ padding: '11px 14px', textAlign: 'right', color: (l.actual_cost ?? 0) > (l.revised_budget ?? 0) ? '#ff7070' : (l.actual_cost ?? 0) > 0 ? '#f97316' : DIM }}>{fmt(l.actual_cost)}</td>
                       <td style={{ padding: '11px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                          <div style={{ width: 40, height: 4, background: 'rgba(0,0,0,.08)', borderRadius: 2 }}>
+                          <div style={{ width: 40, height: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 2 }}>
                             <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: pct >= 100 ? '#3dd68c' : GOLD, borderRadius: 2 }} />
                           </div>
                           <span style={{ color: pct >= 100 ? '#3dd68c' : TEXT, fontWeight: 600, whiteSpace: 'nowrap' }}>{pct}%</span>
@@ -411,7 +411,7 @@ export default function BudgetPage() {
                       <td style={{ padding: '11px 14px', whiteSpace: 'nowrap', position: 'relative' as const }}>
                         {isEditing ? (
                           <div style={{ display: 'flex', gap: 5 }}>
-                            <button onClick={() => saveEdit(l.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 4, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                            <button onClick={() => saveEdit(l.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 4, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                             <button onClick={() => setEditingId(null)} style={{ padding: '3px 8px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 4, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                           </div>
                         ) : adjustId === l.id ? (
@@ -456,7 +456,7 @@ export default function BudgetPage() {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ background: 'rgba(0,0,0,.03)', fontWeight: 800 }}>
+                <tr style={{ background: 'rgba(255,255,255,0.04)', fontWeight: 800 }}>
                   <td colSpan={2} style={{ padding: '12px 14px', color: TEXT, fontWeight: 800 }}>TOTALS</td>
                   <td style={{ padding: '12px 14px', textAlign: 'right', color: TEXT }}>{fmt(totalOriginal)}</td>
                   <td style={{ padding: '12px 14px', textAlign: 'right', color: totalApprovedCOs > 0 ? '#4a9de8' : DIM }}>{totalApprovedCOs > 0 ? '+' + fmt(totalApprovedCOs) : '—'}</td>

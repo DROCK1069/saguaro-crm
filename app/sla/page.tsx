@@ -1,17 +1,18 @@
 import React from 'react';
+import Link from 'next/link';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#22c55e',RED='#ef4444';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#22c55e',RED='#ef4444';
 
 const NAV = (
-  <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(255,255,255,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',gap:24,backdropFilter:'blur(12px)'}}>
-    <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
+  <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(15,23,42,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',gap:24,backdropFilter:'blur(12px)'}}>
+    <Link href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
       <span style={{fontSize:22}}>🌵</span>
       <span style={{fontWeight:800,fontSize:16,letterSpacing:1,color:GOLD}}>SAGUARO</span>
       <span style={{fontSize:10,background:GOLD,color:'#1C1C1E',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
-    </a>
+    </Link>
     <div style={{flex:1}}/>
-    <a href="/login" style={{padding:'7px 16px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>Log In</a>
-    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
+    <Link href="/login" style={{padding:'7px 16px',background:'rgba(245, 158, 11,.12)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>Log In</Link>
+    <Link href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</Link>
   </nav>
 );
 
@@ -65,7 +66,7 @@ export default function SLAPage() {
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}}>
           {UPTIME_TIERS.map(t=>(
             <div key={t.plan} style={{background:RAISED,border:`2px solid ${t.popular?t.color:BORDER}`,borderRadius:14,padding:'28px 24px',textAlign:'center',position:'relative'}}>
-              {t.popular&&<div style={{position:'absolute',top:-1,left:0,right:0,background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:'12px 12px 0 0',padding:'5px 0',fontSize:10,fontWeight:800,color:'#1C1C1E',letterSpacing:1}}>MOST POPULAR</div>}
+              {t.popular&&<div style={{position:'absolute',top:-1,left:0,right:0,background:`linear-gradient(135deg,${GOLD},#FBBF24)`,borderRadius:'12px 12px 0 0',padding:'5px 0',fontSize:10,fontWeight:800,color:'#1C1C1E',letterSpacing:1}}>MOST POPULAR</div>}
               <div style={{marginTop:t.popular?12:0}}>
                 <div style={{fontSize:12,fontWeight:700,letterSpacing:1,textTransform:'uppercase',color:t.color,marginBottom:10}}>{t.plan}</div>
                 <div style={{fontSize:52,fontWeight:900,color:TEXT,lineHeight:1}}>{t.uptime}</div>
@@ -84,7 +85,7 @@ export default function SLAPage() {
           <div style={{border:`1px solid ${BORDER}`,borderRadius:12,overflow:'hidden'}}>
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
               <thead>
-                <tr style={{background:'#F2F2F7'}}>
+                <tr style={{background:'#16243A'}}>
                   <th style={{padding:'14px 20px',textAlign:'left',color:DIM,fontWeight:700,fontSize:11,textTransform:'uppercase',letterSpacing:.5}}>Priority</th>
                   <th style={{padding:'14px 20px',textAlign:'left',color:DIM,fontWeight:700,fontSize:11,textTransform:'uppercase',letterSpacing:.5}}>Description</th>
                   <th style={{padding:'14px 20px',textAlign:'center',color:'#818cf8',fontWeight:700,fontSize:11,textTransform:'uppercase',letterSpacing:.5}}>Enterprise</th>
@@ -96,7 +97,7 @@ export default function SLAPage() {
                 {SUPPORT_ROWS.map((row,i)=>(
                   <tr key={row.priority} style={{borderTop:`1px solid ${BORDER}`,background:i%2===0?'transparent':'rgba(0,0,0,.01)'}}>
                     <td style={{padding:'14px 20px'}}>
-                      <span style={{fontSize:11,fontWeight:800,padding:'3px 10px',borderRadius:4,background:row.priority==='Critical'?'rgba(239,68,68,.15)':row.priority==='High'?'rgba(212,160,23,.12)':'rgba(0,0,0,.06)',color:row.priority==='Critical'?RED:row.priority==='High'?GOLD:DIM}}>
+                      <span style={{fontSize:11,fontWeight:800,padding:'3px 10px',borderRadius:4,background:row.priority==='Critical'?'rgba(239,68,68,.15)':row.priority==='High'?'rgba(245, 158, 11,.12)':'rgba(0,0,0,.06)',color:row.priority==='Critical'?RED:row.priority==='High'?GOLD:DIM}}>
                         {row.priority.toUpperCase()}
                       </span>
                     </td>
@@ -170,11 +171,11 @@ export default function SLAPage() {
       <div style={{textAlign:'center',padding:'60px 24px',background:RAISED,borderTop:`1px solid ${BORDER}`}}>
         <h2 style={{fontSize:26,fontWeight:900,marginBottom:10}}>SLA questions or incident reports?</h2>
         <p style={{color:DIM,marginBottom:20,fontSize:15}}>We respond to SLA inquiries within one business day.</p>
-        <a href="mailto:sla@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}>
+        <a href="mailto:sla@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,borderRadius:9,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}>
           sla@saguarocontrol.net
         </a>
         <div style={{marginTop:20,fontSize:13,color:DIM}}>
-          <a href="/security" style={{color:GOLD,textDecoration:'none'}}>Security</a> · <a href="/privacy" style={{color:GOLD,textDecoration:'none'}}>Privacy</a> · <a href="/terms" style={{color:GOLD,textDecoration:'none'}}>Terms</a>
+          <Link href="/security" style={{color:GOLD,textDecoration:'none'}}>Security</Link> · <Link href="/privacy" style={{color:GOLD,textDecoration:'none'}}>Privacy</Link> · <Link href="/terms" style={{color:GOLD,textDecoration:'none'}}>Terms</Link>
         </div>
       </div>
     </div>

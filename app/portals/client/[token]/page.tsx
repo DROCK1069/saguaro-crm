@@ -1,14 +1,15 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
 /* ── Palette ──────────────────────────────────────────────────────── */
-const GOLD = '#C8881C';
-const BG = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const BG = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
@@ -1031,7 +1032,7 @@ export default function ClientPortalPage() {
   const renderDashboard = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Welcome Banner */}
-      <div style={{ ...cardStyle, background: `linear-gradient(135deg, ${RAISED} 0%, #F2F2F7 100%)`, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ ...cardStyle, background: `linear-gradient(135deg, ${RAISED} 0%, #16243A 100%)`, position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: `${GOLD}10` }} />
         <div style={{ position: 'absolute', bottom: -20, right: 40, width: 80, height: 80, borderRadius: '50%', background: `${GOLD}08` }} />
         <div style={{ position: 'relative' }}>
@@ -2139,7 +2140,7 @@ export default function ClientPortalPage() {
       {showChangeRequest && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: '#F2F2F7', zIndex: 300,
+          background: '#0d1117', zIndex: 300,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 24,
         }}
@@ -2332,7 +2333,7 @@ export default function ClientPortalPage() {
               <span style={{ fontSize: 18 }}>🌵</span>
               <div>
                 <div style={{ fontSize: 12, color: DIM }}>
-                  Powered by <span style={{ color: GOLD, fontWeight: 700 }}>Saguaro CRM</span>
+                  Powered by <span style={{ color: GOLD, fontWeight: 700 }}>Saguaro Control Systems</span>
                 </div>
                 <div style={{ fontSize: 10, color: `${DIM}60`, marginTop: 2 }}>
                   Secure client portal · All data encrypted in transit
@@ -2341,8 +2342,8 @@ export default function ClientPortalPage() {
             </div>
             <div style={{ display: 'flex', gap: 16, fontSize: 11, color: DIM }}>
               <span style={{ cursor: 'pointer' }} onClick={() => showToast('Help center coming soon')}>Help</span>
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: DIM, textDecoration: 'none', cursor: 'pointer' }}>Privacy</a>
-              <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: DIM, textDecoration: 'none', cursor: 'pointer' }}>Terms</a>
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: DIM, textDecoration: 'none', cursor: 'pointer' }}>Privacy</Link>
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: DIM, textDecoration: 'none', cursor: 'pointer' }}>Terms</Link>
             </div>
           </div>
 

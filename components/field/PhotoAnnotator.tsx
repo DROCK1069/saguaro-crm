@@ -107,12 +107,12 @@ export function PhotoAnnotator({ onSave, onCancel }: PhotoAnnotatorProps) {
     img.src = imgSrc;
   }, [imgSrc, annotations, onSave]);
 
-  const DARK   = '#F2F2F7';
-  const RAISED = '#FFFFFF';
-  const BORDER = '#E5E5EA';
-  const TEXT   = '#1C1C1E';
-  const DIM    = '#6E6E73';
-  const GOLD   = '#C8881C';
+  const DARK   = '#0d1117';
+  const RAISED = '#0F172A';
+  const BORDER = 'rgba(255,255,255,0.12)';
+  const TEXT   = '#FFFFFF';
+  const DIM    = '#CBD5E1';
+  const GOLD   = '#F59E0B';
 
   return (
     <div style={{ background: DARK, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -123,7 +123,7 @@ export function PhotoAnnotator({ onSave, onCancel }: PhotoAnnotatorProps) {
         <button
           onClick={handleSave}
           disabled={!imgSrc}
-          style={{ background: imgSrc ? GOLD : 'rgba(212,160,23,.3)', border: 'none', borderRadius: 8, padding: '8px 16px', color: '#1C1C1E', fontWeight: 700, fontSize: 13, cursor: imgSrc ? 'pointer' : 'not-allowed' }}
+          style={{ background: imgSrc ? GOLD : 'rgba(245, 158, 11,.3)', border: 'none', borderRadius: 8, padding: '8px 16px', color: '#1C1C1E', fontWeight: 700, fontSize: 13, cursor: imgSrc ? 'pointer' : 'not-allowed' }}
         >
           Attach
         </button>
@@ -208,7 +208,7 @@ export function PhotoAnnotator({ onSave, onCancel }: PhotoAnnotatorProps) {
           {!adding && !pendingPos && (
             <button
               onClick={() => setAdding(true)}
-              style={{ width: '100%', padding: '10px', background: 'rgba(212,160,23,.12)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 8, color: GOLD, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              style={{ width: '100%', padding: '10px', background: 'rgba(245, 158, 11,.12)', border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 8, color: GOLD, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
             >
               + Add Annotation (tap photo to place)
             </button>
@@ -235,7 +235,7 @@ export function PhotoAnnotator({ onSave, onCancel }: PhotoAnnotatorProps) {
               <button
                 onClick={commitAnnotation}
                 disabled={!newText.trim()}
-                style={{ padding: '9px 18px', background: newText.trim() ? GOLD : 'rgba(212,160,23,.3)', border: 'none', borderRadius: 8, color: '#1C1C1E', fontWeight: 700, fontSize: 13, cursor: newText.trim() ? 'pointer' : 'not-allowed' }}
+                style={{ padding: '9px 18px', background: newText.trim() ? GOLD : 'rgba(245, 158, 11,.3)', border: 'none', borderRadius: 8, color: '#1C1C1E', fontWeight: 700, fontSize: 13, cursor: newText.trim() ? 'pointer' : 'not-allowed' }}
               >
                 Add
               </button>

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 
 const STEPS = [
   { num: 1, label: 'Welcome', active: true },
@@ -34,7 +34,7 @@ export default function OnboardingStep1() {
           {STEPS.map((s, i) => (
             <React.Fragment key={s.num}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : 'rgba(0,0,0,.06)', color: s.active ? '#1C1C1E' : DIM, border: `2px solid ${s.active ? GOLD : BORDER}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, background: s.active ? GOLD : 'rgba(255,255,255,.08)', color: s.active ? '#1C1C1E' : DIM, border: `2px solid ${s.active ? GOLD : BORDER}` }}>
                   {s.num}
                 </div>
                 <span style={{ fontSize: 11, color: s.active ? TEXT : DIM, fontWeight: s.active ? 700 : 400 }}>{s.label}</span>
@@ -64,7 +64,7 @@ export default function OnboardingStep1() {
               { icon: '🔒', title: 'Lien Waivers', desc: 'State-specific forms for all 50 states. AZ, CA, TX statutory language included.' },
               { icon: '🤖', title: 'Autopilot', desc: 'Automated RFI routing, change order tracking, and insurance expiry alerts.' },
             ].map(f => (
-              <div key={f.title} style={{ background: 'rgba(0,0,0,.02)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
+              <div key={f.title} style={{ background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '14px 16px' }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>{f.icon}</div>
                 <div style={{ fontWeight: 700, fontSize: 13, color: TEXT, marginBottom: 4 }}>{f.title}</div>
                 <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>{f.desc}</div>
@@ -76,7 +76,7 @@ export default function OnboardingStep1() {
             <button
               onClick={createDemoProject}
               disabled={loading}
-              style={{ padding: '14px 0', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 10, color: '#1C1C1E', fontSize: 16, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? .7 : 1 }}
+              style={{ padding: '14px 0', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 10, color: '#1C1C1E', fontSize: 16, fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? .7 : 1 }}
             >
               {loading ? 'Loading your dashboard...' : 'Go to Dashboard →'}
             </button>
@@ -88,12 +88,12 @@ export default function OnboardingStep1() {
             </a>
           </div>
 
-          <div style={{ marginTop: 24, padding: 16, background: 'rgba(212,160,23,.06)', border: '1px solid rgba(212,160,23,.2)', borderRadius: 8, fontSize: 12, color: DIM, textAlign: 'center' }}>
+          <div style={{ marginTop: 24, padding: 16, background: 'rgba(245, 158, 11,.06)', border: '1px solid rgba(245, 158, 11,.2)', borderRadius: 8, fontSize: 12, color: DIM, textAlign: 'center' }}>
             💡 <strong style={{ color: TEXT }}>Pro tip:</strong> Start with the AI Takeoff — upload any blueprint PDF and see it calculate every material automatically in under 60 seconds.
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#6E6E73' }}>
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#CBD5E1' }}>
           Need help? <a href="mailto:support@saguarocontrol.net" style={{ color: DIM }}>support@saguarocontrol.net</a>
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD = '#C8881C', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
+const GOLD = '#F59E0B', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
 
 interface FilterOption {
   label: string;
@@ -72,7 +72,7 @@ export default function SearchFilter({
               style={{
                 padding: '4px 12px', borderRadius: 16, fontSize: 11, fontWeight: 600,
                 whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
-                background: activeFilter === f.value ? 'rgba(212,160,23,.2)' : 'rgba(0,0,0,.04)',
+                background: activeFilter === f.value ? 'rgba(245, 158, 11,.2)' : 'rgba(0,0,0,.04)',
                 border: `1px solid ${activeFilter === f.value ? GOLD : 'rgba(0,0,0,.08)'}`,
                 color: activeFilter === f.value ? GOLD : DIM,
               }}>
@@ -90,7 +90,7 @@ export default function SearchFilter({
               }}
             >
               {sortOptions.map(s => (
-                <option key={s.value} value={s.value} style={{ background: '#FFFFFF' }}>{s.label}</option>
+                <option key={s.value} value={s.value} style={{ background: '#0F172A' }}>{s.label}</option>
               ))}
             </select>
           )}

@@ -6,7 +6,7 @@ import { WarningCircle } from '@phosphor-icons/react';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#3dd68c';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#3dd68c';
 
 interface BidRecord {
   id: string;
@@ -233,8 +233,8 @@ function BidsPageInner() {
           <div style={{fontSize:13,color:DIM,marginTop:4}}>AI-scored opportunities and active bid packages</div>
         </div>
         <div style={{display:'flex',gap:10}}>
-          <Link href="/app/intelligence" style={{padding:'9px 16px',background:'rgba(212,160,23,.12)',border:'1px solid rgba(212,160,23,.3)',borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>🧠 Bid Intelligence</Link>
-          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}} onClick={()=>setShowScore(true)}>+ Score a Bid</button>
+          <Link href="/app/intelligence" style={{padding:'9px 16px',background:'rgba(245, 158, 11,.12)',border:'1px solid rgba(245, 158, 11,.3)',borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>🧠 Bid Intelligence</Link>
+          <button style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}} onClick={()=>setShowScore(true)}>+ Score a Bid</button>
         </div>
       </div>
 
@@ -274,11 +274,11 @@ function BidsPageInner() {
             <div style={{fontSize:40,marginBottom:12}}>📊</div>
             <div style={{fontSize:18,fontWeight:700,color:TEXT,marginBottom:8}}>No Open Bid Packages</div>
             <div style={{marginBottom:20}}>Create bid packages on your projects to track your pipeline here.</div>
-            <button onClick={()=>router.push('/app/projects')} style={{padding:'10px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>Go to Projects</button>
+            <button onClick={()=>router.push('/app/projects')} style={{padding:'10px 22px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>Go to Projects</button>
           </div>
         ) : (
           <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
-            <thead><tr style={{background:'#F2F2F7'}}>
+            <thead><tr style={{background:'#16243A'}}>
               {['Package Name','Trade','Status','Bid Due','Actions'].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
               ))}
@@ -290,7 +290,7 @@ function BidsPageInner() {
                 <td style={{padding:'12px 14px'}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(26,95,168,.12)',color:'#4a9de8',textTransform:'uppercase' as const}}>{op.status}</span></td>
                 <td style={{padding:'12px 14px',color:DIM}}>{op.bid_due_date || '—'}</td>
                 <td style={{padding:'12px 14px'}}>
-                  <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>View →</button>
+                  <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}>View →</button>
                 </td>
               </tr>
             ))}</tbody>
@@ -305,7 +305,7 @@ function BidsPageInner() {
         <div style={{marginBottom:20}}>Select a project to view and manage its bid packages.</div>
         <button
           onClick={()=>router.push('/app/projects')}
-          style={{padding:'10px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}
+          style={{padding:'10px 22px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}
         >View Projects</button>
       </div>}
 
@@ -335,7 +335,7 @@ function BidsPageInner() {
         {/* Filter pills */}
         <div style={{display:'flex',gap:8,marginBottom:16}}>
           {(['all','won','lost','pending'] as const).map(f=>(
-            <button key={f} onClick={()=>handleHistoryFilter(f)} style={{padding:'5px 14px',border:`1px solid ${historyFilter===f?GOLD:BORDER}`,borderRadius:20,background:historyFilter===f?'rgba(212,160,23,.12)':'transparent',color:historyFilter===f?GOLD:DIM,fontSize:12,fontWeight:historyFilter===f?700:500,cursor:'pointer',textTransform:'capitalize' as const}}>{f}</button>
+            <button key={f} onClick={()=>handleHistoryFilter(f)} style={{padding:'5px 14px',border:`1px solid ${historyFilter===f?GOLD:BORDER}`,borderRadius:20,background:historyFilter===f?'rgba(245, 158, 11,.12)':'transparent',color:historyFilter===f?GOLD:DIM,fontSize:12,fontWeight:historyFilter===f?700:500,cursor:'pointer',textTransform:'capitalize' as const}}>{f}</button>
           ))}
         </div>
         {/* LOADING — skeleton rows, never computed zeros */}
@@ -366,7 +366,7 @@ function BidsPageInner() {
           <button onClick={()=>fetchHistory(historyFilter==='all'?undefined:historyFilter)} style={{padding:'8px 18px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Retry</button>
         </div>}
         {!historyLoading&&!historyError&&historyBids.length>0&&<table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
-          <thead><tr style={{background:'#F2F2F7'}}>
+          <thead><tr style={{background:'#16243A'}}>
             {['Project','Type','Bid Date','Bid Amount','Margin %','Location','Outcome','Awarded To'].map(h=>(
               <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
             ))}
@@ -377,7 +377,7 @@ function BidsPageInner() {
               : b.outcome==='lost'
               ? {bg:'rgba(192,48,48,.12)',c:'#ff7070'}
               : b.outcome==='pending'
-              ? {bg:'rgba(212,160,23,.12)',c:GOLD}
+              ? {bg:'rgba(245, 158, 11,.12)',c:GOLD}
               : {bg:'rgba(143,163,192,.1)',c:DIM};
             return <tr key={b.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
               <td style={{padding:'12px 14px',color:TEXT,fontWeight:600,maxWidth:220,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{b.project_name}</td>
@@ -394,7 +394,7 @@ function BidsPageInner() {
                 ) : editId===b.id ? (
                   <div style={{display:'flex',alignItems:'center',gap:4}}>
                     <input value={editVal} onChange={e=>setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleSaveEdit(b.id);if(e.key==='Escape')setEditId(null);}} style={{width:110,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
-                    <button onClick={()=>handleSaveEdit(b.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                    <button onClick={()=>handleSaveEdit(b.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
                     <button onClick={()=>setEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                   </div>
                 ) : adjustId===b.id ? (
@@ -407,7 +407,7 @@ function BidsPageInner() {
                 ) : noteId===b.id ? (
                   <div style={{display:'flex',alignItems:'center',gap:4}}>
                     <input value={noteVal} onChange={e=>setNoteVal(e.target.value)} placeholder="Add a note…" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleSaveNote(b.id);if(e.key==='Escape'){setNoteId(null);setNoteVal('');}}} style={{width:160,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none'}}/>
-                    <button onClick={()=>handleSaveNote(b.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                    <button onClick={()=>handleSaveNote(b.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
                     <button onClick={()=>{setNoteId(null);setNoteVal('');}} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                   </div>
                 ) : (
@@ -458,7 +458,7 @@ function BidsPageInner() {
       </div>}
 
       {/* ── Score a Bid Modal ─────────────────────────────────────────────────── */}
-      {showScore&&<div style={{position:'fixed',inset:0,background:'#F2F2F7',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+      {showScore&&<div style={{position:'fixed',inset:0,background:'#0d1117',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
         <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:28,width:480,maxWidth:'95vw',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
             <div style={{fontWeight:800,fontSize:17,color:TEXT}}>🤖 Score This Bid</div>
@@ -477,10 +477,10 @@ function BidsPageInner() {
                   <div style={{fontSize:36,fontWeight:900,color:scoreResult.winPct>=60?'#3dd68c':scoreResult.winPct>=40?GOLD:'#ff7070'}}>{scoreResult.winPct}%</div>
                 </div>
               </div>
-              <div style={{background:'rgba(212,160,23,.08)',border:'1px solid rgba(212,160,23,.25)',borderRadius:8,padding:'12px 16px',marginBottom:20,fontSize:14,fontWeight:700,color:GOLD,textAlign:'center' as const}}>{scoreResult.recommendation}</div>
+              <div style={{background:'rgba(245, 158, 11,.08)',border:'1px solid rgba(245, 158, 11,.25)',borderRadius:8,padding:'12px 16px',marginBottom:20,fontSize:14,fontWeight:700,color:GOLD,textAlign:'center' as const}}>{scoreResult.recommendation}</div>
               <div style={{display:'flex',gap:10}}>
                 <button onClick={()=>{setScoreResult(null);setScoreForm({projectName:'',bidAmount:'',margin:'',tradeType:'',notes:''});}} style={{flex:1,padding:'9px 16px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Score Another</button>
-                <button onClick={()=>setTab('pipeline')} style={{flex:1,padding:'9px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>View Pipeline</button>
+                <button onClick={()=>setTab('pipeline')} style={{flex:1,padding:'9px 16px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>View Pipeline</button>
               </div>
             </div>
           ) : (
@@ -489,16 +489,16 @@ function BidsPageInner() {
                 {([['Project Name','projectName','e.g. Scottsdale Office Buildout'],['Bid Amount ($)','bidAmount','e.g. 2,500,000'],['Target Margin (%)','margin','e.g. 15'],['Trade Type','tradeType','e.g. Commercial']]).map(([lbl,key,ph])=>(
                   <div key={key}>
                     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>{lbl}</label>
-                    <input value={(scoreForm as any)[key]} onChange={e=>setScoreForm(f=>({...f,[key]:e.target.value}))} placeholder={ph} style={{width:'100%',padding:'8px 12px',background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const}}/>
+                    <input value={(scoreForm as any)[key]} onChange={e=>setScoreForm(f=>({...f,[key]:e.target.value}))} placeholder={ph} style={{width:'100%',padding:'8px 12px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const}}/>
                   </div>
                 ))}
               </div>
               <div style={{marginBottom:16}}>
                 <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Notes</label>
-                <textarea value={scoreForm.notes} onChange={e=>setScoreForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Any context for the AI…" style={{width:'100%',padding:'8px 12px',background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',resize:'vertical' as const,boxSizing:'border-box' as const}}/>
+                <textarea value={scoreForm.notes} onChange={e=>setScoreForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Any context for the AI…" style={{width:'100%',padding:'8px 12px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',resize:'vertical' as const,boxSizing:'border-box' as const}}/>
               </div>
               <div style={{display:'flex',gap:10}}>
-                <button onClick={submitScore} disabled={scoring||!scoreForm.projectName||!scoreForm.bidAmount} style={{flex:1,padding:'10px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',opacity:scoring||!scoreForm.projectName||!scoreForm.bidAmount?0.6:1}}>
+                <button onClick={submitScore} disabled={scoring||!scoreForm.projectName||!scoreForm.bidAmount} style={{flex:1,padding:'10px 18px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',opacity:scoring||!scoreForm.projectName||!scoreForm.bidAmount?0.6:1}}>
                   {scoring?'Scoring…':'🤖 Score This Bid'}
                 </button>
                 <button onClick={()=>setShowScore(false)} style={{padding:'10px 16px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
@@ -513,7 +513,7 @@ function BidsPageInner() {
 
 export default function BidsPage() {
   return (
-    <Suspense fallback={<div style={{minHeight:'100vh',background:'#F2F2F7'}}/>}>
+    <Suspense fallback={<div style={{minHeight:'100vh',background:'#0d1117'}}/>}>
       <BidsPageInner />
     </Suspense>
   );

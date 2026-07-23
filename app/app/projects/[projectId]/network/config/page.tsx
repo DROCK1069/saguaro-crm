@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#16243A';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface ConfigTemplate {
   id: string;
@@ -258,7 +258,7 @@ export default function ConfigGeneratorPage() {
               )}
 
               <button onClick={generateConfig} disabled={generating} style={{
-                padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+                padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
                 color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
                 opacity: generating ? 0.5 : 1, marginBottom: 16,
               }}>
@@ -288,7 +288,7 @@ export default function ConfigGeneratorPage() {
                     </div>
                   </div>
                   <pre style={{
-                    background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 8,
+                    background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8,
                     padding: 16, color: GREEN, fontSize: 12, fontFamily: 'monospace',
                     lineHeight: 1.6, overflow: 'auto', maxHeight: 400,
                     whiteSpace: 'pre-wrap', wordBreak: 'break-all',

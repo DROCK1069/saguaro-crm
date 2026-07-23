@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -165,8 +165,8 @@ function NotificationsPage() {
 
       {statusMsg && (
         <div style={{
-          background: statusMsg.includes('enabled') ? 'rgba(34,197,94,.1)' : statusMsg.includes('denied') || statusMsg.includes('Failed') || statusMsg.includes('missing') ? 'rgba(239,68,68,.1)' : 'rgba(212,160,23,.1)',
-          border: `1px solid ${statusMsg.includes('enabled') ? 'rgba(34,197,94,.3)' : statusMsg.includes('denied') || statusMsg.includes('Failed') || statusMsg.includes('missing') ? 'rgba(239,68,68,.3)' : 'rgba(212,160,23,.3)'}`,
+          background: statusMsg.includes('enabled') ? 'rgba(34,197,94,.1)' : statusMsg.includes('denied') || statusMsg.includes('Failed') || statusMsg.includes('missing') ? 'rgba(239,68,68,.1)' : 'rgba(245, 158, 11,.1)',
+          border: `1px solid ${statusMsg.includes('enabled') ? 'rgba(34,197,94,.3)' : statusMsg.includes('denied') || statusMsg.includes('Failed') || statusMsg.includes('missing') ? 'rgba(239,68,68,.3)' : 'rgba(245, 158, 11,.3)'}`,
           borderRadius: 10, padding: '12px 14px', marginBottom: 14,
           color: statusMsg.includes('enabled') ? GREEN : statusMsg.includes('denied') || statusMsg.includes('Failed') || statusMsg.includes('missing') ? RED : AMBER,
           fontSize: 14, fontWeight: 600,
@@ -193,9 +193,9 @@ function NotificationsPage() {
           <span style={{ fontSize: 14, color: TEXT }}>Permission</span>
           <span style={{
             fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-            background: permissionState === 'granted' ? 'rgba(34,197,94,.15)' : permissionState === 'denied' ? 'rgba(239,68,68,.15)' : 'rgba(212,160,23,.15)',
+            background: permissionState === 'granted' ? 'rgba(34,197,94,.15)' : permissionState === 'denied' ? 'rgba(239,68,68,.15)' : 'rgba(245, 158, 11,.15)',
             color: permissionState === 'granted' ? GREEN : permissionState === 'denied' ? RED : AMBER,
-            border: `1px solid ${permissionState === 'granted' ? 'rgba(34,197,94,.3)' : permissionState === 'denied' ? 'rgba(239,68,68,.3)' : 'rgba(212,160,23,.3)'}`,
+            border: `1px solid ${permissionState === 'granted' ? 'rgba(34,197,94,.3)' : permissionState === 'denied' ? 'rgba(239,68,68,.3)' : 'rgba(245, 158, 11,.3)'}`,
           }}>
             {permissionState === 'granted' ? 'Granted' : permissionState === 'denied' ? 'Denied' : 'Default'}
           </span>
@@ -216,7 +216,7 @@ function NotificationsPage() {
             disabled={subscribing}
             style={{
               width: 52, height: 30, borderRadius: 15, border: 'none', cursor: subscribing ? 'wait' : 'pointer',
-              background: prefs.enabled ? GREEN : '#E5E5EA', position: 'relative', transition: 'background .3s',
+              background: prefs.enabled ? GREEN : '#16243A', position: 'relative', transition: 'background .3s',
               flexShrink: 0,
             }}
           >
@@ -240,7 +240,7 @@ function NotificationsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: 8,
-                  background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.2)',
+                  background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0,
                 }}>
                   {cat.icon === 'bell' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
@@ -259,7 +259,7 @@ function NotificationsPage() {
               onClick={() => toggleCategory(cat.id)}
               style={{
                 width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
-                background: prefs.categories[cat.id] ? GOLD : '#E5E5EA', position: 'relative',
+                background: prefs.categories[cat.id] ? GOLD : '#16243A', position: 'relative',
                 transition: 'background .3s', flexShrink: 0, marginLeft: 10,
                 opacity: prefs.enabled ? 1 : 0.4, pointerEvents: prefs.enabled ? 'auto' : 'none',
               }}
@@ -297,7 +297,7 @@ function NotificationsPage() {
 
 export default function FieldNotificationsPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <NotificationsPage />
     </Suspense>
   );

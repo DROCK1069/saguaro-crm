@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, extend } from '@/lib/calc';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -292,13 +292,13 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                 {w.suggestedSubs.map(sub => (
-                  <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: sub.checked ? 'rgba(212,160,23,.05)' : 'rgba(0,0,0,.02)', border: `1px solid ${sub.checked ? 'rgba(212,160,23,.3)' : BORDER}`, borderRadius: 8, cursor: 'pointer' }}>
+                  <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: sub.checked ? 'rgba(245, 158, 11,.05)' : 'rgba(0,0,0,.02)', border: `1px solid ${sub.checked ? 'rgba(245, 158, 11,.3)' : BORDER}`, borderRadius: 8, cursor: 'pointer' }}>
                     <input type="checkbox" checked={sub.checked} onChange={e => setW(prev => ({ ...prev, suggestedSubs: prev.suggestedSubs.map(s => s.id === sub.id ? { ...s, checked: e.target.checked } : s) }))} style={{ accentColor: GOLD, width: 16, height: 16 }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{sub.name}</div>
                       {sub.email && <div style={{ fontSize: 11, color: DIM }}>{sub.email}</div>}
                     </div>
-                    {sub.recommended && <span style={{ fontSize: 10, background: 'rgba(212,160,23,.12)', color: GOLD, padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>RECOMMENDED</span>}
+                    {sub.recommended && <span style={{ fontSize: 10, background: 'rgba(245, 158, 11,.12)', color: GOLD, padding: '2px 7px', borderRadius: 4, fontWeight: 700 }}>RECOMMENDED</span>}
                   </label>
                 ))}
               </div>
@@ -308,7 +308,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input value={w.addName} onChange={e => setField('addName', e.target.value)} placeholder="Name" style={{ ...inp, flex: 1 }} />
                   <input value={w.addEmail} onChange={e => setField('addEmail', e.target.value)} placeholder="email@company.com" style={{ ...inp, flex: 2 }} />
-                  <button onClick={addExtra} style={{ padding: '8px 14px', background: 'rgba(212,160,23,.1)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+                  <button onClick={addExtra} style={{ padding: '8px 14px', background: 'rgba(245, 158, 11,.1)', border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
                 </div>
                 {w.extraInvites.map((ei, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(0,0,0,.02)', borderRadius: 6, marginBottom: 4, fontSize: 12, color: TEXT }}>
@@ -362,7 +362,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
               else handleSubmit();
             }}
             disabled={w.submitting}
-            style={{ padding: '9px 24px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 14, fontWeight: 800, cursor: w.submitting ? 'wait' : 'pointer', opacity: w.submitting ? 0.7 : 1 }}>
+            style={{ padding: '9px 24px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 14, fontWeight: 800, cursor: w.submitting ? 'wait' : 'pointer', opacity: w.submitting ? 0.7 : 1 }}>
             {step < 4 ? 'Next →' : w.submitting ? 'Creating...' : 'Create Bid Package'}
           </button>
         </div>
@@ -421,7 +421,7 @@ export default function BidPackagesPage() {
         </div>
         <button
           onClick={() => setShowWizard(true)}
-          style={{ padding: '9px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
+          style={{ padding: '9px 18px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
           + Create Bid Package
         </button>
       </div>
@@ -450,13 +450,13 @@ export default function BidPackagesPage() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 8 }}>No bid packages yet</div>
             <div style={{ fontSize: 13, marginBottom: 20 }}>Create your first bid package to start soliciting subcontractors.</div>
-            <button onClick={() => setShowWizard(true)} style={{ padding: '10px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Create Bid Package</button>
+            <button onClick={() => setShowWizard(true)} style={{ padding: '10px 22px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Create Bid Package</button>
           </div>
         ) : (
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr style={{ background: '#16243A' }}>
                   {['Trade', 'Package Name', 'Due Date', 'Status', '# Invited', '# Submitted', 'Bid Jacket', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: DIM, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
                   ))}

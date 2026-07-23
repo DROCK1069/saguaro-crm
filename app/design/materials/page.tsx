@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 /* ─── Palette ─── */
-const BG = '#F2F2F7', CARD = '#FFFFFF', GOLD = '#C8881C', GREEN = '#34C759';
-const BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73', DARK = '#F2F2F7';
+const BG = '#0d1117', CARD = '#0F172A', GOLD = '#F59E0B', GREEN = '#34C759';
+const BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1', DARK = '#0d1117';
 const RED = '#FF3B30', BLUE = '#007AFF';
 
 const glass: React.CSSProperties = {

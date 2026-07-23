@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD = '#D4A017';
+const GOLD = '#F59E0B';
 const RAISED = '#0D1D2E';
 const BORDER = '#1E3A5F';
 const TEXT = '#F0F4FF';
@@ -204,7 +204,7 @@ export default function EmailComposer({
             <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
               {to.split(',').map((email, i) => email.trim() && (
                 <span key={i} style={{
-                  background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.25)',
+                  background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.25)',
                   borderRadius: 6, padding: '3px 8px', fontSize: 12, color: GOLD, fontWeight: 600,
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                 }}>

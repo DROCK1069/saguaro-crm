@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
 /* ── Design Tokens ── */
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#22c55e',RED='#ef4444',AMBER='#f59e0b',BLUE='#3b82f6',PURPLE='#8b5cf6';
 const fmt=(n:number)=>'$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
 const fmtDate=(d:string)=>d?new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'--';
@@ -904,7 +904,7 @@ export default function SubPortal(){
 
       {/* Footer */}
       <footer style={{textAlign:'center',padding:'24px 20px',borderTop:`1px solid ${BORDER}`,marginTop:40}}>
-        <div style={{fontSize:12,color:DIM}}>Powered by <strong style={{color:GOLD}}>Saguaro CRM</strong> &middot; Construction Management Platform</div>
+        <div style={{fontSize:12,color:DIM}}>Powered by <strong style={{color:GOLD}}>Saguaro Control Systems</strong> &middot; Construction Management Platform</div>
         <div style={{fontSize:10,color:BORDER,marginTop:4}}>&copy; {new Date().getFullYear()} Saguaro. All rights reserved.</div>
       </footer>
 

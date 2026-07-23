@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 
 export default function OwnerApprovePage() {
   const params = useParams();
@@ -50,7 +50,7 @@ export default function OwnerApprovePage() {
         </div>
 
         <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.5)'}}>
-          <div style={{background:'#F2F2F7',padding:'20px 24px',borderBottom:`1px solid ${BORDER}`}}>
+          <div style={{background:'#16243A',padding:'20px 24px',borderBottom:`1px solid ${BORDER}`}}>
             <div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:'uppercase' as const,color:DIM,marginBottom:6}}>Approval Required</div>
             <h2 style={{fontSize:20,fontWeight:800,color:TEXT,margin:0}}>{title}</h2>
           </div>
@@ -58,20 +58,20 @@ export default function OwnerApprovePage() {
           <div style={{padding:24}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:24}}>
               {[['Project',project],['Contractor','Copper State Developments'],['Period','Feb 1 – Feb 28, 2026'],['Amount Due','$'+amount.toLocaleString()]].map(r=>(
-                <div key={r[0]} style={{background:'#F2F2F7',borderRadius:8,padding:'12px 16px'}}>
+                <div key={r[0]} style={{background:'#16243A',borderRadius:8,padding:'12px 16px'}}>
                   <div style={{fontSize:11,color:DIM,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:4}}>{r[0]}</div>
                   <div style={{fontSize:15,fontWeight:700,color:r[0]==='Amount Due'?GOLD:TEXT}}>{r[1]}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{background:'rgba(212,160,23,.06)',border:'1px solid rgba(212,160,23,.2)',borderRadius:10,padding:'16px 20px',marginBottom:24,fontSize:13,color:DIM,lineHeight:1.7}}>
+            <div style={{background:'rgba(245, 158, 11,.06)',border:'1px solid rgba(245, 158, 11,.2)',borderRadius:10,padding:'16px 20px',marginBottom:24,fontSize:13,color:DIM,lineHeight:1.7}}>
               <strong style={{color:TEXT}}>What you&apos;re approving:</strong> Payment Application #2 for work completed through February 28, 2026. This represents 14.8% completion of the total contract value of $2,895,000. Conditional lien waivers from all 6 subcontractors are attached.
             </div>
 
             <div style={{marginBottom:24}}>
               <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:8}}>Notes (optional)</label>
-              <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Add any notes about this approval..." style={{width:'100%',padding:'10px 14px',background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none',resize:'vertical' as const}}/>
+              <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Add any notes about this approval..." style={{width:'100%',padding:'10px 14px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none',resize:'vertical' as const}}/>
             </div>
 
             <div style={{display:'flex',gap:12}}>
@@ -83,7 +83,7 @@ export default function OwnerApprovePage() {
               </button>
             </div>
 
-            <div style={{marginTop:16,fontSize:11,color:'#6E6E73',textAlign:'center' as const}}>
+            <div style={{marginTop:16,fontSize:11,color:'#CBD5E1',textAlign:'center' as const}}>
               This approval is legally binding. By clicking Approve you certify the work has been performed per the contract documents.
             </div>
           </div>

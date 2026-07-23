@@ -6,11 +6,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const BLUE   = '#3B82F6';
 const PURPLE = '#8B5CF6';

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444';
 
 function getSupabase() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
@@ -30,7 +30,7 @@ export default function ResetPasswordPage(){
     setLoading(false);
   }
 
-  const inputStyle = {width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box' as const};
+  const inputStyle = {width:'100%',padding:'11px 14px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box' as const};
 
   return (
     <div style={{minHeight:'100vh',background:DARK,display:'flex',flexDirection:'column'}}>
@@ -65,7 +65,7 @@ export default function ResetPasswordPage(){
                     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Confirm Password</label>
                     <input type="password" placeholder="Repeat password" value={confirm} onChange={e=>setConfirm(e.target.value)} required autoComplete="new-password" style={inputStyle}/>
                   </div>
-                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:9,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
+                  <button type="submit" disabled={loading} style={{padding:'13px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:9,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'not-allowed':'pointer'}}>
                     {loading?'Updating…':'Update Password →'}
                   </button>
                 </form>

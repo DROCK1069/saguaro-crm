@@ -7,15 +7,15 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD = '#C8881C';
-const CARD = '#FFFFFF';
-const BASE = '#F2F2F7';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const CARD = '#0F172A';
+const BASE = '#16243A';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
-const BORDER = '#E5E5EA';
+const BORDER = 'rgba(255,255,255,0.12)';
 
 function hr(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);
@@ -49,10 +49,10 @@ interface Delivery {
 type View = 'list' | 'add';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.7)',
+  background: 'rgba(15,23,42,0.7)',
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
-  border: '1px solid rgba(0,0,0,0.06)',
+  border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: 16,
 };
 
@@ -279,14 +279,14 @@ function DeliveriesPage() {
           {/* Filter bar */}
           {deliveries.length > 0 && (
             <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
-              <button onClick={() => setFilterStatus('all')} style={{ ...glass, padding: '6px 12px', fontSize: 12, fontWeight: filterStatus === 'all' ? 700 : 400, color: filterStatus === 'all' ? GOLD : DIM, cursor: 'pointer', whiteSpace: 'nowrap', background: filterStatus === 'all' ? `rgba(${hr(GOLD)},0.15)` : 'rgba(255,255,255,0.7)' }}>
+              <button onClick={() => setFilterStatus('all')} style={{ ...glass, padding: '6px 12px', fontSize: 12, fontWeight: filterStatus === 'all' ? 700 : 400, color: filterStatus === 'all' ? GOLD : DIM, cursor: 'pointer', whiteSpace: 'nowrap', background: filterStatus === 'all' ? `rgba(${hr(GOLD)},0.15)` : 'rgba(15,23,42,0.7)' }}>
                 All ({deliveries.length})
               </button>
               {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
                 const count = deliveries.filter(d => d.status === key).length;
                 if (count === 0) return null;
                 return (
-                  <button key={key} onClick={() => setFilterStatus(key)} style={{ ...glass, padding: '6px 12px', fontSize: 12, fontWeight: filterStatus === key ? 700 : 400, color: filterStatus === key ? cfg.color : DIM, cursor: 'pointer', whiteSpace: 'nowrap', background: filterStatus === key ? `rgba(${hr(cfg.color)},0.15)` : 'rgba(255,255,255,0.7)' }}>
+                  <button key={key} onClick={() => setFilterStatus(key)} style={{ ...glass, padding: '6px 12px', fontSize: 12, fontWeight: filterStatus === key ? 700 : 400, color: filterStatus === key ? cfg.color : DIM, cursor: 'pointer', whiteSpace: 'nowrap', background: filterStatus === key ? `rgba(${hr(cfg.color)},0.15)` : 'rgba(15,23,42,0.7)' }}>
                     {cfg.icon} {cfg.label} ({count})
                   </button>
                 );
@@ -298,9 +298,9 @@ function DeliveriesPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[1, 2, 3].map(i => (
                 <div key={i} style={{ ...glass, padding: 16, height: 100, animation: 'pulse 1.5s ease-in-out infinite' }}>
-                  <div style={{ background: 'rgba(0,0,0,0.04)', borderRadius: 8, height: 16, width: '60%', marginBottom: 8 }} />
-                  <div style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 8, height: 12, width: '40%', marginBottom: 8 }} />
-                  <div style={{ background: 'rgba(0,0,0,0.02)', borderRadius: 8, height: 10, width: '30%' }} />
+                  <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8, height: 16, width: '60%', marginBottom: 8 }} />
+                  <div style={{ background: 'rgba(255,255,255,0.045)', borderRadius: 8, height: 12, width: '40%', marginBottom: 8 }} />
+                  <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, height: 10, width: '30%' }} />
                 </div>
               ))}
             </div>
@@ -324,7 +324,7 @@ function DeliveriesPage() {
                 return (
                   <div key={delivery.id} style={{
                     ...glass, padding: 14,
-                    border: isOverdue ? `1px solid rgba(${hr(RED)},0.3)` : '1px solid rgba(0,0,0,0.06)',
+                    border: isOverdue ? `1px solid rgba(${hr(RED)},0.3)` : '1px solid rgba(255,255,255,0.08)',
                   }}>
                     {/* Header */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -373,7 +373,7 @@ function DeliveriesPage() {
                         disabled={markingId === delivery.id}
                         style={{
                           width: '100%', marginTop: 10,
-                          background: markingId === delivery.id ? 'rgba(0,0,0,0.04)' : `rgba(${hr(GREEN)},0.1)`,
+                          background: markingId === delivery.id ? 'rgba(255,255,255,0.06)' : `rgba(${hr(GREEN)},0.1)`,
                           border: `1px solid ${markingId === delivery.id ? BORDER : `rgba(${hr(GREEN)},0.3)`}`,
                           borderRadius: 10, padding: '10px', cursor: markingId === delivery.id ? 'wait' : 'pointer',
                           color: markingId === delivery.id ? DIM : GREEN, fontSize: 13, fontWeight: 700,
@@ -445,7 +445,7 @@ function DeliveriesPage() {
 
 export default function FieldDeliveriesPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <DeliveriesPage />
     </Suspense>
   );

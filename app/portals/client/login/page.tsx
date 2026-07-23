@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 
@@ -57,13 +58,13 @@ export default function ClientPortalLogin() {
       fontFamily: 'system-ui,-apple-system,sans-serif',
     }}>
       {/* Header */}
-      <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
+      <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
         <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 38, borderRadius: 4 }} />
         <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-          <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '0.1em', background: `linear-gradient(90deg,${GOLD},#E0A030)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
+          <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '0.1em', background: `linear-gradient(90deg,${GOLD},#FBBF24)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
           <span style={{ fontSize: 8, color: DIM, letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
         </span>
-      </a>
+      </Link>
 
       {/* Card */}
       <div style={{
@@ -77,7 +78,7 @@ export default function ClientPortalLogin() {
       }}>
         {/* Icon */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: `rgba(212,160,23,0.12)`, border: `1.5px solid rgba(212,160,23,0.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: `rgba(245, 158, 11,0.12)`, border: `1.5px solid rgba(245, 158, 11,0.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}>
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
@@ -151,7 +152,7 @@ export default function ClientPortalLogin() {
                 width: '100%',
                 marginTop: 16,
                 padding: '13px',
-                background: loading || !email.trim() ? 'rgba(212,160,23,0.4)' : `linear-gradient(135deg, ${GOLD}, #C8960F)`,
+                background: loading || !email.trim() ? 'rgba(245, 158, 11,0.4)' : `linear-gradient(135deg, ${GOLD}, #C8960F)`,
                 border: 'none',
                 borderRadius: 8,
                 color: '#000',
@@ -175,16 +176,16 @@ export default function ClientPortalLogin() {
 
       {/* Footer links */}
       <div style={{ marginTop: 24, display: 'flex', gap: 20, fontSize: 12, color: DIM }}>
-        <a href="/portals/sub/login" style={{ color: DIM, textDecoration: 'none' }}
+        <Link href="/portals/sub/login" style={{ color: DIM, textDecoration: 'none' }}
           onMouseEnter={e => e.currentTarget.style.color = TEXT}
           onMouseLeave={e => e.currentTarget.style.color = DIM}>
           Subcontractor Portal →
-        </a>
-        <a href="/" style={{ color: DIM, textDecoration: 'none' }}
+        </Link>
+        <Link href="/" style={{ color: DIM, textDecoration: 'none' }}
           onMouseEnter={e => e.currentTarget.style.color = TEXT}
           onMouseLeave={e => e.currentTarget.style.color = DIM}>
           Back to Saguaro
-        </a>
+        </Link>
       </div>
     </div>
   );

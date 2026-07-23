@@ -8,11 +8,11 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -126,7 +126,7 @@ function exportPDF(title: string, content: string) {
   pw.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
     <style>
       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 900px; margin: 0 auto; }
-      h1 { font-size: 22px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
+      h1 { font-size: 22px; border-bottom: 2px solid #F59E0B; padding-bottom: 8px; }
       h2 { font-size: 16px; color: #333; margin-top: 20px; }
       table { width: 100%; border-collapse: collapse; margin: 12px 0; }
       th, td { padding: 6px 10px; border: 1px solid #ddd; font-size: 13px; text-align: left; }
@@ -352,7 +352,7 @@ function CoordinationPage() {
 
   /* ─────────── LIST VIEW ─────────── */
   if (view === 'list') return (
-    <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT }}>
+    <div style={{ minHeight: '100vh', background: '#0d1117', color: TEXT }}>
       {toast && <div style={toastStyle}>{toast}</div>}
       {/* Header */}
       <div style={{ padding: '16px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -480,7 +480,7 @@ function CoordinationPage() {
   if (view === 'detail' && selected) {
     const avail = STATUS_FLOW[selected.status] || [];
     return (
-      <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT }}>
+      <div style={{ minHeight: '100vh', background: '#0d1117', color: TEXT }}>
         {toast && <div style={toastStyle}>{toast}</div>}
         <div style={{ padding: 16 }}>
           <button onClick={() => setView('list')} style={backBtn}>← Back</button>
@@ -637,7 +637,7 @@ function CoordinationPage() {
 
   /* ─────────── CREATE VIEW ─────────── */
   if (view === 'create') return (
-    <div style={{ minHeight: '100vh', background: '#F2F2F7', color: TEXT }}>
+    <div style={{ minHeight: '100vh', background: '#0d1117', color: TEXT }}>
       {toast && <div style={toastStyle}>{toast}</div>}
       <div style={{ padding: 16 }}>
         <button onClick={() => setView('list')} style={backBtn}>← Cancel</button>
@@ -792,7 +792,7 @@ const summaryCard: React.CSSProperties = {
   background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px',
 };
 const filterSelect: React.CSSProperties = {
-  background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 8px',
+  background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 8px',
   color: TEXT, fontSize: 12, outline: 'none', flex: 1, minWidth: 90,
 };
 const sortBtn: React.CSSProperties = {
@@ -810,7 +810,7 @@ const lbl: React.CSSProperties = {
   display: 'block', fontSize: 12, color: DIM, marginBottom: 4, fontWeight: 600,
 };
 const inp: React.CSSProperties = {
-  width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 10,
+  width: '100%', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 10,
   padding: '11px 14px', color: TEXT, fontSize: 15, outline: 'none', boxSizing: 'border-box',
 };
 const detailGrid: React.CSSProperties = {

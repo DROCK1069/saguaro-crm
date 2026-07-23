@@ -1,10 +1,11 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 const C = {
   dark: '#0B0B0F',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
+  gold: '#F59E0B',
+  goldBright: '#FBBF24',
   text: '#F5F5F7',
   dim: '#A1A1AA',
   border: 'rgba(255,255,255,0.10)',
@@ -159,9 +160,9 @@ export default function ContactPage() {
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-        </a>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
+          <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
           {NAV_LINKS.map(link => (
             <a key={link.label} href={link.href} style={{ padding: '6px 12px', borderRadius: 6, color: C.dim, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
@@ -172,15 +173,15 @@ export default function ContactPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
+          <Link href="/login" style={{ padding: '8px 18px', background: 'rgba(245, 158, 11,0.10)', border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</Link>
+          <Link href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(245, 158, 11,0.25)` }}>Free Trial</Link>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '88px 24px 56px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
+        <section style={{ textAlign: 'center', padding: '88px 24px 56px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(245, 158, 11,0.07) 0%, transparent 70%)` }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(34,197,94,0.1)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 20, fontSize: 12, fontWeight: 700, color: C.green, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, display: 'inline-block' }} />
             Real humans · 1-hour sales response
@@ -201,7 +202,7 @@ export default function ContactPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
             {CHANNELS.map(ch => (
               <a key={ch.title} href={ch.href} style={{ textDecoration: 'none', background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '26px 24px', display: 'block', boxShadow: '0 1px 2px rgba(0,0,0,.4)', transition: 'border-color 0.15s' }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(212,160,23,0.35)')}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.35)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 16 }}>
                   {ch.icon}
@@ -232,9 +233,9 @@ export default function ContactPage() {
                     Thanks{form.name ? `, ${form.name.split(' ')[0]}` : ''}. We received your note and a real person from our team will reply shortly. If your mail client opened, just hit send to confirm.
                   </p>
                   <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <a href="/signup" style={{ display: 'inline-block', padding: '12px 26px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+                    <Link href="/signup" style={{ display: 'inline-block', padding: '12px 26px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 14px rgba(245, 158, 11,0.30)` }}>
                       Start Free Trial &rarr;
-                    </a>
+                    </Link>
                     <button onClick={() => { setForm({ name: '', email: '', company: '', reason: REASONS[0].value, message: '' }); setStatus('idle'); }} style={{ padding: '12px 26px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: C.font }}>
                       Send another
                     </button>
@@ -299,7 +300,7 @@ export default function ContactPage() {
                     border: 'none', borderRadius: 10, color: '#0B0B0F',
                     fontWeight: 900, fontSize: 15, cursor: status === 'sending' ? 'default' : 'pointer',
                     opacity: status === 'sending' ? 0.7 : 1, fontFamily: C.font,
-                    boxShadow: '0 4px 14px rgba(212,160,23,0.30)', letterSpacing: 0.3,
+                    boxShadow: '0 4px 14px rgba(245, 158, 11,0.30)', letterSpacing: 0.3,
                   }}>
                     {status === 'sending' ? 'Sending…' : 'Send message'}
                   </button>
@@ -315,15 +316,15 @@ export default function ContactPage() {
 
             {/* Side info */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ background: 'linear-gradient(135deg, rgba(212,160,23,0.10) 0%, rgba(11,11,15,0) 100%)', border: `1px solid rgba(212,160,23,0.30)`, borderRadius: 16, padding: '28px 26px' }}>
+              <div style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11,0.10) 0%, rgba(11,11,15,0) 100%)', border: `1px solid rgba(245, 158, 11,0.30)`, borderRadius: 16, padding: '28px 26px' }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Skip the wait</div>
                 <h3 style={{ fontSize: 20, fontWeight: 900, margin: '0 0 10px', lineHeight: 1.25 }}>Start free, no sales call required</h3>
                 <p style={{ fontSize: 14, color: C.dim, lineHeight: 1.65, margin: '0 0 20px' }}>
                   You do not have to talk to anyone to try Saguaro. Spin up your account, run an AI takeoff, and invite your whole team — free for 30 days, no credit card.
                 </p>
-                <a href="/signup" style={{ display: 'inline-block', padding: '12px 24px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+                <Link href="/signup" style={{ display: 'inline-block', padding: '12px 24px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 14px rgba(245, 158, 11,0.30)` }}>
                   Create your account &rarr;
-                </a>
+                </Link>
               </div>
 
               <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, padding: '26px 26px' }}>
@@ -348,7 +349,7 @@ export default function ContactPage() {
 
               <div style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 16, padding: '24px 26px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Headquarters</div>
-                <div style={{ fontSize: 14, color: C.text, fontWeight: 600, marginBottom: 4 }}>Saguaro Control</div>
+                <div style={{ fontSize: 14, color: C.text, fontWeight: 600, marginBottom: 4 }}>Saguaro Control Systems</div>
                 <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>Phoenix, Arizona · Remote-first team<br />Serving general contractors across all 50 states</div>
               </div>
             </div>
@@ -358,7 +359,7 @@ export default function ContactPage() {
         {/* FAQ */}
         <section style={{ padding: '0 24px 96px', maxWidth: 760, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Before you write</div>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(245, 158, 11,0.12)', border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Before you write</div>
             <h2 style={{ fontSize: 'clamp(26px, 4vw, 38px)', fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>Quick answers</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -372,7 +373,7 @@ export default function ContactPage() {
         </section>
 
         {/* Final CTA */}
-        <section style={{ padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ padding: '96px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(245, 158, 11,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
               Don&rsquo;t wait on us to{' '}
@@ -382,12 +383,12 @@ export default function ContactPage() {
               30-day free trial. Free migration from any platform. No credit card. Your whole team, one flat rate.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+              <Link href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(245, 158, 11,0.30)` }}>
                 Start Free Trial &rarr;
-              </a>
-              <a href="/pricing" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              </Link>
+              <Link href="/pricing" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 See Pricing
-              </a>
+              </Link>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {['30 days free', 'Free migration', 'No credit card', 'Unlimited users'].map(pill => (
@@ -406,9 +407,9 @@ export default function ContactPage() {
         {/* Footer */}
         <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
-            <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-            </a>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+            </Link>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
                 { label: 'Home', href: '/' }, { label: 'Features', href: '/features' },
@@ -419,7 +420,7 @@ export default function ContactPage() {
                 <a key={link.label} href={link.href} style={{ fontSize: 13, color: C.dim, textDecoration: 'none', fontWeight: 500 }}>{link.label}</a>
               ))}
             </div>
-            <div style={{ fontSize: 12, color: C.dim, whiteSpace: 'nowrap' }}>&copy; {new Date().getFullYear()} Saguaro CRM</div>
+            <div style={{ fontSize: 12, color: C.dim, whiteSpace: 'nowrap' }}>&copy; {new Date().getFullYear()} Saguaro Control Systems</div>
           </div>
         </footer>
 

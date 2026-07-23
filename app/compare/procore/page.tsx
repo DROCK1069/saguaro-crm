@@ -2,14 +2,15 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const C = {
-  dark: '#F2F2F7',
+  dark: '#0d1117',
   gold: '#F59E0B',
-  text: '#1C1C1E',
-  dim: '#6E6E73',
-  border: '#E5E5EA',
-  raised: '#FFFFFF',
+  text: '#FFFFFF',
+  dim: '#CBD5E1',
+  border: 'rgba(255,255,255,0.12)',
+  raised: '#0F172A',
   green: '#22c55e',
   red: '#ef4444',
 };
@@ -21,7 +22,7 @@ const ROWS: {
   saguaroWin: boolean | 'neutral';
   note?: string;
 }[] = [
-  { feature: 'Starting Price', saguaro: '$199/mo', procore: '$375–600/mo+', saguaroWin: true, note: 'Procore pricing requires annual contract and implementation fees' },
+  { feature: 'Starting Price', saguaro: '$499/mo flat', procore: '$375–600/mo+ per seat', saguaroWin: true, note: 'Procore is per-seat with an annual contract and implementation fees; Saguaro is one flat rate for your whole team' },
   { feature: 'Annual Contract Required', saguaro: 'Month-to-month', procore: 'Annual required', saguaroWin: true, note: 'Cancel Saguaro anytime — no penalty, no lock-in' },
   { feature: 'Setup Time', saguaro: '< 1 day', procore: '3–6 months', saguaroWin: true, note: 'Procore requires a dedicated implementation team and onboarding process' },
   { feature: 'Per-Seat Pricing', saguaro: 'Flat rate', procore: 'Per user (costs grow)', saguaroWin: true, note: 'Add 50 users on Saguaro — same price. Procore charges per seat.' },
@@ -56,7 +57,7 @@ const DEEP_DIVE = [
   },
   {
     title: 'Pricing That Grows With You',
-    body: 'One flat monthly rate. Add 50 users and 50 projects — same price. No annual contract. Cancel anytime. Start free with no credit card required. Starter at $299/mo, Professional at $599/mo.',
+    body: 'One flat monthly rate. Add 50 users and 50 projects — same price. No annual contract. Cancel anytime. Start free with no credit card required. Starter at $499/mo, Professional at $750/mo.',
     procoreBody: "Procore's per-user, per-module pricing scales sharply as your team grows. Annual contracts are required. Total cost of ownership for a mid-size GC typically exceeds $50,000–$80,000/year when add-ons and implementation are included.",
   },
 ];
@@ -133,13 +134,13 @@ export default function CompareProcorePage() {
       {/* ── NAV ── */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(255,255,255,0.85)',
+        height: 64, background: 'rgba(13,17,23,0.9)',
         borderBottom: `1px solid ${C.border}`,
         backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center',
         padding: '0 32px', gap: 32,
       }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
           <Image
             src="/logo-full.jpg"
             alt="Saguaro"
@@ -147,21 +148,21 @@ export default function CompareProcorePage() {
             height={44}
             style={{ height: 44, width: 'auto', objectFit: 'contain' }}
           />
-        </a>
+        </Link>
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           {['Features', 'Field App', 'Pricing', 'How It Works'].map((link) => (
-            <a
+            <Link
               key={link}
               href={`/${link.toLowerCase().replace(/\s+/g, '-')}`}
               style={{ color: C.dim, fontSize: 14, fontWeight: 500, textDecoration: 'none', letterSpacing: 0.2 }}
             >
               {link}
-            </a>
+            </Link>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginLeft: 8 }}>
-          <a href="/login" style={{
+          <Link href="/login" style={{
             padding: '8px 18px',
             background: 'transparent',
             border: `1px solid ${C.border}`,
@@ -172,8 +173,8 @@ export default function CompareProcorePage() {
             textDecoration: 'none',
           }}>
             Log In
-          </a>
-          <a href="/signup" style={{
+          </Link>
+          <Link href="/signup" style={{
             padding: '9px 20px',
             background: C.gold,
             borderRadius: 8,
@@ -184,7 +185,7 @@ export default function CompareProcorePage() {
             letterSpacing: 0.2,
           }}>
             Free Trial
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -243,7 +244,7 @@ export default function CompareProcorePage() {
         </p>
 
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
-          <a href="/signup" style={{
+          <Link href="/signup" style={{
             padding: '14px 36px',
             background: C.gold,
             borderRadius: 10,
@@ -255,8 +256,8 @@ export default function CompareProcorePage() {
             boxShadow: `0 0 32px rgba(245,158,11,0.25)`,
           }}>
             Try Saguaro Free →
-          </a>
-          <a href="/pricing" style={{
+          </Link>
+          <Link href="/pricing" style={{
             padding: '14px 32px',
             background: 'transparent',
             border: `1px solid ${C.border}`,
@@ -267,7 +268,7 @@ export default function CompareProcorePage() {
             textDecoration: 'none',
           }}>
             See Pricing
-          </a>
+          </Link>
         </div>
 
         <div style={{ fontSize: 13, color: C.dim, marginBottom: 52, letterSpacing: 0.3 }}>
@@ -403,7 +404,7 @@ export default function CompareProcorePage() {
                   display: 'grid',
                   gridTemplateColumns: '2fr 1.1fr 1.1fr',
                   borderBottom: i < ROWS.length - 1 ? `1px solid ${C.border}` : 'none',
-                  background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.012)',
+                  background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.03)',
                 }}
               >
                 <div style={{ padding: '16px 28px' }}>
@@ -459,7 +460,7 @@ export default function CompareProcorePage() {
 
       {/* ── ROI MINI-CALCULATOR ── */}
       <div style={{
-        background: 'linear-gradient(180deg, #FFFFFF 0%, #F2F2F7 100%)',
+        background: 'linear-gradient(180deg, #0F172A 0%, #0d1117 100%)',
         padding: '64px 24px',
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
@@ -506,7 +507,7 @@ export default function CompareProcorePage() {
                   style={{
                     width: '100%',
                     padding: '14px 16px 14px 30px',
-                    background: 'rgba(242,242,247,0.8)',
+                    background: '#16243A',
                     border: `1px solid rgba(245,158,11,0.3)`,
                     borderRadius: 10,
                     color: C.text,
@@ -621,7 +622,7 @@ export default function CompareProcorePage() {
 
           {/* CTA */}
           <div style={{ textAlign: 'center' }}>
-            <a href="/signup" style={{
+            <Link href="/signup" style={{
               display: 'inline-block',
               padding: '15px 40px',
               background: `linear-gradient(135deg, ${C.gold}, #D97706)`,
@@ -634,11 +635,11 @@ export default function CompareProcorePage() {
               marginBottom: 16,
             }}>
               Claim This Savings — Start Free →
-            </a>
+            </Link>
             <div style={{ fontSize: 13, color: C.dim }}>
-              <a href="/roi-calculator" style={{ color: C.gold, textDecoration: 'none', fontWeight: 600 }}>
+              <Link href="/roi-calculator" style={{ color: C.gold, textDecoration: 'none', fontWeight: 600 }}>
                 Or see our full ROI calculator →
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -849,7 +850,7 @@ export default function CompareProcorePage() {
             <div style={{ fontSize: 13, color: C.dim, marginBottom: 2 }}>Estimated annual savings vs Procore</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: C.green, letterSpacing: -0.5 }}>$17,412 / year</div>
           </div>
-          <a href="/signup" style={{
+          <Link href="/signup" style={{
             padding: '12px 28px',
             background: C.gold,
             borderRadius: 9,
@@ -860,7 +861,7 @@ export default function CompareProcorePage() {
             flexShrink: 0,
           }}>
             Start Saving Today →
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -930,7 +931,7 @@ export default function CompareProcorePage() {
 
             {/* RIGHT */}
             <div style={{
-              background: 'rgba(255,255,255,0.7)',
+              background: '#16243A',
               border: `1px solid rgba(245,158,11,0.3)`,
               borderRadius: 14,
               padding: '32px 28px',
@@ -960,7 +961,7 @@ export default function CompareProcorePage() {
                   </div>
                 ))}
               </div>
-              <a href="/switch-from-procore" style={{
+              <Link href="/switch-from-procore" style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -975,8 +976,8 @@ export default function CompareProcorePage() {
                 boxShadow: `0 0 24px rgba(245,158,11,0.2)`,
               }}>
                 Start My Free Migration →
-              </a>
-              <a href="/sandbox" style={{
+              </Link>
+              <Link href="/sandbox" style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -990,7 +991,7 @@ export default function CompareProcorePage() {
                 textDecoration: 'none',
               }}>
                 Talk to Sales First
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -1096,7 +1097,7 @@ export default function CompareProcorePage() {
         </p>
 
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 48 }}>
-          <a href="/signup" style={{
+          <Link href="/signup" style={{
             padding: '16px 44px',
             background: C.gold,
             borderRadius: 10,
@@ -1108,8 +1109,8 @@ export default function CompareProcorePage() {
             letterSpacing: 0.2,
           }}>
             Start Free Trial →
-          </a>
-          <a href="/contact" style={{
+          </Link>
+          <Link href="/contact" style={{
             padding: '16px 36px',
             background: 'transparent',
             border: `1px solid ${C.border}`,
@@ -1120,26 +1121,26 @@ export default function CompareProcorePage() {
             textDecoration: 'none',
           }}>
             Talk to Sales
-          </a>
+          </Link>
         </div>
 
         <div style={{ fontSize: 13, color: C.dim }}>
           Also compare:&nbsp;
-          <a href="/compare/buildertrend" style={{ color: C.gold, textDecoration: 'none', fontWeight: 600 }}>
+          <Link href="/compare/buildertrend" style={{ color: C.gold, textDecoration: 'none', fontWeight: 600 }}>
             Saguaro vs Buildertrend
-          </a>
+          </Link>
         </div>
       </div>
 
       {/* ── MOBILE STICKY CTA ── */}
-      <div className="mobile-sticky-cta" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(255,255,255,0.97)', borderTop: '1px solid rgba(245,158,11,0.3)', padding: '12px 16px', backdropFilter: 'blur(12px)' }}>
+      <div className="mobile-sticky-cta" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(15,23,42,0.97)', borderTop: '1px solid rgba(245,158,11,0.3)', padding: '12px 16px', backdropFilter: 'blur(12px)' }}>
         <div style={{ display: 'flex', gap: 10 }}>
-          <a href="/signup" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, textDecoration: 'none' }}>
+          <Link href="/signup" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, textDecoration: 'none' }}>
             Start Free Trial
-          </a>
-          <a href="/switch-from-procore" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, color: '#F59E0B', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+          </Link>
+          <Link href="/switch-from-procore" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, color: '#F59E0B', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
             Free Migration
-          </a>
+          </Link>
         </div>
       </div>
 

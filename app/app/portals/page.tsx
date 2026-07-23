@@ -1,12 +1,12 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#16243A';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 const BLUE = '#3B82F6';
@@ -189,7 +189,7 @@ export default function PortalsPage() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => openInvite('client')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: `rgba(212,160,23,0.12)`, border: `1px solid rgba(212,160,23,0.3)`, borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: `rgba(245, 158, 11,0.12)`, border: `1px solid rgba(245, 158, 11,0.3)`, borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><line x1={12} y1={5} x2={12} y2={19}/><line x1={5} y1={12} x2={19} y2={12}/></svg>
             Invite Client
           </button>
@@ -210,7 +210,7 @@ export default function PortalsPage() {
           { n: '4', title: 'They Log In', desc: 'They go to the link or enter email at the portal login', color: GREEN },
         ].map(s => (
           <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10 }}>
-            <div style={{ width: 26, height: 26, borderRadius: '50%', background: `rgba(212,160,23,0.15)`, border: `1.5px solid rgba(212,160,23,0.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12, color: GOLD, flexShrink: 0 }}>{s.n}</div>
+            <div style={{ width: 26, height: 26, borderRadius: '50%', background: `rgba(245, 158, 11,0.15)`, border: `1.5px solid rgba(245, 158, 11,0.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12, color: GOLD, flexShrink: 0 }}>{s.n}</div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{s.title}</div>
               <div style={{ fontSize: 12, color: DIM, lineHeight: 1.4 }}>{s.desc}</div>
@@ -224,7 +224,7 @@ export default function PortalsPage() {
         <div style={{ display: 'flex', borderBottom: `1px solid ${BORDER}` }}>
           {(['client', 'sub'] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              style={{ flex: 1, padding: '13px 20px', background: tab === t ? 'rgba(212,160,23,0.05)' : 'transparent', border: 'none', borderBottom: `2px solid ${tab === t ? GOLD : 'transparent'}`, color: tab === t ? GOLD : DIM, fontSize: 13, fontWeight: tab === t ? 700 : 500, cursor: 'pointer', transition: 'all 0.15s' }}>
+              style={{ flex: 1, padding: '13px 20px', background: tab === t ? 'rgba(245, 158, 11,0.05)' : 'transparent', border: 'none', borderBottom: `2px solid ${tab === t ? GOLD : 'transparent'}`, color: tab === t ? GOLD : DIM, fontSize: 13, fontWeight: tab === t ? 700 : 500, cursor: 'pointer', transition: 'all 0.15s' }}>
               {t === 'client'
                 ? `Client Access (${clientSessions.filter(s => s.status === 'active').length} active)`
                 : `Subcontractor Access (${subSessions.filter(s => s.status === 'active').length} active)`}
@@ -278,7 +278,7 @@ export default function PortalsPage() {
             <div style={{ display: 'flex', borderBottom: `1px solid ${BORDER}` }}>
               {(['client', 'sub'] as Tab[]).map(t => (
                 <button key={t} onClick={() => { setInviteTab(t); setInviteSuccess(null); setInviteError(''); }}
-                  style={{ flex: 1, padding: '10px', background: inviteTab === t ? 'rgba(212,160,23,0.06)' : 'transparent', border: 'none', borderBottom: `2px solid ${inviteTab === t ? GOLD : 'transparent'}`, color: inviteTab === t ? GOLD : DIM, fontSize: 13, fontWeight: inviteTab === t ? 700 : 400, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: inviteTab === t ? 'rgba(245, 158, 11,0.06)' : 'transparent', border: 'none', borderBottom: `2px solid ${inviteTab === t ? GOLD : 'transparent'}`, color: inviteTab === t ? GOLD : DIM, fontSize: 13, fontWeight: inviteTab === t ? 700 : 400, cursor: 'pointer' }}>
                   {t === 'client' ? 'Client Portal' : 'Sub Portal'}
                 </button>
               ))}
@@ -346,7 +346,7 @@ export default function PortalsPage() {
                   )}
 
                   <button type="submit" disabled={inviteLoading}
-                    style={{ width: '100%', padding: '12px', background: inviteLoading ? 'rgba(212,160,23,0.4)' : `linear-gradient(135deg,${GOLD},#C8960F)`, border: 'none', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, cursor: inviteLoading ? 'not-allowed' : 'pointer' }}>
+                    style={{ width: '100%', padding: '12px', background: inviteLoading ? 'rgba(245, 158, 11,0.4)' : `linear-gradient(135deg,${GOLD},#C8960F)`, border: 'none', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, cursor: inviteLoading ? 'not-allowed' : 'pointer' }}>
                     {inviteLoading ? 'Creating Access…' : 'Generate Portal Link →'}
                   </button>
                 </form>
@@ -377,7 +377,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const selectStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', background: '#F2F2F7',
+  width: '100%', padding: '10px 12px', background: '#16243A',
   border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontSize: 14,
   outline: 'none', boxSizing: 'border-box', cursor: 'pointer',
 };
@@ -416,11 +416,11 @@ function SuccessCard({ url, name, type, emailSent, onAnother, onClose }: { url: 
       )}
 
       {/* Link box */}
-      <div style={{ background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, textAlign: 'left' }}>
+      <div style={{ background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', marginBottom: 12, textAlign: 'left' }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: DIM, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Portal Link</div>
         <div style={{ fontSize: 12, color: DIM, wordBreak: 'break-all', lineHeight: 1.5, marginBottom: 10 }}>{url}</div>
         <button onClick={copyUrl}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: linkCopied ? 'rgba(34,197,94,0.12)' : `rgba(212,160,23,0.12)`, border: `1px solid ${linkCopied ? 'rgba(34,197,94,0.3)' : 'rgba(212,160,23,0.3)'}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: linkCopied ? GREEN : GOLD, cursor: 'pointer' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: linkCopied ? 'rgba(34,197,94,0.12)' : `rgba(245, 158, 11,0.12)`, border: `1px solid ${linkCopied ? 'rgba(34,197,94,0.3)' : 'rgba(245, 158, 11,0.3)'}`, borderRadius: 6, fontSize: 12, fontWeight: 700, color: linkCopied ? GREEN : GOLD, cursor: 'pointer' }}>
           {linkCopied
             ? <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><polyline points="20 6 9 17 4 12"/></svg> Copied!</>
             : <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={13} height={13}><rect x={9} y={9} width={13} height={13} rx={2}/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Portal Link</>}
@@ -438,7 +438,7 @@ function SuccessCard({ url, name, type, emailSent, onAnother, onClose }: { url: 
         <button onClick={onAnother} style={{ flex: 1, padding: '10px', background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           + Invite Another
         </button>
-        <button onClick={onClose} style={{ flex: 1, padding: '10px', background: `rgba(212,160,23,0.1)`, border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+        <button onClick={onClose} style={{ flex: 1, padding: '10px', background: `rgba(245, 158, 11,0.1)`, border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
           Done
         </button>
       </div>
@@ -454,7 +454,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
         <div style={{ fontSize: 36, marginBottom: 12 }}>🏠</div>
         <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 6 }}>No client portal access yet</div>
         <div style={{ fontSize: 13, color: DIM, marginBottom: 20 }}>Create access for a client to get started.</div>
-        <button onClick={onInvite} style={{ padding: '10px 20px', background: `rgba(212,160,23,0.12)`, border: `1px solid rgba(212,160,23,0.3)`, borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+        <button onClick={onInvite} style={{ padding: '10px 20px', background: `rgba(245, 158, 11,0.12)`, border: `1px solid rgba(245, 158, 11,0.3)`, borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
           + Invite First Client
         </button>
       </div>
@@ -465,7 +465,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
-          <tr style={{ background: '#F2F2F7' }}>
+          <tr style={{ background: '#16243A' }}>
             {['Client', 'Project', 'Status', 'Last Access', 'Expires', 'Invite', 'Actions'].map(h => (
               <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
             ))}
@@ -495,7 +495,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
               <td style={{ padding: '12px 16px' }}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button onClick={() => onCopy(s.token, 'client')}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: copied === s.token ? 'rgba(34,197,94,0.1)' : 'rgba(212,160,23,0.1)', border: `1px solid ${copied === s.token ? 'rgba(34,197,94,0.25)' : 'rgba(212,160,23,0.25)'}`, borderRadius: 5, fontSize: 11, fontWeight: 700, color: copied === s.token ? GREEN : GOLD, cursor: 'pointer' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: copied === s.token ? 'rgba(34,197,94,0.1)' : 'rgba(245, 158, 11,0.1)', border: `1px solid ${copied === s.token ? 'rgba(34,197,94,0.25)' : 'rgba(245, 158, 11,0.25)'}`, borderRadius: 5, fontSize: 11, fontWeight: 700, color: copied === s.token ? GREEN : GOLD, cursor: 'pointer' }}>
                     {copied === s.token ? '✓ Copied' : '⎘ Copy Link'}
                   </button>
                   <a href={`/portals/client/${s.token}`} target="_blank" rel="noreferrer"
@@ -537,7 +537,7 @@ function SubTable({ sessions, copied, revoking, resending, resendMsg, onCopy, on
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
-          <tr style={{ background: '#F2F2F7' }}>
+          <tr style={{ background: '#16243A' }}>
             {['Company', 'Project', 'Status', 'Last Login', 'Invite', 'Actions'].map(h => (
               <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
             ))}

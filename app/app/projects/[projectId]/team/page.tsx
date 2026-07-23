@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',BLUE='#1a5fa8';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',BLUE='#1a5fa8';
 const fmt = (n:number) => '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-function Badge({label,color='#6E6E73',bg='rgba(148,163,184,.12)'}:{label:string,color?:string,bg?:string}){
+function Badge({label,color='#CBD5E1',bg='rgba(148,163,184,.12)'}:{label:string,color?:string,bg?:string}){
   return <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:bg,color,textTransform:'uppercase' as const,letterSpacing:.3}}>{label}</span>;
 }
 function Card({title,children,action}:{title:string,children:React.ReactNode,action?:React.ReactNode}){
@@ -94,11 +94,11 @@ export default function TeamPage(){
     finally { setSendingPortal(null); }
   }
 
-  const inputStyle = {width:'100%',padding:'8px 12px',background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const};
+  const inputStyle = {width:'100%',padding:'8px 12px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const};
 
   return <div>
-    <PageHeader title="Team" sub="Manage project team members and access" actions={<button onClick={()=>setShowInvite(!showInvite)} style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Invite Member</button>}/>
-    {showInvite&&<div style={{margin:24,background:RAISED,border:`1px solid rgba(212,160,23,.3)`,borderRadius:10,padding:24}}>
+    <PageHeader title="Team" sub="Manage project team members and access" actions={<button onClick={()=>setShowInvite(!showInvite)} style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Invite Member</button>}/>
+    {showInvite&&<div style={{margin:24,background:RAISED,border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:10,padding:24}}>
       <div style={{fontWeight:700,fontSize:15,marginBottom:16,color:TEXT}}>Invite Team Member</div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:16}}>
         <div>
@@ -118,7 +118,7 @@ export default function TeamPage(){
       </div>
       {inviteMsg&&<div style={{fontSize:13,marginBottom:12,color:inviteMsg==='Invitation sent!'?GREEN:RED}}>{inviteMsg}</div>}
       <div style={{display:'flex',gap:10}}>
-        <button onClick={handleInvite} disabled={inviting} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',opacity:inviting?.6:1}}>{inviting?'Sending...':'Send Invitation'}</button>
+        <button onClick={handleInvite} disabled={inviting} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',opacity:inviting?.6:1}}>{inviting?'Sending...':'Send Invitation'}</button>
         <button onClick={()=>{setShowInvite(false);setInviteMsg('');}} style={{padding:'9px 20px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
       </div>
     </div>}
@@ -132,11 +132,11 @@ export default function TeamPage(){
             <tr><td colSpan={6} style={{padding:'24px 12px',textAlign:'center',color:DIM,fontSize:13}}>Loading...</td></tr>
           ) : members.length === 0 ? (
             <tr><td colSpan={6} style={{padding:'32px 12px',textAlign:'center',color:DIM,fontSize:13}}>No team members yet. Invite someone to get started.</td></tr>
-          ) : members.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
+          ) : members.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
             <td style={{padding:'11px 12px'}}><div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:'50%',background:`linear-gradient(135deg,${GOLD},#B85C2A)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#1C1C1E'}}>{m.name[0]}</div><span style={{color:TEXT,fontWeight:600}}>{m.name}</span></div></td>
             <td style={{padding:'11px 12px',color:DIM}}>{m.role}</td>
             <td style={{padding:'11px 12px',color:DIM}}>{m.email}</td>
-            <td style={{padding:'11px 12px'}}><Badge label={m.access} color={m.access==='Admin'?GOLD:m.access==='Manager'?'#4a9de8':'#6E6E73'} bg={m.access==='Admin'?'rgba(212,160,23,.12)':m.access==='Manager'?'rgba(26,95,168,.12)':'rgba(148,163,184,.08)'}/></td>
+            <td style={{padding:'11px 12px'}}><Badge label={m.access} color={m.access==='Admin'?GOLD:m.access==='Manager'?'#4a9de8':'#CBD5E1'} bg={m.access==='Admin'?'rgba(245, 158, 11,.12)':m.access==='Manager'?'rgba(26,95,168,.12)':'rgba(148,163,184,.08)'}/></td>
             <td style={{padding:'11px 12px',color:'#3dd68c',fontSize:12}}>{m.last}</td>
             <td style={{padding:'11px 12px'}}><button style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,padding:'3px 8px',cursor:'pointer'}}>Edit</button></td>
           </tr>)}</tbody>
@@ -149,7 +149,7 @@ export default function TeamPage(){
           </tr></thead>
           <tbody>{subs.length === 0 ? (
             <tr><td colSpan={4} style={{padding:'32px 12px',textAlign:'center',color:DIM,fontSize:13}}>No subcontractors on this project yet.</td></tr>
-          ) : subs.map(s=><tr key={s.name} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
+          ) : subs.map(s=><tr key={s.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
             <td style={{padding:'11px 12px',color:TEXT,fontWeight:600}}>{s.name}</td>
             <td style={{padding:'11px 12px',color:DIM}}>{s.email}</td>
             <td style={{padding:'11px 12px'}}><Badge label="Sub Portal" color='#a78bfa' bg='rgba(167,139,250,.12)'/></td>

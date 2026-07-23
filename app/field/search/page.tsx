@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -126,7 +126,7 @@ function HighlightedText({ text, highlight }: { text: string; highlight: string 
     <span>
       {parts.map((part, i) =>
         part.toLowerCase() === highlight.toLowerCase()
-          ? <mark key={i} style={{ background: 'rgba(212,160,23,.3)', color: GOLD, borderRadius: 2, padding: '0 1px' }}>{part}</mark>
+          ? <mark key={i} style={{ background: 'rgba(245, 158, 11,.3)', color: GOLD, borderRadius: 2, padding: '0 1px' }}>{part}</mark>
           : <span key={i}>{part}</span>
       )}
     </span>
@@ -354,8 +354,8 @@ function SearchPage() {
                     display: 'flex', alignItems: 'center', gap: 5,
                     padding: '6px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                     cursor: 'pointer', transition: 'all .15s',
-                    background: active ? 'rgba(212,160,23,.15)' : 'transparent',
-                    border: `1px solid ${active ? 'rgba(212,160,23,.4)' : BORDER}`,
+                    background: active ? 'rgba(245, 158, 11,.15)' : 'transparent',
+                    border: `1px solid ${active ? 'rgba(245, 158, 11,.4)' : BORDER}`,
                     color: active ? GOLD : DIM,
                   }}
                 >
@@ -377,8 +377,8 @@ function SearchPage() {
             style={{
               padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
               cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s',
-              background: quickFilter === f.id ? 'rgba(212,160,23,.15)' : 'transparent',
-              border: `1px solid ${quickFilter === f.id ? 'rgba(212,160,23,.4)' : BORDER}`,
+              background: quickFilter === f.id ? 'rgba(245, 158, 11,.15)' : 'transparent',
+              border: `1px solid ${quickFilter === f.id ? 'rgba(245, 158, 11,.4)' : BORDER}`,
               color: quickFilter === f.id ? GOLD : DIM,
             }}
           >
@@ -404,7 +404,7 @@ function SearchPage() {
               key={i}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 0', borderTop: i > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
+                padding: '8px 0', borderTop: i > 0 ? `1px solid rgba(255,255,255,0.12)` : 'none',
               }}
             >
               <button
@@ -510,7 +510,7 @@ function SearchPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{
                 width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.2)',
+                background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.2)',
               }}>
                 <ModuleIcon type={group.icon} size={14} color={GOLD} />
               </div>
@@ -518,7 +518,7 @@ function SearchPage() {
             </div>
             <span style={{
               fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
-              background: 'rgba(212,160,23,.1)', color: GOLD, border: '1px solid rgba(212,160,23,.2)',
+              background: 'rgba(245, 158, 11,.1)', color: GOLD, border: '1px solid rgba(245, 158, 11,.2)',
             }}>
               {group.items.length}
             </span>
@@ -533,10 +533,10 @@ function SearchPage() {
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '12px 14px', cursor: 'pointer',
                 background: 'transparent', border: 'none',
-                borderTop: idx > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
+                borderTop: idx > 0 ? `1px solid rgba(255,255,255,0.12)` : 'none',
                 transition: 'background .15s',
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.04)'; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(245, 158, 11,.04)'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -572,7 +572,7 @@ function SearchPage() {
 
 export default function FieldSearchPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <SearchPage />
     </Suspense>
   );

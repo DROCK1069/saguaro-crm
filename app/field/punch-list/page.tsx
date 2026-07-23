@@ -10,12 +10,12 @@ import { takePhoto, hapticSuccess, hapticLight, hapticError, isNative } from '@/
 import OfflineSyncStatus from '@/components/field/OfflineSyncStatus';
 import VoiceToLog from '@/components/field/VoiceToLog';
 
-const GOLD   = '#C8881C';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const GOLD   = '#F59E0B';
+const DARK   = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 const GREEN  = '#22c55e';
 const RED    = '#ef4444';
 const AMBER  = '#f59e0b';
@@ -578,7 +578,7 @@ function PunchListInner() {
 /* ─── Page wrapper with Suspense ─── */
 export default function FieldPunchListPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CBD5E1' }}>Loading...</div>}>
       <PunchListInner />
     </Suspense>
   );

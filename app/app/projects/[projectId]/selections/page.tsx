@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#3b82f6';
 
 const CATEGORIES=['Flooring','Countertops','Cabinetry','Fixtures','Hardware','Paint',
@@ -20,8 +20,8 @@ const STATUS_LABELS:Record<string,string>={
 const fmt=(n:number)=>'$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 const inp:React.CSSProperties={
-  width:'100%',padding:'9px 12px',background:'#FFFFFF',
-  border:'1px solid #E5E5EA',borderRadius:7,color:'#1C1C1E',
+  width:'100%',padding:'9px 12px',background:'#16243A',
+  border:'1px solid rgba(255,255,255,0.12)',borderRadius:7,color:'#FFFFFF',
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
 const EMPTY:Record<string,any>={
@@ -188,7 +188,7 @@ export default function SelectionsPage(){
             <div style={{fontSize:12,color:DIM,marginTop:3}}>Materials, finishes &amp; owner approvals</div>
           </div>
           <button onClick={openCreate}
-            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
               border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + Add Selection
           </button>
@@ -220,7 +220,7 @@ export default function SelectionsPage(){
                   {fmt(totalCost)} / {fmt(totalAllowance)}
                 </span>
               </div>
-              <div style={{background:'rgba(229,229,234,.6)',borderRadius:4,height:8,overflow:'hidden'}}>
+              <div style={{background:'rgba(255,255,255,0.12)',borderRadius:4,height:8,overflow:'hidden'}}>
                 <div style={{height:'100%',borderRadius:4,
                   background:overage>0?`linear-gradient(90deg,${RED},#f87171)`:`linear-gradient(90deg,${GREEN},#3dd68c)`,
                   width:`${Math.min(100,totalAllowance>0?(totalCost/totalAllowance*100):0)}%`,transition:'width .4s'}}/>
@@ -261,7 +261,7 @@ export default function SelectionsPage(){
               <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No selections yet</div>
               <div style={{fontSize:13,color:DIM,marginBottom:24}}>Track material selections, finishes, and owner approvals.</div>
               <button onClick={openCreate}
-                style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                   border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                 + Add First Selection
               </button>
@@ -284,10 +284,10 @@ export default function SelectionsPage(){
                   const color=STATUS_COLORS[item.status]||DIM;
                   return(
                     <div key={item.id} onClick={()=>viewItem(item)}
-                      style={{background:isSel?'rgba(212,160,23,.07)':RAISED,
+                      style={{background:isSel?'rgba(245, 158, 11,.07)':RAISED,
                         border:`1px solid ${isSel?GOLD:BORDER}`,borderRadius:10,
                         padding:'12px 16px',cursor:'pointer',transition:'all .15s'}}
-                      onMouseEnter={e=>{if(!isSel)e.currentTarget.style.borderColor='rgba(212,160,23,.4)';}}
+                      onMouseEnter={e=>{if(!isSel)e.currentTarget.style.borderColor='rgba(245, 158, 11,.4)';}}
                       onMouseLeave={e=>{if(!isSel)e.currentTarget.style.borderColor=BORDER;}}>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
                         <div style={{flex:1,minWidth:0}}>
@@ -425,7 +425,7 @@ export default function SelectionsPage(){
                 </div>
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
-                    style={{flex:1,padding:'11px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                    style={{flex:1,padding:'11px 0',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                       border:'none',borderRadius:8,color:'#1C1C1E',fontSize:14,fontWeight:800,
                       cursor:'pointer',opacity:saving?0.6:1}}>
                     {saving?'Saving...':mode==='create'?'Add Selection':'Save Changes'}
@@ -469,7 +469,7 @@ export default function SelectionsPage(){
                     {l:'Decision Due',v:selected.due_date?new Date(selected.due_date+'T12:00:00')
                       .toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):null},
                   ].filter(x=>x.v).map(x=>(
-                    <div key={x.l} style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,
+                    <div key={x.l} style={{background:'#0F172A',border:`1px solid ${BORDER}`,
                       borderRadius:8,padding:'10px 12px'}}>
                       <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:4}}>{x.l}</div>
                       <div style={{fontSize:13,color:TEXT}}>{x.v}</div>
@@ -499,7 +499,7 @@ export default function SelectionsPage(){
                 )}
 
                 {selected.notes&&(
-                  <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
                     <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>Notes</div>
                     <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.notes}</div>
                   </div>

@@ -1,9 +1,9 @@
 'use client';
 
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
 
 function Pulse({ w, h, mb }: { w: string; h: number; mb?: number }) {
   return (
@@ -70,7 +70,7 @@ export default function ProjectLoading() {
         <div style={{ padding: '16px 24px 40px' }}>
           <div
             style={{
-              background: '#F2F2F7',
+              background: '#0d1117',
               padding: '10px 14px',
               borderBottom: `1px solid ${BORDER}`,
               display: 'flex',
@@ -86,7 +86,7 @@ export default function ProjectLoading() {
               key={i}
               style={{
                 padding: '12px 14px',
-                borderBottom: `1px solid rgba(229,229,234,.4)`,
+                borderBottom: `1px solid rgba(255,255,255,0.12)`,
                 display: 'flex',
                 gap: 20,
                 alignItems: 'center',

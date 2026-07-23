@@ -26,7 +26,7 @@ export function GetAppBadge() {
       href={TESTFLIGHT}
       target="_blank"
       rel="noopener noreferrer"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#C8881C', color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 15, padding: '14px 28px', borderRadius: 10, boxShadow: '0 4px 20px rgba(212,160,23,0.35)' }}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#F59E0B', color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 15, padding: '14px 28px', borderRadius: 10, boxShadow: '0 4px 20px rgba(245, 158, 11,0.35)' }}
     >
       Join the iOS Beta →
     </a>

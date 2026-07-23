@@ -11,8 +11,8 @@ import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 import { UsersThree, Hammer, CalendarBlank, Phone, Crane } from '@phosphor-icons/react';
 
 /* ── colour palette ────────────────────────────────────────────────── */
-const GOLD = '#C8881C', BG = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E', DIM = '#6E6E73', GREEN = '#22C55E', RED = '#EF4444';
+const GOLD = '#F59E0B', BG = '#0d1117', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)';
+const TEXT = '#FFFFFF', DIM = '#CBD5E1', GREEN = '#22C55E', RED = '#EF4444';
 const AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
 
 function hr(hex: string): string {
@@ -916,9 +916,9 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <div style={{ minHeight: '100dvh', background: '#F2F2F7', color: '#6E6E73', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+        <div style={{ minHeight: '100dvh', background: '#0d1117', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 32, height: 32, border: '3px solid #E5E5EA', borderTopColor: '#C8881C', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.12)', borderTopColor: '#F59E0B', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
             <p style={{ fontSize: 14, margin: 0 }}>Loading Resource Planning...</p>
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
           </div>

@@ -3,12 +3,12 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toCents, toDollars, extend, sumCents, scaleCents, percentOf, addCents } from '@/lib/calc';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
-const GOLD   = '#C8881C';
-const BG     = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const BG     = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -655,7 +655,7 @@ export default function EstimateBuilderPage() {
   const btnSmStyle = (bg: string = BORDER): React.CSSProperties => ({
     background: bg, color: TEXT, border: 'none', borderRadius: 4, padding: '4px 10px', cursor: 'pointer', fontSize: 12,
   });
-  const inputStyle: React.CSSProperties = { background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, padding: '6px 10px', fontSize: 13, width: '100%' };
+  const inputStyle: React.CSSProperties = { background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, padding: '6px 10px', fontSize: 13, width: '100%' };
   const selectStyle: React.CSSProperties = { ...inputStyle, width: 'auto' };
   const thStyle: React.CSSProperties = { textAlign: 'left', padding: '8px 10px', borderBottom: `1px solid ${BORDER}`, color: DIM, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' };
   const tdStyle: React.CSSProperties = { padding: '6px 10px', borderBottom: `1px solid ${BORDER}`, fontSize: 13, verticalAlign: 'middle' };
@@ -850,8 +850,8 @@ export default function EstimateBuilderPage() {
                                 </div>
                               ) : editId === item.id ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditLine(div.code, item.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 100, padding: '4px 8px', background: BG, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
-                                  <button onClick={() => handleEditLine(div.code, item.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 5, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                                  <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditLine(div.code, item.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 100, padding: '4px 8px', background: '#16243A', border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
+                                  <button onClick={() => handleEditLine(div.code, item.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 5, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                                   <button onClick={() => setEditId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                                 </div>
                               ) : adjustId === item.id ? (

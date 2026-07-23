@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { CONTRACTOR_TRADES as TRADES, TRADESPERSON_ROLES as ROLES } from '@/lib/contractor-trades';
 
-const GOLD='#C8881C',BG='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',TEXT='#1C1C1E',DIM='#6E6E73',GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',BLUE='#3B82F6',PURPLE='#8B5CF6';
+const GOLD='#F59E0B',BG='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',TEXT='#FFFFFF',DIM='#CBD5E1',GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',BLUE='#3B82F6',PURPLE='#8B5CF6';
 
 /* ===== TYPES ===== */
 interface Assignment {
@@ -34,7 +34,7 @@ type Tab = 'grid' | 'timeline' | 'people' | 'staffing' | 'utilization' | 'availa
 /* ===== STYLE HELPERS ===== */
 function btn(primary?: boolean): React.CSSProperties {
   return primary
-    ? { padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'opacity .15s' }
+    ? { padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'opacity .15s' }
     : { padding: '8px 18px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'opacity .15s' };
 }
 function inp(): React.CSSProperties {
@@ -58,7 +58,7 @@ function Spinner() {
   return <div style={{ display: 'inline-block', width: 16, height: 16, border: `2px solid ${BORDER}`, borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />;
 }
 function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+  return <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
     <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 28, minWidth: 520, maxWidth: 720, maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
       {children}
     </div>

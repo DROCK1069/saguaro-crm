@@ -1,14 +1,15 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 const GOLD   = '#F59E0B';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const DARK   = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 const GREEN  = '#22c55e';
 const RED    = '#ef4444';
 
@@ -28,8 +29,8 @@ const PLANS = [
     name: 'Starter',
     price_mo: 299,
     price_yr: 249,
-    tagline: 'Up to 10 projects · 100 AI pages/mo',
-    features: ['10 active projects', 'AI Takeoff 100 pages/mo', 'G702/G703 Pay Apps', 'Lien Waivers all 50 states', 'Mobile Field App', 'Free migration', 'Email support'],
+    tagline: 'Up to 15 projects · 150 AI pages/mo',
+    features: ['Unlimited users', '15 active projects', 'AI Takeoff 150 pages/mo', 'G702/G703 Pay Apps', 'Lien Waivers all 50 states', 'Mobile Field App', 'Free migration', 'Email support'],
   },
   {
     id: 'professional',
@@ -273,7 +274,7 @@ export default function BillingPage() {
             const isUpgrade = plan.id === 'professional' && currentPlanName.includes('starter');
             return (
               <div key={plan.id} style={{
-                background: plan.popular ? 'linear-gradient(180deg, #FFFFFF, #FFFFFF)' : RAISED,
+                background: plan.popular ? 'linear-gradient(180deg, #0F172A, #0F172A)' : RAISED,
                 border: `1.5px solid ${isCurrent ? GREEN : plan.popular ? GOLD : BORDER}`,
                 borderRadius: 14, overflow: 'hidden', position: 'relative',
                 boxShadow: plan.popular ? `0 0 40px rgba(245,158,11,0.08)` : 'none',
@@ -340,9 +341,9 @@ export default function BillingPage() {
             <div style={{ fontSize: 18, fontWeight: 800, color: TEXT, marginBottom: 6 }}>Install on your phone or tablet</div>
             <div style={{ fontSize: 13, color: DIM, maxWidth: 480 }}>No app store required. Install directly from your browser on iPhone, Android, iPad, or desktop. Free for every team member on your plan.</div>
           </div>
-          <a href="/get-the-app" style={{ padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap', boxShadow: `0 4px 16px rgba(245,158,11,0.3)` }}>
+          <Link href="/get-the-app" style={{ padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap', boxShadow: `0 4px 16px rgba(245,158,11,0.3)` }}>
             Get Install Instructions
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -368,7 +369,7 @@ export default function BillingPage() {
       {/* Cancel Confirmation Modal */}
       {showCancel && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%' }}>
+          <div style={{ background: '#0F172A', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%' }}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12, color: TEXT }}>Cancel your subscription?</div>
             <div style={{ fontSize: 14, color: DIM, lineHeight: 1.65, marginBottom: 28 }}>
               You'll retain access until the end of your current billing period. Your data will be preserved for 30 days after that. You can reactivate anytime.

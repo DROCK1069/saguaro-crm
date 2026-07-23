@@ -1,12 +1,13 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 const GOLD  = '#F59E0B';
-const DARK  = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM   = '#6E6E73';
-const TEXT  = '#1C1C1E';
+const DARK  = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM   = '#CBD5E1';
+const TEXT  = '#FFFFFF';
 const GREEN = '#22c55e';
 
 export default function WelcomePage() {
@@ -45,18 +46,18 @@ export default function WelcomePage() {
           <div style={{ fontSize: 11, fontWeight: 800, color: GOLD, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>How to access your software</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
             Open any browser and go to{' '}
-            <a href="/app" style={{ color: GOLD, textDecoration: 'none', borderBottom: `1px solid rgba(245,158,11,0.4)` }}>saguarocontrol.net/app</a>
+            <Link href="/app" style={{ color: GOLD, textDecoration: 'none', borderBottom: `1px solid rgba(245,158,11,0.4)` }}>saguarocontrol.net/app</Link>
           </div>
           <p style={{ fontSize: 14, color: DIM, margin: '0 0 20px', lineHeight: 1.65 }}>
             Saguaro is a <strong style={{ color: TEXT }}>web-based platform</strong> — there is nothing to download or install on your computer. Just bookmark this address and log in from any device, any time.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <a href="/app" style={{ padding: '12px 28px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 900, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 20px rgba(245,158,11,0.3)` }}>
+            <Link href="/app" style={{ padding: '12px 28px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 900, fontSize: 14, textDecoration: 'none', boxShadow: `0 4px 20px rgba(245,158,11,0.3)` }}>
               Go to My Dashboard →
-            </a>
-            <a href="/get-the-app" style={{ padding: '12px 24px', background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: 9, color: TEXT, fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+            </Link>
+            <Link href="/get-the-app" style={{ padding: '12px 24px', background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: 9, color: TEXT, fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
               Install on Phone
-            </a>
+            </Link>
           </div>
         </div>
 

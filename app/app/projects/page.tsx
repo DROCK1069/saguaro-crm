@@ -12,7 +12,7 @@ const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDig
 
 function statusStyle(s:string):{bg:string,c:string}{
   if(s==='active')    return {bg:'rgba(34,197,94,.12)',c:colors.green};
-  if(s==='bidding')   return {bg:'rgba(212,160,23,.14)',c:GOLD};
+  if(s==='bidding')   return {bg:'rgba(245, 158, 11,.14)',c:GOLD};
   if(s==='planning')  return {bg:'rgba(99,102,241,.14)',c:colors.blue};
   if(s==='closed'||s==='complete') return {bg:'rgba(255,255,255,.06)',c:colors.textDim};
   return {bg:'rgba(255,255,255,.06)',c:colors.textDim};
@@ -64,7 +64,7 @@ export default function ProjectsPage() {
               onChange={e=>setSearch(e.target.value)}
               placeholder="Search projects…"
               style={{padding:'9px 14px 9px 34px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:radius.xl,color:TEXT,fontSize:13,outline:'none',width:220}}
-              onFocus={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.boxShadow=`0 0 0 3px rgba(212,160,23,.12)`}}
+              onFocus={e=>{e.currentTarget.style.borderColor=colors.gold;e.currentTarget.style.boxShadow=`0 0 0 3px rgba(245, 158, 11,.12)`}}
               onBlur={e=>{e.currentTarget.style.borderColor=BORDER;e.currentTarget.style.boxShadow='none'}}
             />
           </div>
@@ -121,7 +121,7 @@ export default function ProjectsPage() {
         }}>
           <div style={{
             width:64,height:64,borderRadius:radius['2xl'],display:'flex',alignItems:'center',justifyContent:'center',
-            background:'rgba(212,160,23,.10)',border:`1px solid rgba(212,160,23,.20)`,marginBottom:20,
+            background:'rgba(245, 158, 11,.10)',border:`1px solid rgba(245, 158, 11,.20)`,marginBottom:20,
           }}>
             {projects.length===0
               ? <FolderOpen size={30} weight="duotone" color={GOLD}/>
@@ -197,11 +197,11 @@ export default function ProjectsPage() {
 
           {/* New Project Card */}
           <Link href="/app/projects/new" style={{textDecoration:'none'}}>
-            <div style={{background:'rgba(212,160,23,.04)',border:`1px dashed rgba(212,160,23,.3)`,borderRadius:14,padding:40,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,minHeight:190,transition:'background .18s,border-color .18s'}}
-              onMouseEnter={e=>{const t=e.currentTarget as HTMLElement;t.style.background='rgba(212,160,23,.08)';t.style.borderColor='rgba(212,160,23,.5)'}}
-              onMouseLeave={e=>{const t=e.currentTarget as HTMLElement;t.style.background='rgba(212,160,23,.04)';t.style.borderColor='rgba(212,160,23,.3)'}}
+            <div style={{background:'rgba(245, 158, 11,.04)',border:`1px dashed rgba(245, 158, 11,.3)`,borderRadius:14,padding:40,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,minHeight:190,transition:'background .18s,border-color .18s'}}
+              onMouseEnter={e=>{const t=e.currentTarget as HTMLElement;t.style.background='rgba(245, 158, 11,.08)';t.style.borderColor='rgba(245, 158, 11,.5)'}}
+              onMouseLeave={e=>{const t=e.currentTarget as HTMLElement;t.style.background='rgba(245, 158, 11,.04)';t.style.borderColor='rgba(245, 158, 11,.3)'}}
             >
-              <div style={{width:50,height:50,borderRadius:radius['2xl'],background:'rgba(212,160,23,.14)',display:'flex',alignItems:'center',justifyContent:'center',color:GOLD}}>
+              <div style={{width:50,height:50,borderRadius:radius['2xl'],background:'rgba(245, 158, 11,.14)',display:'flex',alignItems:'center',justifyContent:'center',color:GOLD}}>
                 <Plus size={24} weight="bold"/>
               </div>
               <div style={{fontWeight:700,color:GOLD,fontSize:15}}>New Project</div>

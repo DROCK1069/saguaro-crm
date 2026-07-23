@@ -3,12 +3,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import ErrorBoundary from '../../../../../components/ErrorBoundary';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface Message {
   id: string;
@@ -185,9 +185,9 @@ function IntelligenceChat() {
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 120px)', background: DARK, borderRadius: '12px', overflow: 'hidden', border: `1px solid ${BORDER}` }}>
       {/* Sidebar */}
-      <div style={{ width: 260, background: '#F2F2F7', borderRight: `1px solid ${BORDER}`, padding: '20px 16px', overflowY: 'auto', flexShrink: 0 }}>
+      <div style={{ width: 260, background: '#0d1117', borderRight: `1px solid ${BORDER}`, padding: '20px 16px', overflowY: 'auto', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🧠</div>
+          <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🧠</div>
           <div>
             <div style={{ color: TEXT, fontWeight: 700, fontSize: '13px' }}>Saguaro Intelligence</div>
             <div style={{ color: DIM, fontSize: '11px' }}>AI Construction Expert</div>
@@ -200,15 +200,15 @@ function IntelligenceChat() {
         <div style={{ fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '10px', marginTop: '8px' }}>Quick Questions</div>
         {QUICK_QUESTIONS.map(q => (
           <button key={q} onClick={() => sendMessage(q)}
-            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: '6px', background: 'rgba(212,160,23,0.06)', border: '1px solid rgba(212,160,23,0.15)', borderRadius: '6px', color: GOLD, fontSize: '11px', cursor: 'pointer', transition: 'background 0.15s' }}
-            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(212,160,23,0.12)'}
-            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(212,160,23,0.06)'}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: '6px', background: 'rgba(245, 158, 11,0.06)', border: '1px solid rgba(245, 158, 11,0.15)', borderRadius: '6px', color: GOLD, fontSize: '11px', cursor: 'pointer', transition: 'background 0.15s' }}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245, 158, 11,0.12)'}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245, 158, 11,0.06)'}
           >{q}</button>
         ))}
 
         <div style={{ marginTop: '24px', fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '8px' }}>Expertise</div>
         {['CSI MasterFormat', 'AIA Contracts', 'Lien Law (AZ/CA/TX)', 'Davis-Bacon / WH-347', 'OSHA 29 CFR 1926', 'Change Orders & Claims', 'Pay Application Process', 'Construction Finance'].map(item => (
-          <div key={item} style={{ fontSize: '11px', color: DIM, padding: '4px 0', borderBottom: `1px solid rgba(229,229,234,0.5)` }}>{item}</div>
+          <div key={item} style={{ fontSize: '11px', color: DIM, padding: '4px 0', borderBottom: `1px solid rgba(255,255,255,0.12)` }}>{item}</div>
         ))}
       </div>
 
@@ -218,11 +218,11 @@ function IntelligenceChat() {
           {messages.map(msg => (
             <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {msg.role === 'assistant' && (
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg,${GOLD},#E0A030)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-end', fontWeight: 900, color: '#1C1C1E' }}>S</div>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-end', fontWeight: 900, color: '#1C1C1E' }}>S</div>
               )}
               <div style={{
                 maxWidth: '78%',
-                background: msg.role === 'user' ? `linear-gradient(135deg,${GOLD},#E0A030)` : RAISED,
+                background: msg.role === 'user' ? `linear-gradient(135deg,${GOLD},#FBBF24)` : RAISED,
                 color: msg.role === 'user' ? '#F2F2F7' : TEXT,
                 padding: '12px 16px',
                 borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
@@ -243,7 +243,7 @@ function IntelligenceChat() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div style={{ padding: '12px 20px', borderTop: `1px solid ${BORDER}`, display: 'flex', gap: '10px', alignItems: 'center', background: '#F2F2F7' }}>
+        <div style={{ padding: '12px 20px', borderTop: `1px solid ${BORDER}`, display: 'flex', gap: '10px', alignItems: 'center', background: '#0d1117' }}>
           <input
             ref={inputRef}
             value={input}
@@ -251,10 +251,10 @@ function IntelligenceChat() {
             onKeyDown={handleKeyDown}
             placeholder="Ask about costs, schedules, lien waivers, change orders..."
             disabled={isLoading}
-            style={{ flex: 1, background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', color: TEXT, fontSize: '13px', outline: 'none' }}
+            style={{ flex: 1, background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '10px 14px', color: TEXT, fontSize: '13px', outline: 'none' }}
           />
           <button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()}
-            style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: '8px', color: '#1C1C1E', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}>
+            style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(245, 158, 11,0.3)' : `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: '8px', color: '#1C1C1E', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}>
             {isLoading ? '...' : 'Ask →'}
           </button>
         </div>

@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { syncAll, getPendingCount, isOnline as checkOnline } from '@/lib/offline-sync';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 export default function OfflineSyncStatus() {
   const [online, setOnline] = useState(true);

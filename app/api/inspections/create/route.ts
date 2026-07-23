@@ -79,6 +79,33 @@ export async function POST(req: NextRequest) {
       status:            status,
     };
 
+    // QC-before-inspections gate (per SCS spec: "QC occurs before inspections").
+    // Scoped by data: only projects that carry a QC-by-trade checklist (franchise
+    // sites) are gated; any other project has no qc_trade rows and is unaffected.
+    // Soft-block (409) that the caller can re-submit with override:true.
+    const gateProjectId = row.project_id;
+    const override = body.override === true || body.qc_override === true;
+    if (gateProjectId && !override) {
+      const { data: qcRows } = await supabase
+        .from('project_todos')
+        .select('title,status')
+        .eq('tenant_id', user.tenantId)
+        .eq('project_id', gateProjectId as string)
+        .eq('linked_module', 'qc_trade');
+      if (qcRows && qcRows.length) {
+        const open = qcRows
+          .filter((t) => !/pass|complete|done/i.test(String((t as Record<string, unknown>).status || '')))
+          .map((t) => String((t as Record<string, unknown>).title || 'trade'));
+        if (open.length) {
+          return NextResponse.json({
+            requiresQcOverride: true,
+            qcOpen: open,
+            error: `QC not signed off for ${open.length} trade(s): ${open.slice(0, 6).join(', ')}${open.length > 6 ? '…' : ''}. Complete QC before scheduling the inspection, or override.`,
+          }, { status: 409 });
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('inspections')
       .insert(row as Database['public']['Tables']['inspections']['Insert'])

@@ -6,16 +6,16 @@
  */
 import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const CARD_GLASS = 'rgba(255,255,255,0.7)';
-const GOLD = '#C8881C';
+const BASE = '#0d1117';
+const CARD = '#0F172A';
+const CARD_GLASS = 'rgba(15,23,42,0.7)';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
 const RADIUS = 16;
 
 const glass: React.CSSProperties = {
@@ -132,7 +132,7 @@ function BimViewerPage() {
     ctx.fillRect(0, 0, dw, dh);
 
     // Grid floor (perspective-ish)
-    ctx.strokeStyle = 'rgba(212,160,23,0.08)';
+    ctx.strokeStyle = 'rgba(245, 158, 11,0.08)';
     ctx.lineWidth = 0.5;
     const gridSize = 20;
     const vanishY = dh * 0.35;
@@ -152,7 +152,7 @@ function BimViewerPage() {
     }
 
     // Center text
-    ctx.fillStyle = 'rgba(212,160,23,0.3)';
+    ctx.fillStyle = 'rgba(245, 158, 11,0.3)';
     ctx.font = '14px -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('3D Viewer — install @react-three/fiber to enable', dw / 2, vanishY - 20);
@@ -313,7 +313,7 @@ function BimViewerPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: TEXT }}>{selectedModel.name || selectedModel.file_name}</h2>
             <span style={{
-              background: `rgba(${STATUS_COLORS[selectedModel.status] === GREEN ? '34,197,94' : STATUS_COLORS[selectedModel.status] === BLUE ? '59,130,246' : STATUS_COLORS[selectedModel.status] === RED ? '239,68,68' : '212,160,23'},0.15)`,
+              background: `rgba(${STATUS_COLORS[selectedModel.status] === GREEN ? '34,197,94' : STATUS_COLORS[selectedModel.status] === BLUE ? '59,130,246' : STATUS_COLORS[selectedModel.status] === RED ? '239,68,68' : '245, 158, 11'},0.15)`,
               color: STATUS_COLORS[selectedModel.status],
               fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
               border: `1px solid ${STATUS_COLORS[selectedModel.status]}33`,
@@ -351,7 +351,7 @@ function BimViewerPage() {
 
             {/* Stats bar */}
             <div style={{ ...glass, padding: '12px 16px', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ background: 'rgba(212,160,23,0.1)', borderRadius: 10, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ background: 'rgba(245, 158, 11,0.1)', borderRadius: 10, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 11, color: DIM }}>Total</span>
                 <span style={{ fontSize: 15, fontWeight: 800, color: GOLD }}>{totalElements}</span>
               </div>
@@ -556,7 +556,7 @@ function BimViewerPage() {
               <p style={{ margin: '3px 0 0', fontSize: 11, color: DIM }}>{model.file_name}</p>
             </div>
             <span style={{
-              background: `rgba(${STATUS_COLORS[model.status] === GREEN ? '34,197,94' : STATUS_COLORS[model.status] === BLUE ? '59,130,246' : STATUS_COLORS[model.status] === RED ? '239,68,68' : '212,160,23'},0.15)`,
+              background: `rgba(${STATUS_COLORS[model.status] === GREEN ? '34,197,94' : STATUS_COLORS[model.status] === BLUE ? '59,130,246' : STATUS_COLORS[model.status] === RED ? '239,68,68' : '245, 158, 11'},0.15)`,
               color: STATUS_COLORS[model.status],
               fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, flexShrink: 0,
               border: `1px solid ${STATUS_COLORS[model.status]}33`,

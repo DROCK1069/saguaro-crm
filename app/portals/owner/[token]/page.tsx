@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030';
 const fmt=(n:number)=>'$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
 
 export default function OwnerApprovalPortal() {
@@ -72,7 +72,7 @@ export default function OwnerApprovalPortal() {
 
   return (
     <div style={{ minHeight:'100vh',background:DARK,fontFamily:'system-ui,sans-serif',color:TEXT }}>
-      <div style={{ background:'rgba(255,255,255,.96)',borderBottom:`1px solid ${BORDER}`,padding:'16px 24px',display:'flex',alignItems:'center',gap:12 }}>
+      <div style={{ background:'#0F172A',borderBottom:`1px solid ${BORDER}`,padding:'16px 24px',display:'flex',alignItems:'center',gap:12 }}>
         <span style={{ fontSize:22 }}>🌵</span>
         <span style={{ fontWeight:800,fontSize:16,color:GOLD,letterSpacing:1 }}>SAGUARO CRM</span>
         <span style={{ fontSize:11,color:DIM,marginLeft:8 }}>Owner Pay Application Review Portal</span>
@@ -80,7 +80,7 @@ export default function OwnerApprovalPortal() {
 
       <div style={{ maxWidth:900,margin:'0 auto',padding:'32px 24px' }}>
         {/* Banner */}
-        <div style={{ background:'rgba(212,160,23,.06)',border:`1px solid rgba(212,160,23,.2)`,borderRadius:10,padding:'16px 20px',marginBottom:24 }}>
+        <div style={{ background:'rgba(245, 158, 11,.06)',border:`1px solid rgba(245, 158, 11,.2)`,borderRadius:10,padding:'16px 20px',marginBottom:24 }}>
           <div style={{ fontWeight:800,fontSize:18,color:GOLD,marginBottom:4 }}>
             Pay Application #{pa.app_number} — Review &amp; Approval
           </div>
@@ -120,7 +120,7 @@ export default function OwnerApprovalPortal() {
               ['Current Payment Due', fmt(pa.current_payment_due||0)],
               ['Balance to Finish (incl. Retainage)', fmt(Math.max(0,(pa.contract_sum_to_date||0)-(pa.total_earned_less_retainage||0)))],
             ].map(([l,v]:any)=>(
-              <div key={l} style={{ display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(229,229,234,.4)',fontSize:13 }}>
+              <div key={l} style={{ display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.12)',fontSize:13 }}>
                 <span style={{ color:DIM }} dangerouslySetInnerHTML={{ __html:l }} />
                 <span style={{ color:l.includes('Current Payment')?(GOLD):TEXT,fontWeight:700 }}>{v}</span>
               </div>
@@ -135,7 +135,7 @@ export default function OwnerApprovalPortal() {
             <div style={{ overflowX:'auto' }}>
               <table style={{ width:'100%',borderCollapse:'collapse',fontSize:12 }}>
                 <thead>
-                  <tr style={{ background:'#F2F2F7' }}>
+                  <tr style={{ background:'#16243A' }}>
                     {['#','Description','Sched Value','From Prev','This Period','Materials Stored','Total Completed','%','Balance'].map(h=>(
                       <th key={h} style={{ padding:'8px 10px',textAlign:'right',color:DIM,fontWeight:700,whiteSpace:'nowrap',borderBottom:`1px solid ${BORDER}` }}>{h}</th>
                     ))}
@@ -143,7 +143,7 @@ export default function OwnerApprovalPortal() {
                 </thead>
                 <tbody>
                   {lineItems.map((item:any,i:number)=>(
-                    <tr key={i} style={{ borderBottom:'1px solid rgba(229,229,234,.3)' }}>
+                    <tr key={i} style={{ borderBottom:'1px solid rgba(255,255,255,0.12)' }}>
                       <td style={{ padding:'7px 10px',color:DIM,textAlign:'right' }}>{item.line_number||i+1}</td>
                       <td style={{ padding:'7px 10px',color:TEXT,maxWidth:200 }}>{item.description}</td>
                       <td style={{ padding:'7px 10px',textAlign:'right',color:TEXT }}>{fmt(item.scheduled_value||0)}</td>
@@ -165,8 +165,8 @@ export default function OwnerApprovalPortal() {
         {(pa.g702_pdf_url||pa.g703_pdf_url) && (
           <div style={{ background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'16px 20px',marginBottom:20,display:'flex',gap:12,flexWrap:'wrap' }}>
             <div style={{ fontSize:13,fontWeight:700,color:TEXT,marginBottom:8,width:'100%' }}>Download Official AIA Documents</div>
-            {pa.g702_pdf_url && <a href={pa.g702_pdf_url} target="_blank" rel="noreferrer" style={{ padding:'9px 18px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none' }}>📄 Download G702</a>}
-            {pa.g703_pdf_url && <a href={pa.g703_pdf_url} target="_blank" rel="noreferrer" style={{ padding:'9px 18px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none' }}>📄 Download G703</a>}
+            {pa.g702_pdf_url && <a href={pa.g702_pdf_url} target="_blank" rel="noreferrer" style={{ padding:'9px 18px',background:'rgba(245, 158, 11,.12)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none' }}>📄 Download G702</a>}
+            {pa.g703_pdf_url && <a href={pa.g703_pdf_url} target="_blank" rel="noreferrer" style={{ padding:'9px 18px',background:'rgba(245, 158, 11,.12)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none' }}>📄 Download G703</a>}
           </div>
         )}
 
@@ -177,11 +177,11 @@ export default function OwnerApprovalPortal() {
             <div style={{ marginBottom:16 }}>
               <label style={{ display:'block',fontSize:12,fontWeight:700,color:DIM,marginBottom:5,textTransform:'uppercase',letterSpacing:.5 }}>Notes / Comments (optional)</label>
               <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add any notes, conditions, or comments for the contractor..." rows={3}
-                style={{ width:'100%',background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:7,padding:'10px 14px',color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box',resize:'vertical' }} />
+                style={{ width:'100%',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:7,padding:'10px 14px',color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box',resize:'vertical' }} />
             </div>
             <div style={{ display:'flex',gap:12 }}>
               <button onClick={()=>handleAction('approved')} disabled={saving}
-                style={{ flex:1,padding:'14px',background:saving?'#6E6E73':`linear-gradient(135deg,${GREEN},#22a85a)`,border:'none',borderRadius:9,color:'#fff',fontWeight:800,fontSize:15,cursor:saving?'not-allowed':'pointer' }}>
+                style={{ flex:1,padding:'14px',background:saving?'#5B677A':`linear-gradient(135deg,${GREEN},#22a85a)`,border:'none',borderRadius:9,color:'#fff',fontWeight:800,fontSize:15,cursor:saving?'not-allowed':'pointer' }}>
                 ✓ Approve Payment — {fmt(pa.current_payment_due||0)}
               </button>
               <button onClick={()=>handleAction('rejected')} disabled={saving}
@@ -190,7 +190,7 @@ export default function OwnerApprovalPortal() {
               </button>
             </div>
             <div style={{ textAlign:'center',marginTop:14,fontSize:11,color:DIM }}>
-              Your approval constitutes authorization for the contractor to invoice for the amount shown. · Powered by Saguaro CRM
+              Your approval constitutes authorization for the contractor to invoice for the amount shown. · Powered by Saguaro Control Systems
             </div>
           </div>
         </div>

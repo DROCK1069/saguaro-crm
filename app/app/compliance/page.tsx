@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',AMBER='#d97706';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',AMBER='#d97706';
 
 function ScoreBar({score}:{score:number}){
   const color = score>=80?GREEN:score>=50?AMBER:RED;
   return <div style={{display:'flex',alignItems:'center',gap:8}}>
-    <div style={{flex:1,height:6,background:'rgba(229,229,234,.6)',borderRadius:3,overflow:'hidden'}}>
+    <div style={{flex:1,height:6,background:'#16243A',borderRadius:3,overflow:'hidden'}}>
       <div style={{height:'100%',background:color,width:score+'%',borderRadius:3}}/>
     </div>
     <span style={{fontSize:12,fontWeight:700,color,minWidth:30}}>{score}</span>
@@ -78,7 +78,7 @@ export default function CompliancePage(){
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search subcontractors..." style={{padding:'8px 14px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:240}}/>
       <div style={{display:'flex',gap:6}}>
         {(['all','compliant','at_risk','non_compliant'] as const).map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:'6px 14px',background:filter===f?'rgba(212,160,23,.15)':RAISED,border:`1px solid ${filter===f?'rgba(212,160,23,.4)':BORDER}`,borderRadius:7,color:filter===f?GOLD:DIM,fontSize:12,fontWeight:700,cursor:'pointer',textTransform:'capitalize'}}>
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:'6px 14px',background:filter===f?'rgba(245, 158, 11,.15)':RAISED,border:`1px solid ${filter===f?'rgba(245, 158, 11,.4)':BORDER}`,borderRadius:7,color:filter===f?GOLD:DIM,fontSize:12,fontWeight:700,cursor:'pointer',textTransform:'capitalize'}}>
             {f==='all'?'All':f.replace('_',' ')}
           </button>
         ))}
@@ -91,16 +91,16 @@ export default function CompliancePage(){
         :filtered.length===0?<div style={{textAlign:'center',padding:40,color:DIM}}>No subcontractors found.</div>
         :<div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,overflow:'hidden'}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
-            <thead><tr style={{background:'#F2F2F7'}}>
+            <thead><tr style={{background:'#16243A'}}>
               {['Subcontractor','Trade','Score','W-9','Insurance','Lien Waivers','Status',''].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,textTransform:'uppercase',color:DIM,borderBottom:`1px solid ${BORDER}`,whiteSpace:'nowrap'}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{filtered.map(sub=>(
-              <tr key={sub.id} onClick={()=>setSelected(selected?.id===sub.id?null:sub)} style={{borderBottom:`1px solid rgba(229,229,234,.4)`,cursor:'pointer',background:selected?.id===sub.id?'rgba(212,160,23,.04)':'transparent'}}>
+              <tr key={sub.id} onClick={()=>setSelected(selected?.id===sub.id?null:sub)} style={{borderBottom:`1px solid rgba(255,255,255,0.12)`,cursor:'pointer',background:selected?.id===sub.id?'rgba(245, 158, 11,.04)':'transparent'}}>
                 <td style={{padding:'11px 14px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(212,160,23,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:GOLD,flexShrink:0}}>{sub.name?.[0]||'?'}</div>
+                    <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(245, 158, 11,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:GOLD,flexShrink:0}}>{sub.name?.[0]||'?'}</div>
                     <div>
                       <div style={{fontWeight:600,color:TEXT}}>{sub.name}</div>
                       {sub.email&&<div style={{fontSize:11,color:DIM}}>{sub.email}</div>}
@@ -137,7 +137,7 @@ export default function CompliancePage(){
         </div>}
       </div>
 
-      {selected&&<div style={{borderLeft:`1px solid ${BORDER}`,padding:24,background:'rgba(229,229,234,.4)'}}>
+      {selected&&<div style={{borderLeft:`1px solid ${BORDER}`,padding:24,background:'#16243A'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
           <div style={{fontWeight:700,fontSize:15,color:TEXT}}>{selected.name}</div>
           <button onClick={()=>setSelected(null)} style={{background:'none',border:'none',color:DIM,fontSize:18,cursor:'pointer',lineHeight:1}}>×</button>
@@ -170,7 +170,7 @@ export default function CompliancePage(){
           <div style={{fontSize:11,color:DIM,marginTop:6}}>Score contribution: {selected.lien_waivers.score}/35 pts</div>
         </div>
         <div style={{display:'flex',flexDirection:'column' as const,gap:8}}>
-          {selected.email&&<a href={`mailto:${selected.email}?subject=Compliance%20Follow-Up`} style={{padding:'9px 0',background:'rgba(212,160,23,.1)',border:'1px solid rgba(212,160,23,.3)',borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none',textAlign:'center' as const}}>Email Sub</a>}
+          {selected.email&&<a href={`mailto:${selected.email}?subject=Compliance%20Follow-Up`} style={{padding:'9px 0',background:'rgba(245, 158, 11,.1)',border:'1px solid rgba(245, 158, 11,.3)',borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none',textAlign:'center' as const}}>Email Sub</a>}
           {selected.project_id&&<Link href={`/app/projects/${selected.project_id}/team`} style={{padding:'9px 0',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,textDecoration:'none',textAlign:'center' as const}}>View Project Team</Link>}
         </div>
       </div>}

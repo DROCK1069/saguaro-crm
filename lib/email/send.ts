@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-const FROM = process.env.EMAIL_FROM || 'Saguaro CRM <noreply@saguarocontrol.net>';
+const FROM = process.env.EMAIL_FROM || 'Saguaro Control Systems <noreply@saguarocontrol.net>';
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY;
@@ -15,7 +15,7 @@ function baseLayout(body: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Saguaro CRM</title>
+  <title>Saguaro Control Systems</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 0;">
@@ -39,7 +39,7 @@ function baseLayout(body: string): string {
           <tr>
             <td style="background:#f4f4f5;padding:16px 32px;border-top:1px solid #e5e7eb;">
               <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-                &copy; ${new Date().getFullYear()} Saguaro CRM &mdash; All rights reserved.<br/>
+                &copy; ${new Date().getFullYear()} Saguaro Control Systems &mdash; All rights reserved.<br/>
                 This email was sent automatically. Please do not reply directly to this message.
               </p>
             </td>
@@ -176,7 +176,7 @@ export async function sendW9Request(
       ${para('A W-9 is required before we can process any payments to your company. Please complete the secure form at the link below — it only takes a few minutes.')}
       ${detailTable(`
         ${detail('Project', projectName)}
-        ${detail('Requesting Party', 'Saguaro CRM')}
+        ${detail('Requesting Party', 'Saguaro Control Systems')}
       `)}
       ${btn('Complete W-9 Form', portalUrl)}
       ${para('<small style="color:#9ca3af;">This link is secure and unique to your account. Your information is encrypted and stored safely.</small>')}
@@ -332,7 +332,7 @@ export function payAppSubmittedEmail(data: {
       ${detail('Amount Due', formatCurrency(data.amount))}
     `)}
     ${btn('Review &amp; Download', data.downloadUrl)}
-    ${para('<small style="color:#9ca3af;">This is an automated notification from Saguaro CRM.</small>')}
+    ${para('<small style="color:#9ca3af;">This is an automated notification from Saguaro Control Systems.</small>')}
   `);
 }
 
@@ -352,7 +352,7 @@ export function lienWaiverRequestEmail(data: {
       ${detail('Amount', formatCurrency(data.amount))}
     `)}
     ${btn('Sign Lien Waiver', data.portalUrl)}
-    ${para('<small style="color:#9ca3af;">Saguaro CRM &mdash; automated lien waiver request.</small>')}
+    ${para('<small style="color:#9ca3af;">Saguaro Control Systems &mdash; automated lien waiver request.</small>')}
   `);
 }
 
@@ -379,7 +379,7 @@ export function welcomeEmail(data: {
   loginUrl: string;
 }): string {
   return baseLayout(`
-    ${heading(`Welcome to Saguaro CRM, ${data.userName}!`)}
+    ${heading(`Welcome to Saguaro Control Systems, ${data.userName}!`)}
     ${para(`Your account for <strong>${data.companyName}</strong> is ready.`)}
     ${para('Here&rsquo;s what you can do right now:')}
     <ul style="color:#374151;font-size:14px;line-height:2.2;margin:16px 0;">
@@ -390,4 +390,22 @@ export function welcomeEmail(data: {
     </ul>
     ${btn('Go to Your Dashboard &rarr;', data.loginUrl)}
   `);
+}
+
+// ─── sendOwnerUpdate (Franchise Rollout weekly owner progress update) ─────────
+export async function sendOwnerUpdate(
+  to: string,
+  projectName: string,
+  bodyText: string,
+): Promise<{ sent: boolean; id?: string }> {
+  const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const htmlBody = esc(bodyText).split('\n').map((line) => {
+    const t = line.trim();
+    if (!t) return '<div style="height:8px"></div>';
+    const header = /^[A-Z][A-Z0-9 \/&+.-]{2,}:?$/.test(t);
+    return `<p style="margin:2px 0;color:${header ? '#0D1116' : '#374151'};font-size:14px;line-height:1.55;font-weight:${header ? 700 : 400};">${line}</p>`;
+  }).join('');
+  const html = baseLayout(`${heading(`Weekly Progress Update — ${esc(projectName)}`)}${htmlBody}`);
+  const res = await sendEmail({ to, subject: `Weekly Owner Update — ${projectName}`, html });
+  return { sent: !!res, id: res?.id };
 }

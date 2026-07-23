@@ -28,10 +28,10 @@ export default class ErrorBoundary extends Component<Props, State> {
         }}>
           <div>
             <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚠️</div>
-            <div style={{ color: '#1C1C1E', fontWeight: 700, fontSize: '16px', marginBottom: '8px' }}>Something went wrong</div>
-            <div style={{ color: '#6E6E73', fontSize: '14px', marginBottom: '20px' }}>Please refresh the page to continue.</div>
+            <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '16px', marginBottom: '8px' }}>Something went wrong</div>
+            <div style={{ color: '#CBD5E1', fontSize: '14px', marginBottom: '20px' }}>Please refresh the page to continue.</div>
             <button onClick={() => window.location.reload()}
-              style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#C8881C,#E0A030)', border: 'none', borderRadius: '8px', color: '#1C1C1E', fontWeight: 700, cursor: 'pointer', fontSize: '14px' }}>
+              style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#F59E0B,#FBBF24)', border: 'none', borderRadius: '8px', color: '#1C1C1E', fontWeight: 700, cursor: 'pointer', fontSize: '14px' }}>
               Refresh Page
             </button>
           </div>

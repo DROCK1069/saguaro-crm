@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 
-const GOLD = '#C8881C'; const DARK = '#F2F2F7'; const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA'; const DIM = '#6E6E73'; const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B'; const DARK = '#0d1117'; const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)'; const DIM = '#CBD5E1'; const TEXT = '#FFFFFF';
 
 // ALL sidebar nav items — every module Buildertrend has + more
 const NAV_SECTIONS = [
@@ -151,8 +151,8 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2, lineHeight: 1.3 }}>{projectName || '—'}</div>
             <div style={{ fontSize: 10, color: DIM, marginBottom: 8 }}>{projectNumber}</div>
             {/* Progress */}
-            <div style={{ height: 3, background: 'rgba(0,0,0,.08)', borderRadius: 2, marginBottom: 3 }}>
-              <div style={{ height: '100%', width: `${pctComplete}%`, background: `linear-gradient(90deg,${GOLD},#E0A030)`, borderRadius: 2 }} />
+            <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 3 }}>
+              <div style={{ height: '100%', width: `${pctComplete}%`, background: `linear-gradient(90deg,${GOLD},#FBBF24)`, borderRadius: 2 }} />
             </div>
             <div style={{ fontSize: 10, color: DIM }}>{pctComplete}% complete</div>
           </>
@@ -166,7 +166,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       {NAV_SECTIONS.map(section => (
         <div key={section.label} style={{ padding: '8px 0' }}>
           {!isCollapsed && (
-            <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#6E6E73' }}>
+            <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#CBD5E1' }}>
               {section.label}
             </div>
           )}
@@ -183,7 +183,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
                   gap: 8,
                   padding: isCollapsed ? '8px 16px' : '7px 12px',
                   color: active ? GOLD : DIM,
-                  background: active ? 'rgba(212,160,23,.08)' : 'transparent',
+                  background: active ? 'rgba(245, 158, 11,.08)' : 'transparent',
                   borderLeft: `2px solid ${active ? GOLD : 'transparent'}`,
                   fontSize: 12.5,
                   fontWeight: active ? 700 : 500,
@@ -229,7 +229,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       <aside className="sidebar-desktop" style={{
         width: collapsed ? 56 : 220,
         flexShrink: 0,
-        background: '#F2F2F7',
+        background: '#0d1117',
         borderRight: `1px solid ${BORDER}`,
         position: 'sticky',
         top: 56,
@@ -243,7 +243,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       </aside>
 
       {/* ── Page Content ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, minWidth: 0, background: '#F2F2F7' }}>
+      <div style={{ flex: 1, minWidth: 0, background: '#0d1117' }}>
 
         {/* Mobile module bar — only shown <=768px (hidden on desktop) */}
         <div className="project-mobile-bar" style={{
@@ -251,7 +251,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
           alignItems: 'center',
           gap: 10,
           padding: '8px 12px',
-          background: '#F2F2F7',
+          background: '#0d1117',
           borderBottom: `1px solid ${BORDER}`,
           position: 'sticky',
           top: 56,
@@ -296,7 +296,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
           {/* Backdrop */}
           <div
             onClick={() => setMobileOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 199 }}
+            style={{ position: 'fixed', inset: 0, background: '#0d1117', zIndex: 199 }}
           />
           {/* Panel */}
           <aside style={{
@@ -306,7 +306,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             bottom: 0,
             width: 250,
             maxWidth: '82vw',
-            background: '#F2F2F7',
+            background: '#0d1117',
             borderRight: `1px solid ${BORDER}`,
             overflowY: 'auto',
             overflowX: 'hidden',

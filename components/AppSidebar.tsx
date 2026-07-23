@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import {
   FolderSimple,
   GridFour,
+  Gauge,
   Blueprint,
   CurrencyDollar,
   FileText,
@@ -33,9 +34,22 @@ import {
   Truck,
   HardHat,
   Users,
+  Warning,
+  Flag,
+  ChartLineUp,
+  Kanban,
+  Notepad,
+  AddressBook,
+  ListChecks,
+  CalendarCheck,
+  ShareNetwork,
+  NotePencil,
+  Receipt,
+  SealCheck,
 } from '@phosphor-icons/react';
 import { colors, font, radius, shadow, sidebar as sidebarTokens, z } from '../lib/design-tokens';
 import { useWhiteLabel } from './WhiteLabelProvider';
+import { useEntitlements } from '../lib/hooks/useEntitlements';
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 interface NavItem {
@@ -43,6 +57,7 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  gate?: string; // gated feature flag; item hidden unless the tenant is entitled
 }
 interface NavSection {
   title: string;
@@ -56,6 +71,31 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Dashboard',    href: '/app',              icon: GridFour },
       { label: 'Projects',     href: '/app/projects',     icon: FolderSimple },
+    ],
+  },
+  {
+    // Entire section is gated to command_center — hidden unless the tenant is entitled.
+    title: 'Franchise Rollout',
+    items: [
+      { label: 'Command Center',    href: '/app/command-center',            icon: Gauge,        gate: 'command_center' },
+      { label: 'Rollout Pipeline',  href: '/app/command-center/rollout',    icon: Kanban,       gate: 'command_center' },
+      { label: 'Pre-Site Inspection', href: '/app/command-center/pre-site', icon: MagnifyingGlass, gate: 'command_center' },
+      { label: 'KPI Dashboard',     href: '/app/command-center/kpis',       icon: ChartLineUp,  gate: 'command_center' },
+      { label: 'Long-Lead Tracker', href: '/app/command-center/long-lead',  icon: Truck,        gate: 'command_center' },
+      { label: 'Risk Register',     href: '/app/command-center/risks',      icon: Warning,      gate: 'command_center' },
+      { label: 'Milestone Variance',href: '/app/command-center/milestones', icon: Flag,         gate: 'command_center' },
+      { label: 'Escalations',       href: '/app/command-center/escalations',icon: Bell,         gate: 'command_center' },
+      { label: 'OAC Meetings',      href: '/app/command-center/oac',        icon: Users,        gate: 'command_center' },
+      { label: 'Verification Hub',  href: '/app/command-center/verify',     icon: ShieldCheck,  gate: 'command_center' },
+      { label: 'Owner Updates',     href: '/app/command-center/owner-updates', icon: Notepad,   gate: 'command_center' },
+      { label: 'Stakeholders',      href: '/app/command-center/directory',  icon: AddressBook,  gate: 'command_center' },
+      { label: 'Phase Checklists',  href: '/app/command-center/checklists', icon: ListChecks,   gate: 'command_center' },
+      { label: 'Vendor Schedule',   href: '/app/command-center/vendors',    icon: CalendarCheck,gate: 'command_center' },
+      { label: 'Daily Reports',     href: '/app/command-center/daily-logs', icon: NotePencil,   gate: 'command_center' },
+      { label: 'Budget & COs',      href: '/app/command-center/budget',     icon: CurrencyDollar, gate: 'command_center' },
+      { label: 'Financials',        href: '/app/command-center/financials', icon: Receipt,      gate: 'command_center' },
+      { label: 'QC by Trade',       href: '/app/command-center/qc',         icon: SealCheck,    gate: 'command_center' },
+      { label: 'Owner Portals',     href: '/app/command-center/portals',    icon: ShareNetwork, gate: 'command_center' },
     ],
   },
   {
@@ -111,10 +151,14 @@ export default function AppSidebar({
 }) {
   const pathname = usePathname();
   const wl = useWhiteLabel();
+  const { features } = useEntitlements(); // fail-closed: gated items hidden until entitled
   const width = collapsed ? sidebarTokens.widthCollapsed : sidebarTokens.width;
 
   function isActive(href: string) {
     if (href === '/app') return pathname === '/app';
+    // Command Center index highlights only on its own page, not its sub-routes
+    // (Rollout, KPIs, Long-Lead, …), which each own their nav item.
+    if (href === '/app/command-center') return pathname === '/app/command-center';
     if (href === '/field') return pathname.startsWith('/field');
     return pathname.startsWith(href);
   }
@@ -181,7 +225,11 @@ export default function AppSidebar({
 
       {/* ── Navigation Sections ─────────────────────────────────────── */}
       <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '10px 0' }}>
-        {NAV_SECTIONS.map((section, sIdx) => (
+        {NAV_SECTIONS.map((section, sIdx) => {
+          const visibleItems = section.items.filter((item) => !item.gate || features[item.gate] === true);
+          // Hide an entire section (title + divider) when the tenant sees none of its items.
+          if (visibleItems.length === 0) return null;
+          return (
           <div key={section.title} style={{ marginBottom: sIdx === NAV_SECTIONS.length - 1 ? 4 : 14 }}>
             {/* Section Title */}
             {!collapsed && (
@@ -204,7 +252,7 @@ export default function AppSidebar({
             )}
 
             {/* Items */}
-            {section.items.map((item) => {
+            {visibleItems.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
               return (
@@ -286,7 +334,8 @@ export default function AppSidebar({
               );
             })}
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* ── Bottom Section (Settings + Collapse) ────────────────────── */}

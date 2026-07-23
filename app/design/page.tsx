@@ -1,10 +1,11 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 
 /* ─── Light Theme Palette — Arizona Modern ─── */
-const BG = '#F8F6F3', CARD = '#FFFFFF', GOLD = '#C8960F', GREEN = '#16A34A';
-const BORDER = '#E5E2DC', TEXT = '#1A1A1A', DIM = '#6B7280';
+const BG = '#0d1117', CARD = '#0F172A', GOLD = '#C8960F', GREEN = '#16A34A';
+const BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
 const BLUE = '#2563EB', RED = '#DC2626', PURPLE = '#7C3AED';
 
 /* ─── Room Types ─── */
@@ -23,23 +24,23 @@ const ROOMS = [
 
 /* ─── Design Styles with color swatches ─── */
 const STYLES = [
-  { id: 'modern', label: 'Modern Minimalist', colors: ['#FAFAF9','#78716C','#292524','#D4A017'], desc: 'Clean lines, neutral tones' },
+  { id: 'modern', label: 'Modern Minimalist', colors: ['#FAFAF9','#78716C','#292524','#F59E0B'], desc: 'Clean lines, neutral tones' },
   { id: 'farmhouse', label: 'Modern Farmhouse', colors: ['#FEFCE8','#A16207','#44403C','#D6D3D1'], desc: 'Warm rustic charm' },
   { id: 'mediterranean', label: 'Mediterranean', colors: ['#FEF3C7','#B45309','#7C2D12','#065F46'], desc: 'Earth tones, arched details' },
   { id: 'industrial', label: 'Industrial Loft', colors: ['#78716C','#DC2626','#1C1917','#A8A29E'], desc: 'Exposed brick, raw metal' },
   { id: 'coastal', label: 'Coastal Beach', colors: ['#F0F9FF','#0EA5E9','#BAE6FD','#FDE68A'], desc: 'Light, airy, ocean palette' },
   { id: 'scandinavian', label: 'Scandinavian', colors: ['#FAFAFA','#E7E5E4','#D6D3D1','#A3E635'], desc: 'Hygge warmth, birch wood' },
-  { id: 'art-deco', label: 'Art Deco', colors: ['#1C1917','#D4A017','#7C3AED','#F5F5F4'], desc: 'Glamorous geometric luxury' },
+  { id: 'art-deco', label: 'Art Deco', colors: ['#1C1917','#F59E0B','#7C3AED','#F5F5F4'], desc: 'Glamorous geometric luxury' },
   { id: 'japanese', label: 'Japanese Zen', colors: ['#F5F5DC','#8B7355','#2D4A3E','#D4C5A9'], desc: 'Tranquil, natural, wabi-sabi' },
   { id: 'midcentury', label: 'Mid-Century Modern', colors: ['#FDE68A','#EA580C','#065F46','#78716C'], desc: 'Retro 1960s organic curves' },
-  { id: 'luxury', label: 'Luxury Contemporary', colors: ['#1C1917','#D4A017','#F5F5F4','#78716C'], desc: 'High-end sophisticated' },
+  { id: 'luxury', label: 'Luxury Contemporary', colors: ['#1C1917','#F59E0B','#F5F5F4','#78716C'], desc: 'High-end sophisticated' },
   { id: 'bohemian', label: 'Bohemian', colors: ['#7C3AED','#DB2777','#F59E0B','#059669'], desc: 'Eclectic, colorful, layered' },
-  { id: 'transitional', label: 'Transitional', colors: ['#F5F5F4','#A8A29E','#57534E','#D4A017'], desc: 'Classic meets contemporary' },
+  { id: 'transitional', label: 'Transitional', colors: ['#F5F5F4','#A8A29E','#57534E','#F59E0B'], desc: 'Classic meets contemporary' },
   { id: 'desert-modern', label: 'Desert Modern', colors: ['#D2B48C','#8B4513','#2F4F4F','#DAA520'], desc: 'Southwest contemporary' },
-  { id: 'kitchen', label: "Chef's Kitchen", colors: ['#1E3A5A','#D4A017','#F5F5F4','#44403C'], desc: 'Professional-grade kitchen' },
-  { id: 'bathroom-spa', label: 'Spa Bathroom', colors: ['#F0FDFA','#5EEAD4','#F5F5F4','#D4A017'], desc: 'Hotel-quality spa retreat' },
+  { id: 'kitchen', label: "Chef's Kitchen", colors: ['#1E3A5A','#F59E0B','#F5F5F4','#44403C'], desc: 'Professional-grade kitchen' },
+  { id: 'bathroom-spa', label: 'Spa Bathroom', colors: ['#F0FDFA','#5EEAD4','#F5F5F4','#F59E0B'], desc: 'Hotel-quality spa retreat' },
   { id: 'resort-backyard', label: 'Resort Backyard', colors: ['#0EA5E9','#22C55E','#FDE68A','#78716C'], desc: 'Luxury pool & outdoor living' },
-  { id: 'home-office', label: 'Executive Office', colors: ['#1C1917','#78716C','#D4A017','#F5F5F4'], desc: 'Productive, stylish workspace' },
+  { id: 'home-office', label: 'Executive Office', colors: ['#1C1917','#78716C','#F59E0B','#F5F5F4'], desc: 'Productive, stylish workspace' },
   { id: 'garage-workshop', label: 'Dream Garage', colors: ['#374151','#EF4444','#9CA3AF','#F5F5F4'], desc: 'Organized workshop & storage' },
 ];
 
@@ -269,7 +270,7 @@ export default function DesignStudioPage() {
   const outlineBtn: React.CSSProperties = { padding: '14px 36px', background: 'transparent', border: `2px solid ${GOLD}`, color: GOLD, borderRadius: 12, fontWeight: 700, fontSize: 16, cursor: 'pointer', transition: 'all .15s' };
 
   return (
-    <div style={{ background: '#F8F6F3', color: '#1A1A1A', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ background: '#0d1117', color: '#FFFFFF', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Arizona desert gradient background ── */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '100vh', zIndex: 0, pointerEvents: 'none',
@@ -285,11 +286,11 @@ export default function DesignStudioPage() {
       {/* ════════════════════════════════════════════════════════════════ */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 1000,
-        background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        background: 'rgba(15,23,42,0.82)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(0,0,0,0.05)',
         padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <a href="/" style={{ color: GOLD, fontWeight: 800, fontSize: 18, letterSpacing: 3, textDecoration: 'none' }}>SAGUARO</a>
+        <Link href="/" style={{ color: GOLD, fontWeight: 800, fontSize: 18, letterSpacing: 3, textDecoration: 'none' }}>SAGUARO</Link>
         <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
           {['How It Works', 'Examples', 'Pricing', 'Compare'].map(link => (
             <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, '-')}`} style={{ color: DIM, fontSize: 14, fontWeight: 500, textDecoration: 'none', transition: 'color .15s' }}
@@ -299,7 +300,7 @@ export default function DesignStudioPage() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <a href="/login" style={{ color: DIM, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>Log In</a>
+          <Link href="/login" style={{ color: DIM, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>Log In</Link>
           <button onClick={scrollToStudio} style={{ ...goldBtn, padding: '10px 24px', fontSize: 14, borderRadius: 10 }}>Start Free</button>
         </div>
       </nav>
@@ -338,7 +339,7 @@ export default function DesignStudioPage() {
               overflow: 'hidden',
               boxShadow: '0 8px 40px rgba(0,0,0,0.12)', zIndex: 1,
             }}>
-              <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80" alt="Plain living room before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
+              <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=55&fm=webp" alt="Plain living room before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
               <span style={{ position: 'absolute', bottom: 20, left: 20, background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>BEFORE</span>
             </div>
             {/* After card */}
@@ -347,7 +348,7 @@ export default function DesignStudioPage() {
               overflow: 'hidden',
               boxShadow: '0 12px 48px rgba(200,150,15,0.25)', zIndex: 2,
             }}>
-              <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&q=80" alt="Modern styled living room after renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
+              <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&q=55&fm=webp" alt="Modern styled living room after renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
               <span style={{ position: 'absolute', bottom: 20, right: 20, background: `${GOLD}`, color: '#000', padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 800, letterSpacing: 1 }}>AFTER</span>
             </div>
             {/* Slider line */}
@@ -424,14 +425,14 @@ export default function DesignStudioPage() {
         {/* ════════════════════════════════════════════════════════════════ */}
         {/* 5. BEFORE/AFTER GALLERY                                        */}
         {/* ════════════════════════════════════════════════════════════════ */}
-        <section id="gallery" style={{ ...sectionPad, background: 'rgba(255,255,255,0.5)' }}>
+        <section id="gallery" style={{ ...sectionPad, background: 'rgba(255,255,255,0.03)' }}>
           <h2 style={sectionTitle}>See The Transformation</h2>
           <p style={sectionSub}>Real results from our AI design engine</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             {[
-              { name: 'Kitchen', style: 'Modern Minimalist', beforeImg: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=80', afterImg: 'https://images.unsplash.com/photo-1556909172-54557c7e4fb7?w=400&q=80' },
-              { name: 'Living Room', style: 'Scandinavian', beforeImg: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=80', afterImg: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=400&q=80' },
-              { name: 'Exterior', style: 'Desert Modern', beforeImg: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=80', afterImg: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80' },
+              { name: 'Kitchen', style: 'Modern Minimalist', beforeImg: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=55&fm=webp', afterImg: 'https://images.unsplash.com/photo-1556909172-54557c7e4fb7?w=400&q=55&fm=webp' },
+              { name: 'Living Room', style: 'Scandinavian', beforeImg: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400&q=55&fm=webp', afterImg: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=400&q=55&fm=webp' },
+              { name: 'Exterior', style: 'Desert Modern', beforeImg: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=55&fm=webp', afterImg: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=55&fm=webp' },
             ].map((item, i) => (
               <div key={i} style={{ ...card, overflow: 'hidden' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: 200 }}>
@@ -480,23 +481,23 @@ export default function DesignStudioPage() {
         {/* ════════════════════════════════════════════════════════════════ */}
         {/* 7. FEATURE GRID                                                */}
         {/* ════════════════════════════════════════════════════════════════ */}
-        <section id="pricing" style={{ ...sectionPad, background: 'rgba(255,255,255,0.5)' }}>
+        <section id="pricing" style={{ ...sectionPad, background: 'rgba(255,255,255,0.03)' }}>
           <h2 style={sectionTitle}>Why Saguaro AI Design?</h2>
           <p style={sectionSub}>Built for construction professionals, loved by homeowners</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {[
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>, title: 'Photorealistic AI', desc: 'SDXL + ControlNet generates real-looking rooms, not cartoons', bgImg: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=300&q=80' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>, title: 'Instant Cost Estimate', desc: 'Know renovation costs before calling a contractor', bgImg: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=300&q=80' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><circle cx="13.5" cy="6.5" r=".5" fill={GOLD}/><circle cx="17.5" cy="10.5" r=".5" fill={GOLD}/><circle cx="8.5" cy="7.5" r=".5" fill={GOLD}/><circle cx="6.5" cy="12" r=".5" fill={GOLD}/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>, title: '18 Design Styles', desc: 'Modern to Mediterranean, Farmhouse to Art Deco', bgImg: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=300&q=80' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M2 20h20"/><path d="M5 20V8l7-5 7 5v12"/><path d="M9 20v-5h6v5"/></svg>, title: 'Construction-Ready', desc: 'Designs link directly to material takeoffs and contractor bids', bgImg: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&q=80' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, title: 'Exterior + Interior', desc: 'Redesign kitchens, bathrooms, yards, facades -- any space', bgImg: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=300&q=80' },
-              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>, title: 'Smart Upsells', desc: 'AI suggests upgrades based on your location and lifestyle', bgImg: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=300&q=80' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>, title: 'Photorealistic AI', desc: 'SDXL + ControlNet generates real-looking rooms, not cartoons', bgImg: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=300&q=55&fm=webp' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>, title: 'Instant Cost Estimate', desc: 'Know renovation costs before calling a contractor', bgImg: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=300&q=55&fm=webp' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><circle cx="13.5" cy="6.5" r=".5" fill={GOLD}/><circle cx="17.5" cy="10.5" r=".5" fill={GOLD}/><circle cx="8.5" cy="7.5" r=".5" fill={GOLD}/><circle cx="6.5" cy="12" r=".5" fill={GOLD}/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>, title: '18 Design Styles', desc: 'Modern to Mediterranean, Farmhouse to Art Deco', bgImg: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=300&q=55&fm=webp' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M2 20h20"/><path d="M5 20V8l7-5 7 5v12"/><path d="M9 20v-5h6v5"/></svg>, title: 'Construction-Ready', desc: 'Designs link directly to material takeoffs and contractor bids', bgImg: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=300&q=55&fm=webp' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, title: 'Exterior + Interior', desc: 'Redesign kitchens, bathrooms, yards, facades -- any space', bgImg: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=300&q=55&fm=webp' },
+              { icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>, title: 'Smart Upsells', desc: 'AI suggests upgrades based on your location and lifestyle', bgImg: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=300&q=55&fm=webp' },
             ].map((f, i) => (
               <div key={i} style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
                 <div style={{ position: 'relative', height: 140, overflow: 'hidden' }}>
                   <img src={f.bgImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.85) 100%)' }} />
-                  <div style={{ position: 'absolute', bottom: 12, left: 20, width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,23,42,0.1) 0%, rgba(15,23,42,0.85) 100%)' }} />
+                  <div style={{ position: 'absolute', bottom: 12, left: 20, width: 52, height: 52, borderRadius: 14, background: 'rgba(15,23,42,0.9)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
                     {f.icon}
                   </div>
                 </div>
@@ -561,7 +562,7 @@ export default function DesignStudioPage() {
         {/* ════════════════════════════════════════════════════════════════ */}
         {/* 9. TESTIMONIALS                                                */}
         {/* ════════════════════════════════════════════════════════════════ */}
-        <section style={{ ...sectionPad, background: 'rgba(255,255,255,0.5)' }}>
+        <section style={{ ...sectionPad, background: 'rgba(255,255,255,0.03)' }}>
           <h2 style={sectionTitle}>What Our Users Say</h2>
           <p style={sectionSub}>Trusted by contractors and homeowners across the country</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
@@ -652,7 +653,7 @@ export default function DesignStudioPage() {
                   onClick={() => fileRef.current?.click()}
                   style={{
                     background: isDragging ? 'rgba(200,150,15,0.05)' : CARD,
-                    border: `2px dashed ${isDragging ? GOLD : '#D1CBC0'}`,
+                    border: `2px dashed ${isDragging ? GOLD : 'rgba(255,255,255,0.12)'}`,
                     boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
                     borderRadius: 20, padding: photo ? 0 : '80px 40px', cursor: 'pointer',
                     transition: 'all .2s', overflow: 'hidden', maxWidth: 640, margin: '0 auto',
@@ -853,7 +854,7 @@ export default function DesignStudioPage() {
                     animation: 'spin 3s linear infinite', opacity: 0.7,
                   }} />
                   <div style={{
-                    position: 'absolute', inset: 8, borderRadius: '50%', background: '#fff',
+                    position: 'absolute', inset: 8, borderRadius: '50%', background: '#0F172A',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <SparkleIcon />
@@ -868,7 +869,7 @@ export default function DesignStudioPage() {
                 </p>
 
                 <div style={{ maxWidth: 400, margin: '0 auto' }}>
-                  <div style={{ height: 6, background: '#E5E2DC', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: 6, background: '#16243A', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{
                       height: '100%', borderRadius: 4, transition: 'width .5s ease',
                       width: `${progress.pct || 10}%`,
@@ -1011,15 +1012,15 @@ export default function DesignStudioPage() {
 
                 {/* CTAs */}
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <a href="/design/discover" style={{ textDecoration: 'none' }}>
+                  <Link href="/design/discover" style={{ textDecoration: 'none' }}>
                     <button style={goldBtn}>Get a Free Quote</button>
-                  </a>
-                  <a href="/design/packages" style={{ textDecoration: 'none' }}>
+                  </Link>
+                  <Link href="/design/packages" style={{ textDecoration: 'none' }}>
                     <button style={outlineBtn}>Smart Packages</button>
-                  </a>
-                  <a href="/design/roi" style={{ textDecoration: 'none' }}>
+                  </Link>
+                  <Link href="/design/roi" style={{ textDecoration: 'none' }}>
                     <button style={{ padding: '12px 28px', background: 'transparent', border: `1px solid ${BORDER}`, color: DIM, borderRadius: 12, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>ROI Calculator</button>
-                  </a>
+                  </Link>
                 </div>
               </div>
             )}
@@ -1062,7 +1063,7 @@ export default function DesignStudioPage() {
           </div>
           <div style={{ borderTop: '1px solid #333', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: GOLD, fontWeight: 800, fontSize: 16, letterSpacing: 3 }}>SAGUARO</span>
-            <span style={{ fontSize: 13, color: '#666' }}>&copy; 2026 Saguaro CRM. All rights reserved.</span>
+            <span style={{ fontSize: 13, color: '#666' }}>&copy; 2026 Saguaro Control Systems. All rights reserved.</span>
           </div>
         </footer>
       </div>
@@ -1077,7 +1078,7 @@ export default function DesignStudioPage() {
         input[type="range"]::-webkit-slider-thumb { cursor: pointer; }
         ::-webkit-scrollbar { height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #D1CBC0; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
       `}</style>
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030';
 
 export default function IntelligencePage() {
   const [scoring, setScoring] = useState(false);
@@ -40,13 +40,13 @@ export default function IntelligencePage() {
           <h1 style={{fontSize:26,fontWeight:800,color:TEXT,margin:'4px 0'}}>Bid Intelligence</h1>
           <div style={{fontSize:13,color:DIM}}>Saguaro learns from every bid you win or lose. No competitor has this.</div>
         </div>
-        <button onClick={()=>setScoring(!scoring)} style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+        <button onClick={()=>setScoring(!scoring)} style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           🎯 Score New Opportunity
         </button>
       </div>
 
       {/* Score opportunity panel */}
-      {scoring&&<div style={{background:RAISED,border:`1px solid rgba(212,160,23,.3)`,borderRadius:10,padding:24,marginBottom:24}}>
+      {scoring&&<div style={{background:RAISED,border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:10,padding:24,marginBottom:24}}>
         <div style={{fontWeight:800,fontSize:15,marginBottom:16,color:TEXT}}>Score a New Bid Opportunity</div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:14}}>
           {[['Opportunity Title',title,setTitle,'e.g. 3,200 SF Custom Home - Scottsdale'],['Estimated Value',value,setValue,'$450,000']].map(f=>(
@@ -61,10 +61,10 @@ export default function IntelligencePage() {
         <div style={{marginBottom:14}}><label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Description</label>
           <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} placeholder="Describe the project scope..." style={{width:'100%',padding:'9px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',resize:'vertical'}}/></div>
         <div style={{display:'flex',gap:10}}>
-          <button onClick={scoreOpportunity} disabled={loading} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>🤖 {loading?'Scoring...':'Score with AI'}</button>
+          <button onClick={scoreOpportunity} disabled={loading} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>🤖 {loading?'Scoring...':'Score with AI'}</button>
           <button onClick={()=>setScoring(false)} style={{padding:'9px 20px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
         </div>
-        {result&&!('error' in result)&&<div style={{marginTop:20,background:'rgba(212,160,23,.06)',border:'1px solid rgba(212,160,23,.2)',borderRadius:10,padding:20}}>
+        {result&&!('error' in result)&&<div style={{marginTop:20,background:'rgba(245, 158, 11,.06)',border:'1px solid rgba(245, 158, 11,.2)',borderRadius:10,padding:20}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:16}}>
             {[{l:'Fit Score',v:`${result['fit_score']}/100`,c:GOLD},{l:'Win Probability',v:`${result['win_probability']}%`,c:'#3dd68c'},{l:'Recommended Bid Low',v:`$${Math.round(result['suggested_bid_low'] as number).toLocaleString()}`,c:TEXT},{l:'Target Margin',v:`${result['suggested_margin_pct']}%`,c:GOLD}].map(k=>(
               <div key={k.l} style={{textAlign:'center' as const}}><div style={{fontSize:10,color:DIM,fontWeight:700,textTransform:'uppercase' as const,marginBottom:6}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div></div>
@@ -72,7 +72,7 @@ export default function IntelligencePage() {
           </div>
           <div style={{background:DARK,borderRadius:8,padding:14,fontSize:13,color:DIM,lineHeight:1.7}}>{result['bid_recommendation_text'] as string}</div>
           <div style={{marginTop:12,display:'flex',gap:10}}>
-            <button style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:12,fontWeight:800,cursor:'pointer'}}>✅ Add to Pipeline</button>
+            <button style={{padding:'8px 16px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:12,fontWeight:800,cursor:'pointer'}}>✅ Add to Pipeline</button>
             <button style={{padding:'8px 16px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:12,cursor:'pointer'}}>Pass on this bid</button>
           </div>
         </div>}
@@ -96,12 +96,12 @@ export default function IntelligencePage() {
                 <span style={{color:TEXT,fontWeight:600}}>{t.trade}</span>
                 <span style={{color:t.wr>=60?'#3dd68c':t.wr>0?GOLD:RED,fontWeight:700}}>{t.wr}% win ({t.wins}/{t.bids})</span>
               </div>
-              <div style={{height:5,background:'rgba(0,0,0,.06)',borderRadius:3}}>
+              <div style={{height:5,background:'rgba(255,255,255,.1)',borderRadius:3}}>
                 <div style={{height:'100%',width:`${t.wr}%`,background:t.wr>=60?'#3dd68c':t.wr>0?GOLD:RED,borderRadius:3}}/>
               </div>
             </div>
           ))}
-          <div style={{marginTop:16,background:'rgba(212,160,23,.06)',border:'1px solid rgba(212,160,23,.2)',borderRadius:8,padding:12,fontSize:12,color:DIM}}>
+          <div style={{marginTop:16,background:'rgba(245, 158, 11,.06)',border:'1px solid rgba(245, 158, 11,.2)',borderRadius:8,padding:12,fontSize:12,color:DIM}}>
             🤖 <strong style={{color:TEXT}}>AI Recommendation:</strong> Focus on residential under $500K — 71% win rate. Avoid commercial office — 0% win rate with your current experience.
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function IntelligencePage() {
               {['Project','Trade','Bid','Margin','Result'].map(h=><th key={h} style={{padding:'9px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
             </tr></thead>
             <tbody>{outcomes.map((o,i)=>(
-              <tr key={i} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
+              <tr key={i} style={{borderBottom:`1px solid rgba(255,255,255,.08)`}}>
                 <td style={{padding:'11px 14px',color:TEXT,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{o.project}</td>
                 <td style={{padding:'11px 14px',color:DIM}}>{o.trade}</td>
                 <td style={{padding:'11px 14px',color:TEXT}}>${o.amount.toLocaleString()}</td>
@@ -123,7 +123,7 @@ export default function IntelligencePage() {
                   <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:4,background:o.outcome==='won'?'rgba(26,138,74,.15)':'rgba(192,48,48,.12)',color:o.outcome==='won'?'#3dd68c':RED}}>
                     {o.outcome.toUpperCase()}
                   </span>
-                  {o.outcome==='lost'&&o.reason&&<div style={{fontSize:10,color:'#6E6E73',marginTop:2}}>{o.reason}</div>}
+                  {o.outcome==='lost'&&o.reason&&<div style={{fontSize:10,color:'#CBD5E1',marginTop:2}}>{o.reason}</div>}
                 </td>
               </tr>
             ))}</tbody>

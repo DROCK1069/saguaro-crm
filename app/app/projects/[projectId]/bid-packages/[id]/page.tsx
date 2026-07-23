@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toCents, toDollars, sumCents } from '@/lib/calc';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ function Badge({ label, color = DIM, bg = 'rgba(148,163,192,.1)' }: { label: str
 function subStatusColor(s: SubStatus): { c: string; bg: string } {
   switch (s) {
     case 'submitted': return { c: '#1db954', bg: 'rgba(26,138,74,.12)' };
-    case 'viewed':    return { c: GOLD,      bg: 'rgba(212,160,23,.12)' };
+    case 'viewed':    return { c: GOLD,      bg: 'rgba(245, 158, 11,.12)' };
     case 'declined':  return { c: '#ff7070', bg: 'rgba(192,48,48,.12)' };
     default:          return { c: DIM,       bg: 'rgba(143,163,192,.1)' };
   }
@@ -307,7 +307,7 @@ export default function BidPackageDetailPage() {
             <div style={{ padding: '12px 18px', borderBottom: `1px solid ${BORDER}`, fontWeight: 700, fontSize: 14, color: TEXT }}>Line Items</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr style={{ background: '#16243A' }}>
                   {['Description', 'Qty', 'Unit', 'Unit Cost', 'Total'].map(h => (
                     <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: DIM, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
                   ))}
@@ -323,7 +323,7 @@ export default function BidPackageDetailPage() {
                     <td style={{ padding: '11px 16px', color: TEXT, fontWeight: 600 }}>{fmt(item.total)}</td>
                   </tr>
                 ))}
-                <tr style={{ background: 'rgba(212,160,23,.05)', borderTop: `1px solid ${BORDER}` }}>
+                <tr style={{ background: 'rgba(245, 158, 11,.05)', borderTop: `1px solid ${BORDER}` }}>
                   <td colSpan={4} style={{ padding: '11px 16px', color: DIM, fontWeight: 700, textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 }}>Total</td>
                   <td style={{ padding: '11px 16px', color: GOLD, fontWeight: 800, fontSize: 15 }}>{fmt(totalSov)}</td>
                 </tr>
@@ -341,7 +341,7 @@ export default function BidPackageDetailPage() {
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr style={{ background: '#16243A' }}>
                   {['Sub Name', 'Email', 'Bid Amount', 'Submitted', 'Action'].map(h => (
                     <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: DIM, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
                   ))}
@@ -386,7 +386,7 @@ export default function BidPackageDetailPage() {
               <span style={{ fontSize: 12, color: DIM }}>{pkg.invited_subs.length} invited · {submittedSubs.length} submitted</span>
               <button
                 onClick={() => setShowInviteForm(!showInviteForm)}
-                style={{ padding: '5px 12px', background: showInviteForm ? 'rgba(0,0,0,.05)' : 'rgba(212,160,23,.1)', border: `1px solid ${showInviteForm ? BORDER : 'rgba(212,160,23,.3)'}`, borderRadius: 6, color: showInviteForm ? DIM : GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                style={{ padding: '5px 12px', background: showInviteForm ? 'rgba(0,0,0,.05)' : 'rgba(245, 158, 11,.1)', border: `1px solid ${showInviteForm ? BORDER : 'rgba(245, 158, 11,.3)'}`, borderRadius: 6, color: showInviteForm ? DIM : GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                 {showInviteForm ? 'Cancel' : '+ Invite More'}
               </button>
             </div>
@@ -394,7 +394,7 @@ export default function BidPackageDetailPage() {
 
           {/* Invite More Form */}
           {showInviteForm && (
-            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(212,160,23,.03)', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(245, 158, 11,.03)', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>Name</div>
                 <input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="Company name" style={inp} />
@@ -406,7 +406,7 @@ export default function BidPackageDetailPage() {
               <button
                 onClick={handleInviteMore}
                 disabled={!inviteEmail || inviting}
-                style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: (!inviteEmail || inviting) ? 0.6 : 1 }}>
+                style={{ padding: '8px 18px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: (!inviteEmail || inviting) ? 0.6 : 1 }}>
                 {inviting ? 'Sending...' : 'Send Invite'}
               </button>
             </div>
@@ -417,7 +417,7 @@ export default function BidPackageDetailPage() {
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr style={{ background: '#16243A' }}>
                   {['Company', 'Contact', 'Email', 'Status', 'Bid Amount', 'Invited', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: DIM, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
                   ))}

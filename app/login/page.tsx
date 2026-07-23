@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444';
 
 export default function LoginPage(){
   const [form, setForm] = useState({email:'',password:''});
@@ -81,7 +82,7 @@ export default function LoginPage(){
     width:'100%',
     padding:'12px 14px',
     paddingRight: field === 'password' ? 44 : 14,
-    background:'rgba(0,0,0,.04)',
+    background:'#16243A',
     border:`1.5px solid ${focused === field ? GOLD : BORDER}`,
     borderRadius:8,
     color:TEXT,
@@ -89,7 +90,7 @@ export default function LoginPage(){
     outline:'none',
     boxSizing:'border-box',
     transition:'border-color .2s, box-shadow .2s',
-    boxShadow: focused === field ? `0 0 0 3px rgba(212,160,23,.12)` : 'none',
+    boxShadow: focused === field ? `0 0 0 3px rgba(245, 158, 11,.12)` : 'none',
   });
   const labelStyle: React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
 
@@ -97,14 +98,14 @@ export default function LoginPage(){
     <div style={{minHeight:'100vh',background:DARK,display:'flex',flexDirection:'column'}}>
       {/* Top nav */}
       <nav style={{padding:'0 24px',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`}}>
-        <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10}}>
+        <Link href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:10}}>
           <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{height:36,width:'auto',objectFit:'contain',borderRadius:4}} />
           <span style={{display:'flex',flexDirection:'column',lineHeight:1.15}}>
-            <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:`linear-gradient(90deg,${GOLD},#E0A030)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
+            <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:`linear-gradient(90deg,${GOLD},#FBBF24)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
             <span style={{fontSize:10,color:DIM,letterSpacing:.5,fontWeight:600}}>Control Systems</span>
           </span>
-        </a>
-        <a href="/signup" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>No account? <span style={{color:GOLD}}>Start free trial →</span></a>
+        </Link>
+        <Link href="/signup" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>No account? <span style={{color:GOLD}}>Start free trial →</span></Link>
       </nav>
 
       {/* Main content */}
@@ -155,7 +156,7 @@ export default function LoginPage(){
               <div>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
                   <label htmlFor="login-password" style={{...labelStyle,marginBottom:0}}>Password</label>
-                  <a href="/forgot-password" style={{fontSize:11,color:GOLD,textDecoration:'none',fontWeight:600}}>Forgot password?</a>
+                  <Link href="/forgot-password" style={{fontSize:11,color:GOLD,textDecoration:'none',fontWeight:600}}>Forgot password?</Link>
                 </div>
                 <div style={{position:'relative'}}>
                   <input
@@ -211,17 +212,17 @@ export default function LoginPage(){
               <button type="submit" disabled={loading}
                 style={{
                   marginTop:4,padding:'14px 0',
-                  background:loading?'rgba(212,160,23,.5)':`linear-gradient(135deg,${GOLD},#E0A030)`,
+                  background:loading?'rgba(245, 158, 11,.5)':`linear-gradient(135deg,${GOLD},#FBBF24)`,
                   border:'none',borderRadius:9,color:'#1C1C1E',fontSize:15,fontWeight:800,
                   cursor:loading?'not-allowed':'pointer',transition:'all .2s',
                   display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-                  boxShadow: loading ? 'none' : '0 4px 16px rgba(212,160,23,.25)',
+                  boxShadow: loading ? 'none' : '0 4px 16px rgba(245, 158, 11,.25)',
                 }}
               >
                 {loading && (
                   <span style={{
                     display:'inline-block',width:16,height:16,
-                    border:'2px solid #E5E5EA',borderTopColor:'#C8881C',
+                    border:'2px solid #E5E5EA',borderTopColor:'#F59E0B',
                     borderRadius:'50%',animation:'spin .6s linear infinite',
                   }}/>
                 )}
@@ -230,19 +231,19 @@ export default function LoginPage(){
             </form>
 
             {/* Hint */}
-            <div style={{marginTop:12,textAlign:'center',fontSize:11,color:'rgba(110,110,115,0.7)'}}>
+            <div style={{marginTop:12,textAlign:'center',fontSize:11,color:'rgba(203,213,225,0.6)'}}>
               Press Enter to sign in
             </div>
 
             <div style={{marginTop:16,textAlign:'center',fontSize:12,color:DIM}}>
-              Don't have an account? <a href="/signup" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Start free trial</a>
+              Don't have an account? <Link href="/signup" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Start free trial</Link>
             </div>
           </div>
 
           {/* Trust badges */}
           <div style={{marginTop:20,textAlign:'center',display:'flex',justifyContent:'center',gap:20,flexWrap:'wrap'}}>
             {['256-bit SSL','SOC 2','99.9% Uptime'].map(badge => (
-              <span key={badge} style={{fontSize:10,color:'rgba(110,110,115,0.7)',fontWeight:600,letterSpacing:.5,textTransform:'uppercase'}}>
+              <span key={badge} style={{fontSize:10,color:'rgba(203,213,225,0.6)',fontWeight:600,letterSpacing:.5,textTransform:'uppercase'}}>
                 🔒 {badge}
               </span>
             ))}

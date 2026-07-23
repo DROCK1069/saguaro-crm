@@ -57,7 +57,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     heroHeadline: 'Everything Buildertrend Does,\nPlus the AI Buildertrend Doesn\'t Have',
     heroSubheadline: 'Saguaro gives you AI blueprint takeoff, lien waivers in all 50 states, certified payroll, and a field app that works offline — none of which Buildertrend offers.',
     metaTitle: 'Saguaro vs Buildertrend — Full Comparison 2025',
-    metaDescription: 'Buildertrend vs Saguaro: See how AI takeoff, lien waivers, certified payroll, and offline mode stack up. Starting at $199/mo vs Buildertrend\'s $499/mo.',
+    metaDescription: 'Buildertrend vs Saguaro: See how AI takeoff, lien waivers, certified payroll, and offline mode stack up. Flat $499/mo for your whole team — unlimited users, no per-seat fees.',
     searchKeywords: ['buildertrend alternative', 'buildertrend vs saguaro', 'buildertrend competitor', 'buildertrend replacement'],
   },
   coconstruct: {
@@ -154,7 +154,7 @@ export const COMPETITORS: Record<string, Competitor> = {
     bestFor: 'ENR Top 400 contractors with dedicated BIM/VDC teams',
     saguaroAdvantage: 'AI takeoff, flat pricing, lien waivers, certified payroll — all at a fraction of Autodesk\'s cost',
     heroHeadline: 'Autodesk Build Pricing Is\nEnterprise. Your Work Isn\'t.',
-    heroSubheadline: 'Autodesk Build costs $500+/user/year and still has no AI takeoff. Saguaro gives mid-market GCs everything they need at $399/mo flat — the whole team, one price.',
+    heroSubheadline: 'Autodesk Build costs $500+/user/year and still has no AI takeoff. Saguaro gives mid-market GCs everything they need at $499/mo flat — the whole team, one price.',
     metaTitle: 'Saguaro vs Autodesk Build — Full Comparison 2025',
     metaDescription: 'Autodesk Build vs Saguaro: Enterprise pricing vs flat rate. AI takeoff, lien waivers, certified payroll included in Saguaro. No per-seat fees.',
     searchKeywords: ['autodesk build alternative', 'plangrid alternative', 'autodesk construction cloud alternative', 'autodesk build vs saguaro'],

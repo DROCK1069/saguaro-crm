@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 /* ── palette ── */
-const GOLD = '#C8881C';
-const BG = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const BG = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = '#2C3344';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
@@ -208,7 +208,7 @@ const inputStyle: React.CSSProperties = {
 const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
 
 const overlayStyle: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex',
+  position: 'fixed', inset: 0, background: '#0d1117', display: 'flex',
   alignItems: 'center', justifyContent: 'center', zIndex: 1000,
 };
 

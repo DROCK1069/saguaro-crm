@@ -3,18 +3,18 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const DARK = '#F2F2F7';
+const DARK = '#0d1117';
 const GOLD = '#F59E0B';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
+const RAISED = '#0F172A';
 const GREEN = '#22c55e';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '11px 14px',
-  background: '#FFFFFF',
+  background: '#16243A',
   border: `1px solid ${BORDER}`,
   borderRadius: 8,
   color: TEXT,
@@ -253,7 +253,7 @@ export default function SandboxPage() {
         {/* ── NAV ── */}
         <nav style={{
           position: 'fixed', top: 0, left: 0, right: 0, height: 58,
-          background: 'rgba(255,255,255,0.97)', borderBottom: `1px solid ${BORDER}`,
+          background: 'rgba(15,23,42,0.97)', borderBottom: `1px solid ${BORDER}`,
           display: 'flex', alignItems: 'center', padding: '0 28px',
           gap: 16, zIndex: 100, backdropFilter: 'blur(8px)',
         }}>

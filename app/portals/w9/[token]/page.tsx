@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030';
 
 export default function W9Portal() {
   const { token } = useParams<{ token: string }>();
@@ -54,7 +54,7 @@ export default function W9Portal() {
         value={(form as any)[key]}
         onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
         placeholder={placeholder}
-        style={{ width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+        style={{ width: '100%', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
       />
     </div>
   );
@@ -90,7 +90,7 @@ export default function W9Portal() {
   return (
     <div style={{ minHeight: '100vh', background: DARK, fontFamily: 'system-ui,sans-serif', color: TEXT }}>
       {/* Header */}
-      <div style={{ background: 'rgba(255,255,255,.96)', borderBottom: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ background: 'rgba(15,23,42,.96)', borderBottom: `1px solid ${BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ fontSize: 22 }}>🌵</span>
         <span style={{ fontWeight: 800, fontSize: 16, color: GOLD, letterSpacing: 1 }}>SAGUARO CRM</span>
         <span style={{ fontSize: 11, color: DIM, marginLeft: 8 }}>Secure W-9 Collection Portal</span>
@@ -98,7 +98,7 @@ export default function W9Portal() {
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 24px' }}>
         {/* Banner */}
-        <div style={{ background: 'rgba(212,160,23,.06)', border: `1px solid rgba(212,160,23,.2)`, borderRadius: 10, padding: '16px 20px', marginBottom: 28 }}>
+        <div style={{ background: 'rgba(245, 158, 11,.06)', border: `1px solid rgba(245, 158, 11,.2)`, borderRadius: 10, padding: '16px 20px', marginBottom: 28 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: GOLD, marginBottom: 4 }}>W-9 Request — {info.projectName}</div>
           <div style={{ fontSize: 13, color: DIM, lineHeight: 1.6 }}>
             You have been requested to provide W-9 tax information for <strong style={{ color: TEXT }}>{info.vendorName}</strong>. This form is required to process payments. All information is transmitted securely and encrypted.
@@ -117,7 +117,7 @@ export default function W9Portal() {
                 <select
                   value={form.taxClassification}
                   onChange={e => setForm(f => ({ ...f, taxClassification: e.target.value }))}
-                  style={{ width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none' }}
+                  style={{ width: '100%', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none' }}
                 >
                   <option value="individual">Individual / Sole Proprietor</option>
                   <option value="c_corp">C Corporation</option>
@@ -162,7 +162,7 @@ export default function W9Portal() {
                   onChange={e => setForm(f => ({ ...f, tin: e.target.value }))}
                   placeholder={form.tinType === 'ssn' ? '___-__-____' : '__-_______'}
                   maxLength={11}
-                  style={{ width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box', letterSpacing: 2 }}
+                  style={{ width: '100%', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box', letterSpacing: 2 }}
                 />
                 <div style={{ fontSize: 11, color: DIM, marginTop: 4 }}>Your TIN is encrypted and stored securely. It will never be shared with unauthorized parties.</div>
               </div>
@@ -173,7 +173,7 @@ export default function W9Portal() {
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', marginBottom: 20 }}>
             <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, fontWeight: 700, fontSize: 14 }}>Part III — Certification</div>
             <div style={{ padding: 20 }}>
-              <div style={{ fontSize: 12, color: DIM, lineHeight: 1.7, marginBottom: 16, background: '#F2F2F7', borderRadius: 6, padding: '12px 14px' }}>
+              <div style={{ fontSize: 12, color: DIM, lineHeight: 1.7, marginBottom: 16, background: '#16243A', borderRadius: 6, padding: '12px 14px' }}>
                 Under penalties of perjury, I certify that: (1) The number shown on this form is my correct taxpayer identification number; (2) I am not subject to backup withholding; (3) I am a U.S. citizen or other U.S. person; (4) The FATCA code(s) entered on this form (if any) indicating that I am exempt from FATCA reporting is correct.
               </div>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 20 }}>
@@ -190,13 +190,13 @@ export default function W9Portal() {
           <button
             type="submit"
             disabled={saving}
-            style={{ width: '100%', padding: '14px', background: saving ? '#6E6E73' : `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 9, color: '#1C1C1E', fontWeight: 800, fontSize: 16, cursor: saving ? 'not-allowed' : 'pointer', letterSpacing: .5 }}
+            style={{ width: '100%', padding: '14px', background: saving ? '#6E6E73' : `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 9, color: '#1C1C1E', fontWeight: 800, fontSize: 16, cursor: saving ? 'not-allowed' : 'pointer', letterSpacing: .5 }}
           >
             {saving ? 'Submitting...' : 'Submit W-9 Securely →'}
           </button>
 
           <div style={{ textAlign: 'center', marginTop: 16, fontSize: 11, color: DIM }}>
-            🔒 256-bit encrypted · Your information is never sold or shared · Powered by Saguaro CRM
+            🔒 256-bit encrypted · Your information is never sold or shared · Powered by Saguaro Control Systems
           </div>
         </form>
       </div>

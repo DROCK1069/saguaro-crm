@@ -3,8 +3,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
 /* ─── Palette ─── */
-const GOLD = '#C8881C', BG = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA',
-  TEXT = '#1C1C1E', DIM = '#6E6E73', GREEN = '#22C55E', RED = '#EF4444',
+const GOLD = '#F59E0B', BG = '#0d1117', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)',
+  TEXT = '#FFFFFF', DIM = '#CBD5E1', GREEN = '#22C55E', RED = '#EF4444',
   AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
 
 /* ─── Types ─── */
@@ -47,7 +47,7 @@ const inputS: React.CSSProperties = { padding: '9px 13px', background: BG, borde
 const btnS = (bg: string, c: string = '#000'): React.CSSProperties => ({ padding: '8px 18px', background: bg, color: c, border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' });
 const cardS: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 16, marginBottom: 10 };
 const chipS = (bg: string, c: string): React.CSSProperties => ({ display: 'inline-block', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: bg + '22', color: c });
-const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
+const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
 const modalBox: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 28, width: '90%', maxWidth: 700, maxHeight: '85vh', overflowY: 'auto', color: TEXT };
 const selectS: React.CSSProperties = { ...inputS, appearance: 'auto' as any };
 const labelS: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block', fontWeight: 600 };
@@ -926,7 +926,7 @@ function QuestionEditor({ initial, onSave, onClose }: { initial: Question | null
   };
 
   return (
-    <div style={{ ...modalOverlay, background: '#F2F2F7' }} onClick={onClose}>
+    <div style={{ ...modalOverlay, background: '#0d1117' }} onClick={onClose}>
       <div style={{ ...modalBox, maxWidth: 500 }} onClick={e => e.stopPropagation()}>
         <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: GOLD }}>{initial ? 'Edit Question' : 'Add Question'}</h3>
         {err && <div style={{ background: RED + '22', color: RED, padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 10 }}>{err}</div>}

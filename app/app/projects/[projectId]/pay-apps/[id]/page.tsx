@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 
-const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', RAISED2='#FFFFFF',
-      BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E',
+const GOLD='#F59E0B', DARK='#0d1117', RAISED='#0F172A', RAISED2='#0F172A',
+      BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF',
       GREEN='#22c55e', RED='#ef4444', ORANGE='#f97316', BLUE='#60a5fa';
 
 const fmt  = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n||0);
@@ -13,10 +13,10 @@ const fmt2 = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',curre
 const fmtDate = (s:string|null|undefined) => s ? new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
 
 const STATUS_META: Record<string,{label:string;color:string;bg:string;next?:string;nextLabel?:string}> = {
-  draft:     {label:'Draft',     color:'#6E6E73', bg:'rgba(148,163,184,.15)', next:'submitted',  nextLabel:'Submit to Owner'},
+  draft:     {label:'Draft',     color:'#CBD5E1', bg:'rgba(148,163,184,.15)', next:'submitted',  nextLabel:'Submit to Owner'},
   submitted: {label:'Submitted', color:BLUE,      bg:'rgba(96,165,250,.15)',  next:'approved',   nextLabel:'Approve'},
   approved:  {label:'Approved',  color:GREEN,     bg:'rgba(34,197,94,.15)',   next:'certified',  nextLabel:'Certify'},
-  certified: {label:'Certified', color:GOLD,      bg:'rgba(212,160,23,.15)', next:'paid',       nextLabel:'Mark Paid'},
+  certified: {label:'Certified', color:GOLD,      bg:'rgba(245, 158, 11,.15)', next:'paid',       nextLabel:'Mark Paid'},
   paid:      {label:'Paid',      color:'#a78bfa', bg:'rgba(167,139,250,.15)'},
 };
 
@@ -313,7 +313,7 @@ export default function PayAppDetailPage() {
           {meta.next && !editMode && (
             <button onClick={() => doAction(meta.next === 'paid' ? 'paid' : meta.next === 'submitted' ? 'submit' : meta.next === 'approved' ? 'approve' : 'certify')}
               disabled={actioning}
-              style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontWeight: 800, fontSize: 13, cursor: actioning ? 'wait' : 'pointer', opacity: actioning ? 0.7 : 1 }}>
+              style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`, border: 'none', borderRadius: 7, color: '#1C1C1E', fontWeight: 800, fontSize: 13, cursor: actioning ? 'wait' : 'pointer', opacity: actioning ? 0.7 : 1 }}>
               {actioning ? '…' : `${meta.nextLabel} →`}
             </button>
           )}
@@ -374,7 +374,7 @@ export default function PayAppDetailPage() {
                 </div>
                 {canEdit && (
                   <button onClick={addLine}
-                    style={{ padding: '5px 14px', background: 'rgba(212,160,23,.12)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 6, color: GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ padding: '5px 14px', background: 'rgba(245, 158, 11,.12)', border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 6, color: GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                     + Add Row
                   </button>
                 )}

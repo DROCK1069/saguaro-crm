@@ -8,14 +8,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ClipboardText } from '@phosphor-icons/react';
 import { useToast } from '@/components/Toast';
 
-const BASE   = '#F2F2F7';
-const CARD   = '#FFFFFF';
-const GOLD   = '#C8881C';
+const BASE   = '#0d1117';
+const CARD   = '#0F172A';
+const GOLD   = '#F59E0B';
 const GREEN  = '#34C759';
 const RED    = '#FF3B30';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 
 type FieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'checkbox' | 'photo' | 'signature' | 'rating';
 type Category = 'safety' | 'quality' | 'inspection' | 'checklist' | 'custom';
@@ -805,9 +805,9 @@ function inputStyle(): React.CSSProperties {
     width: '100%',
     padding: '10px 12px',
     borderRadius: 8,
-    border: '1px solid #E5E5EA',
-    background: 'rgba(242,242,247,0.85)',
-    color: '#1C1C1E',
+    border: '1px solid rgba(255,255,255,0.12)',
+    background: 'rgba(22,36,58,0.85)',
+    color: '#FFFFFF',
     fontSize: 14,
     outline: 'none',
     boxSizing: 'border-box',

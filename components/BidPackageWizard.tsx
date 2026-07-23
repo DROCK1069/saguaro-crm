@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const RAISED2 = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#16243A';
+const RAISED = '#0F172A';
+const RAISED2 = '#16243A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 const GREEN = '#3dd68c';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ function PrimaryBtn({ onClick, disabled, loading, children }: {
       disabled={disabled || loading}
       style={{
         padding: '10px 24px',
-        background: disabled || loading ? '#E5E5EA' : `linear-gradient(135deg,${GOLD},#E0A030)`,
+        background: disabled || loading ? '#16243A' : `linear-gradient(135deg,${GOLD},#FBBF24)`,
         border: 'none', borderRadius: 7, color: disabled || loading ? DIM : '#F2F2F7',
         fontSize: 13, fontWeight: 800, cursor: disabled || loading ? 'not-allowed' : 'pointer',
         transition: 'opacity 0.15s',
@@ -139,7 +139,7 @@ function ProgressBar({ step }: { step: number }) {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: '50%',
-                  background: done ? GOLD : active ? 'rgba(212,160,23,0.15)' : 'rgba(229,229,234,0.6)',
+                  background: done ? GOLD : active ? 'rgba(245, 158, 11,0.15)' : 'rgba(255,255,255,0.12)',
                   border: `2px solid ${color}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: done ? DARK : color, fontWeight: 800, fontSize: 13,
@@ -336,7 +336,7 @@ function Step2({ projectId, lineItems, onLineItemsChange, onNext, onBack }: {
           <div style={{ border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden', marginBottom: 12 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr style={{ background: '#16243A' }}>
                   <th style={{ ...thStyle, width: 30 }}></th>
                   <th style={thStyle}>Description</th>
                   <th style={{ ...thStyle, width: 70 }}>Qty</th>
@@ -348,7 +348,7 @@ function Step2({ projectId, lineItems, onLineItemsChange, onNext, onBack }: {
               </thead>
               <tbody>
                 {lineItems.map((row) => (
-                  <tr key={row.id} style={{ borderBottom: `1px solid rgba(229,229,234,.4)`, background: row.selected ? 'transparent' : 'rgba(0,0,0,0.15)' }}>
+                  <tr key={row.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.12)`, background: row.selected ? 'transparent' : 'rgba(0,0,0,0.15)' }}>
                     <td style={tdStyle}>
                       <input type="checkbox" checked={!!row.selected} onChange={e => updateRow(row.id, 'selected', e.target.checked)}
                         style={{ accentColor: GOLD, marginLeft: 6 }} />
@@ -462,8 +462,8 @@ function Step3({ trade, projectId, selectedSubs, onSelectedSubsChange, manualEma
         <div key={sub.id} onClick={() => toggleSub(sub.id)} style={{
           display: 'flex', alignItems: 'center', gap: 14,
           padding: '12px 14px', borderRadius: 8, marginBottom: 8,
-          background: selectedSubs[sub.id] ? 'rgba(212,160,23,0.06)' : DARK,
-          border: `1px solid ${selectedSubs[sub.id] ? 'rgba(212,160,23,0.3)' : BORDER}`,
+          background: selectedSubs[sub.id] ? 'rgba(245, 158, 11,0.06)' : DARK,
+          border: `1px solid ${selectedSubs[sub.id] ? 'rgba(245, 158, 11,0.3)' : BORDER}`,
           cursor: 'pointer', transition: 'all 0.15s',
         }}>
           <input type="checkbox" checked={!!selectedSubs[sub.id]} onChange={() => toggleSub(sub.id)}
@@ -475,7 +475,7 @@ function Step3({ trade, projectId, selectedSubs, onSelectedSubsChange, manualEma
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <span style={{
               fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-              background: sub.winRate >= 75 ? 'rgba(61,214,140,0.12)' : 'rgba(212,160,23,0.12)',
+              background: sub.winRate >= 75 ? 'rgba(61,214,140,0.12)' : 'rgba(245, 158, 11,0.12)',
               color: sub.winRate >= 75 ? GREEN : GOLD,
             }}>
               {sub.winRate}% Win
@@ -547,7 +547,7 @@ function Step4({ trade, scope, lineItems, selectedSubCount, packageName, onPacka
       <p style={{ margin: '0 0 16px', color: DIM, fontSize: 13 }}>Confirm the details and create your bid package.</p>
 
       {/* Summary card */}
-      <div style={{ background: DARK, border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, padding: '16px 20px', marginBottom: 20 }}>
+      <div style={{ background: DARK, border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 10, padding: '16px 20px', marginBottom: 20 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Package Summary</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px' }}>
           {summaryItems.map(item => (
@@ -590,12 +590,12 @@ function Step4({ trade, scope, lineItems, selectedSubCount, packageName, onPacka
           disabled={submitting}
           style={{
             padding: '12px 32px',
-            background: submitting ? '#E5E5EA' : `linear-gradient(135deg,${GOLD},#E0A030)`,
+            background: submitting ? '#16243A' : `linear-gradient(135deg,${GOLD},#FBBF24)`,
             border: 'none', borderRadius: 8,
             color: submitting ? DIM : '#F2F2F7',
             fontSize: 15, fontWeight: 800,
             cursor: submitting ? 'not-allowed' : 'pointer',
-            boxShadow: submitting ? 'none' : `0 4px 16px rgba(212,160,23,0.3)`,
+            boxShadow: submitting ? 'none' : `0 4px 16px rgba(245, 158, 11,0.3)`,
           }}
         >
           {submitting ? '⏳ Creating…' : '🤖 Create Bid Package'}

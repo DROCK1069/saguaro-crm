@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // ── Color palette ──────────────────────────────────────────────
-const GOLD   = '#C8881C';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const GOLD   = '#F59E0B';
+const DARK   = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 const GREEN  = '#22C55E';
 const YELLOW = '#F59E0B';
 const RED    = '#EF4444';
@@ -104,7 +104,7 @@ function fmtText(v: unknown): string {
 function getBadgeStyle(v: unknown): React.CSSProperties {
   const s = String(v ?? '').toLowerCase();
   let bg = 'rgba(0,0,0,0.1)';
-  let color = '#6E6E73';
+  let color = '#CBD5E1';
   if (['active', 'approved', 'complete', 'completed', 'paid', 'closed-won'].some(k => s.includes(k))) {
     bg = 'rgba(34,197,94,0.15)'; color = GREEN;
   } else if (['pending', 'submitted', 'in progress', 'in-progress', 'open', 'review'].some(k => s.includes(k))) {
@@ -444,8 +444,8 @@ export default function ReportsPage() {
             style={{
               padding: '10px 22px',
               background: pageState === 'loading' || !sageQuery.trim()
-                ? 'rgba(212,160,23,0.3)'
-                : `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+                ? 'rgba(245, 158, 11,0.3)'
+                : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
               border: 'none',
               borderRadius: 10,
               color: pageState === 'loading' || !sageQuery.trim() ? 'rgba(0,0,0,0.4)' : DARK,
@@ -532,7 +532,7 @@ export default function ReportsPage() {
                 <div style={{
                   height: '100%',
                   width: `${progress.pct}%`,
-                  background: `linear-gradient(90deg, ${GOLD}, #E0A030)`,
+                  background: `linear-gradient(90deg, ${GOLD}, #FBBF24)`,
                   borderRadius: 8,
                   transition: 'width 0.4s ease',
                 }} />
@@ -556,7 +556,7 @@ export default function ReportsPage() {
               <div style={{
                 padding: '16px 20px',
                 borderBottom: `1px solid ${BORDER}`,
-                background: '#F2F2F7',
+                background: '#0d1117',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',

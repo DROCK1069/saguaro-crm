@@ -8,7 +8,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { useRealtimeMessages } from '@/lib/useRealtime';
 
-const GOLD = '#C8881C', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
+const GOLD = '#F59E0B', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 
 function hr(hex: string): string {
@@ -18,7 +18,7 @@ function hr(hex: string): string {
   return `${r},${g},${b}`;
 }
 
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#CBD5E1', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 
 interface Message {
   id: string;
@@ -185,13 +185,13 @@ function ChatPage() {
             onChange={e => setNameInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') saveName(); }}
             placeholder="Your first name or nickname"
-            style={{ width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '12px 14px', color: '#1C1C1E', fontSize: 16, outline: 'none', boxSizing: 'border-box', marginBottom: 12 }}
+            style={{ width: '100%', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '12px 14px', color: '#FFFFFF', fontSize: 16, outline: 'none', boxSizing: 'border-box', marginBottom: 12 }}
             autoFocus
           />
           <button
             onClick={saveName}
             disabled={!nameInput.trim()}
-            style={{ width: '100%', background: nameInput.trim() ? GOLD : '#E5E5EA', border: 'none', borderRadius: 10, padding: '14px', color: nameInput.trim() ? '#000' : DIM, fontSize: 16, fontWeight: 800, cursor: nameInput.trim() ? 'pointer' : 'default' }}
+            style={{ width: '100%', background: nameInput.trim() ? GOLD : '#16243A', border: 'none', borderRadius: 10, padding: '14px', color: nameInput.trim() ? '#000' : DIM, fontSize: 16, fontWeight: 800, cursor: nameInput.trim() ? 'pointer' : 'default' }}
           >
             Join Job Board
           </button>
@@ -264,7 +264,7 @@ function ChatPage() {
       </div>
 
       {/* Input bar */}
-      <div style={{ flexShrink: 0, padding: '10px 12px', borderTop: `1px solid ${BORDER}`, background: '#FFFFFF' }}>
+      <div style={{ flexShrink: 0, padding: '10px 12px', borderTop: `1px solid ${BORDER}`, background: '#0F172A' }}>
         {!online && (
           <div style={{ fontSize: 12, color: '#EF4444', fontWeight: 600, marginBottom: 6, textAlign: 'center' }}>Offline — message will send when reconnected</div>
         )}
@@ -277,11 +277,11 @@ function ChatPage() {
             rows={1}
             style={{
               flex: 1,
-              background: '#F2F2F7',
+              background: '#16243A',
               border: `1px solid ${BORDER}`,
               borderRadius: 10,
               padding: '11px 14px',
-              color: '#1C1C1E',
+              color: '#FFFFFF',
               fontSize: 15,
               outline: 'none',
               resize: 'none',
@@ -294,7 +294,7 @@ function ChatPage() {
             type="submit"
             disabled={!content.trim() || sending}
             style={{
-              background: content.trim() && !sending ? GOLD : '#E5E5EA',
+              background: content.trim() && !sending ? GOLD : '#16243A',
               border: 'none',
               borderRadius: 10,
               width: 44,
@@ -327,7 +327,7 @@ function ChatPage() {
 
 export default function FieldChatPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <ChatPage />
     </Suspense>
   );

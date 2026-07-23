@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 
 interface ScoreBreakdown {
   ownerFit: number;
@@ -219,7 +219,7 @@ export default function BidScorePage() {
   }
 
   const recColor = result?.recommendation === 'PURSUE' ? '#3dd68c' : result?.recommendation === 'PASS' ? '#ff7070' : GOLD;
-  const recBg = result?.recommendation === 'PURSUE' ? 'rgba(61,214,140,.12)' : result?.recommendation === 'PASS' ? 'rgba(255,112,112,.12)' : 'rgba(212,160,23,.12)';
+  const recBg = result?.recommendation === 'PURSUE' ? 'rgba(61,214,140,.12)' : result?.recommendation === 'PASS' ? 'rgba(255,112,112,.12)' : 'rgba(245, 158, 11,.12)';
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px',
@@ -346,7 +346,7 @@ export default function BidScorePage() {
                   disabled={loading || !form.projectName}
                   style={{
                     width: '100%', padding: '12px',
-                    background: loading || !form.projectName ? 'rgba(212,160,23,.3)' : `linear-gradient(135deg,${GOLD},#E0A030)`,
+                    background: loading || !form.projectName ? 'rgba(245, 158, 11,.3)' : `linear-gradient(135deg,${GOLD},#FBBF24)`,
                     border: 'none', borderRadius: 8,
                     color: '#1C1C1E', fontSize: 14, fontWeight: 800,
                     cursor: loading || !form.projectName ? 'not-allowed' : 'pointer',
@@ -406,7 +406,7 @@ export default function BidScorePage() {
                     <button
                       onClick={addToPipeline}
                       disabled={addingToPipeline}
-                      style={{ padding: '11px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: addingToPipeline ? 'wait' : 'pointer', opacity: addingToPipeline ? 0.7 : 1 }}
+                      style={{ padding: '11px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 8, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: addingToPipeline ? 'wait' : 'pointer', opacity: addingToPipeline ? 0.7 : 1 }}
                     >
                       {addingToPipeline ? 'Adding...' : '+ Add to Pipeline'}
                     </button>

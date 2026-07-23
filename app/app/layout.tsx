@@ -207,7 +207,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .ai-msg-content strong { color: ${colors.text}; }
         .ai-msg-content code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
         .ai-msg-content h3 { color: ${colors.gold}; font-size: 13px; margin: 10px 0 4px; }
-        .quick-prompt-btn:hover { background: rgba(212,160,23,.2) !important; border-color: rgba(212,160,23,.5) !important; }
+        .quick-prompt-btn:hover { background: rgba(245, 158, 11,.2) !important; border-color: rgba(245, 158, 11,.5) !important; }
       `}</style>
 
       {/* ── Sidebar (Desktop) ────────────────────────────────────────── */}
@@ -357,7 +357,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => sendAI()}
                 disabled={aiLoading || !aiMsg.trim()}
-                style={{ padding: '10px 18px', background: aiLoading || !aiMsg.trim() ? 'rgba(212,160,23,.3)' : colors.gold, border: 'none', borderRadius: 8, color: colors.dark, fontWeight: 800, cursor: aiLoading || !aiMsg.trim() ? 'not-allowed' : 'pointer', fontSize: 13, transition: 'background .15s', whiteSpace: 'nowrap' }}
+                style={{ padding: '10px 18px', background: aiLoading || !aiMsg.trim() ? 'rgba(245, 158, 11,.3)' : colors.gold, border: 'none', borderRadius: 8, color: colors.dark, fontWeight: 800, cursor: aiLoading || !aiMsg.trim() ? 'not-allowed' : 'pointer', fontSize: 13, transition: 'background .15s', whiteSpace: 'nowrap' }}
               >
                 {aiLoading ? '...' : 'Send'}
               </button>

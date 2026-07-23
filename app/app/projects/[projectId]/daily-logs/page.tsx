@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',BLUE='#3b82f6';
 
 const WEATHER_OPTS = ['☀️ Clear','⛅ Partly Cloudy','☁️ Overcast','🌧️ Rain','⛈️ Thunderstorm','❄️ Snow','🌫️ Fog','🌬️ Windy'];
@@ -15,8 +15,8 @@ const EMPTY: Record<string,any> = {
 };
 
 const inp: React.CSSProperties = {
-  width:'100%', padding:'9px 12px', background:'#FFFFFF',
-  border:'1px solid #E5E5EA', borderRadius:7, color:'#1C1C1E',
+  width:'100%', padding:'9px 12px', background:'#16243A',
+  border:'1px solid rgba(255,255,255,0.12)', borderRadius:7, color:'#FFFFFF',
   fontSize:13, outline:'none', boxSizing:'border-box',
 };
 
@@ -33,8 +33,8 @@ function Field({label,children}:{label:string;children:React.ReactNode}){
 function Section({label,value,warn}:{label:string;value?:string;warn?:boolean}){
   if(!value?.trim()) return null;
   return (
-    <div style={{background:warn?'rgba(192,48,48,.07)':'#FFFFFF',
-      border:`1px solid ${warn?'rgba(192,48,48,.25)':'#E5E5EA'}`,
+    <div style={{background:warn?'rgba(192,48,48,.07)':'#0F172A',
+      border:`1px solid ${warn?'rgba(192,48,48,.25)':'rgba(255,255,255,0.12)'}`,
       borderRadius:8,padding:'12px 14px'}}>
       <div style={{fontSize:10,fontWeight:700,color:warn?'#f87171':DIM,
         textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>{label}</div>
@@ -181,7 +181,7 @@ export default function DailyLogsPage(){
             <div style={{fontSize:12,color:DIM,marginTop:3}}>Field reports — weather, crew, work, safety</div>
           </div>
           <button onClick={openCreate}
-            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
               border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + New Daily Log
           </button>
@@ -238,7 +238,7 @@ export default function DailyLogsPage(){
               </div>
               {logs.length===0&&(
                 <button onClick={openCreate}
-                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                     border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                   + Create First Log
                 </button>
@@ -253,10 +253,10 @@ export default function DailyLogsPage(){
                 const isSel = selected?.id===log.id && mode==='view';
                 return (
                   <div key={log.id} onClick={()=>viewLog(log)}
-                    style={{background:isSel?'rgba(212,160,23,.08)':RAISED,
+                    style={{background:isSel?'rgba(245, 158, 11,.08)':RAISED,
                       border:`1px solid ${isSel?GOLD:BORDER}`,borderRadius:10,
                       padding:'14px 18px',cursor:'pointer',transition:'all .15s'}}
-                    onMouseEnter={e=>{if(!isSel)e.currentTarget.style.borderColor='rgba(212,160,23,.4)';}}
+                    onMouseEnter={e=>{if(!isSel)e.currentTarget.style.borderColor='rgba(245, 158, 11,.4)';}}
                     onMouseLeave={e=>{if(!isSel)e.currentTarget.style.borderColor=BORDER;}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
                       <div>
@@ -280,7 +280,7 @@ export default function DailyLogsPage(){
                         )}
                         {log.safety_notes?.trim()&&(
                           <span style={{fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:4,
-                            background:'rgba(212,160,23,.15)',color:GOLD,textTransform:'uppercase',letterSpacing:.3}}>
+                            background:'rgba(245, 158, 11,.15)',color:GOLD,textTransform:'uppercase',letterSpacing:.3}}>
                             Safety
                           </span>
                         )}
@@ -417,7 +417,7 @@ export default function DailyLogsPage(){
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',
-                      background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                      background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                       border:'none',borderRadius:8,color:'#1C1C1E',
                       fontSize:14,fontWeight:800,cursor:'pointer',opacity:saving?.6:1}}>
                     {saving?'Saving…':mode==='create'?'Create Log':'Save Changes'}

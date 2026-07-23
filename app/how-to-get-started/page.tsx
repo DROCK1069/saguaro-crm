@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'How to Get Started — Saguaro CRM',
+  title: 'How to Get Started — Saguaro Control Systems',
   description: 'Step-by-step guide to setting up Saguaro: sign up, log in, invite your team, install on your phone, and run your first AI takeoff.',
 };
 
@@ -11,8 +12,8 @@ export default function HowToGetStartedPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-          --dark: #F2F2F7; --gold: #F59E0B; --text: #1C1C1E;
-          --dim: #6E6E73; --border: #E5E5EA; --raised: #FFFFFF;
+          --dark: #0d1117; --gold: #F59E0B; --text: #FFFFFF;
+          --dim: #CBD5E1; --border: rgba(255,255,255,0.12); --raised: #0F172A;
           --green: #22c55e; --font: system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
         }
         body { background: var(--dark); color: var(--text); font-family: var(--font); }
@@ -21,7 +22,7 @@ export default function HowToGetStartedPage() {
           position: sticky; top: 0; z-index: 100;
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 32px;
-          background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+          background: rgba(15,23,42,0.95); backdrop-filter: blur(12px);
           border-bottom: 1px solid var(--border);
         }
         .logo { font-weight: 900; font-size: 16px; text-decoration: none;
@@ -77,8 +78,8 @@ export default function HowToGetStartedPage() {
 
         .device-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
         .device-card {
-          padding: 18px; background: rgba(0,0,0,0.02);
-          border: 1px solid rgba(229,229,234,0.6); border-radius: 12px;
+          padding: 18px; background: #16243A;
+          border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
         }
         .device-card .icon { font-size: 28px; margin-bottom: 10px; }
         .device-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
@@ -116,10 +117,10 @@ export default function HowToGetStartedPage() {
 
       {/* Nav */}
       <nav className="nav">
-        <a href="/" className="logo">SAGUARO</a>
+        <Link href="/" className="logo">SAGUARO</Link>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <a href="/login" style={{ fontSize: 13, color: 'var(--dim)', textDecoration: 'none', fontWeight: 600 }}>Log In</a>
-          <a href="/signup" className="nav-cta">Start Free Trial</a>
+          <Link href="/login" style={{ fontSize: 13, color: 'var(--dim)', textDecoration: 'none', fontWeight: 600 }}>Log In</Link>
+          <Link href="/signup" className="nav-cta">Start Free Trial</Link>
         </div>
       </nav>
 
@@ -276,8 +277,8 @@ export default function HowToGetStartedPage() {
           <p className="sub">Your 30-day free trial gives you full access to everything. No credit card is required to start. When your trial ends, choose a plan to keep access.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
             {[
-              { name: 'Starter', price: '$299/mo', desc: 'Up to 10 projects, 100 AI pages/mo, pay apps, lien waivers, mobile app. Best for small GCs.', href: '/signup' },
-              { name: 'Professional', price: '$599/mo', desc: 'Unlimited projects, unlimited AI, certified payroll, bid intelligence, owner portals, all documents.', href: '/signup', popular: true },
+              { name: 'Starter', price: '$499/mo', desc: 'Unlimited users, up to 15 projects, 150 AI pages/mo, pay apps, lien waivers, mobile app. Best for small GCs.', href: '/signup' },
+              { name: 'Professional', price: '$750/mo', desc: 'Unlimited projects, unlimited AI, certified payroll, bid intelligence, owner portals, all documents.', href: '/signup', popular: true },
             ].map(p => (
               <div key={p.name} className="card" style={{ borderColor: p.popular ? 'rgba(245,158,11,0.4)' : 'var(--border)' }}>
                 {p.popular && <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--gold)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Most Popular</div>}
@@ -320,7 +321,7 @@ export default function HowToGetStartedPage() {
         <div className="cta-box">
           <h2>Ready to get started?</h2>
           <p>Sign up in 30 seconds. No credit card required. Your whole team is live in under 5 minutes.</p>
-          <a href="/signup" className="btn-primary">Start Free Trial →</a>
+          <Link href="/signup" className="btn-primary">Start Free Trial →</Link>
           <div className="trust-row">
             {['30 days free', 'No credit card', 'Unlimited users', 'Free migration', 'Cancel anytime'].map(t => (
               <div key={t} className="trust-item">

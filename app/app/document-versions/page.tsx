@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 // ─── Color Palette ────────────────────────────────────────────────
 const C = {
-  GOLD: '#C8881C', BG: '#F2F2F7', RAISED: '#FFFFFF', BORDER: '#E5E5EA',
-  TEXT: '#1C1C1E', DIM: '#6E6E73', GREEN: '#22C55E', RED: '#EF4444',
+  GOLD: '#F59E0B', BG: '#0d1117', RAISED: '#0F172A', BORDER: 'rgba(255,255,255,0.12)',
+  TEXT: '#FFFFFF', DIM: '#8094B0', GREEN: '#22C55E', RED: '#EF4444',
   AMBER: '#F59E0B', BLUE: '#3B82F6', PURPLE: '#8B5CF6',
 };
 
@@ -419,7 +419,7 @@ export default function DocumentVersionsPage() {
   };
 
   const sOverlay: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex',
+    position: 'fixed', inset: 0, background: '#0d1117', display: 'flex',
     alignItems: 'center', justifyContent: 'center', zIndex: 1000,
   };
 

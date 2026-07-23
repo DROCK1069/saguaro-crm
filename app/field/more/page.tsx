@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { ClipboardText, Ruler, FileText, CurrencyDollar, Warning, UsersThree, Cube, Wrench } from '@phosphor-icons/react';
 
-const GOLD='#C8881C',RAISED='#FFFFFF',BORDER='#E5E5EA',TEXT='#1C1C1E',DIM='#6E6E73';
+const GOLD='#F59E0B',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',TEXT='#FFFFFF',DIM='#CBD5E1';
 const GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',PURPLE='#8B5CF6',BLUE='#3B82F6',TEAL='#06B6D4';
 type Panel=null|'timesheet'|'rfi'|'safety';
 const COST_CODES=['General Conditions','Concrete','Masonry','Metals / Structural','Carpentry','Thermal & Moisture','Openings','Finishes','Electrical','Plumbing','HVAC / Mechanical','Earthwork / Site','Other'];
@@ -97,7 +97,7 @@ function MorePage(){
     {href:`/field/drawings${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'Drawings',desc:'View plans, drop pins on issues',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
     {href:`/field/equipment${projectId?`?projectId=${projectId}`:''}`,icon:'truck',label:'Equipment Log',desc:'Track equipment hours and condition',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/chat${projectId?`?projectId=${projectId}`:''}`,icon:'message',label:'Job Board',desc:'Crew messages and announcements',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
-    {href:`/field/sage${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Sage AI',desc:'Ask anything about your project',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/sage${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Sage AI',desc:'Ask anything about your project',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'},
     {href:`/field/qr${projectId?`?projectId=${projectId}`:''}`,icon:'qr',label:'QR Scanner',desc:'Scan or generate QR codes',color:PURPLE,bg:'rgba(139,92,246,.1)',border:'rgba(139,92,246,.25)'},
     {href:`/field/rfis${projectId?`?projectId=${projectId}`:''}`,icon:'question',label:'RFIs',desc:'View, respond, and create RFIs',color:'#F97316',bg:'rgba(249,115,22,.1)',border:'rgba(249,115,22,.25)'},
     {href:`/field/submittals${projectId?`?projectId=${projectId}`:''}`,icon:'document',label:'Submittals',desc:'Review and approve submittals',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
@@ -105,34 +105,34 @@ function MorePage(){
     {href:`/field/change-orders${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'Change Orders',desc:'View, approve, and create COs from field',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/safety${projectId?`?projectId=${projectId}`:''}`,icon:'shield',label:'Safety',desc:'Incident reports and corrective actions',color:RED,bg:'rgba(239,68,68,.1)',border:'rgba(239,68,68,.25)'},
     {href:`/field/more/notifications${projectId?`?projectId=${projectId}`:''}`,icon:'message',label:'Notifications',desc:'Push notification settings',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
-    {href:`/field/tm-tickets${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'T&M Tickets',desc:'Time & material tickets with signatures',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/tm-tickets${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'T&M Tickets',desc:'Time & material tickets with signatures',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'},
     {href:`/field/observations${projectId?`?projectId=${projectId}`:''}`,icon:'shield',label:'Observations',desc:'Proactive safety observations & templates',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
     {href:`/field/meetings${projectId?`?projectId=${projectId}`:''}`,icon:'users',label:'Meetings',desc:'Minutes, attendees, action items',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
     {href:`/field/correspondence${projectId?`?projectId=${projectId}`:''}`,icon:'document',label:'Correspondence',desc:'Letters, transmittals, notices',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
     {href:`/field/forms${projectId?`?projectId=${projectId}`:''}`,icon:'check',label:'Custom Forms',desc:'Form builder & fillable templates',color:PURPLE,bg:'rgba(139,92,246,.1)',border:'rgba(139,92,246,.25)'},
     {href:`/field/directory${projectId?`?projectId=${projectId}`:''}`,icon:'users',label:'Directory',desc:'Company & project contacts',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/budget${projectId?`?projectId=${projectId}`:''}`,icon:'chart',label:'Budget',desc:'Cost tracking, forecast, variance',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
-    {href:`/field/bids${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'Bid Management',desc:'Bid packages & comparison',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/bids${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'Bid Management',desc:'Bid packages & comparison',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'},
     {href:`/field/search${projectId?`?projectId=${projectId}`:''}`,icon:'qr',label:'Global Search',desc:'Search across all modules',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
     {href:`/field/notifications${projectId?`?projectId=${projectId}`:''}`,icon:'message',label:'Notification Center',desc:'Activity feed & alerts',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
-    {href:`/field/favorites${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Favorites & Recents',desc:'Pinned items & recent activity',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/favorites${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Favorites & Recents',desc:'Pinned items & recent activity',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'},
     {href:`/field/activity${projectId?`?projectId=${projectId}`:''}`,icon:'calendar',label:'Activity Log',desc:'Audit trail — who changed what',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
     {href:`/field/bim-viewer${projectId?`?projectId=${projectId}`:''}`,icon:'box',label:'BIM 3D Viewer',desc:'Upload IFC models, tap elements for specs',color:PURPLE,bg:'rgba(139,92,246,.1)',border:'rgba(139,92,246,.25)'},
     {href:`/field/laser${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'Laser Measure',desc:'BLE connect to Leica/Bosch, log measurements',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
     {href:`/field/drone${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Drone Analysis',desc:'Upload drone photos, AI progress detection',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
-    {href:`/field/ar-overlay${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'AR Overlay',desc:'Camera + blueprint dimensions overlay',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/ar-overlay${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'AR Overlay',desc:'Camera + blueprint dimensions overlay',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'},
     {href:`/field/floor-plan${projectId?`?projectId=${projectId}`:''}`,icon:'plan',label:'Floor Plan Pins',desc:'Tap drawings to pin locations, rooms & heatmap',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
     {href:`/field/room-progress${projectId?`?projectId=${projectId}`:''}`,icon:'chart',label:'Room Progress',desc:'Track completion by room & trade',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
     {href:`/field/crew-map${projectId?`?projectId=${projectId}`:''}`,icon:'pin',label:'Crew Map',desc:'Live GPS locations of all crew',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
     {href:`/field/deliveries${projectId?`?projectId=${projectId}`:''}`,icon:'truck',label:'Delivery Tracking',desc:'Track deliveries with ETA & arrival',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/safety-talks${projectId?`?projectId=${projectId}`:''}`,icon:'shield',label:'Toolbox Talks',desc:'AI-generated OSHA safety topics',color:RED,bg:'rgba(239,68,68,.1)',border:'rgba(239,68,68,.25)'},
-    {href:`/field/leaderboard${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Leaderboard',desc:'Safety streaks, punch closure, badges',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/leaderboard${projectId?`?projectId=${projectId}`:''}`,icon:'sparkle',label:'Leaderboard',desc:'Safety streaks, punch closure, badges',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'},
     {href:`/field/escalations${projectId?`?projectId=${projectId}`:''}`,icon:'shield',label:'Escalations',desc:'Overdue items auto-escalated',color:RED,bg:'rgba(239,68,68,.1)',border:'rgba(239,68,68,.25)'},
     {href:`/field/saved-views${projectId?`?projectId=${projectId}`:''}`,icon:'folder',label:'Saved Views',desc:'Custom filters & saved searches',color:PURPLE,bg:'rgba(139,92,246,.1)',border:'rgba(139,92,246,.25)'},
     {href:`/field/timesheets${projectId?`?projectId=${projectId}`:''}`,icon:'clock',label:'Timesheets',desc:'Weekly timesheet entry & approval',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/permits${projectId?`?projectId=${projectId}`:''}`,icon:'document',label:'Permits',desc:'Permit tracking & expiration alerts',color:GREEN,bg:'rgba(34,197,94,.1)',border:'rgba(34,197,94,.25)'},
     {href:`/field/purchase-orders${projectId?`?projectId=${projectId}`:''}`,icon:'box',label:'Purchase Orders',desc:'PO creation, line items & receiving',color:BLUE,bg:'rgba(59,130,246,.1)',border:'rgba(59,130,246,.25)'},
-    {href:`/field/contracts${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'Contracts',desc:'Prime & sub contracts, compliance',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'},
+    {href:`/field/contracts${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'Contracts',desc:'Prime & sub contracts, compliance',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'},
     {href:`/field/invoices${projectId?`?projectId=${projectId}`:''}`,icon:'dollar',label:'Invoices',desc:'Invoice approval, aging & payment',color:AMBER,bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)'},
     {href:`/field/specs${projectId?`?projectId=${projectId}`:''}`,icon:'folder',label:'Specifications',desc:'CSI MasterFormat spec sections',color:TEAL,bg:'rgba(6,182,212,.1)',border:'rgba(6,182,212,.25)'},
     {href:`/field/todos${projectId?`?projectId=${projectId}`:''}`,icon:'check',label:'Action Items',desc:'Tasks, assignments & due dates',color:PURPLE,bg:'rgba(139,92,246,.1)',border:'rgba(139,92,246,.25)'},
@@ -152,7 +152,7 @@ function MorePage(){
     {icon:'document',label:'Documents',href:'/app/documents'},{icon:'chart',label:'Reports',href:'/app/reports'},
     {icon:'sparkle',label:'AI Autopilot',href:'/app/autopilot'},{icon:'plan',label:'AI Takeoff',href:'/app/takeoff'},
   ];
-  const APP_INSTALL={icon:'download',label:'Install App',desc:'Add to home screen — works offline',href:'/field/install',color:GOLD,bg:'rgba(212,160,23,.08)',border:'rgba(212,160,23,.2)'};
+  const APP_INSTALL={icon:'download',label:'Install App',desc:'Add to home screen — works offline',href:'/field/install',color:GOLD,bg:'rgba(245, 158, 11,.08)',border:'rgba(245, 158, 11,.2)'};
 
   return(
     <div style={{padding:'18px 16px'}}>
@@ -198,7 +198,7 @@ function MorePage(){
           </div>
           {/* Install app */}
           <a href={APP_INSTALL.href} style={{background:APP_INSTALL.bg,border:`1px solid ${APP_INSTALL.border}`,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,textDecoration:'none',marginBottom:18}}>
-            <div style={{width:44,height:44,borderRadius:12,background:'rgba(212,160,23,.12)',border:'1px solid rgba(212,160,23,.3)',display:'flex',alignItems:'center',justifyContent:'center',color:APP_INSTALL.color,flexShrink:0}}>{ICONS[APP_INSTALL.icon]}</div>
+            <div style={{width:44,height:44,borderRadius:12,background:'rgba(245, 158, 11,.12)',border:'1px solid rgba(245, 158, 11,.3)',display:'flex',alignItems:'center',justifyContent:'center',color:APP_INSTALL.color,flexShrink:0}}>{ICONS[APP_INSTALL.icon]}</div>
             <div><p style={{margin:0,fontSize:15,fontWeight:700,color:APP_INSTALL.color}}>{APP_INSTALL.label}</p><p style={{margin:'2px 0 0',fontSize:12,color:DIM}}>{APP_INSTALL.desc}</p></div>
             <span style={{marginLeft:'auto',color:DIM,fontSize:18}}>›</span>
           </a>
@@ -222,7 +222,7 @@ function MorePage(){
             <F label="Employee Name *"><input value={tsEmployee} onChange={e=>setTsEmployee(e.target.value)} placeholder="Full name" style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <F label="Hours Worked"><input type="number" inputMode="decimal" step="0.5" min="0" max="24" value={tsHours} onChange={e=>setTsHours(e.target.value)} placeholder="e.g. 8.5" style={inp}/></F>
-              <F label="Cost Code"><select value={tsCostCode} onChange={e=>setTsCostCode(e.target.value)} style={inp}>{COST_CODES.map(c=><option key={c} value={c} style={{background:'#FFFFFF'}}>{c}</option>)}</select></F>
+              <F label="Cost Code"><select value={tsCostCode} onChange={e=>setTsCostCode(e.target.value)} style={inp}>{COST_CODES.map(c=><option key={c} value={c} style={{background:'#0F172A'}}>{c}</option>)}</select></F>
             </div>
             <F label="Notes"><input value={tsNotes} onChange={e=>setTsNotes(e.target.value)} placeholder="Work area, task, OT reason..." style={inp}/></F>
           </S>
@@ -239,7 +239,7 @@ function MorePage(){
             <F label="Subject *"><input value={rfiSubject} onChange={e=>setRfiSubject(e.target.value)} placeholder="Brief description" style={inp} required/></F>
             <F label="Question / Description *"><textarea value={rfiQuestion} onChange={e=>setRfiQuestion(e.target.value)} placeholder="Describe the issue and what clarification you need..." rows={4} style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <F label="Spec Section"><select value={rfiSpec} onChange={e=>setRfiSpec(e.target.value)} style={inp}>{SPEC_SECTIONS.map(s=><option key={s} value={s} style={{background:'#FFFFFF'}}>{s}</option>)}</select></F>
+              <F label="Spec Section"><select value={rfiSpec} onChange={e=>setRfiSpec(e.target.value)} style={inp}>{SPEC_SECTIONS.map(s=><option key={s} value={s} style={{background:'#0F172A'}}>{s}</option>)}</select></F>
               <F label="Need By"><input type="date" value={rfiDueDate} onChange={e=>setRfiDueDate(e.target.value)} style={inp}/></F>
             </div>
           </S>
@@ -255,8 +255,8 @@ function MorePage(){
           <S label="Incident Details">
             <F label="What Happened *"><textarea value={safetyDesc} onChange={e=>setSafetyDesc(e.target.value)} placeholder="Describe the incident, near miss, or hazard in detail..." rows={5} style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <F label="Severity"><select value={safetySeverity} onChange={e=>setSafetySeverity(e.target.value)} style={inp}>{SEVERITY.map(s=><option key={s} value={s} style={{background:'#FFFFFF'}}>{s}</option>)}</select></F>
-              <F label="Injury Type"><select value={safetyInjury} onChange={e=>setSafetyInjury(e.target.value)} style={inp}>{INJURY_TYPES.map(s=><option key={s} value={s} style={{background:'#FFFFFF'}}>{s}</option>)}</select></F>
+              <F label="Severity"><select value={safetySeverity} onChange={e=>setSafetySeverity(e.target.value)} style={inp}>{SEVERITY.map(s=><option key={s} value={s} style={{background:'#0F172A'}}>{s}</option>)}</select></F>
+              <F label="Injury Type"><select value={safetyInjury} onChange={e=>setSafetyInjury(e.target.value)} style={inp}>{INJURY_TYPES.map(s=><option key={s} value={s} style={{background:'#0F172A'}}>{s}</option>)}</select></F>
             </div>
             <F label="Location"><input value={safetyLocation} onChange={e=>setSafetyLocation(e.target.value)} placeholder="e.g. Level 3 east stairwell" style={inp}/></F>
             <F label="Reported To"><input value={safetyReported} onChange={e=>setSafetyReported(e.target.value)} placeholder="Supervisor / PM name" style={inp}/></F>
@@ -270,16 +270,16 @@ function MorePage(){
 }
 
 export default function FieldMorePage(){
-  return <Suspense fallback={<div style={{padding:32,color:'#6E6E73',textAlign:'center'}}>Loading...</div>}><MorePage/></Suspense>;
+  return <Suspense fallback={<div style={{padding:32,color:'#CBD5E1',textAlign:'center'}}>Loading...</div>}><MorePage/></Suspense>;
 }
 
 function S({label,children}:{label:string;children:React.ReactNode}){return <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:'14px 14px 6px',marginBottom:12}}><p style={{...sLbl,margin:'0 0 10px'}}>{label}</p>{children}</div>;}
 function F({label,children}:{label:string;children:React.ReactNode}){return <div style={{marginBottom:10}}><label style={{display:'block',fontSize:12,color:DIM,marginBottom:4}}>{label}</label>{children}</div>;}
 function Sub({saving,label,online,color,dark}:{saving:boolean;label:string;online:boolean;color:string;dark?:boolean}){
-  return <button type="submit" disabled={saving} style={{width:'100%',background:saving?'#E5E5EA':color,border:'none',borderRadius:14,padding:'18px',color:saving?DIM:(dark?'#000':'#fff'),fontSize:17,fontWeight:800,cursor:saving?'wait':'pointer',marginTop:4}}>{saving?'Saving...':(online?`Save ${label}`:`${label} (Offline — will sync)`)}</button>;
+  return <button type="submit" disabled={saving} style={{width:'100%',background:saving?'#16243A':color,border:'none',borderRadius:14,padding:'18px',color:saving?DIM:(dark?'#000':'#fff'),fontSize:17,fontWeight:800,cursor:saving?'wait':'pointer',marginTop:4}}>{saving?'Saving...':(online?`Save ${label}`:`${label} (Offline — will sync)`)}</button>;
 }
 
-const inp:React.CSSProperties={width:'100%',background:'#F2F2F7',border:'1px solid #E5E5EA',borderRadius:10,padding:'11px 14px',color:'#1C1C1E',fontSize:15,outline:'none'};
+const inp:React.CSSProperties={width:'100%',background:'#16243A',border:'1px solid rgba(255,255,255,0.12)',borderRadius:10,padding:'11px 14px',color:'#FFFFFF',fontSize:15,outline:'none'};
 const bkBtn:React.CSSProperties={background:'none',border:'none',color:DIM,fontSize:14,cursor:'pointer',padding:'0 0 12px',display:'block'};
 const sLbl:React.CSSProperties={margin:'0 0 8px',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:0.8};
 

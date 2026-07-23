@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -302,7 +302,7 @@ function FavoritesRecentsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F2F2F7', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: TEXT, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#0d1117', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: TEXT, paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ background: RAISED, borderBottom: `1px solid ${BORDER}`, padding: '16px 16px 0', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -499,7 +499,7 @@ function FavoritesRecentsPage() {
 
 export default function FieldFavoritesPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <FavoritesRecentsPage />
     </Suspense>
   );
@@ -530,7 +530,7 @@ const secLbl: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: 0.8,
 };
 const inp: React.CSSProperties = {
-  width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`,
+  width: '100%', background: '#16243A', border: `1px solid ${BORDER}`,
   borderRadius: 10, padding: '11px 14px', color: TEXT, fontSize: 15, outline: 'none',
   boxSizing: 'border-box',
 };

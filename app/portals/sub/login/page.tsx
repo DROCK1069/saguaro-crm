@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 const BLUE = '#3B82F6';
@@ -59,13 +60,13 @@ export default function SubPortalLogin() {
       fontFamily: 'system-ui,-apple-system,sans-serif',
     }}>
       {/* Header */}
-      <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
+      <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 40 }}>
         <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 38, borderRadius: 4 }} />
         <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-          <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '0.1em', background: `linear-gradient(90deg,${GOLD},#E0A030)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
+          <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '0.1em', background: `linear-gradient(90deg,${GOLD},#FBBF24)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
           <span style={{ fontSize: 8, color: DIM, letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
         </span>
-      </a>
+      </Link>
 
       {/* Card */}
       <div style={{
@@ -115,9 +116,9 @@ export default function SubPortalLogin() {
               <div style={{ height: '100%', background: BLUE, borderRadius: 4, animation: 'progress 1.4s linear forwards' }} />
             </div>
             <style>{`@keyframes progress { from { width: 0% } to { width: 100% } }`}</style>
-            <a href={`/portals/sub/${found.token}`} style={{ display: 'inline-block', marginTop: 12, fontSize: 12, color: BLUE, textDecoration: 'none' }}>
+            <Link href={`/portals/sub/${found.token}`} style={{ display: 'inline-block', marginTop: 12, fontSize: 12, color: BLUE, textDecoration: 'none' }}>
               Click here if not redirected →
-            </a>
+            </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -134,7 +135,7 @@ export default function SubPortalLogin() {
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'rgba(0,0,0,0.05)',
+                background: '#16243A',
                 border: `1px solid ${error ? RED : BORDER}`,
                 borderRadius: 8,
                 color: TEXT,
@@ -175,7 +176,7 @@ export default function SubPortalLogin() {
             </button>
 
             {/* Have a direct link */}
-            <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(0,0,0,0.03)', border: `1px solid ${BORDER}`, borderRadius: 8 }}>
+            <div style={{ marginTop: 16, padding: '12px 14px', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8 }}>
               <div style={{ fontSize: 11, color: DIM, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Have a direct portal link?</div>
               <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>
                 If your GC sent you a direct URL, click the link in that email instead of entering your email here.
@@ -192,16 +193,16 @@ export default function SubPortalLogin() {
 
       {/* Footer links */}
       <div style={{ marginTop: 24, display: 'flex', gap: 20, fontSize: 12, color: DIM }}>
-        <a href="/portals/client/login" style={{ color: DIM, textDecoration: 'none' }}
+        <Link href="/portals/client/login" style={{ color: DIM, textDecoration: 'none' }}
           onMouseEnter={e => e.currentTarget.style.color = TEXT}
           onMouseLeave={e => e.currentTarget.style.color = DIM}>
           Client Portal →
-        </a>
-        <a href="/" style={{ color: DIM, textDecoration: 'none' }}
+        </Link>
+        <Link href="/" style={{ color: DIM, textDecoration: 'none' }}
           onMouseEnter={e => e.currentTarget.style.color = TEXT}
           onMouseLeave={e => e.currentTarget.style.color = DIM}>
           Back to Saguaro
-        </a>
+        </Link>
       </div>
     </div>
   );

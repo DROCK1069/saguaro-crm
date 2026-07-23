@@ -1,11 +1,11 @@
 'use client';
 import React, { useRef, useEffect, useCallback } from 'react';
 
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const GOLD = '#C8881C';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const GOLD = '#F59E0B';
 const RED = '#EF4444';
 
 interface SignaturePadProps {
@@ -35,7 +35,7 @@ export default function SignaturePad({ onSave, onCancel, label = 'Signature' }: 
     }
     const ctx = c.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = '#F2F2F7';
+      ctx.fillStyle = '#16243A';
       ctx.fillRect(0, 0, c.width, c.height);
       ctx.strokeStyle = TEXT;
       ctx.lineWidth = 2.5;
@@ -100,7 +100,7 @@ export default function SignaturePad({ onSave, onCancel, label = 'Signature' }: 
     const ctx = c.getContext('2d');
     if (!ctx) return;
     hasStrokes.current = false;
-    ctx.fillStyle = '#F2F2F7';
+    ctx.fillStyle = '#16243A';
     ctx.fillRect(0, 0, c.width, c.height);
     ctx.beginPath();
     ctx.strokeStyle = BORDER;

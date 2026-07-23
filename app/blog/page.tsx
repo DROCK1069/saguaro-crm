@@ -1,9 +1,10 @@
 import React from 'react';
+import Link from 'next/link';
 
 const C = {
   dark: '#0B0B0F',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
+  gold: '#F59E0B',
+  goldBright: '#FBBF24',
   text: '#F5F5F7',
   dim: '#A1A1AA',
   border: 'rgba(255,255,255,0.10)',
@@ -100,9 +101,9 @@ export default function BlogPage() {
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-        </a>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
+          <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
           {NAV_LINKS.map(link => (
             <a key={link.label} href={link.href} style={{ padding: '6px 12px', borderRadius: 6, color: C.dim, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
@@ -111,16 +112,16 @@ export default function BlogPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
+          <Link href="/login" style={{ padding: '8px 18px', background: 'rgba(245, 158, 11,0.10)', border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</Link>
+          <Link href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(245, 158, 11,0.25)` }}>Free Trial</Link>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '88px 24px 56px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
-          <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(212,160,23,0.12)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 20 }}>
+        <section style={{ textAlign: 'center', padding: '88px 24px 56px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(245, 158, 11,0.07) 0%, transparent 70%)` }}>
+          <div style={{ display: 'inline-block', padding: '5px 14px', background: 'rgba(245, 158, 11,0.12)', border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 999, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 20 }}>
             The Saguaro Blog
           </div>
           <h1 style={{ fontSize: 'clamp(40px, 6vw, 64px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 18px', letterSpacing: -1.5 }}>
@@ -138,15 +139,15 @@ export default function BlogPage() {
         <section style={{ padding: '0 24px 64px', maxWidth: 1100, margin: '0 auto' }}>
           <a href={FEATURED.href} style={{ textDecoration: 'none', display: 'block' }}>
             <div style={{
-              background: 'linear-gradient(135deg, rgba(212,160,23,0.10) 0%, rgba(11,11,15,0) 60%)',
-              border: `1px solid rgba(212,160,23,0.30)`,
+              background: 'linear-gradient(135deg, rgba(245, 158, 11,0.10) 0%, rgba(11,11,15,0) 60%)',
+              border: `1px solid rgba(245, 158, 11,0.30)`,
               borderRadius: 14, padding: '40px 44px', boxShadow: '0 16px 44px rgba(0,0,0,.45)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: C.gold, letterSpacing: 1.5, textTransform: 'uppercase' }}>Featured</span>
                 <span style={{ width: 4, height: 4, borderRadius: '50%', background: C.dim, display: 'inline-block' }} />
                 <span style={{ fontSize: 12, color: C.dim }}>{FEATURED.category}</span>
-                <span style={{ fontSize: 11, color: C.gold, background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.25)', borderRadius: 999, padding: '2px 10px', fontWeight: 600 }}>{FEATURED.tag}</span>
+                <span style={{ fontSize: 11, color: C.gold, background: 'rgba(245, 158, 11,0.12)', border: '1px solid rgba(245, 158, 11,0.25)', borderRadius: 999, padding: '2px 10px', fontWeight: 600 }}>{FEATURED.tag}</span>
               </div>
               <h2 style={{ fontSize: 'clamp(26px, 3.4vw, 38px)', fontWeight: 900, lineHeight: 1.15, margin: '0 0 16px', letterSpacing: -0.6, color: C.text, maxWidth: 760 }}>
                 {FEATURED.title}
@@ -172,7 +173,7 @@ export default function BlogPage() {
         <section style={{ padding: '0 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 8 }}>
             <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: C.text }}>Latest articles</h2>
-            <span style={{ fontSize: 13, color: C.dim }}>Insights from the Saguaro Control team</span>
+            <span style={{ fontSize: 13, color: C.dim }}>Insights from the Saguaro Control Systems team</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
             {POSTS.map(post => (
@@ -215,7 +216,7 @@ export default function BlogPage() {
         </section>
 
         {/* CTA */}
-        <section style={{ padding: '88px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ padding: '88px 24px', background: `linear-gradient(180deg, transparent 0%, rgba(245, 158, 11,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
               Stop reading about it.{' '}
@@ -224,18 +225,18 @@ export default function BlogPage() {
             <p style={{ fontSize: 17, color: C.dim, margin: '0 0 32px', lineHeight: 1.6 }}>
               AI takeoffs, the Sage assistant, pay apps, RFIs, and 50-state compliance — all in one platform. 30-day free trial, free migration, no credit card.
             </p>
-            <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+            <Link href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(245, 158, 11,0.30)` }}>
               Start Free Trial — No Credit Card
-            </a>
+            </Link>
           </div>
         </section>
 
         {/* Footer */}
         <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
-            <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-            </a>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+            </Link>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
                 { label: 'Home', href: '/' }, { label: 'Features', href: '/features' },
@@ -245,7 +246,7 @@ export default function BlogPage() {
                 <a key={link.label} href={link.href} style={{ fontSize: 13, color: C.dim, textDecoration: 'none', fontWeight: 500 }}>{link.label}</a>
               ))}
             </div>
-            <div style={{ fontSize: 12, color: C.dim, whiteSpace: 'nowrap' }}>&copy; {new Date().getFullYear()} Saguaro CRM</div>
+            <div style={{ fontSize: 12, color: C.dim, whiteSpace: 'nowrap' }}>&copy; {new Date().getFullYear()} Saguaro Control Systems</div>
           </div>
         </footer>
 

@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
-const BG = '#f8f9fa';
-const CARD = '#ffffff';
-const BORDER_LT = '#e2e8f0';
-const TEXT_DARK = '#1a202c';
-const TEXT_MED = '#4a5568';
-const TEXT_DIM = '#718096';
-const GOLD = '#D4A017';
+const BG = '#0d1117';
+const CARD = '#0F172A';
+const BORDER_LT = 'rgba(255,255,255,0.12)';
+const TEXT_DARK = '#FFFFFF';
+const TEXT_MED = '#F1F5F9';
+const TEXT_DIM = '#CBD5E1';
+const GOLD = '#F59E0B';
 const GREEN = '#16a34a';
 const RED = '#dc2626';
 
@@ -93,7 +93,7 @@ export default function PublicSigningPage() {
     ctx.moveTo(20, c.height - 30);
     ctx.lineTo(c.width - 20, c.height - 30);
     ctx.stroke();
-    ctx.fillStyle = TEXT_DIM;
+    ctx.fillStyle = '#718096';
     ctx.font = '11px sans-serif';
     ctx.fillText('Sign above', 20, c.height - 12);
   }, []);
@@ -279,7 +279,7 @@ export default function PublicSigningPage() {
               href={signature.pdf_url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'rgba(212,160,23,.06)', border: `1px solid rgba(212,160,23,.2)`, borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'rgba(245, 158, 11,.06)', border: `1px solid rgba(245, 158, 11,.2)`, borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -303,7 +303,7 @@ export default function PublicSigningPage() {
           <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: TEXT_DARK }}>Your Signature</p>
 
           {/* Mode Toggle */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#edf2f7', borderRadius: 8, padding: 3 }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#16243A', borderRadius: 8, padding: 3 }}>
             {(['draw', 'type'] as const).map(m => (
               <button
                 key={m}
@@ -355,7 +355,7 @@ export default function PublicSigningPage() {
                 }}
               />
               {typedName.trim() && (
-                <div style={{ marginTop: 12, padding: '16px 20px', border: `1px solid ${BORDER_LT}`, borderRadius: 8, background: '#fefefe' }}>
+                <div style={{ marginTop: 12, padding: '16px 20px', border: `1px solid ${BORDER_LT}`, borderRadius: 8, background: '#16243A' }}>
                   <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 32, color: TEXT_DARK }}>{typedName}</span>
                 </div>
               )}
@@ -390,7 +390,7 @@ export default function PublicSigningPage() {
           onClick={handleSign}
           style={{
             width: '100%', padding: '14px', border: 'none', borderRadius: 10,
-            background: canSign && !signing ? GOLD : '#cbd5e1',
+            background: canSign && !signing ? GOLD : '#5B677A',
             color: canSign && !signing ? '#000' : '#94a3b8',
             fontSize: 15, fontWeight: 800, cursor: canSign && !signing ? 'pointer' : 'not-allowed',
           }}

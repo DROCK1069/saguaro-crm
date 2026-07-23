@@ -8,11 +8,11 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -113,7 +113,7 @@ async function offlineFetch(url: string, method: string, body?: object) {
 /* ─── Confirm Dialog ─── */
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117' }}>
       <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, maxWidth: 340, width: '90%' }}>
         <p style={{ margin: '0 0 20px', fontSize: 15, color: TEXT, lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -603,7 +603,7 @@ function TodosPageInner() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FFFFFF', padding: '16px 16px 100px' }}>
+    <div style={{ minHeight: '100vh', background: '#0F172A', padding: '16px 16px 100px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
@@ -755,7 +755,7 @@ function TodosPageInner() {
 /* ─── Default export with Suspense wrapper ─── */
 export default function TodosPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CBD5E1' }}>Loading...</div>}>
       <TodosPageInner />
     </Suspense>
   );

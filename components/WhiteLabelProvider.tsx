@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-const SAGUARO_GOLD = '#C8881C';
+const SAGUARO_GOLD = '#F59E0B';
 
 export interface WhiteLabelBranding {
   logoUrl: string;

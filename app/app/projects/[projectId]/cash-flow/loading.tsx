@@ -1,9 +1,9 @@
 'use client';
 
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
 
 function Pulse({ w, h, mb }: { w: string; h: number; mb?: number }) {
   return (
@@ -117,7 +117,7 @@ export default function CashFlowLoading() {
               <div
                 key={i}
                 style={{
-                  padding: '14px 20px', borderBottom: `1px solid rgba(229,229,234,0.4)`,
+                  padding: '14px 20px', borderBottom: `1px solid rgba(255,255,255,0.12)`,
                   display: 'flex', gap: 30, alignItems: 'center',
                 }}
               >

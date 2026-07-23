@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 const WAIVER_TYPES = [
@@ -44,7 +44,7 @@ function CellIcon({status,pdfUrl}:{status:string|undefined|null,pdfUrl?:string})
         <span style={{fontSize:16,color:'#3dd68c'}}>✓</span>
         {pdfUrl && (
           <a href={pdfUrl} target="_blank" rel="noreferrer"
-            style={{fontSize:10,color:GOLD,textDecoration:'none',padding:'2px 7px',border:`1px solid rgba(212,160,23,.3)`,borderRadius:4}}>
+            style={{fontSize:10,color:GOLD,textDecoration:'none',padding:'2px 7px',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:4}}>
             PDF
           </a>
         )}
@@ -146,11 +146,11 @@ export default function LienWaiversPage() {
         </div>
         <div style={{display:'flex',gap:10}}>
           <button onClick={()=>setShowForm(!showForm)}
-            style={{padding:'9px 18px',background:'rgba(212,160,23,.1)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,cursor:'pointer'}}>
+            style={{padding:'9px 18px',background:'rgba(245, 158, 11,.1)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,cursor:'pointer'}}>
             + Generate Waiver
           </button>
           <button onClick={generateAll} disabled={genAll}
-            style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:genAll?'wait':'pointer',opacity:genAll?.6:1}}>
+            style={{padding:'9px 18px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:genAll?'wait':'pointer',opacity:genAll?.6:1}}>
             {genAll ? 'Generating…' : '⚡ Generate All'}
           </button>
         </div>
@@ -158,7 +158,7 @@ export default function LienWaiversPage() {
 
       {/* Form */}
       {showForm && (
-        <div style={{margin:'20px 24px',background:RAISED,border:`1px solid rgba(212,160,23,.3)`,borderRadius:12,padding:24}}>
+        <div style={{margin:'20px 24px',background:RAISED,border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:12,padding:24}}>
           <div style={{fontWeight:800,fontSize:15,color:TEXT,marginBottom:18,paddingBottom:12,borderBottom:`1px solid ${BORDER}`}}>Generate Lien Waiver</div>
           {error && (
             <div style={{background:'rgba(192,48,48,.12)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:8,padding:'10px 14px',marginBottom:16,color:RED,fontSize:13}}>{error}</div>
@@ -191,7 +191,7 @@ export default function LienWaiversPage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button onClick={generate} disabled={generating}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:generating?'wait':'pointer',opacity:generating?.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:generating?'wait':'pointer',opacity:generating?.6:1}}>
               {generating ? 'Generating…' : 'Generate PDF'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -223,7 +223,7 @@ export default function LienWaiversPage() {
               AZ (ARS §33-1008), CA (Civil Code §8132), TX (Property Code Ch. 53) statutory forms included.
             </div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Generate First Waiver
             </button>
           </div>
@@ -253,7 +253,7 @@ export default function LienWaiversPage() {
                 </thead>
                 <tbody>
                   {matrix.map(row=>(
-                    <tr key={row.subId} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
+                    <tr key={row.subId} style={{borderBottom:`1px solid rgba(255,255,255,0.12)`}}>
                       <td style={{padding:'14px 16px',color:TEXT,fontWeight:700}}>{row.subName}</td>
                       {WAIVER_TYPES.map(t=>{
                         const w = row.waivers[t.key];
@@ -288,7 +288,7 @@ export default function LienWaiversPage() {
                       {waivers.map((w:any)=>{
                         const typeLabel = WAIVER_TYPES.find(t=>t.key===w.waiver_type)?.label || w.waiver_type;
                         return (
-                          <tr key={w.id} style={{borderBottom:`1px solid rgba(229,229,234,.4)`}}>
+                          <tr key={w.id} style={{borderBottom:`1px solid rgba(255,255,255,0.12)`}}>
                             <td style={{padding:'10px 14px',color:TEXT,fontWeight:600}}>{w.claimant_name||(w.subcontractors as any)?.name||'—'}</td>
                             <td style={{padding:'10px 14px',color:DIM}}>{typeLabel}</td>
                             <td style={{padding:'10px 14px',color:DIM}}>{w.state||'—'}</td>
@@ -296,7 +296,7 @@ export default function LienWaiversPage() {
                             <td style={{padding:'10px 14px',color:DIM}}>{w.through_date||'—'}</td>
                             <td style={{padding:'10px 14px'}}>
                               <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,textTransform:'uppercase' as const,
-                                background:w.status==='signed'?'rgba(26,138,74,.14)':'rgba(212,160,23,.14)',
+                                background:w.status==='signed'?'rgba(26,138,74,.14)':'rgba(245, 158, 11,.14)',
                                 color:w.status==='signed'?'#3dd68c':GOLD}}>
                                 {w.status||'pending'}
                               </span>

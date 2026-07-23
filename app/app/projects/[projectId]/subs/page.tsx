@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD='#C8881C',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 interface Sub {
@@ -20,7 +20,7 @@ function scoreBadge(score: number) {
 function statusBadge(s: string) {
   const map: Record<string,{c:string,bg:string}> = {
     active:{c:'#22C55E',bg:'rgba(34,197,94,.12)'}, prequalified:{c:'#60A5FA',bg:'rgba(96,165,250,.12)'},
-    invited:{c:GOLD,bg:'rgba(212,160,23,.12)'}, suspended:{c:'#EF4444',bg:'rgba(239,68,68,.12)'},
+    invited:{c:GOLD,bg:'rgba(245, 158, 11,.12)'}, suspended:{c:'#EF4444',bg:'rgba(239,68,68,.12)'},
     inactive:{c:DIM,bg:'rgba(143,163,192,.08)'},
   };
   const st = map[s]||{c:DIM,bg:'rgba(143,163,192,.08)'};
@@ -96,7 +96,7 @@ export default function SubsPage() {
           <h2 style={{margin:0,fontSize:20,fontWeight:800,color:TEXT}}>Subcontractors</h2>
           <div style={{fontSize:12,color:DIM,marginTop:3}}>Manage subs, track compliance, monitor health scores</div>
         </div>
-        <button onClick={()=>setShowForm(!showForm)} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+        <button onClick={()=>setShowForm(!showForm)} style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           {showForm ? 'Cancel' : '+ Add Subcontractor'}
         </button>
       </div>
@@ -134,12 +134,12 @@ export default function SubsPage() {
                 <div key={f.k}>
                   <label style={{display:'block',fontSize:11,color:DIM,marginBottom:4,fontWeight:600}}>{f.l}{f.req&&<span style={{color:'#EF4444'}}> *</span>}</label>
                   <input required={f.req} type={f.type||'text'} placeholder={f.ph} value={(form as Record<string,string>)[f.k]} onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))}
-                    style={{width:'100%',padding:'8px 12px',background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:6,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box'}} />
+                    style={{width:'100%',padding:'8px 12px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:6,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box'}} />
                 </div>
               ))}
             </div>
             <div style={{marginTop:14,display:'flex',gap:10}}>
-              <button type="submit" style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>Add Subcontractor</button>
+              <button type="submit" style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>Add Subcontractor</button>
               <button type="button" onClick={()=>setShowForm(false)} style={{padding:'9px 22px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
             </div>
           </form>
@@ -154,7 +154,7 @@ export default function SubsPage() {
             <div style={{fontSize:48,marginBottom:14}}>🤝</div>
             <div style={{fontWeight:800,fontSize:18,color:TEXT,marginBottom:8}}>No subcontractors yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24,maxWidth:400,margin:'0 auto 24px'}}>Add your project subcontractors to track contracts, compliance, insurance, and performance scores.</div>
-            <button onClick={()=>setShowForm(true)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Add First Subcontractor</button>
+            <button onClick={()=>setShowForm(true)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>+ Add First Subcontractor</button>
           </div>
         )}
 
@@ -163,7 +163,7 @@ export default function SubsPage() {
           <div style={{overflowX:'auto'}}>
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
               <thead>
-                <tr style={{background:'#F2F2F7'}}>
+                <tr style={{background:'#16243A'}}>
                   {['Company','Trade','Contact','Phone','License','Contract','Paid','Score','Status',''].map(h=>(
                     <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
                   ))}
@@ -171,7 +171,7 @@ export default function SubsPage() {
               </thead>
               <tbody>
                 {subs.map(sub=>(
-                  <tr key={sub.id} style={{borderBottom:`1px solid rgba(229,229,234,.5)`}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(212,160,23,.04)')} onMouseLeave={e=>(e.currentTarget.style.background='')}>
+                  <tr key={sub.id} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(245, 158, 11,.04)')} onMouseLeave={e=>(e.currentTarget.style.background='')}>
                     <td style={{padding:'12px 14px'}}>
                       <div style={{color:TEXT,fontWeight:700}}>{sub.name}</div>
                       <div style={{color:DIM,fontSize:11}}>{sub.contact_email}</div>
@@ -185,7 +185,7 @@ export default function SubsPage() {
                     <td style={{padding:'12px 14px'}}>{scoreBadge(sub.health_score||0)}</td>
                     <td style={{padding:'12px 14px'}}>
                       <select value={sub.status||'active'} onChange={e=>handleUpdateStatus(sub.id,e.target.value)}
-                        style={{background:'#F2F2F7',border:`1px solid ${BORDER}`,borderRadius:5,color:TEXT,fontSize:11,padding:'4px 8px',cursor:'pointer'}}>
+                        style={{background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:5,color:TEXT,fontSize:11,padding:'4px 8px',cursor:'pointer'}}>
                         {['active','prequalified','invited','suspended','inactive'].map(s=><option key={s} value={s}>{s}</option>)}
                       </select>
                     </td>

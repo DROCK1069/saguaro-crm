@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { GetAppBadge } from '@/components/GetAppBadge';
 
 export const metadata: Metadata = {
@@ -27,12 +28,12 @@ export default function GetTheAppPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --dark:   #F2F2F7;
+          --dark:   #0d1117;
           --gold:   #F59E0B;
-          --text:   #1C1C1E;
-          --dim:    #6E6E73;
-          --border: #E5E5EA;
-          --raised: #FFFFFF;
+          --text:   #FFFFFF;
+          --dim:    #CBD5E1;
+          --border: rgba(255,255,255,0.12);
+          --raised: #0F172A;
           --green:  #22c55e;
           --gold-dim: rgba(245,158,11,0.12);
           --gold-glow: rgba(245,158,11,0.25);
@@ -49,9 +50,9 @@ export default function GetTheAppPage() {
           align-items: center;
           padding: 0 32px;
           height: 64px;
-          background: rgba(255,255,255,0.92);
+          background: rgba(15,23,42,0.92);
           backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(229,229,234,0.6);
+          border-bottom: 1px solid rgba(255,255,255,0.12);
         }
         .nav-logo { display: flex; align-items: center; text-decoration: none; }
         .nav-logo img { height: 40px;  }
@@ -204,7 +205,7 @@ export default function GetTheAppPage() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: rgba(242,242,247,0.8);
+          background: rgba(255,255,255,0.05);
           border: 1px solid var(--border);
           border-radius: 100px;
           padding: 6px 14px;
@@ -323,7 +324,7 @@ export default function GetTheAppPage() {
         .ts-dot { width:5px;height:5px;border-radius:50%; }
         .ts-body { padding:10px 12px; }
         .ts-greeting { font-size:8px;color:rgba(110,110,115,0.7);margin-bottom:1px; }
-        .ts-title { font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px; }
+        .ts-title { font-size:11px;font-weight:700;color:#1C1C1E;margin-bottom:10px; }
         .ts-grid { display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px; }
         .ts-card { border-radius:8px;padding:8px 9px; }
         .ts-card.c-gold { background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.25); }
@@ -381,7 +382,7 @@ export default function GetTheAppPage() {
         .ls-dot { width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5; }
         .ls-main { flex:1;padding:7px 8px; }
         .ls-top { display:flex;justify-content:space-between;align-items:center;margin-bottom:5px; }
-        .ls-title { font-size:8px;font-weight:700;color:var(--text); }
+        .ls-title { font-size:8px;font-weight:700;color:#1C1C1E; }
         .ls-badge { padding:2px 5px;border-radius:4px;font-size:5.5px;background:rgba(34,197,94,0.15);color:#22c55e; }
         .ls-cards { display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:4px; }
         .ls-card { border-radius:4px;padding:5px 6px; }
@@ -435,7 +436,7 @@ export default function GetTheAppPage() {
           text-align: center;
           padding: 24px 16px;
           border-radius: 12px;
-          background: rgba(0,0,0,0.02);
+          background: rgba(255,255,255,0.02);
           border: 1px solid var(--border);
         }
         .stat-number {
@@ -493,7 +494,7 @@ export default function GetTheAppPage() {
           padding: 32px 28px;
           transition: background .2s;
         }
-        .feat-card:hover { background: #F2F2F7; }
+        .feat-card:hover { background: #16243A; }
         .feat-icon-wrap {
           width: 44px; height: 44px;
           border-radius: 11px;
@@ -633,7 +634,7 @@ export default function GetTheAppPage() {
           overflow: hidden;
           border: 1px solid var(--border);
         }
-        .compare-table thead tr { background: #F2F2F7; }
+        .compare-table thead tr { background: #16243A; }
         .compare-table th {
           padding: 16px 24px;
           font-size: 13px;
@@ -653,7 +654,7 @@ export default function GetTheAppPage() {
           padding: 14px 24px;
           font-size: 14px;
           color: var(--dim);
-          border-bottom: 1px solid rgba(229,229,234,0.5);
+          border-bottom: 1px solid rgba(255,255,255,0.12);
           background: var(--raised);
         }
         .compare-table tr:last-child td { border-bottom: none; }
@@ -661,7 +662,7 @@ export default function GetTheAppPage() {
           color: var(--text);
           font-weight: 500;
         }
-        .compare-table td.app-store-col { color: #6E6E73; }
+        .compare-table td.app-store-col { color: #CBD5E1; }
         .compare-table td.saguaro-col {
           background: rgba(245,158,11,0.05);
           color: var(--text);
@@ -730,13 +731,13 @@ export default function GetTheAppPage() {
         .trust-note {
           margin-top: 28px;
           font-size: 13px;
-          color: rgba(110,110,115,0.6);
+          color: rgba(203,213,225,0.6);
           line-height: 1.6;
         }
 
         /* ── FOOTER ── */
         .footer {
-          background: #FFFFFF;
+          background: #0F172A;
           border-top: 1px solid var(--border);
           padding: 48px 32px;
         }
@@ -751,11 +752,11 @@ export default function GetTheAppPage() {
         }
         .footer-left { display:flex;align-items:center;gap:16px; }
         .footer-logo img { height:32px; }
-        .footer-copy { font-size:13px;color:rgba(110,110,115,0.4); }
+        .footer-copy { font-size:13px;color:rgba(203,213,225,0.4); }
         .footer-links { display:flex;gap:24px;flex-wrap:wrap; }
         .footer-link {
           font-size:13px;
-          color:rgba(110,110,115,0.5);
+          color:rgba(203,213,225,0.5);
           text-decoration:none;
           transition:color .2s;
         }
@@ -798,12 +799,12 @@ export default function GetTheAppPage() {
 
         {/* ── NAV ── */}
         <nav className="nav">
-          <a href="/" className="nav-logo">
+          <Link href="/" className="nav-logo">
             <img src="/logo-full.jpg" alt="Saguaro" height={40} style={{ }} />
-          </a>
+          </Link>
           <div className="nav-spacer" />
-          <a href="/login" className="nav-login">Log In</a>
-          <a href="/signup" className="nav-cta">Start Free Trial</a>
+          <Link href="/login" className="nav-login">Log In</Link>
+          <Link href="/signup" className="nav-cta">Start Free Trial</Link>
         </nav>
 
         {/* ── HERO ── */}
@@ -1123,7 +1124,7 @@ export default function GetTheAppPage() {
               Join the iOS Beta →
             </a>
             <div className="final-sub">
-              Or <a href="/signup">start a full company trial →</a>
+              Or <Link href="/signup">start a full company trial →</Link>
             </div>
             <div className="trust-note">
               Your crew gets the app free during the beta. Managers get the full platform free for 30 days.<br />
@@ -1139,14 +1140,14 @@ export default function GetTheAppPage() {
               <div className="footer-logo">
                 <img src="/logo-full.jpg" alt="Saguaro" height={32} style={{ }} />
               </div>
-              <span className="footer-copy">© {new Date().getFullYear()} Saguaro Control. All rights reserved.</span>
+              <span className="footer-copy">© {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.</span>
             </div>
             <div className="footer-links">
-              <a href="/pricing" className="footer-link">Pricing</a>
-              <a href="/field-app" className="footer-link">Field App</a>
-              <a href="/compare/procore" className="footer-link">vs Procore</a>
-              <a href="/privacy" className="footer-link">Privacy</a>
-              <a href="/terms" className="footer-link">Terms</a>
+              <Link href="/pricing" className="footer-link">Pricing</Link>
+              <Link href="/field-app" className="footer-link">Field App</Link>
+              <Link href="/compare/procore" className="footer-link">vs Procore</Link>
+              <Link href="/privacy" className="footer-link">Privacy</Link>
+              <Link href="/terms" className="footer-link">Terms</Link>
             </div>
           </div>
         </footer>

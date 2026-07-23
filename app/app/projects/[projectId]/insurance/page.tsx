@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 const INP:React.CSSProperties = {padding:'8px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box'};
@@ -116,14 +116,14 @@ export default function InsurancePage() {
           <div style={{fontSize:12,color:DIM,marginTop:3}}>COIs for all subcontractors — expiration alerts included</div>
         </div>
         <button onClick={()=>setShowForm(!showForm)}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           {showForm ? '× Cancel' : '+ Add Certificate'}
         </button>
       </div>
 
       {/* Add Form */}
       {showForm && (
-        <div style={{margin:'20px 24px',background:RAISED,border:`1px solid rgba(212,160,23,.3)`,borderRadius:12,padding:24}}>
+        <div style={{margin:'20px 24px',background:RAISED,border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:12,padding:24}}>
           <div style={{fontWeight:800,fontSize:15,color:TEXT,marginBottom:18,paddingBottom:12,borderBottom:`1px solid ${BORDER}`}}>Add Insurance Certificate</div>
           {error && (
             <div style={{background:'rgba(192,48,48,.12)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:8,padding:'10px 14px',marginBottom:16,color:RED,fontSize:13}}>
@@ -164,7 +164,7 @@ export default function InsurancePage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button onClick={addCert} disabled={saving}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
               {saving ? 'Adding…' : 'Add Certificate'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -208,7 +208,7 @@ export default function InsurancePage() {
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No certificates yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Upload COIs for all subcontractors to track expiration dates and maintain compliance.</div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Add First Certificate
             </button>
           </div>
@@ -237,10 +237,10 @@ export default function InsurancePage() {
                   const rowBg    = expired?'rgba(192,48,48,.06)':expiring?'rgba(245,158,11,.04)':'transparent';
                   const cid      = c.id||String(idx);
                   return (
-                    <tr key={cid} style={{borderBottom:`1px solid rgba(229,229,234,.5)`,background:rowBg}}>
+                    <tr key={cid} style={{borderBottom:`1px solid rgba(255,255,255,0.12)`,background:rowBg}}>
                       <td style={{padding:'11px 14px',color:TEXT,fontWeight:600}}>{c.sub_name||c.subName||c.vendor_name||'—'}</td>
                       <td style={{padding:'11px 14px'}}>
-                        <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(212,160,23,.12)',color:GOLD,textTransform:'uppercase' as const}}>
+                        <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(245, 158, 11,.12)',color:GOLD,textTransform:'uppercase' as const}}>
                           {c.policy_type||c.policyType||'—'}
                         </span>
                       </td>

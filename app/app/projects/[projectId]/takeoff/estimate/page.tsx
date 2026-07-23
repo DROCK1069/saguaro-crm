@@ -1,17 +1,17 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useDragReorder } from '../../../../../../components/DragHandle';
 import BulkActionBar from '../../../../../../components/BulkActionBar';
 import PresenceIndicator from '../../../../../../components/PresenceIndicator';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface Project {
   id: string;
@@ -125,6 +125,12 @@ function EstimatePage() {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<Sheet | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  // Mirror lineItems in a ref so the debounced totals-writer reads the freshest array
+  // without doing I/O inside a state updater (which StrictMode double-invokes).
+  const lineItemsRef = useRef<LineItem[]>([]);
+  useEffect(() => { lineItemsRef.current = lineItems; }, [lineItems]);
+  const recalcTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const escapedRef = useRef(false); // set on Escape so the ensuing onBlur skips the save
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [assemblyOpen, setAssemblyOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
@@ -156,7 +162,8 @@ function EstimatePage() {
     fetch(`/api/takeoff-projects/list?project_id=${projectId}`)
       .then(r => r.json())
       .then(d => {
-        const list = d.takeoffProjects || d || [];
+        // Never store a non-array (an {error} envelope would crash the next .map()).
+        const list = Array.isArray(d.takeoffProjects) ? d.takeoffProjects : (Array.isArray(d) ? d : []);
         setTakeoffProjects(list);
         if (list.length > 0 && !selectedTakeoff) {
           selectTakeoff(list[0]);
@@ -171,7 +178,7 @@ function EstimatePage() {
   useEffect(() => {
     fetch(`/api/takeoff-assemblies/list`)
       .then(r => r.json())
-      .then(d => setAssemblies(d.assemblies || d || []))
+      .then(d => setAssemblies(Array.isArray(d.assemblies) ? d.assemblies : (Array.isArray(d) ? d : [])))
       .catch(() => {});
   }, []);
 
@@ -187,8 +194,8 @@ function EstimatePage() {
     fetch(`/api/takeoff-projects/${tp.id}`)
       .then(r => r.json())
       .then(d => {
-        if (d.sheets) setSheets(d.sheets);
-        if (d.lineItems) setLineItems(d.lineItems);
+        if (Array.isArray(d.sheets)) setSheets(d.sheets);
+        if (Array.isArray(d.lineItems)) setLineItems(d.lineItems);
         if (d.takeoffProject) {
           setOverhead(d.takeoffProject.overhead_pct || 0);
           setProfit(d.takeoffProject.profit_pct || 0);
@@ -203,7 +210,7 @@ function EstimatePage() {
     if (!selectedTakeoff) return;
     fetch(`/api/takeoff-projects/${selectedTakeoff.id}/line-items?sheet_id=${sheetId}`)
       .then(r => r.json())
-      .then(d => setLineItems(d.lineItems || d || []))
+      .then(d => setLineItems(Array.isArray(d.lineItems) ? d.lineItems : (Array.isArray(d) ? d : [])))
       .catch(() => {});
   }, [selectedTakeoff]);
 
@@ -213,11 +220,14 @@ function EstimatePage() {
     loadLineItems(s.id);
   };
 
-  // Computed totals
-  const totalMaterial = lineItems.reduce((s, i) => s + num(i.material_cost), 0);
-  const totalLabor = lineItems.reduce((s, i) => s + num(i.labor_cost), 0);
-  const totalExtended = lineItems.reduce((s, i) => s + num(i.extended_cost), 0);
-  const totalLaborHrs = lineItems.reduce((s, i) => s + num(i.labor_hours), 0);
+  // Computed totals — memoized so they recompute only when the line items change,
+  // not on every keystroke in an inline-edit cell (which sets unrelated editValue state).
+  const { totalMaterial, totalLabor, totalExtended, totalLaborHrs } = useMemo(() => ({
+    totalMaterial: lineItems.reduce((s, i) => s + num(i.material_cost), 0),
+    totalLabor: lineItems.reduce((s, i) => s + num(i.labor_cost), 0),
+    totalExtended: lineItems.reduce((s, i) => s + num(i.extended_cost), 0),
+    totalLaborHrs: lineItems.reduce((s, i) => s + num(i.labor_hours), 0),
+  }), [lineItems]);
   const grandTotal = totalMaterial + totalLabor;
   const markupMultiplier = 1 + num(overhead) / 100 + num(profit) / 100 + num(contingency) / 100;
   const sellPrice = grandTotal * markupMultiplier;
@@ -312,22 +322,23 @@ function EstimatePage() {
     recalcTotals();
   };
 
-  // Recalculate and save totals
+  // Recalculate and persist totals. Debounced + reads the freshest lineItems from a
+  // ref, so rapid edits coalesce into ONE PATCH and no I/O runs inside a state updater
+  // (the old setLineItems-updater pattern double-fired the PATCH under StrictMode).
   const recalcTotals = useCallback(() => {
     if (!selectedTakeoff) return;
-    setTimeout(() => {
-      setLineItems(current => {
-        const mat = current.reduce((s, i) => s + num(i.material_cost), 0);
-        const lab = current.reduce((s, i) => s + num(i.labor_cost), 0);
-        const ext = current.reduce((s, i) => s + num(i.extended_cost), 0);
-        fetch(`/api/takeoff-projects/${selectedTakeoff.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ total_cost: ext, material_cost: mat, labor_cost: lab }),
-        }).catch(() => {});
-        return current;
-      });
-    }, 100);
+    if (recalcTimerRef.current) clearTimeout(recalcTimerRef.current);
+    recalcTimerRef.current = setTimeout(() => {
+      const current = lineItemsRef.current;
+      const mat = current.reduce((s, i) => s + num(i.material_cost), 0);
+      const lab = current.reduce((s, i) => s + num(i.labor_cost), 0);
+      const ext = current.reduce((s, i) => s + num(i.extended_cost), 0);
+      fetch(`/api/takeoff-projects/${selectedTakeoff.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total_cost: ext, material_cost: mat, labor_cost: lab }),
+      }).catch(() => {});
+    }, 400);
   }, [selectedTakeoff]);
 
   // Save detail panel
@@ -468,7 +479,7 @@ function EstimatePage() {
                   padding: '10px 16px',
                   cursor: 'pointer',
                   borderBottom: `1px solid ${BORDER}`,
-                  background: selectedSheet?.id === s.id ? 'rgba(212,160,23,0.12)' : 'transparent',
+                  background: selectedSheet?.id === s.id ? 'rgba(245, 158, 11,0.12)' : 'transparent',
                   borderLeft: selectedSheet?.id === s.id ? `3px solid ${GOLD}` : '3px solid transparent',
                   display: 'flex',
                   alignItems: 'center',
@@ -577,10 +588,12 @@ function EstimatePage() {
                                 ref={editRef}
                                 value={editValue}
                                 onChange={e => setEditValue(e.target.value)}
-                                onBlur={() => saveInlineEdit(item, field, editValue)}
+                                onBlur={() => { if (escapedRef.current) { escapedRef.current = false; return; } saveInlineEdit(item, field, editValue); }}
                                 onKeyDown={e => {
-                                  if (e.key === 'Enter') saveInlineEdit(item, field, editValue);
-                                  if (e.key === 'Escape') setEditingCell(null);
+                                  // Enter → blur so onBlur is the SINGLE commit path (no double PATCH);
+                                  // Escape → cancel without saving.
+                                  if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
+                                  if (e.key === 'Escape') { escapedRef.current = true; setEditingCell(null); }
                                 }}
                                 style={{ background: DARK, color: TEXT, border: `1px solid ${GOLD}`, borderRadius: 3, padding: '3px 6px', width: width || 80, fontSize: 13 }}
                               />
@@ -603,7 +616,7 @@ function EstimatePage() {
                             onClick={() => { setSelectedItem(item); setDetailDraft({ ...item }); setRightOpen(true); }}
                             style={{
                               borderBottom: `1px solid ${BORDER}`,
-                              background: selectedItem?.id === item.id ? 'rgba(212,160,23,0.06)' : 'transparent',
+                              background: selectedItem?.id === item.id ? 'rgba(245, 158, 11,0.06)' : 'transparent',
                               cursor: 'pointer',
                             }}
                           >
@@ -629,7 +642,7 @@ function EstimatePage() {
                       })}
                       {/* Add Row */}
                       {addingRow && (
-                        <tr style={{ borderBottom: `1px solid ${BORDER}`, background: 'rgba(212,160,23,0.08)' }}>
+                        <tr style={{ borderBottom: `1px solid ${BORDER}`, background: 'rgba(245, 158, 11,0.08)' }}>
                           <td style={{ padding: '8px 10px', color: DIM }}>+</td>
                           <td style={{ padding: '8px 10px' }}>
                             <input value={newRow.csi_code} onChange={e => setNewRow(r => ({ ...r, csi_code: e.target.value }))} placeholder="CSI Code" style={{ background: DARK, color: TEXT, border: `1px solid ${BORDER}`, borderRadius: 3, padding: '3px 6px', width: 100, fontSize: 13 }} />
@@ -802,7 +815,7 @@ function EstimatePage() {
 export default function EstimatePageWrapper() {
   return (
     <Suspense fallback={
-      <div style={{ background: '#F2F2F7', color: '#6E6E73', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+      <div style={{ background: '#0d1117', color: '#CBD5E1', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
         Loading estimate workspace...
       </div>
     }>

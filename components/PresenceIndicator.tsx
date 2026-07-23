@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 
-const GOLD = '#C8881C', DARK = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', DIM = '#6E6E73', TEXT = '#1C1C1E';
+const GOLD = '#F59E0B', DARK = '#0d1117', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF';
 
 const HEARTBEAT_MS = 30_000;
 const POLL_MS = 15_000;

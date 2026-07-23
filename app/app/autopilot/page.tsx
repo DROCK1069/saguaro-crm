@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#c03030';
 
 type AlertSeverity = 'critical' | 'high' | 'medium' | 'low';
 
@@ -51,7 +51,7 @@ export default function AutopilotPage() {
     return filter === 'all' || a.severity === filter;
   });
 
-  const sevColor = (s: string) => s==='critical'?{bg:'rgba(192,48,48,.12)',c:'#ff7070',border:'rgba(192,48,48,.3)'}:s==='high'?{bg:'rgba(249,115,22,.1)',c:'#f97316',border:'rgba(249,115,22,.3)'}:{bg:'rgba(212,160,23,.1)',c:GOLD,border:'rgba(212,160,23,.3)'};
+  const sevColor = (s: string) => s==='critical'?{bg:'rgba(192,48,48,.12)',c:'#ff7070',border:'rgba(192,48,48,.3)'}:s==='high'?{bg:'rgba(249,115,22,.1)',c:'#f97316',border:'rgba(249,115,22,.3)'}:{bg:'rgba(245, 158, 11,.1)',c:GOLD,border:'rgba(245, 158, 11,.3)'};
 
   async function acknowledge(alertId: string) {
     setAlertStates(prev => ({ ...prev, [alertId]: 'acknowledged' }));
@@ -111,7 +111,7 @@ export default function AutopilotPage() {
         <button
           onClick={runScan}
           disabled={scanning}
-          style={{padding:'9px 18px',background:scanning?'rgba(212,160,23,.4)':`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:scanning?'not-allowed':'pointer'}}
+          style={{padding:'9px 18px',background:scanning?'rgba(245, 158, 11,.4)':`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:scanning?'not-allowed':'pointer'}}
         >
           {scanning ? '🔄 Scanning...' : '🤖 Run Scan Now'}
         </button>
@@ -135,7 +135,7 @@ export default function AutopilotPage() {
       {/* Filter tabs */}
       <div style={{display:'flex',gap:8,marginBottom:20}}>
         {(['all','critical','high','medium'] as const).map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:'6px 16px',borderRadius:6,border:`1px solid ${filter===f?GOLD:BORDER}`,background:filter===f?'rgba(212,160,23,.12)':'transparent',color:filter===f?GOLD:DIM,fontSize:13,fontWeight:600,cursor:'pointer',textTransform:'capitalize' as const}}>
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:'6px 16px',borderRadius:6,border:`1px solid ${filter===f?GOLD:BORDER}`,background:filter===f?'rgba(245, 158, 11,.12)':'transparent',color:filter===f?GOLD:DIM,fontSize:13,fontWeight:600,cursor:'pointer',textTransform:'capitalize' as const}}>
             {f==='all'?`All (${allAlerts.filter(a=>alertStates[a.id]!=='dismissed').length})`:f}
           </button>
         ))}

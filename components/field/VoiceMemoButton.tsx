@@ -6,14 +6,14 @@
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
-const BASE   = '#F2F2F7';
-const CARD   = '#FFFFFF';
-const GOLD   = '#C8881C';
+const BASE   = '#0d1117';
+const CARD   = '#0F172A';
+const GOLD   = '#F59E0B';
 const GREEN  = '#34C759';
 const RED    = '#FF3B30';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 
 interface VoiceMemoButtonProps {
   projectId: string;

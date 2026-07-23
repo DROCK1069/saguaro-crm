@@ -5,15 +5,15 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#0d1117';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
 
 interface Escalation {
   id: string;
@@ -42,7 +42,7 @@ function severityColor(severity: string): string {
 
 function severityBg(severity: string): string {
   if (severity === 'high') return 'rgba(239,68,68,0.12)';
-  if (severity === 'medium') return 'rgba(212,160,23,0.12)';
+  if (severity === 'medium') return 'rgba(245, 158, 11,0.12)';
   return 'rgba(59,130,246,0.12)';
 }
 
@@ -174,7 +174,7 @@ export default function EscalationDashboard() {
           onClick={runCheck}
           disabled={running}
           style={{
-            background: running ? 'rgba(212,160,23,0.3)' : GOLD,
+            background: running ? 'rgba(245, 158, 11,0.3)' : GOLD,
             color: running ? DIM : '#000',
             border: 'none',
             borderRadius: 10,
@@ -244,7 +244,7 @@ export default function EscalationDashboard() {
         {/* Loading */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-            <div style={{ width: 32, height: 32, border: '3px solid #E5E5EA', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.12)', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
             Loading escalations...
           </div>
         ) : filtered.length === 0 ? (

@@ -1,12 +1,12 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#16243A';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 const GREEN = '#3dd68c';
 const RED = '#EF4444';
 
@@ -59,7 +59,7 @@ function inputStyle(extra?: React.CSSProperties): React.CSSProperties {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; label: string }> = {
-    pending: { bg: 'rgba(212,160,23,.12)', color: GOLD, label: 'Pending' },
+    pending: { bg: 'rgba(245, 158, 11,.12)', color: GOLD, label: 'Pending' },
     viewed: { bg: 'rgba(59,130,246,.12)', color: '#3b82f6', label: 'Viewed' },
     signed: { bg: 'rgba(61,214,140,.12)', color: GREEN, label: 'Signed' },
   };

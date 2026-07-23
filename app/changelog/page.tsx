@@ -1,9 +1,10 @@
 import React from 'react';
+import Link from 'next/link';
 
 const C = {
   dark: '#0B0B0F',
-  gold: '#D4A017',
-  goldBright: '#F0C040',
+  gold: '#F59E0B',
+  goldBright: '#FBBF24',
   text: '#F5F5F7',
   dim: '#A1A1AA',
   border: 'rgba(255,255,255,0.10)',
@@ -114,7 +115,7 @@ const RELEASES: Release[] = [
 
 function KindBadge({ kind }: { kind: Change['kind'] }) {
   const map = {
-    New: { color: C.gold, bg: 'rgba(212,160,23,0.12)', border: 'rgba(212,160,23,0.30)' },
+    New: { color: C.gold, bg: 'rgba(245, 158, 11,0.12)', border: 'rgba(245, 158, 11,0.30)' },
     Improved: { color: C.blue, bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.30)' },
     Fixed: { color: C.green, bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.30)' },
   }[kind];
@@ -153,27 +154,27 @@ export default function ChangelogPage() {
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
       }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-        </a>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
+          <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
           {NAV_LINKS.map(link => (
-            <a key={link.label} href={link.href} style={{ padding: '6px 12px', borderRadius: 6, color: C.dim, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
+            <Link key={link.label} href={link.href} style={{ padding: '6px 12px', borderRadius: 6, color: C.dim, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/login" style={{ padding: '8px 18px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</a>
-          <a href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(212,160,23,0.25)` }}>Free Trial</a>
+          <Link href="/login" style={{ padding: '8px 18px', background: 'rgba(245, 158, 11,0.10)', border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 10, color: C.gold, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>Log In</Link>
+          <Link href="/signup" style={{ padding: '8px 18px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontSize: 13, fontWeight: 800, textDecoration: 'none', boxShadow: `0 0 20px rgba(245, 158, 11,0.25)` }}>Free Trial</Link>
         </div>
       </nav>
 
       <div style={{ paddingTop: 64 }}>
 
         {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '88px 24px 56px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(212,160,23,0.07) 0%, transparent 70%)` }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(212,160,23,0.10)', border: `1px solid rgba(212,160,23,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
+        <section style={{ textAlign: 'center', padding: '88px 24px 56px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(245, 158, 11,0.07) 0%, transparent 70%)` }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(245, 158, 11,0.10)', border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 20, fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 24 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.gold, display: 'inline-block' }} />
             Product Changelog
           </div>
@@ -203,12 +204,12 @@ export default function ChangelogPage() {
                     width: 16, height: 16, borderRadius: '50%',
                     background: i === 0 ? C.gold : C.raisedAlt,
                     border: `2px solid ${i === 0 ? C.goldBright : C.border}`,
-                    boxShadow: i === 0 ? '0 0 0 4px rgba(212,160,23,0.18)' : 'none',
+                    boxShadow: i === 0 ? '0 0 0 4px rgba(245, 158, 11,0.18)' : 'none',
                   }} />
 
                   <div style={{
                     background: i === 0 ? C.raisedAlt : C.raised,
-                    border: i === 0 ? `1px solid rgba(212,160,23,0.30)` : `1px solid ${C.border}`,
+                    border: i === 0 ? `1px solid rgba(245, 158, 11,0.30)` : `1px solid ${C.border}`,
                     borderRadius: 14,
                     overflow: 'hidden',
                     boxShadow: '0 4px 14px rgba(0,0,0,.45)',
@@ -264,7 +265,7 @@ export default function ChangelogPage() {
         </section>
 
         {/* CTA */}
-        <section style={{ padding: '80px 24px 96px', background: `linear-gradient(180deg, transparent 0%, rgba(212,160,23,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
+        <section style={{ padding: '80px 24px 96px', background: `linear-gradient(180deg, transparent 0%, rgba(245, 158, 11,0.05) 50%, transparent 100%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 620, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 900, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: -0.8 }}>
               Get every new feature{' '}
@@ -274,12 +275,12 @@ export default function ChangelogPage() {
               AI takeoffs, the Sage assistant, the field app, and pay-app approvals are included on every plan — and updates land automatically. No upgrades to buy, no installs to run.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-              <a href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(212,160,23,0.30)` }}>
+              <Link href="/signup" style={{ display: 'inline-block', padding: '15px 36px', background: `linear-gradient(135deg, ${C.gold}, ${C.goldBright})`, borderRadius: 10, color: '#0B0B0F', fontWeight: 800, fontSize: 16, textDecoration: 'none', boxShadow: `0 4px 14px rgba(245, 158, 11,0.30)` }}>
                 Start Free Trial — No Credit Card
-              </a>
-              <a href="/features" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+              </Link>
+              <Link href="/features" style={{ display: 'inline-block', padding: '15px 36px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
                 Explore Features
-              </a>
+              </Link>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {['30 days free', 'Unlimited users', 'Free migration', 'Cancel anytime'].map(pill => (
@@ -294,9 +295,9 @@ export default function ChangelogPage() {
         {/* Footer */}
         <footer style={{ borderTop: `1px solid ${C.border}`, padding: '48px 32px', background: C.raised }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
-            <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/logo-full.jpg" alt="Saguaro CRM" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-            </a>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+            </Link>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
                 { label: 'Home', href: '/' }, { label: 'Features', href: '/features' },
@@ -304,10 +305,10 @@ export default function ChangelogPage() {
                 { label: 'Field App', href: '/get-the-app' }, { label: 'Security', href: '/security' },
                 { label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' },
               ].map(link => (
-                <a key={link.label} href={link.href} style={{ fontSize: 13, color: C.dim, textDecoration: 'none', fontWeight: 500 }}>{link.label}</a>
+                <Link key={link.label} href={link.href} style={{ fontSize: 13, color: C.dim, textDecoration: 'none', fontWeight: 500 }}>{link.label}</Link>
               ))}
             </div>
-            <div style={{ fontSize: 12, color: C.dim, whiteSpace: 'nowrap' }}>&copy; {new Date().getFullYear()} Saguaro CRM</div>
+            <div style={{ fontSize: 12, color: C.dim, whiteSpace: 'nowrap' }}>&copy; {new Date().getFullYear()} Saguaro Control Systems</div>
           </div>
         </footer>
 

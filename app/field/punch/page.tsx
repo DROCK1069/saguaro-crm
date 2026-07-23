@@ -9,11 +9,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -58,8 +58,8 @@ type View = 'list' | 'new' | 'detail';
 /* ─── Confirmation Dialog ─── */
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
-      <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 340, width: '90%' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117' }}>
+      <div style={{ background: '#0F172A', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 340, width: '90%' }}>
         <p style={{ margin: '0 0 20px', fontSize: 15, color: TEXT, lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onCancel} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
@@ -74,8 +74,8 @@ function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onCo
 function AssigneePickerDialog({ assignees, onSelect, onCancel }: { assignees: string[]; onSelect: (a: string) => void; onCancel: () => void }) {
   const [custom, setCustom] = useState('');
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
-      <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 380, width: '90%', maxHeight: '70vh', overflow: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117' }}>
+      <div style={{ background: '#0F172A', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 380, width: '90%', maxHeight: '70vh', overflow: 'auto' }}>
         <p style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: TEXT }}>Reassign To</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
           {assignees.map((a) => (
@@ -95,8 +95,8 @@ function AssigneePickerDialog({ assignees, onSelect, onCancel }: { assignees: st
 /* ─── Priority Picker Dialog ─── */
 function PriorityPickerDialog({ onSelect, onCancel }: { onSelect: (p: string) => void; onCancel: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
-      <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 300, width: '90%' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117' }}>
+      <div style={{ background: '#0F172A', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '24px', maxWidth: 300, width: '90%' }}>
         <p style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: TEXT }}>Change Priority</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
           {PRIORITIES.map((p) => (
@@ -274,7 +274,7 @@ function AdvancedFilterPanel({
   });
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', flexDirection: 'column', background: '#F2F2F7' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', flexDirection: 'column', background: '#0d1117' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: `1px solid ${BORDER}` }}>
         <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: TEXT }}>Advanced Filters</h3>
         <button onClick={onClose} style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '8px 18px', color: '#000', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Apply</button>
@@ -328,16 +328,16 @@ function AdvancedFilterPanel({
         {/* Assignee */}
         <p style={secLbl}>Assignee</p>
         <select value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)} style={{ ...inp, marginBottom: 16 }}>
-          <option value="" style={{ background: '#FFFFFF' }}>All Assignees</option>
-          {assignees.map((a) => <option key={a} value={a} style={{ background: '#FFFFFF' }}>{a}</option>)}
+          <option value="" style={{ background: '#0F172A' }}>All Assignees</option>
+          {assignees.map((a) => <option key={a} value={a} style={{ background: '#0F172A' }}>{a}</option>)}
         </select>
 
         {/* Date range */}
         <p style={secLbl}>Date Range</p>
         <select value={filterDateField} onChange={(e) => setFilterDateField(e.target.value)} style={{ ...inp, marginBottom: 8 }}>
-          <option value="" style={{ background: '#FFFFFF' }}>No Date Filter</option>
-          <option value="created_at" style={{ background: '#FFFFFF' }}>Created Date</option>
-          <option value="due_date" style={{ background: '#FFFFFF' }}>Due Date</option>
+          <option value="" style={{ background: '#0F172A' }}>No Date Filter</option>
+          <option value="created_at" style={{ background: '#0F172A' }}>Created Date</option>
+          <option value="due_date" style={{ background: '#0F172A' }}>Due Date</option>
         </select>
         {filterDateField && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
@@ -854,7 +854,7 @@ function PunchListPage() {
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 6 }}>
           {['all', 'open', 'in_progress', 'ready_to_inspect', 'complete', 'Critical', 'High'].map((f) => (
             <button key={f} onClick={() => { setFilter(f); if (f !== 'advanced') setAdvancedActive(false); }}
-              style={{ flexShrink: 0, background: filter === f && !advancedActive ? 'rgba(212,160,23,.2)' : 'transparent', border: `1px solid ${filter === f && !advancedActive ? GOLD : BORDER}`, borderRadius: 20, padding: '5px 12px', color: filter === f && !advancedActive ? GOLD : DIM, fontSize: 12, fontWeight: filter === f && !advancedActive ? 700 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              style={{ flexShrink: 0, background: filter === f && !advancedActive ? 'rgba(245, 158, 11,.2)' : 'transparent', border: `1px solid ${filter === f && !advancedActive ? GOLD : BORDER}`, borderRadius: 20, padding: '5px 12px', color: filter === f && !advancedActive ? GOLD : DIM, fontSize: 12, fontWeight: filter === f && !advancedActive ? 700 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}
             >
               {STATUS_LABELS[f] || f}
             </button>
@@ -955,7 +955,7 @@ function PunchListPage() {
       {view === 'list' && selectMode && selectedIds.size > 0 && (
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: '#FFFFFF', borderTop: `1px solid ${BORDER}`,
+          background: '#0F172A', borderTop: `1px solid ${BORDER}`,
           padding: '10px 16px', display: 'flex', gap: 8, overflowX: 'auto', zIndex: 999,
         }}>
           <button disabled={batchBusy} onClick={() => setShowConfirm({ message: `Close ${selectedIds.size} selected item(s)? They will be marked as complete.`, action: batchClose })}
@@ -998,12 +998,12 @@ function PunchListPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <Fld label="Responsible Trade">
                 <select value={trade} onChange={(e) => setTrade(e.target.value)} style={inp}>
-                  {TRADES.map((t) => <option key={t} value={t} style={{ background: '#FFFFFF' }}>{t}</option>)}
+                  {TRADES.map((t) => <option key={t} value={t} style={{ background: '#0F172A' }}>{t}</option>)}
                 </select>
               </Fld>
               <Fld label="Priority">
                 <select value={priority} onChange={(e) => setPriority(e.target.value)} style={inp}>
-                  {PRIORITIES.map((p) => <option key={p} value={p} style={{ background: '#FFFFFF' }}>{p}</option>)}
+                  {PRIORITIES.map((p) => <option key={p} value={p} style={{ background: '#0F172A' }}>{p}</option>)}
                 </select>
               </Fld>
             </div>
@@ -1025,7 +1025,7 @@ function PunchListPage() {
           <div style={card}>
             <p style={secLbl}>Photos</p>
             <input ref={photoRef} type="file" accept="image/*" capture="environment" multiple onChange={handlePhotoCapture} style={{ display: 'none' }} />
-            <button type="button" onClick={() => photoRef.current?.click()} style={{ width: '100%', background: 'transparent', border: `2px dashed rgba(212,160,23,.4)`, borderRadius: 10, padding: '14px', color: GOLD, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: photoPreviews.length ? 10 : 0 }}>
+            <button type="button" onClick={() => photoRef.current?.click()} style={{ width: '100%', background: 'transparent', border: `2px dashed rgba(245, 158, 11,.4)`, borderRadius: 10, padding: '14px', color: GOLD, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: photoPreviews.length ? 10 : 0 }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx={12} cy={13} r={4}/></svg>
               Attach Photo
             </button>
@@ -1046,7 +1046,7 @@ function PunchListPage() {
             <button type="button" onClick={() => { setView('list'); resetForm(); }} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
+            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#16243A' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
               {saving ? 'Saving...' : '+ Add to Punch List'}
             </button>
           </div>
@@ -1132,7 +1132,7 @@ function PunchListPage() {
 }
 
 export default function FieldPunchPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><PunchListPage /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}><PunchListPage /></Suspense>;
 }
 
 // Shared helpers
@@ -1151,7 +1151,7 @@ function OfflineBanner() {
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
 const secLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
-const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
+const inp: React.CSSProperties = { width: '100%', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '8px', marginLeft: -8, display: 'flex', alignItems: 'center', marginBottom: 4 };
 
 function hexRgb(hex: string): string {

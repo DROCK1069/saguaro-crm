@@ -1,5 +1,5 @@
 /**
- * Saguaro CRM — Centralized Design Tokens
+ * Saguaro Control Systems — Centralized Design Tokens
  * Import these instead of hardcoding colors/spacing in every file.
  */
 
@@ -16,26 +16,28 @@ export const colors = {
   goldHover:  'var(--brand-primary-18)',
   goldActive: 'var(--brand-primary-25)',
 
-  // Apple LIGHT ramp — matches the (light) mobile app: iOS grouped page
-  // background #F2F2F7 with #FFFFFF cards/panels and #F2F2F7 grouped insets.
-  dark:       '#F2F2F7',
-  darkAlt:    '#FFFFFF',
-  raised:     '#FFFFFF',
-  raisedAlt:  '#F2F2F7',
-  surface:    '#FFFFFF',
+  // Sonoran DARK ramp (Rob's direction 2026-07-22) — matches the dark mobile
+  // field app: navy page background #0d1117 with slate cards/panels. Naming kept
+  // (`dark` = page bg, `surface`/`raised` = cards) so existing token consumers
+  // re-theme without renames.
+  dark:       '#0d1117', // page background (dark navy)
+  darkAlt:    '#0F172A', // card / panel (slate)
+  raised:     '#0F172A', // raised card
+  raisedAlt:  '#16243A', // grouped inset / input
+  surface:    '#0F172A', // surface / card
 
-  border:     '#E5E5EA',
-  borderDim:  'rgba(0,0,0,0.06)',
+  border:     'rgba(255,255,255,0.12)',
+  borderDim:  'rgba(255,255,255,0.06)',
 
-  text:       '#1C1C1E',
-  textMuted:  '#6E6E73',
-  textDim:    '#AEAEB2',
-  textFaint:  '#C7C7CC',
+  text:       '#FFFFFF',
+  textMuted:  '#CBD5E1',
+  textDim:    '#8094B0',
+  textFaint:  '#5B677A',
 
-  green:      '#34C759',
-  red:        '#FF3B30',
-  orange:     '#FF9500',
-  blue:       '#007AFF',
+  green:      '#22C55E',
+  red:        '#EF4444',
+  orange:     '#F59E0B',
+  blue:       '#3B82F6',
 
   white:      '#ffffff',
   black:      '#000000',

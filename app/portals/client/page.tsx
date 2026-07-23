@@ -38,42 +38,42 @@ export default function ClientPortalLanding() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ minHeight: '100vh', background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ maxWidth: 440, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ color: '#C8881C', fontWeight: 800, fontSize: 24, letterSpacing: '0.12em', marginBottom: 8 }}>SAGUARO</div>
-          <h1 style={{ color: '#1C1C1E', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>Owner / Client Portal</h1>
-          <p style={{ color: '#86868B', fontSize: 14, margin: 0 }}>View your project progress, budgets, photos, and documents in real time.</p>
+          <div style={{ color: '#F59E0B', fontWeight: 800, fontSize: 24, letterSpacing: '0.12em', marginBottom: 8 }}>SAGUARO</div>
+          <h1 style={{ color: '#FFFFFF', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>Owner / Client Portal</h1>
+          <p style={{ color: '#CBD5E1', fontSize: 14, margin: 0 }}>View your project progress, budgets, photos, and documents in real time.</p>
         </div>
 
-        <div style={{ background: 'rgba(0,0,0,0.04)', backdropFilter: 'blur(40px)', border: '1px solid #E5E5EA', borderRadius: 16, padding: 32 }}>
+        <div style={{ background: '#0F172A', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 32 }}>
           <div style={{ marginBottom: 24 }}>
-            <label style={{ color: '#86868B', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>Access with your email</label>
+            <label style={{ color: '#CBD5E1', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>Access with your email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleEmailAccess()}
               placeholder="you@example.com"
-              style={{ width: '100%', padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#1C1C1E', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px 16px', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#FFFFFF', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
             />
             <button
               onClick={handleEmailAccess}
               disabled={loading || !email.trim()}
-              style={{ width: '100%', marginTop: 12, padding: '12px', background: 'linear-gradient(135deg, #C8881C, #C8960F)', border: 'none', borderRadius: 10, color: '#000', fontWeight: 700, fontSize: 14, cursor: loading ? 'wait' : 'pointer', opacity: !email.trim() ? 0.5 : 1 }}
+              style={{ width: '100%', marginTop: 12, padding: '12px', background: 'linear-gradient(135deg, #F59E0B, #C8960F)', border: 'none', borderRadius: 10, color: '#000', fontWeight: 700, fontSize: 14, cursor: loading ? 'wait' : 'pointer', opacity: !email.trim() ? 0.5 : 1 }}
             >
               {loading ? 'Checking...' : 'Access My Project'}
             </button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
-            <span style={{ color: '#86868B', fontSize: 12 }}>or</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
+            <span style={{ color: '#CBD5E1', fontSize: 12 }}>or</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.12)' }} />
           </div>
 
           <div>
-            <label style={{ color: '#86868B', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>Enter access token</label>
+            <label style={{ color: '#CBD5E1', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 8 }}>Enter access token</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
                 type="text"
@@ -81,12 +81,12 @@ export default function ClientPortalLanding() {
                 onChange={(e) => setToken(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleTokenAccess()}
                 placeholder="Paste your token"
-                style={{ flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.06)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#1C1C1E', fontSize: 14, outline: 'none' }}
+                style={{ flex: 1, padding: '12px 16px', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#FFFFFF', fontSize: 14, outline: 'none' }}
               />
               <button
                 onClick={handleTokenAccess}
                 disabled={!token.trim()}
-                style={{ padding: '12px 20px', background: 'rgba(0,0,0,0.08)', border: '1px solid #E5E5EA', borderRadius: 10, color: '#1C1C1E', fontWeight: 600, fontSize: 14, cursor: 'pointer', opacity: !token.trim() ? 0.5 : 1 }}
+                style={{ padding: '12px 20px', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#FFFFFF', fontWeight: 600, fontSize: 14, cursor: 'pointer', opacity: !token.trim() ? 0.5 : 1 }}
               >
                 Go
               </button>
@@ -97,7 +97,7 @@ export default function ClientPortalLanding() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 24 }}>
-          <a href="/" style={{ color: '#86868B', fontSize: 13, textDecoration: 'none' }}>Back to Saguaro</a>
+          <a href="/" style={{ color: '#CBD5E1', fontSize: 13, textDecoration: 'none' }}>Back to Saguaro</a>
         </div>
       </div>
     </div>

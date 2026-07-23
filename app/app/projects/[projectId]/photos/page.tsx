@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import PhotoEditor from '../../../../../components/PhotoEditor';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
 
 const ALBUMS=['General','Progress','Inspections','Closeout','Issues','Other'];
@@ -18,7 +18,7 @@ const ALBUM_COLORS:Record<string,string>={
 };
 
 const inp:React.CSSProperties={
-  width:'100%',padding:'9px 12px',background:'#FFFFFF',
+  width:'100%',padding:'9px 12px',background:'#16243A',
   border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
@@ -47,7 +47,7 @@ function FieldLabel({label}:{label:string}){
 function InfoCard({label,value}:{label:string;value:string|undefined|null}){
   if(!value) return null;
   return(
-    <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'10px 12px'}}>
+    <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:8,padding:'10px 12px'}}>
       <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:4}}>{label}</div>
       <div style={{fontSize:13,color:TEXT}}>{value}</div>
     </div>
@@ -231,7 +231,7 @@ export default function PhotosPage(){
             <div style={{fontSize:12,color:DIM,marginTop:3}}>Site progress photos and documentation</div>
           </div>
           <button onClick={openCreate}
-            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
               border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + Add Photo
           </button>
@@ -287,7 +287,7 @@ export default function PhotosPage(){
               </div>
               {photos.length===0&&(
                 <button onClick={openCreate}
-                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                     border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                   + Add First Photo
                 </button>
@@ -415,7 +415,7 @@ export default function PhotosPage(){
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',
-                      background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                      background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                       border:'none',borderRadius:8,color:'#1C1C1E',
                       fontSize:14,fontWeight:800,cursor:'pointer',opacity:saving?0.6:1}}>
                     {saving?'Saving...':mode==='create'?'Add Photo':'Save Changes'}
@@ -453,7 +453,7 @@ export default function PhotosPage(){
 
                 {/* Description */}
                 {selected.description&&(
-                  <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
                     <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>Description</div>
                     <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.description}</div>
                   </div>
@@ -468,7 +468,7 @@ export default function PhotosPage(){
 
                 {/* Tags */}
                 {Array.isArray(selected.tags)&&selected.tags.length>0&&(
-                  <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
                     <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>Tags</div>
                     <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                       {selected.tags.map((tag:string)=>(
@@ -502,23 +502,23 @@ export default function PhotosPage(){
 function PhotoCard({photo,selected,onClick,albumColor,onEdit}:{
   photo:any;selected:boolean;onClick:()=>void;albumColor:string;onEdit?:(id:string,url:string)=>void;
 }){
-  const BORDER_C='#E5E5EA';
-  const RAISED_C='#FFFFFF';
-  const DIM_C='#6E6E73';
-  const TEXT_C='#1C1C1E';
+  const BORDER_C='rgba(255,255,255,0.12)';
+  const RAISED_C='#0F172A';
+  const DIM_C='#CBD5E1';
+  const TEXT_C='#FFFFFF';
   return(
     <div onClick={onClick}
-      style={{background:selected?'rgba(212,160,23,.07)':RAISED_C,
-        border:`1px solid ${selected?'#C8881C':BORDER_C}`,borderRadius:10,
+      style={{background:selected?'rgba(245, 158, 11,.07)':RAISED_C,
+        border:`1px solid ${selected?'#F59E0B':BORDER_C}`,borderRadius:10,
         overflow:'hidden',cursor:'pointer',transition:'border-color .15s'}}
-      onMouseEnter={e=>{if(!selected)e.currentTarget.style.borderColor='rgba(212,160,23,.4)';}}
+      onMouseEnter={e=>{if(!selected)e.currentTarget.style.borderColor='rgba(245, 158, 11,.4)';}}
       onMouseLeave={e=>{if(!selected)e.currentTarget.style.borderColor=BORDER_C;}}>
       {photo.url?(
         <img src={photo.url} alt={photo.title}
           style={{width:'100%',height:140,objectFit:'cover',display:'block'}}
-          onError={e=>{(e.target as HTMLImageElement).parentElement!.style.background='#F2F2F7';(e.target as HTMLImageElement).style.display='none';}}/>
+          onError={e=>{(e.target as HTMLImageElement).parentElement!.style.background='#16243A';(e.target as HTMLImageElement).style.display='none';}}/>
       ):(
-        <div style={{width:'100%',height:140,background:'#F2F2F7',display:'flex',
+        <div style={{width:'100%',height:140,background:'#16243A',display:'flex',
           alignItems:'center',justifyContent:'center',color:DIM_C,fontSize:12}}>
           No image
         </div>
@@ -546,7 +546,7 @@ function PhotoCard({photo,selected,onClick,albumColor,onEdit}:{
         )}
         {photo.url && onEdit && (
           <button onClick={(e)=>{e.stopPropagation();onEdit(photo.id,photo.url);}}
-            style={{marginTop:8,width:'100%',padding:'6px',background:'rgba(212,160,23,.08)',border:`1px solid rgba(212,160,23,.2)`,borderRadius:6,color:'#C8881C',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
+            style={{marginTop:8,width:'100%',padding:'6px',background:'rgba(245, 158, 11,.08)',border:`1px solid rgba(245, 158, 11,.2)`,borderRadius:6,color:'#F59E0B',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
             ✏️ Edit / Crop / Rotate
           </button>
         )}

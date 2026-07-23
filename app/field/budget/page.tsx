@@ -8,11 +8,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SwipeActionItem } from '@/components/field/SwipeAction';
 
-const GOLD = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
@@ -97,14 +97,14 @@ function formatDate(d: string | undefined): string {
 /* ── Styles ────────────────────────────────────────────── */
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 12 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: 0, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 };
 const badge = (bg: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${bg}22`, color: bg });
 const tabStyle = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? GOLD : 'transparent', color: active ? '#000' : DIM, fontWeight: 700, border: `1px solid ${active ? GOLD : BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 13, transition: 'all .2s' });
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none' as const, width: 'auto', minWidth: 140, display: 'inline-block' };
 const summaryCard = (borderColor: string): React.CSSProperties => ({ ...card, borderLeft: `3px solid ${borderColor}`, padding: '14px 16px' });
 const thStyle: React.CSSProperties = { textAlign: 'left', padding: '10px 12px', fontSize: 12, fontWeight: 700, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' };
-const tdStyle: React.CSSProperties = { padding: '10px 12px', fontSize: 13, color: TEXT, borderBottom: `1px solid ${BORDER}08` };
+const tdStyle: React.CSSProperties = { padding: '10px 12px', fontSize: 13, color: TEXT, borderBottom: `1px solid rgba(255,255,255,0.06)` };
 
 /* ── Main Component ────────────────────────────────────── */
 
@@ -281,7 +281,7 @@ function BudgetPage() {
               {selectedCostCode.budget > 0 ? formatPct(selectedCostCode.actual / selectedCostCode.budget) : '0%'}
             </span>
           </div>
-          <div style={{ height: 10, background: '#FFFFFF', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ height: 10, background: '#16243A', borderRadius: 6, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${Math.min(100, selectedCostCode.budget > 0 ? (selectedCostCode.actual / selectedCostCode.budget) * 100 : 0)}%`, background: vc, borderRadius: 6, transition: 'width .5s' }} />
           </div>
         </div>
@@ -294,7 +294,7 @@ function BudgetPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#FFFFFF' }}>
+                <tr style={{ background: '#0F172A' }}>
                   <th style={thStyle}>Description</th>
                   <th style={thStyle}>Type</th>
                   <th style={thStyle}>Vendor</th>
@@ -393,7 +393,7 @@ function BudgetPage() {
                         <span style={{ color: TEXT, fontWeight: 600 }}>{cc.code}</span>
                         <span style={{ color: vc, fontWeight: 600 }}>{cc.variance >= 0 ? '+' : ''}{formatUSD(cc.variance)}</span>
                       </div>
-                      <div style={{ position: 'relative', height: 20, background: '#FFFFFF', borderRadius: 6, overflow: 'hidden' }}>
+                      <div style={{ position: 'relative', height: 20, background: '#16243A', borderRadius: 6, overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, height: '50%', width: `${budgetPct}%`, background: BLUE, borderRadius: '6px 6px 0 0', opacity: 0.7, transition: 'width .5s' }} />
                         <div style={{ position: 'absolute', bottom: 0, left: 0, height: '50%', width: `${actualPct}%`, background: vc, borderRadius: '0 0 6px 6px', transition: 'width .5s' }} />
                       </div>
@@ -460,7 +460,7 @@ function BudgetPage() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', background: RAISED, borderRadius: 14, overflow: 'hidden' }}>
                 <thead>
-                  <tr style={{ background: '#FFFFFF' }}>
+                  <tr style={{ background: '#0F172A' }}>
                     <th style={thStyle}>Code</th>
                     <th style={thStyle}>Description</th>
                     <th style={{ ...thStyle, textAlign: 'right' }}>Budget</th>
@@ -493,7 +493,7 @@ function BudgetPage() {
                         </td>
                         <td style={{ ...tdStyle, textAlign: 'center' }}>
                           <div style={{ width: 60, margin: '0 auto' }}>
-                            <div style={{ height: 6, background: '#FFFFFF', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ height: 6, background: '#16243A', borderRadius: 4, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.min(100, pctUsed * 100)}%`, background: vc, borderRadius: 4, transition: 'width .4s' }} />
                             </div>
                             <div style={{ fontSize: 10, color: vc, marginTop: 2, fontWeight: 600 }}>{formatPct(pctUsed)}</div>
@@ -505,7 +505,7 @@ function BudgetPage() {
                 </tbody>
                 {/* Totals row */}
                 <tfoot>
-                  <tr style={{ background: '#FFFFFF' }}>
+                  <tr style={{ background: '#0F172A' }}>
                     <td style={{ ...tdStyle, fontWeight: 800, color: TEXT }} colSpan={2}>TOTALS</td>
                     <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{formatUSD(filteredCodes.reduce((s, c) => s + c.budget, 0))}</td>
                     <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{formatUSD(filteredCodes.reduce((s, c) => s + c.committed, 0))}</td>
@@ -553,7 +553,7 @@ function BudgetPage() {
           {sheetMode === 'edit' && (
             <div>
               <label style={{ display: 'block', fontSize: 12, color: DIM, fontWeight: 700, marginBottom: 6 }}>New Amount ($)</label>
-              <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" inputMode="decimal" autoFocus style={{ width: '100%', padding: '14px 16px', background: '#FFFFFF', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }} />
+              <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" inputMode="decimal" autoFocus style={{ width: '100%', padding: '14px 16px', background: '#16243A', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }} />
               <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                 <button onClick={handleFieldBudgetEdit} style={{ flex: 1, padding: '14px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Save</button>
                 <button onClick={() => setSheetMode('menu')} style={{ flex: 1, padding: '14px', background: 'transparent', color: DIM, fontWeight: 600, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Back</button>
@@ -577,7 +577,7 @@ function BudgetPage() {
 
       {/* Delete Confirmation */}
       {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
+        <div style={{ position: 'fixed', inset: 0, background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 340, textAlign: 'center' }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Delete this budget line?</div>
@@ -602,7 +602,7 @@ function BudgetPage() {
 
 export default function BudgetPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6E6E73' }}>Loading budget...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#CBD5E1' }}>Loading budget...</div>}>
       <BudgetPage />
     </Suspense>
   );

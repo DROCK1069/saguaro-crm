@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 
 /* ─── Palette ─── */
-const BG = '#F2F2F7', CARD = '#FFFFFF', GOLD = '#C8881C', GREEN = '#34C759';
-const BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73', DARK = '#F2F2F7';
+const BG = '#0d1117', CARD = '#0F172A', GOLD = '#F59E0B', GREEN = '#34C759';
+const BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1', DARK = '#0d1117';
 
 const glass: React.CSSProperties = {
   background: `${CARD}CC`, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
@@ -343,7 +344,7 @@ export default function DiscoverPage() {
           )}
 
           <div style={{ textAlign: 'center', marginTop: 32, display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/design/packages" style={{ textDecoration: 'none' }}>
+            <Link href="/design/packages" style={{ textDecoration: 'none' }}>
               <button style={{
                 padding: '16px 36px', background: `linear-gradient(135deg, ${GOLD}, #B8860B)`,
                 color: '#000', border: 'none', borderRadius: 12, fontWeight: 700,
@@ -351,8 +352,8 @@ export default function DiscoverPage() {
               }}>
                 See Your Smart Building Packages
               </button>
-            </a>
-            <a href="/design/roi" style={{ textDecoration: 'none' }}>
+            </Link>
+            <Link href="/design/roi" style={{ textDecoration: 'none' }}>
               <button style={{
                 padding: '16px 28px', background: 'transparent', color: GOLD,
                 border: `2px solid ${GOLD}`, borderRadius: 12, fontWeight: 700,
@@ -360,7 +361,7 @@ export default function DiscoverPage() {
               }}>
                 Calculate Full ROI
               </button>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

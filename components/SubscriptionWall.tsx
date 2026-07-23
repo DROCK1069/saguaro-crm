@@ -19,15 +19,16 @@
  * earlier version did) always saw `undefined` and walled every tenant.
  */
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 // ── Apple LIGHT tokens (match the mobile app + dashboard) ──────────────────────
-const GOLD   = '#C8881C';
-const PAGE   = '#F2F2F7';
-const CARD   = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const GOLD   = '#F59E0B';
+const PAGE   = '#0d1117';
+const CARD   = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 const GREEN  = '#34C759';
 const RED    = '#FF3B30';
 const AMBER  = '#FF9500';
@@ -153,14 +154,14 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
         {!isPastDue && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 28 }}>
             {[
-              { id: 'starter', name: 'Starter', price: '$299', sub: '/mo · up to 10 projects' },
-              { id: 'professional', name: 'Professional', price: '$599', sub: '/mo · unlimited everything', popular: true },
+              { id: 'starter', name: 'Starter', price: '$499', sub: '/mo · up to 10 projects' },
+              { id: 'professional', name: 'Professional', price: '$750', sub: '/mo · unlimited everything', popular: true },
             ].map(plan => (
               <div key={plan.id} style={{
                 background: CARD,
                 border: `1.5px solid ${plan.popular ? GOLD : BORDER}`,
                 borderRadius: 16, padding: '20px 16px',
-                boxShadow: plan.popular ? '0 4px 14px rgba(200,136,28,.12)' : 'none',
+                boxShadow: plan.popular ? '0 4px 14px rgba(245, 158, 11,.12)' : 'none',
               }}>
                 {plan.popular && (
                   <div style={{ fontSize: 9, fontWeight: 800, color: GOLD, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Most Popular</div>
@@ -168,7 +169,7 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
                 <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 4 }}>{plan.name}</div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: plan.popular ? GOLD : TEXT, marginBottom: 4 }}>{plan.price}<span style={{ fontSize: 12, fontWeight: 400, color: DIM }}>/mo</span></div>
                 <div style={{ fontSize: 11, color: DIM, marginBottom: 16 }}>{plan.sub}</div>
-                <a href={`/app/billing?plan=${plan.id}`} style={{
+                <Link href={`/app/billing?plan=${plan.id}`} style={{
                   display: 'block', padding: '10px 0', borderRadius: 10,
                   background: plan.popular ? GOLD : PAGE,
                   border: plan.popular ? 'none' : `1px solid ${BORDER}`,
@@ -176,7 +177,7 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
                   textDecoration: 'none',
                 }}>
                   Select Plan
-                </a>
+                </Link>
               </div>
             ))}
           </div>
@@ -184,15 +185,15 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
 
         {/* CTA Buttons */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="/app/billing" style={{
+          <Link href="/app/billing" style={{
             padding: '14px 32px',
             background: isPastDue ? RED : GOLD,
             borderRadius: 12, color: '#fff',
             fontWeight: 700, fontSize: 15, textDecoration: 'none',
-            boxShadow: isPastDue ? '0 4px 16px rgba(255,59,48,0.25)' : '0 4px 16px rgba(200,136,28,0.25)',
+            boxShadow: isPastDue ? '0 4px 16px rgba(255,59,48,0.25)' : '0 4px 16px rgba(245, 158, 11,0.25)',
           }}>
             {isPastDue ? 'Update Payment Method' : 'Upgrade Now →'}
-          </a>
+          </Link>
           <a href="mailto:support@saguarocontrol.net" style={{
             padding: '14px 24px', background: CARD,
             border: `1px solid ${BORDER}`, borderRadius: 12,
@@ -216,7 +217,7 @@ export default function SubscriptionWall({ children }: { children: React.ReactNo
         </div>
 
         {/* Data preservation note */}
-        <div style={{ marginTop: 24, padding: '14px 20px', background: 'rgba(200,136,28,0.06)', border: `1px solid rgba(200,136,28,0.15)`, borderRadius: 12, fontSize: 13, color: DIM }}>
+        <div style={{ marginTop: 24, padding: '14px 20px', background: 'rgba(245, 158, 11,0.06)', border: `1px solid rgba(245, 158, 11,0.15)`, borderRadius: 12, fontSize: 13, color: DIM }}>
           Your projects, documents, and data are preserved for <strong style={{ color: TEXT }}>30 days</strong>. Reactivate anytime to pick up right where you left off.
         </div>
 

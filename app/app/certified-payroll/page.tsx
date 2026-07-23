@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toCents, toDollars, extend, sumCents, subCents, scaleCents } from '@/lib/calc';
 
-const GOLD = '#C8881C', BG = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E',
-  DIM = '#6E6E73', GREEN = '#22C55E', RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
+const GOLD = '#F59E0B', BG = '#0d1117', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF',
+  DIM = '#CBD5E1', GREEN = '#22C55E', RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
 
 type PayrollStatus = 'Draft' | 'Submitted' | 'Approved';
 type ComplianceStatus = 'Compliant' | 'Non-Compliant' | 'Pending';
@@ -153,7 +153,7 @@ const btn = (bg: string, hover = false): React.CSSProperties => ({
 });
 
 const input: React.CSSProperties = {
-  padding: '8px 12px', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG,
+  padding: '8px 12px', borderRadius: 6, border: `1px solid ${BORDER}`, background: '#16243A',
   color: TEXT, fontSize: 13, outline: 'none', width: '100%',
 };
 
@@ -650,8 +650,8 @@ export default function CertifiedPayrollPage() {
                           <td style={{ padding: '10px 6px', position: 'relative' as const, whiteSpace: 'nowrap' }}>
                             {editId === worker.id ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" step="0.01" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditRate(worker.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 90, padding: '4px 8px', background: BG, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
-                                <button onClick={() => handleEditRate(worker.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 5, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                                <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" step="0.01" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditRate(worker.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 90, padding: '4px 8px', background: '#16243A', border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
+                                <button onClick={() => handleEditRate(worker.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 5, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                                 <button onClick={() => setEditId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                               </div>
                             ) : adjustId === worker.id ? (
@@ -925,7 +925,7 @@ export default function CertifiedPayrollPage() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16, fontSize: 12, borderBottom: '2px solid #333', paddingBottom: 14 }}>
-                <div><span style={{ color: '#666' }}>Contractor/Subcontractor: </span><strong>TNT Cyber Solutions</strong></div>
+                <div><span style={{ color: '#666' }}>Contractor/Subcontractor: </span><strong>Saguaro Control Systems</strong></div>
                 <div><span style={{ color: '#666' }}>Contract #: </span><strong>{proj?.contractNumber}</strong></div>
                 <div><span style={{ color: '#666' }}>Payroll No: </span><strong>{activePeriod.id.replace('pp', '')}</strong></div>
                 <div><span style={{ color: '#666' }}>Project: </span><strong>{proj?.name}</strong></div>

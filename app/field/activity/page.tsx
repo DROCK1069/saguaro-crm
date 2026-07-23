@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -254,7 +254,7 @@ function ActivityLogPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F2F2F7', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: TEXT, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', background: '#0d1117', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: TEXT, paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ background: RAISED, borderBottom: `1px solid ${BORDER}`, padding: '16px 16px 12px', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -296,7 +296,7 @@ function ActivityLogPage() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div style={{ marginTop: 12, padding: 14, background: '#F2F2F7', borderRadius: 12, border: `1px solid ${BORDER}` }}>
+          <div style={{ marginTop: 12, padding: 14, background: '#16243A', borderRadius: 12, border: `1px solid ${BORDER}` }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div>
                 <label style={filterLabel}>Module</label>
@@ -464,7 +464,7 @@ function ActivityLogPage() {
                             {entry.changes!.length} field{entry.changes!.length !== 1 ? 's' : ''} changed
                           </button>
                           {isExpanded && (
-                            <div style={{ marginTop: 8, padding: 10, background: '#F2F2F7', borderRadius: 8, border: `1px solid ${BORDER}` }}>
+                            <div style={{ marginTop: 8, padding: 10, background: '#16243A', borderRadius: 8, border: `1px solid ${BORDER}` }}>
                               {entry.changes!.map((change, ci) => (
                                 <div key={ci} style={{ marginBottom: ci < entry.changes!.length - 1 ? 8 : 0 }}>
                                   <div style={{ fontSize: 11, fontWeight: 700, color: DIM, marginBottom: 2, textTransform: 'capitalize' }}>
@@ -522,7 +522,7 @@ function ActivityLogPage() {
 
 export default function FieldActivityPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <ActivityLogPage />
     </Suspense>
   );
@@ -549,7 +549,7 @@ const card: React.CSSProperties = {
   padding: '14px 14px 6px', marginBottom: 10,
 };
 const inp: React.CSSProperties = {
-  width: '100%', background: '#F2F2F7', border: `1px solid ${BORDER}`,
+  width: '100%', background: '#16243A', border: `1px solid ${BORDER}`,
   borderRadius: 10, padding: '11px 14px', color: TEXT, fontSize: 15, outline: 'none',
   boxSizing: 'border-box',
 };
@@ -562,7 +562,7 @@ const filterLabel: React.CSSProperties = {
   marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5,
 };
 const selectStyle: React.CSSProperties = {
-  width: '100%', background: '#FFFFFF', border: `1px solid ${BORDER}`,
+  width: '100%', background: '#16243A', border: `1px solid ${BORDER}`,
   borderRadius: 8, padding: '8px 10px', color: TEXT, fontSize: 13, outline: 'none',
   boxSizing: 'border-box',
 };

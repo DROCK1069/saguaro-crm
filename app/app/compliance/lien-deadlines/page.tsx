@@ -5,16 +5,16 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#0d1117';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const GRAY = '#6B7280';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
+const GRAY = '#8094B0';
 
 const STATES = ['AZ', 'CA', 'TX', 'NV', 'CO', 'FL'];
 const DEADLINE_TYPES = [
@@ -152,7 +152,7 @@ export default function LienDeadlinePage() {
   const sorted = [...deadlines].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
   const inputStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.6)',
+    background: '#16243A',
     border: `1px solid ${BORDER}`,
     borderRadius: 10,
     padding: '10px 14px',
@@ -261,7 +261,7 @@ export default function LienDeadlinePage() {
 
             {/* AZ-specific auto-calculation inputs */}
             {formState === 'AZ' && (
-              <div style={{ marginTop: 20, padding: 16, background: 'rgba(212,160,23,0.06)', borderRadius: 12, border: `1px solid rgba(212,160,23,0.15)` }}>
+              <div style={{ marginTop: 20, padding: 16, background: 'rgba(245, 158, 11,0.06)', borderRadius: 12, border: `1px solid rgba(245, 158, 11,0.15)` }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: GOLD, marginBottom: 12 }}>AZ Auto-Calculated Deadlines</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                   <div>
@@ -300,7 +300,7 @@ export default function LienDeadlinePage() {
                 onClick={createDeadline}
                 disabled={!formProject.trim() || !formDueDate || saving}
                 style={{
-                  background: (!formProject.trim() || !formDueDate) ? 'rgba(212,160,23,0.3)' : GOLD,
+                  background: (!formProject.trim() || !formDueDate) ? 'rgba(245, 158, 11,0.3)' : GOLD,
                   color: (!formProject.trim() || !formDueDate) ? DIM : '#6E6E73',
                   border: 'none',
                   borderRadius: 10,
@@ -319,7 +319,7 @@ export default function LienDeadlinePage() {
         {/* Loading */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-            <div style={{ width: 32, height: 32, border: '3px solid #E5E5EA', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.12)', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
             Loading deadlines...
           </div>
         ) : sorted.length === 0 ? (
@@ -409,7 +409,7 @@ export default function LienDeadlinePage() {
                       </span>
                       {/* Reminder badges */}
                       {dl.reminder_30 && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(107,114,128,0.12)', color: GRAY }}>30d sent</span>}
-                      {dl.reminder_14 && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(212,160,23,0.12)', color: GOLD }}>14d sent</span>}
+                      {dl.reminder_14 && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(245, 158, 11,0.12)', color: GOLD }}>14d sent</span>}
                       {dl.reminder_7 && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.12)', color: RED }}>7d sent</span>}
                     </div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{dl.description || deadlineTypeLabel(dl.deadline_type)}</div>

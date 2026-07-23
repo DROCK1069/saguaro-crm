@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#22c55e';
 
 const STEPS = [
   { num: 1, label: 'Welcome', done: true },
@@ -108,7 +108,7 @@ export default function OnboardingStep4() {
             </p>
             <a
               href="/app"
-              style={{display:'inline-block',padding:'14px 40px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:10,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}
+              style={{display:'inline-block',padding:'14px 40px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,borderRadius:10,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}
             >
               Go to Dashboard →
             </a>
@@ -163,7 +163,7 @@ export default function OnboardingStep4() {
               <button
                 onClick={handleSendInvites}
                 disabled={loading}
-                style={{padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
+                style={{padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
               >
                 {loading?'Sending Invites...':'Send Invites'}
               </button>
@@ -175,13 +175,13 @@ export default function OnboardingStep4() {
               </a>
             </div>
 
-            <div style={{marginTop:24,padding:'12px 16px',background:'rgba(212,160,23,.06)',border:'1px solid rgba(212,160,23,.2)',borderRadius:8,fontSize:12,color:DIM,textAlign:'center'}}>
+            <div style={{marginTop:24,padding:'12px 16px',background:'rgba(245, 158, 11,.06)',border:'1px solid rgba(245, 158, 11,.2)',borderRadius:8,fontSize:12,color:DIM,textAlign:'center'}}>
               You can invite more team members anytime from <strong style={{color:TEXT}}>Settings → Team</strong>
             </div>
           </div>
         )}
 
-        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6E6E73'}}>
+        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#CBD5E1'}}>
           Questions? <a href="mailto:support@saguarocontrol.net" style={{color:DIM}}>support@saguarocontrol.net</a>
         </div>
       </div>

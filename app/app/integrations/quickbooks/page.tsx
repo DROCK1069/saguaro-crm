@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#C8881C', DARK = '#F2F2F7', CARD = '#FFFFFF', BORDER = '#E5E5EA';
-const DIM = '#6E6E73', TEXT = '#1C1C1E', GREEN = '#22C55E', RED = '#EF4444', QB_GREEN = '#2CA01C';
+const GOLD = '#F59E0B', DARK = '#16243A', CARD = '#0F172A', BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#22C55E', RED = '#EF4444', QB_GREEN = '#2CA01C';
 
 type SyncHistoryEntry = {
   timestamp: string;
@@ -250,7 +250,7 @@ export default function QuickBooksPage() {
                 disabled={syncing}
                 style={{
                   padding: '10px 24px', borderRadius: 10, cursor: 'pointer',
-                  background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                  background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none',
                   color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                   opacity: syncing ? 0.6 : 1,
                 }}
@@ -302,8 +302,8 @@ export default function QuickBooksPage() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
                       borderRadius: 8, cursor: 'pointer', marginBottom: 6,
-                      background: checked ? 'rgba(212,160,23,0.06)' : 'transparent',
-                      border: `1px solid ${checked ? 'rgba(212,160,23,0.2)' : 'transparent'}`,
+                      background: checked ? 'rgba(245, 158, 11,0.06)' : 'transparent',
+                      border: `1px solid ${checked ? 'rgba(245, 158, 11,0.2)' : 'transparent'}`,
                     }}
                   >
                     <input
@@ -339,7 +339,7 @@ export default function QuickBooksPage() {
                       style={{
                         flex: 1, padding: '10px 8px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                         border: syncDirection === d.key ? `1px solid ${GOLD}` : `1px solid ${BORDER}`,
-                        background: syncDirection === d.key ? 'rgba(212,160,23,0.1)' : 'transparent',
+                        background: syncDirection === d.key ? 'rgba(245, 158, 11,0.1)' : 'transparent',
                         color: syncDirection === d.key ? GOLD : DIM,
                       }}
                     >
@@ -360,7 +360,7 @@ export default function QuickBooksPage() {
                       style={{
                         padding: '10px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                         border: syncFrequency === f ? `1px solid ${GOLD}` : `1px solid ${BORDER}`,
-                        background: syncFrequency === f ? 'rgba(212,160,23,0.1)' : 'transparent',
+                        background: syncFrequency === f ? 'rgba(245, 158, 11,0.1)' : 'transparent',
                         color: syncFrequency === f ? GOLD : DIM,
                         textTransform: 'capitalize',
                       }}
@@ -397,12 +397,12 @@ export default function QuickBooksPage() {
                       const totalCount = Object.values(entry.results).reduce((s, r) => s + (r.count || 0), 0);
                       const allSuccess = Object.values(entry.results).every((r) => r.status === 'success');
                       return (
-                        <tr key={i} style={{ borderBottom: `1px solid ${BORDER}22` }}>
+                        <tr key={i} style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
                           <td style={{ padding: '10px 12px', color: TEXT }}>{formatDate(entry.timestamp)}</td>
                           <td style={{ padding: '10px 12px', color: DIM }}>
                             <span style={{
                               padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
-                              background: entry.direction === 'push' ? 'rgba(212,160,23,0.12)' : 'rgba(59,130,246,0.12)',
+                              background: entry.direction === 'push' ? 'rgba(245, 158, 11,0.12)' : 'rgba(59,130,246,0.12)',
                               color: entry.direction === 'push' ? GOLD : '#3B82F6',
                             }}>
                               {entry.direction === 'push' ? '\u2192 Push' : '\u2190 Pull'}
@@ -445,11 +445,11 @@ export default function QuickBooksPage() {
                 </thead>
                 <tbody>
                   {FIELD_MAPPINGS.map((m, i) => (
-                    <tr key={i} style={{ borderBottom: `1px solid ${BORDER}22` }}>
+                    <tr key={i} style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
                       <td style={{ padding: '10px 12px' }}>
                         <span style={{
                           padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
-                          background: 'rgba(212,160,23,0.1)', color: GOLD,
+                          background: 'rgba(245, 158, 11,0.1)', color: GOLD,
                         }}>
                           {m.entity}
                         </span>

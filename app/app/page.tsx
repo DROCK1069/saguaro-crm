@@ -20,14 +20,14 @@ const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: 
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false });
 const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false });
 
-const GOLD   = '#C8881C';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const RAISED_ALT = '#F2F2F7';
-const BORDER = '#E5E5EA';
+const GOLD   = '#F59E0B';
+const DARK   = '#16243A';
+const RAISED = '#0F172A';
+const RAISED_ALT = '#16243A';
+const BORDER = 'rgba(255,255,255,0.12)';
 const BORDER_SUBTLE = 'rgba(0,0,0,0.06)';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 const GREEN  = '#34C759';
 const RED    = '#FF3B30';
 const BLUE   = '#007AFF';
@@ -128,8 +128,8 @@ function TodayActionCard({ item }: { item: TodayItem }) {
         href={item.actionUrl}
         style={{
           padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 700,
-          background: `rgba(200,136,28,0.12)`, color: GOLD,
-          border: `1px solid rgba(200,136,28,0.3)`, textDecoration: 'none',
+          background: `rgba(245, 158, 11,0.12)`, color: GOLD,
+          border: `1px solid rgba(245, 158, 11,0.3)`, textDecoration: 'none',
           whiteSpace: 'nowrap', flexShrink: 0,
         }}
       >
@@ -208,7 +208,7 @@ function BidScoreModal({ onClose }: { onClose: () => void }) {
               {error && <div style={{ color: RED, fontSize: 12, marginBottom: 12 }}>{error}</div>}
               <button
                 type="submit" disabled={loading}
-                style={{ width: '100%', padding: '11px', background: loading ? 'rgba(200,136,28,0.4)' : GOLD, border: 'none', borderRadius: 8, color: '#FFFFFF', fontWeight: 800, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4 }}
+                style={{ width: '100%', padding: '11px', background: loading ? 'rgba(245, 158, 11,0.4)' : GOLD, border: 'none', borderRadius: 8, color: '#FFFFFF', fontWeight: 800, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4 }}
               >
                 {loading ? 'Analyzing...' : 'Score This Bid →'}
               </button>
@@ -230,7 +230,7 @@ function BidScoreModal({ onClose }: { onClose: () => void }) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 5 }}>Reasoning</div>
                 <div style={{ fontSize: 13, color: TEXT, lineHeight: 1.6 }}>{result.reasoning}</div>
               </div>
-              <div style={{ background: `rgba(200,136,28,0.12)`, border: `1px solid rgba(200,136,28,0.2)`, borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+              <div style={{ background: `rgba(245, 158, 11,0.12)`, border: `1px solid rgba(245, 158, 11,0.2)`, borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 4 }}>Suggested Margin</div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: GOLD }}>{result.suggestedMargin}%</div>
               </div>
@@ -366,7 +366,7 @@ export default function DashboardPage() {
             </Link>
             <button
               onClick={() => setShowScoreModal(true)}
-              style={{ padding: '10px 18px', background: 'rgba(200,136,28,0.12)', color: GOLD, border: `1px solid rgba(200,136,28,0.3)`, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              style={{ padding: '10px 18px', background: 'rgba(245, 158, 11,0.12)', color: GOLD, border: `1px solid rgba(245, 158, 11,0.3)`, borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
             >
               Score a Bid
             </button>
@@ -435,7 +435,7 @@ export default function DashboardPage() {
             {/* Project Budget Chart */}
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(200,136,28,0.12)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(245, 158, 11,0.12)' }}>
                   <ChartBar size={17} weight="duotone" color={GOLD} />
                 </span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Project Budgets</span>
@@ -469,7 +469,7 @@ export default function DashboardPage() {
             {/* Portfolio Status Donut */}
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', boxShadow: SHADOW_SM }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(200,136,28,0.12)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(245, 158, 11,0.12)' }}>
                   <TrendUp size={17} weight="duotone" color={GOLD} />
                 </span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: TEXT, letterSpacing: '-0.01em' }}>Portfolio Status</span>
@@ -585,7 +585,7 @@ export default function DashboardPage() {
               {!projectsLoading && !projectsError && projects.slice(0, 3).map(proj => (
                 <Link key={proj.id} href={`/app/projects/${proj.id}`} style={{ display: 'block', textDecoration: 'none', marginBottom: 10 }}>
                   <div style={{ padding: '14px 16px', background: RAISED_ALT, borderRadius: 10, border: `1px solid ${BORDER_SUBTLE}`, cursor: 'pointer', transition: 'border-color .15s' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(200,136,28,0.5)')}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.5)')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER_SUBTLE)}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>

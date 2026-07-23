@@ -6,14 +6,14 @@
 import React, { useState, useMemo } from 'react';
 import { toCents, toDollars, extend } from '@/lib/calc';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#0d1117';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
 
 interface WageRate {
   trade: string;
@@ -64,7 +64,7 @@ export default function PrevailingWagePage() {
   const weeklyCost = toDollars(extend(40, toCents(rate.total)));
 
   const inputStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.6)',
+    background: '#16243A',
     border: `1px solid ${BORDER}`,
     borderRadius: 10,
     padding: '10px 14px',
@@ -144,7 +144,7 @@ export default function PrevailingWagePage() {
                     }}
                     style={{
                       background: (!isCustom && hoursPreset === p.hours) || (isCustom && p.label === 'Custom')
-                        ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.4)',
+                        ? 'rgba(245, 158, 11,0.15)' : '#16243A',
                       color: (!isCustom && hoursPreset === p.hours) || (isCustom && p.label === 'Custom')
                         ? GOLD : DIM,
                       border: `1px solid ${(!isCustom && hoursPreset === p.hours) || (isCustom && p.label === 'Custom')
@@ -326,7 +326,7 @@ export default function PrevailingWagePage() {
                     onClick={() => setSelectedTrade(r.trade)}
                     style={{
                       cursor: 'pointer',
-                      background: selectedTrade === r.trade ? 'rgba(212,160,23,0.06)' : 'transparent',
+                      background: selectedTrade === r.trade ? 'rgba(245, 158, 11,0.06)' : 'transparent',
                       transition: 'background 0.15s',
                     }}
                   >

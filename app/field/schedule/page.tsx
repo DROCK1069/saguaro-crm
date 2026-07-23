@@ -10,11 +10,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { FlagCheckered } from '@phosphor-icons/react';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -649,8 +649,8 @@ function GanttChart({
                         top: (ROW_HEIGHT - 12) / 2,
                         width: 12,
                         height: 12,
-                        background: 'rgba(212,160,23,.2)',
-                        border: `1px dashed rgba(212,160,23,.4)`,
+                        background: 'rgba(245, 158, 11,.2)',
+                        border: `1px dashed rgba(245, 158, 11,.4)`,
                         transform: 'rotate(45deg)',
                         borderRadius: 1,
                       }}
@@ -669,7 +669,7 @@ function GanttChart({
                       transform: 'rotate(45deg)',
                       borderRadius: 2,
                       cursor: 'pointer',
-                      boxShadow: task._isCritical ? `0 0 6px rgba(239,68,68,.5)` : `0 0 4px rgba(212,160,23,.4)`,
+                      boxShadow: task._isCritical ? `0 0 6px rgba(239,68,68,.5)` : `0 0 4px rgba(245, 158, 11,.4)`,
                     }}
                   />
                 </div>
@@ -945,7 +945,7 @@ function SchedulePage() {
           </div>
 
           {/* Progress bar */}
-          <div style={{ height: 8, background: '#E5E5EA', borderRadius: 4, marginBottom: 16 }}>
+          <div style={{ height: 8, background: '#16243A', borderRadius: 4, marginBottom: 16 }}>
             <div style={{ height: '100%', background: pct === 100 ? GREEN : pct > 0 ? GOLD : 'transparent', borderRadius: 4, width: `${pct}%`, transition: 'width .3s' }} />
           </div>
 
@@ -960,7 +960,7 @@ function SchedulePage() {
               onChange={(e) => setEditPct(parseInt(e.target.value))}
               style={{
                 width: '100%', height: 6, appearance: 'none', WebkitAppearance: 'none',
-                background: `linear-gradient(to right, ${GOLD} 0%, ${GOLD} ${pct}%, #E5E5EA ${pct}%, #E5E5EA 100%)`,
+                background: `linear-gradient(to right, ${GOLD} 0%, ${GOLD} ${pct}%, #16243A ${pct}%, #16243A 100%)`,
                 borderRadius: 3, outline: 'none', cursor: 'pointer',
               }}
             />
@@ -974,7 +974,7 @@ function SchedulePage() {
                 onClick={() => setEditPct(v)}
                 style={{
                   flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                  background: pct === v ? (v === 100 ? GREEN : GOLD) : 'rgba(229,229,234,.5)',
+                  background: pct === v ? (v === 100 ? GREEN : GOLD) : '#16243A',
                   border: `1px solid ${pct === v ? (v === 100 ? GREEN : GOLD) : BORDER}`,
                   color: pct === v ? (v === 100 ? '#000' : '#000') : DIM,
                   transition: 'all .2s',
@@ -990,7 +990,7 @@ function SchedulePage() {
             onClick={handleSavePct}
             disabled={saving}
             style={{
-              width: '100%', background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 14,
+              width: '100%', background: saving ? '#16243A' : GOLD, border: 'none', borderRadius: 14,
               padding: '18px', color: saving ? DIM : '#000', fontSize: 17, fontWeight: 800,
               cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5,
             }}
@@ -1163,7 +1163,7 @@ function SchedulePage() {
       </div>
 
       {/* View mode toggle: List / Gantt */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 10, background: '#F2F2F7', borderRadius: 10, padding: 4 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 10, background: '#16243A', borderRadius: 10, padding: 4 }}>
         <button
           onClick={() => setViewMode('list')}
           style={{ flex: 1, background: viewMode === 'list' ? RAISED : 'transparent', border: `1px solid ${viewMode === 'list' ? BORDER : 'transparent'}`, borderRadius: 8, padding: '8px 4px', color: viewMode === 'list' ? TEXT : DIM, fontSize: 13, fontWeight: viewMode === 'list' ? 700 : 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
@@ -1183,7 +1183,7 @@ function SchedulePage() {
       {viewMode === 'list' && (
         <>
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#F2F2F7', borderRadius: 10, padding: 4 }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#16243A', borderRadius: 10, padding: 4 }}>
             {tabs.map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{ flex: 1, background: tab === t.id ? RAISED : 'transparent', border: `1px solid ${tab === t.id ? BORDER : 'transparent'}`, borderRadius: 8, padding: '8px 4px', color: tab === t.id ? TEXT : DIM, fontSize: 11, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}
@@ -1219,8 +1219,8 @@ function SchedulePage() {
                     onClick={() => openTaskDetail(task)}
                     style={{
                       background: RAISED,
-                      border: `1px solid ${late ? 'rgba(239,68,68,.35)' : active ? 'rgba(212,160,23,.25)' : BORDER}`,
-                      borderLeft: task._isCritical ? `3px solid ${RED}` : `1px solid ${late ? 'rgba(239,68,68,.35)' : active ? 'rgba(212,160,23,.25)' : BORDER}`,
+                      border: `1px solid ${late ? 'rgba(239,68,68,.35)' : active ? 'rgba(245, 158, 11,.25)' : BORDER}`,
+                      borderLeft: task._isCritical ? `3px solid ${RED}` : `1px solid ${late ? 'rgba(239,68,68,.35)' : active ? 'rgba(245, 158, 11,.25)' : BORDER}`,
                       borderRadius: 14, padding: '14px', textAlign: 'left', width: '100%', cursor: 'pointer',
                     }}
                   >
@@ -1262,7 +1262,7 @@ function SchedulePage() {
                           )}
                         </p>
                         {/* Progress bar */}
-                        <div style={{ height: 5, background: '#E5E5EA', borderRadius: 3 }}>
+                        <div style={{ height: 5, background: '#16243A', borderRadius: 3 }}>
                           <div style={{ height: '100%', background: pct === 100 ? GREEN : late ? RED : active ? GOLD : BLUE, borderRadius: 3, width: `${pct}%`, transition: 'width .3s' }} />
                         </div>
                       </div>
@@ -1348,7 +1348,7 @@ function SchedulePage() {
 }
 
 export default function FieldSchedulePage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><SchedulePage /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}><SchedulePage /></Suspense>;
 }
 
 function StatBadge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -1364,7 +1364,7 @@ function InfoRow({ label, value, valueColor }: { label: string; value: string; v
   );
 }
 
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#CBD5E1', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 
 function hexRgb(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);

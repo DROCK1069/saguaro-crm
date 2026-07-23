@@ -3,15 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Robot } from '@phosphor-icons/react';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#16243A';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface Article {
   id: string;
@@ -143,12 +143,12 @@ export default function TradeGuidePage() {
   const renderMarkdown = (md: string) => {
     if (!md) return '';
     return md
-      .replace(/### (.*)/g, '<h3 style="color:#1C1C1E;font-size:16px;font-weight:700;margin:16px 0 8px">$1</h3>')
-      .replace(/## (.*)/g, '<h2 style="color:#1C1C1E;font-size:18px;font-weight:700;margin:20px 0 10px">$1</h2>')
-      .replace(/# (.*)/g, '<h1 style="color:#1C1C1E;font-size:22px;font-weight:700;margin:24px 0 12px">$1</h1>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1C1C1E">$1</strong>')
+      .replace(/### (.*)/g, '<h3 style="color:#FFFFFF;font-size:16px;font-weight:700;margin:16px 0 8px">$1</h3>')
+      .replace(/## (.*)/g, '<h2 style="color:#FFFFFF;font-size:18px;font-weight:700;margin:20px 0 10px">$1</h2>')
+      .replace(/# (.*)/g, '<h1 style="color:#FFFFFF;font-size:22px;font-weight:700;margin:24px 0 12px">$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#FFFFFF">$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code style="background:#F2F2F7;padding:2px 6px;border-radius:4px;font-size:12px;color:#22C55E">$1</code>')
+      .replace(/`(.*?)`/g, '<code style="background:#16243A;padding:2px 6px;border-radius:4px;font-size:12px;color:#22C55E">$1</code>')
       .replace(/^- (.*)/gm, '<li style="margin:4px 0;padding-left:4px">$1</li>')
       .replace(/^(\d+)\. (.*)/gm, '<li style="margin:4px 0;padding-left:4px">$2</li>')
       .replace(/\n\n/g, '<br/><br/>')
@@ -185,7 +185,7 @@ export default function TradeGuidePage() {
               textTransform: 'capitalize',
             }}>{selectedArticle.difficulty}</span>
             {selectedArticle.estimated_time && (
-              <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.06)', color: DIM }}>
+              <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', color: DIM }}>
                 {selectedArticle.estimated_time}
               </span>
             )}
@@ -247,7 +247,7 @@ export default function TradeGuidePage() {
           onClick={() => setShowChat(!showChat)}
           style={{
             position: 'fixed', bottom: 20, right: 20, width: 56, height: 56,
-            borderRadius: '50%', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+            borderRadius: '50%', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
             border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
             justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
             zIndex: 100,
@@ -281,7 +281,7 @@ export default function TradeGuidePage() {
                 <div key={i} style={{
                   alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                   maxWidth: '85%', padding: '10px 14px', borderRadius: 12,
-                  background: msg.role === 'user' ? `${GOLD}20` : 'rgba(0,0,0,0.05)',
+                  background: msg.role === 'user' ? `${GOLD}20` : 'rgba(255,255,255,0.05)',
                   color: TEXT, fontSize: 13, lineHeight: 1.5,
                   borderBottomRightRadius: msg.role === 'user' ? 4 : 12,
                   borderBottomLeftRadius: msg.role === 'assistant' ? 4 : 12,
@@ -302,7 +302,7 @@ export default function TradeGuidePage() {
                 style={{ flex: 1, padding: '10px 14px', background: BASE, color: TEXT, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none' }}
               />
               <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()} style={{
-                padding: '10px 16px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+                padding: '10px 16px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
                 color: '#000', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer',
                 opacity: chatLoading || !chatInput.trim() ? 0.5 : 1,
               }}>
@@ -362,7 +362,7 @@ export default function TradeGuidePage() {
             onClick={() => setActiveCategory(cat)}
             style={{
               padding: '4px 10px', border: 'none',
-              borderRadius: 6, background: activeCategory === cat ? 'rgba(0,0,0,0.1)' : 'transparent',
+              borderRadius: 6, background: activeCategory === cat ? 'rgba(255,255,255,0.1)' : 'transparent',
               color: activeCategory === cat ? TEXT : DIM,
               fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
             }}
@@ -401,12 +401,12 @@ export default function TradeGuidePage() {
                   textTransform: 'capitalize',
                 }}>{article.difficulty}</span>
                 {article.estimated_time && (
-                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: 'rgba(0,0,0,0.05)', color: DIM }}>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: DIM }}>
                     {article.estimated_time}
                   </span>
                 )}
                 <span style={{
-                  fontSize: 10, padding: '2px 8px', borderRadius: 8, background: 'rgba(0,0,0,0.05)', color: DIM,
+                  fontSize: 10, padding: '2px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: DIM,
                 }}>{article.category}</span>
               </div>
               <div style={{ color: TEXT, fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{article.title}</div>
@@ -423,7 +423,7 @@ export default function TradeGuidePage() {
         onClick={() => setShowChat(!showChat)}
         style={{
           position: 'fixed', bottom: 20, right: 20, width: 56, height: 56,
-          borderRadius: '50%', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+          borderRadius: '50%', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
           border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
           justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
           zIndex: 100,
@@ -457,7 +457,7 @@ export default function TradeGuidePage() {
               <div key={i} style={{
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '85%', padding: '10px 14px', borderRadius: 12,
-                background: msg.role === 'user' ? `${GOLD}20` : 'rgba(0,0,0,0.05)',
+                background: msg.role === 'user' ? `${GOLD}20` : 'rgba(255,255,255,0.05)',
                 color: TEXT, fontSize: 13, lineHeight: 1.5,
                 borderBottomRightRadius: msg.role === 'user' ? 4 : 12,
                 borderBottomLeftRadius: msg.role === 'assistant' ? 4 : 12,
@@ -478,7 +478,7 @@ export default function TradeGuidePage() {
               style={{ flex: 1, padding: '10px 14px', background: BASE, color: TEXT, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 13, outline: 'none' }}
             />
             <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()} style={{
-              padding: '10px 16px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+              padding: '10px 16px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
               color: '#000', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer',
               opacity: chatLoading || !chatInput.trim() ? 0.5 : 1,
             }}>

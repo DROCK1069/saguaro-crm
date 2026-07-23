@@ -8,11 +8,11 @@ import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'reac
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -592,7 +592,7 @@ function CorrespondencePage() {
   });
   const input: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: `1px solid ${BORDER}`, background: '#FFFFFF', color: TEXT,
+    border: `1px solid ${BORDER}`, background: '#16243A', color: TEXT,
     fontSize: 14, outline: 'none', boxSizing: 'border-box',
   };
   const label: React.CSSProperties = {
@@ -823,7 +823,7 @@ function CorrespondencePage() {
                 {savedPresets.map(sp => (
                   <div key={sp.name} style={{
                     display: 'flex', alignItems: 'center', gap: 4,
-                    background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 8,
+                    background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8,
                     padding: '4px 6px 4px 12px',
                   }}>
                     <button onClick={() => applyPreset(sp.filters)} style={{
@@ -851,8 +851,8 @@ function CorrespondencePage() {
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
           {advFilters.types.map(t => (
             <span key={t} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(212,160,23,.12)',
-              border: `1px solid rgba(212,160,23,.3)`, borderRadius: 20, padding: '4px 10px',
+              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11,.12)',
+              border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 20, padding: '4px 10px',
               fontSize: 11, fontWeight: 600, color: GOLD, whiteSpace: 'nowrap' as const,
             }}>
               {t} <span onClick={() => toggleAdvType(t)} style={{ cursor: 'pointer', marginLeft: 2, fontSize: 13 }}>&times;</span>
@@ -860,8 +860,8 @@ function CorrespondencePage() {
           ))}
           {advFilters.statuses.map(s => (
             <span key={s} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(212,160,23,.12)',
-              border: `1px solid rgba(212,160,23,.3)`, borderRadius: 20, padding: '4px 10px',
+              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11,.12)',
+              border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 20, padding: '4px 10px',
               fontSize: 11, fontWeight: 600, color: GOLD, whiteSpace: 'nowrap' as const,
             }}>
               {s} <span onClick={() => toggleAdvStatus(s)} style={{ cursor: 'pointer', marginLeft: 2, fontSize: 13 }}>&times;</span>
@@ -869,8 +869,8 @@ function CorrespondencePage() {
           ))}
           {advFilters.fromTo && (
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(212,160,23,.12)',
-              border: `1px solid rgba(212,160,23,.3)`, borderRadius: 20, padding: '4px 10px',
+              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11,.12)',
+              border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 20, padding: '4px 10px',
               fontSize: 11, fontWeight: 600, color: GOLD, whiteSpace: 'nowrap' as const,
             }}>
               From/To: {advFilters.fromTo} <span onClick={() => setAdvFilters(prev => ({ ...prev, fromTo: '' }))} style={{ cursor: 'pointer', marginLeft: 2, fontSize: 13 }}>&times;</span>
@@ -878,8 +878,8 @@ function CorrespondencePage() {
           )}
           {(advFilters.dateFrom || advFilters.dateTo) && (
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(212,160,23,.12)',
-              border: `1px solid rgba(212,160,23,.3)`, borderRadius: 20, padding: '4px 10px',
+              display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11,.12)',
+              border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 20, padding: '4px 10px',
               fontSize: 11, fontWeight: 600, color: GOLD, whiteSpace: 'nowrap' as const,
             }}>
               Date: {advFilters.dateFrom || '...'} - {advFilters.dateTo || '...'} <span onClick={() => setAdvFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' }))} style={{ cursor: 'pointer', marginLeft: 2, fontSize: 13 }}>&times;</span>
@@ -1004,7 +1004,7 @@ function CorrespondencePage() {
           {/* Body */}
           <div style={{
             color: TEXT, fontSize: 14, lineHeight: 1.7, padding: 14,
-            background: '#FFFFFF', borderRadius: 10, whiteSpace: 'pre-wrap',
+            background: '#16243A', borderRadius: 10, whiteSpace: 'pre-wrap',
             border: `1px solid ${BORDER}`, marginBottom: 14,
           }}>
             {selected.body || '(No body content)'}
@@ -1012,7 +1012,7 @@ function CorrespondencePage() {
 
           {/* Transmittal specifics */}
           {selected.type === 'Transmittal' && (
-            <div style={{ ...card, background: '#FFFFFF', marginBottom: 14 }}>
+            <div style={{ ...card, background: '#16243A', marginBottom: 14 }}>
               <h3 style={{ color: GOLD, fontSize: 14, fontWeight: 700, margin: '0 0 8px' }}>Transmittal Details</h3>
               {selected.transmittal_purposes && selected.transmittal_purposes.length > 0 && (
                 <div style={{ marginBottom: 8 }}>
@@ -1081,7 +1081,7 @@ function CorrespondencePage() {
               {selected.attachments.map((att, i) => (
                 <a key={i} href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-                  background: '#FFFFFF', borderRadius: 8, marginBottom: 4,
+                  background: '#16243A', borderRadius: 8, marginBottom: 4,
                   border: `1px solid ${BORDER}`, textDecoration: 'none', cursor: 'pointer',
                 }}>
                   <span style={{ fontSize: 16 }}>{'\u{1F4CE}'}</span>
@@ -1304,7 +1304,7 @@ function CorrespondencePage() {
 
       {/* Transmittal-specific fields */}
       {formType === 'Transmittal' && (
-        <div style={{ ...card, background: '#FFFFFF', marginBottom: 14 }}>
+        <div style={{ ...card, background: '#16243A', marginBottom: 14 }}>
           <h3 style={{ color: GOLD, fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>Transmittal Details</h3>
 
           {/* Purpose checkboxes */}
@@ -1389,7 +1389,7 @@ function CorrespondencePage() {
             {formAttachments.map((f, i) => (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px',
-                background: '#FFFFFF', borderRadius: 6, marginBottom: 3,
+                background: '#16243A', borderRadius: 6, marginBottom: 3,
               }}>
                 <span style={{ color: TEXT, fontSize: 12, flex: 1 }}>{'\u{1F4CE}'} {f.name}</span>
                 <span style={{ color: DIM, fontSize: 11 }}>{formatFileSize(f.size)}</span>
@@ -1456,7 +1456,7 @@ function CorrespondencePage() {
 
   /* ─── Main render ─── */
   return (
-    <div style={{ minHeight: '100vh', background: '#F2F2F7', padding: '16px 12px 80px' }}>
+    <div style={{ minHeight: '100vh', background: '#0d1117', padding: '16px 12px 80px' }}>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
         {renderHeader()}
         {view === 'list' && renderList()}
@@ -1471,8 +1471,8 @@ function CorrespondencePage() {
 export default function CorrespondencePageWrapper() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#6E6E73', fontSize: 16 }}>Loading Correspondence...</div>
+      <div style={{ minHeight: '100vh', background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#CBD5E1', fontSize: 16 }}>Loading Correspondence...</div>
       </div>
     }>
       <CorrespondencePage />

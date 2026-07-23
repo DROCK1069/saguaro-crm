@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   PageWrap, SectionHeader, StatCard, Badge, Btn,
   Card, CardHeader, CardBody, Table, ProgressBar, T,
@@ -130,6 +130,34 @@ export default function TakeoffPage() {
   const [activeTab, setActiveTab] = useState<'divisions' | 'summary'>('divisions');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSelectedRef = useRef(false);          // guards one-time auto-select
+  const evtSourceRef = useRef<EventSource | null>(null); // live SSE, torn down on unmount
+  const [showAllRows, setShowAllRows] = useState(false);
+
+  // Group the AI-extracted materials ONCE per takeoff (was recomputed inline on every
+  // render, incl. every SSE progress tick), and cap the rows we synchronously render so
+  // a huge extraction can't build thousands of SVG progress bars in one commit → freeze.
+  const CSI_ROW_CAP = 300;
+  const divisions = useMemo(
+    () => (selectedTakeoff?.materials ? groupByDivision(selectedTakeoff.materials) : []),
+    [selectedTakeoff],
+  );
+  const totalMatRows = useMemo(() => divisions.reduce((s, d) => s + d.items.length, 0), [divisions]);
+  const rowsCapped = !showAllRows && totalMatRows > CSI_ROW_CAP;
+  const cappedDivisions = useMemo(() => {
+    if (!rowsCapped) return divisions;
+    let budget = CSI_ROW_CAP;
+    const out: typeof divisions = [];
+    for (const d of divisions) {
+      if (budget <= 0) break;
+      const items = d.items.slice(0, budget);
+      budget -= items.length;
+      out.push({ ...d, items });
+    }
+    return out;
+  }, [divisions, rowsCapped]);
+  // Reset the "show all" toggle whenever a different takeoff is opened.
+  useEffect(() => { setShowAllRows(false); }, [selectedTakeoff?.id]);
 
   // ── Data loading ─────────────────────────────────────────────────────────
   const loadDetail = useCallback(async (id: string) => {
@@ -148,16 +176,15 @@ export default function TakeoffPage() {
     try {
       const res = await fetch('/api/takeoff?limit=30');
       const json = await res.json();
-      const list: Takeoff[] = json.data || [];
+      // Guard the shape: an error envelope ({error}) must never become list state.
+      const list: Takeoff[] = Array.isArray(json.data) ? json.data : [];
       setTakeoffs(list);
-      if (list.length > 0) {
-        // Only auto-select if nothing selected yet
-        setSelectedTakeoff(prev => {
-          if (!prev) {
-            loadDetail(list[0].id);
-          }
-          return prev;
-        });
+      // Auto-select the first takeoff (side-effect kept OUT of the state updater, which
+      // must stay pure — previously loadDetail() ran inside setSelectedTakeoff and
+      // double-fired under StrictMode). Guarded by a ref so it only auto-selects once.
+      if (list.length > 0 && !autoSelectedRef.current) {
+        autoSelectedRef.current = true;
+        loadDetail(list[0].id);
       }
     } finally {
       setLoadingList(false);
@@ -178,6 +205,9 @@ export default function TakeoffPage() {
     loadTakeoffs();
     loadProjects();
   }, [loadTakeoffs]);
+
+  // Tear down any live analysis stream if the user navigates away mid-analysis.
+  useEffect(() => () => { evtSourceRef.current?.close(); evtSourceRef.current = null; }, []);
 
   // ── File handling ─────────────────────────────────────────────────────────
   function handleFile(file: File) {
@@ -238,26 +268,29 @@ export default function TakeoffPage() {
 
       await new Promise<void>((resolve, reject) => {
         const evtSource = new EventSource(`/api/takeoff/${takeoffId}/analyze`);
+        evtSourceRef.current = evtSource;
         let sseResolved = false;
+
+        // Watchdog: if the stream goes silent for 90s (server stall) tear it down and
+        // fail cleanly instead of leaving the UI stuck on "analyzing" forever.
+        let watchdog: ReturnType<typeof setTimeout>;
+        const finish = (fn: () => void) => { sseResolved = true; clearTimeout(watchdog); evtSource.close(); evtSourceRef.current = null; fn(); };
+        const armWatchdog = () => {
+          clearTimeout(watchdog);
+          watchdog = setTimeout(() => { if (!sseResolved) finish(() => reject(new Error('Analysis timed out. Please try again.'))); }, 90_000);
+        };
+        armWatchdog();
 
         evtSource.onmessage = (e) => {
           try {
             const evt = JSON.parse(e.data);
             if (evt.event === 'progress') {
+              armWatchdog();
               setProgress({ pct: evt.pct, message: evt.message, step: evt.step });
-            } else if (evt.event === 'result') {
-              // result means done — resolve here so reload happens immediately
-              sseResolved = true;
-              evtSource.close();
-              resolve();
+            } else if (evt.event === 'result' || evt.event === 'done') {
+              finish(resolve);
             } else if (evt.event === 'error') {
-              sseResolved = true;
-              evtSource.close();
-              reject(new Error(evt.message));
-            } else if (evt.event === 'done') {
-              sseResolved = true;
-              evtSource.close();
-              resolve();
+              finish(() => reject(new Error(evt.message)));
             }
           } catch {
             // ignore parse errors
@@ -265,11 +298,9 @@ export default function TakeoffPage() {
         };
 
         evtSource.onerror = () => {
-          evtSource.close();
-          // Natural SSE stream close fires onerror — only reject if we never got a result
-          if (!sseResolved) {
-            reject(new Error('Connection lost during analysis. Please try again.'));
-          }
+          // Natural SSE stream close fires onerror — only reject if we never got a result.
+          if (!sseResolved) finish(() => reject(new Error('Connection lost during analysis. Please try again.')));
+          else finish(() => {});
         };
       });
 
@@ -684,7 +715,7 @@ export default function TakeoffPage() {
                   <Card>
                     {selectedTakeoff.materials?.length ? (
                       <div>
-                        {groupByDivision(selectedTakeoff.materials).map(div => (
+                        {cappedDivisions.map(div => (
                           <div key={div.divCode}>
                             {/* Division header */}
                             <div style={{
@@ -726,6 +757,14 @@ export default function TakeoffPage() {
                             />
                           </div>
                         ))}
+                        {rowsCapped && (
+                          <button
+                            onClick={() => setShowAllRows(true)}
+                            style={{ width: '100%', padding: '12px', background: T.surface2, border: 'none', borderTop: `1px solid ${T.border}`, color: T.gold, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                          >
+                            Showing first {CSI_ROW_CAP.toLocaleString()} of {totalMatRows.toLocaleString()} line items — show all
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <CardBody>

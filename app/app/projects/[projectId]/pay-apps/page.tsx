@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import DragHandle, { useDragReorder } from '../../../../../components/DragHandle';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 function statusBadge(s:string){
   const map:Record<string,{c:string,bg:string}> = {
-    draft:      {c:'#6E6E73',bg:'rgba(148,163,184,.14)'},
+    draft:      {c:'#CBD5E1',bg:'rgba(148,163,184,.14)'},
     submitted:  {c:'#4a9de8',bg:'rgba(74,157,232,.14)'},
     approved:   {c:'#3dd68c',bg:'rgba(26,138,74,.14)'},
-    certified:  {c:GOLD,    bg:'rgba(212,160,23,.14)'},
+    certified:  {c:GOLD,    bg:'rgba(245, 158, 11,.14)'},
     paid:       {c:'#3dd68c',bg:'rgba(26,138,74,.14)'},
   };
   const st = map[s]||{c:DIM,bg:'rgba(143,163,192,.12)'};
@@ -161,7 +161,7 @@ export default function PayAppsPage() {
         </div>
         <Link
           href={`/app/projects/${projectId}/pay-apps/new`}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}
         >
           + New Pay Application
         </Link>
@@ -203,7 +203,7 @@ export default function PayAppsPage() {
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Create your first AIA G702/G703 pay application to bill the owner.</div>
             <Link
               href={`/app/projects/${projectId}/pay-apps/new`}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}
             >
               + Create First Pay Application
             </Link>
@@ -215,10 +215,10 @@ export default function PayAppsPage() {
           <div style={{overflowX:'auto'}}>
             {/* Bulk action bar */}
             {bulkSelected.size > 0 && (
-              <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',background:'rgba(212,160,23,0.08)',border:`1px solid rgba(212,160,23,0.2)`,borderRadius:8,marginBottom:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',background:'rgba(245, 158, 11,0.08)',border:`1px solid rgba(245, 158, 11,0.2)`,borderRadius:8,marginBottom:12}}>
                 <span style={{color:GOLD,fontWeight:700,fontSize:13}}>{bulkSelected.size} selected</span>
                 <button onClick={handleBulkApprove} style={{padding:'6px 14px',background:'rgba(34,197,94,0.15)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:6,color:'#22C55E',fontSize:12,fontWeight:700,cursor:'pointer'}}>✓ Approve All</button>
-                <button onClick={handleBulkExport} style={{padding:'6px 14px',background:'rgba(212,160,23,0.15)',border:`1px solid rgba(212,160,23,0.3)`,borderRadius:6,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer'}}>📄 Export All PDFs</button>
+                <button onClick={handleBulkExport} style={{padding:'6px 14px',background:'rgba(245, 158, 11,0.15)',border:`1px solid rgba(245, 158, 11,0.3)`,borderRadius:6,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer'}}>📄 Export All PDFs</button>
                 <button onClick={()=>setBulkSelected(new Set())} style={{padding:'6px 14px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:6,color:DIM,fontSize:12,cursor:'pointer'}}>Clear</button>
               </div>
             )}
@@ -244,7 +244,7 @@ export default function PayAppsPage() {
                     key={pa.id}
                     onClick={()=>router.push(`/app/projects/${projectId}/pay-apps/${pa.id}`)}
                     style={{borderBottom:`1px solid rgba(229,229,234,.5)`,cursor:'pointer',transition:'background .15s',opacity:draggingIndex===idx?0.5:1}}
-                    onMouseEnter={e=>(e.currentTarget.style.background='rgba(212,160,23,.06)')}
+                    onMouseEnter={e=>(e.currentTarget.style.background='rgba(245, 158, 11,.06)')}
                     onMouseLeave={e=>(e.currentTarget.style.background='')}
                     {...handlers}
                   >
@@ -275,7 +275,7 @@ export default function PayAppsPage() {
                       ) : editId===pa.id ? (
                         <div style={{display:'flex',alignItems:'center',gap:4}}>
                           <input value={editVal} onChange={e=>setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditPayAmt(pa.id);if(e.key==='Escape')setEditId(null);}} style={{width:100,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
-                          <button onClick={()=>handleEditPayAmt(pa.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                          <button onClick={()=>handleEditPayAmt(pa.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
                           <button onClick={()=>setEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                         </div>
                       ) : (

@@ -1,39 +1,33 @@
 'use client';
-import { useState } from 'react';
 import { SiQuickbooks, SiStripe, SiXero, SiSage, SiAutodesk } from 'react-icons/si';
 import type { IconType } from 'react-icons';
 
-// Real vendor logos load from /public/vendors/<slug>.png (official brand-kit assets
-// you drop in). Until a file exists, each falls back to a recognizable mark so the
-// strip is NEVER broken. We only list integrations we actually ship.
-type Vendor = { slug: string; name: string; color: string; Icon?: IconType };
+// Real vendor brand marks, rendered directly in each brand's color (react-icons /
+// Simple Icons glyphs). No image files to 404 on — the strip always renders. We only
+// list integrations we actually ship. DocuSign has no glyph in the icon set, so it
+// renders as its brand wordmark.
+type Vendor = { name: string; color: string; Icon?: IconType };
 
 const VENDORS: Vendor[] = [
-  { slug: 'quickbooks', name: 'QuickBooks', color: '#2CA01C', Icon: SiQuickbooks },
-  { slug: 'stripe', name: 'Stripe', color: '#635BFF', Icon: SiStripe },
-  { slug: 'xero', name: 'Xero', color: '#13B5EA', Icon: SiXero },
-  { slug: 'sage', name: 'Sage', color: '#00D639', Icon: SiSage },
-  { slug: 'docusign', name: 'DocuSign', color: '#1C1C1E' },
-  { slug: 'autodesk', name: 'Autodesk', color: '#1C1C1E', Icon: SiAutodesk },
+  { name: 'QuickBooks', color: '#2CA01C', Icon: SiQuickbooks },
+  { name: 'Stripe', color: '#635BFF', Icon: SiStripe },
+  { name: 'Xero', color: '#13B5EA', Icon: SiXero },
+  { name: 'Sage', color: '#00D639', Icon: SiSage },
+  { name: 'DocuSign', color: '#26374A' },
+  { name: 'Autodesk', color: '#000000', Icon: SiAutodesk },
 ];
 
-function VendorLogo({ slug, name, color, Icon }: Vendor) {
-  const [failed, setFailed] = useState(false);
-  if (!failed) {
-    // Real official logo, once dropped in /public/vendors/<slug>.png
-    return (
-      <img
-        src={`/vendors/${slug}.png`}
-        alt={name}
-        style={{ height: 30, width: 'auto', objectFit: 'contain', display: 'block' }}
-        onError={() => setFailed(true)}
-      />
-    );
-  }
-  // Fallback until the official asset is added.
-  return Icon
-    ? <Icon size={32} color={color} aria-label={name} />
-    : <span style={{ fontSize: 19, fontWeight: 800, color, letterSpacing: '-0.01em' }} aria-label={name}>{name}</span>;
+function VendorLogo({ name, color, Icon }: Vendor) {
+  if (Icon) return <Icon size={34} color={color} title={name} aria-label={name} />;
+  // DocuSign is a wordmark brand — render it cleanly in its brand color.
+  return (
+    <span
+      aria-label={name}
+      style={{ fontSize: 21, fontWeight: 800, color, letterSpacing: '-0.02em', fontFamily: 'system-ui, -apple-system, sans-serif' }}
+    >
+      {name}
+    </span>
+  );
 }
 
 export function IntegrationStrip({
@@ -42,13 +36,13 @@ export function IntegrationStrip({
   heading?: string;
 }) {
   return (
-    <div style={{ padding: '36px 0', borderTop: '1px solid #E5E5EA', borderBottom: '1px solid #E5E5EA' }}>
-      <div style={{ textAlign: 'center', color: '#86868B', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 26, fontWeight: 600 }}>
+    <div style={{ padding: '36px 0', borderTop: '1px solid rgba(255,255,255,0.12)', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+      <div style={{ textAlign: 'center', color: '#CBD5E1', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 28, fontWeight: 600 }}>
         {heading}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 46, flexWrap: 'wrap', maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 50, flexWrap: 'wrap', maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
         {VENDORS.map((v) => (
-          <div key={v.slug} title={v.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36 }}>
+          <div key={v.name} title={v.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 40 }}>
             <VendorLogo {...v} />
           </div>
         ))}

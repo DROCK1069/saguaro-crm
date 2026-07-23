@@ -1,10 +1,10 @@
 'use client';
 import React from 'react';
-const GOLD='#C8881C',DARK='#F2F2F7',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 export default function PrivacyPage(){
   return (
     <div style={{minHeight:'100vh',background:DARK,color:TEXT,fontFamily:'system-ui,sans-serif'}}>
-      <nav style={{position:'fixed' as const,top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(255,255,255,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',backdropFilter:'blur(12px)'}}>
+      <nav style={{position:'fixed' as const,top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(15,23,42,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',backdropFilter:'blur(12px)'}}>
         <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}><span style={{fontSize:22}}>🌵</span><span style={{fontWeight:800,fontSize:16,letterSpacing:1,color:GOLD}}>SAGUARO</span></a>
       </nav>
       <div style={{maxWidth:780,margin:'0 auto',padding:'88px 32px 60px'}}>
@@ -20,7 +20,7 @@ export default function PrivacyPage(){
           {h:'Third-Party Services',b:'We use: Supabase (database), Stripe (payments), Resend (email delivery), Anthropic (AI features), PostHog (product analytics), Google Analytics (web analytics), Vercel (hosting). Each has their own privacy policy.'},
           {h:'Children',b:"Our Service is not directed at children under 13. We do not knowingly collect data from children."},
           {h:'Changes to This Policy',b:'We will notify users of material changes via email and in-app notice 30 days before changes take effect.'},
-          {h:'Contact',b:'Privacy questions: privacy@saguarocontrol.net · TNT Cyber Solutions · Scottsdale, AZ 85251'},
+          {h:'Contact',b:'Privacy questions: privacy@saguarocontrol.net · Saguaro Control Systems · Scottsdale, AZ 85251'},
         ].map(s=>(
           <div key={s.h} style={{marginBottom:28}}>
             <h2 style={{fontSize:18,fontWeight:700,marginBottom:8,color:TEXT}}>{s.h}</h2>

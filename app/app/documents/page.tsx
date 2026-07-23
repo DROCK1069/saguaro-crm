@@ -4,19 +4,19 @@ import Link from 'next/link';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { WarningCircle } from '@phosphor-icons/react';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 const GREEN = '#3dd68c';
 const RED = '#ef4444';
 
 const fmt = (n: number | null | undefined) =>
   '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function Badge({ label, color = '#6E6E73', bg = 'rgba(148,163,184,.12)' }: { label: string; color?: string; bg?: string }) {
+function Badge({ label, color = '#CBD5E1', bg = 'rgba(148,163,184,.12)' }: { label: string; color?: string; bg?: string }) {
   return (
     <span style={{
       fontSize: 10, fontWeight: 700, padding: '2px 8px',
@@ -39,7 +39,7 @@ function ErrorRow({ colSpan, message, onRetry }: { colSpan: number; message: str
             onClick={onRetry}
             style={{
               padding: '7px 18px',
-              background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+              background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
               border: 'none', borderRadius: 7,
               color: '#1C1C1E', fontSize: 12, fontWeight: 800, cursor: 'pointer',
             }}
@@ -56,7 +56,7 @@ function SkeletonRows({ rows = 4, cols }: { rows?: number; cols: number }) {
   return (
     <>
       {Array.from({ length: rows }).map((_, r) => (
-        <tr key={r} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
+        <tr key={r} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
           {Array.from({ length: cols }).map((_, c) => (
             <td key={c} style={{ padding: '12px 16px' }}>
               <Skeleton height={14} width={c === 0 ? '50%' : '70%'} />
@@ -96,9 +96,9 @@ const CLOSEOUT_CHECKLIST = [
 const statusConfig: Record<string, { color: string; bg: string }> = {
   paid:      { color: GREEN,   bg: 'rgba(61,214,140,.12)' },
   approved:  { color: '#4a9de8', bg: 'rgba(26,95,168,.12)' },
-  draft:     { color: GOLD,    bg: 'rgba(212,160,23,.12)' },
+  draft:     { color: GOLD,    bg: 'rgba(245, 158, 11,.12)' },
   executed:  { color: GREEN,   bg: 'rgba(61,214,140,.12)' },
-  pending:   { color: GOLD,    bg: 'rgba(212,160,23,.12)' },
+  pending:   { color: GOLD,    bg: 'rgba(245, 158, 11,.12)' },
   submitted: { color: '#4a9de8', bg: 'rgba(26,95,168,.12)' },
 };
 
@@ -205,7 +205,7 @@ export default function DocumentsPage() {
   }
 
   const projectSelectStyle: React.CSSProperties = {
-    background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 7,
+    background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 7,
     color: TEXT, fontSize: 13, fontWeight: 600, padding: '8px 12px', cursor: 'pointer',
   };
 
@@ -228,7 +228,7 @@ export default function DocumentsPage() {
       <div style={{
         display: 'flex', gap: 0,
         borderBottom: `1px solid ${BORDER}`,
-        background: '#F2F2F7', paddingLeft: 24,
+        background: '#0d1117', paddingLeft: 24,
         overflowX: 'auto',
       }}>
         {TABS.map(tab => {
@@ -262,7 +262,7 @@ export default function DocumentsPage() {
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Pay Applications (AIA G702 / G703)</div>
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
                 borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate New</Link>
@@ -270,7 +270,7 @@ export default function DocumentsPage() {
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#F2F2F7' }}>
+                  <tr style={{ background: '#16243A' }}>
                     {['Application #', 'Period', 'Amount Due', 'Status', 'Download'].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', textAlign: 'left',
@@ -291,7 +291,7 @@ export default function DocumentsPage() {
                   ) : payApps.map(pa => {
                     const sc = statusConfig[pa.status] || statusConfig.draft;
                     return (
-                      <tr key={pa.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
+                      <tr key={pa.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
                         <td style={{ padding: '12px 16px', color: GOLD, fontWeight: 700 }}>#{(pa.appNo ?? pa.app_no ?? '').toString().padStart(3, '0')}</td>
                         <td style={{ padding: '12px 16px', color: DIM }}>{pa.period}</td>
                         <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{fmt(pa.amount)}</td>
@@ -327,7 +327,7 @@ export default function DocumentsPage() {
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Lien Waivers</div>
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
                 borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate New</Link>
@@ -335,7 +335,7 @@ export default function DocumentsPage() {
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#F2F2F7' }}>
+                  <tr style={{ background: '#16243A' }}>
                     {['Sub Name', 'Type', 'Amount', 'Through Date', 'Status', 'Download'].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', textAlign: 'left',
@@ -356,7 +356,7 @@ export default function DocumentsPage() {
                   ) : lienWaivers.map(lw => {
                     const sc = statusConfig[lw.status] || statusConfig.pending;
                     return (
-                      <tr key={lw.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
+                      <tr key={lw.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
                         <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{lw.subName ?? lw.sub_name}</td>
                         <td style={{ padding: '12px 16px', color: DIM }}>{lw.type}</td>
                         <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(lw.amount)}</td>
@@ -421,7 +421,7 @@ export default function DocumentsPage() {
                   }}
                   style={{
                     padding: '8px 16px',
-                    background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                    background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
                     border: 'none', borderRadius: 7,
                     color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                     opacity: busyKey === 'bond-new' ? 0.6 : 1,
@@ -454,7 +454,7 @@ export default function DocumentsPage() {
                     }}
                     style={{
                       marginTop: 4, padding: '8px 0', width: '100%',
-                      background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                      background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
                       border: 'none', borderRadius: 7,
                       color: '#1C1C1E', fontSize: 12, fontWeight: 800, cursor: 'pointer',
                       opacity: busyKey === `bond-${card.code}` ? 0.6 : 1,
@@ -472,7 +472,7 @@ export default function DocumentsPage() {
               <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Certified Payroll (WH-347)</div>
               <Link href="/app/projects" style={{
                 padding: '8px 16px',
-                background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
                 borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800,
                 textDecoration: 'none',
               }}>+ Generate WH-347</Link>
@@ -480,7 +480,7 @@ export default function DocumentsPage() {
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#F2F2F7' }}>
+                  <tr style={{ background: '#16243A' }}>
                     {['Week Ending', '# Employees', 'Total Gross', 'Status', 'Download'].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', textAlign: 'left',
@@ -501,7 +501,7 @@ export default function DocumentsPage() {
                   ) : payroll.map(pr => {
                     const sc = statusConfig[pr.status] || statusConfig.draft;
                     return (
-                      <tr key={pr.id} style={{ borderBottom: `1px solid rgba(229,229,234,.5)` }}>
+                      <tr key={pr.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
                         <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{pr.weekEnding ?? pr.week_ending}</td>
                         <td style={{ padding: '12px 16px', color: DIM }}>{pr.employees}</td>
                         <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(pr.totalGross ?? pr.total_gross ?? 0)}</td>
@@ -553,7 +553,7 @@ export default function DocumentsPage() {
                   }}
                   style={{
                     padding: '8px 16px',
-                    background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+                    background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
                     border: 'none', borderRadius: 7,
                     color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                     opacity: busyKey === 'closeout' ? 0.6 : 1,
@@ -574,10 +574,10 @@ export default function DocumentsPage() {
                     <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Closeout Progress</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: GOLD }}>{done} / {CLOSEOUT_CHECKLIST.length} items ({pct}%)</span>
                   </div>
-                  <div style={{ height: 8, background: 'rgba(0,0,0,.06)', borderRadius: 4 }}>
+                  <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }}>
                     <div style={{
                       height: '100%', width: `${pct}%`,
-                      background: `linear-gradient(90deg,${GOLD},#E0A030)`,
+                      background: `linear-gradient(90deg,${GOLD},#FBBF24)`,
                       borderRadius: 4, transition: 'width .3s',
                     }} />
                   </div>
@@ -592,7 +592,7 @@ export default function DocumentsPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 14,
                     padding: '14px 20px',
-                    borderBottom: idx < CLOSEOUT_CHECKLIST.length - 1 ? `1px solid rgba(229,229,234,.5)` : 'none',
+                    borderBottom: idx < CLOSEOUT_CHECKLIST.length - 1 ? `1px solid rgba(255,255,255,0.08)` : 'none',
                     background: item.done ? 'rgba(61,214,140,.03)' : 'transparent',
                   }}
                 >
@@ -606,7 +606,7 @@ export default function DocumentsPage() {
                     <Badge
                       label={item.done ? 'Complete' : 'Pending'}
                       color={item.done ? GREEN : GOLD}
-                      bg={item.done ? 'rgba(61,214,140,.12)' : 'rgba(212,160,23,.1)'}
+                      bg={item.done ? 'rgba(61,214,140,.12)' : 'rgba(245, 158, 11,.1)'}
                     />
                   </div>
                 </div>

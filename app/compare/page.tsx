@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { COMPETITORS } from '@/lib/competitors';
 import { IntegrationStrip } from '@/components/Integrations';
 
 export const metadata: Metadata = {
   title: 'Saguaro vs Every Construction Software — Full Comparisons',
-  description: 'See how Saguaro CRM compares to Procore, Buildertrend, CoConstruct, Fieldwire, Autodesk Build, Contractor Foreman, Jobber, JobNimbus, and more.',
+  description: 'See how Saguaro Control Systems compares to Procore, Buildertrend, CoConstruct, Fieldwire, Autodesk Build, Contractor Foreman, Jobber, JobNimbus, and more.',
   openGraph: {
     title: 'Saguaro vs Every Construction Software',
     description: 'Full feature and price comparisons against every major competitor.',
@@ -13,12 +14,12 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://saguarocontrol.net/compare' },
 };
 
-const DARK = '#F2F2F7';
+const DARK = '#0d1117';
 const GOLD = '#F59E0B';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
+const RAISED = '#0F172A';
 const GREEN = '#22c55e';
 
 export default function ComparePage() {
@@ -30,13 +31,13 @@ export default function ComparePage() {
       {/* NAV */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(255,255,255,0.9)',
+        height: 64, background: 'rgba(13,17,23,0.9)',
         borderBottom: `1px solid ${BORDER}`,
         backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center',
         padding: '0 32px', gap: 32,
       }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
           <Image
             src="/logo-full.jpg"
             alt="Saguaro"
@@ -44,7 +45,7 @@ export default function ComparePage() {
             height={44}
             style={{ height: 44, width: 'auto', objectFit: 'contain' }}
           />
-        </a>
+        </Link>
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           {[
@@ -53,15 +54,15 @@ export default function ComparePage() {
             { label: 'Field App', href: '/field-app' },
             { label: 'Compare', href: '/compare' },
           ].map((link) => (
-            <a
+            <Link
               key={link.label}
               href={link.href}
               style={{ color: DIM, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
-          <a
+          <Link
             href="/signup"
             style={{
               background: GOLD, color: '#000', fontSize: 14, fontWeight: 700,
@@ -70,7 +71,7 @@ export default function ComparePage() {
             }}
           >
             Start Free Trial
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -100,7 +101,7 @@ export default function ComparePage() {
 
         {/* PROCORE FEATURED CARD */}
         <div style={{ maxWidth: 900, margin: '0 auto 56px', padding: '0 32px' }}>
-          <a
+          <Link
             href="/compare/procore"
             style={{
               display: 'block', textDecoration: 'none',
@@ -126,7 +127,7 @@ export default function ComparePage() {
                   Saguaro vs. Procore
                 </h2>
                 <p style={{ fontSize: 16, color: DIM, margin: '0 0 24px', lineHeight: 1.5 }}>
-                  Procore starts at $375–600/mo+ per seat with a 3–6 month implementation. Saguaro is $199/mo flat for your whole team, live today.
+                  Procore starts at $375–600/mo+ per seat with a 3–6 month implementation. Saguaro is $499/mo flat for your whole team, live today.
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                   {['AI Takeoff Included', 'Lien Waivers All 50 States', 'Certified Payroll WH-347', 'Flat Rate Pricing', 'Go Live Today'].map((feat) => (
@@ -144,7 +145,7 @@ export default function ComparePage() {
               }}>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 13, color: DIM, marginBottom: 4 }}>Saguaro starting price</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: GOLD }}>$199/mo</div>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: GOLD }}>$499/mo</div>
                   <div style={{ fontSize: 13, color: DIM }}>vs Procore $375–600+/mo per seat</div>
                 </div>
                 <div style={{
@@ -155,7 +156,7 @@ export default function ComparePage() {
                 </div>
               </div>
             </div>
-          </a>
+          </Link>
         </div>
 
         {/* COMPETITOR GRID */}
@@ -169,7 +170,7 @@ export default function ComparePage() {
             gap: 20,
           }}>
             {competitors.map((comp) => (
-              <a
+              <Link
                 key={comp.slug}
                 href={`/compare/${comp.slug}`}
                 style={{
@@ -210,7 +211,7 @@ export default function ComparePage() {
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -231,7 +232,7 @@ export default function ComparePage() {
               Start free — no credit card required. Go live today, not in 3 months.
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a
+              <Link
                 href="/signup"
                 style={{
                   background: GOLD, color: '#000', fontWeight: 700, fontSize: 16,
@@ -239,8 +240,8 @@ export default function ComparePage() {
                 }}
               >
                 Start Free Trial
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/sandbox"
                 style={{
                   background: 'transparent', color: TEXT, fontWeight: 600, fontSize: 16,
@@ -249,7 +250,7 @@ export default function ComparePage() {
                 }}
               >
                 Explore the Sandbox
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -262,9 +263,9 @@ export default function ComparePage() {
           <p style={{ fontSize: 13, color: DIM, margin: 0 }}>
             &copy; {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.
             {' '}&middot;{' '}
-            <a href="/privacy" style={{ color: DIM, textDecoration: 'none' }}>Privacy</a>
+            <Link href="/privacy" style={{ color: DIM, textDecoration: 'none' }}>Privacy</Link>
             {' '}&middot;{' '}
-            <a href="/terms" style={{ color: DIM, textDecoration: 'none' }}>Terms</a>
+            <Link href="/terms" style={{ color: DIM, textDecoration: 'none' }}>Terms</Link>
           </p>
         </footer>
       </div>

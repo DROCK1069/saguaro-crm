@@ -8,13 +8,28 @@ interface Message {
   sender: string;
   text: string;
   timestamp: string;
-  project_id: string;
+  project_id?: string;
+}
+
+// The `messages` table stores sender_name / content / created_at. Normalize the
+// raw DB rows into the client shape so the thread actually renders (previously
+// the UI read msg.sender/msg.text/msg.timestamp — columns that don't exist —
+// so every loaded message showed blank + "Invalid Date").
+function normalize(row: Record<string, unknown>): Message {
+  return {
+    id: String(row.id ?? `${row.created_at ?? ''}-${row.sender_name ?? ''}`),
+    sender: String(row.sender_name ?? row.sender ?? 'Team'),
+    text: String(row.content ?? row.text ?? ''),
+    timestamp: String(row.created_at ?? row.timestamp ?? ''),
+    project_id: row.project_id ? String(row.project_id) : undefined,
+  };
 }
 
 function relativeTime(ts: string): string {
-  const now = Date.now();
   const then = new Date(ts).getTime();
-  const diff = Math.floor((now - then) / 1000);
+  if (isNaN(then)) return '';
+  const diff = Math.floor((Date.now() - then) / 1000);
+  if (diff < 0) return 'just now';
   if (diff < 60) return 'just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -29,14 +44,22 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [myName, setMyName] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Remember which sender_name is "me" so my own bubbles align right. The server
+  // stamps sender_name from my auth identity and returns it on POST; cache it.
+  useEffect(() => {
+    try { const n = localStorage.getItem('saguaro:msgSender'); if (n) setMyName(n); } catch { /* noop */ }
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/messages`);
       const json = await res.json();
-      setMessages(json.messages || []);
+      setMessages(Array.isArray(json.messages) ? json.messages.map(normalize) : []);
     } catch {
       setMessages([]);
     } finally {
@@ -52,7 +75,7 @@ export default function MessagesPage() {
       try {
         const res = await fetch(`/api/projects/${projectId}/messages`);
         const json = await res.json();
-        const newMsgs: Message[] = json.messages || [];
+        const newMsgs: Message[] = Array.isArray(json.messages) ? json.messages.map(normalize) : [];
         setMessages(prev => {
           if (newMsgs.length !== prev.length) return newMsgs;
           return prev;
@@ -69,25 +92,28 @@ export default function MessagesPage() {
   }, [messages]);
 
   async function handleSend() {
-    if (!text.trim()) return;
+    const body = text.trim();
+    if (!body) return;
     setSending(true);
-    const newMsg: Message = {
-      id: `m-${Date.now()}`,
-      sender: 'Me',
-      text: text.trim(),
-      timestamp: new Date().toISOString(),
-      project_id: projectId,
-    };
+    setError('');
     try {
-      await fetch(`/api/projects/${projectId}/messages`, {
+      const res = await fetch(`/api/projects/${projectId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text.trim() }),
+        body: JSON.stringify({ content: body }),
       });
-    } catch { /* demo */ }
-    setMessages(prev => [...prev, newMsg]);
-    setText('');
-    setSending(false);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json?.message) throw new Error(json?.error || 'Message failed to send');
+      const saved = normalize(json.message);
+      // The server just told us our own sender_name — remember it for alignment.
+      if (saved.sender) { setMyName(saved.sender); try { localStorage.setItem('saguaro:msgSender', saved.sender); } catch { /* noop */ } }
+      setMessages(prev => [...prev, saved]);
+      setText('');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Could not send message');
+    } finally {
+      setSending(false);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -118,7 +144,7 @@ export default function MessagesPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {messages.map(msg => {
-                  const isMe = msg.sender === 'Me';
+                  const isMe = !!myName && msg.sender === myName;
                   return (
                     <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -146,6 +172,9 @@ export default function MessagesPage() {
           </div>
 
           {/* Send bar */}
+          {error && (
+            <div style={{ padding: '8px 20px', color: '#FF3B30', fontSize: 13, borderTop: `1px solid ${T.border}` }}>{error}</div>
+          )}
           <div style={{ padding: '12px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, alignItems: 'center' }}>
             <input
               type="text"

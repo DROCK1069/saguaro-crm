@@ -12,18 +12,18 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
 /* ââ Design Tokens ââ */
-const GOLD = '#C8881C';
-const CARD = '#FFFFFF';
-const BASE = '#F2F2F7';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const CARD = '#0F172A';
+const BASE = '#0d1117';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
-const BORDER = '#E5E5EA';
+const BORDER = 'rgba(255,255,255,0.12)';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.7)',
+  background: 'rgba(15,23,42,0.7)',
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
   border: '1px solid rgba(0,0,0,0.06)',
@@ -485,7 +485,7 @@ function FloorPlanPage() {
     <button onClick={onClick} style={{
       ...glass, padding: '8px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700,
       color: active ? BASE : (color || GOLD),
-      background: active ? (color || GOLD) : 'rgba(255,255,255,0.7)',
+      background: active ? (color || GOLD) : 'rgba(15,23,42,0.7)',
       border: active ? `1px solid ${color || GOLD}` : '1px solid rgba(0,0,0,0.06)',
       display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
     }}>
@@ -939,7 +939,7 @@ function FloorPlanPage() {
 
 export default function FieldFloorPlanPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <FloorPlanPage />
     </Suspense>
   );

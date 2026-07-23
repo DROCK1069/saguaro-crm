@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -274,7 +274,7 @@ function NotificationCenter() {
                   position: 'absolute', top: -4, right: -6, minWidth: 18, height: 18,
                   borderRadius: 9, background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 10, fontWeight: 800, color: '#fff', padding: '0 4px',
-                  border: '2px solid #FFFFFF',
+                  border: '2px solid #0F172A',
                 }}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </div>
@@ -294,7 +294,7 @@ function NotificationCenter() {
             onClick={markAllAsRead}
             disabled={markingAllRead}
             style={{
-              background: 'rgba(212,160,23,.1)', border: `1px solid rgba(212,160,23,.3)`,
+              background: 'rgba(245, 158, 11,.1)', border: `1px solid rgba(245, 158, 11,.3)`,
               borderRadius: 8, padding: '6px 10px', fontSize: 11, fontWeight: 700,
               color: GOLD, cursor: markingAllRead ? 'wait' : 'pointer', whiteSpace: 'nowrap',
             }}
@@ -320,7 +320,7 @@ function NotificationCenter() {
               style={{
                 flex: 1, padding: '10px 6px', fontSize: 12, fontWeight: 700,
                 cursor: 'pointer', border: 'none', transition: 'all .15s',
-                background: active ? 'rgba(212,160,23,.12)' : 'transparent',
+                background: active ? 'rgba(245, 158, 11,.12)' : 'transparent',
                 color: active ? GOLD : DIM,
                 borderBottom: active ? `2px solid ${GOLD}` : '2px solid transparent',
               }}
@@ -397,7 +397,7 @@ function NotificationCenter() {
                   style={{
                     position: 'relative',
                     overflow: 'hidden',
-                    borderTop: idx > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
+                    borderTop: idx > 0 ? `1px solid rgba(255,255,255,0.12)` : 'none',
                     opacity: isDismissing ? 0 : 1,
                     maxHeight: isDismissing ? 0 : 200,
                     transition: 'opacity .3s, max-height .3s',
@@ -423,7 +423,7 @@ function NotificationCenter() {
                     onClick={() => handleNotificationTap(notif)}
                     style={{
                       display: 'flex', gap: 12, padding: '12px 14px', cursor: 'pointer',
-                      background: notif.read ? 'transparent' : 'rgba(212,160,23,.03)',
+                      background: notif.read ? 'transparent' : 'rgba(245, 158, 11,.03)',
                       position: 'relative', zIndex: 1,
                       transform: swipeOffset > 0 ? `translateX(-${swipeOffset}px)` : 'none',
                       transition: swipeOffset === 0 ? 'transform .2s' : 'none',
@@ -537,7 +537,7 @@ function NotificationCenter() {
                 style={{
                   display: 'flex', gap: 10, alignItems: 'flex-start',
                   padding: '10px 14px',
-                  borderTop: idx > 0 ? `1px solid rgba(229,229,234,.5)` : 'none',
+                  borderTop: idx > 0 ? `1px solid rgba(255,255,255,0.12)` : 'none',
                 }}
               >
                 {/* Timeline dot */}
@@ -575,7 +575,7 @@ function NotificationCenter() {
 
 export default function FieldNotificationCenterPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <NotificationCenter />
     </Suspense>
   );

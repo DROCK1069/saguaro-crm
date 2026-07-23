@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 /* ── palette ── */
-const GOLD   = '#C8881C';
-const BG     = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const BG     = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -363,7 +363,7 @@ export default function NotificationSettingsPage() {
       borderRadius: 12,
       cursor: 'pointer',
       border: 'none',
-      background: on ? GREEN : '#E5E5EA',
+      background: on ? GREEN : 'rgba(255,255,255,0.12)',
       position: 'relative' as const,
       transition: 'background 0.2s ease',
       flexShrink: 0,

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import SaguaroDatePicker from '../../../components/SaguaroDatePicker';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#22c55e';
 
 const STEPS = [
   { num: 1, label: 'Welcome', done: true },
@@ -134,7 +134,7 @@ export default function OnboardingStep3() {
             <button
               onClick={handleCreate}
               disabled={loading}
-              style={{marginTop:8,padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
+              style={{marginTop:8,padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
             >
               {loading?'Creating Project...':'Add Project → Invite Team'}
             </button>
@@ -148,7 +148,7 @@ export default function OnboardingStep3() {
           </div>
         </div>
 
-        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6E6E73'}}>
+        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#CBD5E1'}}>
           You can always add projects later from your dashboard.
         </div>
       </div>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GOLD = '#C8881C', DARK = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', DIM = '#6E6E73', TEXT = '#1C1C1E';
+const GOLD = '#F59E0B', DARK = '#0F172A', RAISED = '#16243A', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF';
 const RED = '#c03030', AMBER = '#f59e0b';
 
 interface Notification {
@@ -401,14 +401,14 @@ export default function NotificationCenter() {
                   gap: 10,
                   padding: '10px 16px',
                   borderBottom: `1px solid ${BORDER}`,
-                  backgroundColor: n.read ? 'transparent' : 'rgba(212,160,23,0.04)',
+                  backgroundColor: n.read ? 'transparent' : 'rgba(245, 158, 11,0.04)',
                   cursor: n.link ? 'pointer' : 'default',
                   transition: 'background 0.15s',
                   position: 'relative',
                 }}
                 onClick={() => handleClick(n)}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = RAISED; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = n.read ? 'transparent' : 'rgba(212,160,23,0.04)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.backgroundColor = n.read ? 'transparent' : 'rgba(245, 158, 11,0.04)'; }}
               >
                 {/* Urgency dot */}
                 {n.urgency === 'high' && (

@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface GlobalShortcutsProps {
   onProjectSwitch?: () => void;
@@ -105,7 +105,7 @@ export default function GlobalShortcuts({ onProjectSwitch }: GlobalShortcutsProp
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#F2F2F7',
+        background: '#0d1117',
         backdropFilter: 'blur(4px)',
       }}
     >

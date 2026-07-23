@@ -3,12 +3,12 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0F172A';
+const RAISED = '#16243A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 const RECENT_KEY = 'saguaro_recent_projects';
 const MAX_RECENT = 5;
@@ -180,7 +180,7 @@ export default function ProjectSwitcher({ open, onClose }: ProjectSwitcherProps)
         alignItems: 'flex-start',
         justifyContent: 'center',
         paddingTop: 100,
-        background: '#F2F2F7',
+        background: '#0d1117',
         backdropFilter: 'blur(4px)',
       }}
     >

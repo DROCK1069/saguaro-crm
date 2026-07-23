@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 /* ── palette ── */
-const GOLD = '#C8881C';
-const BG = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const BG = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
@@ -133,7 +133,7 @@ function permLevelColor(level: PermLevel): string {
     case 'Full': return GREEN;
     case 'Edit': return BLUE;
     case 'View': return AMBER;
-    default: return '#AEAEB2';
+    default: return '#8094B0';
   }
 }
 
@@ -160,7 +160,7 @@ function Modal({ open, onClose, title, width, children }: {
   if (!open) return null;
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ position: 'absolute', inset: 0, background: '#F2F2F7' }} onClick={onClose} />
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} onClick={onClose} />
       <div style={{ position: 'relative', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
         width: width ?? 520, maxHeight: '85vh', overflowY: 'auto', padding: 28, zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>

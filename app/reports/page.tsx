@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-const GOLD='#C8881C',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 
 const REPORTS = [
   { icon:'💰', title:'Job Cost Report',          desc:'Budget vs actuals by cost code, variance analysis',              reportType:'job-cost' },
@@ -91,7 +91,7 @@ export default function ReportsPage() {
           const busy = pdfBusy || csvBusy;
           return (
             <div key={r.reportType} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 22, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
                 {r.icon}
               </div>
               <div style={{ flex: 1 }}>
@@ -101,7 +101,7 @@ export default function ReportsPage() {
                   <button
                     onClick={() => downloadReport(r.reportType, r.title, 'pdf')}
                     disabled={busy}
-                    style={{ padding: '6px 14px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 6, color: '#1C1C1E', fontSize: 12, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1, minWidth: 110 }}
+                    style={{ padding: '6px 14px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 6, color: '#1C1C1E', fontSize: 12, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1, minWidth: 110 }}
                   >
                     {pdfBusy ? '⏳ Generating...' : '📄 Download PDF'}
                   </button>

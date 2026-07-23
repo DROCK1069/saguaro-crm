@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../../components/SaguaroDatePicker';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 interface SovLine {
@@ -195,7 +195,7 @@ export default function NewPayAppPage() {
                   <input type="number" value={retainagePct} onChange={e=>setRetainagePct(e.target.value)} placeholder="10" min="0" max="100" style={INP}/>
                 </div>
               </div>
-              <button onClick={()=>setStep(2)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:'pointer'}}>
+              <button onClick={()=>setStep(2)} style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:'pointer'}}>
                 Next: Schedule of Values →
               </button>
             </div>
@@ -210,7 +210,7 @@ export default function NewPayAppPage() {
               <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:12,overflow:'hidden',marginBottom:16}}>
                 <div style={{padding:'12px 18px',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <span style={{fontWeight:800,fontSize:15,color:TEXT}}>Schedule of Values (G703)</span>
-                  <button onClick={addLine} style={{padding:'6px 14px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:6,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                  <button onClick={addLine} style={{padding:'6px 14px',background:'rgba(245, 158, 11,.12)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:6,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer'}}>
                     + Add Row
                   </button>
                 </div>
@@ -273,7 +273,7 @@ export default function NewPayAppPage() {
                   {saving ? 'Saving…' : 'Save Draft'}
                 </button>
                 <button onClick={()=>save('submitted')} disabled={saving}
-                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
+                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:saving?.6:1}}>
                   {saving ? 'Submitting…' : 'Submit to Owner →'}
                 </button>
               </div>

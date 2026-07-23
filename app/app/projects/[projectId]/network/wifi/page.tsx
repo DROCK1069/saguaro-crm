@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#16243A';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface WifiNetwork {
   id: string;
@@ -122,11 +122,11 @@ export default function WifiManagerPage() {
     ctx.clearRect(0, 0, w, h);
 
     // Floor plan background
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = '#0F172A';
     ctx.fillRect(0, 0, w, h);
 
     // Grid lines
-    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.lineWidth = 1;
     for (let x = 0; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
     for (let y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
@@ -171,7 +171,7 @@ export default function WifiManagerPage() {
 
     // Legend
     if (floorAps.length > 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillStyle = 'rgba(15,23,42,0.9)';
       ctx.fillRect(w - 160, h - 80, 150, 70);
       ctx.fillStyle = TEXT;
       ctx.font = 'bold 10px system-ui';
@@ -251,7 +251,7 @@ export default function WifiManagerPage() {
         <h1 style={{ color: TEXT, fontSize: 22, fontWeight: 700, margin: 0 }}>WiFi Manager</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowSsidForm(!showSsidForm)} style={{
-            padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, color: '#000',
+            padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`, color: '#000',
             border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
           }}>
             + Add SSID
@@ -304,7 +304,7 @@ export default function WifiManagerPage() {
             </div>
           </div>
           <button onClick={handleSsidSubmit} disabled={saving || !ssidForm.ssid} style={{
-            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+            marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
             color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
             opacity: saving || !ssidForm.ssid ? 0.5 : 1,
           }}>
@@ -420,7 +420,7 @@ export default function WifiManagerPage() {
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={handleApSubmit} disabled={saving || !apForm.name} style={{
-                padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`,
+                padding: '10px 24px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
                 color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
                 opacity: saving || !apForm.name ? 0.5 : 1,
               }}>

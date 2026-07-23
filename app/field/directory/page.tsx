@@ -7,11 +7,11 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const GOLD = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
@@ -88,12 +88,12 @@ function isExpiringSoon(d: string | undefined): boolean {
 /* ── Styles ────────────────────────────────────────────── */
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 12 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const btnPrimary: React.CSSProperties = { padding: '10px 22px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14 };
 const btnSecondary: React.CSSProperties = { padding: '10px 22px', background: 'transparent', color: DIM, fontWeight: 600, border: `1px solid ${BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 14 };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: 0, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 };
 const badge = (bg: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${bg}22`, color: bg });
-const quickBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', border: `1px solid ${BORDER}`, background: '#FFFFFF', cursor: 'pointer', textDecoration: 'none' };
+const quickBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', border: `1px solid ${BORDER}`, background: '#16243A', cursor: 'pointer', textDecoration: 'none' };
 const tabStyle = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? GOLD : 'transparent', color: active ? '#000' : DIM, fontWeight: 700, border: `1px solid ${active ? GOLD : BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 13, transition: 'all .2s' });
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none' as const };
 const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: DIM, marginBottom: 4, display: 'block' };
@@ -646,7 +646,7 @@ function DirectoryPage() {
             </div>
             <div style={{ marginBottom: 10 }}>
               <label style={labelStyle}>Members</label>
-              <div style={{ maxHeight: 180, overflowY: 'auto', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 8, background: '#FFFFFF' }}>
+              <div style={{ maxHeight: 180, overflowY: 'auto', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 8, background: '#16243A' }}>
                 {people.length === 0 && <div style={{ color: DIM, fontSize: 13, padding: 8 }}>No people in directory yet</div>}
                 {people.map((p) => (
                   <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', color: TEXT, fontSize: 13 }}>
@@ -706,7 +706,7 @@ function DirectoryPage() {
 
 export default function DirectoryPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6E6E73' }}>Loading directory...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#CBD5E1' }}>Loading directory...</div>}>
       <DirectoryPage />
     </Suspense>
   );

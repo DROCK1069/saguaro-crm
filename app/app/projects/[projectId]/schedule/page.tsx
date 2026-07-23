@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
 import { WarningCircle } from '@phosphor-icons/react';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#3b82f6';
 
 const STATUSES=['not_started','in_progress','completed','delayed','on_hold'];
@@ -21,8 +21,8 @@ const PHASES=['Pre-Construction','Foundation','Framing','MEP Rough','Insulation'
   'Drywall','Finishes','MEP Trim','Punch List','Closeout','Other'];
 
 const inp:React.CSSProperties={
-  width:'100%',padding:'9px 12px',background:'#FFFFFF',
-  border:'1px solid #E5E5EA',borderRadius:7,color:'#1C1C1E',
+  width:'100%',padding:'9px 12px',background:'#16243A',
+  border:'1px solid rgba(255,255,255,0.12)',borderRadius:7,color:'#FFFFFF',
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
 const EMPTY:Record<string,any>={
@@ -107,7 +107,7 @@ function GanttChart({tasks}:{tasks:any[]}){
         const isDone=task.status==='completed';
         return(
           <div key={task.id} style={{display:'flex',alignItems:'center',
-            minHeight:36,borderBottom:`1px solid rgba(229,229,234,.3)`,minWidth:700}}>
+            minHeight:36,borderBottom:`1px solid rgba(255,255,255,0.08)`,minWidth:700}}>
             {/* Label */}
             <div style={{width:200,flexShrink:0,paddingRight:12,
               fontSize:12,fontWeight:600,color:isDone?DIM:TEXT,
@@ -119,7 +119,7 @@ function GanttChart({tasks}:{tasks:any[]}){
             <div style={{flex:1,position:'relative',height:24}}>
               {/* Today line */}
               <div style={{position:'absolute',left:`${todayPct}%`,top:0,bottom:0,
-                width:1,background:'rgba(212,160,23,.5)',zIndex:1}}/>
+                width:1,background:'rgba(245, 158, 11,.5)',zIndex:1}}/>
               {/* Bar background */}
               <div style={{position:'absolute',left:`${left}%`,width:`${width}%`,
                 top:4,height:16,borderRadius:3,
@@ -288,7 +288,7 @@ export default function SchedulePage(){
             <div style={{display:'flex',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:7,overflow:'hidden'}}>
               {(['gantt','list'] as const).map(v=>(
                 <button key={v} onClick={()=>setViewMode(v)}
-                  style={{padding:'7px 14px',background:viewMode===v?`rgba(212,160,23,.15)`:'transparent',
+                  style={{padding:'7px 14px',background:viewMode===v?`rgba(245, 158, 11,.15)`:'transparent',
                     border:'none',color:viewMode===v?GOLD:DIM,fontSize:12,fontWeight:700,
                     cursor:'pointer',textTransform:'uppercase',letterSpacing:.5}}>
                   {v==='gantt'?'Gantt':'List'}
@@ -296,7 +296,7 @@ export default function SchedulePage(){
               ))}
             </div>
             <button onClick={openCreate}
-              style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+              style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                 border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Add Task
             </button>
@@ -385,7 +385,7 @@ export default function SchedulePage(){
                 Add your first task to start building the project schedule.
               </div>
               <button onClick={openCreate}
-                style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                   border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                 + Add First Task
               </button>
@@ -414,10 +414,10 @@ export default function SchedulePage(){
                     return(
                       <tr key={task.id}
                         onClick={()=>viewTask(task)}
-                        style={{borderBottom:`1px solid rgba(229,229,234,.4)`,cursor:'pointer',
-                          background:selected?.id===task.id&&mode==='view'?'rgba(212,160,23,.05)':''}}
-                        onMouseEnter={e=>e.currentTarget.style.background='rgba(212,160,23,.04)'}
-                        onMouseLeave={e=>e.currentTarget.style.background=selected?.id===task.id&&mode==='view'?'rgba(212,160,23,.05)':''}>
+                        style={{borderBottom:`1px solid rgba(255,255,255,0.08)`,cursor:'pointer',
+                          background:selected?.id===task.id&&mode==='view'?'rgba(245, 158, 11,.05)':''}}
+                        onMouseEnter={e=>e.currentTarget.style.background='rgba(245, 158, 11,.04)'}
+                        onMouseLeave={e=>e.currentTarget.style.background=selected?.id===task.id&&mode==='view'?'rgba(245, 158, 11,.05)':''}>
                         <td style={{padding:'11px 14px',fontWeight:700,color:TEXT}}>{task.name}</td>
                         <td style={{padding:'11px 14px',color:DIM}}>{task.phase||'—'}</td>
                         <td style={{padding:'11px 14px',color:DIM,whiteSpace:'nowrap'}}>{task.start_date||'—'}</td>
@@ -431,7 +431,7 @@ export default function SchedulePage(){
                         </td>
                         <td style={{padding:'11px 14px'}}>
                           <div style={{display:'flex',alignItems:'center',gap:8}}>
-                            <div style={{width:60,height:6,background:'rgba(229,229,234,.8)',borderRadius:3,overflow:'hidden'}}>
+                            <div style={{width:60,height:6,background:'rgba(255,255,255,0.12)',borderRadius:3,overflow:'hidden'}}>
                               <div style={{height:'100%',borderRadius:3,background:color,
                                 width:`${task.pct_complete??0}%`}}/>
                             </div>
@@ -551,7 +551,7 @@ export default function SchedulePage(){
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',
-                      background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                      background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                       border:'none',borderRadius:8,color:'#1C1C1E',
                       fontSize:14,fontWeight:800,cursor:'pointer',opacity:saving?.6:1}}>
                     {saving?'Saving…':mode==='create'?'Add Task':'Save Changes'}
@@ -592,7 +592,7 @@ export default function SchedulePage(){
                         {selected.pct_complete??0}%
                       </span>
                     </div>
-                    <div style={{background:'rgba(229,229,234,.6)',borderRadius:4,height:10,overflow:'hidden'}}>
+                    <div style={{background:'rgba(255,255,255,0.12)',borderRadius:4,height:10,overflow:'hidden'}}>
                       <div style={{height:'100%',borderRadius:4,
                         background:STATUS_COLORS[selected.status]||GREEN,
                         width:`${selected.pct_complete??0}%`,transition:'width .3s'}}/>
@@ -602,8 +602,8 @@ export default function SchedulePage(){
                   <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                     {[25,50,75,100].map(pct=>(
                       <button key={pct} onClick={()=>updatePct(selected,pct)}
-                        style={{flex:1,padding:'6px 0',background:'rgba(212,160,23,.1)',
-                          border:`1px solid rgba(212,160,23,.3)`,borderRadius:6,
+                        style={{flex:1,padding:'6px 0',background:'rgba(245, 158, 11,.1)',
+                          border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:6,
                           color:GOLD,fontSize:11,fontWeight:700,cursor:'pointer'}}>
                         {pct}%
                       </button>
@@ -620,7 +620,7 @@ export default function SchedulePage(){
                     {l:'Assigned To',v:selected.assigned_to},
                     {l:'Predecessor',v:selected.predecessor},
                   ].filter(x=>x.v).map(x=>(
-                    <div key={x.l} style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,
+                    <div key={x.l} style={{background:'#0F172A',border:`1px solid ${BORDER}`,
                       borderRadius:8,padding:'10px 12px'}}>
                       <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',
                         letterSpacing:.5,marginBottom:4}}>{x.l}</div>
@@ -630,7 +630,7 @@ export default function SchedulePage(){
                 </div>
 
                 {selected.notes&&(
-                  <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
                     <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',
                       letterSpacing:.5,marginBottom:6}}>Notes</div>
                     <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.notes}</div>

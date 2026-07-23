@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
-const GOLD = '#C8881C', DARK = '#F2F2F7', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
+const GOLD = '#F59E0B', DARK = '#0d1117', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
 const RED = '#EF4444', GREEN = '#22C55E';
 
 interface PhotoEditorProps {
@@ -339,7 +339,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
               }
               setTool(tool === t.id ? null : t.id);
             }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px', background: tool === t.id ? 'rgba(212,160,23,.2)' : 'rgba(0,0,0,.06)', border: `1px solid ${tool === t.id ? GOLD : 'rgba(0,0,0,.1)'}`, borderRadius: 10, color: tool === t.id ? GOLD : DIM, cursor: 'pointer', minWidth: 52 }}>
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px', background: tool === t.id ? 'rgba(245, 158, 11,.2)' : 'rgba(0,0,0,.06)', border: `1px solid ${tool === t.id ? GOLD : 'rgba(0,0,0,.1)'}`, borderRadius: 10, color: tool === t.id ? GOLD : DIM, cursor: 'pointer', minWidth: 52 }}>
               <span style={{ fontSize: 18 }}>{t.icon}</span>
               <span style={{ fontSize: 10, fontWeight: 600 }}>{t.label}</span>
             </button>
@@ -359,7 +359,7 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', marginBottom: 6 }}>
             {colors.map(c => (
               <button key={c} onClick={() => setDrawColor(c)}
-                style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: drawColor === c ? '3px solid #fff' : '2px solid #E5E5EA', cursor: 'pointer' }} />
+                style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: drawColor === c ? '3px solid #fff' : '2px solid rgba(255,255,255,0.12)', cursor: 'pointer' }} />
             ))}
             <input type="range" min={1} max={10} value={drawWidth} onChange={e => setDrawWidth(Number(e.target.value))}
               style={{ width: 60, accentColor: GOLD }} />
@@ -382,5 +382,5 @@ export default function PhotoEditor({ src, photoId, onSave, onDelete, onClose }:
 
 const qBtn: React.CSSProperties = {
   padding: '6px 12px', background: 'rgba(0,0,0,.06)', border: '1px solid rgba(0,0,0,.1)',
-  borderRadius: 8, color: '#6E6E73', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+  borderRadius: 8, color: '#CBD5E1', fontSize: 11, fontWeight: 600, cursor: 'pointer',
 };

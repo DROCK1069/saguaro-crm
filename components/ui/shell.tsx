@@ -4,21 +4,21 @@ import React from 'react';
 // Apple light theme — matches the (light) mobile app:
 // iOS grouped page base, white raised surfaces, hairline borders, reserved gold.
 export const T = {
-  bg: '#F2F2F7',
-  surface: '#F2F2F7',
-  surface2: '#FFFFFF',
-  elevated: '#FFFFFF',
-  border: '#E5E5EA',
+  bg: '#0d1117',
+  surface: '#0d1117',
+  surface2: '#0F172A',
+  elevated: '#0F172A',
+  border: 'rgba(255,255,255,0.12)',
   borderSubtle: 'rgba(0,0,0,0.08)',
   borderStrong: 'rgba(0,0,0,0.14)',
-  borderGold: 'rgba(200,136,28,0.35)',
-  gold: '#C8881C',
-  goldBright: '#E0A030',
-  goldDim: 'rgba(200,136,28,0.12)',
-  goldMid: 'rgba(200,136,28,0.22)',
-  white: '#1C1C1E',
-  muted: '#6E6E73',
-  faint: '#AEAEB2',
+  borderGold: 'rgba(245, 158, 11,0.35)',
+  gold: '#F59E0B',
+  goldBright: '#FBBF24',
+  goldDim: 'rgba(245, 158, 11,0.12)',
+  goldMid: 'rgba(245, 158, 11,0.22)',
+  white: '#FFFFFF',
+  muted: '#CBD5E1',
+  faint: '#8094B0',
   green: '#34C759',
   greenDim: 'rgba(52,199,89,0.12)',
   red: '#FF3B30',
@@ -101,7 +101,7 @@ const badgeStyles: Record<BadgeColor, { bg: string; color: string; border: strin
   red:   { bg: T.redDim,   color: T.red,   border: 'rgba(255,59,48,0.30)' },
   amber: { bg: T.amberDim, color: T.amber, border: 'rgba(255,149,0,0.32)' },
   blue:  { bg: T.blueDim,  color: T.blue,  border: 'rgba(0,122,255,0.32)' },
-  muted: { bg: '#F2F2F7', color: T.muted, border: T.border },
+  muted: { bg: '#16243A', color: T.muted, border: T.border },
 };
 
 export function Badge({ label, color = 'muted' }: { label: string; color?: BadgeColor }) {

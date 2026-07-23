@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 const GOLD   = '#F59E0B';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const DARK   = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 const GREEN  = '#22C55E';
 const BLUE   = '#3B82F6';
 const PURPLE = '#8B5CF6';
@@ -217,23 +218,23 @@ export default function FieldAppPage() {
         .fa-card:hover { border-color: rgba(245,158,11,.6) !important; background: rgba(245,158,11,0.06) !important; transform: translateY(-3px); transition: all .2s ease; }
         .fa-cta-primary:hover { opacity: 0.9; transform: translateY(-2px); transition: all .15s ease; }
         .fa-nav-link:hover { color: #F59E0B !important; }
-        .fa-back:hover { color: #1C1C1E !important; background: rgba(0,0,0,0.08) !important; }
+        .fa-back:hover { color: #FFFFFF !important; background: rgba(0,0,0,0.08) !important; }
         .fa-get-app:hover { opacity: 0.88; transform: translateY(-1px); transition: all .15s ease; }
       `}</style>
 
       {/* ── Nav ────────────────────────────────────────────────────────── */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: 58, background: 'rgba(255,255,255,.96)', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', padding: '0 20px', gap: 12, backdropFilter: 'blur(12px)' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: 58, background: 'rgba(15,23,42,.96)', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', padding: '0 20px', gap: 12, backdropFilter: 'blur(12px)' }}>
 
         {/* Back to Home */}
-        <a href="/" className="fa-back" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, color: DIM, fontSize: 13, textDecoration: 'none', transition: 'all .15s', flexShrink: 0 }}>
+        <Link href="/" className="fa-back" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.04)', border: `1px solid ${BORDER}`, color: DIM, fontSize: 13, textDecoration: 'none', transition: 'all .15s', flexShrink: 0 }}>
           <IconArrowLeft />
           <span>Home</span>
-        </a>
+        </Link>
 
         {/* Logo */}
-        <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
           <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-        </a>
+        </Link>
 
         {/* Nav links */}
         <div className="fa-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
@@ -244,13 +245,13 @@ export default function FieldAppPage() {
 
         <div style={{ flex: 1 }} />
 
-        <a href="/field" style={{ padding: '7px 14px', background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 6, color: 'rgba(28,28,30,0.7)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>Open Field App</a>
+        <Link href="/field" style={{ padding: '7px 14px', background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 6, color: 'rgba(28,28,30,0.7)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>Open Field App</Link>
         {/* Get the App button */}
-        <a href="/field/install" className="fa-get-app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 6, color: '#000', fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', boxShadow: '0 2px 12px rgba(245,158,11,0.35)' }}>
+        <Link href="/field/install" className="fa-get-app" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 6, color: '#000', fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', boxShadow: '0 2px 12px rgba(245,158,11,0.35)' }}>
           <IconDownload />
           Get the App
-        </a>
-        <a href="/signup" style={{ padding: '7px 16px', background: GOLD, borderRadius: 6, color: '#000', fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>Free Trial</a>
+        </Link>
+        <Link href="/signup" style={{ padding: '7px 16px', background: GOLD, borderRadius: 6, color: '#000', fontSize: 13, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>Free Trial</Link>
       </nav>
 
       <div style={{ paddingTop: 58 }}>
@@ -261,8 +262,8 @@ export default function FieldAppPage() {
 
           <div className="fa-hero" style={{ display: 'flex', alignItems: 'center', gap: 56, position: 'relative' }}>
             <div style={{ flex: 1, minWidth: 280 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.35)', borderRadius: 24, padding: '5px 14px 5px 10px', marginBottom: 20 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', background: 'rgba(212,160,23,0.2)', color: GOLD }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(245, 158, 11,0.08)', border: '1px solid rgba(245, 158, 11,0.35)', borderRadius: 24, padding: '5px 14px 5px 10px', marginBottom: 20 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', background: 'rgba(245, 158, 11,0.2)', color: GOLD }}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Saguaro Field App</span>
@@ -278,12 +279,12 @@ export default function FieldAppPage() {
               </p>
 
               <div className="fa-cta-row" style={{ display: 'flex', gap: 12, justifyContent: 'flex-start', flexWrap: 'wrap', marginBottom: 20 }}>
-                <a href="/signup" className="fa-cta-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: `linear-gradient(135deg,#F59E0B,#EF4444)`, borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 900, textDecoration: 'none', boxShadow: `0 8px 36px rgba(245,158,11,0.5)` }}>
+                <Link href="/signup" className="fa-cta-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: `linear-gradient(135deg,#F59E0B,#EF4444)`, borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 900, textDecoration: 'none', boxShadow: `0 8px 36px rgba(245,158,11,0.5)` }}>
                   Start Free Trial — includes Field App
-                </a>
-                <a href="/field" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 22px', background: 'rgba(0,0,0,0.07)', border: '1px solid #E5E5EA', borderRadius: 8, color: 'rgba(28,28,30,0.92)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+                </Link>
+                <Link href="/field" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 22px', background: 'rgba(0,0,0,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, color: 'rgba(28,28,30,0.92)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
                   Open Field App →
-                </a>
+                </Link>
               </div>
 
               {/* Social proof stat bar */}
@@ -312,14 +313,14 @@ export default function FieldAppPage() {
 
             {/* Phone mockup */}
             <div style={{ flex: '0 0 280px', maxWidth: 280, position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: -24, background: 'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(212,160,23,0.18) 0%, transparent 70%)', pointerEvents: 'none', filter: 'blur(16px)' }} />
-              <div style={{ position: 'relative', background: 'linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 100%)', border: '2px solid rgba(0,0,0,0.13)', borderRadius: 40, padding: '14px 10px', boxShadow: '0 40px 100px rgba(0,0,0,.7)' }}>
+              <div style={{ position: 'absolute', inset: -24, background: 'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(245, 158, 11,0.18) 0%, transparent 70%)', pointerEvents: 'none', filter: 'blur(16px)' }} />
+              <div style={{ position: 'relative', background: 'linear-gradient(160deg, #0F172A 0%, #0F172A 100%)', border: '2px solid rgba(0,0,0,0.13)', borderRadius: 40, padding: '14px 10px', boxShadow: '0 40px 100px rgba(0,0,0,.7)' }}>
                 <div style={{ width: 72, height: 5, background: 'rgba(0,0,0,0.1)', borderRadius: 3, margin: '0 auto 12px' }} />
-                <div style={{ background: '#F2F2F7', borderRadius: 28, overflow: 'hidden', padding: '16px 14px' }}>
+                <div style={{ background: '#16243A', borderRadius: 28, overflow: 'hidden', padding: '16px 14px' }}>
                   {/* Saguaro Field header */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(212,160,23,0.15)', border: '1.5px solid rgba(212,160,23,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(245, 158, 11,0.15)', border: '1.5px solid rgba(245, 158, 11,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD }}>
                         <IconSaguaro />
                       </div>
                       <div>
@@ -334,7 +335,7 @@ export default function FieldAppPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 12 }}>
                     {[
                       { Icon: IconLog,    label: 'Daily Log',  rgb: '59,130,246' },
-                      { Icon: IconCamera, label: 'Photos',     rgb: '212,160,23' },
+                      { Icon: IconCamera, label: 'Photos',     rgb: '245, 158, 11' },
                       { Icon: IconClock,  label: 'Clock In',   rgb: '34,197,94' },
                       { Icon: IconCheck,  label: 'Punch List', rgb: '139,92,246' },
                     ].map(a => (
@@ -346,7 +347,7 @@ export default function FieldAppPage() {
                   </div>
 
                   {/* Sage chat bubble */}
-                  <div style={{ background: 'rgba(212,160,23,0.07)', border: '1px solid rgba(212,160,23,0.2)', borderRadius: 12, padding: '8px 10px' }}>
+                  <div style={{ background: 'rgba(245, 158, 11,0.07)', border: '1px solid rgba(245, 158, 11,0.2)', borderRadius: 12, padding: '8px 10px' }}>
                     <div style={{ fontSize: 8, color: GOLD, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <span style={{ display: 'inline-flex', color: GOLD }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                       Sage AI
@@ -383,7 +384,7 @@ export default function FieldAppPage() {
         </div>
 
         {/* ── "Why field crews love it" stats bar ─────────────────────── */}
-        <div style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #F2F2F7 50%, #FFFFFF 100%)', borderTop: '1px solid rgba(245,158,11,0.3)', borderBottom: '1px solid rgba(245,158,11,0.3)' }}>
+        <div style={{ background: 'linear-gradient(135deg, #0F172A 0%, #0d1117 50%, #0F172A 100%)', borderTop: '1px solid rgba(245,158,11,0.3)', borderBottom: '1px solid rgba(245,158,11,0.3)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', padding: '36px 32px' }}>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.14em' }}>Why field crews love it</div>
@@ -408,7 +409,7 @@ export default function FieldAppPage() {
         </div>
 
         {/* ── Features grid ───────────────────────────────────────────── */}
-        <section id="features" style={{ padding: '72px 32px', background: 'linear-gradient(180deg, #F2F2F7 0%, #FFFFFF 50%, #F2F2F7 100%)' }}>
+        <section id="features" style={{ padding: '72px 32px', background: 'linear-gradient(180deg, #0d1117 0%, #0F172A 50%, #0d1117 100%)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Everything In The Field</div>
@@ -427,7 +428,7 @@ export default function FieldAppPage() {
                 <div style={{ fontWeight: 800, fontSize: 15, color: TEXT, marginBottom: 8 }}>{f.title}</div>
                 <div style={{ fontSize: 13, color: 'rgba(28,28,30,0.78)', lineHeight: 1.65, marginBottom: 12 }}>{f.desc}</div>
                 {/* Before / After */}
-                <div style={{ background: '#F2F2F7', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
+                <div style={{ background: '#16243A', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 5, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 9, fontWeight: 800, color: '#EF4444', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 4, padding: '1px 6px', letterSpacing: '0.05em', flexShrink: 0, marginTop: 1 }}>BEFORE</span>
                     <span style={{ fontSize: 11, color: 'rgba(28,28,30,0.52)', lineHeight: 1.5 }}>{f.before}</span>
@@ -501,7 +502,7 @@ export default function FieldAppPage() {
         </section>
 
         {/* ── Testimonials ────────────────────────────────────────────── */}
-        <section style={{ padding: '64px 32px', background: 'linear-gradient(180deg, #F2F2F7 0%, #F2F2F7 100%)', borderTop: `1px solid ${BORDER}` }}>
+        <section style={{ padding: '64px 32px', background: 'linear-gradient(180deg, #0d1117 0%, #0d1117 100%)', borderTop: `1px solid ${BORDER}` }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Field Crew Reviews</div>
@@ -537,7 +538,7 @@ export default function FieldAppPage() {
         </section>
 
         {/* ── Install steps ───────────────────────────────────────────── */}
-        <section id="install" style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #F2F2F7 50%, #FFFFFF 100%)', borderTop: '1px solid rgba(229,229,234,0.8)', borderBottom: '1px solid rgba(229,229,234,0.8)' }}>
+        <section id="install" style={{ background: 'linear-gradient(180deg, #0F172A 0%, #0d1117 50%, #0F172A 100%)', borderTop: '1px solid rgba(229,229,234,0.8)', borderBottom: '1px solid rgba(229,229,234,0.8)' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 32px' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               {/* "Live in 30 seconds" badge */}
@@ -573,9 +574,9 @@ export default function FieldAppPage() {
             </div>
 
             <div style={{ textAlign: 'center', marginTop: 28 }}>
-              <a href="/field/install" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 8, color: 'rgba(28,28,30,0.7)', fontSize: 13, textDecoration: 'none' }}>
+              <Link href="/field/install" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 8, color: 'rgba(28,28,30,0.7)', fontSize: 13, textDecoration: 'none' }}>
                 Full step-by-step install guide →
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -634,13 +635,13 @@ export default function FieldAppPage() {
             Start your 30-day free trial. Saguaro Field is included. Your crew can install it on any device in 30 seconds.
           </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
-            <a href="/field/install" className="fa-cta-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 36px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 9, color: '#000', fontSize: 15, fontWeight: 900, textDecoration: 'none', boxShadow: '0 8px 40px rgba(245,158,11,0.55)' }}>
+            <Link href="/field/install" className="fa-cta-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 36px', background: 'linear-gradient(135deg,#F59E0B,#D97706)', borderRadius: 9, color: '#000', fontSize: 15, fontWeight: 900, textDecoration: 'none', boxShadow: '0 8px 40px rgba(245,158,11,0.55)' }}>
               <IconDownload />
               Get the App — Free
-            </a>
-            <a href="/signup" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', background: 'transparent', border: '2px solid #E5E5EA', borderRadius: 9, color: 'rgba(28,28,30,0.88)', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
+            </Link>
+            <Link href="/signup" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', background: 'transparent', border: '2px solid rgba(255,255,255,0.12)', borderRadius: 9, color: 'rgba(28,28,30,0.88)', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
               Start Free Trial
-            </a>
+            </Link>
           </div>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             {['No credit card', '30-day free trial', 'Cancel anytime', 'Whole crew included'].map(t => (
@@ -652,13 +653,13 @@ export default function FieldAppPage() {
         </section>
 
         {/* ── Footer ──────────────────────────────────────────────────── */}
-        <footer style={{ borderTop: `1px solid ${BORDER}`, padding: '32px 24px', background: 'rgba(255,255,255,.8)', textAlign: 'center' }}>
+        <footer style={{ borderTop: `1px solid ${BORDER}`, padding: '32px 24px', background: 'rgba(15,23,42,.8)', textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', marginBottom: 20 }}>
             {[['Home', '/'], ['Features', '/#features'], ['Pricing', '/pricing'], ['Compare Procore', '/compare/procore'], ['Open Field App', '/field'], ['Install Guide', '/field/install']].map(([l, h]) => (
-              <a key={h} href={h} style={{ fontSize: 12, color: DIM, textDecoration: 'none' }}>{l}</a>
+              <Link key={h} href={h} style={{ fontSize: 12, color: DIM, textDecoration: 'none' }}>{l}</Link>
             ))}
           </div>
-          <div style={{ fontSize: 12, color: '#6E6E73' }}>© {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.</div>
+          <div style={{ fontSize: 12, color: '#CBD5E1' }}>© {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.</div>
         </footer>
 
       </div>

@@ -6,11 +6,11 @@ import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
 /* ── Color tokens ─────────────────────────────────────────────── */
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -77,7 +77,7 @@ const btnBase: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: '#FFFFFF',
+  background: '#16243A',
   border: `1px solid ${BORDER}`,
   borderRadius: 8,
   color: TEXT,
@@ -460,7 +460,7 @@ function InvoicesPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FFFFFF', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#0d1117', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Header ──────────────────────────────────────────── */}
       <div style={{ background: RAISED, borderBottom: `2px solid ${GOLD}`, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -581,7 +581,7 @@ function InvoicesPage() {
 
             {/* Batch actions */}
             {selected.size > 0 && (
-              <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#FFFFFF' }}>
+              <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: '#0F172A' }}>
                 <span style={{ color: GOLD, fontWeight: 600 }}>{selected.size} selected</span>
                 <button onClick={() => batchAction('approved')} style={{ ...btnBase, background: GREEN, color: '#fff', padding: '6px 14px', fontSize: 13 }}>
                   Batch Approve
@@ -932,7 +932,7 @@ function InvoicesPage() {
                   value={editVal} onChange={e => setEditVal(e.target.value)}
                   type="number" inputMode="decimal" autoFocus
                   onKeyDown={e => { if (e.key === 'Enter') handleFieldSaveEdit(); }}
-                  style={{ width: '100%', padding: '14px 16px', background: '#FFFFFF', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
+                  style={{ width: '100%', padding: '14px 16px', background: '#16243A', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
                 />
                 <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                   <button onClick={handleFieldSaveEdit} style={{ flex: 1, padding: '14px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Save</button>
@@ -963,7 +963,7 @@ function InvoicesPage() {
 
       {/* ── Delete (Void) Confirmation Overlay ────────────── */}
       {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
+        <div style={{ position: 'fixed', inset: 0, background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
           <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 340, textAlign: 'center' }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>{'\uD83D\uDDD1\uFE0F'}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Void this invoice?</div>
@@ -989,7 +989,7 @@ function InvoicesPage() {
 /* ── Suspense wrapper ─────────────────────────────────────────── */
 export default function InvoicesPageWrapper() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6E6E73', background: '#FFFFFF', minHeight: '100vh' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#CBD5E1', background: '#0d1117', minHeight: '100vh' }}>Loading...</div>}>
       <InvoicesPage />
     </Suspense>
   );

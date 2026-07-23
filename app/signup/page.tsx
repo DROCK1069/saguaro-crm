@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
-const GOLD='#F59E0B',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#22c55e';
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -77,8 +78,8 @@ export default function SignupPage(){
     setLoading(false);
   }
 
-  const inputStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box'};
-  const selectStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box',cursor:'pointer'};
+  const inputStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box'};
+  const selectStyle: React.CSSProperties = {width:'100%',padding:'11px 14px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box',cursor:'pointer'};
   const labelStyle: React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
 
   if(success) return (
@@ -99,9 +100,9 @@ export default function SignupPage(){
             </div>
           ))}
         </div>
-        <a href="/login" style={{display:'block',padding:'14px',background:`linear-gradient(135deg,${GOLD},#D97706)`,borderRadius:9,color:'#000',fontWeight:900,fontSize:15,textDecoration:'none',marginBottom:16}}>
+        <Link href="/login" style={{display:'block',padding:'14px',background:`linear-gradient(135deg,${GOLD},#D97706)`,borderRadius:9,color:'#000',fontWeight:900,fontSize:15,textDecoration:'none',marginBottom:16}}>
           Go to Login →
-        </a>
+        </Link>
         <p style={{fontSize:12,color:DIM}}>Didn't get it? Check spam or <button onClick={()=>setSuccess(false)} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',fontSize:12,fontWeight:700}}>try again</button></p>
       </div>
     </div>
@@ -111,14 +112,14 @@ export default function SignupPage(){
     <div style={{minHeight:'100vh',background:DARK,fontFamily:"system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
       {/* Nav */}
-      <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(255,255,255,0.95)',backdropFilter:'blur(12px)',zIndex:50}}>
-        <a href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:10}}>
+      <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(15,23,42,0.95)',backdropFilter:'blur(12px)',zIndex:50}}>
+        <Link href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:10}}>
           <img src="/logo-full.jpg" alt="Saguaro" style={{height:34,width:'auto',borderRadius:4}}/>
           <span style={{fontWeight:900,fontSize:15,background:`linear-gradient(90deg,${GOLD},#FCD34D)`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
-        </a>
-        <a href="/login" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>
+        </Link>
+        <Link href="/login" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>
           Already have an account? <span style={{color:GOLD}}>Log in →</span>
-        </a>
+        </Link>
       </nav>
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',minHeight:'calc(100vh - 60px)',maxWidth:1100,margin:'0 auto',padding:'0 24px',gap:64,alignItems:'start'}}>
@@ -253,10 +254,10 @@ export default function SignupPage(){
             </div>
 
             <div style={{marginTop:16,textAlign:'center',fontSize:12,color:DIM}}>
-              Already have an account? <a href="/login" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Log in →</a>
+              Already have an account? <Link href="/login" style={{color:GOLD,textDecoration:'none',fontWeight:700}}>Log in →</Link>
             </div>
-            <div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#6E6E73'}}>
-              By signing up you agree to our <a href="/terms" style={{color:DIM,textDecoration:'none'}}>Terms</a> and <a href="/privacy" style={{color:DIM,textDecoration:'none'}}>Privacy Policy</a>
+            <div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#CBD5E1'}}>
+              By signing up you agree to our <Link href="/terms" style={{color:DIM,textDecoration:'none'}}>Terms</Link> and <Link href="/privacy" style={{color:DIM,textDecoration:'none'}}>Privacy Policy</Link>
             </div>
           </div>
         </div>

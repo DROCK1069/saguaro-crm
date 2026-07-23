@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#C8881C', DARK = '#F2F2F7', CARD = '#FFFFFF', BORDER = '#E5E5EA';
-const DIM = '#6E6E73', TEXT = '#1C1C1E', GREEN = '#22C55E', RED = '#EF4444', BLUE = '#3B82F6';
+const GOLD = '#F59E0B', DARK = '#16243A', CARD = '#0F172A', BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#22C55E', RED = '#EF4444', BLUE = '#3B82F6';
 
 type Endpoint = {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -271,7 +271,7 @@ export default function ApiDocsPage() {
                       key={i}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 14, padding: '12px 20px',
-                        borderBottom: i < mod.endpoints.length - 1 ? `1px solid ${BORDER}22` : 'none',
+                        borderBottom: i < mod.endpoints.length - 1 ? `1px solid rgba(255,255,255,0.06)` : 'none',
                       }}
                     >
                       <span style={{
@@ -382,7 +382,7 @@ export default function ApiDocsPage() {
                 </thead>
                 <tbody>
                   {WEBHOOK_EVENTS.map((ev, i) => (
-                    <tr key={i} style={{ borderBottom: `1px solid ${BORDER}22` }}>
+                    <tr key={i} style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
                       <td style={{ padding: '10px 14px' }}>
                         <code style={{ fontSize: 12, color: GOLD, fontFamily: 'monospace', background: `${GOLD}12`, padding: '2px 8px', borderRadius: 4 }}>
                           {ev.event}
@@ -507,7 +507,7 @@ export default function ApiDocsPage() {
                 disabled={tryLoading}
                 style={{
                   padding: '10px 28px', borderRadius: 8, cursor: 'pointer',
-                  background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                  background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none',
                   color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                   opacity: tryLoading ? 0.6 : 1,
                 }}

@@ -12,11 +12,11 @@ import { enqueue } from '@/lib/field-db';
 import SignaturePad from '@/components/SignaturePad';
 import EmailComposer from '@/components/EmailComposer';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -193,8 +193,8 @@ function PunchItemModal({
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7', padding: 20 }}>
-      <div style={{ background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, maxWidth: 420, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117', padding: 20 }}>
+      <div style={{ background: '#0F172A', border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, maxWidth: 420, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
         {created ? (
           <div style={{ textAlign: 'center' }}>
             <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(34,197,94,.15)', border: `2px solid rgba(34,197,94,.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
@@ -239,7 +239,7 @@ function PunchItemModal({
               <button type="button" onClick={() => onClose()} disabled={creating} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer' }}>
                 Skip
               </button>
-              <button type="button" onClick={handleCreate} disabled={creating} style={{ flex: 1, background: creating ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 700, cursor: creating ? 'wait' : 'pointer' }}>
+              <button type="button" onClick={handleCreate} disabled={creating} style={{ flex: 1, background: creating ? '#16243A' : GOLD, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 700, cursor: creating ? 'wait' : 'pointer' }}>
                 {creating ? 'Creating...' : 'Create Items'}
               </button>
             </div>
@@ -257,9 +257,9 @@ function TemplatePicker({ onSelect }: { onSelect: (template: { name: string; ins
 
   if (!expanded) {
     return (
-      <div style={{ ...card, background: 'linear-gradient(135deg, #FFFFFF 0%, #112840 100%)', borderColor: `rgba(212,160,23,.25)`, cursor: 'pointer' }} onClick={() => setExpanded(true)}>
+      <div style={{ ...card, background: 'linear-gradient(135deg, #0F172A 0%, #112840 100%)', borderColor: `rgba(245, 158, 11,.25)`, cursor: 'pointer' }} onClick={() => setExpanded(true)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(212,160,23,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245, 158, 11,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
               <rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/>
             </svg>
@@ -275,7 +275,7 @@ function TemplatePicker({ onSelect }: { onSelect: (template: { name: string; ins
   }
 
   return (
-    <div style={{ ...card, borderColor: `rgba(212,160,23,.25)` }}>
+    <div style={{ ...card, borderColor: `rgba(245, 158, 11,.25)` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <p style={{ ...sectionLabel, margin: 0, color: GOLD }}>Template Library</p>
         <button type="button" onClick={() => setExpanded(false)} style={{ background: 'transparent', border: 'none', color: DIM, fontSize: 18, cursor: 'pointer', padding: 0, lineHeight: 1 }}>&#x2715;</button>
@@ -288,7 +288,7 @@ function TemplatePicker({ onSelect }: { onSelect: (template: { name: string; ins
             type="button"
             onClick={() => setActiveCategory(activeCategory === cat.name ? null : cat.name)}
             style={{
-              background: activeCategory === cat.name ? 'rgba(212,160,23,.15)' : 'transparent',
+              background: activeCategory === cat.name ? 'rgba(245, 158, 11,.15)' : 'transparent',
               border: `1px solid ${activeCategory === cat.name ? GOLD : BORDER}`,
               borderRadius: 8,
               padding: '6px 12px',
@@ -311,8 +311,8 @@ function TemplatePicker({ onSelect }: { onSelect: (template: { name: string; ins
               type="button"
               onClick={() => { onSelect(tmpl); setExpanded(false); setActiveCategory(null); }}
               style={{
-                background: 'rgba(212,160,23,.06)',
-                border: `1px solid rgba(212,160,23,.2)`,
+                background: 'rgba(245, 158, 11,.06)',
+                border: `1px solid rgba(245, 158, 11,.2)`,
                 borderRadius: 10,
                 padding: '10px 12px',
                 textAlign: 'left',
@@ -360,7 +360,7 @@ const exportPDF = (title: string, content: string) => {
       <title>${title}</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #1a1a1a; max-width: 800px; margin: 0 auto; }
-        h1 { font-size: 24px; border-bottom: 2px solid #C8881C; padding-bottom: 8px; }
+        h1 { font-size: 24px; border-bottom: 2px solid #F59E0B; padding-bottom: 8px; }
         h2 { font-size: 18px; color: #333; margin-top: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 12px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; font-size: 13px; }
@@ -378,7 +378,7 @@ const exportPDF = (title: string, content: string) => {
     <body>
       ${content}
       <div class="footer">
-        <p>Generated by Saguaro Control &middot; ${new Date().toLocaleString()}</p>
+        <p>Generated by Saguaro Control Systems &middot; ${new Date().toLocaleString()}</p>
       </div>
     </body>
     </html>
@@ -534,11 +534,25 @@ function InspectionForm() {
 
     try {
       if (!online) throw new Error('offline');
-      const res2 = await fetch('/api/inspections/create', {
+      let res2 = await fetch('/api/inspections/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      // QC-before-inspections gate: franchise sites block until QC is signed off.
+      // Let the inspector proceed with an explicit override.
+      if (res2.status === 409) {
+        const g = await res2.json().catch(() => ({}));
+        if (g?.requiresQcOverride && typeof window !== 'undefined' &&
+            window.confirm(`${g.error || 'QC is not complete for this site.'}\n\nCall the inspector anyway?`)) {
+          res2 = await fetch('/api/inspections/create', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...payload, override: true }),
+          });
+        } else if (g?.requiresQcOverride) {
+          setError(g.error || 'QC not complete for this site.'); setSaving(false); return;
+        }
+      }
       if (!res2.ok) { const b = await res2.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res2.status}`); }
       afterSubmitSuccess();
     } catch (err) {
@@ -636,7 +650,7 @@ function InspectionForm() {
           type="button"
           onClick={() => setShowEmail(true)}
           style={{
-            marginTop: 8, background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.3)', borderRadius: 10,
+            marginTop: 8, background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.3)', borderRadius: 10,
             padding: '8px 14px', color: GOLD, fontSize: 13, fontWeight: 600, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
           }}
@@ -746,7 +760,7 @@ function InspectionForm() {
           <p style={sectionLabel}>Inspection Details</p>
           <Label>Type</Label>
           <select value={inspType} onChange={(e) => changeType(e.target.value)} style={{ ...inp, marginBottom: 10 }}>
-            {INSPECTION_TYPES.map((t) => <option key={t} value={t} style={{ background: '#FFFFFF' }}>{t}</option>)}
+            {INSPECTION_TYPES.map((t) => <option key={t} value={t} style={{ background: '#0F172A' }}>{t}</option>)}
           </select>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
@@ -774,7 +788,7 @@ function InspectionForm() {
             </div>
           </div>
           {/* Progress bar */}
-          <div style={{ height: 5, background: '#E5E5EA', borderRadius: 3, marginBottom: 12 }}>
+          <div style={{ height: 5, background: '#16243A', borderRadius: 3, marginBottom: 12 }}>
             <div style={{ height: '100%', background: pct === 100 ? GREEN : pct > 50 ? GOLD : AMBER, borderRadius: 3, width: `${pct}%`, transition: 'width 0.25s' }} />
           </div>
           {checklist.map((item, idx) => (
@@ -867,7 +881,7 @@ function InspectionForm() {
           ) : showSignature ? (
             <SignaturePad onSave={(d) => { setSignatureData(d); setShowSignature(false); }} onCancel={() => setShowSignature(false)} label="Inspector Signature" />
           ) : (
-            <button type="button" onClick={() => setShowSignature(true)} style={{ width: '100%', background: 'transparent', border: `2px dashed rgba(212,160,23,.4)`, borderRadius: 10, padding: '14px', color: GOLD, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            <button type="button" onClick={() => setShowSignature(true)} style={{ width: '100%', background: 'transparent', border: `2px dashed rgba(245, 158, 11,.4)`, borderRadius: 10, padding: '14px', color: GOLD, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               Tap to Sign
             </button>
           )}
@@ -878,7 +892,7 @@ function InspectionForm() {
         <button
           type="submit"
           disabled={saving}
-          style={{ width: '100%', background: saving ? '#E5E5EA' : res.color, border: 'none', borderRadius: 14, padding: '18px', color: saving ? DIM : (result === 'pending' ? TEXT : '#000'), fontSize: 17, fontWeight: 800, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.3 }}
+          style={{ width: '100%', background: saving ? '#16243A' : res.color, border: 'none', borderRadius: 14, padding: '18px', color: saving ? DIM : (result === 'pending' ? TEXT : '#000'), fontSize: 17, fontWeight: 800, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.3 }}
         >
           {saving ? 'Submitting...' : `Submit — ${res.label}`}
         </button>
@@ -888,7 +902,7 @@ function InspectionForm() {
 }
 
 export default function FieldInspectPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><InspectionForm /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}><InspectionForm /></Suspense>;
 }
 
 function Label({ children }: { children: React.ReactNode }) {
@@ -900,8 +914,8 @@ function OfflineBanner() {
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
 const sectionLabel: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
-const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const inp: React.CSSProperties = { width: '100%', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#CBD5E1', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 
 function hexRgb(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);

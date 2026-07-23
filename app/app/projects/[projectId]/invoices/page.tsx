@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
 
-const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E', GREEN='#3dd68c', RED='#ef4444';
+const GOLD='#F59E0B', DARK='#0d1117', RAISED='#0F172A', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
 interface Invoice {
   id: string;
@@ -124,7 +124,7 @@ export default function InvoicesPage() {
     try { await fetch(`/api/invoices/${id}/delete`, { method: 'DELETE' }); setSuccessMsg('Invoice deleted.'); setTimeout(() => setSuccessMsg(''), 3000); } catch { setSuccessMsg('Deleted locally.'); setTimeout(() => setSuccessMsg(''), 3000); }
   }
 
-  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#16243A', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
 
   return (
@@ -134,7 +134,7 @@ export default function InvoicesPage() {
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: TEXT }}>Invoices</h2>
           <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Owner billing and payment tracking</div>
         </div>
-        <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,' + GOLD + ',#E0A030)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>+ New Invoice</button>
+        <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,' + GOLD + ',#FBBF24)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>+ New Invoice</button>
       </div>
 
       {/* KPIs */}
@@ -155,7 +155,7 @@ export default function InvoicesPage() {
       {errorMsg && <div style={{ margin: '12px 24px 0', padding: '10px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', borderRadius: 7, color: RED, fontSize: 13 }}>{errorMsg}</div>}
 
       {showForm && (
-        <div style={{ margin: 24, background: RAISED, border: '1px solid rgba(212,160,23,.3)', borderRadius: 10, padding: 24 }}>
+        <div style={{ margin: 24, background: RAISED, border: '1px solid rgba(245, 158, 11,.3)', borderRadius: 10, padding: 24 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 16 }}>New Invoice</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
             <div><label style={label}>Invoice # *</label><input type="text" value={form.invoice_num} onChange={e => setForm(p => ({ ...p, invoice_num: e.target.value }))} style={inp} /></div>
@@ -166,7 +166,7 @@ export default function InvoicesPage() {
             <div><label style={label}>Notes</label><input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} style={inp} /></div>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,' + GOLD + ',#E0A030)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,' + GOLD + ',#FBBF24)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Saving...' : 'Create Invoice'}
             </button>
             <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={{ padding: '9px 16px', background: RAISED, border: '1px solid ' + BORDER, borderRadius: 7, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
@@ -181,7 +181,7 @@ export default function InvoicesPage() {
           <>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#F2F2F7' }}>
+              <tr style={{ background: '#0d1117' }}>
                 {['Invoice #','Period','Amount','Issued','Due','Status','Notes','Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: DIM, borderBottom: '1px solid ' + BORDER, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
@@ -193,7 +193,7 @@ export default function InvoicesPage() {
                 const effectiveStatus = overdue ? 'Overdue' : inv.status;
                 const sc = STATUS_MAP[effectiveStatus] || { bg: 'rgba(143,163,192,.2)', color: DIM };
                 return (
-                  <tr key={inv.id} style={{ borderBottom: '1px solid rgba(229,229,234,.4)', background: overdue ? 'rgba(239,68,68,.04)' : 'transparent' }}>
+                  <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.12)', background: overdue ? 'rgba(239,68,68,.04)' : 'transparent' }}>
                     <td style={{ padding: '10px 14px', color: GOLD, fontWeight: 700 }}>{inv.invoice_num}</td>
                     <td style={{ padding: '10px 14px', color: DIM }}>{inv.period}</td>
                     <td style={{ padding: '10px 14px', position: 'relative' as const }}>
@@ -206,7 +206,7 @@ export default function InvoicesPage() {
                       ) : editId === inv.id ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <input value={editVal} onChange={e => setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e => { if (e.key === 'Enter') handleEditInv(inv.id); if (e.key === 'Escape') setEditId(null); }} style={{ width: 100, padding: '4px 8px', background: DARK, border: `1px solid ${GOLD}`, borderRadius: 5, color: TEXT, fontSize: 12, outline: 'none', textAlign: 'right' }} />
-                          <button onClick={() => handleEditInv(inv.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none', borderRadius: 5, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                          <button onClick={() => handleEditInv(inv.id)} style={{ padding: '3px 8px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: 5, color: '#1C1C1E', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                           <button onClick={() => setEditId(null)} style={{ padding: '3px 8px', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 5, color: DIM, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
                         </div>
                       ) : adjustId === inv.id ? (

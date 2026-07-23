@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#c07830';
 
 const STATUSES=['pending','submitted','under_review','approved','rejected','revise_resubmit'];
@@ -33,7 +33,7 @@ const BIC_COLORS:Record<string,string>={
 };
 
 const inp:React.CSSProperties={
-  width:'100%',padding:'9px 12px',background:'#FFFFFF',
+  width:'100%',padding:'9px 12px',background:'#16243A',
   border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
@@ -63,7 +63,7 @@ function FieldLabel({label}:{label:string}){
 function InfoCard({label,value}:{label:string;value:string|undefined|null}){
   if(!value) return null;
   return(
-    <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'10px 12px'}}>
+    <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:8,padding:'10px 12px'}}>
       <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:4}}>{label}</div>
       <div style={{fontSize:13,color:TEXT}}>{value}</div>
     </div>
@@ -220,7 +220,7 @@ export default function SubmittalsPage(){
             <div style={{fontSize:12,color:DIM,marginTop:3}}>Shop drawings, product data &amp; submittal log</div>
           </div>
           <button onClick={openCreate}
-            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+            style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
               border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
             + New Submittal
           </button>
@@ -282,7 +282,7 @@ export default function SubmittalsPage(){
               </div>
               {submittals.length===0&&(
                 <button onClick={openCreate}
-                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                  style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                     border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
                   + Create First Submittal
                 </button>
@@ -294,7 +294,7 @@ export default function SubmittalsPage(){
             <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,overflow:'hidden',overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
                 <thead>
-                  <tr style={{background:'#F2F2F7'}}>
+                  <tr style={{background:'#16243A'}}>
                     {['#','Title','Spec Section','Status','Ball in Court','Req. Date','Rev.'].map(h=>(
                       <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,
                         textTransform:'uppercase',letterSpacing:.5,color:DIM,
@@ -311,10 +311,10 @@ export default function SubmittalsPage(){
                     return(
                       <tr key={s.id}
                         onClick={()=>viewSub(s)}
-                        style={{background:isSel?'rgba(212,160,23,.07)':'transparent',
-                          borderBottom:`1px solid rgba(229,229,234,.5)`,cursor:'pointer',
+                        style={{background:isSel?'rgba(245, 158, 11,.07)':'transparent',
+                          borderBottom:`1px solid rgba(255,255,255,0.08)`,cursor:'pointer',
                           transition:'background .1s'}}
-                        onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background='rgba(0,0,0,.02)';}}
+                        onMouseEnter={e=>{if(!isSel)e.currentTarget.style.background='rgba(255,255,255,.04)';}}
                         onMouseLeave={e=>{if(!isSel)e.currentTarget.style.background='transparent';}}>
                         <td style={{padding:'11px 14px',color:GOLD,fontWeight:700,whiteSpace:'nowrap'}}>
                           {s.submittal_number||'—'}
@@ -465,7 +465,7 @@ export default function SubmittalsPage(){
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',
-                      background:`linear-gradient(135deg,${GOLD},#E0A030)`,
+                      background:`linear-gradient(135deg,${GOLD},#FBBF24)`,
                       border:'none',borderRadius:8,color:'#1C1C1E',
                       fontSize:14,fontWeight:800,cursor:'pointer',opacity:saving?0.6:1}}>
                     {saving?'Saving...':mode==='create'?'Create Submittal':'Save Changes'}
@@ -502,7 +502,7 @@ export default function SubmittalsPage(){
                 </div>
 
                 {/* Status workflow */}
-                <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:10,padding:'12px 14px'}}>
+                <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:10,padding:'12px 14px'}}>
                   <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:10}}>
                     Status Workflow
                   </div>
@@ -533,7 +533,7 @@ export default function SubmittalsPage(){
                 </div>
 
                 {selected.notes&&(
-                  <div style={{background:'#FFFFFF',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                  <div style={{background:'#0F172A',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
                     <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>Notes</div>
                     <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.notes}</div>
                   </div>

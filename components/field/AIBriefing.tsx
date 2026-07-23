@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 
-const GOLD = '#D4A017';
+const GOLD = '#F59E0B';
 const DIM = '#8BAAC8';
 const TEXT = '#F0F4FF';
 const BLUE = '#3B82F6';

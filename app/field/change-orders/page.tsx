@@ -9,11 +9,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -297,7 +297,7 @@ function ChangeOrdersPage() {
   };
   const advFilteredCOs = getAdvFilteredCOs();
   const advFilteredPCOs = getAdvFilteredPCOs();
-  const coChipStyle: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(212,160,23,.12)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: GOLD, cursor: 'pointer', whiteSpace: 'nowrap' };
+  const coChipStyle: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11,.12)', border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: GOLD, cursor: 'pointer', whiteSpace: 'nowrap' };
 
   // ─── Drawer overlay + panel styles ──────────────────────────
   const drawerOverlayStyle: React.CSSProperties = {
@@ -308,7 +308,7 @@ function ChangeOrdersPage() {
   };
   const drawerPanelStyle: React.CSSProperties = {
     position: 'fixed', top: 0, right: 0, bottom: 0, width: '85%', maxWidth: 380, zIndex: 910,
-    background: '#FFFFFF', borderLeft: `1px solid ${BORDER}`,
+    background: '#0F172A', borderLeft: `1px solid ${BORDER}`,
     transform: showFilterDrawer ? 'translateX(0)' : 'translateX(100%)',
     transition: 'transform 300ms cubic-bezier(.4,0,.2,1)',
     display: 'flex', flexDirection: 'column' as const, overflowY: 'auto' as const,
@@ -821,7 +821,7 @@ function ChangeOrdersPage() {
     if (!showEmailModal) return null;
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <div style={{ background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 20 }}>
+        <div style={{ background: '#0F172A', border: `1px solid ${BORDER}`, borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '90vh', overflow: 'auto', padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: GOLD }}>
               {emailContext === 'co' ? 'Email to Owner' : 'Email for Pricing'}
@@ -851,7 +851,7 @@ function ChangeOrdersPage() {
               Cancel
             </button>
             <button onClick={handleSendEmail} disabled={emailSending || !emailTo.trim()} style={{
-              flex: 2, background: emailSending || !emailTo.trim() ? '#E5E5EA' : BLUE, border: 'none', borderRadius: 12,
+              flex: 2, background: emailSending || !emailTo.trim() ? '#16243A' : BLUE, border: 'none', borderRadius: 12,
               padding: '14px', color: emailSending || !emailTo.trim() ? DIM : '#fff', fontSize: 14, fontWeight: 800,
               cursor: emailSending || !emailTo.trim() ? 'not-allowed' : 'pointer',
             }}>
@@ -915,7 +915,7 @@ function ChangeOrdersPage() {
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {CO_FILTER_STATUSES.map(s => (
                       <button key={s} onClick={() => toggleCoStatusFilter(s)} style={{
-                        background: advFilterStatuses.includes(s) ? 'rgba(212,160,23,.2)' : 'transparent',
+                        background: advFilterStatuses.includes(s) ? 'rgba(245, 158, 11,.2)' : 'transparent',
                         border: `1px solid ${advFilterStatuses.includes(s) ? GOLD : BORDER}`, borderRadius: 20,
                         padding: '6px 14px', color: advFilterStatuses.includes(s) ? GOLD : DIM, fontSize: 12,
                         fontWeight: advFilterStatuses.includes(s) ? 700 : 400, cursor: 'pointer', whiteSpace: 'nowrap' as const,
@@ -930,7 +930,7 @@ function ChangeOrdersPage() {
                   <div style={{ display: 'flex', gap: 6 }}>
                     {(['all', 'co', 'pco'] as const).map(t => (
                       <button key={t} onClick={() => setAdvFilterType(t)} style={{
-                        background: advFilterType === t ? 'rgba(212,160,23,.2)' : 'transparent',
+                        background: advFilterType === t ? 'rgba(245, 158, 11,.2)' : 'transparent',
                         border: `1px solid ${advFilterType === t ? GOLD : BORDER}`, borderRadius: 20,
                         padding: '6px 14px', color: advFilterType === t ? GOLD : DIM, fontSize: 12,
                         fontWeight: advFilterType === t ? 700 : 400, cursor: 'pointer',
@@ -969,7 +969,7 @@ function ChangeOrdersPage() {
                       <option value="status">Status</option>
                     </select>
                     <button onClick={() => setAdvSortDir(prev => prev === 'asc' ? 'desc' : 'asc')} style={{
-                      background: 'rgba(212,160,23,.1)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 10,
+                      background: 'rgba(245, 158, 11,.1)', border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 10,
                       padding: '8px 12px', color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
                     }}>
@@ -1005,7 +1005,7 @@ function ChangeOrdersPage() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input value={coPresetName} onChange={e => setCoPresetName(e.target.value)} placeholder="Preset name..." style={{ ...inp, fontSize: 13, padding: '8px 12px', flex: 1 }} />
                     <button onClick={saveCoPreset} disabled={!coPresetName.trim()} style={{
-                      background: coPresetName.trim() ? GOLD : '#E5E5EA', border: 'none', borderRadius: 10,
+                      background: coPresetName.trim() ? GOLD : '#16243A', border: 'none', borderRadius: 10,
                       padding: '8px 16px', color: coPresetName.trim() ? '#000' : DIM, fontSize: 13, fontWeight: 700, cursor: coPresetName.trim() ? 'pointer' : 'not-allowed',
                     }}>Save</button>
                   </div>
@@ -1080,7 +1080,7 @@ function ChangeOrdersPage() {
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 12 }}>
               {['all', 'pending', 'approved', 'rejected', 'draft'].map((f) => (
                 <button key={f} onClick={() => setFilter(f)}
-                  style={{ flexShrink: 0, background: filter === f ? 'rgba(212,160,23,.2)' : 'transparent', border: `1px solid ${filter === f ? GOLD : BORDER}`, borderRadius: 20, padding: '5px 12px', color: filter === f ? GOLD : DIM, fontSize: 12, fontWeight: filter === f ? 700 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  style={{ flexShrink: 0, background: filter === f ? 'rgba(245, 158, 11,.2)' : 'transparent', border: `1px solid ${filter === f ? GOLD : BORDER}`, borderRadius: 20, padding: '5px 12px', color: filter === f ? GOLD : DIM, fontSize: 12, fontWeight: filter === f ? 700 : 400, cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
                   {f === 'all' ? 'All' : STATUS_LABELS[f] || f}
                 </button>
@@ -1090,7 +1090,7 @@ function ChangeOrdersPage() {
             {/* ─── Advanced Filters ─── */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
               <button onClick={toggleDrawer} style={{
-                background: coActiveFilterCount > 0 ? 'rgba(212,160,23,.15)' : 'transparent',
+                background: coActiveFilterCount > 0 ? 'rgba(245, 158, 11,.15)' : 'transparent',
                 border: `1px solid ${coActiveFilterCount > 0 ? GOLD : BORDER}`,
                 borderRadius: 10, padding: '8px 14px', color: coActiveFilterCount > 0 ? GOLD : DIM,
                 fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
@@ -1163,7 +1163,7 @@ function ChangeOrdersPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             {co.co_number != null && (
-                              <span style={{ fontSize: 11, fontWeight: 800, color: GOLD, background: 'rgba(212,160,23,.12)', padding: '2px 8px', borderRadius: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: GOLD, background: 'rgba(245, 158, 11,.12)', padding: '2px 8px', borderRadius: 6 }}>
                                 CO-{co.co_number}
                               </span>
                             )}
@@ -1353,7 +1353,7 @@ function ChangeOrdersPage() {
                     value={editVal} onChange={e => setEditVal(e.target.value)}
                     type="number" inputMode="decimal" autoFocus
                     onKeyDown={e => { if (e.key === 'Enter') handleCOSaveEdit(); }}
-                    style={{ width: '100%', padding: '14px 16px', background: '#FFFFFF', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
+                    style={{ width: '100%', padding: '14px 16px', background: '#16243A', border: `1px solid ${GOLD}`, borderRadius: 10, color: TEXT, fontSize: 20, fontWeight: 700, outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
                   />
                   <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
                     <button onClick={handleCOSaveEdit} style={{ flex: 1, padding: '14px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer' }}>Save</button>
@@ -1384,7 +1384,7 @@ function ChangeOrdersPage() {
 
         {/* ── Delete (Reject) Confirmation Overlay ────────────── */}
         {deleteConfirm && (
-          <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
+          <div style={{ position: 'fixed', inset: 0, background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 700, padding: 24 }}>
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 340, textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>{'\uD83D\uDDD1\uFE0F'}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Reject this change order?</div>
@@ -1423,7 +1423,7 @@ function ChangeOrdersPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           {selected.co_number != null && (
-            <span style={{ fontSize: 12, fontWeight: 800, color: GOLD, background: 'rgba(212,160,23,.12)', padding: '3px 10px', borderRadius: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: GOLD, background: 'rgba(245, 158, 11,.12)', padding: '3px 10px', borderRadius: 6 }}>
               CO-{selected.co_number}
             </span>
           )}
@@ -1455,7 +1455,7 @@ function ChangeOrdersPage() {
             Email to Owner
           </button>
           <button onClick={() => handleExportPdf('co')} disabled={pdfLoading} style={{
-            flex: 1, background: 'rgba(212,160,23,.1)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 10,
+            flex: 1, background: 'rgba(245, 158, 11,.1)', border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 10,
             padding: '10px 12px', color: GOLD, fontSize: 13, fontWeight: 700,
             cursor: pdfLoading ? 'wait' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -1542,7 +1542,7 @@ function ChangeOrdersPage() {
               onClick={handleApprove}
               disabled={actionLoading}
               style={{
-                width: '100%', background: actionLoading ? '#E5E5EA' : GREEN, border: 'none', borderRadius: 12,
+                width: '100%', background: actionLoading ? '#16243A' : GREEN, border: 'none', borderRadius: 12,
                 padding: '16px', color: actionLoading ? DIM : '#000', fontSize: 16, fontWeight: 800,
                 cursor: actionLoading ? 'wait' : 'pointer', marginBottom: 10,
               }}
@@ -1564,7 +1564,7 @@ function ChangeOrdersPage() {
               onClick={handleReject}
               disabled={actionLoading || !rejectReason.trim()}
               style={{
-                width: '100%', background: actionLoading || !rejectReason.trim() ? '#E5E5EA' : RED, border: 'none', borderRadius: 12,
+                width: '100%', background: actionLoading || !rejectReason.trim() ? '#16243A' : RED, border: 'none', borderRadius: 12,
                 padding: '16px', color: actionLoading || !rejectReason.trim() ? DIM : '#fff', fontSize: 16, fontWeight: 800,
                 cursor: actionLoading || !rejectReason.trim() ? 'not-allowed' : 'pointer',
               }}
@@ -1629,7 +1629,7 @@ function ChangeOrdersPage() {
             Email for Pricing
           </button>
           <button onClick={() => handleExportPdf('pco')} disabled={pdfLoading} style={{
-            flex: 1, minWidth: 120, background: 'rgba(212,160,23,.1)', border: `1px solid rgba(212,160,23,.3)`, borderRadius: 10,
+            flex: 1, minWidth: 120, background: 'rgba(245, 158, 11,.1)', border: `1px solid rgba(245, 158, 11,.3)`, borderRadius: 10,
             padding: '10px 12px', color: GOLD, fontSize: 13, fontWeight: 700,
             cursor: pdfLoading ? 'wait' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -1644,7 +1644,7 @@ function ChangeOrdersPage() {
         {/* Convert to CO button */}
         {selectedPCO.status !== 'converted' && selectedPCO.status !== 'rejected' && (
           <button onClick={handleConvertPCO} disabled={actionLoading} style={{
-            width: '100%', background: actionLoading ? '#E5E5EA' : GREEN, border: 'none', borderRadius: 12,
+            width: '100%', background: actionLoading ? '#16243A' : GREEN, border: 'none', borderRadius: 12,
             padding: '16px', color: actionLoading ? DIM : '#000', fontSize: 16, fontWeight: 800,
             cursor: actionLoading ? 'wait' : 'pointer', marginBottom: 14,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -1781,7 +1781,7 @@ function ChangeOrdersPage() {
               <div>
                 <label style={lbl}>Reason *</label>
                 <select value={pcoReason} onChange={(e) => setPcoReason(e.target.value)} style={inp}>
-                  {REASONS.map((r) => <option key={r} value={r} style={{ background: '#FFFFFF' }}>{r}</option>)}
+                  {REASONS.map((r) => <option key={r} value={r} style={{ background: '#0F172A' }}>{r}</option>)}
                 </select>
               </div>
               <div>
@@ -1836,7 +1836,7 @@ function ChangeOrdersPage() {
             <button type="button" onClick={() => { setView('pco_list'); setActiveTab('pcos'); }} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={pcoSaving} style={{ flex: 2, background: pcoSaving ? '#E5E5EA' : PURPLE, border: 'none', borderRadius: 12, padding: '16px', color: pcoSaving ? DIM : '#fff', fontSize: 15, fontWeight: 800, cursor: pcoSaving ? 'wait' : 'pointer' }}>
+            <button type="submit" disabled={pcoSaving} style={{ flex: 2, background: pcoSaving ? '#16243A' : PURPLE, border: 'none', borderRadius: 12, padding: '16px', color: pcoSaving ? DIM : '#fff', fontSize: 15, fontWeight: 800, cursor: pcoSaving ? 'wait' : 'pointer' }}>
               {pcoSaving ? 'Saving...' : online ? 'Submit PCO' : 'Submit (Offline — will sync)'}
             </button>
           </div>
@@ -1876,7 +1876,7 @@ function ChangeOrdersPage() {
             <div>
               <label style={lbl}>Reason *</label>
               <select value={newReason} onChange={(e) => setNewReason(e.target.value)} style={inp}>
-                {REASONS.map((r) => <option key={r} value={r} style={{ background: '#FFFFFF' }}>{r}</option>)}
+                {REASONS.map((r) => <option key={r} value={r} style={{ background: '#0F172A' }}>{r}</option>)}
               </select>
             </div>
             <div>
@@ -1898,7 +1898,7 @@ function ChangeOrdersPage() {
           <button type="button" onClick={() => setView('list')} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
             Cancel
           </button>
-          <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
+          <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#16243A' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
             {saving ? 'Saving...' : online ? 'Submit Change Order' : 'Submit (Offline — will sync)'}
           </button>
         </div>
@@ -1909,7 +1909,7 @@ function ChangeOrdersPage() {
 
 export default function FieldChangeOrdersPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <ChangeOrdersPage />
     </Suspense>
   );
@@ -1932,7 +1932,7 @@ function OfflineBanner() {
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
 const secLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
 const lbl: React.CSSProperties = { display: 'block', fontSize: 12, color: DIM, marginBottom: 4, fontWeight: 600 };
-const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
+const inp: React.CSSProperties = { width: '100%', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '8px', marginLeft: -8, display: 'flex', alignItems: 'center', marginBottom: 4 };
 
 function hexRgb(hex: string): string {

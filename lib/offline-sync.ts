@@ -1,4 +1,4 @@
-// Saguaro CRM - Offline Sync Engine
+// Saguaro Control Systems - Offline Sync Engine
 // IndexedDB-based offline queue for the field app
 
 const DB_NAME = 'saguaro-offline';

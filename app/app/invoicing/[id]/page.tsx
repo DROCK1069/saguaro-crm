@@ -365,7 +365,7 @@ export default function InvoiceDetailPage() {
               <td style={{ padding: '12px 16px', color: colors.text }}>{money(inv.tax)}</td>
               <td style={{ padding: '12px 16px', color: colors.text, fontWeight: font.weight.semibold }}>{money(computedTotal)}</td>
             </tr>
-            <tr style={{ background: 'rgba(212,160,23,.05)' }}>
+            <tr style={{ background: 'rgba(245, 158, 11,.05)' }}>
               <td colSpan={5} style={{ padding: '12px 16px', color: colors.textMuted, fontWeight: font.weight.bold, textTransform: 'uppercase', fontSize: font.size.xs, letterSpacing: 0.5, textAlign: 'right' }}>Total Due</td>
               <td style={{ padding: '12px 16px', color: colors.gold, fontWeight: font.weight.black, fontSize: font.size.xl }}>{money(computedTotal)}</td>
             </tr>

@@ -9,12 +9,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Toolbox, MapPin, Phone, Envelope } from '@phosphor-icons/react';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#C8881C';
-const BG     = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const BG     = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -86,7 +86,7 @@ function daysRemaining(expiry?: string): number | null {
 /* ─── Confirm Dialog ─── */
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F2F7' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117' }}>
       <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, maxWidth: 340, width: '90%' }}>
         <p style={{ margin: '0 0 20px', fontSize: 15, color: TEXT, lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -1153,16 +1153,16 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <div style={{ minHeight: '100vh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ minHeight: '100vh', background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
-                width: 40, height: 40, border: '3px solid #E5E5EA', borderTopColor: '#C8881C',
+                width: 40, height: 40, border: '3px solid rgba(255,255,255,0.12)', borderTopColor: '#F59E0B',
                 borderRadius: '50%', margin: '0 auto 16px',
                 animation: 'spin 1s linear infinite',
               }}
             />
-            <p style={{ color: '#6E6E73', fontSize: 14 }}>Loading Warranty Claims...</p>
+            <p style={{ color: '#CBD5E1', fontSize: 14 }}>Loading Warranty Claims...</p>
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </div>
         </div>

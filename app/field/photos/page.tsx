@@ -12,12 +12,12 @@ import VoiceToLog from '@/components/field/VoiceToLog';
 import PhotoEditor from '@/components/field/PhotoEditor';
 import { PencilSimple, Trash } from '@phosphor-icons/react';
 
-const GOLD   = '#C8881C';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const GOLD   = '#F59E0B';
+const DARK   = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 const GREEN  = '#22c55e';
 const RED    = '#ef4444';
 
@@ -314,7 +314,7 @@ function PhotosInner() {
             width: '100%', padding: '18px 0', borderRadius: 14, border: 'none',
             background: GOLD, color: '#1C1C1E', fontSize: 17, fontWeight: 700,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            boxShadow: '0 4px 20px rgba(212,160,23,0.3)',
+            boxShadow: '0 4px 20px rgba(245, 158, 11,0.3)',
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
@@ -494,7 +494,7 @@ function PhotosInner() {
             {/* Edit + Delete buttons */}
             <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'center' }}>
               <button onClick={(e) => { e.stopPropagation(); setEditingPhoto(viewingPhoto); setViewingPhoto(null); }}
-                style={{ padding: '8px 20px', background: 'rgba(212,160,23,.2)', border: '1px solid rgba(212,160,23,.4)', borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                style={{ padding: '8px 20px', background: 'rgba(245, 158, 11,.2)', border: '1px solid rgba(245, 158, 11,.4)', borderRadius: 8, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <PencilSimple size={14} weight="bold" /> Edit
               </button>
               <button onClick={async (e) => {
@@ -545,7 +545,7 @@ function PhotosInner() {
 /* ─── Page wrapper with Suspense ─── */
 export default function FieldPhotosPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#F2F2F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E6E73' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CBD5E1' }}>Loading...</div>}>
       <PhotosInner />
     </Suspense>
   );

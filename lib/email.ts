@@ -1,11 +1,11 @@
 /**
  * lib/email.ts
- * Complete Saguaro CRM email system — all templates + Resend sender
+ * Complete Saguaro Control Systems email system — all templates + Resend sender
  * Graceful fallback to console.log when RESEND_API_KEY is not set
  */
 import { Resend } from 'resend';
 
-const FROM = process.env.EMAIL_FROM || 'Saguaro CRM <noreply@saguarocrm.com>';
+const FROM = process.env.EMAIL_FROM || 'Saguaro Control Systems <noreply@saguarocrm.com>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://saguaro-crm-rho.vercel.app';
 
 function getResend(): Resend | null {
@@ -16,7 +16,7 @@ function getResend(): Resend | null {
 
 // ─── HTML Template Helpers ────────────────────────────────────────────────────
 function layout(body: string): string {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Saguaro CRM</title></head>
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Saguaro Control Systems</title></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 0;">
 <tr><td align="center">
@@ -28,7 +28,7 @@ function layout(body: string): string {
 <tr><td style="padding:32px;">${body}</td></tr>
 <tr><td style="background:#f4f4f5;padding:16px 32px;border-top:1px solid #e5e7eb;">
   <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">
-    &copy; ${new Date().getFullYear()} Saguaro CRM &mdash; All rights reserved.<br>
+    &copy; ${new Date().getFullYear()} Saguaro Control Systems &mdash; All rights reserved.<br>
     <a href="${APP_URL}/unsubscribe" style="color:#9ca3af;">Unsubscribe</a> &middot;
     <a href="${APP_URL}" style="color:#9ca3af;">saguarocrm.com</a>
   </p>
@@ -75,8 +75,8 @@ async function send(to: string | string[], subject: string, html: string): Promi
 // ─── All Email Functions ──────────────────────────────────────────────────────
 
 export async function sendWelcome(to: string, name: string, company: string) {
-  await send(to, `Welcome to Saguaro CRM, ${name}!`, layout(`
-    ${h(`Welcome to Saguaro CRM, ${name}!`)}
+  await send(to, `Welcome to Saguaro Control Systems, ${name}!`, layout(`
+    ${h(`Welcome to Saguaro Control Systems, ${name}!`)}
     ${p(`Your account for <strong>${company}</strong> is ready. Here's what you can do right now:`)}
     <ul style="color:#374151;font-size:14px;line-height:2.2;margin:12px 0;">
       <li>Upload blueprints for instant AI takeoffs</li>
@@ -247,18 +247,18 @@ export async function sendTrialExpiring(to: string, userName: string, daysLeft: 
     </h2>
     ${p(`Hi ${userName},`)}
     ${p(`Your Saguaro free trial expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>. Upgrade now to keep all your projects, documents, and AI features.`)}
-    ${p('Plans start at $199/month — save 30% when you upgrade before your trial ends.')}
+    ${p('Plans start at $499/month, flat — unlimited users, no per-seat fees. Lock in annual pricing before your trial ends.')}
     ${btn('Upgrade Now — Keep Everything', upgradeUrl)}
     ${p('<small style="color:#9ca3af;">Questions? Reply to this email and our team will help.</small>')}
   `));
 }
 
 export async function sendInviteTeamMember(to: string, inviterName: string, companyName: string, role: string, acceptUrl: string) {
-  await send(to, `You're invited to join ${companyName} on Saguaro CRM`, layout(`
+  await send(to, `You're invited to join ${companyName} on Saguaro Control Systems`, layout(`
     ${h(`You've been invited to join ${companyName}`)}
-    ${p(`<strong>${inviterName}</strong> has invited you to collaborate on <strong>${companyName}</strong>'s projects on Saguaro CRM.`)}
+    ${p(`<strong>${inviterName}</strong> has invited you to collaborate on <strong>${companyName}</strong>'s projects on Saguaro Control Systems.`)}
     ${table(row('Company', companyName) + row('Your Role', role) + row('Invited By', inviterName))}
-    ${p('Saguaro CRM is a construction project management platform for GCs and subs — manage projects, documents, bids, and more.')}
+    ${p('Saguaro Control Systems is a construction project management platform for GCs and subs — manage projects, documents, bids, and more.')}
     ${btn('Accept Invitation', acceptUrl)}
     ${p('<small style="color:#9ca3af;">This invitation expires in 7 days.</small>')}
   `));

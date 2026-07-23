@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#16243A';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface NetworkProject {
   id: string;
@@ -223,7 +223,7 @@ export default function NetworkDashboard() {
               onClick={handleSetup}
               disabled={creating}
               style={{
-                padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, color: '#000',
+                padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`, color: '#000',
                 border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer',
                 opacity: creating ? 0.6 : 1,
               }}
@@ -250,7 +250,7 @@ export default function NetworkDashboard() {
           <button
             onClick={() => router.push(`/app/projects/${projectId}/network/wizard`)}
             style={{
-              padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #E0A030)`, color: '#000',
+              padding: '10px 18px', background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`, color: '#000',
               border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
             }}

@@ -1,12 +1,13 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 
 const GOLD  = '#F59E0B';
-const DARK  = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM   = '#6E6E73';
-const TEXT  = '#1C1C1E';
+const DARK  = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM   = '#CBD5E1';
+const TEXT  = '#FFFFFF';
 const GREEN = '#22c55e';
 const RED   = '#ef4444';
 
@@ -150,7 +151,7 @@ export default function SettingsPage() {
               {sub.status === 'active' && sub.current_period_end && (
                 <div style={{ fontSize: 13, color: GREEN }}>Active · renews {new Date(sub.current_period_end).toLocaleDateString()}</div>
               )}
-              <a href="/app/billing" style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600 }}>Manage Billing →</a>
+              <Link href="/app/billing" style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600 }}>Manage Billing →</Link>
             </div>
           )}
         </div>
@@ -162,9 +163,9 @@ export default function SettingsPage() {
           <div style={{ fontSize: 14, color: TEXT }}>
             ⏰ <strong>{trialDays} days left</strong> in your free trial — upgrade to keep access for your whole team.
           </div>
-          <a href="/app/billing" style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 7, color: '#000', fontWeight: 800, fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+          <Link href="/app/billing" style={{ padding: '8px 20px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 7, color: '#000', fontWeight: 800, fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             Upgrade Now
-          </a>
+          </Link>
         </div>
       )}
 
@@ -236,7 +237,7 @@ export default function SettingsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <input
                   type="color"
-                  value={/^#[0-9a-fA-F]{6}$/.test(branding.primary_color) ? branding.primary_color : '#C8881C'}
+                  value={/^#[0-9a-fA-F]{6}$/.test(branding.primary_color) ? branding.primary_color : '#F59E0B'}
                   onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
                   style={{ width: 48, height: 40, border: `1px solid ${BORDER}`, borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }}
                   aria-label="Brand color"
@@ -245,7 +246,7 @@ export default function SettingsPage() {
                   type="text"
                   value={branding.primary_color}
                   onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
-                  placeholder="#C8881C"
+                  placeholder="#F59E0B"
                   style={{ width: 130, background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none' }}
                 />
                 {branding.primary_color
@@ -316,9 +317,9 @@ export default function SettingsPage() {
           <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 4 }}>Install Saguaro Field on your phone</div>
           <div style={{ fontSize: 13, color: DIM }}>iPhone, Android, iPad, or desktop — no app store needed. Free for your entire team.</div>
         </div>
-        <a href="/get-the-app" style={{ padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+        <Link href="/get-the-app" style={{ padding: '12px 24px', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, borderRadius: 9, color: '#000', fontWeight: 800, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
           Get Install Guide
-        </a>
+        </Link>
       </div>
 
       {/* Logout */}

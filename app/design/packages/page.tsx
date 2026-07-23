@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 
 /* ─── Palette ─── */
-const BG = '#F2F2F7', CARD = '#FFFFFF', GOLD = '#C8881C', GREEN = '#34C759';
-const BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73', DARK = '#F2F2F7';
+const BG = '#0d1117', CARD = '#0F172A', GOLD = '#F59E0B', GREEN = '#34C759';
+const BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1', DARK = '#0d1117';
 const BLUE = '#007AFF', PURPLE = '#AF52DE', AMBER = '#FF9500';
 
 const glass: React.CSSProperties = {
@@ -300,7 +301,7 @@ export default function PackagesPage() {
                   </div>
                 </div>
 
-                <a href="/design/discover" style={{ textDecoration: 'none' }}>
+                <Link href="/design/discover" style={{ textDecoration: 'none' }}>
                   <button style={{
                     width: '100%', padding: '14px', border: 'none', borderRadius: 0,
                     background: tierColor, color: pkg.tier === 'essential' ? '#fff' : '#000',
@@ -308,7 +309,7 @@ export default function PackagesPage() {
                   }}>
                     Get Started
                   </button>
-                </a>
+                </Link>
               </div>
             );
           })}

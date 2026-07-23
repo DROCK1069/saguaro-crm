@@ -7,11 +7,11 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -242,8 +242,8 @@ function FolderTreeItem({
         style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px',
           paddingLeft: 8 + depth * 16, cursor: 'pointer', borderRadius: 8,
-          background: isSelected ? 'rgba(212,160,23,0.12)' : 'transparent',
-          border: isSelected ? `1px solid rgba(212,160,23,0.3)` : '1px solid transparent',
+          background: isSelected ? 'rgba(245, 158, 11,0.12)' : 'transparent',
+          border: isSelected ? `1px solid rgba(245, 158, 11,0.3)` : '1px solid transparent',
           transition: 'background 0.15s',
         }}
         onMouseEnter={(e) => { if (!isSelected) (e.currentTarget.style.background = 'rgba(139,170,200,0.06)'); }}
@@ -388,8 +388,8 @@ function DocInfoPanel({
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
     padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: active ? 600 : 400, cursor: 'pointer',
-    background: active ? 'rgba(212,160,23,0.12)' : 'transparent', color: active ? GOLD : DIM,
-    border: active ? `1px solid rgba(212,160,23,0.2)` : '1px solid transparent',
+    background: active ? 'rgba(245, 158, 11,0.12)' : 'transparent', color: active ? GOLD : DIM,
+    border: active ? `1px solid rgba(245, 158, 11,0.2)` : '1px solid transparent',
   });
 
   return (
@@ -454,7 +454,7 @@ function DocInfoPanel({
               {tags.map((tag) => (
                 <span key={tag} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px',
-                  borderRadius: 12, background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.2)',
+                  borderRadius: 12, background: 'rgba(245, 158, 11,0.1)', border: '1px solid rgba(245, 158, 11,0.2)',
                   color: GOLD, fontSize: 11, fontWeight: 500,
                 }}>
                   {tag}
@@ -1018,7 +1018,7 @@ function DocsPage() {
     const currentVersion = currentVersions.find((v) => v.isCurrent);
     const containerStyle: React.CSSProperties = fullScreen
       ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: '#000', display: 'flex', flexDirection: 'column' }
-      : { padding: '18px 16px', minHeight: '100vh', background: '#F2F2F7' };
+      : { padding: '18px 16px', minHeight: '100vh', background: '#0d1117' };
 
     return (
       <div style={containerStyle}>
@@ -1052,7 +1052,7 @@ function DocsPage() {
 
           <div style={{ display: 'flex', gap: 6 }}>
             {/* Doc Info button */}
-            <button onClick={() => { setShowDocInfo(!showDocInfo); setShowVersionHistory(false); }} style={{ ...iconBtn, background: showDocInfo ? 'rgba(212,160,23,0.15)' : undefined, color: showDocInfo ? GOLD : DIM }} title="Document Info">
+            <button onClick={() => { setShowDocInfo(!showDocInfo); setShowVersionHistory(false); }} style={{ ...iconBtn, background: showDocInfo ? 'rgba(245, 158, 11,0.15)' : undefined, color: showDocInfo ? GOLD : DIM }} title="Document Info">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={18} height={18}>
                 <circle cx={12} cy={12} r={10}/><line x1={12} y1={16} x2={12} y2={12}/><line x1={12} y1={8} x2={12.01} y2={8}/>
               </svg>
@@ -1228,7 +1228,7 @@ function DocsPage() {
   ];
 
   return (
-    <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#F2F2F7' }}>
+    <div style={{ padding: '18px 16px', minHeight: '100vh', background: '#0d1117' }}>
       {/* Hidden file input for version uploads */}
       <input
         ref={fileInputRef}
@@ -1275,9 +1275,9 @@ function DocsPage() {
           onClick={() => setShowSearchPanel(!showSearchPanel)}
           style={{
             ...iconBtn,
-            background: showSearchPanel ? 'rgba(212,160,23,0.12)' : iconBtn.background,
+            background: showSearchPanel ? 'rgba(245, 158, 11,0.12)' : iconBtn.background,
             color: showSearchPanel ? GOLD : DIM,
-            border: showSearchPanel ? `1px solid rgba(212,160,23,0.3)` : `1px solid ${BORDER}`,
+            border: showSearchPanel ? `1px solid rgba(245, 158, 11,0.3)` : `1px solid ${BORDER}`,
           }}
           title="Advanced Search"
         >
@@ -1292,9 +1292,9 @@ function DocsPage() {
           onClick={() => setShowFolderTree(!showFolderTree)}
           style={{
             ...iconBtn,
-            background: showFolderTree ? 'rgba(212,160,23,0.12)' : iconBtn.background,
+            background: showFolderTree ? 'rgba(245, 158, 11,0.12)' : iconBtn.background,
             color: showFolderTree ? GOLD : DIM,
-            border: showFolderTree ? `1px solid rgba(212,160,23,0.3)` : `1px solid ${BORDER}`,
+            border: showFolderTree ? `1px solid rgba(245, 158, 11,0.3)` : `1px solid ${BORDER}`,
           }}
           title="Toggle Folder Tree"
         >
@@ -1437,8 +1437,8 @@ function DocsPage() {
               onClick={() => { setSelectedFolder(null); setBreadcrumb(['Home']); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', cursor: 'pointer', borderRadius: 8,
-                background: !selectedFolder ? 'rgba(212,160,23,0.12)' : 'transparent',
-                border: !selectedFolder ? '1px solid rgba(212,160,23,0.3)' : '1px solid transparent',
+                background: !selectedFolder ? 'rgba(245, 158, 11,0.12)' : 'transparent',
+                border: !selectedFolder ? '1px solid rgba(245, 158, 11,0.3)' : '1px solid transparent',
               }}
               onMouseEnter={(e) => { if (selectedFolder) (e.currentTarget.style.background = 'rgba(139,170,200,0.06)'); }}
               onMouseLeave={(e) => { if (selectedFolder) (e.currentTarget.style.background = 'transparent'); }}
@@ -1567,7 +1567,7 @@ function DocsPage() {
                           {tags.length > 0 && tags.slice(0, 2).map((tag) => (
                             <span key={tag} style={{
                               fontSize: 10, padding: '1px 6px', borderRadius: 8,
-                              background: 'rgba(212,160,23,0.1)', color: GOLD,
+                              background: 'rgba(245, 158, 11,0.1)', color: GOLD,
                             }}>
                               {tag}
                             </span>
@@ -1591,17 +1591,17 @@ function DocsPage() {
 }
 
 export default function FieldDocsPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><DocsPage /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}><DocsPage /></Suspense>;
 }
 
 const backBtn: React.CSSProperties = {
-  background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'flex', alignItems: 'center',
+  background: 'none', border: 'none', color: '#CBD5E1', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'flex', alignItems: 'center',
 };
 
 const iconBtn: React.CSSProperties = {
-  background: '#FFFFFF', border: `1px solid #E5E5EA`, borderRadius: 8, padding: 6, color: '#6E6E73', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: '#16243A', border: `1px solid rgba(255,255,255,0.12)`, borderRadius: 8, padding: 6, color: '#CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
 const smallBtn: React.CSSProperties = {
-  padding: '4px 10px', borderRadius: 6, background: 'transparent', border: `1px solid #E5E5EA`, color: '#6E6E73', fontSize: 11, cursor: 'pointer',
+  padding: '4px 10px', borderRadius: 6, background: 'transparent', border: `1px solid rgba(255,255,255,0.12)`, color: '#CBD5E1', fontSize: 11, cursor: 'pointer',
 };

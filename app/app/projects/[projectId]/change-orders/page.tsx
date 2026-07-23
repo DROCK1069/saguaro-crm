@@ -3,11 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { toCents, toDollars, summarizeContract } from '@/lib/calc';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const AMBER='#d97706';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
-const INP:React.CSSProperties = {padding:'8px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box'};
+const INP:React.CSSProperties = {padding:'8px 12px',background:'#16243A',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box'};
 const LBL:React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
 
 interface AIRiskResult {
@@ -34,7 +34,7 @@ function RiskBadge({ level }: { level: 'LOW' | 'MEDIUM' | 'HIGH' }) {
 function AIRiskPanel({ result, onClose }: { result: AIRiskResult; onClose: () => void }) {
   const approvalColor = result.approval_likelihood >= 70 ? '#3dd68c' : result.approval_likelihood >= 40 ? AMBER : RED;
   return (
-    <div style={{marginTop:12,background:'rgba(255,255,255,0.97)',border:`1px solid rgba(212,160,23,.25)`,borderRadius:12,padding:20,animation:'slideDown .25s ease'}}>
+    <div style={{marginTop:12,background:'#0F172A',border:`1px solid rgba(245, 158, 11,.25)`,borderRadius:12,padding:20,animation:'slideDown .25s ease'}}>
       <style>{`@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -57,7 +57,7 @@ function AIRiskPanel({ result, onClose }: { result: AIRiskResult; onClose: () =>
       </div>
 
       {/* Summary */}
-      <div style={{background:'rgba(212,160,23,.06)',border:`1px solid rgba(212,160,23,.12)`,borderRadius:8,padding:'12px 14px',marginBottom:14,fontSize:13,color:TEXT,lineHeight:1.6}}>
+      <div style={{background:'rgba(245, 158, 11,.06)',border:`1px solid rgba(245, 158, 11,.12)`,borderRadius:8,padding:'12px 14px',marginBottom:14,fontSize:13,color:TEXT,lineHeight:1.6}}>
         {result.summary}
       </div>
 
@@ -98,7 +98,7 @@ function AIRiskPanel({ result, onClose }: { result: AIRiskResult; onClose: () =>
 function statusStyle(s:string):{c:string,bg:string}{
   if(s==='approved') return {c:'#3dd68c',bg:'rgba(26,138,74,.14)'};
   if(s==='rejected') return {c:RED,    bg:'rgba(192,48,48,.14)'};
-  return {c:GOLD,bg:'rgba(212,160,23,.14)'};
+  return {c:GOLD,bg:'rgba(245, 158, 11,.14)'};
 }
 
 export default function ChangeOrdersPage() {
@@ -280,14 +280,14 @@ export default function ChangeOrdersPage() {
           </div>
         </div>
         <button onClick={()=>setShowForm(!showForm)}
-          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+          style={{padding:'9px 20px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
           {showForm ? '× Cancel' : '+ New Change Order'}
         </button>
       </div>
 
       {/* Create Form */}
       {showForm && (
-        <div style={{margin:'20px 24px',background:RAISED,border:`1px solid rgba(212,160,23,.3)`,borderRadius:12,padding:24}}>
+        <div style={{margin:'20px 24px',background:RAISED,border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:12,padding:24}}>
           <div style={{fontWeight:800,fontSize:15,color:TEXT,marginBottom:18,paddingBottom:12,borderBottom:`1px solid ${BORDER}`}}>New Change Order</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
             <div style={{gridColumn:'1/-1'}}>
@@ -314,7 +314,7 @@ export default function ChangeOrdersPage() {
           </div>
           <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
             <button onClick={createCO} disabled={saving||!fTitle.trim()}
-              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:(saving||!fTitle.trim())?0.6:1}}>
+              style={{padding:'9px 22px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontWeight:800,fontSize:13,cursor:saving?'wait':'pointer',opacity:(saving||!fTitle.trim())?0.6:1}}>
               {saving ? 'Creating…' : 'Create Change Order'}
             </button>
             <button onClick={()=>{setShowForm(false);setError('');}}
@@ -324,7 +324,7 @@ export default function ChangeOrdersPage() {
             <button
               onClick={()=>analyzeRisk({title:fTitle,description:fDesc,reason:fReason,cost_impact:parseFloat(fCost)||0,schedule_impact:parseFloat(fSchedule)||0},'form')}
               disabled={(riskLoading&&riskTarget==='form')||!fTitle.trim()}
-              style={{padding:'9px 18px',background:'rgba(212,160,23,.1)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,cursor:'pointer',opacity:!fTitle.trim()?0.5:1,display:'flex',alignItems:'center',gap:6}}>
+              style={{padding:'9px 18px',background:'rgba(245, 158, 11,.1)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:8,color:GOLD,fontSize:13,fontWeight:700,cursor:'pointer',opacity:!fTitle.trim()?0.5:1,display:'flex',alignItems:'center',gap:6}}>
               {riskLoading&&riskTarget==='form' ? '🤖 Analyzing…' : '🤖 Analyze Risk'}
             </button>
           </div>
@@ -363,7 +363,7 @@ export default function ChangeOrdersPage() {
           </div>
           {pendingCOs!==0 && (
             <>
-              <div style={{marginLeft:'auto',padding:'8px 16px',background:'rgba(212,160,23,.08)',border:`1px solid rgba(212,160,23,.2)`,borderRadius:8}}>
+              <div style={{marginLeft:'auto',padding:'8px 16px',background:'rgba(245, 158, 11,.08)',border:`1px solid rgba(245, 158, 11,.2)`,borderRadius:8}}>
                 <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:3}}>Pending Approval</div>
                 <div style={{fontSize:16,fontWeight:800,color:GOLD}}>{pendingCOs>=0?'+':''}{fmt(pendingCOs)}</div>
               </div>
@@ -396,7 +396,7 @@ export default function ChangeOrdersPage() {
             <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>No change orders yet</div>
             <div style={{fontSize:13,color:DIM,marginBottom:24}}>Track scope changes, owner requests, and unforeseen conditions.</div>
             <button onClick={()=>setShowForm(true)}
-              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
+              style={{padding:'10px 24px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:8,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>
               + Create First Change Order
             </button>
           </div>
@@ -421,7 +421,7 @@ export default function ChangeOrdersPage() {
                   const cost = Number(co.cost_impact||0);
                   return (
                     <React.Fragment key={co.id}>
-                    <tr style={{borderBottom:`1px solid rgba(229,229,234,.5)`}}>
+                    <tr style={{borderBottom:`1px solid rgba(255,255,255,0.12)`}}>
                       <td style={{padding:'12px 14px',color:GOLD,fontWeight:800}}>CO-{String(co.co_number).padStart(3,'0')}</td>
                       <td style={{padding:'12px 14px',color:TEXT,maxWidth:240}}>
                         <div style={{fontWeight:600}}>{co.title}</div>
@@ -435,8 +435,8 @@ export default function ChangeOrdersPage() {
                       <td style={{padding:'12px 14px',position:'relative' as const}}>
                         {coEditId===co.id ? (
                           <div style={{display:'flex',alignItems:'center',gap:4}}>
-                            <input value={coEditVal} onChange={e=>setCoEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditCO(co.id);if(e.key==='Escape')setCoEditId(null);}} style={{width:100,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
-                            <button onClick={()=>handleEditCO(co.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
+                            <input value={coEditVal} onChange={e=>setCoEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditCO(co.id);if(e.key==='Escape')setCoEditId(null);}} style={{width:100,padding:'4px 8px',background:'#16243A',border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
+                            <button onClick={()=>handleEditCO(co.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
                             <button onClick={()=>setCoEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                           </div>
                         ) : (
@@ -474,7 +474,7 @@ export default function ChangeOrdersPage() {
                           {co.status==='pending' && (
                             <>
                               <button onClick={()=>approveCO(co.id)} disabled={approvingId===co.id}
-                                style={{background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 12px',fontWeight:800,cursor:approvingId===co.id?'wait':'pointer',opacity:approvingId===co.id?0.6:1}}>
+                                style={{background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 12px',fontWeight:800,cursor:approvingId===co.id?'wait':'pointer',opacity:approvingId===co.id?0.6:1}}>
                                 {approvingId===co.id ? '…' : 'Approve'}
                               </button>
                               <button onClick={()=>rejectCO(co.id)} disabled={approvingId===co.id}
@@ -491,7 +491,7 @@ export default function ChangeOrdersPage() {
                               else analyzeRisk({title:co.title,description:co.description,reason:co.reason,cost_impact:co.cost_impact,schedule_impact:co.schedule_impact,status:co.status},co.id);
                             }}
                             disabled={riskLoading&&riskTarget===co.id}
-                            style={{background:'rgba(212,160,23,.08)',border:`1px solid rgba(212,160,23,.25)`,borderRadius:5,color:GOLD,fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+                            style={{background:'rgba(245, 158, 11,.08)',border:`1px solid rgba(245, 158, 11,.25)`,borderRadius:5,color:GOLD,fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
                             {riskLoading&&riskTarget===co.id ? '🤖…' : '🤖 Risk'}
                           </button>
                         </div>

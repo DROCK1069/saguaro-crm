@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD='#C8881C', DARK='#F2F2F7', RAISED='#FFFFFF', BORDER='#E5E5EA', DIM='#6E6E73', TEXT='#1C1C1E', GREEN='#3dd68c', RED='#ef4444';
+const GOLD='#F59E0B', DARK='#0d1117', RAISED='#0F172A', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
 interface Proposal {
   id: string;
@@ -105,7 +105,7 @@ export default function ProposalPage() {
     setTimeout(() => setSuccessMsg(''), 4000);
   }
 
-  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#16243A', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
 
   return (
@@ -115,7 +115,7 @@ export default function ProposalPage() {
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: TEXT }}>Proposal</h2>
           <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>Project proposals and contract amounts</div>
         </div>
-        <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,' + GOLD + ',#E0A030)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>+ New Version</button>
+        <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,' + GOLD + ',#FBBF24)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>+ New Version</button>
       </div>
 
       {/* Accepted proposal banner */}
@@ -134,14 +134,14 @@ export default function ProposalPage() {
       {errorMsg && <div style={{ margin: '12px 24px 0', padding: '10px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', borderRadius: 7, color: RED, fontSize: 13 }}>{errorMsg}</div>}
 
       {showForm && (
-        <div style={{ margin: 24, background: RAISED, border: '1px solid rgba(212,160,23,.3)', borderRadius: 10, padding: 24 }}>
+        <div style={{ margin: 24, background: RAISED, border: '1px solid rgba(245, 158, 11,.3)', borderRadius: 10, padding: 24 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 16 }}>New Proposal Version ({latestVersion})</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 14 }}>
             <div><label style={label}>Amount ($) *</label><input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} /></div>
             <div><label style={label}>Notes</label><input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Revised after value engineering" style={inp} /></div>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,' + GOLD + ',#E0A030)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            <button onClick={handleSave} disabled={saving} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,' + GOLD + ',#FBBF24)', border: 'none', borderRadius: 7, color: '#1C1C1E', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
               {saving ? 'Saving...' : 'Create Version'}
             </button>
             <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={{ padding: '9px 16px', background: RAISED, border: '1px solid ' + BORDER, borderRadius: 7, color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
@@ -153,7 +153,7 @@ export default function ProposalPage() {
         {loading ? <div style={{ textAlign: 'center', padding: 40, color: DIM }}>Loading...</div> : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#F2F2F7' }}>
+              <tr style={{ background: '#16243A' }}>
                 {['Version','Created','Amount','Status','Notes','Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: DIM, borderBottom: '1px solid ' + BORDER, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}

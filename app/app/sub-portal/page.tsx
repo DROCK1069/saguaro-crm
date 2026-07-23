@@ -3,12 +3,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CONTRACTOR_TRADES as ALL_TRADES } from '@/lib/contractor-trades';
 
 /* ── palette ── */
-const GOLD = '#C8881C';
-const BG = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const BG = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';

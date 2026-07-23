@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 
-const GOLD = '#D4A017', DIM = '#8BAAC8', TEXT = '#F0F4FF';
+const GOLD = '#F59E0B', DIM = '#8BAAC8', TEXT = '#F0F4FF';
 
 interface EmptyStateProps {
   icon?: string;
@@ -30,7 +30,7 @@ export default function EmptyState({ icon, title, description, actionLabel, onAc
     }}>
       <div style={{
         width: compact ? 56 : 80, height: compact ? 56 : 80, borderRadius: '50%',
-        background: 'rgba(212,160,23,.08)', border: '2px solid rgba(212,160,23,.15)',
+        background: 'rgba(245, 158, 11,.08)', border: '2px solid rgba(245, 158, 11,.15)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: compact ? 28 : 40, marginBottom: compact ? 12 : 20,
       }}>

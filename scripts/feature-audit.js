@@ -50,6 +50,7 @@ const BATCHES = [
   ['app/project/[id]/safety.tsx', 'app/project/[id]/inspection.tsx'],
   ['app/project/[id]/drawings.tsx', 'app/project/[id]/photos.tsx'],
   ['app/project/[id]/schedule.tsx', 'app/project/[id]/financials.tsx'],
+  ['app/lien-waivers.tsx', 'app/insurance.tsx'],
 ]
 
 log(`Beta-readiness audit across ${BATCHES.flat().length} screens`)

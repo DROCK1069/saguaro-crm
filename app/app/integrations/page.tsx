@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { IntegrationStrip } from '@/components/Integrations';
 
-const GOLD = '#C8881C', DARK = '#F2F2F7', CARD = '#FFFFFF', BORDER = '#E5E5EA';
-const DIM = '#6E6E73', TEXT = '#1C1C1E', GREEN = '#22C55E', RED = '#EF4444';
+const GOLD = '#F59E0B', DARK = '#16243A', CARD = '#0F172A', BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#22C55E', RED = '#EF4444';
 
 type Integration = {
   key: string;
@@ -295,7 +295,7 @@ export default function IntegrationsPage() {
           <Link
             href="/app/integrations/api-docs"
             style={{
-              padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#E0A030)`,
+              padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
               color: '#1C1C1E', borderRadius: 8, fontWeight: 800, fontSize: 13, textDecoration: 'none',
             }}
           >
@@ -316,7 +316,7 @@ export default function IntegrationsPage() {
             style={{
               padding: '7px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
               border: category === cat.key ? `1px solid ${GOLD}` : `1px solid ${BORDER}`,
-              background: category === cat.key ? 'rgba(212,160,23,0.12)' : 'transparent',
+              background: category === cat.key ? 'rgba(245, 158, 11,0.12)' : 'transparent',
               color: category === cat.key ? GOLD : DIM,
               transition: 'all 0.2s',
             }}
@@ -418,7 +418,7 @@ export default function IntegrationsPage() {
                           href="/app/integrations/quickbooks"
                           style={{
                             flex: 1, padding: '8px 0', textAlign: 'center', borderRadius: 8,
-                            background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: '#1C1C1E',
+                            background: `linear-gradient(135deg,${GOLD},#FBBF24)`, color: '#1C1C1E',
                             fontSize: 12, fontWeight: 700, textDecoration: 'none',
                           }}
                         >
@@ -455,7 +455,7 @@ export default function IntegrationsPage() {
                     disabled={connectingKey === intg.key}
                     style={{
                       flex: 1, padding: '9px 0', borderRadius: 8, cursor: 'pointer',
-                      background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                      background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none',
                       color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                       opacity: connectingKey === intg.key ? 0.6 : 1,
                     }}
@@ -488,7 +488,7 @@ export default function IntegrationsPage() {
       {/* Sage 300 Setup Modal */}
       {showSetup === 'sage300' && (
         <div style={{
-          position: 'fixed', inset: 0, background: '#F2F2F7',
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(8px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowSetup(null)}>
           <div
@@ -571,7 +571,7 @@ export default function IntegrationsPage() {
                 disabled={!setupForm.api_url || connectingKey === 'sage300'}
                 style={{
                   padding: '10px 24px', borderRadius: 8, cursor: 'pointer',
-                  background: `linear-gradient(135deg,${GOLD},#E0A030)`, border: 'none',
+                  background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none',
                   color: '#1C1C1E', fontSize: 13, fontWeight: 700,
                   opacity: !setupForm.api_url || connectingKey === 'sage300' ? 0.5 : 1,
                 }}

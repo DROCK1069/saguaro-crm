@@ -8,11 +8,11 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -461,7 +461,7 @@ function TimesheetsInner() {
     fontSize: 14, transition: 'opacity .15s',
   });
   const inputStyle: React.CSSProperties = {
-    background: hexAlpha(BORDER, 0.4), border: `1px solid ${BORDER}`, borderRadius: 8,
+    background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8,
     color: TEXT, padding: '10px 14px', fontSize: 14, width: '100%', boxSizing: 'border-box',
     outline: 'none',
   };
@@ -473,7 +473,7 @@ function TimesheetsInner() {
 
   /* ────────────────────────── RENDER ────────────────────────── */
   return (
-    <div style={{ background: '#FFFFFF', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ background: '#0d1117', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       {/* ── Toast ── */}
       {toast && (
         <div style={{
@@ -505,7 +505,7 @@ function TimesheetsInner() {
         </div>
 
         {/* ── View tabs ── */}
-        <div style={{ display: 'flex', gap: 4, background: hexAlpha(BORDER, 0.3), borderRadius: 10, padding: 3 }}>
+        <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 3 }}>
           {(['list', 'weekly'] as View[]).map((v) => (
             <button
               key={v}
@@ -958,7 +958,7 @@ function TimesheetsInner() {
                         padding: '8px 4px', textAlign: 'center', fontSize: 14, fontWeight: 700,
                         color: dayTotal > 0 ? TEXT : hexAlpha(DIM, 0.3),
                         background: dayTotal > 8 ? hexAlpha(AMBER, 0.1) : 'transparent',
-                        borderRight: i < 6 ? `1px solid ${hexAlpha(BORDER, 0.3)}` : 'none',
+                        borderRight: i < 6 ? `1px solid rgba(255,255,255,0.06)` : 'none',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         minHeight: 44, cursor: 'default',
                       }}
@@ -1212,8 +1212,8 @@ function TimesheetsInner() {
 export default function TimesheetsPage() {
   return (
     <Suspense fallback={
-      <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#C8881C', fontWeight: 700, fontSize: 16 }}>Loading Timesheets...</div>
+      <div style={{ background: '#0d1117', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#F59E0B', fontWeight: 700, fontSize: 16 }}>Loading Timesheets...</div>
       </div>
     }>
       <TimesheetsInner />

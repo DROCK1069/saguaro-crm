@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 const GREEN = '#1a8a4a';
 const RED = '#c03030';
 
@@ -154,7 +154,7 @@ export default function NotificationsPage() {
         <button
           onClick={markAllRead}
           disabled={markingAll || unreadCount === 0}
-          style={{ padding: '8px 16px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 7, color: unreadCount > 0 ? DIM : '#6E6E73', fontSize: 12, fontWeight: 600, cursor: unreadCount > 0 ? 'pointer' : 'not-allowed', opacity: unreadCount > 0 ? 1 : 0.5 }}
+          style={{ padding: '8px 16px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 7, color: unreadCount > 0 ? DIM : '#CBD5E1', fontSize: 12, fontWeight: 600, cursor: unreadCount > 0 ? 'pointer' : 'not-allowed', opacity: unreadCount > 0 ? 1 : 0.5 }}
         >
           {markingAll ? 'Marking...' : 'Mark all read'}
         </button>
@@ -164,7 +164,7 @@ export default function NotificationsPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {(['all', 'unread'] as const).map(f => (
           <button key={f} onClick={() => setReadFilter(f)}
-            style={{ padding: '6px 16px', borderRadius: 6, border: `1px solid ${readFilter === f ? GOLD : BORDER}`, background: readFilter === f ? 'rgba(212,160,23,.12)' : 'transparent', color: readFilter === f ? GOLD : DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
+            style={{ padding: '6px 16px', borderRadius: 6, border: `1px solid ${readFilter === f ? GOLD : BORDER}`, background: readFilter === f ? 'rgba(245, 158, 11,.12)' : 'transparent', color: readFilter === f ? GOLD : DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
             {f === 'all' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
           </button>
         ))}
@@ -174,7 +174,7 @@ export default function NotificationsPage() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
         {TYPE_GROUPS.filter(g => g === 'All' || typeCounts[g] > 0).map(g => (
           <button key={g} onClick={() => setTypeFilter(g)}
-            style={{ padding: '4px 12px', borderRadius: 20, border: `1px solid ${typeFilter === g ? GOLD : BORDER}`, background: typeFilter === g ? 'rgba(212,160,23,.12)' : 'transparent', color: typeFilter === g ? GOLD : DIM, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            style={{ padding: '4px 12px', borderRadius: 20, border: `1px solid ${typeFilter === g ? GOLD : BORDER}`, background: typeFilter === g ? 'rgba(245, 158, 11,.12)' : 'transparent', color: typeFilter === g ? GOLD : DIM, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
             {g}{typeCounts[g] > 0 && g !== 'All' ? ` (${typeCounts[g]})` : ''}
           </button>
         ))}
@@ -204,7 +204,7 @@ export default function NotificationsPage() {
                   padding: '14px 20px',
                   borderBottom: i < displayed.length - 1 ? `1px solid ${BORDER}` : 'none',
                   cursor: n.read ? 'default' : 'pointer',
-                  background: n.read ? 'transparent' : 'rgba(212,160,23,.04)',
+                  background: n.read ? 'transparent' : 'rgba(245, 158, 11,.04)',
                   transition: 'background .15s',
                   display: 'flex',
                   gap: 14,
@@ -226,7 +226,7 @@ export default function NotificationsPage() {
                         onClick={e => { e.stopPropagation(); dismiss(n.id); }}
                         disabled={dismissingId === n.id}
                         title="Dismiss"
-                        style={{ background: 'none', border: 'none', color: '#AEAEB2', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
+                        style={{ background: 'none', border: 'none', color: '#8094B0', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 4 }}
                       >×</button>
                     </div>
                   </div>
@@ -244,7 +244,7 @@ export default function NotificationsPage() {
                         href={n.link || n.action_url || '#'}
                         prefetch={false}
                         onClick={e => { e.stopPropagation(); markRead(n.id); }}
-                        style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.25)', borderRadius: 5 }}
+                        style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.25)', borderRadius: 5 }}
                       >
                         View →
                       </Link>
@@ -263,7 +263,7 @@ export default function NotificationsPage() {
                     )}
                     {n.project_id && n.type === 'bid_submitted' && (
                       <Link href={`/app/projects/${n.project_id}/bid-packages`} prefetch={false} onClick={e => { e.stopPropagation(); markRead(n.id); }}
-                        style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.25)', borderRadius: 5 }}>
+                        style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600, padding: '3px 10px', background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.25)', borderRadius: 5 }}>
                         Review Bid →
                       </Link>
                     )}

@@ -7,11 +7,11 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 
-const GOLD = '#C8881C', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
+const GOLD = '#F59E0B', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
 const GREEN = '#22C55E', RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6';
 
 const PRESET_COLORS = [RED, BLUE, GREEN, AMBER, GOLD, '#8B5CF6', '#EC4899', '#06B6D4'];
-const USER_COLORS = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#C8881C'];
+const USER_COLORS = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F59E0B'];
 
 function hr(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);
@@ -20,8 +20,8 @@ function hr(hex: string): string {
   return `${r},${g},${b}`;
 }
 
-const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none', boxSizing: 'border-box' };
-const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#6E6E73', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
+const inp: React.CSSProperties = { width: '100%', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none', boxSizing: 'border-box' };
+const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#CBD5E1', fontSize: 14, cursor: 'pointer', padding: '0 0 10px', display: 'block' };
 const CATEGORY_COLORS: Record<string, string> = { RFI: BLUE, Punch: RED, Safety: AMBER, Other: DIM };
 
 type MarkupTool = 'pen' | 'pin' | 'text' | 'rect' | 'circle' | 'arrow' | 'measure' | 'eraser';
@@ -968,7 +968,7 @@ function DrawingsPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: TEXT }}>Markup Layers</p>
               {uniqueCreators.length > 1 && (
-                <select value={filterUser || ''} onChange={e => setFilterUser(e.target.value || null)} style={{ background: '#F2F2F7', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 8px', color: TEXT, fontSize: 12 }}>
+                <select value={filterUser || ''} onChange={e => setFilterUser(e.target.value || null)} style={{ background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 8px', color: TEXT, fontSize: 12 }}>
                   <option value="">All Users</option>
                   {uniqueCreators.map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
@@ -1186,7 +1186,7 @@ function DrawingsPage() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" onClick={cancelPin} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
-              <button type="submit" disabled={savingPin} style={{ flex: 2, background: savingPin ? '#E5E5EA' : GOLD, border: 'none', borderRadius: 10, padding: '12px', color: savingPin ? DIM : '#000', fontSize: 14, fontWeight: 800, cursor: savingPin ? 'wait' : 'pointer' }}>
+              <button type="submit" disabled={savingPin} style={{ flex: 2, background: savingPin ? 'rgba(255,255,255,0.12)' : GOLD, border: 'none', borderRadius: 10, padding: '12px', color: savingPin ? DIM : '#000', fontSize: 14, fontWeight: 800, cursor: savingPin ? 'wait' : 'pointer' }}>
                 {savingPin ? 'Saving...' : 'Save Pin'}
               </button>
             </div>
@@ -1245,9 +1245,9 @@ function DrawingsPage() {
           {drawings.map(drawing => (
             <button key={drawing.id} onClick={() => openDrawing(drawing)} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
               {drawing.thumbnail_url ? (
-                <img src={drawing.thumbnail_url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0, background: '#F2F2F7' }} />
+                <img src={drawing.thumbnail_url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0, background: '#16243A' }} />
               ) : (
-                <div style={{ width: 56, height: 56, borderRadius: 8, background: '#F2F2F7', border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DIM, flexShrink: 0 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 8, background: '#16243A', border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DIM, flexShrink: 0 }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 </div>
               )}
@@ -1269,7 +1269,7 @@ function DrawingsPage() {
 
 export default function FieldDrawingsPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}>
       <DrawingsPage />
     </Suspense>
   );

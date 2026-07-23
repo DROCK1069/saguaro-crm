@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 /* ─── Palette ─── */
-const GOLD = '#C8881C', BG = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', TEXT = '#1C1C1E', DIM = '#6E6E73';
+const GOLD = '#F59E0B', BG = '#16243A', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
 const GREEN = '#22C55E', RED = '#EF4444', AMBER = '#F59E0B', BLUE = '#3B82F6', PURPLE = '#8B5CF6';
 
 /* ─── Constants ─── */
@@ -57,7 +57,7 @@ const labelS: React.CSSProperties = {
   fontSize: 12, fontWeight: 600, color: DIM, marginBottom: 4, display: 'block',
 };
 const overlayS: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 1000,
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000,
   display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
   paddingTop: 60, overflowY: 'auto',
 };
@@ -380,7 +380,7 @@ export default function LeadsPage() {
             ...btnS('transparent', DIM), border: `1px solid ${BORDER}`,
           }}>Export CSV</button>
           <button onClick={() => { setEditLead(emptyLead()); setShowModal(true); }}
-            style={btnS(`linear-gradient(135deg,${GOLD},#E0A030)`)}>
+            style={btnS(`linear-gradient(135deg,${GOLD},#FBBF24)`)}>
             + New Lead
           </button>
         </div>
@@ -486,7 +486,7 @@ export default function LeadsPage() {
             Start building your pipeline by adding your first lead.
           </div>
           <button onClick={() => { setEditLead(emptyLead()); setShowModal(true); }}
-            style={btnS(`linear-gradient(135deg,${GOLD},#E0A030)`)}>
+            style={btnS(`linear-gradient(135deg,${GOLD},#FBBF24)`)}>
             + Add First Lead
           </button>
         </div>
@@ -518,7 +518,7 @@ export default function LeadsPage() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontWeight: 700, fontSize: 13, color: TEXT }}>{stage}</span>
-                    <span style={{ ...chipS('rgba(0,0,0,.08)', DIM) }}>
+                    <span style={{ ...chipS('rgba(255,255,255,0.1)', DIM) }}>
                       {stageLeads.length}
                     </span>
                   </div>
@@ -531,7 +531,7 @@ export default function LeadsPage() {
                     <div style={{
                       padding: '20px 12px', textAlign: 'center', color: DIM, fontSize: 12,
                       border: `1px dashed ${BORDER}`, borderRadius: 8,
-                      background: 'rgba(0,0,0,.01)',
+                      background: 'rgba(255,255,255,0.02)',
                     }}>No leads</div>
                   )}
 
@@ -559,7 +559,7 @@ export default function LeadsPage() {
                         {(lead.tags || []).length > 0 && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                             {lead.tags.slice(0, 3).map((t, i) => (
-                              <span key={i} style={chipS('rgba(212,160,23,.15)', GOLD)}>{t}</span>
+                              <span key={i} style={chipS('rgba(245, 158, 11,.15)', GOLD)}>{t}</span>
                             ))}
                             {lead.tags.length > 3 && (
                               <span style={{ fontSize: 11, color: DIM }}>
@@ -671,7 +671,7 @@ export default function LeadsPage() {
                     borderBottom: `1px solid ${BORDER}`, cursor: 'pointer',
                     transition: 'background .1s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,.03)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <td style={{ padding: '10px 12px', fontWeight: 600, color: TEXT }}
@@ -838,7 +838,7 @@ export default function LeadsPage() {
                     ? Math.round((d?.count || 0) / metrics.total * 100)
                     : 0;
                   return (
-                    <tr key={s} style={{ borderBottom: `1px solid ${BORDER}22` }}>
+                    <tr key={s} style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
                       <td style={{
                         padding: '8px 10px', display: 'flex',
                         alignItems: 'center', gap: 8,
@@ -974,7 +974,7 @@ export default function LeadsPage() {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
                     {editLead.tags!.map((t, i) => (
                       <span key={i}
-                        style={{ ...chipS('rgba(212,160,23,.15)', GOLD), cursor: 'pointer' }}
+                        style={{ ...chipS('rgba(245, 158, 11,.15)', GOLD), cursor: 'pointer' }}
                         onClick={() => removeTag(i)}
                       >{t} {'\u2715'}</span>
                     ))}
@@ -1011,7 +1011,7 @@ export default function LeadsPage() {
               <button onClick={handleSave}
                 disabled={saving || !editLead.company_name?.trim()}
                 style={{
-                  ...btnS(saving ? DIM : `linear-gradient(135deg,${GOLD},#E0A030)`),
+                  ...btnS(saving ? DIM : `linear-gradient(135deg,${GOLD},#FBBF24)`),
                   opacity: saving || !editLead.company_name?.trim() ? 0.5 : 1,
                 }}
               >
@@ -1082,7 +1082,7 @@ export default function LeadsPage() {
             {(detailLead.tags || []).length > 0 && (
               <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {detailLead.tags.map((t, i) => (
-                  <span key={i} style={chipS('rgba(212,160,23,.15)', GOLD)}>{t}</span>
+                  <span key={i} style={chipS('rgba(245, 158, 11,.15)', GOLD)}>{t}</span>
                 ))}
               </div>
             )}
@@ -1213,7 +1213,7 @@ export default function LeadsPage() {
                     <div key={act.id} style={{
                       display: 'flex', gap: 12, padding: '12px 0',
                       borderBottom: idx < activities.length - 1
-                        ? `1px solid ${BORDER}22` : 'none',
+                        ? `1px solid rgba(255,255,255,0.06)` : 'none',
                       position: 'relative',
                     }}>
                       {/* Timeline icon */}

@@ -1,18 +1,19 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { INDUSTRIES } from '@/lib/industries';
 
 export const metadata: Metadata = {
-  title: 'Construction Software by Industry | Saguaro CRM',
+  title: 'Construction Software by Industry | Saguaro Control Systems',
   description: 'Purpose-built for every type of contractor: general contractors, residential remodelers, commercial GCs, roofing contractors, specialty subcontractors.',
 };
 
-const DARK = '#F2F2F7';
+const DARK = '#0d1117';
 const GOLD = '#F59E0B';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
+const RAISED = '#0F172A';
 
 export default function IndustryIndexPage() {
   return (
@@ -21,13 +22,13 @@ export default function IndustryIndexPage() {
       {/* NAV */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(255,255,255,0.9)',
+        height: 64, background: 'rgba(15,23,42,0.9)',
         borderBottom: `1px solid ${BORDER}`,
         backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center',
         padding: '0 32px', gap: 32,
       }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
           <Image
             src="/logo-full.jpg"
             alt="Saguaro"
@@ -35,7 +36,7 @@ export default function IndustryIndexPage() {
             height={44}
             style={{ height: 44, width: 'auto', objectFit: 'contain' }}
           />
-        </a>
+        </Link>
         <div style={{ flex: 1 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           {[
@@ -44,15 +45,15 @@ export default function IndustryIndexPage() {
             { label: 'Field App', href: '/field-app' },
             { label: 'Compare', href: '/compare' },
           ].map((link) => (
-            <a
+            <Link
               key={link.label}
               href={link.href}
               style={{ color: DIM, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
-          <a
+          <Link
             href="/signup"
             style={{
               background: GOLD, color: '#000', fontSize: 14, fontWeight: 700,
@@ -61,7 +62,7 @@ export default function IndustryIndexPage() {
             }}
           >
             Start Free Trial
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -96,7 +97,7 @@ export default function IndustryIndexPage() {
             gap: 20,
           }}>
             {INDUSTRIES.map((industry) => (
-              <a
+              <Link
                 key={industry.slug}
                 href={`/industry/${industry.slug}`}
                 style={{
@@ -145,7 +146,7 @@ export default function IndustryIndexPage() {
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -164,7 +165,7 @@ export default function IndustryIndexPage() {
             <p style={{ fontSize: 17, color: DIM, margin: '0 0 32px', lineHeight: 1.6 }}>
               No credit card required. Get your whole team on board today.
             </p>
-            <a
+            <Link
               href="/signup"
               style={{
                 display: 'inline-block',
@@ -173,7 +174,7 @@ export default function IndustryIndexPage() {
               }}
             >
               Start Free Trial
-            </a>
+            </Link>
           </div>
         </section>
 
@@ -182,9 +183,9 @@ export default function IndustryIndexPage() {
           <p style={{ fontSize: 13, color: DIM, margin: 0 }}>
             &copy; {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.
             {' '}&middot;{' '}
-            <a href="/privacy" style={{ color: DIM, textDecoration: 'none' }}>Privacy</a>
+            <Link href="/privacy" style={{ color: DIM, textDecoration: 'none' }}>Privacy</Link>
             {' '}&middot;{' '}
-            <a href="/terms" style={{ color: DIM, textDecoration: 'none' }}>Terms</a>
+            <Link href="/terms" style={{ color: DIM, textDecoration: 'none' }}>Terms</Link>
           </p>
         </footer>
       </div>

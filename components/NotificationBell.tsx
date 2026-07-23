@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#c03030';
 
 interface Notification {
   id: string;
@@ -129,7 +129,7 @@ export default function NotificationBell() {
       <button
         onClick={handleOpen}
         aria-label={`Notifications${displayCount > 0 ? ` (${displayCount} unread)` : ''}`}
-        style={{ position: 'relative', background: 'rgba(0,0,0,.04)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        style={{ position: 'relative', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: 18 }}>🔔</span>
         {displayCount > 0 && (
           <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, background: RED, borderRadius: 9, fontSize: 10, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: `2px solid ${DARK}` }}>
@@ -142,7 +142,7 @@ export default function NotificationBell() {
         <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', width: 'min(380px, calc(100vw - 24px))', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.6)', zIndex: 1000, overflow: 'hidden' }}>
 
           {/* Dropdown Header */}
-          <div style={{ padding: '12px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F2F2F7' }}>
+          <div style={{ padding: '12px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#16243A' }}>
             <span style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>Notifications</span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {displayCount > 0 && (
@@ -171,9 +171,9 @@ export default function NotificationBell() {
                 <div
                   key={n.id}
                   onClick={() => markRead(n.id, n.link)}
-                  style={{ padding: '12px 16px', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer', background: n.read ? 'transparent' : 'rgba(212,160,23,.04)', transition: 'background .15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = n.read ? 'rgba(0,0,0,.02)' : 'rgba(212,160,23,.08)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(212,160,23,.04)')}>
+                  style={{ padding: '12px 16px', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer', background: n.read ? 'transparent' : 'rgba(245, 158, 11,.04)', transition: 'background .15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = n.read ? 'rgba(255,255,255,.03)' : 'rgba(245, 158, 11,.08)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(245, 158, 11,.04)')}>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{TYPE_ICONS[n.type] || TYPE_ICONS.default}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>

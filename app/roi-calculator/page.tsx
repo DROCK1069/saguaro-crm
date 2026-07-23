@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
-const DARK = '#F2F2F7';
+const DARK = '#0d1117';
 const GOLD = '#F59E0B';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
+const RAISED = '#0F172A';
 const GREEN = '#22c55e';
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
@@ -47,7 +48,7 @@ export default function ROICalculatorPage() {
   const adminMoneySaved = adminSaved * hourlyRate;
   const totalMonthlySaved =
     takeoffMoneySaved + lienWaiverMoneySaved + payAppMoneySaved + certPayrollMoneySaved + adminMoneySaved;
-  const saguaroCost = 399;
+  const saguaroCost = 499;
   const softwareSavings = Math.max(0, effectiveSoftwareCost - saguaroCost);
   const totalNetSavings = totalMonthlySaved + softwareSavings;
   const annualSavings = totalNetSavings * 12;
@@ -125,8 +126,8 @@ export default function ROICalculatorPage() {
         }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-        <span style={{ color: '#475569', fontSize: 11 }}>{prefix}{min}{suffix}</span>
-        <span style={{ color: '#475569', fontSize: 11 }}>{prefix}{max.toLocaleString()}{suffix}</span>
+        <span style={{ color: '#8094B0', fontSize: 11 }}>{prefix}{min}{suffix}</span>
+        <span style={{ color: '#8094B0', fontSize: 11 }}>{prefix}{max.toLocaleString()}{suffix}</span>
       </div>
     </div>
   );
@@ -307,7 +308,7 @@ export default function ROICalculatorPage() {
           font-weight: 500;
         }
         .comparison-table tr:hover td {
-          background: rgba(0,0,0,0.02);
+          background: rgba(255,255,255,0.03);
         }
         .trust-pill {
           display: inline-flex;
@@ -360,18 +361,18 @@ export default function ROICalculatorPage() {
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          background: 'rgba(255,255,255,0.92)',
+          background: 'rgba(15,23,42,0.98)',
           backdropFilter: 'blur(16px)',
           borderBottom: `1px solid ${BORDER}`,
           padding: '0 24px',
         }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-            <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
               <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 48 }} />
-            </a>
+            </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <a href="/login" className="nav-btn-outline">Log In</a>
-              <a href="/signup" className="nav-btn-gold">Start Free Trial</a>
+              <Link href="/login" className="nav-btn-outline">Log In</Link>
+              <Link href="/signup" className="nav-btn-gold">Start Free Trial</Link>
             </div>
           </div>
         </nav>
@@ -670,9 +671,9 @@ export default function ROICalculatorPage() {
                   </span>
                 </div>
 
-                <a href="/signup" className="cta-btn">
+                <Link href="/signup" className="cta-btn">
                   Claim This ROI — Start Free Trial →
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -721,7 +722,7 @@ export default function ROICalculatorPage() {
                 {
                   icon: '💻',
                   title: 'Software Comparison',
-                  desc: "Procore pricing from public data and verified customer contracts. Saguaro is $299/mo flat — no per-seat fees, no add-ons, no surprise invoices. Your current spend overrides defaults.",
+                  desc: "Procore pricing from public data and verified customer contracts. Saguaro is $499/mo flat — no per-seat fees, no add-ons, no surprise invoices. Your current spend overrides defaults.",
                 },
               ].map((card) => (
                 <div
@@ -757,7 +758,7 @@ export default function ROICalculatorPage() {
               Feature Comparison
             </div>
             <h2 style={{ fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              {"What's Included in the $299"}
+              {"What's Included in the $499"}
             </h2>
             <p style={{ color: DIM, fontSize: 16, marginTop: 12 }}>
               Everything you need. No per-seat pricing. No hidden add-ons.
@@ -772,11 +773,11 @@ export default function ROICalculatorPage() {
           }}>
             <table className="comparison-table">
               <thead>
-                <tr style={{ background: '#F2F2F7' }}>
+                <tr style={{ background: '#16243A' }}>
                   <th style={{ textAlign: 'left', color: DIM, padding: '16px 20px' }}>Feature</th>
                   <th style={{ color: DIM }}>Manual</th>
                   <th style={{ color: DIM }}>Procore</th>
-                  <th style={{ color: GOLD, borderBottom: `2px solid ${GOLD}` }}>Saguaro $299/mo</th>
+                  <th style={{ color: GOLD, borderBottom: `2px solid ${GOLD}` }}>Saguaro $499/mo</th>
                 </tr>
               </thead>
               <tbody>
@@ -882,9 +883,9 @@ export default function ROICalculatorPage() {
         }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20, marginBottom: 28 }}>
-              <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
                 <img src="/logo-full.jpg" alt="Saguaro" style={{ height: 40 }} />
-              </a>
+              </Link>
               <div className="footer-links" style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
                 {[
                   ['Features', '/features'],
@@ -893,27 +894,27 @@ export default function ROICalculatorPage() {
                   ['Sign Up', '/signup'],
                   ['Log In', '/login'],
                 ].map(([label, href]) => (
-                  <a key={label} href={href} style={{ color: DIM, textDecoration: 'none', fontSize: 14, transition: 'color 0.2s' }}
+                  <Link key={label} href={href} style={{ color: DIM, textDecoration: 'none', fontSize: 14, transition: 'color 0.2s' }}
                     onMouseOver={(e) => (e.currentTarget.style.color = GOLD)}
                     onMouseOut={(e) => (e.currentTarget.style.color = DIM)}
                   >
                     {label}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>
             <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <p style={{ margin: 0, color: '#475569', fontSize: 13 }}>
+              <p style={{ margin: 0, color: '#8094B0', fontSize: 13 }}>
                 &copy; {new Date().getFullYear()} Saguaro. All rights reserved.
               </p>
               <div style={{ display: 'flex', gap: 20 }}>
                 {[['Privacy Policy', '/privacy'], ['Terms of Service', '/terms']].map(([label, href]) => (
-                  <a key={label} href={href} style={{ color: '#475569', textDecoration: 'none', fontSize: 13 }}
+                  <Link key={label} href={href} style={{ color: '#8094B0', textDecoration: 'none', fontSize: 13 }}
                     onMouseOver={(e) => (e.currentTarget.style.color = DIM)}
-                    onMouseOut={(e) => (e.currentTarget.style.color = '#475569')}
+                    onMouseOut={(e) => (e.currentTarget.style.color = '#8094B0')}
                   >
                     {label}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>

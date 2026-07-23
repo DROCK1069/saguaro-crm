@@ -1,8 +1,8 @@
 'use client';
 
-const DARK = '#F2F2F7';
-const BORDER = '#E5E5EA';
-const GOLD = '#C8881C';
+const DARK = '#0d1117';
+const BORDER = 'rgba(255,255,255,0.12)';
+const GOLD = '#F59E0B';
 
 function Pulse({ w, h, mb, r }: { w: string; h: number; mb?: number; r?: number }) {
   return (
@@ -41,7 +41,7 @@ export default function FieldLoading() {
             <div
               key={i}
               style={{
-                background: '#FFFFFF',
+                background: '#0F172A',
                 borderRadius: 12,
                 padding: '18px 14px',
                 border: `1px solid ${BORDER}`,
@@ -62,7 +62,7 @@ export default function FieldLoading() {
           <div
             key={i}
             style={{
-              background: '#FFFFFF',
+              background: '#0F172A',
               borderRadius: 10,
               padding: '14px 16px',
               border: `1px solid ${BORDER}`,

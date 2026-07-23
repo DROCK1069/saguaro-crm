@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-const GOLD = '#C8881C';
-const DARK = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
-const TEXT = '#1C1C1E';
+const GOLD = '#F59E0B';
+const DARK = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
 
 interface VoiceToLogProps {
   onTranscript: (text: string) => void;
@@ -235,11 +235,11 @@ export default function VoiceToLog({ onTranscript }: VoiceToLogProps) {
         {recording ? (
           // Stop icon
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="4" y="4" width="12" height="12" rx="2" fill={DARK} />
+            <rect x="4" y="4" width="12" height="12" rx="2" fill="#FFFFFF" />
           </svg>
         ) : (
           // Mic icon
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="9" y="1" width="6" height="12" rx="3" />
             <path d="M5 10a7 7 0 0 0 14 0" />
             <line x1="12" y1="17" x2="12" y2="22" />

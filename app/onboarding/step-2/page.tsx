@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',RED='#ef4444',GREEN='#22c55e';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#22c55e';
 
 const STEPS = [
   { num: 1, label: 'Welcome', done: true },
@@ -17,12 +18,12 @@ const US_STATES = [
 ];
 
 const inputStyle: React.CSSProperties = {
-  width:'100%',padding:'11px 14px',background:'rgba(0,0,0,.04)',
+  width:'100%',padding:'11px 14px',background:'#16243A',
   border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:14,
   outline:'none',boxSizing:'border-box',
 };
 const selectStyle: React.CSSProperties = {
-  ...inputStyle, background:'#FFFFFF', cursor:'pointer',
+  ...inputStyle, background:'#16243A', cursor:'pointer',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -67,10 +68,10 @@ export default function OnboardingStep2() {
 
         {/* Logo */}
         <div style={{textAlign:'center',marginBottom:36}}>
-          <a href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:8}}>
+          <Link href="/" style={{textDecoration:'none',display:'inline-flex',alignItems:'center',gap:8}}>
             <span style={{fontSize:28}}>🌵</span>
             <span style={{fontWeight:900,fontSize:20,color:GOLD,letterSpacing:1}}>SAGUARO</span>
-          </a>
+          </Link>
         </div>
 
         {/* Step indicator */}
@@ -81,7 +82,7 @@ export default function OnboardingStep2() {
                 <div style={{
                   width:36,height:36,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
                   fontSize:14,fontWeight:800,
-                  background: s.done ? GREEN : s.active ? GOLD : 'rgba(0,0,0,.06)',
+                  background: s.done ? GREEN : s.active ? GOLD : 'rgba(255,255,255,.08)',
                   color: (s.done||s.active) ? '#1C1C1E' : DIM,
                   border:`2px solid ${s.done ? GREEN : s.active ? GOLD : BORDER}`,
                 }}>
@@ -135,7 +136,7 @@ export default function OnboardingStep2() {
                   <button
                     key={type}
                     onClick={()=>setForm(p=>({...p,companyType:type}))}
-                    style={{padding:'10px 8px',background:form.companyType===type?'rgba(212,160,23,.15)':'rgba(0,0,0,.03)',border:`1px solid ${form.companyType===type?'rgba(212,160,23,.5)':BORDER}`,borderRadius:8,color:form.companyType===type?GOLD:DIM,fontSize:11,fontWeight:form.companyType===type?700:400,cursor:'pointer',textAlign:'center',lineHeight:1.4}}
+                    style={{padding:'10px 8px',background:form.companyType===type?'rgba(245, 158, 11,.15)':'#16243A',border:`1px solid ${form.companyType===type?'rgba(245, 158, 11,.5)':BORDER}`,borderRadius:8,color:form.companyType===type?GOLD:DIM,fontSize:11,fontWeight:form.companyType===type?700:400,cursor:'pointer',textAlign:'center',lineHeight:1.4}}
                   >
                     {type}
                   </button>
@@ -168,15 +169,15 @@ export default function OnboardingStep2() {
             <button
               onClick={handleNext}
               disabled={loading}
-              style={{marginTop:8,padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#E0A030)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
+              style={{marginTop:8,padding:'14px 0',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:10,color:'#1C1C1E',fontSize:15,fontWeight:800,cursor:loading?'wait':'pointer',opacity:loading?.7:1}}
             >
               {loading?'Saving...':'Continue → First Project'}
             </button>
           </div>
         </div>
 
-        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#6E6E73'}}>
-          <a href="/app" style={{color:DIM,textDecoration:'none'}}>Skip setup — go to dashboard</a>
+        <div style={{textAlign:'center',marginTop:20,fontSize:12,color:'#CBD5E1'}}>
+          <Link href="/app" style={{color:DIM,textDecoration:'none'}}>Skip setup — go to dashboard</Link>
         </div>
       </div>
     </div>

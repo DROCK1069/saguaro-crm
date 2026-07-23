@@ -2,7 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 
-const GOLD = '#C8881C', DARK = '#F2F2F7', RAISED = '#FFFFFF', BORDER = '#E5E5EA', DIM = '#6E6E73', TEXT = '#1C1C1E';
+const GOLD = '#F59E0B', DARK = '#0d1117', RAISED = '#0F172A', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF';
 const GREEN = '#1a8a4a', RED = '#c03030';
 
 const fmt = (n: number) => '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -319,12 +319,12 @@ function CashFlowContent() {
                 onClick={() => setExpandedRow(isExpanded ? null : i)}
                 style={{
                   display: 'grid', gridTemplateColumns: '160px 1fr 1fr 1fr 1fr 40px',
-                  padding: '14px 20px', borderBottom: `1px solid rgba(229,229,234,0.4)`,
+                  padding: '14px 20px', borderBottom: `1px solid rgba(255,255,255,0.12)`,
                   cursor: 'pointer', fontSize: 13,
                   background: isDanger ? 'rgba(192,48,48,0.08)' : 'transparent',
                   transition: 'background 0.2s',
                 }}
-                onMouseEnter={(e) => { if (!isDanger) e.currentTarget.style.background = 'rgba(212,160,23,0.05)'; }}
+                onMouseEnter={(e) => { if (!isDanger) e.currentTarget.style.background = 'rgba(245, 158, 11,0.05)'; }}
                 onMouseLeave={(e) => { if (!isDanger) e.currentTarget.style.background = 'transparent'; }}
               >
                 <div style={{ color: TEXT, fontWeight: 600 }}>{period.month}</div>
@@ -350,7 +350,7 @@ function CashFlowContent() {
               {/* Expanded line items */}
               {isExpanded && (
                 <div style={{
-                  background: 'rgba(255,255,255,0.6)', borderBottom: `1px solid rgba(229,229,234,0.4)`,
+                  background: '#16243A', borderBottom: `1px solid rgba(255,255,255,0.12)`,
                   padding: '12px 20px 12px 40px',
                 }}>
                   {period.line_items.length === 0 ? (
@@ -359,7 +359,7 @@ function CashFlowContent() {
                     period.line_items.map((item, j) => (
                       <div key={j} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '6px 0', borderBottom: j < period.line_items.length - 1 ? `1px solid rgba(229,229,234,0.3)` : 'none',
+                        padding: '6px 0', borderBottom: j < period.line_items.length - 1 ? `1px solid rgba(255,255,255,0.08)` : 'none',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{
@@ -379,8 +379,8 @@ function CashFlowContent() {
                   )}
                   {period.retainage_release > 0 && (
                     <div style={{
-                      marginTop: 8, padding: '8px 12px', background: 'rgba(212,160,23,0.1)',
-                      borderRadius: 6, border: `1px solid rgba(212,160,23,0.3)`,
+                      marginTop: 8, padding: '8px 12px', background: 'rgba(245, 158, 11,0.1)',
+                      borderRadius: 6, border: `1px solid rgba(245, 158, 11,0.3)`,
                       fontSize: 11, color: GOLD,
                     }}>
                       Retainage release scheduled: {fmt(period.retainage_release)}
@@ -395,7 +395,7 @@ function CashFlowContent() {
         {/* Summary footer */}
         <div style={{
           display: 'grid', gridTemplateColumns: '160px 1fr 1fr 1fr 1fr 40px',
-          padding: '14px 20px', background: 'rgba(212,160,23,0.06)',
+          padding: '14px 20px', background: 'rgba(245, 158, 11,0.06)',
           borderTop: `2px solid ${GOLD}`,
           fontSize: 13, fontWeight: 800,
         }}>

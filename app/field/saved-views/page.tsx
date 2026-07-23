@@ -6,15 +6,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BASE = '#0d1117';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
 
 const MODULES = [
   { value: 'punch', label: 'Punch List', route: '/field/punch' },
@@ -185,7 +185,7 @@ export default function SavedViewsPage() {
   };
 
   const inputStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.6)',
+    background: '#16243A',
     border: `1px solid ${BORDER}`,
     borderRadius: 10,
     padding: '10px 14px',
@@ -271,7 +271,7 @@ export default function SavedViewsPage() {
                       key={s}
                       onClick={() => toggleStatus(s)}
                       style={{
-                        background: formStatuses.includes(s) ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.4)',
+                        background: formStatuses.includes(s) ? 'rgba(245, 158, 11,0.15)' : '#16243A',
                         color: formStatuses.includes(s) ? GOLD : DIM,
                         border: `1px solid ${formStatuses.includes(s) ? GOLD + '40' : BORDER}`,
                         borderRadius: 6,
@@ -310,7 +310,7 @@ export default function SavedViewsPage() {
                 onClick={createView}
                 disabled={!formName.trim() || saving}
                 style={{
-                  background: !formName.trim() ? 'rgba(212,160,23,0.3)' : GOLD,
+                  background: !formName.trim() ? 'rgba(245, 158, 11,0.3)' : GOLD,
                   color: !formName.trim() ? DIM : '#000',
                   border: 'none',
                   borderRadius: 10,
@@ -329,7 +329,7 @@ export default function SavedViewsPage() {
         {/* Loading */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-            <div style={{ width: 32, height: 32, border: '3px solid #E5E5EA', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ width: 32, height: 32, border: '3px solid rgba(255,255,255,0.12)', borderTopColor: GOLD, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
             Loading saved views...
           </div>
         ) : Object.keys(grouped).length === 0 ? (
@@ -412,7 +412,7 @@ export default function SavedViewsPage() {
                       <button
                         onClick={() => toggleDefault(view.id, view.is_default)}
                         style={{
-                          background: view.is_default ? 'rgba(34,197,94,0.12)' : 'rgba(0,0,0,0.04)',
+                          background: view.is_default ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.06)',
                           color: view.is_default ? GREEN : DIM,
                           border: `1px solid ${view.is_default ? 'rgba(34,197,94,0.25)' : BORDER}`,
                           borderRadius: 8,
@@ -444,7 +444,7 @@ export default function SavedViewsPage() {
                           <button
                             onClick={() => setDeleteConfirm(null)}
                             style={{
-                              background: 'rgba(0,0,0,0.04)',
+                              background: 'rgba(255,255,255,0.06)',
                               color: DIM,
                               border: `1px solid ${BORDER}`,
                               borderRadius: 8,

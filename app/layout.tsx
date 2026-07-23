@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://saguarocontrol.net'),
 
   title: {
-    default: 'Saguaro CRM — AI-Powered Construction Management',
-    template: '%s | Saguaro CRM',
+    default: 'Saguaro Control Systems — Construction Management & Project Controls',
+    template: '%s | Saguaro Control Systems',
   },
 
   description: 'The CRM built for General Contractors. AI blueprint takeoff, AIA pay applications, lien waivers, bid intelligence, and certified payroll — all in one platform.',
@@ -32,6 +32,9 @@ export const metadata: Metadata = {
     'construction bid management',
     'certified payroll WH-347',
     'construction project management',
+    'multi-site franchise rollouts',
+    'project controls',
+    'Saguaro Control Systems',
     'Saguaro CRM',
   ],
 
@@ -59,15 +62,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: 'https://saguarocontrol.net',
-    siteName: 'Saguaro CRM',
-    title: 'Saguaro CRM — AI-Powered Construction Management',
+    siteName: 'Saguaro Control Systems',
+    title: 'Saguaro Control Systems — AI-Powered Construction Management',
     description: 'AI blueprint takeoff, AIA pay applications, lien waivers, bid intelligence. Built for General Contractors.',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Saguaro CRM — AI-Powered Construction Management',
+        alt: 'Saguaro Control Systems — AI-Powered Construction Management',
         type: 'image/jpeg',
       },
     ],
@@ -84,7 +87,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@saguarocrm',
     creator: '@saguarocrm',
-    title: 'Saguaro CRM — AI-Powered Construction Management',
+    title: 'Saguaro Control Systems — AI-Powered Construction Management',
     description: 'AI blueprint takeoff, AIA pay applications, lien waivers, bid intelligence. Built for General Contractors.',
     images: ['/og-image.jpg'],
   },
@@ -122,8 +125,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Saguaro Field" />
         <meta name="application-name" content="Saguaro Field" />
-        <meta name="theme-color" content="#C8881C" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#C8881C" />
+        <meta name="theme-color" content="#F59E0B" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#F59E0B" />
         {/* Apple touch icons — PNG, multiple sizes for iPhone/iPad/Mac */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120x120.png" />
@@ -133,7 +136,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         {/* Microsoft Tiles */}
-        <meta name="msapplication-TileColor" content="#C8881C" />
+        <meta name="msapplication-TileColor" content="#F59E0B" />
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
         <meta name="msapplication-config" content="none" />
         {/* Service Worker registration */}
@@ -197,14 +200,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body style={{ margin: 0, padding: 0, background: '#F2F2F7', color: '#1C1C1E' }}>
+      <body style={{ margin: 0, padding: 0, background: '#0d1117', color: '#FFFFFF' }}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "Saguaro CRM",
+              "name": "Saguaro Control Systems",
               "url": "https://saguarocontrol.net",
               "logo": "https://saguarocontrol.net/logo-full.jpg",
               "image": "https://saguarocontrol.net/og-image.jpg",

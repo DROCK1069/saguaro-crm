@@ -8,7 +8,7 @@ import { toCents, toDollars, sumCents, subCents, summarizeContract } from '@/lib
 import EmptyState from '@/components/EmptyState';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#1a8a4a',RED='#c03030';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n:number|null|undefined) => '$'+((n ?? 0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 const fmtPct = (a:number|null|undefined,b:number|null|undefined) => (b ?? 0)>0?(((a ?? 0)/(b as number))*100).toFixed(1)+'%':'0%';
 
@@ -162,8 +162,8 @@ export default function OverviewPage(){
         <div style={{fontSize:12,color:DIM,marginTop:3}}>{[p.address,p.city,p.state].filter(Boolean).join(', ')}</div>
       </div>
       <div style={{display:'flex',gap:10,alignItems:'center'}}>
-        <button onClick={runAutopilot} disabled={scanning} style={{padding:'9px 16px',background:'rgba(212,160,23,.1)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer',opacity:scanning?.6:1}}>{scanning?'Scanning...':'Run Autopilot'}</button>
-        <Link href={'/app/projects/'+projectId+'/pay-apps/new'} style={{padding:'9px 16px',background:'linear-gradient(135deg,'+GOLD+',#E0A030)',borderRadius:7,color:'#1C1C1E',fontSize:12,fontWeight:800,textDecoration:'none'}}>+ New Pay App</Link>
+        <button onClick={runAutopilot} disabled={scanning} style={{padding:'9px 16px',background:'rgba(245, 158, 11,.1)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:7,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer',opacity:scanning?.6:1}}>{scanning?'Scanning...':'Run Autopilot'}</button>
+        <Link href={'/app/projects/'+projectId+'/pay-apps/new'} style={{padding:'9px 16px',background:'linear-gradient(135deg,'+GOLD+',#FBBF24)',borderRadius:7,color:'#1C1C1E',fontSize:12,fontWeight:800,textDecoration:'none'}}>+ New Pay App</Link>
       </div>
     </div>
     {scanMsg&&<div style={{margin:'12px 24px 0',padding:'12px 18px',background: scanMsg.includes('failed') ? 'rgba(192,48,48,.1)' : 'rgba(26,138,74,.1)',border:`1px solid ${scanMsg.includes('failed') ? 'rgba(192,48,48,.35)' : 'rgba(26,138,74,.35)'}`,borderRadius:8,fontSize:13,fontWeight:600,color: scanMsg.includes('failed') ? RED : GREEN,display:'flex',alignItems:'center',gap:8}}>
@@ -184,7 +184,7 @@ export default function OverviewPage(){
         <Link href={'/app/projects/'+projectId+'/rfis'} style={{fontSize:12,color:GOLD,textDecoration:'none',fontWeight:700}}>View RFIs →</Link>
       </div>}
 
-      {alerts.length>0&&<div style={{background:'rgba(212,160,23,.04)',border:'1px solid rgba(212,160,23,.2)',borderRadius:10,padding:'14px 18px',marginBottom:18}}>
+      {alerts.length>0&&<div style={{background:'rgba(245, 158, 11,.04)',border:'1px solid rgba(245, 158, 11,.2)',borderRadius:10,padding:'14px 18px',marginBottom:18}}>
         <div style={{fontWeight:700,fontSize:13,color:GOLD,marginBottom:10}}>Autopilot Alerts</div>
         {alerts.slice(0,3).map((a:any)=>(
           <div key={a.id} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'6px 0',borderBottom:'1px solid rgba(229,229,234,.3)'}}>
@@ -259,7 +259,7 @@ export default function OverviewPage(){
                 <div style={{width:8,height:8,borderRadius:'50%',flexShrink:0,background:phase.status==='complete'?GREEN:late?RED:phase.status==='in_progress'?GOLD:DIM}}/>
                 <div style={{flex:1,fontSize:13,color:TEXT,fontWeight:600}}>{phase.name}</div>
                 <div style={{fontSize:11,color:late?RED:DIM}}>{phase.planned_end||'—'}</div>
-                <span style={{fontSize:10,padding:'2px 6px',borderRadius:4,background:phase.status==='complete'?'rgba(26,138,74,.15)':phase.status==='in_progress'?'rgba(212,160,23,.12)':'rgba(148,163,184,.1)',color:phase.status==='complete'?GREEN:phase.status==='in_progress'?GOLD:DIM,fontWeight:700,textTransform:'uppercase' as const}}>{phase.status||'pending'}</span>
+                <span style={{fontSize:10,padding:'2px 6px',borderRadius:4,background:phase.status==='complete'?'rgba(26,138,74,.15)':phase.status==='in_progress'?'rgba(245, 158, 11,.12)':'rgba(148,163,184,.1)',color:phase.status==='complete'?GREEN:phase.status==='in_progress'?GOLD:DIM,fontWeight:700,textTransform:'uppercase' as const}}>{phase.status||'pending'}</span>
               </div>;
             })}
           </Card>}
@@ -268,7 +268,7 @@ export default function OverviewPage(){
               ?<div style={{color:DIM,fontSize:13,textAlign:'center',padding:'12px 0'}}>No subs yet. <Link href={'/app/projects/'+projectId+'/team'} style={{color:GOLD}}>Add subs →</Link></div>
               :subs.slice(0,4).map((sub:any)=>(
                 <div key={sub.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid rgba(229,229,234,.3)'}}>
-                  <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(212,160,23,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,flexShrink:0,color:GOLD}}>{sub.name?.[0]||'?'}</div>
+                  <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(245, 158, 11,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,flexShrink:0,color:GOLD}}>{sub.name?.[0]||'?'}</div>
                   <div style={{flex:1}}><div style={{fontSize:13,color:TEXT,fontWeight:600}}>{sub.name}</div><div style={{fontSize:11,color:DIM}}>{sub.trade} — {fmt(sub.contract_amount||0)}</div></div>
                   <span style={{fontSize:10,padding:'2px 6px',borderRadius:4,background:sub.status==='active'?'rgba(26,138,74,.15)':'rgba(148,163,184,.1)',color:sub.status==='active'?GREEN:DIM,fontWeight:700}}>{sub.status}</span>
                 </div>

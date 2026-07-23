@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
 import { useParams } from 'next/navigation';
 import { useToast } from '../../../../../components/Toast';
 import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning } from '@phosphor-icons/react';
@@ -41,11 +41,17 @@ interface ProgressState {
   pct: number;
 }
 
-const fmt$ = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+// Construct each formatter ONCE at module scope — previously these built a new
+// Intl.NumberFormat on every call (~5×/row × hundreds of rows × 60fps slider drags
+// = thousands of allocations per render, a major cause of the main-thread freeze).
+const CURRENCY_FMT = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const NUMBER_FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const fmt$ = (n: number) => CURRENCY_FMT.format(Number.isFinite(n) ? n : 0);
+const fmtN = (n: number) => NUMBER_FMT.format(Number.isFinite(n) ? n : 0);
 
-const fmtN = (n: number) =>
-  new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n);
+// Hard cap on synchronously-rendered rows so a huge AI extraction can't freeze the
+// page building thousands of DOM nodes at once. Beyond this, we show a "load more".
+const ROW_RENDER_CAP = 300;
 
 const CSI_DIVISION_NAMES: Record<string, string> = {
   '01': 'General Requirements',
@@ -71,9 +77,68 @@ const CSI_DIVISION_NAMES: Record<string, string> = {
   '33': 'Utilities',
 };
 
-const GOLD = '#D4A017';
+const GOLD = '#F59E0B';
 const SURFACE = 'rgba(255,255,255,0.02)';
 const BORDER = 'rgba(255,255,255,0.05)';
+
+const ROW_GRID = '100px 1fr 80px 56px 80px 110px 110px';
+
+/**
+ * Memoized line-item table. Because `groupedItems` is memoized on the takeoff in the
+ * parent, this component's props are reference-stable across markup-slider drags, so
+ * React.memo skips re-rendering the (potentially thousands-of-rows) table entirely —
+ * killing the freeze. Rows are also capped to ROW_RENDER_CAP with a "show all" toggle
+ * so a huge AI extraction can't build thousands of DOM nodes in one synchronous commit.
+ */
+const LineItemTable = memo(function LineItemTable({ groupedItems }: { groupedItems: Record<string, TakeoffItem[]> }) {
+  const [showAll, setShowAll] = useState(false);
+  const entries = useMemo(
+    () => Object.entries(groupedItems).sort(([a], [b]) => a.localeCompare(b)),
+    [groupedItems],
+  );
+  const totalRows = useMemo(() => entries.reduce((s, [, items]) => s + items.length, 0), [entries]);
+  const capped = !showAll && totalRows > ROW_RENDER_CAP;
+
+  let budget = capped ? ROW_RENDER_CAP : Infinity;
+  return (
+    <>
+      {entries.map(([div, items]) => {
+        if (budget <= 0) return null;
+        const shown = budget === Infinity ? items : items.slice(0, budget);
+        budget -= shown.length;
+        const divTotal = items.reduce((s, i) => s + i.totalCost, 0);
+        const divName = CSI_DIVISION_NAMES[div] || `Division ${div}`;
+        return (
+          <div key={div}>
+            <div style={{ padding: '8px 16px', background: 'rgba(245, 158, 11,0.06)', borderBottom: `1px solid ${BORDER}`, borderTop: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <span>Division {div} — {divName}</span>
+              <span>{fmt$(divTotal)}</span>
+            </div>
+            {shown.map((item, idx) => (
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: ROW_GRID, padding: '10px 16px', borderBottom: `1px solid rgba(255,255,255,0.04)`, fontSize: 13, alignItems: 'center', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
+                <div style={{ color: GOLD, fontFamily: 'monospace', fontSize: 12 }}>{item.csiCode}</div>
+                <div style={{ color: 'rgba(255,255,255,0.85)', paddingRight: 8 }}>{item.description}</div>
+                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.7)' }}>{fmtN(item.quantity)}</div>
+                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{item.unit}</div>
+                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${item.unitCost.toFixed(2)}</div>
+                <div style={{ textAlign: 'right', color: GOLD, fontWeight: 600 }}>{fmt$(item.totalCost)}</div>
+                <div style={{ textAlign: 'right', color: '#22C55E', fontWeight: 600 }}>{fmt$(item.totalCost * 1.15)}</div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+      {capped && (
+        <button
+          onClick={() => setShowAll(true)}
+          style={{ width: '100%', padding: '12px', background: 'rgba(245, 158, 11,0.08)', border: 'none', borderTop: `1px solid ${BORDER}`, color: GOLD, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+        >
+          Showing first {fmtN(ROW_RENDER_CAP)} of {fmtN(totalRows)} line items — show all
+        </button>
+      )}
+    </>
+  );
+});
 
 export default function TakeoffPage() {
   const { projectId } = useParams() as { projectId: string };
@@ -94,12 +159,13 @@ export default function TakeoffPage() {
 
   // Load latest completed takeoff on mount
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       // Step 1: get list of takeoffs for this project
       const listRes = await fetch(`/api/takeoff?projectId=${projectId}&limit=5`);
-      if (!listRes.ok) return;
+      if (cancelled || !listRes.ok) return;
       const { data: list } = await listRes.json();
-      if (!Array.isArray(list) || list.length === 0) return;
+      if (cancelled || !Array.isArray(list) || list.length === 0) return;
 
       // Find the most recent completed takeoff
       const completed = list.find((t: { status: string }) => t.status === 'complete');
@@ -107,9 +173,9 @@ export default function TakeoffPage() {
 
       // Step 2: load full detail (includes materials)
       const detailRes = await fetch(`/api/takeoff/${completed.id}`);
-      if (!detailRes.ok) return;
+      if (cancelled || !detailRes.ok) return;
       const { data } = await detailRes.json();
-      if (!data || data.status !== 'complete') return;
+      if (cancelled || !data || data.status !== 'complete') return;
       const mats: Array<Record<string, unknown>> = data.materials || [];
       if (mats.length === 0) return;
 
@@ -151,10 +217,12 @@ export default function TakeoffPage() {
         recommendations:   Array.isArray(data.recommendations) ? data.recommendations : [],
         itemCount:         items.length,
       });
+      if (cancelled) return;
       setTakeoffId(String(data.id));
       setState('results');
     };
     load().catch(() => {});
+    return () => { cancelled = true; };
   }, [projectId]);
 
   const handleFileSelect = useCallback((file: File) => {
@@ -538,8 +606,9 @@ export default function TakeoffPage() {
     }
   };
 
-  // Computed cost values with adjustable markups
-  const computedCosts = (() => {
+  // Computed cost values with adjustable markups. Memoized so it only recomputes
+  // when the takeoff or a markup actually changes (not on every unrelated render).
+  const computedCosts = useMemo(() => {
     if (!result) return null;
     const matCost = result.totalMaterialCost;
     const labCost = result.totalLaborCost;
@@ -550,17 +619,19 @@ export default function TakeoffPage() {
     const totalJobCost = subtotal + overhead + profit + contingency;
     const costPerSF = result.estimatedSF > 0 ? totalJobCost / result.estimatedSF : 0;
     return { matCost, labCost, subtotal, overhead, profit, contingency, totalJobCost, costPerSF };
-  })();
+  }, [result, overheadPct, profitPct, contingencyPct]);
 
-  // Group items by CSI division
-  const groupedItems = result
-    ? result.items.reduce<Record<string, TakeoffItem[]>>((acc, item) => {
-        const div = item.csiCode?.slice(0, 2) || 'XX';
-        if (!acc[div]) acc[div] = [];
-        acc[div].push(item);
-        return acc;
-      }, {})
-    : {};
+  // Group items by CSI division. Memoized on `result` ONLY — moving a markup slider
+  // no longer rebuilds this map, so the giant line-item table is never re-derived on drag.
+  const groupedItems = useMemo<Record<string, TakeoffItem[]>>(() => {
+    if (!result) return {};
+    return result.items.reduce<Record<string, TakeoffItem[]>>((acc, item) => {
+      const div = item.csiCode?.slice(0, 2) || 'XX';
+      if (!acc[div]) acc[div] = [];
+      acc[div].push(item);
+      return acc;
+    }, {});
+  }, [result]);
 
   // ── STATE A: UPLOAD ──────────────────────────────────────────────────────────
   if (state === 'upload') {
@@ -587,7 +658,7 @@ export default function TakeoffPage() {
             padding: '48px 32px',
             textAlign: 'center',
             cursor: 'pointer',
-            background: isDragging ? 'rgba(212,160,23,0.05)' : SURFACE,
+            background: isDragging ? 'rgba(245, 158, 11,0.05)' : SURFACE,
             transition: 'all 0.2s',
             marginBottom: 24,
           }}
@@ -706,7 +777,7 @@ export default function TakeoffPage() {
           <div style={{
             height: '100%',
             width: `${progress.pct}%`,
-            background: `linear-gradient(90deg, ${GOLD}, #F0C040)`,
+            background: `linear-gradient(90deg, ${GOLD}, #FBBF24)`,
             borderRadius: 999,
             transition: 'width 0.5s ease',
           }} />
@@ -742,8 +813,8 @@ export default function TakeoffPage() {
 
       {/* Summary header */}
       <div style={{
-        background: 'rgba(212,160,23,0.08)',
-        border: `1px solid rgba(212,160,23,0.2)`,
+        background: 'rgba(245, 158, 11,0.08)',
+        border: `1px solid rgba(245, 158, 11,0.2)`,
         borderRadius: 12, padding: '20px 24px', marginBottom: 20,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: 16,
@@ -883,8 +954,8 @@ export default function TakeoffPage() {
                   return (
                     <g key={fi}>
                       <rect x={padX} y={y} width={bldgW} height={floorH}
-                        fill={isGround ? 'rgba(212,160,23,0.12)' : `rgba(212,160,23,${0.04 + (displayFloors - fi) * 0.01})`}
-                        stroke="rgba(212,160,23,0.25)" strokeWidth={1} />
+                        fill={isGround ? 'rgba(245, 158, 11,0.12)' : `rgba(245, 158, 11,${0.04 + (displayFloors - fi) * 0.01})`}
+                        stroke="rgba(245, 158, 11,0.25)" strokeWidth={1} />
                       {/* Windows */}
                       {[0.2, 0.45, 0.7].map((wx, wi) => (
                         <rect key={wi}
@@ -903,7 +974,7 @@ export default function TakeoffPage() {
                 {/* Roof triangle */}
                 <polygon
                   points={`${padX},${padY} ${padX + bldgW / 2},${padY - 24} ${padX + bldgW},${padY}`}
-                  fill="rgba(212,160,23,0.18)" stroke="rgba(212,160,23,0.4)" strokeWidth={1.5} />
+                  fill="rgba(245, 158, 11,0.18)" stroke="rgba(245, 158, 11,0.4)" strokeWidth={1.5} />
                 {/* SF label */}
                 <text x={padX + bldgW / 2} y={svgH - 6}
                   fill="rgba(255,255,255,0.3)" fontSize={10} textAnchor="middle">
@@ -964,7 +1035,7 @@ export default function TakeoffPage() {
           gridTemplateColumns: '100px 1fr 80px 56px 80px 110px 110px',
           padding: '10px 16px',
           background: '#0A0A0A',
-          borderBottom: '2px solid rgba(212,160,23,0.2)',
+          borderBottom: '2px solid rgba(245, 158, 11,0.2)',
           fontSize: 11, fontWeight: 600,
           letterSpacing: '0.08em',
           color: 'rgba(255,255,255,0.4)',
@@ -979,69 +1050,16 @@ export default function TakeoffPage() {
           <div style={{ textAlign: 'right', color: '#22C55E' }}>Sell (+15%)</div>
         </div>
 
-        {/* Grouped rows */}
-        {Object.entries(groupedItems)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([div, items]) => {
-            const divTotal = items.reduce((s, i) => s + i.totalCost, 0);
-            const divName = CSI_DIVISION_NAMES[div] || `Division ${div}`;
-            return (
-              <div key={div}>
-                {/* Division header */}
-                <div style={{
-                  padding: '8px 16px',
-                  background: 'rgba(212,160,23,0.06)',
-                  borderBottom: `1px solid ${BORDER}`,
-                  borderTop: `1px solid ${BORDER}`,
-                  display: 'flex', justifyContent: 'space-between',
-                  fontSize: 11, fontWeight: 700, color: GOLD,
-                  letterSpacing: '0.06em', textTransform: 'uppercase',
-                }}>
-                  <span>Division {div} — {divName}</span>
-                  <span>{fmt$(divTotal)}</span>
-                </div>
-                {/* Items */}
-                {items.map((item, idx) => (
-                  <div key={idx} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '100px 1fr 80px 56px 80px 110px 110px',
-                    padding: '10px 16px',
-                    borderBottom: `1px solid rgba(255,255,255,0.04)`,
-                    fontSize: 13, alignItems: 'center',
-                    background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-                  }}>
-                    <div style={{ color: GOLD, fontFamily: 'monospace', fontSize: 12 }}>
-                      {item.csiCode}
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,0.85)', paddingRight: 8 }}>{item.description}</div>
-                    <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.7)' }}>
-                      {fmtN(item.quantity)}
-                    </div>
-                    <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
-                      {item.unit}
-                    </div>
-                    <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>
-                      ${item.unitCost.toFixed(2)}
-                    </div>
-                    <div style={{ textAlign: 'right', color: GOLD, fontWeight: 600 }}>
-                      {fmt$(item.totalCost)}
-                    </div>
-                    <div style={{ textAlign: 'right', color: '#22C55E', fontWeight: 600 }}>
-                      {fmt$(item.totalCost * 1.15)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
+        {/* Grouped rows — memoized + row-capped so slider drags and huge extractions don't freeze */}
+        <LineItemTable groupedItems={groupedItems} />
 
         {/* Grand total row */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: '100px 1fr 80px 56px 80px 110px 110px',
           padding: '12px 16px',
-          background: 'rgba(212,160,23,0.08)',
-          borderTop: `2px solid rgba(212,160,23,0.3)`,
+          background: 'rgba(245, 158, 11,0.08)',
+          borderTop: `2px solid rgba(245, 158, 11,0.3)`,
           fontSize: 14, fontWeight: 700,
         }}>
           <div style={{ gridColumn: '1 / 6', color: GOLD, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -1060,7 +1078,7 @@ export default function TakeoffPage() {
       {(result?.recommendations?.length ?? 0) > 0 && (
         <div style={{
           borderLeft: `3px solid ${GOLD}`,
-          background: 'rgba(212,160,23,0.05)',
+          background: 'rgba(245, 158, 11,0.05)',
           borderRadius: '0 8px 8px 0',
           padding: '14px 18px',
           marginBottom: 20,
@@ -1079,8 +1097,8 @@ export default function TakeoffPage() {
       {/* Sage progress overlay (shown while building documents) */}
       {generating === 'sage' && progress.pct > 0 && (
         <div style={{
-          background: 'rgba(212,160,23,0.08)',
-          border: `1px solid rgba(212,160,23,0.25)`,
+          background: 'rgba(245, 158, 11,0.08)',
+          border: `1px solid rgba(245, 158, 11,0.25)`,
           borderRadius: 10, padding: '12px 18px',
           marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14,
         }}>
@@ -1089,7 +1107,7 @@ export default function TakeoffPage() {
               Sage is building your documents...
             </div>
             <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progress.pct}%`, background: `linear-gradient(90deg, ${GOLD}, #F0C040)`, borderRadius: 4, transition: 'width 0.5s ease' }} />
+              <div style={{ height: '100%', width: `${progress.pct}%`, background: `linear-gradient(90deg, ${GOLD}, #FBBF24)`, borderRadius: 4, transition: 'width 0.5s ease' }} />
             </div>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 5 }}>
               {progress.message}
@@ -1130,7 +1148,7 @@ export default function TakeoffPage() {
             {generating === 'all' ? 'Building...' : <><ArrowRight size={16} weight="bold" color="#fff" style={{marginRight:4, verticalAlign:'middle'}} /> Generate All Documents</>}
           </button>
           <button onClick={handleSageAutoDocs} disabled={!!generating}
-            style={{ padding: '11px 24px', background: generating === 'sage' ? 'rgba(212,160,23,0.3)' : `linear-gradient(135deg, ${GOLD}, #C8960F)`, border: 'none', borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'sage') ? 0.5 : 1 }}>
+            style={{ padding: '11px 24px', background: generating === 'sage' ? 'rgba(245, 158, 11,0.3)' : `linear-gradient(135deg, ${GOLD}, #C8960F)`, border: 'none', borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'sage') ? 0.5 : 1 }}>
             {generating === 'sage' ? 'Sage building...' : <><Lightning size={16} weight="duotone" color="#000" style={{marginRight:4, verticalAlign:'middle'}} /> Sage AI Documents</>}
           </button>
           <button onClick={exportXLS} disabled={!!generating}

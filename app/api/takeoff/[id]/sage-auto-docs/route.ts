@@ -164,7 +164,7 @@ export async function GET(
           return `DIV ${div} — ${divName} (${fmt$(total)})\n${lines}`;
         }).join('\n\n');
 
-        const sagePrompt = `You are Sage, Saguaro CRM's expert GC with 25+ years on commercial and residential projects.
+        const sagePrompt = `You are Sage, Saguaro Control Systems's expert GC with 25+ years on commercial and residential projects.
 
 Today's date: ${today}
 Project: ${projectName}

@@ -2,12 +2,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GOLD   = '#C8881C';
-const DARK   = '#F2F2F7';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM    = '#6E6E73';
-const TEXT   = '#1C1C1E';
+const GOLD   = '#F59E0B';
+const DARK   = '#0d1117';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -208,7 +208,7 @@ export default function CommandPalette({ onScoreBid }: Props) {
             style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: TEXT, fontSize: 15, fontWeight: 500 }}
           />
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            <kbd style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(0,0,0,.06)', border: `1px solid ${BORDER}`, borderRadius: 4, color: DIM }}>⌘K</kbd>
+            <kbd style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(255,255,255,0.08)', border: `1px solid ${BORDER}`, borderRadius: 4, color: DIM }}>⌘K</kbd>
             <span style={{ fontSize: 11, color: DIM }}>to toggle</span>
           </div>
         </div>
@@ -241,9 +241,9 @@ export default function CommandPalette({ onScoreBid }: Props) {
 
         {/* Footer */}
         <div style={{ padding: '8px 18px', borderTop: `1px solid ${BORDER}`, display: 'flex', gap: 16, fontSize: 11, color: DIM, alignItems: 'center' }}>
-          <span><kbd style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(0,0,0,.06)', border: `1px solid ${BORDER}`, borderRadius: 3 }}>↑↓</kbd> navigate</span>
-          <span><kbd style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(0,0,0,.06)', border: `1px solid ${BORDER}`, borderRadius: 3 }}>↵</kbd> select</span>
-          <span><kbd style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(0,0,0,.06)', border: `1px solid ${BORDER}`, borderRadius: 3 }}>ESC</kbd> close</span>
+          <span><kbd style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(255,255,255,0.08)', border: `1px solid ${BORDER}`, borderRadius: 3 }}>↑↓</kbd> navigate</span>
+          <span><kbd style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(255,255,255,0.08)', border: `1px solid ${BORDER}`, borderRadius: 3 }}>↵</kbd> select</span>
+          <span><kbd style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(255,255,255,0.08)', border: `1px solid ${BORDER}`, borderRadius: 3 }}>ESC</kbd> close</span>
         </div>
       </div>
     </div>
@@ -267,7 +267,7 @@ function ItemRow({
         display: 'flex', alignItems: 'center', gap: 14, padding: '11px 18px',
         cursor: 'pointer',
         borderLeft: isFocused ? `3px solid ${GOLD}` : '3px solid transparent',
-        background: isFocused ? 'rgba(212,160,23,.07)' : 'transparent',
+        background: isFocused ? 'rgba(245, 158, 11,.07)' : 'transparent',
         transition: 'background .1s, border-left-color .1s',
       }}>
       <span style={{ fontSize: 19, flexShrink: 0 }}>{item.icon}</span>
@@ -278,8 +278,8 @@ function ItemRow({
       {item.shortcut && (
         <kbd style={{
           flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
-          background: isFocused ? 'rgba(212,160,23,.2)' : 'rgba(0,0,0,.05)',
-          border: `1px solid ${isFocused ? 'rgba(212,160,23,.4)' : '#E5E5EA'}`,
+          background: isFocused ? 'rgba(245, 158, 11,.2)' : 'rgba(255,255,255,0.08)',
+          border: `1px solid ${isFocused ? 'rgba(245, 158, 11,.4)' : 'rgba(255,255,255,0.12)'}`,
           color: isFocused ? GOLD : DIM, letterSpacing: 0.5,
         }}>
           {item.shortcut}

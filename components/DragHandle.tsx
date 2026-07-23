@@ -2,10 +2,10 @@
 
 import { useState, useCallback, useRef } from 'react';
 
-const GOLD = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
 
 /* ──────────────────────────────────────────────
    useDragReorder hook
@@ -143,7 +143,7 @@ export default function DragHandle({
         width="14"
         height="18"
         viewBox="0 0 14 18"
-        fill={isDropTarget ? RAISED : DIM}
+        fill={isDropTarget ? '#FFFFFF' : DIM}
       >
         <circle cx="4" cy="3" r="1.5" />
         <circle cx="10" cy="3" r="1.5" />

@@ -36,16 +36,16 @@ interface SageV6ChatProps {
 // ─── PALETTE ───────────────────────────────────────────────────────────────────
 
 const C = {
-  DARK:   '#F2F2F7',
-  RAISED: '#FFFFFF',
-  BORDER: '#FFFFFF',
-  GOLD:   '#C8881C',
-  TEXT:   '#1C1C1E',
-  DIM:    '#6E6E73',
+  DARK:   '#16243A',
+  RAISED: '#0F172A',
+  BORDER: 'rgba(255,255,255,0.12)',
+  GOLD:   '#F59E0B',
+  TEXT:   '#FFFFFF',
+  DIM:    '#CBD5E1',
   GREEN:  '#1a8a4a',
   RED:    '#c03030',
   BLUE:   '#1a5fa8',
-  CARD:   '#FFFFFF',
+  CARD:   '#0F172A',
 } as const;
 
 // ─── MARKDOWN RENDERER ─────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ function renderMarkdown(text: string): string {
 function DepthBadge({ depth }: { depth: string }) {
   const map: Record<string, { label: string; bg: string; color: string }> = {
     new:      { label: 'New',      bg: 'rgba(26,138,74,0.18)',  color: '#22c55e' },
-    familiar: { label: 'Familiar', bg: 'rgba(212,160,23,0.15)', color: C.GOLD   },
+    familiar: { label: 'Familiar', bg: 'rgba(245, 158, 11,0.15)', color: C.GOLD   },
     deep:     { label: 'Deep',     bg: 'rgba(26,95,168,0.2)',   color: '#60a5fa' },
   };
   const config = map[depth] ?? map['new'];
@@ -399,17 +399,17 @@ export default function SageV6Chat({
         }
         .sageV6-scroll::-webkit-scrollbar          { width: 4px; }
         .sageV6-scroll::-webkit-scrollbar-track    { background: transparent; }
-        .sageV6-scroll::-webkit-scrollbar-thumb    { background: rgba(212,160,23,0.22); border-radius: 2px; }
-        .sageV6-bubble strong { color: #C8881C; }
+        .sageV6-scroll::-webkit-scrollbar-thumb    { background: rgba(245, 158, 11,0.22); border-radius: 2px; }
+        .sageV6-bubble strong { color: #F59E0B; }
         .sageV6-bubble em     { color: #c8d4e8; }
-        .sageV6-bubble code   { background: rgba(212,160,23,0.12); color: #C8881C; padding: 1px 5px; border-radius: 4px; font-size: 12px; font-family: monospace; }
+        .sageV6-bubble code   { background: rgba(245, 158, 11,0.12); color: #F59E0B; padding: 1px 5px; border-radius: 4px; font-size: 12px; font-family: monospace; }
         .sageV6-bubble ul     { margin: 6px 0; padding-left: 18px; }
-        .sageV6-bubble li     { margin: 3px 0; color: #1C1C1E; }
+        .sageV6-bubble li     { margin: 3px 0; color: #FFFFFF; }
         .sageV6-bubble p      { margin: 0 0 8px; }
         .sageV6-bubble p:last-child { margin: 0; }
-        .sageV6-chip:hover    { background: rgba(212,160,23,0.16) !important; transform: translateY(-1px); box-shadow: 0 3px 12px rgba(212,160,23,0.15); }
+        .sageV6-chip:hover    { background: rgba(245, 158, 11,0.16) !important; transform: translateY(-1px); box-shadow: 0 3px 12px rgba(245, 158, 11,0.15); }
         .sageV6-send:hover:not(:disabled) { transform: scale(1.06); }
-        .sageV6-thumb:hover   { background: rgba(212,160,23,0.14) !important; }
+        .sageV6-thumb:hover   { background: rgba(245, 158, 11,0.14) !important; }
       `}</style>
 
       {/* ── LAUNCHER BUTTON (closed state) ────────────────────────────── */}
@@ -444,17 +444,17 @@ export default function SageV6Chat({
               width: 52, height: 52, borderRadius: '50%',
               background: C.GOLD, border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 6px 24px rgba(212,160,23,0.45), 0 2px 6px rgba(0,0,0,0.4)',
+              boxShadow: '0 6px 24px rgba(245, 158, 11,0.45), 0 2px 6px rgba(0,0,0,0.4)',
               transition: 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s',
               padding: 0,
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 10px 32px rgba(212,160,23,0.6), 0 2px 6px rgba(0,0,0,0.4)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 10px 32px rgba(245, 158, 11,0.6), 0 2px 6px rgba(0,0,0,0.4)';
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(212,160,23,0.45), 0 2px 6px rgba(0,0,0,0.4)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(245, 158, 11,0.45), 0 2px 6px rgba(0,0,0,0.4)';
             }}
           >
             {/* S monogram */}
@@ -486,7 +486,7 @@ export default function SageV6Chat({
                 width: 32, height: 32, borderRadius: '50%',
                 background: C.GOLD, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(212,160,23,0.35)',
+                boxShadow: '0 2px 10px rgba(245, 158, 11,0.35)',
               }}>
                 <span style={{ fontSize: 16, fontWeight: 800, color: C.DARK, fontFamily: 'Georgia, serif', lineHeight: 1 }}>S</span>
               </div>
@@ -562,14 +562,14 @@ export default function SageV6Chat({
               <div style={{
                 padding: '10px 14px',
                 borderLeft: `3px solid ${C.GOLD}`,
-                background: 'rgba(212,160,23,0.05)',
+                background: 'rgba(245, 158, 11,0.05)',
                 borderRadius: '0 8px 8px 0',
                 animation: 'fadeIn 0.4s ease forwards',
                 marginBottom: 4,
               }}>
                 <p style={{
                   margin: 0, fontSize: 13, lineHeight: 1.6,
-                  color: 'rgba(212,160,23,0.85)', fontStyle: 'italic',
+                  color: 'rgba(245, 158, 11,0.85)', fontStyle: 'italic',
                 }}>
                   {greeting}
                 </p>
@@ -593,8 +593,8 @@ export default function SageV6Chat({
                   <>
                     <div style={{
                       maxWidth: '80%',
-                      background: 'rgba(212,160,23,0.15)',
-                      border: '1px solid rgba(212,160,23,0.3)',
+                      background: 'rgba(245, 158, 11,0.15)',
+                      border: '1px solid rgba(245, 158, 11,0.3)',
                       color: C.TEXT,
                       fontSize: 14, lineHeight: 1.55,
                       padding: '10px 14px',
@@ -718,8 +718,8 @@ export default function SageV6Chat({
                     className="sageV6-chip"
                     onClick={() => sendMessage(chip.prompt)}
                     style={{
-                      background: 'rgba(212,160,23,0.08)',
-                      border: '1px solid rgba(212,160,23,0.2)',
+                      background: 'rgba(245, 158, 11,0.08)',
+                      border: '1px solid rgba(245, 158, 11,0.2)',
                       borderRadius: 8,
                       padding: '8px 12px',
                       fontSize: 12, lineHeight: 1.4,
@@ -768,7 +768,7 @@ export default function SageV6Chat({
             flexShrink: 0,
             borderTop: `1px solid ${C.BORDER}`,
             padding: '12px 14px 14px',
-            background: 'rgba(255,255,255,0.6)',
+            background: 'rgba(255,255,255,0.04)',
           }}>
             <div style={{
               display: 'flex', alignItems: 'flex-end', gap: 10,
@@ -780,8 +780,8 @@ export default function SageV6Chat({
             }}
               onFocusCapture={e => {
                 const el = e.currentTarget as HTMLDivElement;
-                el.style.borderColor = 'rgba(212,160,23,0.4)';
-                el.style.boxShadow = '0 0 0 3px rgba(212,160,23,0.07)';
+                el.style.borderColor = 'rgba(245, 158, 11,0.4)';
+                el.style.boxShadow = '0 0 0 3px rgba(245, 158, 11,0.07)';
               }}
               onBlurCapture={e => {
                 const el = e.currentTarget as HTMLDivElement;
@@ -832,7 +832,7 @@ export default function SageV6Chat({
                       ? C.GOLD
                       : C.BORDER,
                   boxShadow: (!isStreaming && input.trim())
-                    ? '0 2px 10px rgba(212,160,23,0.3)'
+                    ? '0 2px 10px rgba(245, 158, 11,0.3)'
                     : 'none',
                 }}
               >

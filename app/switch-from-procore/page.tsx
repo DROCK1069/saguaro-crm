@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-const DARK = '#F2F2F7';
+const DARK = '#0d1117';
 const GOLD = '#F59E0B';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
+const RAISED = '#0F172A';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 
@@ -121,7 +121,7 @@ export default function SwitchFromProcorePage() {
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { opacity: 1; }
         .calc-input-field {
-          background: #F2F2F7;
+          background: #16243A;
           border: 1px solid ${BORDER};
           border-radius: 8px;
           color: ${TEXT};
@@ -140,7 +140,7 @@ export default function SwitchFromProcorePage() {
       {/* ─── STICKY NAV ─── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(255,255,255,0.95)',
+        background: 'rgba(15,23,42,0.95)',
         backdropFilter: 'blur(16px)',
         borderBottom: `1px solid ${BORDER}`,
       }}>
@@ -341,7 +341,7 @@ export default function SwitchFromProcorePage() {
                     borderLeft: `1px solid rgba(245,158,11,0.3)`,
                   }}>
                     <span style={{ ...goldGradientText, fontWeight: 800, fontSize: '1.05rem' }}>Saguaro</span>
-                    <div style={{ fontSize: '0.75rem', color: DIM, fontWeight: 500, marginTop: 2 }}>$299/mo flat</div>
+                    <div style={{ fontSize: '0.75rem', color: DIM, fontWeight: 500, marginTop: 2 }}>$499/mo flat</div>
                   </th>
                   <th style={{
                     background: 'rgba(229,229,234,0.2)', padding: '16px 24px', textAlign: 'center',
@@ -677,7 +677,7 @@ export default function SwitchFromProcorePage() {
 
       {/* ─── FINAL CTA ─── */}
       <section style={{
-        background: `linear-gradient(135deg, #FFFFFF 0%, #F2F2F7 40%, #F2F2F7 60%, #FFFFFF 100%)`,
+        background: `linear-gradient(135deg, #0F172A 0%, #0d1117 40%, #0d1117 60%, #0F172A 100%)`,
         borderTop: `1px solid rgba(245,158,11,0.2)`,
         borderBottom: `1px solid rgba(245,158,11,0.2)`,
         padding: '90px 40px',
@@ -774,7 +774,7 @@ export default function SwitchFromProcorePage() {
               </Link>
             ))}
           </div>
-          <p style={{ color: '#475569', fontSize: '0.82rem' }}>
+          <p style={{ color: '#8094B0', fontSize: '0.82rem' }}>
             &copy; {new Date().getFullYear()} Saguaro Construction Software. All rights reserved.
           </p>
         </div>

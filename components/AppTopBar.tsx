@@ -3,7 +3,7 @@
  * AppTopBar — Slim header with breadcrumbs, search, notifications, user menu.
  * Sits to the right of the sidebar.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -11,6 +11,7 @@ import {
   Bell,
   Star,
   CaretRight,
+  ArrowLeft,
   SignOut,
   UserCircle,
   GearSix,
@@ -62,8 +63,34 @@ export default function AppTopBar({
 
   /* ── Breadcrumbs ─────────────────────────────────────────────────── */
   const segments = pathname.split('/').filter(Boolean);
+  // Resolve a project UUID in the path (/app/projects/<uuid>/...) to its real name
+  // so the crumb reads e.g. "Martin Residence" instead of a truncated UUID.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const projIdx = segments.indexOf('projects');
+  const projId = projIdx >= 0 && segments[projIdx + 1] && UUID_RE.test(segments[projIdx + 1]) ? segments[projIdx + 1] : null;
+  const [projectNames, setProjectNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!projId || projectNames[projId]) return;
+    let alive = true;
+    fetch('/api/projects/list')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const list = Array.isArray(d) ? d : (d.projects || d.data || d.rows || []);
+        const p = Array.isArray(list) ? list.find((x: any) => x?.id === projId) : null;
+        if (p) setProjectNames((prev) => ({ ...prev, [projId]: p.name || p.project_name || p.title || 'Project' }));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [projId]); // eslint-disable-line react-hooks/exhaustive-deps
   const crumbs = segments.map((seg, i) => ({
-    label: LABELS[seg] || (seg.length > 20 ? seg.slice(0, 12) + '...' : seg.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())),
+    label:
+      LABELS[seg] ||
+      (UUID_RE.test(seg)
+        ? projectNames[seg] || 'Project'
+        : seg.length > 20
+        ? seg.slice(0, 12) + '...'
+        : seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())),
     href: '/' + segments.slice(0, i + 1).join('/'),
     isLast: i === segments.length - 1,
   }));
@@ -76,8 +103,8 @@ export default function AppTopBar({
         left: sidebarWidth,
         right: 0,
         height: sidebarTokens.headerHeight,
-        background: 'rgba(255,255,255,0.8)',
-        borderBottom: '1px solid #E5E5EA',
+        background: 'rgba(15,23,42,0.8)',
+        borderBottom: '1px solid rgba(255,255,255,0.12)',
         backdropFilter: 'blur(16px) saturate(140%)',
         WebkitBackdropFilter: 'blur(16px) saturate(140%)',
         display: 'flex',
@@ -100,36 +127,57 @@ export default function AppTopBar({
           height: 36,
           background: 'none',
           border: 'none',
-          color: '#6E6E73',
+          color: '#CBD5E1',
           cursor: 'pointer',
           borderRadius: radius.xl,
           transition: 'color .15s, background .15s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#1C1C1E';
+          e.currentTarget.style.color = '#FFFFFF';
           e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = '#6E6E73';
+          e.currentTarget.style.color = '#CBD5E1';
           e.currentTarget.style.background = 'none';
         }}
       >
         <List size={20} />
       </button>
 
+      {/* Back button — on every app page, navigates up to the parent (hierarchical),
+          falling back to browser history. Hidden at the app root where there's no parent. */}
+      {crumbs.length > 1 && (
+        <button
+          onClick={() => { const parent = crumbs[crumbs.length - 2]; if (parent) router.push(parent.href); else router.back(); }}
+          aria-label={`Back to ${crumbs[crumbs.length - 2]?.label || 'previous page'}`}
+          title="Back"
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            height: 34, padding: '0 12px 0 10px', marginRight: 4,
+            background: '#0F172A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: radius.xl,
+            color: '#FFFFFF', cursor: 'pointer', fontSize: font.size.sm, fontWeight: font.weight.medium,
+            transition: 'background .15s, border-color .15s', flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#16243A'; e.currentTarget.style.borderColor = '#F59E0B'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#0F172A'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+        >
+          <ArrowLeft size={16} weight="bold" /> Back
+        </button>
+      )}
+
       {/* Breadcrumbs */}
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, overflow: 'hidden' }}>
         {crumbs.map((c, i) => (
           <React.Fragment key={c.href}>
-            {i > 0 && <CaretRight size={11} weight="bold" style={{ color: '#C7C7CC' }} />}
+            {i > 0 && <CaretRight size={11} weight="bold" style={{ color: '#5B677A' }} />}
             {c.isLast ? (
-              <span style={{ fontSize: font.size.lg, fontWeight: font.weight.semibold, color: '#1C1C1E', letterSpacing: '-0.01em' }}>{c.label}</span>
+              <span style={{ fontSize: font.size.lg, fontWeight: font.weight.semibold, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{c.label}</span>
             ) : (
               <Link
                 href={c.href}
-                style={{ fontSize: font.size.lg, color: '#6E6E73', textDecoration: 'none', transition: 'color .15s' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#1C1C1E')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#6E6E73')}
+                style={{ fontSize: font.size.lg, color: '#CBD5E1', textDecoration: 'none', transition: 'color .15s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#CBD5E1')}
               >
                 {c.label}
               </Link>
@@ -149,10 +197,10 @@ export default function AppTopBar({
           gap: 8,
           height: 36,
           padding: '0 10px 0 12px',
-          background: '#F2F2F7',
-          border: '1px solid #E5E5EA',
+          background: '#16243A',
+          border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: radius.xl,
-          color: '#6E6E73',
+          color: '#CBD5E1',
           fontSize: font.size.md,
           fontWeight: font.weight.medium,
           cursor: 'pointer',
@@ -161,14 +209,14 @@ export default function AppTopBar({
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = 'rgba(0,0,0,0.14)';
-          e.currentTarget.style.background = '#FFFFFF';
+          e.currentTarget.style.background = '#0F172A';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#E5E5EA';
-          e.currentTarget.style.background = '#F2F2F7';
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+          e.currentTarget.style.background = '#16243A';
         }}
       >
-        <MagnifyingGlass size={15} style={{ color: '#AEAEB2' }} />
+        <MagnifyingGlass size={15} style={{ color: '#8094B0' }} />
         <span>Search</span>
         <kbd
           style={{
@@ -180,9 +228,9 @@ export default function AppTopBar({
             fontSize: font.size.xs,
             fontWeight: font.weight.semibold,
             fontFamily: font.mono,
-            color: '#6E6E73',
-            background: '#FFFFFF',
-            border: '1px solid #E5E5EA',
+            color: '#CBD5E1',
+            background: '#0F172A',
+            border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: radius.md,
           }}
         >
@@ -199,10 +247,10 @@ export default function AppTopBar({
           gap: 7,
           height: 36,
           padding: '0 14px',
-          background: 'rgba(200,136,28,0.12)',
-          border: '1px solid rgba(200,136,28,0.25)',
+          background: 'rgba(245, 158, 11,0.12)',
+          border: '1px solid rgba(245, 158, 11,0.25)',
           borderRadius: radius.xl,
-          color: '#C8881C',
+          color: '#F59E0B',
           fontSize: font.size.md,
           fontWeight: font.weight.semibold,
           letterSpacing: '0.01em',
@@ -210,12 +258,12 @@ export default function AppTopBar({
           transition: 'background .15s, border-color .15s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(200,136,28,0.18)';
-          e.currentTarget.style.borderColor = 'rgba(200,136,28,0.35)';
+          e.currentTarget.style.background = 'rgba(245, 158, 11,0.18)';
+          e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.35)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(200,136,28,0.12)';
-          e.currentTarget.style.borderColor = 'rgba(200,136,28,0.25)';
+          e.currentTarget.style.background = 'rgba(245, 158, 11,0.12)';
+          e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.25)';
         }}
       >
         <Star size={15} weight="fill" />
@@ -233,18 +281,18 @@ export default function AppTopBar({
           height: 36,
           background: 'none',
           border: 'none',
-          color: '#6E6E73',
+          color: '#CBD5E1',
           cursor: 'pointer',
           borderRadius: radius.xl,
           transition: 'color .15s, background .15s',
           position: 'relative',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#1C1C1E';
+          e.currentTarget.style.color = '#FFFFFF';
           e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = '#6E6E73';
+          e.currentTarget.style.color = '#CBD5E1';
           e.currentTarget.style.background = 'none';
         }}
       >
@@ -259,7 +307,7 @@ export default function AppTopBar({
             width: 34,
             height: 34,
             borderRadius: radius.full,
-            background: `linear-gradient(135deg,#F0C040,#C8881C)`,
+            background: `linear-gradient(135deg,#FBBF24,#F59E0B)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -268,11 +316,11 @@ export default function AppTopBar({
             color: '#1C1C1E',
             cursor: 'pointer',
             border: 'none',
-            boxShadow: showUserMenu ? `0 0 0 2px rgba(200,136,28,0.35)` : 'none',
+            boxShadow: showUserMenu ? `0 0 0 2px rgba(245, 158, 11,0.35)` : 'none',
             transition: 'box-shadow .15s',
           }}
           onMouseEnter={(e) => {
-            if (!showUserMenu) e.currentTarget.style.boxShadow = `0 0 0 2px rgba(200,136,28,0.35)`;
+            if (!showUserMenu) e.currentTarget.style.boxShadow = `0 0 0 2px rgba(245, 158, 11,0.35)`;
           }}
           onMouseLeave={(e) => {
             if (!showUserMenu) e.currentTarget.style.boxShadow = 'none';
@@ -289,8 +337,8 @@ export default function AppTopBar({
                 position: 'absolute',
                 top: 44,
                 right: 0,
-                background: '#FFFFFF',
-                border: '1px solid #E5E5EA',
+                background: '#0F172A',
+                border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: radius['2xl'],
                 minWidth: 196,
                 boxShadow: '0 16px 44px rgba(0,0,0,0.10)',
@@ -307,12 +355,12 @@ export default function AppTopBar({
                   padding: '8px 10px 10px',
                 }}
               >
-                <UserCircle size={28} weight="fill" style={{ color: '#AEAEB2', flexShrink: 0 }} />
+                <UserCircle size={28} weight="fill" style={{ color: '#8094B0', flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: font.size.md, fontWeight: font.weight.semibold, color: '#1C1C1E', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: font.size.md, fontWeight: font.weight.semibold, color: '#FFFFFF', lineHeight: 1.2 }}>
                     Signed in
                   </div>
-                  <div style={{ fontSize: font.size.xs, color: '#AEAEB2', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: font.size.xs, color: '#8094B0', lineHeight: 1.3 }}>
                     {userInitials}
                   </div>
                 </div>
@@ -327,7 +375,7 @@ export default function AppTopBar({
                   gap: 10,
                   padding: '9px 10px',
                   borderRadius: radius.lg,
-                  color: '#1C1C1E',
+                  color: '#FFFFFF',
                   fontSize: font.size.md,
                   fontWeight: font.weight.medium,
                   textDecoration: 'none',
@@ -336,7 +384,7 @@ export default function AppTopBar({
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
-                <GearSix size={16} style={{ color: '#6E6E73' }} /> Settings
+                <GearSix size={16} style={{ color: '#CBD5E1' }} /> Settings
               </Link>
               <button
                 onClick={() => { setShowUserMenu(false); onLogout(); }}

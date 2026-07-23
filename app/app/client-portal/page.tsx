@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 /* ── palette ──────────────────────────────────────────── */
-const GOLD='#C8881C',BG='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',TEXT='#1C1C1E',DIM='#6E6E73';
+const GOLD='#F59E0B',BG='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',TEXT='#FFFFFF',DIM='#CBD5E1';
 const GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',BLUE='#3B82F6',PURPLE='#8B5CF6';
 
 /* ── types ────────────────────────────────────────────── */
@@ -61,10 +61,10 @@ function defaultPerms(): Record<string, boolean> {
 
 /* ── shared inline styles ─────────────────────────────── */
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20 };
-const btnGold: React.CSSProperties = { padding: '9px 20px', background: `linear-gradient(135deg,${GOLD},#E0A030)`, color: '#1C1C1E', borderRadius: 8, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' };
+const btnGold: React.CSSProperties = { padding: '9px 20px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, color: '#1C1C1E', borderRadius: 8, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' };
 const btnOutline: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, cursor: 'pointer' };
 const btnDanger: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${RED}`, borderRadius: 8, color: RED, fontSize: 13, cursor: 'pointer' };
-const inputS: React.CSSProperties = { padding: '9px 14px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' as const };
+const inputS: React.CSSProperties = { padding: '9px 14px', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' as const };
 const badge = (c: string, bg: string): React.CSSProperties => ({ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, color: c, background: bg, display: 'inline-block' });
 const thS: React.CSSProperties = { padding: '10px 14px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '.6px', textAlign: 'left' as const, borderBottom: `1px solid ${BORDER}` };
 const tdS: React.CSSProperties = { padding: '12px 14px', fontSize: 13, color: TEXT, borderBottom: `1px solid ${BORDER}22` };
@@ -73,7 +73,7 @@ const tdS: React.CSSProperties = { padding: '12px 14px', fontSize: 13, color: TE
 function Modal({ open, onClose, title, children, width = 540 }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; width?: number }) {
   if (!open) return null;
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
       <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 28, width, maxWidth: '94vw', maxHeight: '85vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: TEXT }}>{title}</h3>
@@ -485,7 +485,7 @@ export default function ClientPortalPage() {
                 <td style={tdS}>
                   <span style={badge(
                     u.role === 'Owner' ? GOLD : u.role === 'Architect' ? BLUE : u.role === 'Investor' ? PURPLE : AMBER,
-                    u.role === 'Owner' ? 'rgba(212,160,23,.14)' : u.role === 'Architect' ? 'rgba(59,130,246,.14)' : u.role === 'Investor' ? 'rgba(139,92,246,.14)' : 'rgba(245,158,11,.14)'
+                    u.role === 'Owner' ? 'rgba(245, 158, 11,.14)' : u.role === 'Architect' ? 'rgba(59,130,246,.14)' : u.role === 'Investor' ? 'rgba(139,92,246,.14)' : 'rgba(245,158,11,.14)'
                   )}>{u.role}</span>
                 </td>
                 <td style={tdS}>

@@ -1,22 +1,23 @@
 import React from 'react';
+import Link from 'next/link';
 
-const GOLD='#C8881C',DARK='#F2F2F7',RAISED='#FFFFFF',BORDER='#E5E5EA',DIM='#6E6E73',TEXT='#1C1C1E',GREEN='#22c55e';
+const GOLD='#F59E0B',DARK='#0d1117',RAISED='#0F172A',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#22c55e';
 
 const NAV = (
-  <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(255,255,255,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',gap:24,backdropFilter:'blur(12px)'}}>
-    <a href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
+  <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,height:56,background:'rgba(15,23,42,.96)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',padding:'0 32px',gap:24,backdropFilter:'blur(12px)'}}>
+    <Link href="/" style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}}>
       <span style={{fontSize:22}}>🌵</span>
       <span style={{fontWeight:800,fontSize:16,letterSpacing:1,color:GOLD}}>SAGUARO</span>
       <span style={{fontSize:10,background:GOLD,color:'#1C1C1E',padding:'1px 6px',borderRadius:4,fontWeight:700}}>CRM</span>
-    </a>
+    </Link>
     <div style={{flex:1}}/>
-    <a href="/login" style={{padding:'7px 16px',background:'rgba(212,160,23,.12)',border:`1px solid rgba(212,160,23,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>Log In</a>
-    <a href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</a>
+    <Link href="/login" style={{padding:'7px 16px',background:'rgba(245, 158, 11,.12)',border:`1px solid rgba(245, 158, 11,.3)`,borderRadius:7,color:GOLD,fontSize:13,fontWeight:700,textDecoration:'none'}}>Log In</Link>
+    <Link href="/signup" style={{padding:'7px 16px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,textDecoration:'none'}}>Start Free</Link>
   </nav>
 );
 
 const FEATURES = [
-  {icon:'🔐',title:'SOC 2 Type II',desc:'Audit in progress. We follow SOC 2 security, availability, and confidentiality trust principles. Expected certification Q3 2026.',color:'rgba(212,160,23,.15)',border:'rgba(212,160,23,.3)'},
+  {icon:'🔐',title:'SOC 2 Type II',desc:'Audit in progress. We follow SOC 2 security, availability, and confidentiality trust principles. Expected certification Q3 2026.',color:'rgba(245, 158, 11,.15)',border:'rgba(245, 158, 11,.3)'},
   {icon:'🔒',title:'256-bit AES Encryption',desc:'All data at rest is encrypted using AES-256, the same standard used by banks and government agencies. Your data is unreadable without your credentials.',color:'rgba(34,197,94,.08)',border:'rgba(34,197,94,.25)'},
   {icon:'🛡️',title:'TLS 1.3 in Transit',desc:'Every byte transferred between your browser and our servers is protected with TLS 1.3. We enforce HTTPS everywhere and reject older protocols.',color:'rgba(34,197,94,.08)',border:'rgba(34,197,94,.25)'},
   {icon:'🧱',title:'Row-Level Security',desc:'Powered by Supabase RLS policies. Each user can only access their own organization\'s data — enforced at the database layer, not just the application layer.',color:'rgba(34,197,94,.08)',border:'rgba(34,197,94,.25)'},
@@ -98,7 +99,7 @@ export default function SecurityPage() {
 
       {/* Responsible Disclosure */}
       <div style={{maxWidth:720,margin:'0 auto',padding:'0 24px 60px'}}>
-        <div style={{background:'rgba(212,160,23,.06)',border:`1px solid rgba(212,160,23,.25)`,borderRadius:12,padding:'28px 32px'}}>
+        <div style={{background:'rgba(245, 158, 11,.06)',border:`1px solid rgba(245, 158, 11,.25)`,borderRadius:12,padding:'28px 32px'}}>
           <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:8}}>Responsible Disclosure</div>
           <p style={{color:DIM,fontSize:14,lineHeight:1.7,margin:'0 0 12px'}}>
             Found a security vulnerability? We take all reports seriously. Please email us at{' '}
@@ -117,11 +118,11 @@ export default function SecurityPage() {
       <div style={{textAlign:'center',padding:'60px 24px',background:RAISED,borderTop:`1px solid ${BORDER}`}}>
         <h2 style={{fontSize:28,fontWeight:900,marginBottom:12}}>Questions about security?</h2>
         <p style={{color:DIM,fontSize:16,marginBottom:20}}>Our security team is here to help.</p>
-        <a href="mailto:security@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#E0A030)`,borderRadius:9,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}>
+        <a href="mailto:security@saguarocontrol.net" style={{display:'inline-block',padding:'13px 32px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,borderRadius:9,color:'#1C1C1E',fontWeight:800,fontSize:15,textDecoration:'none'}}>
           security@saguarocontrol.net
         </a>
         <div style={{marginTop:20,fontSize:13,color:DIM}}>
-          Also see: <a href="/privacy" style={{color:GOLD,textDecoration:'none'}}>Privacy Policy</a> · <a href="/terms" style={{color:GOLD,textDecoration:'none'}}>Terms of Service</a> · <a href="/sla" style={{color:GOLD,textDecoration:'none'}}>SLA</a>
+          Also see: <Link href="/privacy" style={{color:GOLD,textDecoration:'none'}}>Privacy Policy</Link> · <Link href="/terms" style={{color:GOLD,textDecoration:'none'}}>Terms of Service</Link> · <Link href="/sla" style={{color:GOLD,textDecoration:'none'}}>SLA</Link>
         </div>
       </div>
     </div>

@@ -10,11 +10,11 @@ import { FileText, MagnifyingGlass, Warning, Clock, BookOpen } from '@phosphor-i
 import { enqueue } from '@/lib/field-db';
 
 /* ── Theme constants ── */
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -330,7 +330,7 @@ function SpecsPageInner() {
      ══════════════════════════════════════════ */
   if (!projectId) {
     return (
-      <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#0d1117', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: AMBER, fontSize: 16 }}>No project selected. Please open a project first.</p>
       </div>
     );
@@ -343,7 +343,7 @@ function SpecsPageInner() {
     const sec = selectedSection;
     const isBookmarked = bookmarks.includes(sec.id);
     return (
-      <div style={{ background: '#FFFFFF', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div style={{ background: '#0d1117', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         {/* Detail header */}
         <div style={{ background: RAISED, borderBottom: `1px solid ${BORDER}`, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, zIndex: 10 }}>
           <button
@@ -463,7 +463,7 @@ function SpecsPageInner() {
      ══════════════════════════════════════════ */
   if (showCreateForm) {
     return (
-      <div style={{ background: '#FFFFFF', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div style={{ background: '#0d1117', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
         <div style={{ background: RAISED, borderBottom: `1px solid ${BORDER}`, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, zIndex: 10 }}>
           <button
             onClick={() => setShowCreateForm(false)}
@@ -578,7 +578,7 @@ function SpecsPageInner() {
      RENDER: Main list view
      ══════════════════════════════════════════ */
   return (
-    <div style={{ background: '#FFFFFF', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ background: '#0d1117', minHeight: '100vh', color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* ── Toast ── */}
       {toast && (
         <div style={{
@@ -623,7 +623,7 @@ function SpecsPageInner() {
             placeholder="Search section numbers or titles..."
             style={{
               width: '100%', padding: '10px 12px 10px 36px', borderRadius: 8, fontSize: 14,
-              background: '#FFFFFF', border: `1px solid ${BORDER}`, color: TEXT,
+              background: '#16243A', border: `1px solid ${BORDER}`, color: TEXT,
               outline: 'none', boxSizing: 'border-box',
             }}
           />
@@ -647,7 +647,7 @@ function SpecsPageInner() {
             onChange={e => setDivisionFilter(e.target.value)}
             style={{
               width: '100%', padding: '8px 12px', borderRadius: 8, fontSize: 13,
-              background: '#FFFFFF', border: `1px solid ${BORDER}`, color: TEXT,
+              background: '#16243A', border: `1px solid ${BORDER}`, color: TEXT,
               outline: 'none', boxSizing: 'border-box',
             }}
           >
@@ -771,8 +771,8 @@ function SpecsPageInner() {
                   onClick={() => toggleCollapse(divCode)}
                   style={{
                     display: 'flex', alignItems: 'center', width: '100%', padding: '10px 16px',
-                    background: count > 0 ? `${BORDER}88` : `${BORDER}33`,
-                    border: 'none', borderBottom: `1px solid ${BORDER}44`, cursor: 'pointer',
+                    background: count > 0 ? `rgba(255,255,255,0.10)` : `rgba(255,255,255,0.04)`,
+                    border: 'none', borderBottom: `1px solid rgba(255,255,255,0.08)`, cursor: 'pointer',
                     textAlign: 'left',
                   }}
                 >
@@ -807,12 +807,12 @@ function SpecsPageInner() {
                           onClick={() => openDetail(sec)}
                           style={{
                             display: 'flex', alignItems: 'center', padding: '12px 16px',
-                            borderBottom: `1px solid ${BORDER}22`, cursor: 'pointer',
-                            background: '#FFFFFF',
+                            borderBottom: `1px solid rgba(255,255,255,0.06)`, cursor: 'pointer',
+                            background: '#0d1117',
                             transition: 'background 0.15s',
                           }}
                           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = RAISED; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '#FFFFFF'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '#0d1117'; }}
                         >
                           {/* Section number */}
                           <div style={{ width: 80, flexShrink: 0 }}>
@@ -867,10 +867,10 @@ function SpecsPageInner() {
 export default function SpecsPage() {
   return (
     <Suspense fallback={
-      <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#0d1117', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 36, height: 36, border: '3px solid #E5E5EA', borderTopColor: '#C8881C', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: '#6E6E73', fontSize: 14 }}>Loading specifications...</p>
+          <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.12)', borderTopColor: '#F59E0B', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <p style={{ color: '#CBD5E1', fontSize: 14 }}>Loading specifications...</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>
       </div>

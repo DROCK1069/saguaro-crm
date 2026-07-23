@@ -8,18 +8,18 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const GOLD = '#C8881C';
-const CARD = '#FFFFFF';
-const BASE = '#F2F2F7';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const GOLD = '#F59E0B';
+const CARD = '#0F172A';
+const BASE = '#0d1117';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 const GREEN = '#22C55E';
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
-const BORDER = '#E5E5EA';
+const BORDER = 'rgba(255,255,255,0.12)';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.7)',
+  background: 'rgba(15,23,42,0.7)',
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
   border: '1px solid rgba(0,0,0,0.06)',
@@ -620,7 +620,7 @@ function AROverlayPage() {
             <button onClick={() => { setMeasuring(!measuring); setPendingPoint(null); }} style={{
               flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-              background: measuring ? GOLD : 'rgba(255,255,255,0.7)',
+              background: measuring ? GOLD : 'rgba(15,23,42,0.7)',
               color: measuring ? BASE : GOLD,
               border: measuring ? `1px solid ${GOLD}` : '1px solid rgba(0,0,0,0.06)',
             }}>
@@ -634,7 +634,7 @@ function AROverlayPage() {
             {/* Clear */}
             <button onClick={() => { setMeasurements([]); setPendingPoint(null); }} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: 'rgba(255,255,255,0.7)', color: RED,
+              background: 'rgba(15,23,42,0.7)', color: RED,
               border: '1px solid rgba(0,0,0,0.06)',
             }}>
               Clear
@@ -643,7 +643,7 @@ function AROverlayPage() {
             {/* Undo */}
             <button onClick={undo} disabled={measurements.length === 0 && !pendingPoint} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: 'rgba(255,255,255,0.7)', color: (measurements.length === 0 && !pendingPoint) ? 'rgba(139,170,200,0.3)' : DIM,
+              background: 'rgba(15,23,42,0.7)', color: (measurements.length === 0 && !pendingPoint) ? 'rgba(139,170,200,0.3)' : DIM,
               border: '1px solid rgba(0,0,0,0.06)',
             }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
@@ -655,7 +655,7 @@ function AROverlayPage() {
             <button onClick={saveMeasurements} disabled={saving || measurements.length === 0} style={{
               flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-              background: (saving || measurements.length === 0) ? 'rgba(255,255,255,0.7)' : GREEN,
+              background: (saving || measurements.length === 0) ? 'rgba(15,23,42,0.7)' : GREEN,
               color: (saving || measurements.length === 0) ? 'rgba(139,170,200,0.3)' : '#000',
               border: '1px solid rgba(0,0,0,0.06)',
             }}>
@@ -665,7 +665,7 @@ function AROverlayPage() {
             {/* Unit toggle */}
             <button onClick={() => setUnit(u => u === 'ft' ? 'mm' : 'ft')} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 800,
-              background: 'rgba(255,255,255,0.7)', color: BLUE,
+              background: 'rgba(15,23,42,0.7)', color: BLUE,
               border: '1px solid rgba(0,0,0,0.06)',
             }}>
               {unit}
@@ -674,7 +674,7 @@ function AROverlayPage() {
             {/* Takeoff toggle */}
             <button onClick={() => setShowTakeoff(!showTakeoff)} style={{
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: showTakeoff ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.7)',
+              background: showTakeoff ? 'rgba(59,130,246,0.15)' : 'rgba(15,23,42,0.7)',
               color: showTakeoff ? BLUE : DIM,
               border: showTakeoff ? `1px solid rgba(59,130,246,0.3)` : '1px solid rgba(0,0,0,0.06)',
             }}>
@@ -727,7 +727,7 @@ function AROverlayPage() {
 
 export default function FieldAROverlayPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center', background: '#F2F2F7', minHeight: '100dvh' }}>Loading AR...</div>}>
+    <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center', background: '#0d1117', minHeight: '100dvh' }}>Loading AR...</div>}>
       <AROverlayPage />
     </Suspense>
   );

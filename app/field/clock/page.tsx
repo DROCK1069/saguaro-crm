@@ -15,11 +15,11 @@ import {
   showToast,
 } from '@/lib/native';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -317,7 +317,7 @@ function ClockPage() {
       <p style={{ margin: '0 0 14px', fontSize: 13, color: DIM }}>GPS-stamped time tracking</p>
 
       {/* View toggle: My Clock / Crew */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#F2F2F7', borderRadius: 10, padding: 4 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#16243A', borderRadius: 10, padding: 4 }}>
         <button
           onClick={() => setViewMode('my')}
           style={{
@@ -359,7 +359,7 @@ function ClockPage() {
                 <p style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 700, color: TEXT }}>{clock.employeeName} · {clock.projectName || 'No project'}</p>
 
                 {/* Break minutes */}
-                <div style={{ background: '#F2F2F7', borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
+                <div style={{ background: '#16243A', borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
                   <span style={{ fontSize: 13, color: DIM }}>Break time:</span>
                   <input type="number" inputMode="numeric" value={breakMinutes} onChange={(e) => setBreakMinutes(e.target.value)} min="0" style={{ width: 60, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 8px', color: TEXT, fontSize: 14, textAlign: 'center', outline: 'none' }} />
                   <span style={{ fontSize: 13, color: DIM }}>min</span>
@@ -368,7 +368,7 @@ function ClockPage() {
                 <button
                   onClick={handleClockOut}
                   disabled={saving}
-                  style={{ width: '100%', background: saving ? '#E5E5EA' : RED, border: 'none', borderRadius: 14, padding: '18px', color: '#fff', fontSize: 18, fontWeight: 900, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5 }}
+                  style={{ width: '100%', background: saving ? '#16243A' : RED, border: 'none', borderRadius: 14, padding: '18px', color: '#fff', fontSize: 18, fontWeight: 900, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5 }}
                 >
                   {saving ? 'Processing...' : 'Clock Out'}
                 </button>
@@ -385,13 +385,13 @@ function ClockPage() {
 
                   <label style={lbl}>Project</label>
                   <select value={clock.projectId} onChange={(e) => { const p = projects.find((x) => x.id === e.target.value); updateClock({ projectId: e.target.value, projectName: p?.name || '' }); }} style={{ ...inp, marginTop: 5, marginBottom: 12 }}>
-                    <option value="" style={{ background: '#FFFFFF' }}>Select project...</option>
-                    {projects.map((p) => <option key={p.id} value={p.id} style={{ background: '#FFFFFF' }}>{p.name}</option>)}
+                    <option value="" style={{ background: '#0F172A' }}>Select project...</option>
+                    {projects.map((p) => <option key={p.id} value={p.id} style={{ background: '#0F172A' }}>{p.name}</option>)}
                   </select>
 
                   <label style={lbl}>Cost Code</label>
                   <select value={clock.costCode} onChange={(e) => updateClock({ costCode: e.target.value })} style={{ ...inp, marginTop: 5 }}>
-                    {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#FFFFFF' }}>{c}</option>)}
+                    {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#0F172A' }}>{c}</option>)}
                   </select>
                 </div>
 
@@ -405,7 +405,7 @@ function ClockPage() {
                 <button
                   onClick={handleClockIn}
                   disabled={saving}
-                  style={{ width: '100%', background: saving ? '#E5E5EA' : GREEN, border: 'none', borderRadius: 14, padding: '18px', color: '#000', fontSize: 18, fontWeight: 900, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5 }}
+                  style={{ width: '100%', background: saving ? '#16243A' : GREEN, border: 'none', borderRadius: 14, padding: '18px', color: '#000', fontSize: 18, fontWeight: 900, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5 }}
                 >
                   {saving ? 'Clocking In...' : 'Clock In'}
                 </button>
@@ -456,7 +456,7 @@ function ClockPage() {
             <div style={{ background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.25)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: GREEN, fontWeight: 700 }}>
               {clockedInCount} Clocked In
             </div>
-            <div style={{ background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.25)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: GOLD, fontWeight: 700 }}>
+            <div style={{ background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.25)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: GOLD, fontWeight: 700 }}>
               {totalCrewHours.toFixed(1)}h Total
             </div>
             {onBreakCount > 0 && (
@@ -493,14 +493,14 @@ function ClockPage() {
                   <div style={{ marginBottom: 12 }}>
                     <label style={lbl}>Cost Code</label>
                     <select value={crewClockCostCode} onChange={(e) => setCrewClockCostCode(e.target.value)} style={{ ...inp, marginTop: 4 }}>
-                      {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#FFFFFF' }}>{c}</option>)}
+                      {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#0F172A' }}>{c}</option>)}
                     </select>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => setCrewAction(null)} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                       Cancel
                     </button>
-                    <button onClick={handleCrewClockIn} disabled={crewSaving} style={{ flex: 2, background: crewSaving ? '#E5E5EA' : GREEN, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 800, cursor: crewSaving ? 'wait' : 'pointer' }}>
+                    <button onClick={handleCrewClockIn} disabled={crewSaving} style={{ flex: 2, background: crewSaving ? '#16243A' : GREEN, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 800, cursor: crewSaving ? 'wait' : 'pointer' }}>
                       {crewSaving ? 'Saving...' : 'Clock In'}
                     </button>
                   </div>
@@ -575,9 +575,9 @@ function ClockPage() {
 }
 
 export default function FieldClockPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#6E6E73', textAlign: 'center' }}>Loading...</div>}><ClockPage /></Suspense>;
+  return <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}><ClockPage /></Suspense>;
 }
 
 const lbl: React.CSSProperties = { fontSize: 12, color: DIM, fontWeight: 600 };
-const inp: React.CSSProperties = { width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: 10, padding: '11px 14px', color: '#1C1C1E', fontSize: 15, outline: 'none' };
+const inp: React.CSSProperties = { width: '100%', background: '#16243A', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '8px', marginLeft: -8, display: 'flex', alignItems: 'center', marginBottom: 4 };

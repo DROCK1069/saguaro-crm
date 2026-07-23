@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import type { Competitor } from '@/lib/competitors';
 
-const DARK = '#F2F2F7';
+const DARK = '#0d1117';
 const GOLD = '#F59E0B';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
-const RAISED = '#FFFFFF';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
+const RAISED = '#0F172A';
 const GREEN = '#22c55e';
 const RED = '#ef4444';
 
@@ -29,7 +29,7 @@ function Nav() {
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-        background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.85)',
+        background: scrolled ? 'rgba(15,23,42,0.97)' : 'rgba(15,23,42,0.85)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         borderBottom: scrolled ? '1px solid rgba(245,158,11,0.25)' : `1px solid ${BORDER}`,
         transition: 'all 0.3s ease', height: '58px',
@@ -46,14 +46,14 @@ function Nav() {
               style={{ height: '36px', width: 'auto', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
             />
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-              <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#C8881C,#E0A030)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
-              <span style={{ fontSize: '7px', color: '#6E6E73', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
+              <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.1em', background: 'linear-gradient(90deg,#F59E0B,#FBBF24)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SAGUARO</span>
+              <span style={{ fontSize: '7px', color: '#CBD5E1', letterSpacing: '0.25em', fontWeight: 600, textTransform: 'uppercase' }}>Control Systems</span>
             </span>
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="ccp-desktop">
-            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid #E5E5EA', borderRadius: '6px', color: 'rgba(28,28,30,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
-            <Link href="/signup" style={{ padding: '7px 18px', background: '#C8881C', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
+            <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
+            <Link href="/signup" style={{ padding: '7px 18px', background: '#F59E0B', border: 'none', borderRadius: '6px', color: '#000', fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em', textDecoration: 'none' }}>Free Trial</Link>
           </div>
 
           <button
@@ -68,14 +68,14 @@ function Nav() {
       </nav>
 
       {mobileOpen && (
-        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(255,255,255,0.99)', borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px', backdropFilter: 'blur(12px)' }}>
+        <div style={{ position: 'fixed', top: '58px', left: 0, right: 0, zIndex: 9998, background: 'rgba(15,23,42,0.99)', borderBottom: `1px solid ${BORDER}`, padding: '8px 0 16px', backdropFilter: 'blur(12px)' }}>
           <div style={{ padding: '16px' }}>
             <Link href="/login" onClick={() => setMobileOpen(false)}
               style={{ display: 'block', textAlign: 'center', padding: '13px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: '9px', color: TEXT, fontWeight: 600, textDecoration: 'none', fontSize: '15px', marginBottom: '10px' }}>
               Log In
             </Link>
             <Link href="/signup" onClick={() => setMobileOpen(false)}
-              style={{ display: 'block', textAlign: 'center', padding: '13px', background: '#C8881C', borderRadius: '9px', color: '#000', fontWeight: 600, textDecoration: 'none', fontSize: '15px' }}>
+              style={{ display: 'block', textAlign: 'center', padding: '13px', background: '#F59E0B', borderRadius: '9px', color: '#000', fontWeight: 600, textDecoration: 'none', fontSize: '15px' }}>
               Start Free Trial
             </Link>
           </div>
@@ -156,7 +156,7 @@ function buildRows(c: Competitor): TableRow[] {
   ): TableRow => ({ feature, saguaroValue, competitorValue, saguaroWins, tie });
 
   return [
-    row('Starting Price', '$199/mo flat', c.startingPrice, false, true),
+    row('Starting Price', '$499/mo flat', c.startingPrice, false, true),
     row('Contract Required', 'Month-to-month', c.annualRequired ? 'Annual required' : 'Month-to-month', c.annualRequired, !c.annualRequired),
     row('Setup Time', '< 1 day', c.setupTime, true),
     row('Per-Seat Pricing', 'No — flat rate', c.perSeat ? 'Yes — costs grow with team' : 'No', c.perSeat, !c.perSeat),
@@ -275,7 +275,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
           {/* Table header */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
-            background: '#F2F2F7', borderBottom: `1px solid ${BORDER}`,
+            background: '#16243A', borderBottom: `1px solid ${BORDER}`,
           }}>
             <div style={{ padding: '18px 24px', fontSize: '12px', fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Feature
@@ -298,7 +298,7 @@ export default function CompetitorComparePage({ competitor }: { competitor: Comp
               style={{
                 display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr',
                 borderBottom: i < rows.length - 1 ? `1px solid ${BORDER}` : 'none',
-                background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)',
+                background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.04)',
               }}
             >
               <div style={{ padding: '15px 24px', fontSize: '13px', fontWeight: 600, color: TEXT, display: 'flex', alignItems: 'center' }}>

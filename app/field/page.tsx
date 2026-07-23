@@ -6,11 +6,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#34C759';
 const RED    = '#FF3B30';
 const BLUE   = '#007AFF';
@@ -49,14 +49,14 @@ const COND_CONFIG = {
 };
 
 const QUICK_ACTIONS = [
-  { label: 'Daily Log',  href: '/field/log',     bg: 'rgba(212,160,23,.15)',  border: 'rgba(212,160,23,.3)',  color: GOLD,   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1={16} y1={13} x2={8} y2={13}/><line x1={16} y1={17} x2={8} y2={17}/></svg> },
+  { label: 'Daily Log',  href: '/field/log',     bg: 'rgba(245, 158, 11,.15)',  border: 'rgba(245, 158, 11,.3)',  color: GOLD,   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1={16} y1={13} x2={8} y2={13}/><line x1={16} y1={17} x2={8} y2={17}/></svg> },
   { label: 'Photos',     href: '/field/photos',  bg: 'rgba(59,130,246,.15)',  border: 'rgba(59,130,246,.3)',  color: BLUE,   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx={12} cy={13} r={4}/></svg> },
   { label: 'Punch List', href: '/field/punch',   bg: 'rgba(139,92,246,.15)', border: 'rgba(139,92,246,.3)', color: PURPLE, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
   { label: 'RFIs',       href: '/field/rfis',    bg: 'rgba(249,115,22,.15)',  border: 'rgba(249,115,22,.3)',  color: '#F97316', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><circle cx={12} cy={12} r={10}/><line x1={12} y1={8} x2={12} y2={12}/><line x1={12} y1={16} x2={12.01} y2={16}/></svg> },
   { label: 'Clock In',   href: '/field/clock',   bg: 'rgba(34,197,94,.15)',   border: 'rgba(34,197,94,.3)',   color: GREEN,  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><circle cx={12} cy={12} r={10}/><polyline points="12 6 12 12 16 14"/></svg> },
   { label: 'Safety',     href: '/field/safety',  bg: 'rgba(239,68,68,.15)',   border: 'rgba(239,68,68,.3)',   color: RED,    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
   { label: 'Search',     href: '/field/search',  bg: 'rgba(59,130,246,.15)',  border: 'rgba(59,130,246,.3)',  color: BLUE,   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><circle cx={11} cy={11} r={8}/><line x1={21} y1={21} x2={16.65} y2={16.65}/></svg> },
-  { label: 'T&M',        href: '/field/tm-tickets', bg: 'rgba(212,160,23,.15)', border: 'rgba(212,160,23,.3)', color: GOLD,   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><line x1={12} y1={1} x2={12} y2={23}/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
+  { label: 'T&M',        href: '/field/tm-tickets', bg: 'rgba(245, 158, 11,.15)', border: 'rgba(245, 158, 11,.3)', color: GOLD,   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><line x1={12} y1={1} x2={12} y2={23}/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
   { label: 'Meetings',   href: '/field/meetings', bg: 'rgba(139,92,246,.15)', border: 'rgba(139,92,246,.3)', color: PURPLE, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={26} height={26}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx={9} cy={7} r={4}/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
 ];
 
@@ -188,38 +188,38 @@ export default function FieldHome() {
   return (
     <div style={{ paddingBottom: 8 }}>
       {/* ── Project header bar ─────────────────────────────────── */}
-      <div style={{ background: 'linear-gradient(160deg,#FFFFFF 0%,#F2F2F7 70%)', borderBottom: '1px solid rgba(212,160,23,.2)', padding: '14px 16px 12px' }}>
+      <div style={{ background: 'linear-gradient(160deg,#0F172A 0%,#0d1117 70%)', borderBottom: '1px solid rgba(245, 158, 11,.2)', padding: '14px 16px 12px' }}>
         {/* Top row: date + desktop link */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontSize: 11, color: DIM, fontWeight: 600, letterSpacing: 0.3 }}>{todayStr()}{userName ? ` · ${userName}` : ''}</span>
           {active && (
-            <a href={`/app/projects/${active.id}/overview`} style={{ fontSize: 11, color: GOLD, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Link href={`/app/projects/${active.id}/overview`} style={{ fontSize: 11, color: GOLD, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={11} height={11}><rect x={2} y={3} width={20} height={14} rx={2}/><line x1={8} y1={21} x2={16} y2={21}/><line x1={12} y1={17} x2={12} y2={21}/></svg>
               Desktop
-            </a>
+            </Link>
           )}
         </div>
         {/* Project name / selector */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {loadingProjects ? (
-            <div style={{ height: 26, background: 'rgba(0,0,0,0.06)', borderRadius: 4, width: '60%' }} />
+            <div style={{ height: 26, background: 'rgba(255,255,255,0.08)', borderRadius: 4, width: '60%' }} />
           ) : projects.length === 0 ? (
             <div style={{ flex: 1 }}>
               <p style={{ margin: 0, fontSize: 13, color: AMBER, fontWeight: 700 }}>No projects yet</p>
-              <a href="/app/projects/new" style={{ fontSize: 12, color: GOLD, fontWeight: 600, textDecoration: 'none' }}>
+              <Link href="/app/projects/new" style={{ fontSize: 12, color: GOLD, fontWeight: 600, textDecoration: 'none' }}>
                 + Create your first project →
-              </a>
+              </Link>
             </div>
           ) : (
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 10, color: 'rgba(212,160,23,.7)', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>Active Project</p>
+              <p style={{ margin: 0, fontSize: 10, color: 'rgba(245, 158, 11,.7)', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase' }}>Active Project</p>
               <select
                 value={active?.id || ''}
                 onChange={(e) => switchProject(e.target.value)}
                 style={{ width: '100%', background: 'transparent', border: 'none', color: TEXT, fontSize: 19, fontWeight: 900, outline: 'none', cursor: 'pointer', padding: '2px 0 0', appearance: 'none', WebkitAppearance: 'none', letterSpacing: -0.3 }}
               >
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id} style={{ background: '#FFFFFF' }}>{p.name}</option>
+                  <option key={p.id} value={p.id} style={{ background: '#0F172A' }}>{p.name}</option>
                 ))}
               </select>
             </div>
@@ -227,7 +227,7 @@ export default function FieldHome() {
         </div>
         {/* Stats strip */}
         {active && !loadingProjects && (
-          <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 10, borderTop: '1px solid #E5E5EA' }}>
+          <div style={{ display: 'flex', gap: 20, marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
             <Stat label="Last Log" value={lastLog ? daysAgo(lastLog.log_date || lastLog.date || '') : '—'} />
             <Stat label="Crew" value={lastLog?.crew_count ? String(lastLog.crew_count) : '—'} />
             <Stat label="Open RFIs" value={String(openRFIs.length)} color={openRFIs.length > 0 ? AMBER : DIM} />
@@ -291,9 +291,9 @@ export default function FieldHome() {
         {/* Sage CTA button */}
         <button
           onClick={() => setSageOpen(true)}
-          style={{ width: '100%', background: RAISED, border: '1.5px solid rgba(212,160,23,.35)', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', marginBottom: 14, boxShadow: '0 2px 12px rgba(0,0,0,.25)' }}
+          style={{ width: '100%', background: RAISED, border: '1.5px solid rgba(245, 158, 11,.35)', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', marginBottom: 14, boxShadow: '0 2px 12px rgba(0,0,0,.25)' }}
         >
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(212,160,23,.15)', border: '1px solid rgba(212,160,23,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(245, 158, 11,.15)', border: '1px solid rgba(245, 158, 11,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </div>
           <div style={{ flex: 1, textAlign: 'left' }}>
@@ -309,17 +309,17 @@ export default function FieldHome() {
       {sageOpen && (
         <div
           onClick={handleBackdropClick}
-          style={{ position: 'fixed', inset: 0, background: '#F2F2F7', zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }}
+          style={{ position: 'fixed', inset: 0, background: '#0d1117', zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }}
         >
           <div
             ref={drawerRef}
-            style={{ background: '#FFFFFF', borderRadius: '20px 20px 0 0', border: '1px solid rgba(212,160,23,.2)', borderBottom: 'none', display: 'flex', flexDirection: 'column', maxHeight: '80dvh', minHeight: '50dvh' }}
+            style={{ background: '#0F172A', borderRadius: '20px 20px 0 0', border: '1px solid rgba(245, 158, 11,.2)', borderBottom: 'none', display: 'flex', flexDirection: 'column', maxHeight: '80dvh', minHeight: '50dvh' }}
             onClick={e => e.stopPropagation()}
           >
             {/* Drawer handle + header */}
             <div style={{ padding: '10px 16px 0', flexShrink: 0 }}>
-              <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 2, margin: '0 auto 12px' }} />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #E5E5EA' }}>
+              <div style={{ width: 36, height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, margin: '0 auto 12px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ color: GOLD, display: 'flex' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                   <span style={{ fontSize: 16, fontWeight: 800, color: GOLD }}>Sage AI</span>
@@ -329,7 +329,7 @@ export default function FieldHome() {
                   {sageMessages.length > 0 && (
                     <button onClick={() => setSageMessages([])} style={{ background: 'none', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '4px 10px', color: DIM, fontSize: 11, cursor: 'pointer' }}>Clear</button>
                   )}
-                  <a href={`/field/sage${active ? `?projectId=${active.id}` : ''}`} style={{ fontSize: 11, color: DIM, textDecoration: 'none', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '4px 10px' }}>Full screen</a>
+                  <Link href={`/field/sage${active ? `?projectId=${active.id}` : ''}`} style={{ fontSize: 11, color: DIM, textDecoration: 'none', border: `1px solid ${BORDER}`, borderRadius: 7, padding: '4px 10px' }}>Full screen</Link>
                   <button onClick={() => setSageOpen(false)} style={{ background: 'none', border: 'none', color: DIM, fontSize: 20, cursor: 'pointer', padding: '4px', lineHeight: 1 }}>×</button>
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default function FieldHome() {
             </div>
 
             {/* Input */}
-            <div style={{ padding: '10px 12px', paddingBottom: 'max(12px,env(safe-area-inset-bottom))', borderTop: `1px solid ${BORDER}`, flexShrink: 0, background: '#FFFFFF' }}>
+            <div style={{ padding: '10px 12px', paddingBottom: 'max(12px,env(safe-area-inset-bottom))', borderTop: `1px solid ${BORDER}`, flexShrink: 0, background: '#0F172A' }}>
               <div style={{ display: 'flex', gap: 8, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 20, padding: '6px 6px 6px 14px', alignItems: 'flex-end' }}>
                 <input
                   value={sageInput}

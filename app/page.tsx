@@ -5,18 +5,18 @@ import { Blueprint, Robot, CurrencyDollar, DeviceMobile, PaintBrush, WifiHigh, C
 import { IntegrationStrip } from '../components/Integrations';
 
 /* ── palette ── */
-const BG = '#F2F2F7';
-const CARD = '#FFFFFF';
-const GOLD = '#C8881C';
+const BG = '#0d1117';
+const CARD = '#0F172A';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
 
 const glass: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.65)',
+  background: 'rgba(15,23,42,0.65)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid #E5E5EA',
+  border: '1px solid rgba(255,255,255,0.12)',
   borderRadius: 16,
   boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)',
 };
@@ -89,7 +89,7 @@ const StatusCell = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
   v === 'yes' ? <CheckIcon /> : v === 'partial' ? <PartialIcon /> : <XIcon />;
 
 const PriceLabel = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
-  v === 'yes' ? <span style={{ color: GREEN, fontWeight: 600, fontSize: 13 }}>$49/mo</span>
+  v === 'yes' ? <span style={{ color: GREEN, fontWeight: 600, fontSize: 13 }}>$499/mo</span>
     : v === 'partial' ? <span style={{ color: GOLD, fontWeight: 600, fontSize: 13 }}>$399/mo</span>
     : <span style={{ color: '#EF4444', fontWeight: 600, fontSize: 13 }}>$1,000+/mo</span>;
 
@@ -97,25 +97,25 @@ const PriceLabel = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
 const PLANS = [
   {
     name: 'Starter',
-    price: '$49',
+    price: '$499',
     period: '/mo',
     desc: 'Perfect for small GCs getting started',
-    features: ['3 active projects', 'AI Takeoff (5/mo)', 'Pay apps & invoicing', 'Lien waivers', 'Mobile field app', 'Email support'],
+    features: ['Unlimited users — no per-seat fees', '15 active projects', 'AI Takeoff (150 pages/mo)', 'Pay apps & invoicing', 'Lien waivers', 'Mobile field app', 'Email support'],
     cta: 'Start Free Trial',
     highlighted: false,
   },
   {
     name: 'Professional',
-    price: '$99',
+    price: '$750',
     period: '/mo',
     desc: 'For growing contractors who need it all',
-    features: ['Unlimited projects', 'Unlimited AI Takeoffs', 'Sage AI Assistant', 'Bid package manager', 'Client & sub portals', 'Certified payroll', 'Priority support'],
+    features: ['Unlimited users — no per-seat fees', 'Unlimited projects', 'Unlimited AI Takeoffs', 'Sage AI Assistant', 'Bid package manager', 'Client & sub portals', 'Certified payroll', 'Priority support'],
     cta: 'Start Free Trial',
     highlighted: true,
   },
   {
     name: 'Enterprise',
-    price: 'Custom',
+    price: 'Call for Quote',
     period: '',
     desc: 'For large firms with custom needs',
     features: ['Everything in Professional', 'Dedicated account manager', 'Custom integrations', 'SSO & advanced security', 'On-site training', 'SLA guarantee', 'API access'],
@@ -136,7 +136,7 @@ export default function LandingPage() {
 
       {/* ══════════ 1. TOP BANNER ══════════ */}
       {bannerVisible && (
-        <div style={{ background: 'linear-gradient(90deg, rgba(212,160,23,0.12) 0%, rgba(212,160,23,0.05) 100%)', borderBottom: '1px solid rgba(212,160,23,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, position: 'relative' as const }}>
+        <div style={{ background: 'linear-gradient(90deg, rgba(245, 158, 11,0.12) 0%, rgba(245, 158, 11,0.05) 100%)', borderBottom: '1px solid rgba(245, 158, 11,0.2)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, position: 'relative' as const }}>
           <span style={{ color: GOLD, fontWeight: 600 }}>Procore users: Switch in 1 day — Free migration included.</span>
           <Link href="/roi-calculator" style={{ color: GOLD, textDecoration: 'underline', fontWeight: 500 }}>Calculate your savings &rarr;</Link>
           <button onClick={() => setBannerVisible(false)} style={{ position: 'absolute' as const, right: 16, background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 18, lineHeight: 1 }} aria-label="Dismiss banner">&times;</button>
@@ -164,28 +164,28 @@ export default function LandingPage() {
           platform: {
             label: 'Platform',
             items: [
-              { icon: <Blueprint size={22} weight="duotone" color="#C8881C" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, full estimate out in 60 seconds', href: '/roi-calculator' },
-              { icon: <PaintBrush size={22} weight="duotone" color="#C8881C" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
-              { icon: <ChartLine size={22} weight="duotone" color="#C8881C" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
+              { icon: <Blueprint size={22} weight="duotone" color="#F59E0B" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, full estimate out in 60 seconds', href: '/roi-calculator' },
+              { icon: <PaintBrush size={22} weight="duotone" color="#F59E0B" />, title: 'AI Design Studio', desc: 'Redesign any room with AI', href: '/design' },
+              { icon: <ChartLine size={22} weight="duotone" color="#F59E0B" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
             ],
           },
           solutions: {
             label: 'Solutions',
             items: [
-              { icon: <Buildings size={22} weight="duotone" color="#C8881C" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
-              { icon: <Hammer size={22} weight="duotone" color="#C8881C" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/industry/specialty-subcontractors' },
-              { icon: <HouseSimple size={22} weight="duotone" color="#C8881C" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/industry/residential-remodelers' },
-              { icon: <Building size={22} weight="duotone" color="#C8881C" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/industry/commercial-contractors' },
-              { icon: <Wrench size={22} weight="duotone" color="#C8881C" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/industry/roofing-contractors' },
+              { icon: <Buildings size={22} weight="duotone" color="#F59E0B" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
+              { icon: <Hammer size={22} weight="duotone" color="#F59E0B" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/industry/specialty-subcontractors' },
+              { icon: <HouseSimple size={22} weight="duotone" color="#F59E0B" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/industry/residential-remodelers' },
+              { icon: <Building size={22} weight="duotone" color="#F59E0B" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/industry/commercial-contractors' },
+              { icon: <Wrench size={22} weight="duotone" color="#F59E0B" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/industry/roofing-contractors' },
             ],
           },
           resources: {
             label: 'Resources',
             items: [
-              { icon: <Calculator size={22} weight="duotone" color="#C8881C" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
-              { icon: <Scales size={22} weight="duotone" color="#C8881C" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
-              { icon: <BookOpen size={22} weight="duotone" color="#C8881C" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
-              { icon: <User size={22} weight="duotone" color="#C8881C" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
+              { icon: <Calculator size={22} weight="duotone" color="#F59E0B" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
+              { icon: <Scales size={22} weight="duotone" color="#F59E0B" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
+              { icon: <BookOpen size={22} weight="duotone" color="#F59E0B" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
+              { icon: <User size={22} weight="duotone" color="#F59E0B" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
             ],
           },
         };
@@ -193,15 +193,15 @@ export default function LandingPage() {
         return (
           <nav ref={navRef} style={{
             position: 'sticky', top: 0, zIndex: 100,
-            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-            borderBottom: '1px solid rgba(212,160,23,0.12)',
+            background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            borderBottom: '1px solid rgba(245, 158, 11,0.12)',
             padding: '0 max(24px, 4vw)', height: 56,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             {/* Logo lockup — full horizontal badge + wordmark artwork */}
-            <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
               <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={34} style={{ height: 34, width: 'auto', display: 'block' }} />
-            </a>
+            </Link>
 
             {/* Desktop menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
@@ -212,7 +212,7 @@ export default function LandingPage() {
                     onMouseEnter={() => setOpenMenu(key)}
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: openMenu === key ? '#C8881C' : '#1C1C1E',
+                      color: openMenu === key ? '#F59E0B' : '#FFFFFF',
                       fontSize: 13, fontWeight: 500, padding: '8px 14px',
                       display: 'flex', alignItems: 'center', gap: 4,
                       transition: 'color 0.15s ease',
@@ -229,31 +229,31 @@ export default function LandingPage() {
                       style={{
                         position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
                         width: 420, marginTop: 8,
-                        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-                        border: '1px solid rgba(212,160,23,0.15)',
+                        background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
+                        border: '1px solid rgba(245, 158, 11,0.15)',
                         borderRadius: 16, padding: '8px',
                         boxShadow: '0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,0,0,0.04)',
                         animation: 'navDropFadeIn 0.15s ease',
                       }}
                     >
                       {menu.items.map((item, i) => (
-                        <a key={i} href={item.href} style={{
+                        <Link key={i} href={item.href} style={{
                           display: 'flex', alignItems: 'center', gap: 14,
                           padding: '12px 16px', borderRadius: 10,
                           textDecoration: 'none', transition: 'all 0.15s ease',
                           borderLeft: '3px solid transparent',
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(212,160,23,0.06)'; e.currentTarget.style.borderLeftColor = '#C8881C'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11,0.06)'; e.currentTarget.style.borderLeftColor = '#F59E0B'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
                         >
-                          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245, 158, 11,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             {item.icon}
                           </div>
                           <div>
-                            <div style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
-                            <div style={{ color: '#86868B', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
+                            <div style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
+                            <div style={{ color: '#CBD5E1', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
                           </div>
-                        </a>
+                        </Link>
                       ))}
                     </div>
                   )}
@@ -261,21 +261,21 @@ export default function LandingPage() {
               ))}
 
               {/* Pricing link */}
-              <a href="/#pricing" style={{ color: '#1C1C1E', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</a>
+              <Link href="/#pricing" style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</Link>
             </div>
 
             {/* Right side CTAs */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <a href="/login" style={{ color: '#86868B', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</a>
-              <a href="/signup" style={{
-                background: 'linear-gradient(135deg, #C8881C, #C8960F)',
+              <Link href="/login" style={{ color: '#CBD5E1', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</Link>
+              <Link href="/signup" style={{
+                background: 'linear-gradient(135deg, #F59E0B, #C8960F)',
                 color: '#000', fontSize: 13, fontWeight: 700,
                 padding: '8px 20px', borderRadius: 8, textDecoration: 'none',
-                boxShadow: '0 0 20px rgba(212,160,23,0.2)',
-              }}>Start Free</a>
+                boxShadow: '0 0 20px rgba(245, 158, 11,0.2)',
+              }}>Start Free</Link>
 
               {/* Mobile hamburger */}
-              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#1C1C1E', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
+              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
                 {mobileOpen ? <X size={24} /> : <List size={24} />}
               </button>
             </div>
@@ -284,18 +284,22 @@ export default function LandingPage() {
       })()}
 
       {/* ══════════ 3. HERO ══════════ */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(242,242,247,0.97) 0%, rgba(242,242,247,0.95) 45%, rgba(242,242,247,0.55) 100%)', zIndex: 0 }} />
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 56, alignItems: 'center', position: 'relative' as const, backgroundImage: 'url(https://images.unsplash.com/photo-1609902726285-00668009f004?w=1280&q=55&fm=webp)', backgroundSize: 'cover', backgroundPosition: 'center' }} className="hero-grid">
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(13,17,23,0.97) 0%, rgba(13,17,23,0.95) 45%, rgba(13,17,23,0.55) 100%)', zIndex: 0 }} />
         {/* Brand: subtle sunset glow echoing the Saguaro badge */}
-        <div style={{ position: 'absolute' as const, top: -140, right: -60, width: 560, height: 560, background: 'radial-gradient(circle, rgba(232,140,40,0.20) 0%, rgba(212,160,23,0.07) 42%, transparent 70%)', zIndex: 0, pointerEvents: 'none' as const }} />
+        <div style={{ position: 'absolute' as const, top: -140, right: -60, width: 560, height: 560, background: 'radial-gradient(circle, rgba(232,140,40,0.20) 0%, rgba(245, 158, 11,0.07) 42%, transparent 70%)', zIndex: 0, pointerEvents: 'none' as const }} />
         {/* left */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(212,160,23,0.12)', border: '1px solid rgba(212,160,23,0.35)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.4, padding: '6px 13px', borderRadius: 999, marginBottom: 20, textTransform: 'uppercase' as const }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(212,160,23,0.6)' }} />AI-POWERED CONSTRUCTION CRM</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(245, 158, 11,0.12)', border: '1px solid rgba(245, 158, 11,0.35)', color: GOLD, fontSize: 11, fontWeight: 700, letterSpacing: 1.4, padding: '6px 13px', borderRadius: 999, marginBottom: 20, textTransform: 'uppercase' as const }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 8px rgba(245, 158, 11,0.6)' }} />AI-POWERED CONSTRUCTION CRM</span>
           <h1 style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.02em', margin: '0 0 18px', color: TEXT }}>The Smarter CRM Built<br />for General Contractors</h1>
-          <p style={{ color: DIM, fontSize: 16, lineHeight: 1.65, margin: '0 0 28px', maxWidth: 460 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
+          <p style={{ color: DIM, fontSize: 16, lineHeight: 1.65, margin: '0 0 22px', maxWidth: 460 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
+          <div style={{ borderLeft: `3px solid ${GOLD}`, paddingLeft: 14, margin: '0 0 26px' }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: TEXT, letterSpacing: '-0.2px' }}>Control Every Project. Deliver Every Promise.</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '1px', textTransform: 'uppercase' as const, marginTop: 4 }}>Construction Management &middot; Project Controls &middot; National Rollout Specialists</div>
+          </div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const }}>
-            <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,160,23,0.35)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
-            <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid #E5E5EA', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <Link href="/signup" style={{ background: GOLD, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '13px 30px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(245, 158, 11,0.35)' }}>Start Free Trial <span style={{ fontSize: 16 }}>&rarr;</span></Link>
+            <Link href="/#demo" style={{ color: TEXT, textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '13px 26px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <svg viewBox="0 0 20 20" width={15} height={15} fill={TEXT}><polygon points="5,3 19,10 5,17" /></svg> Watch Demo
             </Link>
           </div>
@@ -306,18 +310,18 @@ export default function LandingPage() {
         {/* right — takeoff mockup */}
         <div id="demo" style={{ ...glass, padding: 0, overflow: 'hidden', position: 'relative', zIndex: 1, scrollMarginTop: 72 }} className="hero-mockup">
           {/* browser chrome */}
-          <div style={{ background: 'rgba(255,255,255,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #E5E5EA' }}>
+          <div style={{ background: 'rgba(15,23,42,0.8)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: GOLD }} />
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: GREEN }} />
             <span style={{ flex: 1, background: 'rgba(0,0,0,0.06)', borderRadius: 6, padding: '4px 12px', fontSize: 11, color: DIM, marginLeft: 8 }}>app.saguaro.build/takeoff</span>
           </div>
           {/* mockup content */}
-          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.98) 100%)` }}>
+          <div style={{ padding: 20, background: `linear-gradient(135deg, ${BG} 0%, rgba(15,23,42,0.95) 50%, rgba(15,23,42,0.98) 100%)` }}>
             {/* toolbar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>AI Takeoff Results</span>
-              <span style={{ fontSize: 11, color: GOLD, fontWeight: 600, background: 'rgba(212,160,23,0.12)', padding: '3px 10px', borderRadius: 12 }}>38s &bull; 47 items</span>
+              <span style={{ fontSize: 11, color: GOLD, fontWeight: 600, background: 'rgba(245, 158, 11,0.12)', padding: '3px 10px', borderRadius: 12 }}>38s &bull; 47 items</span>
             </div>
             {/* table header */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1, marginBottom: 2 }}>
@@ -340,7 +344,7 @@ export default function LandingPage() {
               </div>
             ))}
             {/* total bar */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, padding: '10px 8px', borderTop: `1px solid rgba(212,160,23,0.2)` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, padding: '10px 8px', borderTop: `1px solid rgba(245, 158, 11,0.2)` }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: TEXT }}>Total Estimate</span>
               <span style={{ fontSize: 14, fontWeight: 800, color: GOLD }}>$137,070</span>
             </div>
@@ -359,7 +363,7 @@ export default function LandingPage() {
             { val: '8,900+', lbl: 'Blueprints Analyzed' },
           ].map(s => (
             <div key={s.lbl} style={{ ...glass, padding: '20px 24px', textAlign: 'center' as const }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: '#C8881C', letterSpacing: '-0.02em' }}>{s.val}</div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: '#F59E0B', letterSpacing: '-0.02em' }}>{s.val}</div>
               <div style={{ fontSize: 12, color: DIM, marginTop: 6, fontWeight: 500 }}>{s.lbl}</div>
             </div>
           ))}
@@ -375,22 +379,22 @@ export default function LandingPage() {
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 40, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="feature-grid">
           {FEATURES.map(f => {
-            const cardImg = f.title.includes('Blueprint') || f.title.includes('Takeoff') ? 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&q=80'
-              : f.title.includes('Sage') || f.title.includes('AI Assistant') ? 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=80'
-              : f.title.includes('Financial') ? 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&q=80'
-              : f.title.includes('Field') || f.title.includes('Mobile') ? 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80'
-              : f.title.includes('Portal') ? 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&q=80'
-              : 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80';
+            const cardImg = f.title.includes('Blueprint') || f.title.includes('Takeoff') ? 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&q=55&fm=webp'
+              : f.title.includes('Sage') || f.title.includes('AI Assistant') ? 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=55&fm=webp'
+              : f.title.includes('Financial') ? 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&q=55&fm=webp'
+              : f.title.includes('Field') || f.title.includes('Mobile') ? 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=55&fm=webp'
+              : f.title.includes('Portal') ? 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&q=55&fm=webp'
+              : 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=55&fm=webp';
             return (
             <div key={f.title} style={{ ...glass, padding: 0, overflow: 'hidden', transition: 'all 0.3s ease', cursor: 'default' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,23,0.25)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.25)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)'; }}>
               <div style={{ height: 160, overflow: 'hidden', borderRadius: '16px 16px 0 0', position: 'relative' as const }}>
                 <img src={cardImg} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute' as const, inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.25))' }} />
               </div>
               <div style={{ padding: '24px 22px' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(212,160,23,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245, 158, 11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
                   <Icon d={f.icon} />
                 </div>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, color: TEXT }}>{f.title}</h3>
@@ -415,25 +419,25 @@ export default function LandingPage() {
             <Link href="/design" style={{ background: GREEN, color: '#000', textDecoration: 'none', fontWeight: 700, fontSize: 14, padding: '11px 24px', borderRadius: 10, display: 'inline-block' }}>Try AI Design Studio &mdash; Free</Link>
           </div>
           {/* right mockup — before/after */}
-          <div style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
+          <div style={{ background: `linear-gradient(135deg, rgba(15,23,42,0.9), rgba(15,23,42,0.8))`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' as const }}>
             <div style={{ display: 'flex', gap: 12, width: '100%' }}>
               {/* before */}
-              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid #E5E5EA', position: 'relative' as const }}>
-                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: '#F2F2F7', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: DIM, textTransform: 'uppercase' as const, zIndex: 1 }}>Before</div>
+              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', position: 'relative' as const }}>
+                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: '#16243A', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: DIM, textTransform: 'uppercase' as const, zIndex: 1 }}>Before</div>
                 <div style={{ height: 160 }}>
-                  <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80" alt="Before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
+                  <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=55&fm=webp" alt="Before renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
                 </div>
               </div>
               {/* after */}
-              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: `1px solid rgba(212,160,23,0.2)`, position: 'relative' as const }}>
-                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: 'rgba(212,160,23,0.15)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: GOLD, textTransform: 'uppercase' as const, zIndex: 1 }}>After &mdash; AI Generated</div>
+              <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', border: `1px solid rgba(245, 158, 11,0.2)`, position: 'relative' as const }}>
+                <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, background: 'rgba(245, 158, 11,0.15)', padding: '6px 10px', fontSize: 10, fontWeight: 600, color: GOLD, textTransform: 'uppercase' as const, zIndex: 1 }}>After &mdash; AI Generated</div>
                 <div style={{ height: 160 }}>
-                  <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80" alt="After renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
+                  <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=55&fm=webp" alt="After renovation" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
                 </div>
               </div>
             </div>
             {/* slider indicator */}
-            <div style={{ position: 'absolute' as const, bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(212,160,23,0.15)', borderRadius: 20, padding: '4px 14px', fontSize: 10, color: GOLD, fontWeight: 600 }}>
+            <div style={{ position: 'absolute' as const, bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(245, 158, 11,0.15)', borderRadius: 20, padding: '4px 14px', fontSize: 10, color: GOLD, fontWeight: 600 }}>
               &larr; Drag to Compare &rarr;
             </div>
           </div>
@@ -446,7 +450,7 @@ export default function LandingPage() {
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
         <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.06)' }}>
           {/* header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid #E5E5EA' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
             <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 700, color: GOLD, textAlign: 'center' as const }}>Saguaro</div>
             <div style={{ padding: '14px 12px', fontSize: 13, fontWeight: 700, color: DIM, textAlign: 'center' as const }}>Procore</div>
@@ -454,7 +458,7 @@ export default function LandingPage() {
           </div>
           {/* rows */}
           {COMPARISON_ROWS.map((r, i) => (
-            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid #E5E5EA' : 'none', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
+            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
               <div style={{ padding: '11px 20px', fontSize: 13, color: TEXT }}>{r.feature}</div>
               <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {r.feature === 'Starting Price' ? <PriceLabel v={r.saguaro} /> : <StatusCell v={r.saguaro} />}
@@ -477,14 +481,14 @@ export default function LandingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
           {PLANS.map(plan => (
             <div key={plan.name} style={{
-              background: '#FFFFFF',
+              background: '#0F172A',
               backdropFilter: 'blur(40px)',
               WebkitBackdropFilter: 'blur(40px)',
-              border: plan.highlighted ? '1px solid rgba(212,160,23,0.4)' : '1px solid #E5E5EA',
+              border: plan.highlighted ? '1px solid rgba(245, 158, 11,0.4)' : '1px solid rgba(255,255,255,0.12)',
               borderRadius: 16,
               padding: '28px 24px',
               position: 'relative' as const,
-              boxShadow: plan.highlighted ? '0 0 60px rgba(212,160,23,0.12), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)' : '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(0,0,0,0.05)',
+              boxShadow: plan.highlighted ? '0 0 60px rgba(245, 158, 11,0.12), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)' : '0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(0,0,0,0.05)',
               display: 'flex',
               flexDirection: 'column' as const,
               transition: 'all 0.3s ease',
@@ -516,7 +520,7 @@ export default function LandingPage() {
                 textDecoration: 'none',
                 ...(plan.highlighted
                   ? { background: GOLD, color: '#000' }
-                  : { border: '1px solid #E5E5EA', color: TEXT }),
+                  : { border: '1px solid rgba(255,255,255,0.12)', color: TEXT }),
               }}>
                 {plan.cta}
               </Link>
@@ -528,7 +532,7 @@ export default function LandingPage() {
       {/* ══════════ 8. TESTIMONIAL ══════════ */}
       <section style={{ maxWidth: 700, margin: '0 auto', padding: '40px 24px', textAlign: 'center' as const }}>
         <div style={{ ...glass, padding: '36px 32px', boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(0,0,0,0.06)' }}>
-          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=80" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #C8881C', display: 'block', margin: '0 auto 16px' }} />
+          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&q=55&fm=webp" alt="Marcus Thompson" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #F59E0B', display: 'block', margin: '0 auto 16px' }} />
           <blockquote style={{ fontSize: 16, color: TEXT, lineHeight: 1.6, fontStyle: 'italic' as const, margin: '0 0 16px', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
           <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px' }}>Marcus Torres</p>
           <p style={{ color: DIM, fontSize: 12, margin: 0 }}>VP of Operations &mdash; Sonoran Builders, Phoenix AZ</p>
@@ -536,15 +540,15 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 9. CTA SECTION ══════════ */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '72px 24px 80px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(212,160,23,0.08) 0%, transparent 70%)' }}>
+      <section style={{ maxWidth: 700, margin: '0 auto', padding: '72px 24px 80px', textAlign: 'center' as const, background: 'radial-gradient(ellipse at center, rgba(245, 158, 11,0.08) 0%, transparent 70%)' }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 12 }}>Ready to Build Smarter?</h2>
         <p style={{ color: DIM, fontSize: 15, marginBottom: 28 }}>Join 200+ general contractors who switched to Saguaro and never looked back.</p>
-        <Link href="/signup" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(212,160,23,0.3), 0 12px 40px rgba(212,160,23,0.15)', transition: 'all 0.3s ease' }}>Start Your Free Trial</Link>
+        <Link href="/signup" style={{ background: `linear-gradient(135deg, ${GOLD}, #B8860B)`, color: '#000', textDecoration: 'none', fontWeight: 800, fontSize: 16, padding: '14px 40px', borderRadius: 12, display: 'inline-block', boxShadow: '0 4px 24px rgba(245, 158, 11,0.3), 0 12px 40px rgba(245, 158, 11,0.15)', transition: 'all 0.3s ease' }}>Start Your Free Trial</Link>
         <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>No credit card required. 14-day free trial.</p>
       </section>
 
       {/* ══════════ 10. FOOTER ══════════ */}
-      <footer style={{ borderTop: '1px solid #E5E5EA', maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.12)', maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, marginBottom: 32 }} className="footer-grid">
           {/* product */}
           <div>
@@ -575,11 +579,11 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-        <div style={{ borderTop: '1px solid #E5E5EA', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
             <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={30} style={{ height: 30, width: 'auto', display: 'block' }} />
-          </a>
-          <span style={{ fontSize: 12, color: DIM }}>&copy; {new Date().getFullYear()} Saguaro Technologies Inc. All rights reserved.</span>
+          </Link>
+          <span style={{ fontSize: 12, color: DIM }}>&copy; {new Date().getFullYear()} Saguaro Control Systems. All rights reserved. &middot; <span style={{ color: GOLD, fontWeight: 600 }}>Control Every Project. Deliver Every Promise.</span></span>
         </div>
       </footer>
 

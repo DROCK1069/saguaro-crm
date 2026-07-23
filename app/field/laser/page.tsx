@@ -7,16 +7,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 
-const BASE = '#F2F2F7';
-const CARD = '#FFFFFF';
-const CARD_GLASS = 'rgba(255,255,255,0.7)';
-const GOLD = '#C8881C';
+const BASE = '#0d1117';
+const CARD = '#0F172A';
+const CARD_GLASS = 'rgba(15,23,42,0.98)';
+const GOLD = '#F59E0B';
 const GREEN = '#34C759';
 const BLUE = '#007AFF';
 const RED = '#FF3B30';
-const TEXT = '#1C1C1E';
-const DIM = '#6E6E73';
-const BORDER = '#E5E5EA';
+const TEXT = '#FFFFFF';
+const DIM = '#CBD5E1';
+const BORDER = 'rgba(255,255,255,0.12)';
 const RADIUS = 16;
 
 const glass: React.CSSProperties = {
@@ -28,7 +28,7 @@ const glass: React.CSSProperties = {
 };
 
 const inp: React.CSSProperties = {
-  width: '100%', background: 'rgba(255,255,255,0.8)', border: `1px solid ${BORDER}`,
+  width: '100%', background: '#16243A', border: `1px solid ${BORDER}`,
   borderRadius: 10, padding: '11px 14px', color: TEXT, fontSize: 15, outline: 'none', boxSizing: 'border-box',
 };
 
@@ -331,7 +331,7 @@ function LaserPage() {
           <button key={t} onClick={() => setTab(t)}
             style={{
               flex: 1, padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: tab === t ? 'rgba(212,160,23,0.15)' : 'transparent',
+              background: tab === t ? 'rgba(245, 158, 11,0.15)' : 'transparent',
               color: tab === t ? GOLD : DIM,
               fontSize: 14, fontWeight: tab === t ? 700 : 500,
               transition: 'all 0.2s',
@@ -521,7 +521,7 @@ function LaserPage() {
               <button key={f.key} onClick={() => setHistoryFilter(f.key)}
                 style={{
                   flex: 1, padding: '7px 8px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  background: historyFilter === f.key ? 'rgba(212,160,23,0.12)' : 'transparent',
+                  background: historyFilter === f.key ? 'rgba(245, 158, 11,0.12)' : 'transparent',
                   color: historyFilter === f.key ? GOLD : DIM,
                   fontSize: 12, fontWeight: historyFilter === f.key ? 700 : 500,
                 }}>

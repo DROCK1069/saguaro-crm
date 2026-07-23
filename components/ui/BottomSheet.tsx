@@ -47,7 +47,7 @@ export function BottomSheet({ open, onClose, title, children, height = 'auto' }:
         position: 'fixed',
         inset: 0,
         zIndex: 600,
-        background: '#F2F2F7',
+        background: '#0d1117',
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'center',
@@ -60,10 +60,10 @@ export function BottomSheet({ open, onClose, title, children, height = 'auto' }:
           maxWidth: 600,
           maxHeight: '90vh',
           height,
-          background: '#FFFFFF',
+          background: '#0F172A',
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-          border: '1px solid #E5E5EA',
+          border: '1px solid rgba(255,255,255,0.12)',
           borderBottom: 'none',
           display: 'flex',
           flexDirection: 'column',
@@ -91,16 +91,16 @@ export function BottomSheet({ open, onClose, title, children, height = 'auto' }:
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '8px 20px 12px',
-              borderBottom: '1px solid #E5E5EA',
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
             }}
           >
-            <span style={{ fontWeight: 700, fontSize: 16, color: '#1C1C1E' }}>{title}</span>
+            <span style={{ fontWeight: 700, fontSize: 16, color: '#FFFFFF' }}>{title}</span>
             <button
               onClick={onClose}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#6E6E73',
+                color: '#CBD5E1',
                 fontSize: 22,
                 cursor: 'pointer',
                 lineHeight: 1,

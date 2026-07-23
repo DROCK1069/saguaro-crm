@@ -10,11 +10,11 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 
-const GOLD   = '#C8881C';
-const RAISED = '#FFFFFF';
-const BORDER = '#E5E5EA';
-const TEXT   = '#1C1C1E';
-const DIM    = '#6E6E73';
+const GOLD   = '#F59E0B';
+const RAISED = '#0F172A';
+const BORDER = 'rgba(255,255,255,0.12)';
+const TEXT   = '#FFFFFF';
+const DIM    = '#CBD5E1';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -240,10 +240,10 @@ function CloseoutInner() {
   }, [items]);
 
   /* ── styles ────────────────────────────────────────────────────── */
-  const page: React.CSSProperties = { minHeight: '100vh', background: '#FFFFFF', color: TEXT, fontFamily: 'system-ui, sans-serif', paddingBottom: 80 };
+  const page: React.CSSProperties = { minHeight: '100vh', background: '#0d1117', color: TEXT, fontFamily: 'system-ui, sans-serif', paddingBottom: 80 };
   const header: React.CSSProperties = { background: RAISED, padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12, position: 'sticky', top: 0, zIndex: 50 };
   const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 16, marginBottom: 12 };
-  const input: React.CSSProperties = { width: '100%', padding: '10px 12px', background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14, boxSizing: 'border-box' };
+  const input: React.CSSProperties = { width: '100%', padding: '10px 12px', background: '#16243A', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14, boxSizing: 'border-box' };
   const btnGold: React.CSSProperties = { padding: '10px 20px', background: GOLD, color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' };
   const btnOutline: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, cursor: 'pointer' };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block', fontWeight: 600 };
@@ -256,7 +256,7 @@ function CloseoutInner() {
     const pct = max ? Math.round((value / max) * 100) : 0;
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ flex: 1, height: 10, background: '#FFFFFF', borderRadius: 5, overflow: 'hidden' }}>
+        <div style={{ flex: 1, height: 10, background: '#16243A', borderRadius: 5, overflow: 'hidden' }}>
           <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 5, transition: 'width 0.4s' }} />
         </div>
         <span style={{ fontSize: 12, color: DIM, minWidth: 40, textAlign: 'right' }}>{pct}%</span>
@@ -689,7 +689,7 @@ function CloseoutInner() {
 
         {/* bulk bar */}
         {bulkIds.size > 0 && (
-          <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, background: '#FFFFFF' }}>
+          <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 12, background: '#0F172A' }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>{bulkIds.size} selected</span>
             <select style={{ ...input, width: 'auto', fontSize: 12 }} value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
               {STATUSES.filter((s) => s !== 'na').map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
@@ -777,7 +777,7 @@ function CloseoutInner() {
 /* ── default export with Suspense ────────────────────────────────── */
 export default function CloseoutPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#FFFFFF', color: '#6E6E73', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0d1117', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>}>
       <CloseoutInner />
     </Suspense>
   );
