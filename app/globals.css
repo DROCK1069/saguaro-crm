@@ -492,5 +492,22 @@ input, textarea, select {
   background-color: #0F172A !important;
   color: #FFFFFF !important;
   -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #FFFFFF;
 }
-input::placeholder, textarea::placeholder { color: #CBD5E1 !important; }
+input::placeholder, textarea::placeholder { color: #CBD5E1 !important; opacity: 1; }
+/* FIX: Chrome/Safari autofill paints its OWN light background that background-color
+   can't override — only an inset box-shadow can. Without this, autofilled email/
+   password text is white-on-light = invisible (reported on the client portal). */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #0F172A inset !important;
+  box-shadow: 0 0 0 1000px #0F172A inset !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #FFFFFF !important;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+input:-webkit-autofill::first-line { color: #FFFFFF !important; font-size: 15px; }
