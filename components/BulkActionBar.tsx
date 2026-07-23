@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 
 const GOLD = '#F59E0B';
-const DARK = '#F2F2F7';
+const DARK = '#0d1117';
 const RAISED = '#0F172A';
 const BORDER = 'rgba(255,255,255,0.12)';
 const DIM = '#CBD5E1';
