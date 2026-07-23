@@ -31,6 +31,14 @@ export async function POST(req: NextRequest) {
       materials_delivered: body.materialsDelivered || '',
       visitors: body.visitors || '',
       notes: body.notes || '',
+      // Mobile-app text columns (app/daily.tsx writes these). Persist them so a
+      // web-created log carries the same fields the native app expects, and the
+      // web read below can round-trip a mobile-created log without dropping data.
+      superintendent: body.superintendent || null,
+      precipitation: body.precipitation || null,
+      wind_conditions: body.windConditions ?? body.wind_conditions ?? null,
+      phase_of_work: body.phaseOfWork ?? body.phase_of_work ?? null,
+      equipment: body.equipment || null,
       // Structured columns (jsonb / text[]) — persisted when the client sends them.
       manpower_by_trade: manpower,
       equipment_on_site: equipmentOnSite,

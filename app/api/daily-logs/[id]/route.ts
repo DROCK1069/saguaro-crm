@@ -30,6 +30,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const allowed = [
       'log_date','weather','high_temp','low_temp','crew_count',
       'work_performed','delays','safety_notes','materials_delivered','visitors','notes',
+      // Mobile-app text columns — kept in the allowlist so an edit from either
+      // surface can update the union without silently dropping them.
+      'superintendent','precipitation','wind_conditions','phase_of_work','equipment',
     ];
     const fields: Record<string, any> = {};
     for (const k of allowed) {

@@ -368,6 +368,112 @@ export async function uploadCOIHandler(req: NextRequest) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 2b. MANUAL PM CREATE + COI FILE UPLOAD
+// POST /api/insurance/create  (multipart/form-data)
+//
+// The in-app "Add Certificate" form (app/projects/[projectId]/insurance) is a
+// CREATE flow: no coiId exists yet, and the PM types the policy fields by hand
+// and (now) attaches the COI PDF. The old form POSTed JSON only — so the PDF was
+// never uploaded and no pdf_url was ever persisted. This handler inserts the row
+// with the typed fields and, when a file is attached, uploads it to the shared
+// `project-files` bucket (same pattern as drawings/proposals/photos and the
+// sub-facing uploadCOIHandler above) and persists the public pdf_url so the cert
+// is directly openable on web and mobile (Linking.openURL).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createCOIHandler(req: NextRequest) {
+  const formData = await req.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: 'Expected multipart/form-data' }, { status: 400 });
+
+  const field = (...keys: string[]): string => {
+    for (const k of keys) {
+      const v = formData.get(k);
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+    return '';
+  };
+
+  // Tenant: explicit field → authenticated user. Never trust body alone.
+  const user = await getUser(req);
+  const tenantId  = field('tenantId') || user?.tenantId || '';
+  const projectId = field('projectId', 'project_id');
+  const subName   = field('subName', 'sub_name');
+
+  if (!tenantId)  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!projectId || !subName) {
+    return NextResponse.json({ error: 'projectId and subName are required' }, { status: 400 });
+  }
+
+  const expiry      = field('expiryDate', 'expiry_date') || null;
+  const coverageRaw = field('coverageAmount', 'coverage_amount');
+  const now         = new Date().toISOString();
+
+  // Compute an initial status from the expiry date (list view recomputes for
+  // display, but persist a sensible value so cron / other readers are correct).
+  let status = 'active';
+  if (expiry) {
+    const days = Math.floor((new Date(expiry + 'T12:00:00').getTime() - Date.now()) / 86400000);
+    if (days < 0) status = 'expired';
+    else if (days <= 30) status = 'expiring_soon';
+  }
+
+  // 1) Insert the row first so we have a stable id for the storage path.
+  //    Only columns proven to exist on the live insurance_certificates table.
+  const { data: created, error: insErr } = await supabaseAdmin
+    .from('insurance_certificates')
+    .insert({
+      tenant_id:       tenantId,
+      project_id:      projectId,
+      sub_name:        subName,
+      policy_type:     field('policyType', 'policy_type') || 'GL',
+      carrier:         field('carrier') || null,
+      policy_number:   field('policyNo', 'policy_number') || null,
+      effective_date:  field('effectiveDate', 'effective_date') || null,
+      expiry_date:     expiry,
+      coverage_amount: coverageRaw ? Number(coverageRaw) : null,
+      status,
+      created_at:      now,
+    } as never)
+    .select('id')
+    .single();
+
+  if (insErr || !created) {
+    console.error('[insurance/create] insert failed:', insErr?.message);
+    return NextResponse.json({ error: `COI create failed: ${insErr?.message}` }, { status: 500 });
+  }
+  const coiId = (created as { id: string }).id;
+
+  // 2) Optional COI PDF → public `project-files` bucket → persist pdf_url.
+  const file = formData.get('file') as File | null;
+  let pdfUrl = '';
+  if (file && typeof file.arrayBuffer === 'function') {
+    const buffer      = Buffer.from(await file.arrayBuffer());
+    const storagePath = `projects/${tenantId}/insurance/${coiId}/${Date.now()}_${file.name}`;
+    const { error: storageErr } = await supabaseAdmin.storage
+      .from('project-files')
+      .upload(storagePath, buffer, { contentType: file.type || 'application/pdf', upsert: false });
+    if (storageErr) {
+      console.error('[insurance/create] storage failed:', storageErr.message);
+      // The row exists — surface the file failure without losing the record.
+      return NextResponse.json({ error: `Certificate saved but file upload failed: ${storageErr.message}`, coiId }, { status: 500 });
+    }
+    const { data: urlData } = supabaseAdmin.storage.from('project-files').getPublicUrl(storagePath);
+    pdfUrl = urlData?.publicUrl || '';
+    const { error: updErr } = await supabaseAdmin
+      .from('insurance_certificates')
+      .update({ pdf_url: pdfUrl, last_checked_at: now } as never)
+      .eq('id', coiId)
+      .eq('tenant_id', tenantId);
+    if (updErr) {
+      console.error('[insurance/create] pdf_url save failed:', updErr.message);
+      return NextResponse.json({ error: `Certificate saved but pdf_url save failed: ${updErr.message}`, coiId }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ success: true, coiId, pdfUrl });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 3. GET COI LIST FOR PROJECT
 // GET /api/insurance/[projectId]?tenantId=xxx
 // ─────────────────────────────────────────────────────────────────────────────

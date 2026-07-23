@@ -21,6 +21,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Warning, ClipboardText, Sun, Thermometer, UsersThree,
   HourglassMedium, ShieldCheck, Package, UserCircle, NotePencil, ImageSquare,
+  HardHat, Wrench, CloudRain, Wind,
 } from '@phosphor-icons/react';
 import { colors, font, radius, space } from '@/lib/design-tokens';
 
@@ -38,6 +39,13 @@ interface DailyLog {
   materials_delivered: string | null;
   visitors: string | null;
   notes: string | null;
+  // Mobile-app text columns (app/daily.tsx) — surfaced here so a log created on
+  // the native app renders fully on web instead of showing partial data.
+  superintendent: string | null;
+  precipitation: string | null;
+  wind_conditions: string | null;
+  phase_of_work: string | null;
+  equipment: string | null;
   photos?: string[] | null;
   photo_urls?: string[] | null;
   created_at: string | null;
@@ -156,8 +164,12 @@ export default function DailyLogDetailPage() {
   const photos = (l.photos ?? l.photo_urls ?? []).filter(Boolean);
 
   const summaryCards = [
+    { l: 'Superintendent', v: l.superintendent || '—', icon: <HardHat size={16} color={colors.gold} /> },
+    { l: 'Phase of Work', v: l.phase_of_work || '—', icon: <ClipboardText size={16} color={colors.gold} /> },
     { l: 'Weather', v: l.weather || '—', icon: <Sun size={16} color={colors.gold} /> },
     { l: 'Temp High / Low', v: tempStr(l.high_temp, l.low_temp), icon: <Thermometer size={16} color={colors.gold} /> },
+    { l: 'Precipitation', v: l.precipitation || '—', icon: <CloudRain size={16} color={colors.gold} /> },
+    { l: 'Wind', v: l.wind_conditions || '—', icon: <Wind size={16} color={colors.gold} /> },
     { l: 'Crew', v: l.crew_count != null ? String(l.crew_count) : '0', icon: <UsersThree size={16} color={colors.gold} /> },
   ];
 
@@ -208,6 +220,14 @@ export default function DailyLogDetailPage() {
           {l.work_performed || 'No work recorded for this day.'}
         </div>
       </div>
+
+      {/* Equipment On Site (mobile-app column) — only shown when recorded */}
+      {l.equipment && (
+        <div style={cardStyle}>
+          <div style={cardHeaderStyle}><Wrench size={16} color={colors.textMuted} /> Equipment On Site</div>
+          <div style={blockStyle}>{l.equipment}</div>
+        </div>
+      )}
 
       {/* Delays */}
       <div style={cardStyle}>

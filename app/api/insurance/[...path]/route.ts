@@ -3,6 +3,7 @@ import {
   checkExpiryHandler,
   requestCOIHandler,
   uploadCOIHandler,
+  createCOIHandler,
   getCOIListHandler,
 } from '../../../../insurance-tracker';
 
@@ -14,7 +15,7 @@ export async function GET(
   const [segment] = path;
 
   // GET /api/insurance/:projectId (dynamic segment — not a keyword)
-  if (segment && segment !== 'check-expiry' && segment !== 'request' && segment !== 'upload') {
+  if (segment && segment !== 'check-expiry' && segment !== 'request' && segment !== 'upload' && segment !== 'create') {
     return getCOIListHandler(req, segment);
   }
 
@@ -31,6 +32,7 @@ export async function POST(
   if (segment === 'check-expiry') return checkExpiryHandler(req);
   if (segment === 'request')      return requestCOIHandler(req);
   if (segment === 'upload')       return uploadCOIHandler(req);
+  if (segment === 'create')       return createCOIHandler(req);
 
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }

@@ -53,6 +53,13 @@ export default function DailyLogsPage() {
     materialsDelivered: '',
     visitors: '',
     notes: '',
+    // Mobile-app fields (app/daily.tsx) — kept in sync so a web-created log
+    // carries the same union of columns the native app reads/writes.
+    superintendent: '',
+    precipitation: '',
+    windConditions: '',
+    phaseOfWork: '',
+    equipment: '',
   });
 
   const fetchLogs = useCallback(async () => {
@@ -97,11 +104,16 @@ export default function DailyLogsPage() {
           materialsDelivered: form.materialsDelivered,
           visitors: form.visitors,
           notes: form.notes,
+          superintendent: form.superintendent || null,
+          precipitation: form.precipitation || null,
+          windConditions: form.windConditions || null,
+          phaseOfWork: form.phaseOfWork || null,
+          equipment: form.equipment || null,
         }),
       });
       if (!res.ok) throw new Error('Failed to create daily log');
       setShowCreate(false);
-      setForm({ projectId: '', logDate: new Date().toISOString().slice(0, 10), weather: '', temperatureHigh: '', temperatureLow: '', crewCount: '', workPerformed: '', delays: '', safetyNotes: '', materialsDelivered: '', visitors: '', notes: '' });
+      setForm({ projectId: '', logDate: new Date().toISOString().slice(0, 10), weather: '', temperatureHigh: '', temperatureLow: '', crewCount: '', workPerformed: '', delays: '', safetyNotes: '', materialsDelivered: '', visitors: '', notes: '', superintendent: '', precipitation: '', windConditions: '', phaseOfWork: '', equipment: '' });
       await fetchLogs();
     } catch (e: any) {
       setError(e.message);
@@ -211,6 +223,14 @@ export default function DailyLogsPage() {
                   <input type="date" value={form.logDate} onChange={(e) => setForm({ ...form, logDate: e.target.value })} style={inputStyle} />
                 </div>
                 <div>
+                  <label style={labelStyle}>Superintendent</label>
+                  <input value={form.superintendent} onChange={(e) => setForm({ ...form, superintendent: e.target.value })} style={inputStyle} placeholder="Who ran the site" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Phase of Work</label>
+                  <input value={form.phaseOfWork} onChange={(e) => setForm({ ...form, phaseOfWork: e.target.value })} style={inputStyle} placeholder="e.g. Rough-in, Framing" />
+                </div>
+                <div>
                   <label style={labelStyle}>Weather</label>
                   <select value={form.weather} onChange={(e) => setForm({ ...form, weather: e.target.value })} style={inputStyle}>
                     <option value="">Select...</option>
@@ -235,6 +255,18 @@ export default function DailyLogsPage() {
                   <label style={labelStyle}>Temp Low (°F)</label>
                   <input type="number" value={form.temperatureLow} onChange={(e) => setForm({ ...form, temperatureLow: e.target.value })} style={inputStyle} placeholder="72" />
                 </div>
+                <div>
+                  <label style={labelStyle}>Precipitation</label>
+                  <input value={form.precipitation} onChange={(e) => setForm({ ...form, precipitation: e.target.value })} style={inputStyle} placeholder="e.g. 0.2 in" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Wind</label>
+                  <input value={form.windConditions} onChange={(e) => setForm({ ...form, windConditions: e.target.value })} style={inputStyle} placeholder="e.g. 8 mph SW" />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Equipment On Site</label>
+                <textarea value={form.equipment} onChange={(e) => setForm({ ...form, equipment: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Equipment on site..." />
               </div>
               <div>
                 <label style={labelStyle}>Work Performed *</label>

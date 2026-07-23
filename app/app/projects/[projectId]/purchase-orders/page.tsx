@@ -33,6 +33,23 @@ const STATUS_BADGE: Record<string, 'muted' | 'blue' | 'green' | 'amber' | 'red'>
 const EMPTY_LINE: LineItem = { description: '', quantity: 1, unit_price: 0 };
 const EMPTY_FORM = { vendor: '', description: '', delivery_date: '', line_items: [{ ...EMPTY_LINE }] };
 
+// Map a DB purchase_orders row (vendor_name/po_number/total/created_at) onto the display shape.
+function normalizePo(row: Record<string, unknown>): PurchaseOrder {
+  const created = (row.created_at as string) || '';
+  return {
+    id: String(row.id ?? `po-${Date.now()}`),
+    project_id: String(row.project_id ?? ''),
+    po_num: (row.po_number as string) || '',
+    vendor: (row.vendor_name as string) || '',
+    description: (row.description as string) || '',
+    amount: Number(row.total ?? row.subtotal ?? 0),
+    issued_date: created ? created.split('T')[0] : (new Date().toISOString().split('T')[0]),
+    delivery_date: (row.delivery_date as string) || null,
+    status: (row.status as string) || 'draft',
+    line_items: (row.line_items as LineItem[]) || [],
+  };
+}
+
 export default function PurchaseOrdersPage() {
   const { projectId } = useParams() as { projectId: string };
   const [pos, setPos] = useState<PurchaseOrder[]>([]);
@@ -48,7 +65,7 @@ export default function PurchaseOrdersPage() {
     try {
       const res = await fetch(`/api/projects/${projectId}/purchase-orders`);
       const json = await res.json();
-      setPos(json.purchase_orders || []);
+      setPos((json.purchase_orders || []).map(normalizePo));
     } catch {
       setPos([]);
     } finally {
@@ -103,10 +120,21 @@ export default function PurchaseOrdersPage() {
       const res = await fetch('/api/purchase-orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, ...newPo }),
+        body: JSON.stringify({
+          project_id: projectId,
+          vendor_name: form.vendor,
+          po_number: num,
+          description: form.description,
+          delivery_date: form.delivery_date || null,
+          line_items: form.line_items,
+          subtotal: amount,
+          total: amount,
+          status: 'draft',
+        }),
       });
       const json = await res.json();
-      setPos(prev => [...prev, json.po || newPo]);
+      if (!res.ok || !json.purchaseOrder) throw new Error(json.error || 'Create failed');
+      setPos(prev => [...prev, normalizePo(json.purchaseOrder)]);
     } catch {
       setPos(prev => [...prev, newPo]);
     }

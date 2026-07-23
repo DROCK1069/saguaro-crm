@@ -45,6 +45,7 @@ export default function InsurancePage() {
   const [fEff,setFEff]         = useState('');
   const [fExp,setFExp]         = useState('');
   const [fAmt,setFAmt]         = useState('');
+  const [fFile,setFFile]       = useState<File|null>(null);
 
   const load = useCallback(async()=>{
     setLoading(true); setError('');
@@ -67,13 +68,23 @@ export default function InsurancePage() {
     if(!fSub.trim()||!fCarrier.trim()||!fPolicy.trim()||!fEff||!fExp){ setError('All fields except coverage amount are required'); return; }
     setSaving(true); setError('');
     try{
-      const r = await fetch('/api/insurance/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        projectId,subName:fSub,policyType:fType,carrier:fCarrier,policyNo:fPolicy,
-        effectiveDate:fEff,expiryDate:fExp,coverageAmount:parseFloat(fAmt)||0,
-      })});
+      // Multipart so the COI PDF is actually uploaded (the old JSON POST never
+      // sent the file). The browser sets the multipart boundary — do not set
+      // Content-Type manually.
+      const fd = new FormData();
+      fd.append('projectId',projectId);
+      fd.append('subName',fSub);
+      fd.append('policyType',fType);
+      fd.append('carrier',fCarrier);
+      fd.append('policyNo',fPolicy);
+      fd.append('effectiveDate',fEff);
+      fd.append('expiryDate',fExp);
+      fd.append('coverageAmount',String(parseFloat(fAmt)||0));
+      if(fFile) fd.append('file',fFile);
+      const r = await fetch('/api/insurance/create',{method:'POST',body:fd});
       const d = await r.json();
       if(d.error) throw new Error(d.error);
-      setFSub(''); setFType('GL'); setFCarrier(''); setFPolicy(''); setFEff(''); setFExp(''); setFAmt('');
+      setFSub(''); setFType('GL'); setFCarrier(''); setFPolicy(''); setFEff(''); setFExp(''); setFAmt(''); setFFile(null);
       setShowForm(false);
       await load();
     }catch(e:any){
@@ -160,6 +171,13 @@ export default function InsurancePage() {
             <div>
               <label style={LBL}>Coverage Amount ($)</label>
               <input type="number" value={fAmt} onChange={e=>setFAmt(e.target.value)} placeholder="2000000" min="0" style={INP}/>
+            </div>
+            <div style={{gridColumn:'1/-1'}}>
+              <label style={LBL}>Certificate PDF (COI)</label>
+              <input type="file" accept="application/pdf,image/png,image/jpeg"
+                onChange={e=>setFFile(e.target.files?.[0]||null)}
+                style={{...INP,padding:'7px 10px'}}/>
+              {fFile && <div style={{marginTop:6,fontSize:11,color:DIM}}>Attached: {fFile.name}</div>}
             </div>
           </div>
           <div style={{display:'flex',gap:10}}>
