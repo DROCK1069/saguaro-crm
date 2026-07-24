@@ -51,6 +51,7 @@
     "@capacitor/status-bar": "^6.0.0",
     "@capacitor/toast": "^6.0.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@saguaro/core": "github:DROCK1069/saguaro-core#v0.1.0",
     "@sentry/nextjs": "^8.55.0",
     "@supabase/auth-helpers-nextjs": "^0.9.0",
     "@supabase/supabase-js": "^2.38.0",
