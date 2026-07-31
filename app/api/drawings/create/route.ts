@@ -1,0 +1,34 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+import { signUrl } from '@/lib/storage-signing';
+export async function POST(req: NextRequest) {
+  const g = await requirePermission(req, 'Documents', 'Edit');
+  if (!g.ok) return g.res;
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const body = await req.json();
+    if (!body.projectId || !body.drawing_number || !body.title) {
+      return NextResponse.json({ error: 'projectId, drawing_number, and title are required' }, { status: 400 });
+    }
+    const db = createServerClient();
+    const { data, error } = await db.from('drawings').insert({
+      tenant_id: user.tenantId,
+      project_id: body.projectId,
+      sheet_number: body.drawing_number || body.drawingNumber || '',
+      name: body.title || '',
+      discipline: body.discipline || 'Architectural',
+      version: body.revision ?? 0,
+      revision_date: body.revision_date || null,
+      status: body.status || 'current',
+      url: body.url || '',
+      notes: body.notes || '',
+    }).select().single();
+    if (error) throw error;
+    if (data?.url) (data as any).url = await signUrl((data as any).url);
+    return NextResponse.json({ success: true, drawing: data });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

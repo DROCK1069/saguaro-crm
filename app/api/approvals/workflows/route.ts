@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+import { metaFor } from '@/lib/approvals';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/approvals/workflows — tenant-scoped approval templates.
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ workflows: [], source: 'unauth' }, { status: 401 });
+
+    const db = createServerClient();
+    const { data, error } = await db
+      .from('approval_workflows')
+      .select('*')
+      .eq('tenant_id', user.tenantId)
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    return NextResponse.json({ workflows: data || [], source: 'live' });
+  } catch {
+    return NextResponse.json({ workflows: [], source: 'error' }, { status: 200 });
+  }
+}
+
+/**
+ * POST /api/approvals/workflows — create a template.
+ * Body: { name, module (entity_type key), steps[], active? }
+ */
+export async function POST(req: NextRequest) {
+  const g = await requirePermission(req, 'Documents', 'Edit');
+  if (!g.ok) return g.res;
+  try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json();
+    const meta = metaFor(body.module);
+    if (!body.name?.trim() || !meta) {
+      return NextResponse.json({ error: 'name and a valid module are required' }, { status: 400 });
+    }
+    const steps = Array.isArray(body.steps) ? body.steps : [];
+
+    const db = createServerClient();
+    const nowIso = new Date().toISOString();
+    const { data, error } = await db.from('approval_workflows').insert({
+      tenant_id: user.tenantId,
+      name: body.name.trim(),
+      module: meta.entityType,
+      steps,
+      active: body.active !== false,
+      created_by: user.id,
+      updated_at: nowIso,
+    } as never).select().single();
+    if (error) throw error;
+    return NextResponse.json({ workflow: data, success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -1,0 +1,15 @@
+/field
+/field/daily-log
+/field/prequalification
+/field/specs
+/field/resource-planning
+/field/room-progress
+/field/schedule
+/field/warranty-claims
+/field/more
+/field/trade-guide
+/field/photos
+/field/forms
+/field/observations
+/field/incidents
+/field/inspect

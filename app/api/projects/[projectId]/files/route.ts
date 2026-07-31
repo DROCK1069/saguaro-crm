@@ -1,0 +1,35 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { signFields } from '@/lib/storage-signing';
+
+export const runtime = 'nodejs';
+
+/**
+ * List a project's files from the canonical `project_files` table.
+ * Tenant-scoped (was anon + project-only — a cross-tenant read gap), hides
+ * soft-deleted rows, and signs the private-bucket URLs so they actually open.
+ */
+export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const admin = createServerClient() as any;
+    const url = new URL(req.url);
+    const includeDeleted = url.searchParams.get('trash') === '1';
+    let q = admin
+      .from('project_files')
+      .select('*')
+      .eq('project_id', params.projectId)
+      .eq('tenant_id', user.tenantId)
+      .order('created_at', { ascending: false });
+    q = includeDeleted ? q.not('deleted_at', 'is', null) : q.is('deleted_at', null);
+    const { data, error } = await q;
+    if (error) throw error;
+    const files = await signFields((data as any[]) || [], ['file_url', 'poster_url'], 3600);
+    return NextResponse.json({ files });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[project/files] error:', msg);
+    return NextResponse.json({ error: `Failed to fetch project files: ${msg}` }, { status: 500 });
+  }
+}

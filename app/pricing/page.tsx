@@ -1,0 +1,785 @@
+'use client';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { IntegrationStrip } from '@/components/Integrations';
+
+const C = {
+  dark: '#0B0B0F',
+  gold: '#F59E0B',
+  goldBright: '#FBBF24',
+  text: '#F5F5F7',
+  dim: '#A1A1AA',
+  border: 'rgba(255,255,255,0.10)',
+  hairline: 'rgba(255,255,255,0.08)',
+  cardBg: 'rgba(255,255,255,0.02)',
+  raised: '#131318',
+  raisedAlt: '#1A1A21',
+  green: '#22C55E',
+  blue: '#6366F1',
+  font: "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+};
+
+const NAV_LINKS = [
+  { label: 'Home', href: '/' },
+  { label: 'Features', href: '/features' },
+  { label: 'Field App', href: '/get-the-app' },
+  { label: 'Compare', href: '/compare' },
+  { label: 'Switch from Procore', href: '/switch-from-procore' },
+];
+
+const PLANS = [
+  {
+    name: 'Starter',
+    price_mo: 499,
+    price_yr: 449,
+    tagline: 'For small GCs getting off spreadsheets',
+    popular: false,
+    cta: 'Start Free Trial',
+    cta_href: '/signup',
+    highlight: 'Best for 1–5 person teams',
+    features: [
+      'Unlimited users — no per-seat fees',
+      'Up to 15 active projects',
+      'AI Takeoff — 150 pages/mo',
+      'Pay Applications G702/G703',
+      'Lien Waivers — all 50 states',
+      'Basic RFI & Change Orders',
+      'Mobile Field App (Saguaro Control Systems)',
+      'Free migration from any platform',
+      'Email support (48hr response)',
+    ],
+    not_included: [
+      'Certified Payroll WH-347',
+      'ACORD 25 Insurance Tracker',
+      'Owner & Sub Portals',
+      'Bid Intelligence',
+      'White Label',
+      'API Integrations',
+    ],
+  },
+  {
+    name: 'Professional',
+    price_mo: 750,
+    price_yr: 650,
+    tagline: 'For growing GCs managing multiple projects',
+    popular: true,
+    cta: 'Start Free Trial',
+    cta_href: '/signup',
+    highlight: 'Best for 5–50 person teams',
+    features: [
+      'Unlimited active projects',
+      'Unlimited users',
+      'Unlimited AI Takeoff pages',
+      'All AIA Documents (G702–G706, A310, A312)',
+      'All 4 Lien Waiver types — all 50 states',
+      'Certified Payroll WH-347 + DOL wage lookup',
+      'ACORD 25 Insurance Tracker + COI Parser',
+      'OSHA 300 Log',
+      'Preliminary Notices AZ/CA/TX',
+      'Owner & Sub Portals',
+      'Autopilot RFI/CO automation',
+      'Bid Intelligence + Jacket Generator',
+      'Free migration from any platform',
+      'Priority chat + email support (4hr response)',
+    ],
+    not_included: [
+      'White Label your brand/domain',
+      'Custom API integrations',
+      'SAML SSO',
+      'Dedicated account manager',
+    ],
+  },
+  {
+    name: 'Enterprise',
+    price_mo: 0,
+    price_yr: 0,
+    tagline: 'For ENR 400 firms, large GCs & resellers',
+    popular: false,
+    cta: 'Contact Sales',
+    cta_href: 'mailto:sales@saguarocontrol.net',
+    highlight: 'Custom pricing for 50+ person firms',
+    features: [
+      'Everything in Professional',
+      'White Label your brand/domain',
+      'Unlimited sandbox accounts',
+      'Custom API integrations',
+      'QuickBooks sync',
+      'Dedicated account manager',
+      'SLA — 99.9% uptime guarantee',
+      'Custom contract & invoicing',
+      'SAML SSO',
+      'Custom onboarding + training',
+      'Free migration — we handle everything',
+      'Phone support + 1hr response SLA',
+    ],
+    not_included: [],
+  },
+];
+
+const ADDONS = [
+  {
+    name: 'Priority Support',
+    price: 300,
+    per: 'mo',
+    description: 'Live chat + email with 4hr response. Dedicated support agent for your account.',
+    icon: '💬',
+    available: ['Starter'],
+  },
+  {
+    name: 'Dedicated CSM',
+    price: 299,
+    per: 'mo',
+    description: 'Named Customer Success Manager. Phone support, weekly check-ins, 1hr SLA.',
+    icon: '🎯',
+    available: ['Starter', 'Professional'],
+  },
+  {
+    name: 'Extra AI Takeoff',
+    price: 79,
+    per: 'mo',
+    description: '500 additional blueprint pages per month. Rolls over unused pages.',
+    icon: '📐',
+    available: ['Starter'],
+  },
+  {
+    name: 'White Label',
+    price: 299,
+    per: 'mo',
+    description: 'Your own brand, logo, and custom domain. Resell to your clients.',
+    icon: '🏷️',
+    available: ['Starter', 'Professional'],
+  },
+  {
+    name: 'QuickBooks Sync',
+    price: 99,
+    per: 'mo',
+    description: 'Bidirectional sync of budgets, pay apps, and change orders with QuickBooks.',
+    icon: '🔄',
+    available: ['Starter', 'Professional'],
+  },
+  {
+    name: 'API Access',
+    price: 149,
+    per: 'mo',
+    description: 'Full REST API + webhooks. Build custom integrations with your tech stack.',
+    icon: '⚡',
+    available: ['Starter', 'Professional'],
+  },
+];
+
+const SERVICES = [
+  {
+    name: 'Free Migration',
+    price: 0,
+    label: 'FREE',
+    description: 'We migrate all your projects, contacts, documents, and history from Procore, Buildertrend, or any platform. Done in 1 business day.',
+    highlight: true,
+    icon: '🚀',
+  },
+  {
+    name: 'Guided Onboarding',
+    price: 1200,
+    label: '$1,200',
+    description: 'Hands-on 3-hour setup session with a Saguaro specialist. Configure your company, import your templates, and train your team.',
+    highlight: false,
+    icon: '🎓',
+  },
+  {
+    name: 'Custom Training',
+    price: 299,
+    label: '$299/session',
+    description: '2-hour live training session for your team. Field app, takeoff, pay apps, or any workflow. Remote or on-site (travel extra).',
+    highlight: false,
+    icon: '📚',
+  },
+  {
+    name: 'Template Build-Out',
+    price: 399,
+    label: '$399',
+    description: 'We build your custom bid templates, pay app headers, lien waiver forms, and company documents — ready on day one.',
+    highlight: false,
+    icon: '📋',
+  },
+];
+
+const SUPPORT_TIERS = [
+  {
+    name: 'Basic',
+    price: 'Included',
+    color: C.dim,
+    features: ['Email support', '48hr response time', 'Help center access', 'Video tutorials'],
+    plans: 'All plans',
+  },
+  {
+    name: 'Priority',
+    price: '+$300/mo',
+    color: C.gold,
+    features: ['Live chat + email', '4hr response time', 'Screen share sessions', 'Dedicated support agent'],
+    plans: 'Add-on for Starter',
+  },
+  {
+    name: 'Dedicated CSM',
+    price: '+$299/mo',
+    color: C.blue,
+    features: ['Named account manager', 'Phone support', '1hr response SLA', 'Weekly check-ins', 'Quarterly business reviews'],
+    plans: 'Add-on for Starter & Pro',
+  },
+  {
+    name: 'Enterprise SLA',
+    price: 'Included',
+    color: C.green,
+    features: ['99.9% uptime SLA', 'Phone + chat + email', '1hr response', 'Dedicated CSM', 'Custom escalation path'],
+    plans: 'Enterprise only',
+  },
+];
+
+const COMPARISON_FEATURES = [
+  { label: 'Active Projects', starter: '15', pro: 'Unlimited', ent: 'Unlimited' },
+  { label: 'Users / Seats', starter: 'Unlimited', pro: 'Unlimited', ent: 'Unlimited' },
+  { label: 'AI Takeoff', starter: '150 pages/mo', pro: 'Unlimited', ent: 'Unlimited' },
+  { label: 'Pay Apps G702/G703', starter: true, pro: true, ent: true },
+  { label: 'All AIA Documents', starter: false, pro: true, ent: true },
+  { label: 'Lien Waivers — all 50 states', starter: true, pro: true, ent: true },
+  { label: 'All 4 Lien Waiver types', starter: false, pro: true, ent: true },
+  { label: 'Certified Payroll WH-347', starter: false, pro: true, ent: true },
+  { label: 'ACORD 25 / COI Parser', starter: false, pro: true, ent: true },
+  { label: 'Owner & Sub Portals', starter: false, pro: true, ent: true },
+  { label: 'Autopilot RFI/CO', starter: false, pro: true, ent: true },
+  { label: 'Preliminary Notices', starter: false, pro: true, ent: true },
+  { label: 'Free Migration', starter: true, pro: true, ent: true },
+  { label: 'White Label', starter: false, pro: false, ent: true },
+  { label: 'Custom API Integrations', starter: false, pro: false, ent: true },
+  { label: 'QuickBooks Sync', starter: false, pro: false, ent: true },
+  { label: 'SAML SSO', starter: false, pro: false, ent: true },
+];
+
+const COMPETITOR_COMPARISON = [
+  { name: 'Procore', price: '$3,750–$12,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
+  { name: 'Autodesk Build', price: '$2,500–$8,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
+  { name: 'Buildertrend', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
+  { name: 'CoConstruct', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
+  { name: 'Fieldwire', price: '$54–$104/user/mo', model: 'Per user', migration: false, flatPrice: false },
+  { name: 'Contractor Foreman', price: '$49–$299/mo', model: 'Flat (basic features)', migration: false, flatPrice: true },
+  { name: 'Saguaro Control Systems', price: '$499–$750/mo', model: 'Flat, unlimited users', migration: true, flatPrice: true, isSaguaro: true },
+];
+
+const FAQS = [
+  { q: 'Is the migration really free?', a: 'Yes, completely free. We migrate your projects, contacts, documents, and history from Procore, Buildertrend, CoConstruct, or any spreadsheet-based system. Our team handles everything — you\'ll be live in 1 business day.' },
+  { q: 'Is it really unlimited users?', a: 'Yes. One flat license covers every person on your team — PMs, field supers, estimators, accounting, owners — all included at no extra cost. We will never charge you per seat.' },
+  { q: 'What happens after the 30-day free trial?', a: "You'll be prompted to enter payment info. If you choose not to, your account pauses with data preserved for 30 days before deletion. There are no surprise charges." },
+  { q: 'Can I upgrade or downgrade my plan anytime?', a: 'Yes. Upgrade immediately and get prorated credit. Downgrade at the end of your billing cycle. No penalties, no fees.' },
+  { q: 'Do you support prevailing wage projects?', a: 'Yes. The WH-347 Certified Payroll generator connects to the DOL Davis-Bacon wage API and validates every worker\'s hourly rate against current prevailing wages for their trade and county.' },
+  { q: 'Which states are supported for lien waivers?', a: 'All 50 states. AZ, CA, TX, NV, FL, CO, WA, OR, UT, and NM use state-specific statutory language. All other states use our attorney-reviewed generic form.' },
+  { q: 'What is annual billing and how much do I save?', a: 'Annual billing locks in your rate for 12 months and saves you ~15%: Starter drops from $499 to $449/mo ($600 saved), Professional drops from $750 to $650/mo ($1,200 saved). Billed as one upfront payment.' },
+  { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime from your billing settings. Monthly plans retain access until end of period. Annual plans are non-refundable but can be paused.' },
+  { q: 'What is the White Label add-on?', a: 'Your GC firm or software company can use Saguaro under your own brand, domain, and logo. Each of your clients receives their own sandboxed account. Available as an add-on or included in Enterprise.' },
+  { q: 'Do you integrate with QuickBooks?', a: 'QuickBooks sync is available as an add-on ($99/mo) or included in Enterprise. Budget line items, pay applications, and change orders sync bidirectionally with your QuickBooks company file.' },
+];
+
+function CheckIcon({ size = 16, color = C.green }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+      <circle cx="8" cy="8" r="8" fill={`${color}22`} />
+      <path d="M4.5 8l2.5 2.5 4-5" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DashIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+      <circle cx="8" cy="8" r="8" fill="rgba(203,213,225,0.07)" />
+      <path d="M5 8h6" stroke="#475569" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ComparisonCell({ value }: { value: boolean | string }) {
+  if (typeof value === 'string') return <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{value}</span>;
+  return value ? <CheckIcon size={18} /> : <DashIcon size={18} />;
+}
+
+export default function PricingPage() {
+  const [annual, setAnnual] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  return (
+    <div style={{ minHeight: '100vh', background: C.dark, color: C.text, fontFamily: C.font }}>
+      <style>{`@media (max-width: 768px){ .pricing-mnav-links{ display:none !important } }`}</style>
+
+      {/* Nav */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+        height: 64, background: 'rgba(13,17,23,0.9)',
+        borderBottom: `1px solid ${C.hairline}`,
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
+          <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+        </Link>
+        <div className="pricing-mnav-links" style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+          {NAV_LINKS.map(link => (
+            <a key={link.label} href={link.href} style={{ padding: '6px 12px', borderRadius: 6, color: C.dim, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.color = C.text)}
+              onMouseLeave={e => (e.currentTarget.style.color = C.dim)}>
+              {link.label}
+            </a>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Link href="/login" style={{ padding: '8px 16px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 8, color: C.dim, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</Link>
+          <Link href="/signup" style={{ padding: '8px 18px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Free Trial</Link>
+        </div>
+      </nav>
+
+      <div style={{ paddingTop: 64 }}>
+
+        {/* Hero */}
+        <section style={{ textAlign: 'center', padding: '120px 24px 72px', background: 'transparent' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 12, fontWeight: 500, color: C.dim, letterSpacing: 0.3, marginBottom: 28 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.gold, display: 'inline-block' }} />
+            Free migration included on all plans
+          </div>
+
+          <h1 style={{ fontSize: 'clamp(26px, 4vw, 30px)', fontWeight: 600, lineHeight: 1.15, margin: '0 0 18px', letterSpacing: -0.5 }}>
+            One platform.{' '}
+            <span style={{ color: C.text }}>
+              Your whole team.
+            </span>
+          </h1>
+          <p style={{ fontSize: 'clamp(15px, 2vw, 17px)', color: C.dim, maxWidth: 600, margin: '0 auto 16px', lineHeight: 1.65 }}>
+            Flat pricing. No per-seat fees. No module upgrades. Free migration from Procore, Buildertrend, or any platform — we handle it for you.
+          </p>
+
+          {/* Competitor savings callout */}
+          <div style={{ display: 'inline-flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 40 }}>
+            {[
+              { from: 'Procore', save: 'Save $3,150+/mo' },
+              { from: 'Buildertrend', save: 'Save $200–$500/mo' },
+              { from: 'Autodesk', save: 'Save $1,900+/mo' },
+            ].map(item => (
+              <div key={item.from} style={{ padding: '6px 14px', background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 999, fontSize: 12, color: C.dim, fontWeight: 500 }}>
+                vs {item.from} — {item.save}
+              </div>
+            ))}
+          </div>
+
+          {/* Toggle */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: C.cardBg, borderRadius: 999, padding: '5px', border: `1px solid ${C.hairline}`, marginBottom: 16 }}>
+            <button onClick={() => setAnnual(false)} style={{ padding: '8px 22px', borderRadius: 999, border: '1px solid transparent', background: !annual ? 'rgba(255,255,255,0.08)' : 'transparent', color: !annual ? C.text : C.dim, fontWeight: 500, fontSize: 14, cursor: 'pointer', transition: 'background 0.15s, color 0.15s' }}>
+              Monthly
+            </button>
+            <button onClick={() => setAnnual(true)} style={{ padding: '8px 22px', borderRadius: 999, border: '1px solid transparent', background: annual ? 'rgba(255,255,255,0.08)' : 'transparent', color: annual ? C.text : C.dim, fontWeight: 500, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 0.15s, color 0.15s' }}>
+              Annual
+              <span style={{ fontSize: 11, fontWeight: 500, color: C.dim, background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, padding: '1px 7px', borderRadius: 999 }}>Save 17%</span>
+            </button>
+          </div>
+          <div style={{ fontSize: 13, color: C.dim }}>
+            {annual ? 'Billed annually — cancel anytime' : 'Switch to annual and save up to $1,200/yr'}
+          </div>
+        </section>
+
+        {/* How it works strip */}
+        <section style={{ padding: '0 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ background: 'transparent', border: 'none', borderRadius: 0, padding: 0 }}>
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>How it works</div>
+              <h2 style={{ fontSize: 22, fontWeight: 600, color: C.text, margin: 0 }}>Start using Saguaro in under 5 minutes</h2>
+              <p style={{ fontSize: 14, color: C.dim, margin: '8px 0 0' }}>Saguaro is a web platform — nothing to download on your computer. Sign up, log in, and your whole team is live.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 0, position: 'relative' }}>
+              {[
+                { step: '1', icon: '📝', title: 'Sign Up Free', desc: 'Create your account in 30 seconds. No credit card required. 30-day free trial starts immediately.' },
+                { step: '2', icon: '🌐', title: 'Log In — It\'s Instant', desc: 'Open any browser and go to saguarocontrol.net. Your full platform is live — no download, no install.' },
+                { step: '3', icon: '⚙️', title: '5-Min Company Setup', desc: 'Enter your company name, logo, and team roles. Our onboarding wizard walks you through every step.' },
+                { step: '4', icon: '📱', title: 'Get the iOS App', desc: 'Install Saguaro Control Systems on your iPhone or iPad from TestFlight — our native iOS field app. Works offline.' },
+              ].map((s, i, arr) => (
+                <div key={i} style={{ padding: '0 28px', borderRight: i < arr.length - 1 ? `1px solid ${C.hairline}` : 'none', position: 'relative' }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
+                    {s.icon}
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Step {s.step}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6 }}>{s.title}</div>
+                  <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 28, borderTop: `1px solid ${C.hairline}` }}>
+              <Link href="/signup" style={{ display: 'inline-block', padding: '11px 24px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
+                Start Free Trial — No Credit Card
+              </Link>
+              <div style={{ marginTop: 12, fontSize: 13, color: C.dim }}>
+                30 days free · Unlimited users · Cancel anytime · <Link href="/how-to-get-started" style={{ color: C.gold, textDecoration: 'none', fontWeight: 500 }}>See full walkthrough →</Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Cards */}
+        <section style={{ padding: '0 24px 96px', maxWidth: 1160, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'start' }}>
+            {PLANS.map((plan) => (
+              <div key={plan.name} style={{
+                background: C.cardBg,
+                border: plan.popular ? `1px solid rgba(245,158,11,0.45)` : `1px solid ${C.hairline}`,
+                borderRadius: 14, overflow: 'hidden', position: 'relative',
+                marginTop: 0,
+                boxShadow: 'none',
+              }}>
+                {plan.popular && (
+                  <div style={{ background: C.gold, textAlign: 'center', padding: '7px 0', fontSize: 11, fontWeight: 600, color: '#0B0B0F', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                    Most Popular
+                  </div>
+                )}
+                <div style={{ padding: '30px 28px 28px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase', color: C.dim, marginBottom: 2 }}>{plan.name}</div>
+                  <div style={{ fontSize: 13, color: C.dim, marginBottom: 6 }}>{plan.tagline}</div>
+                  <div style={{ fontSize: 11, color: C.dim, background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 999, padding: '3px 10px', display: 'inline-block', marginBottom: 20, fontWeight: 500 }}>
+                    {plan.highlight}
+                  </div>
+
+                  {plan.price_mo > 0 ? (
+                    <div style={{ marginBottom: 28 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 4 }}>
+                        <span style={{ fontSize: 40, fontWeight: 600, color: C.text, lineHeight: 1 }}>${annual ? plan.price_yr : plan.price_mo}</span>
+                        <span style={{ fontSize: 15, color: C.dim, paddingBottom: 6 }}>/mo</span>
+                      </div>
+                      {annual ? (
+                        <div style={{ fontSize: 12, color: C.dim }}>Billed annually — <span style={{ color: C.dim, fontWeight: 500 }}>save ${(plan.price_mo - plan.price_yr) * 12}/yr</span></div>
+                      ) : (
+                        <div style={{ fontSize: 12, color: C.dim }}>Or <span style={{ color: C.dim, fontWeight: 500 }}>${plan.price_yr}/mo</span> billed annually</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: 28 }}>
+                      <div style={{ fontSize: 28, fontWeight: 600, color: C.text, lineHeight: 1, marginBottom: 6 }}>Call for Quote</div>
+                      <div style={{ fontSize: 12, color: C.dim }}>Custom pricing for your scale</div>
+                    </div>
+                  )}
+
+                  <a href={plan.cta_href} style={{
+                    display: 'block', textAlign: 'center', padding: '12px 0',
+                    background: plan.popular ? C.gold : 'transparent',
+                    border: plan.popular ? '1px solid transparent' : `1px solid ${C.hairline}`,
+                    borderRadius: 8, color: plan.popular ? '#0B0B0F' : C.text,
+                    fontWeight: 600, fontSize: 14, textDecoration: 'none', marginBottom: 28, letterSpacing: 0.2,
+                    boxShadow: 'none',
+                  }}>
+                    {plan.cta}
+                  </a>
+
+                  <div style={{ borderTop: `1px solid ${C.hairline}`, paddingTop: 20 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14 }}>
+                      {plan.name === 'Enterprise' ? "Everything in Professional, plus:" : "What's included:"}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                      {plan.features.map(f => (
+                        <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <CheckIcon size={16} color={C.green} />
+                          <span style={{ fontSize: 13, color: C.text, lineHeight: 1.45, fontWeight: 400 }}>{f}</span>
+                        </div>
+                      ))}
+                      {plan.not_included.map(f => (
+                        <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', opacity: 0.38 }}>
+                          <DashIcon size={16} />
+                          <span style={{ fontSize: 13, color: C.dim, lineHeight: 1.45 }}>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Migration Banner */}
+        <section style={{ padding: '0 24px 96px', maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, padding: '40px 48px', display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap', boxShadow: 'none' }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Free migration — every plan</div>
+              <h2 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 12px', lineHeight: 1.25 }}>We move you over. Free.</h2>
+              <p style={{ fontSize: 15, color: C.dim, margin: '0 0 24px', lineHeight: 1.65 }}>
+                Coming from Procore, Buildertrend, CoConstruct, or a spreadsheet? Our team migrates all your projects, contacts, documents, and history. You do nothing. We handle everything.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {['Projects, contacts & vendors', 'All documents & bid history', 'Pay apps & lien waiver records', 'Team accounts & permissions'].map(item => (
+                  <div key={item} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <CheckIcon size={15} color={C.green} />
+                    <span style={{ fontSize: 14, color: C.text }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+              <div style={{ fontSize: 44, fontWeight: 600, color: C.text, lineHeight: 1 }}>$0</div>
+              <div style={{ fontSize: 14, color: C.dim, textAlign: 'center' }}>Migration fee<br />(always free)</div>
+              <Link href="/signup" style={{ padding: '12px 24px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontWeight: 600, fontSize: 14, textDecoration: 'none', textAlign: 'center' }}>
+                Start Free Migration
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Add-ons */}
+        <section style={{ padding: '0 24px 112px', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+              Add-Ons & Upgrades
+            </div>
+            <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: '0 0 12px', letterSpacing: -0.3 }}>Power up your plan</h2>
+            <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto' }}>Add only what you need. Cancel any add-on anytime.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+            {ADDONS.map(addon => (
+              <div key={addon.name} style={{ background: 'transparent', borderTop: `1px solid ${C.hairline}`, borderRadius: 0, padding: '22px 4px', boxShadow: 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 4 }}>{addon.name}</div>
+                    <div style={{ fontSize: 12, color: C.dim }}>{addon.description}</div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
+                    <div style={{ fontSize: 22, fontWeight: 600, color: C.text }}>${addon.price}</div>
+                    <div style={{ fontSize: 11, color: C.dim }}>/{addon.per}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: C.dim, background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 6, padding: '4px 10px', display: 'inline-block' }}>
+                  Available for: {addon.available.join(', ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Support Tiers */}
+        <section style={{ padding: '0 24px 112px', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+              Support
+            </div>
+            <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: '0 0 12px', letterSpacing: -0.3 }}>Support for every team size</h2>
+            <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto' }}>Basic support is included on all plans. Upgrade for faster response and a dedicated human.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+            {SUPPORT_TIERS.map(tier => (
+              <div key={tier.name} style={{ background: 'transparent', borderTop: `1px solid ${C.hairline}`, borderRadius: 0, padding: '24px 4px', boxShadow: 'none' }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: C.text, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tier.name}</div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: C.text, marginBottom: 4 }}>{tier.price}</div>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 20 }}>{tier.plans}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {tier.features.map(f => (
+                    <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <CheckIcon size={14} color={C.green} />
+                      <span style={{ fontSize: 13, color: C.dim }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* One-Time Services */}
+        <section style={{ padding: '0 24px 112px', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+              One-Time Services
+            </div>
+            <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: '0 0 12px', letterSpacing: -0.3 }}>Get up and running fast</h2>
+            <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto' }}>Optional professional services. Pay once, get set up right.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+            {SERVICES.map(service => (
+              <div key={service.name} style={{
+                background: 'transparent',
+                borderTop: `1px solid ${C.hairline}`,
+                borderRadius: 0, padding: '24px 4px', position: 'relative',
+                boxShadow: 'none',
+              }}>
+                <div style={{ fontSize: 24, marginBottom: 12 }}>{service.icon}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>{service.name}</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: C.text, flexShrink: 0, marginLeft: 12 }}>{service.label}</div>
+                </div>
+                <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>{service.description}</div>
+                {service.highlight && (
+                  <div style={{ marginTop: 16 }}>
+                    <Link href="/signup" style={{ display: 'inline-block', padding: '10px 20px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+                      Start Free Migration
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Competitor Price Comparison */}
+        <section style={{ padding: '0 24px 112px', maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+              How We Stack Up
+            </div>
+            <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: 0, letterSpacing: -0.3 }}>The construction software market — honestly</h2>
+          </div>
+          <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, overflow: 'hidden', boxShadow: 'none' }}>
+           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${C.hairline}` }}>
+                  {['Platform', 'Monthly Cost', 'Pricing Model', 'Free Migration', 'Flat Price'].map((col, i) => (
+                    <th key={col} style={{ padding: '16px 20px', textAlign: i === 0 ? 'left' : 'center', fontSize: 12, fontWeight: 600, color: C.dim, letterSpacing: 0.5, textTransform: 'uppercase' }}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPETITOR_COMPARISON.map((row, i) => (
+                  <tr key={row.name} style={{
+                    borderBottom: i < COMPETITOR_COMPARISON.length - 1 ? `1px solid ${C.hairline}` : 'none',
+                    background: row.isSaguaro ? 'rgba(255,255,255,0.03)' : 'transparent',
+                  }}>
+                    <td style={{ padding: '14px 20px' }}>
+                      <span style={{ fontSize: 14, fontWeight: row.isSaguaro ? 600 : 500, color: C.text }}>
+                        {row.name}
+                        {row.isSaguaro && <span style={{ fontSize: 10, background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 6, padding: '2px 6px', marginLeft: 8, color: C.dim, fontWeight: 500 }}>YOU</span>}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 20px', textAlign: 'center', fontSize: 13, color: C.text, fontWeight: row.isSaguaro ? 600 : 400 }}>{row.price}</td>
+                    <td style={{ padding: '14px 20px', textAlign: 'center', fontSize: 12, color: C.dim }}>{row.model}</td>
+                    <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        {row.migration ? <CheckIcon size={18} color={C.green} /> : <DashIcon size={18} />}
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        {row.flatPrice ? <CheckIcon size={18} /> : <DashIcon size={18} />}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+           </div>
+          </div>
+        </section>
+
+        {/* Feature Comparison Table */}
+        <section style={{ padding: '0 24px 112px', maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
+              Full Comparison
+            </div>
+            <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: 0, letterSpacing: -0.3 }}>Everything, side by side</h2>
+          </div>
+          <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, overflow: 'hidden', boxShadow: 'none' }}>
+           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${C.hairline}` }}>
+                  <th style={{ padding: '20px 24px', textAlign: 'left', fontWeight: 600, fontSize: 13, color: C.dim, width: '40%' }}>Feature</th>
+                  {['Starter', 'Professional', 'Enterprise'].map((col) => (
+                    <th key={col} style={{ padding: '20px 16px', textAlign: 'center', fontWeight: 600, fontSize: 13, color: C.text, background: col === 'Professional' ? 'rgba(255,255,255,0.03)' : 'transparent', borderLeft: `1px solid ${C.hairline}`, borderRight: col === 'Professional' ? `1px solid ${C.hairline}` : undefined }}>
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_FEATURES.map((row, i) => (
+                  <tr key={row.label} style={{ borderBottom: i < COMPARISON_FEATURES.length - 1 ? `1px solid ${C.hairline}` : 'none' }}>
+                    <td style={{ padding: '14px 24px', fontSize: 13, color: C.dim, fontWeight: 500 }}>{row.label}</td>
+                    {(['starter', 'pro', 'ent'] as const).map((key) => (
+                      <td key={key} style={{ padding: '14px 16px', textAlign: 'center', verticalAlign: 'middle', background: key === 'pro' ? 'rgba(255,255,255,0.03)' : 'transparent', borderLeft: `1px solid ${C.hairline}`, borderRight: key === 'pro' ? `1px solid ${C.hairline}` : undefined }}>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          <ComparisonCell value={row[key]} />
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+           </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ padding: '0 24px 112px', maxWidth: 760, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>FAQ</div>
+            <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: 0, letterSpacing: -0.3 }}>Frequently asked questions</h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {FAQS.map((faq, i) => (
+              <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? `1px solid ${C.hairline}` : 'none' }}>
+                <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: '100%', textAlign: 'left', padding: '22px 0', background: 'none', border: 'none', color: C.text, fontSize: 16, fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, lineHeight: 1.4, fontFamily: C.font }}>
+                  <span>{faq.q}</span>
+                  <span style={{ flexShrink: 0, width: 28, height: 28, background: openFaq === i ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${C.hairline}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.text, fontSize: 18, fontWeight: 300 }}>
+                    {openFaq === i ? '−' : '+'}
+                  </span>
+                </button>
+                {openFaq === i && (
+                  <div style={{ padding: '0 0 22px', fontSize: 15, color: C.dim, lineHeight: 1.75, maxWidth: 640 }}>{faq.a}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Trusted integrations */}
+        <IntegrationStrip />
+
+        {/* Final CTA */}
+        <section style={{ padding: '112px 24px', background: 'transparent', borderTop: `1px solid ${C.hairline}`, textAlign: 'center' }}>
+          <div style={{ maxWidth: 640, margin: '0 auto' }}>
+            <h2 style={{ fontSize: 'clamp(22px, 3vw, 26px)', fontWeight: 600, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: -0.4 }}>
+              Ready to stop paying{' '}
+              <span style={{ color: C.text }}>Procore prices?</span>
+            </h2>
+            <p style={{ fontSize: 16, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
+              30-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
+            </p>
+            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
+              <Link href="/signup" style={{ display: 'inline-block', padding: '12px 28px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
+                Start Free Trial — No CC Required
+              </Link>
+              <Link href="/switch-from-procore" style={{ display: 'inline-block', padding: '12px 28px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 8, color: C.dim, fontWeight: 500, fontSize: 15, textDecoration: 'none' }}>
+                Free Migration Guide
+              </Link>
+            </div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {['30 days free', 'Free migration', 'Cancel anytime', 'No per-seat fees', 'Unlimited users'].map(pill => (
+                <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 12, fontWeight: 500, color: C.dim }}>
+                  <CheckIcon size={12} color={C.dim} />
+                  {pill}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer style={{ borderTop: `1px solid ${C.hairline}`, padding: '48px 32px', background: C.raised }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 32 }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 30, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
+            </Link>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {[
+                { label: 'Home', href: '/' }, { label: 'Features', href: '/features' },
+                { label: 'Compare', href: '/compare' }, { label: 'Switch from Procore', href: '/switch-from-procore' },
+                { label: 'Field App', href: '/get-the-app' }, { label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' },
+              ].map(link => (
+                <a key={link.label} href={link.href} style={{ fontSize: 13, color: C.dim, textDecoration: 'none', fontWeight: 500 }}>{link.label}</a>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: C.dim, whiteSpace: 'nowrap' }}>&copy; {new Date().getFullYear()} Saguaro Control Systems</div>
+          </div>
+        </footer>
+
+      </div>
+    </div>
+  );
+}

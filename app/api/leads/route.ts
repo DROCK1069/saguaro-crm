@@ -1,0 +1,65 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+import type { Database } from '@/lib/database.types';
+
+export async function GET(req: NextRequest) {
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const supabase = createServerClient();
+    const url = new URL(req.url);
+    const stage = url.searchParams.get('stage');
+    let q = supabase.from('lead_pipeline').select('*').eq('tenant_id', user.tenantId);
+    if (stage) q = q.eq('stage', stage);
+    const { data, error } = await q.order('created_at', { ascending: false });
+    if (error) throw error;
+    return NextResponse.json({ leads: data ?? [] });
+  } catch { return NextResponse.json({ leads: [] }); }
+}
+
+export async function POST(req: NextRequest) {
+  const g = await requirePermission(req, 'Projects', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+  try {
+    const supabase = createServerClient();
+    const body = await req.json();
+
+    // Map the page's field names onto real lead_pipeline columns. The page sends
+    // contact_email/contact_phone (-> email/phone) and company_name/contact_name.
+    // Fields with no column and no jsonb sink (tags, description, address parts,
+    // estimated_start, follow_up_date, custom_fields, created_by) are folded into
+    // notes/location/next_action_date where there is a clear home, else dropped.
+    const insert: Record<string, unknown> = {
+      tenant_id: user.tenantId,
+      company_name: body.company_name ?? body.company ?? null,
+      contact_name: body.contact_name ?? body.name ?? null,
+      email: body.email ?? body.contact_email ?? null,
+      phone: body.phone ?? body.contact_phone ?? null,
+      source: body.source || 'website',
+      stage: body.stage || 'New',
+      project_type: body.project_type ?? null,
+      estimated_value: body.estimated_value ?? 0,
+      probability: body.probability ?? 50,
+      assigned_to: body.assigned_to ?? null,
+      notes: body.notes ?? body.description ?? null,
+    };
+
+    // location is the single geographic text column; combine any address parts.
+    const loc = [body.address, body.city, body.state, body.zip].filter(Boolean).join(', ');
+    if (body.location) insert.location = body.location;
+    else if (loc) insert.location = loc;
+
+    // follow_up_date maps to the next_action_date (date) column.
+    if (body.next_action_date) insert.next_action_date = body.next_action_date;
+    else if (body.follow_up_date) insert.next_action_date = body.follow_up_date;
+
+    const { data, error } = await supabase.from('lead_pipeline').insert(insert as Database['public']['Tables']['lead_pipeline']['Insert']).select().single();
+    if (error) throw error;
+    return NextResponse.json({ lead: data }, { status: 201 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Failed';
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

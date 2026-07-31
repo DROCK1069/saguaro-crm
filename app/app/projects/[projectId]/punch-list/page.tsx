@@ -1,0 +1,499 @@
+'use client';
+import React, { useState, useEffect, useCallback } from 'react';
+import { humanError } from '@/lib/errors';
+import { useParams } from 'next/navigation';
+import { getAuthHeaders } from '@/lib/supabase-browser';
+import { CheckCircle, Check, MapPin, CalendarBlank, User, X, ArrowUUpLeft, Plus, WarningCircle, FolderOpen, CircleHalf, ListChecks } from '@phosphor-icons/react';
+import {
+  PremiumSurface,
+  ModuleHero,
+  SectionCard,
+  StatCard,
+  PremiumEmpty,
+  goldButtonStyle,
+  ghostButtonStyle,
+  goldOutlineButtonStyle,
+} from '@/components/ui/premium';
+
+const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
+const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
+
+const PRIORITIES=['Critical','High','Medium','Low'];
+const STATUSES=['open','in_progress','completed','voided'];
+const TRADES=['General Contractor','Electrical','Plumbing','HVAC','Framing','Drywall',
+  'Painting','Flooring','Roofing','Concrete','Masonry','Millwork','Landscaping','Other'];
+const PRIORITY_COLORS:Record<string,string>={Critical:RED,High:ORANGE,Medium:GOLD,Low:GREEN};
+const STATUS_COLORS:Record<string,string>={open:'#FBBF24',in_progress:GOLD,completed:GREEN,voided:DIM};
+const STATUS_LABELS:Record<string,string>={open:'Open',in_progress:'In Progress',completed:'Completed',voided:'Voided'};
+
+const inp:React.CSSProperties={
+  width:'100%',padding:'9px 12px',background:'#1c1c1e',
+  border:'1px solid rgba(255,255,255,0.12)',borderRadius:7,color:'#FFFFFF',
+  fontSize:13,outline:'none',boxSizing:'border-box',
+};
+const EMPTY:Record<string,any>={
+  description:'',location:'',trade:'General Contractor',
+  priority:'Medium',status:'open',due_date:'',assigned_to:'',notes:'',
+};
+
+function Pill({label,color}:{label:string;color:string}){
+  return(
+    <span style={{fontSize:10,fontWeight:700,padding:'3px 9px',borderRadius:20,
+      background:`${color}22`,color,textTransform:'uppercase',letterSpacing:.3}}>
+      {label}
+    </span>
+  );
+}
+function Field({label,children}:{label:string;children:React.ReactNode}){
+  return(
+    <div>
+      <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
+        textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+export default function PunchListPage(){
+  const {projectId}=useParams() as {projectId:string};
+  const [items,setItems]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [loadError,setLoadError]=useState('');
+  const [selected,setSelected]=useState<any>(null);
+  const [mode,setMode]=useState<'view'|'edit'|'create'|null>(null);
+  const [form,setForm]=useState<Record<string,any>>({...EMPTY});
+  const [saving,setSaving]=useState(false);
+  const [deleting,setDeleting]=useState(false);
+  const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
+  const [search,setSearch]=useState('');
+  const [filterStatus,setFilterStatus]=useState('all');
+  const [filterPriority,setFilterPriority]=useState('all');
+  const [filterTrade,setFilterTrade]=useState('all');
+
+  const showToast=(msg:string,type:'success'|'error'='success')=>{
+    setToast({msg,type}); setTimeout(()=>setToast(null),4000);
+  };
+
+  const load=useCallback(async()=>{
+    setLoading(true);
+    try{
+      setLoadError('');
+      const h=await getAuthHeaders();
+      const r=await fetch(`/api/punch-list/list?projectId=${projectId}`,{headers:h});
+      if (!r.ok) throw new Error('Failed to load data');
+      const d=await r.json();
+      setItems(d.items||[]);
+    }catch{setItems([]);setLoadError('Failed to load. Please try again.');}
+    finally{setLoading(false);}
+  },[projectId]);
+
+  useEffect(()=>{load();},[load]);
+
+  function openCreate(){setForm({...EMPTY});setMode('create');setSelected(null);}
+  function openEdit(item:any){
+    setForm({description:item.description||'',location:item.location||'',
+      trade:item.trade||'General Contractor',priority:item.priority||'Medium',
+      status:item.status||'open',due_date:item.due_date||'',
+      assigned_to:item.assigned_to||'',notes:item.notes||''});
+    setSelected(item);setMode('edit');
+  }
+  function viewItem(item:any){setSelected(item);setMode('view');}
+  function closePanel(){setSelected(null);setMode(null);}
+
+  async function save(){
+    if(!form.description.trim()){showToast('Description is required','error');return;}
+    setSaving(true);
+    try{
+      const h=await getAuthHeaders();
+      if(mode==='create'){
+        const r=await fetch('/api/punch-list/create',{
+          method:'POST',
+          headers:{...h,'Content-Type':'application/json'},
+          body:JSON.stringify({...form,projectId}),
+        });
+        if(!r.ok) throw new Error(await r.text());
+        showToast('Item added');
+      }else if(mode==='edit'&&selected){
+        const r=await fetch(`/api/punch-list/${selected.id}`,{
+          method:'PUT',
+          headers:{...h,'Content-Type':'application/json'},
+          body:JSON.stringify(form),
+        });
+        if(!r.ok) throw new Error(await r.text());
+        showToast('Item updated');
+      }
+      await load();closePanel();
+    }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
+    finally{setSaving(false);}
+  }
+
+  async function toggleComplete(item:any){
+    const newStatus=item.status==='completed'?'open':'completed';
+    try{
+      const h=await getAuthHeaders();
+      const tr=await fetch(`/api/punch-list/${item.id}`,{
+        method:'PUT',
+        headers:{...h,'Content-Type':'application/json'},
+        body:JSON.stringify({status:newStatus}),
+      });
+      if (!tr.ok) throw new Error('Update failed');
+      await load();
+      if(selected?.id===item.id) setSelected({...selected,status:newStatus});
+    }catch(e:any){console.error(e);showToast(humanError(e,'Something went wrong. Please try again.'),'error');}
+  }
+
+  async function deleteItem(item:any){
+    if(!confirm(`Delete "${item.description}"?`)) return;
+    setDeleting(true);
+    try{
+      const h=await getAuthHeaders();
+      const dr=await fetch(`/api/punch-list/${item.id}`,{method:'DELETE',headers:h});
+      if (!dr.ok) throw new Error('Delete failed');
+      showToast('Item deleted');closePanel();await load();
+    }catch{showToast('Delete failed','error');}
+    finally{setDeleting(false);}
+  }
+
+  const trades=Array.from(new Set(items.map((i:any)=>i.trade).filter(Boolean)));
+  const filtered=items.filter((i:any)=>{
+    const ms=!search||(i.description||'').toLowerCase().includes(search.toLowerCase())
+      ||(i.location||'').toLowerCase().includes(search.toLowerCase());
+    const mst=filterStatus==='all'||i.status===filterStatus;
+    const mp=filterPriority==='all'||i.priority===filterPriority;
+    const mt=filterTrade==='all'||i.trade===filterTrade;
+    return ms&&mst&&mp&&mt;
+  });
+
+  const openCount=items.filter((i:any)=>i.status==='open').length;
+  const inProg=items.filter((i:any)=>i.status==='in_progress').length;
+  const done=items.filter((i:any)=>i.status==='completed').length;
+  const crit=items.filter((i:any)=>i.priority==='Critical'&&i.status!=='completed').length;
+  const pct=items.length>0?Math.round((done/items.length)*100):0;
+
+  return(
+    <>
+      <style>{`@keyframes punchDrawerIn{from{transform:translateX(28px);opacity:.5}to{transform:translateX(0);opacity:1}}`}</style>
+
+      {toast&&(
+        <div style={{position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',zIndex:99999,
+          padding:'12px 20px',borderRadius:8,color:'#fff',fontWeight:700,fontSize:14,pointerEvents:'none',
+          background:toast.type==='success'?'rgba(26,138,74,.92)':'rgba(192,48,48,.92)'}}>
+          {toast.msg}
+        </div>
+      )}
+
+      <PremiumSurface maxWidth={1600}>
+        {/* Header */}
+        <ModuleHero
+          eyebrow="Project Closeout"
+          eyebrowIcon={<ListChecks size={13} weight="fill" color={GOLD}/>}
+          title="Punch"
+          accent="List"
+          subtitle="Deficiencies, corrections & closeout items — track every fix through to completion."
+          actions={
+            <button onClick={openCreate} style={goldButtonStyle} className="pmBtn">
+              <Plus size={15} weight="bold"/> Add Item
+            </button>
+          }
+        />
+
+        {/* KPIs */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:22}}>
+          <StatCard icon={<FolderOpen size={19} weight="duotone" color="#FBBF24"/>} label="Open" value={String(openCount)} accent="#FBBF24" delay={0.02}/>
+          <StatCard icon={<CircleHalf size={19} weight="duotone" color={GOLD}/>} label="In Progress" value={String(inProg)} accent={GOLD} delay={0.06}/>
+          <StatCard icon={<CheckCircle size={19} weight="duotone" color={GREEN}/>} label="Completed" value={String(done)} accent={GREEN} delay={0.10}/>
+          <StatCard icon={<WarningCircle size={19} weight="duotone" color={crit>0?RED:'rgba(255,255,255,0.42)'}/>} label="Critical Open" value={String(crit)} accent={crit>0?RED:undefined} sub={crit>0?'Needs attention':undefined} delay={0.14}/>
+        </div>
+
+        {/* Completion bar */}
+        {items.length>0&&(
+          <div style={{marginBottom:22}}>
+            <SectionCard
+              title="Overall Completion"
+              icon={<CheckCircle size={17} weight="duotone" color={GOLD}/>}
+              action={<span style={{fontSize:13,fontWeight:800,color:TEXT,fontVariantNumeric:'tabular-nums'}}>{pct}%</span>}
+            >
+              <div style={{background:'rgba(255,255,255,0.08)',borderRadius:5,height:8,overflow:'hidden'}}>
+                <div style={{height:'100%',borderRadius:5,
+                  background:`linear-gradient(90deg,${GREEN},#3dd68c)`,
+                  width:`${pct}%`,transition:'width .4s'}}/>
+              </div>
+              <div style={{fontSize:12,color:DIM,marginTop:8}}>{done} of {items.length} items complete</div>
+            </SectionCard>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div style={{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Search items…"
+            style={{flex:1,minWidth:180,padding:'9px 12px',background:RAISED,
+              border:`1px solid ${BORDER}`,borderRadius:9,color:TEXT,fontSize:13,outline:'none'}}/>
+          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
+            style={{padding:'9px 12px',background:RAISED,border:`1px solid ${BORDER}`,
+              borderRadius:9,color:filterStatus!=='all'?TEXT:DIM,fontSize:13,outline:'none',cursor:'pointer'}}>
+            <option value="all">All Statuses</option>
+            {STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+          </select>
+          <select value={filterPriority} onChange={e=>setFilterPriority(e.target.value)}
+            style={{padding:'9px 12px',background:RAISED,border:`1px solid ${BORDER}`,
+              borderRadius:9,color:filterPriority!=='all'?TEXT:DIM,fontSize:13,outline:'none',cursor:'pointer'}}>
+            <option value="all">All Priorities</option>
+            {PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
+          <select value={filterTrade} onChange={e=>setFilterTrade(e.target.value)}
+            style={{padding:'9px 12px',background:RAISED,border:`1px solid ${BORDER}`,
+              borderRadius:9,color:filterTrade!=='all'?TEXT:DIM,fontSize:13,outline:'none',cursor:'pointer'}}>
+            <option value="all">All Trades</option>
+            {trades.map((t:any)=><option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+
+        {/* List */}
+        <SectionCard
+          title="Punch Items"
+          icon={<ListChecks size={17} weight="duotone" color={GOLD}/>}
+          flush
+          action={!loading&&!loadError?(
+            <span style={{fontSize:12,color:'rgba(255,255,255,0.42)',fontVariantNumeric:'tabular-nums'}}>
+              {filtered.length} of {items.length}
+            </span>
+          ):undefined}
+        >
+          {loading&&<div style={{padding:40,textAlign:'center',color:DIM}}>Loading punch list…</div>}
+
+          {!loading&&loadError&&(
+            <PremiumEmpty
+              tone="error"
+              icon={<WarningCircle size={32} weight="duotone" color={RED}/>}
+              title="Couldn't load the punch list"
+              description={loadError}
+              action={<button onClick={load} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
+            />
+          )}
+
+          {!loading&&!loadError&&filtered.length===0&&(
+            <PremiumEmpty
+              icon={<CheckCircle size={32} weight="duotone" color={GOLD}/>}
+              title={items.length===0?'Punch list is empty':'No items match your filters'}
+              description={items.length===0?'Add deficiencies and correction items to track closeout.':'Try adjusting your search or filters.'}
+              action={items.length===0?(
+                <button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold"/> Add First Item</button>
+              ):undefined}
+            />
+          )}
+
+          {!loading&&!loadError&&filtered.length>0&&(
+            <div style={{display:'flex',flexDirection:'column',gap:8,padding:16}}>
+              {filtered.map((item:any)=>{
+                const isSel=selected?.id===item.id&&mode==='view';
+                const isDone=item.status==='completed';
+                return(
+                  <div key={item.id}
+                    style={{background:isSel?'rgba(245, 158, 11,.07)':RAISED,
+                      border:`1px solid ${isSel?GOLD:BORDER}`,borderRadius:10,
+                      padding:'12px 16px',cursor:'pointer',transition:'all .15s',
+                      opacity:isDone?.75:1}}
+                    onMouseEnter={e=>{if(!isSel)e.currentTarget.style.borderColor='rgba(245, 158, 11,.4)';}}
+                    onMouseLeave={e=>{if(!isSel)e.currentTarget.style.borderColor=BORDER;}}
+                    onClick={()=>viewItem(item)}>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      {/* Checkbox */}
+                      <div onClick={e=>{e.stopPropagation();toggleComplete(item);}}
+                        style={{width:20,height:20,borderRadius:5,flexShrink:0,cursor:'pointer',
+                          border:`2px solid ${isDone?GREEN:BORDER}`,
+                          background:isDone?GREEN:'transparent',
+                          display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}}>
+                        {isDone&&<Check size={13} weight="bold" color="#fff"/>}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                          <span style={{fontWeight:700,fontSize:14,color:isDone?DIM:TEXT,
+                            textDecoration:isDone?'line-through':'none'}}>
+                            {item.description}
+                          </span>
+                          <Pill label={item.priority||'Medium'} color={PRIORITY_COLORS[item.priority]||GOLD}/>
+                          <Pill label={STATUS_LABELS[item.status]||item.status} color={STATUS_COLORS[item.status]||DIM}/>
+                        </div>
+                        <div style={{fontSize:12,color:DIM,marginTop:3,display:'flex',gap:12,flexWrap:'wrap'}}>
+                          {item.trade&&<span>{item.trade}</span>}
+                          {item.location&&<span style={{display:'inline-flex',alignItems:'center',gap:4}}><MapPin size={12} weight="regular" color={DIM}/>{item.location}</span>}
+                          {item.due_date&&<span style={{display:'inline-flex',alignItems:'center',gap:4}}><CalendarBlank size={12} weight="regular" color={DIM}/>Due {new Date(item.due_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>}
+                          {item.assigned_to&&<span style={{display:'inline-flex',alignItems:'center',gap:4}}><User size={12} weight="regular" color={DIM}/>{item.assigned_to}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SectionCard>
+      </PremiumSurface>
+
+      {/* Side panel — right drawer */}
+      {mode!==null&&(
+        <div onClick={e=>{if(e.target===e.currentTarget) closePanel();}}
+          style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,.45)',
+            display:'flex',justifyContent:'flex-end'}}>
+          <div style={{width:460,maxWidth:'100%',height:'100%',borderLeft:`1px solid ${BORDER}`,background:DARK,
+            overflow:'auto',flexShrink:0,display:'flex',flexDirection:'column',
+            boxShadow:'-24px 0 60px -30px rgba(0,0,0,0.8)',animation:'punchDrawerIn .22s ease'}}>
+          <div style={{padding:'16px 20px',borderBottom:`1px solid ${BORDER}`,
+            display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontWeight:800,fontSize:15,color:TEXT}}>
+              {mode==='create'?'New Item':mode==='edit'?'Edit Item':'Item Detail'}
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              {mode==='view'&&selected&&(
+                <>
+                  <button onClick={()=>openEdit(selected)}
+                    style={{padding:'6px 14px',background:'rgba(245,158,11,.1)',
+                      border:`1px solid ${BLUE}44`,borderRadius:6,
+                      color:'#FBBF24',fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                    Edit
+                  </button>
+                  <button onClick={()=>deleteItem(selected)} disabled={deleting}
+                    style={{padding:'6px 14px',background:'rgba(192,48,48,.1)',
+                      border:`1px solid ${RED}44`,borderRadius:6,
+                      color:RED,fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                    {deleting?'…':'Delete'}
+                  </button>
+                </>
+              )}
+              <button onClick={closePanel}
+                style={{padding:'6px 10px',background:'rgba(143,163,192,.1)',
+                  border:`1px solid ${BORDER}`,borderRadius:6,color:DIM,fontSize:12,cursor:'pointer'}}>
+                <X size={12} weight="bold" color={DIM}/>
+              </button>
+            </div>
+          </div>
+
+          <div style={{flex:1,overflow:'auto',padding:20}}>
+            {(mode==='create'||mode==='edit')?(
+              <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                <Field label="Description *">
+                  <textarea value={form.description}
+                    onChange={e=>setForm(f=>({...f,description:e.target.value}))}
+                    rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}
+                    placeholder="Describe the deficiency or item to correct…"/>
+                </Field>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                  <Field label="Priority">
+                    <select value={form.priority}
+                      onChange={e=>setForm(f=>({...f,priority:e.target.value}))}
+                      style={{...inp,padding:'9px 10px'}}>
+                      {PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Status">
+                    <select value={form.status}
+                      onChange={e=>setForm(f=>({...f,status:e.target.value}))}
+                      style={{...inp,padding:'9px 10px'}}>
+                      {STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Trade">
+                  <select value={form.trade}
+                    onChange={e=>setForm(f=>({...f,trade:e.target.value}))}
+                    style={{...inp,padding:'9px 10px'}}>
+                    {TRADES.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select>
+                </Field>
+                <Field label="Location">
+                  <input value={form.location}
+                    onChange={e=>setForm(f=>({...f,location:e.target.value}))}
+                    style={inp} placeholder="Room 204, North wall…"/>
+                </Field>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                  <Field label="Assigned To">
+                    <input value={form.assigned_to}
+                      onChange={e=>setForm(f=>({...f,assigned_to:e.target.value}))}
+                      style={inp} placeholder="Subcontractor or person"/>
+                  </Field>
+                  <Field label="Due Date">
+                    <input type="date" value={form.due_date}
+                      onChange={e=>setForm(f=>({...f,due_date:e.target.value}))}
+                      style={inp}/>
+                  </Field>
+                </div>
+                <Field label="Notes">
+                  <textarea value={form.notes}
+                    onChange={e=>setForm(f=>({...f,notes:e.target.value}))}
+                    rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}
+                    placeholder="Additional notes, photos needed, etc…"/>
+                </Field>
+                <div style={{display:'flex',gap:10,paddingTop:4}}>
+                  <button onClick={save} disabled={saving} className="pmBtn"
+                    style={{...goldButtonStyle,flex:1,opacity:saving?.6:1,cursor:saving?'not-allowed':'pointer'}}>
+                    {saving?'Saving…':mode==='create'?'Add Item':'Save Changes'}
+                  </button>
+                  <button onClick={closePanel} style={ghostButtonStyle} className="pmBtn">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ):selected?(
+              <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:16}}>
+                  <div style={{fontSize:16,fontWeight:800,color:TEXT,marginBottom:10}}>
+                    {selected.description}
+                  </div>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
+                    <Pill label={selected.priority||'Medium'} color={PRIORITY_COLORS[selected.priority]||GOLD}/>
+                    <Pill label={STATUS_LABELS[selected.status]||selected.status} color={STATUS_COLORS[selected.status]||DIM}/>
+                  </div>
+                  <button onClick={()=>toggleComplete(selected)}
+                    style={{padding:'9px 0',width:'100%',
+                      background:selected.status==='completed'
+                        ?'rgba(245,158,11,.1)':'rgba(26,138,74,.1)',
+                      border:`1px solid ${selected.status==='completed'?BLUE:GREEN}44`,
+                      borderRadius:7,color:selected.status==='completed'?'#FBBF24':'#4ade80',
+                      fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                    {selected.status==='completed'
+                      ?<span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6}}><ArrowUUpLeft size={14} weight="bold" color="#FBBF24"/>Reopen Item</span>
+                      :<span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6}}><CheckCircle size={14} weight="bold" color="#4ade80"/>Mark Complete</span>}
+                  </button>
+                </div>
+
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  {[
+                    {l:'Trade',v:selected.trade},
+                    {l:'Location',v:selected.location},
+                    {l:'Assigned To',v:selected.assigned_to},
+                    {l:'Due Date',v:selected.due_date?new Date(selected.due_date+'T12:00:00')
+                      .toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):null},
+                  ].filter(x=>x.v).map(x=>(
+                    <div key={x.l} style={{background:'#141416',border:`1px solid ${BORDER}`,
+                      borderRadius:8,padding:'10px 12px'}}>
+                      <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',
+                        letterSpacing:.5,marginBottom:4}}>{x.l}</div>
+                      <div style={{fontSize:13,color:TEXT}}>{x.v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {selected.notes&&(
+                  <div style={{background:'#141416',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',
+                      letterSpacing:.5,marginBottom:6}}>Notes</div>
+                    <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.notes}</div>
+                  </div>
+                )}
+
+                {selected.completed_at&&(
+                  <div style={{fontSize:12,color:GREEN,textAlign:'center'}}>
+                    Completed {new Date(selected.completed_at).toLocaleDateString('en-US',
+                      {month:'short',day:'numeric',year:'numeric'})}
+                  </div>
+                )}
+              </div>
+            ):null}
+          </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

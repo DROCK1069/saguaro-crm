@@ -1,0 +1,761 @@
+'use client';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { Skeleton } from '../../../components/ui/Skeleton';
+import { WarningCircle, FileText, Clipboard, Shield, Hammer, Buildings, NotePencil, CheckCircle, Square, Receipt, Plus } from '@phosphor-icons/react';
+import { humanError } from '@/lib/errors';
+import {
+  PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip,
+  goldButtonStyle, goldOutlineButtonStyle,
+} from '@/components/ui/premium';
+
+const GOLD = '#F59E0B';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
+const GREEN = '#3dd68c';
+const RED = '#ef4444';
+
+const fmt = (n: number | null | undefined) =>
+  '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function Badge({ label, color = '#CBD5E1', bg = 'rgba(148,163,184,.12)' }: { label: string; color?: string; bg?: string }) {
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 700, padding: '2px 8px',
+      borderRadius: 4, background: bg, color,
+      textTransform: 'uppercase', letterSpacing: 0.3,
+    }}>{label}</span>
+  );
+}
+
+// In-table error row: a clear failure state with a Retry action, visually
+// distinct from the genuine empty state. Used when a list fetch fails or 404s.
+function ErrorRow({ colSpan, message, onRetry }: { colSpan: number; message: string; onRetry: () => void }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} style={{ padding: 0 }}>
+        <PremiumEmpty
+          tone="error"
+          compact
+          icon={<WarningCircle size={30} weight="duotone" color={RED} />}
+          title={message}
+          description="Your data is safe — try again."
+          action={<button onClick={onRetry} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
+        />
+      </td>
+    </tr>
+  );
+}
+
+// Skeleton placeholder rows shown while a list fetch is in flight — never
+// computed zeros or an empty state during loading.
+function SkeletonRows({ rows = 4, cols }: { rows?: number; cols: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, r) => (
+        <tr key={r} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
+          {Array.from({ length: cols }).map((_, c) => (
+            <td key={c} style={{ padding: '12px 16px' }}>
+              <Skeleton height={14} width={c === 0 ? '50%' : '70%'} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+const TABS = ['Pay Applications', 'Lien Waivers', 'Bonds & Forms', 'Payroll', 'Closeout'] as const;
+type Tab = typeof TABS[number];
+
+const BOND_CARDS = [
+  { code: 'A310', name: 'Bid Bond', desc: 'AIA A310 – Bid bond for proposal phase', icon: Clipboard },
+  { code: 'A312-P', name: 'Performance Bond', desc: 'AIA A312 – Performance bond for contract execution', icon: Shield },
+  { code: 'A312-L', name: 'Labor & Material Bond', desc: 'AIA A312 – Payment bond for labor and materials', icon: Hammer },
+  { code: 'G704', name: 'Certificate of Substantial Completion', desc: 'AIA G704 – Substantial completion certification', icon: Buildings },
+  { code: 'G706', name: "Contractor's Affidavit of Payment", desc: "AIA G706 – Contractor's affidavit of release of liens", icon: NotePencil },
+  { code: 'G707', name: "Consent of Surety", desc: 'AIA G707 – Consent of surety to final payment', icon: CheckCircle },
+];
+
+// Closeout item shape returned by /api/projects/[projectId]/closeout (real `closeout` table).
+interface CloseoutItem {
+  id: string;
+  item_type: string;
+  title: string;
+  status: string; // pending | submitted | under_review | accepted | rejected | na
+  trade?: string | null;
+  responsible_party?: string | null;
+  due_date?: string | null;
+  received_date?: string | null;
+}
+
+// A closeout item counts as "complete" once it has been accepted.
+const isCloseoutDone = (s: string) => s === 'accepted';
+
+const CLOSEOUT_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  pending:      { label: 'Pending',      color: GOLD,      bg: 'rgba(245,158,11,.1)' },
+  submitted:    { label: 'Submitted',    color: '#4a9de8', bg: 'rgba(26,95,168,.12)' },
+  under_review: { label: 'Under Review', color: '#4a9de8', bg: 'rgba(26,95,168,.12)' },
+  accepted:     { label: 'Complete',     color: GREEN,     bg: 'rgba(61,214,140,.12)' },
+  rejected:     { label: 'Rejected',     color: RED,       bg: 'rgba(239,68,68,.12)' },
+  na:           { label: 'N/A',          color: DIM,       bg: 'rgba(148,163,184,.12)' },
+};
+
+const CLOSEOUT_TYPE_LABEL: Record<string, string> = {
+  warranty: 'Warranty', om_manual: 'O&M Manual', as_built: 'As-Built', attic_stock: 'Attic Stock',
+  spare_parts: 'Spare Parts', training: 'Training', certificate: 'Certificate', leed_doc: 'LEED Doc',
+  closeout_photo: 'Photo', other: 'Other',
+};
+
+const statusConfig: Record<string, { color: string; bg: string }> = {
+  paid:      { color: GREEN,   bg: 'rgba(61,214,140,.12)' },
+  approved:  { color: '#4a9de8', bg: 'rgba(26,95,168,.12)' },
+  draft:     { color: GOLD,    bg: 'rgba(245, 158, 11,.12)' },
+  executed:  { color: GREEN,   bg: 'rgba(61,214,140,.12)' },
+  pending:   { color: GOLD,    bg: 'rgba(245, 158, 11,.12)' },
+  submitted: { color: '#4a9de8', bg: 'rgba(26,95,168,.12)' },
+};
+
+// AIA bond/form card code -> { route, body } using existing /api/documents/* generators.
+const BOND_ROUTES: Record<string, { path: string; body: (projectId: string) => Record<string, unknown> }> = {
+  'A310':   { path: '/api/documents/a310', body: (projectId) => ({ projectId }) },
+  'A312-P': { path: '/api/documents/a312', body: (projectId) => ({ projectId, bondType: 'performance' }) },
+  'A312-L': { path: '/api/documents/a312', body: (projectId) => ({ projectId, bondType: 'payment' }) },
+  'G704':   { path: '/api/documents/g704', body: (projectId) => ({ projectId }) },
+  'G706':   { path: '/api/documents/g706', body: (projectId) => ({ projectId }) },
+  'G707':   { path: '/api/documents/g707', body: (projectId) => ({ projectId }) },
+};
+
+// Shared table header cell style — matches the premium glass surface.
+const thStyle: React.CSSProperties = {
+  padding: '10px 16px', textAlign: 'left',
+  fontSize: 11, fontWeight: 700,
+  textTransform: 'uppercase', letterSpacing: 0.5,
+  color: DIM, borderBottom: `1px solid ${BORDER}`,
+};
+
+export default function DocumentsPage() {
+  const [activeTab, setActiveTab] = useState<Tab>('Pay Applications');
+  const [payApps, setPayApps] = useState<any[]>([]);
+  const [lienWaivers, setLienWaivers] = useState<any[]>([]);
+  const [payroll, setPayroll] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [loadingPayApps, setLoadingPayApps] = useState(true);
+  const [loadingLienWaivers, setLoadingLienWaivers] = useState(true);
+  const [loadingPayroll, setLoadingPayroll] = useState(true);
+  const [errorPayApps, setErrorPayApps] = useState(false);
+  const [errorLienWaivers, setErrorLienWaivers] = useState(false);
+  const [errorPayroll, setErrorPayroll] = useState(false);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  // Closeout tab — real per-project closeout items from the `closeout` table.
+  const [closeoutItems, setCloseoutItems] = useState<CloseoutItem[]>([]);
+  const [loadingCloseout, setLoadingCloseout] = useState(false);
+  const [errorCloseout, setErrorCloseout] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const loadCloseout = useCallback((projectId: string) => {
+    if (!projectId) { setCloseoutItems([]); return; }
+    setLoadingCloseout(true);
+    setErrorCloseout(false);
+    fetch(`/api/projects/${projectId}/closeout`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => setCloseoutItems((d.items ?? []) as CloseoutItem[]))
+      .catch(() => setErrorCloseout(true))
+      .finally(() => setLoadingCloseout(false));
+  }, []);
+
+  // Persist a closeout item's completion by PATCHing its status on the real row.
+  const toggleCloseoutItem = useCallback(async (item: CloseoutItem) => {
+    if (!selectedProject) return;
+    const nextStatus = isCloseoutDone(item.status) ? 'pending' : 'accepted';
+    setTogglingId(item.id);
+    try {
+      const res = await fetch(`/api/projects/${selectedProject}/closeout/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error('closeout update failed', res.status, data.error);
+        alert(humanError(data.error, "Couldn't update the item. Please try again."));
+        return;
+      }
+      const data = await res.json();
+      const updated = (data.item ?? { ...item, status: nextStatus }) as CloseoutItem;
+      setCloseoutItems(prev => prev.map(i => i.id === item.id ? { ...i, ...updated } : i));
+    } catch {
+      alert("Couldn't update item. Check your connection and try again.");
+    } finally {
+      setTogglingId(null);
+    }
+  }, [selectedProject]);
+
+  const loadPayApps = useCallback(() => {
+    setLoadingPayApps(true);
+    setErrorPayApps(false);
+    fetch('/api/pay-apps/list')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => setPayApps(d.payApps ?? d.items ?? []))
+      .catch(() => setErrorPayApps(true))
+      .finally(() => setLoadingPayApps(false));
+  }, []);
+
+  const loadLienWaivers = useCallback(() => {
+    setLoadingLienWaivers(true);
+    setErrorLienWaivers(false);
+    fetch('/api/lien-waivers/list')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => setLienWaivers(d.lienWaivers ?? d.items ?? []))
+      .catch(() => setErrorLienWaivers(true))
+      .finally(() => setLoadingLienWaivers(false));
+  }, []);
+
+  const loadPayroll = useCallback(() => {
+    setLoadingPayroll(true);
+    setErrorPayroll(false);
+    fetch('/api/documents/list?type=payroll')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => setPayroll(d.payroll ?? d.documents ?? d.items ?? []))
+      .catch(() => setErrorPayroll(true))
+      .finally(() => setLoadingPayroll(false));
+  }, []);
+
+  useEffect(() => { loadPayApps(); }, [loadPayApps]);
+  useEffect(() => { loadLienWaivers(); }, [loadLienWaivers]);
+  useEffect(() => { loadPayroll(); }, [loadPayroll]);
+
+  useEffect(() => {
+    fetch('/api/projects/list')
+      .then(r => r.json())
+      .then(d => {
+        const list = d.projects ?? d.items ?? [];
+        setProjects(list);
+        if (list.length) setSelectedProject(list[0].id);
+      })
+      .catch(() => setProjects([]));
+  }, []);
+
+  // Load real closeout items whenever the Closeout tab is active for the selected project.
+  useEffect(() => {
+    if (activeTab === 'Closeout' && selectedProject) loadCloseout(selectedProject);
+  }, [activeTab, selectedProject, loadCloseout]);
+
+  // Open an already-saved PDF, or POST to a generator route and open the returned URL.
+  async function openOrGenerate(
+    key: string,
+    existingUrl: string | null | undefined,
+    gen: { path: string; body: Record<string, unknown>; urlField?: string } | null,
+  ) {
+    if (existingUrl) { window.open(existingUrl, '_blank'); return; }
+    if (!gen) { alert('No document available to download.'); return; }
+    setBusyKey(key);
+    try {
+      const res = await fetch(gen.path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gen.body),
+      });
+      const data = await res.json();
+      const url = data[gen.urlField ?? 'pdfUrl'] ?? data.pdfUrl ?? data.g702Url;
+      if (!res.ok || !url) { console.error('doc generation failed', res.status, data.error); alert(humanError(data.error, 'Document generation failed. Please try again.')); return; }
+      window.open(url, '_blank');
+    } catch {
+      alert('Document generation failed.');
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  function requireProject(): string | null {
+    if (selectedProject) return selectedProject;
+    alert('Select a project first.');
+    return null;
+  }
+
+  const projectSelectStyle: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: 10,
+    color: TEXT, fontSize: 13, fontWeight: 600, padding: '9px 12px', cursor: 'pointer',
+  };
+
+  // Live summary counts for the KPI stat row (guard values while loading / on error).
+  const statVal = (loading: boolean, err: boolean, n: number) => (loading || err ? '—' : String(n));
+
+  return (
+    <PremiumSurface maxWidth={1600}>
+
+      {/* Header */}
+      <ModuleHero
+        eyebrow="Compliance"
+        eyebrowIcon={<FileText size={13} weight="fill" color="#F59E0B" />}
+        title="Project"
+        accent="Documents"
+        subtitle="Generated contracts, forms, and compliance documents across all projects."
+      />
+
+      {/* KPI stat row — live counts across the document library */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 26 }}>
+        <StatCard
+          icon={<Receipt size={19} weight="duotone" color={GOLD} />}
+          label="Pay Applications" value={statVal(loadingPayApps, errorPayApps, payApps.length)}
+          sub="AIA G702 / G703" accent={GOLD} delay={0.02}
+        />
+        <StatCard
+          icon={<Shield size={19} weight="duotone" color={GOLD} />}
+          label="Lien Waivers" value={statVal(loadingLienWaivers, errorLienWaivers, lienWaivers.length)}
+          sub="signed & pending" delay={0.06}
+        />
+        <StatCard
+          icon={<NotePencil size={19} weight="duotone" color={GOLD} />}
+          label="Certified Payroll" value={statVal(loadingPayroll, errorPayroll, payroll.length)}
+          sub="WH-347 filings" delay={0.10}
+        />
+        <StatCard
+          icon={<Clipboard size={19} weight="duotone" color={GOLD} />}
+          label="AIA Forms" value={String(BOND_CARDS.length)}
+          sub="bond & closeout templates" delay={0.14}
+        />
+      </div>
+
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex', gap: 4,
+        borderBottom: `1px solid rgba(255,255,255,0.08)`,
+        marginBottom: 24, overflowX: 'auto',
+      }}>
+        {TABS.map(tab => {
+          const active = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '12px 20px',
+                background: 'none',
+                border: 'none',
+                borderBottom: `2px solid ${active ? GOLD : 'transparent'}`,
+                color: active ? GOLD : DIM,
+                fontSize: 13, fontWeight: active ? 700 : 500,
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'all .15s',
+              }}
+            >{tab}</button>
+          );
+        })}
+      </div>
+
+      {/* Tab content */}
+      <div>
+
+        {/* ── Pay Applications ──────────────────────────────────────── */}
+        {activeTab === 'Pay Applications' && (
+          <SectionCard
+            flush
+            icon={<Receipt size={17} weight="duotone" color={GOLD} />}
+            title="Pay Applications (AIA G702 / G703)"
+            action={
+              <Link href="/app/projects" style={goldButtonStyle} className="pmBtn">
+                <Plus size={15} weight="bold" /> Generate New
+              </Link>
+            }
+          >
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    {['Application #', 'Period', 'Amount Due', 'Status', 'Download'].map(h => (
+                      <th key={h} style={thStyle}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingPayApps ? (
+                    <SkeletonRows cols={5} />
+                  ) : errorPayApps ? (
+                    <ErrorRow colSpan={5} message="Couldn't load pay applications" onRetry={loadPayApps} />
+                  ) : payApps.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: 0 }}>
+                      <PremiumEmpty
+                        compact
+                        icon={<Receipt size={30} weight="duotone" color={GOLD} />}
+                        title="No pay applications yet"
+                        description="Generated AIA G702 / G703 pay applications will appear here."
+                        action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate New</Link>}
+                      />
+                    </td></tr>
+                  ) : payApps.map(pa => {
+                    const sc = statusConfig[pa.status] || statusConfig.draft;
+                    return (
+                      <tr key={pa.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
+                        <td style={{ padding: '12px 16px', color: GOLD, fontWeight: 700 }}>#{(pa.appNo ?? pa.app_no ?? '').toString().padStart(3, '0')}</td>
+                        <td style={{ padding: '12px 16px', color: DIM }}>{pa.period}</td>
+                        <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{fmt(pa.amount)}</td>
+                        <td style={{ padding: '12px 16px' }}><Badge label={pa.status} color={sc.color} bg={sc.bg} /></td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <button
+                            disabled={busyKey === `payapp-${pa.id}`}
+                            onClick={() => openOrGenerate(
+                              `payapp-${pa.id}`,
+                              pa.g702_pdf_url ?? pa.g702Url,
+                              { path: '/api/documents/pay-application', body: { payAppId: pa.id, projectId: pa.project_id ?? pa.projectId }, urlField: 'g702Url' },
+                            )}
+                            style={{
+                              background: 'none', border: `1px solid ${BORDER}`,
+                              borderRadius: 5, color: GOLD, fontSize: 11,
+                              padding: '3px 10px', cursor: 'pointer',
+                              opacity: busyKey === `payapp-${pa.id}` ? 0.5 : 1,
+                            }}>{busyKey === `payapp-${pa.id}` ? '…' : (<span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><FileText size={12} weight="regular" color={GOLD} /> G702 PDF</span>)}</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ── Lien Waivers ──────────────────────────────────────────── */}
+        {activeTab === 'Lien Waivers' && (
+          <SectionCard
+            flush
+            icon={<Shield size={17} weight="duotone" color={GOLD} />}
+            title="Lien Waivers"
+            action={
+              <Link href="/app/projects" style={goldButtonStyle} className="pmBtn">
+                <Plus size={15} weight="bold" /> Generate New
+              </Link>
+            }
+          >
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    {['Sub Name', 'Type', 'Amount', 'Through Date', 'Status', 'Download'].map(h => (
+                      <th key={h} style={thStyle}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingLienWaivers ? (
+                    <SkeletonRows cols={6} />
+                  ) : errorLienWaivers ? (
+                    <ErrorRow colSpan={6} message="Couldn't load lien waivers" onRetry={loadLienWaivers} />
+                  ) : lienWaivers.length === 0 ? (
+                    <tr><td colSpan={6} style={{ padding: 0 }}>
+                      <PremiumEmpty
+                        compact
+                        icon={<Shield size={30} weight="duotone" color={GOLD} />}
+                        title="No lien waivers yet"
+                        description="Conditional and unconditional lien waivers you generate will be listed here."
+                        action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate New</Link>}
+                      />
+                    </td></tr>
+                  ) : lienWaivers.map(lw => {
+                    const sc = statusConfig[lw.status] || statusConfig.pending;
+                    return (
+                      <tr key={lw.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
+                        <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{lw.subName ?? lw.sub_name}</td>
+                        <td style={{ padding: '12px 16px', color: DIM }}>{lw.type}</td>
+                        <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(lw.amount)}</td>
+                        <td style={{ padding: '12px 16px', color: DIM }}>{lw.throughDate ?? lw.through_date}</td>
+                        <td style={{ padding: '12px 16px' }}><Badge label={lw.status} color={sc.color} bg={sc.bg} /></td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <button
+                            disabled={busyKey === `lw-${lw.id}`}
+                            onClick={() => openOrGenerate(
+                              `lw-${lw.id}`,
+                              lw.signed_pdf_url ?? lw.pdf_url ?? lw.pdfUrl,
+                              {
+                                path: '/api/lien-waivers/generate',
+                                body: {
+                                  projectId: lw.project_id ?? lw.projectId,
+                                  waiverType: lw.waiver_type ?? lw.type,
+                                  claimantName: lw.claimant_name ?? lw.subName ?? lw.sub_name,
+                                  amount: lw.amount,
+                                  throughDate: lw.through_date ?? lw.throughDate,
+                                  state: lw.state,
+                                },
+                              },
+                            )}
+                            style={{
+                              background: 'none', border: `1px solid ${BORDER}`,
+                              borderRadius: 5, color: GOLD, fontSize: 11,
+                              padding: '3px 10px', cursor: 'pointer',
+                              opacity: busyKey === `lw-${lw.id}` ? 0.5 : 1,
+                            }}>{busyKey === `lw-${lw.id}` ? '…' : (<span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><FileText size={12} weight="regular" color={GOLD} /> Download</span>)}</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ── Bonds & Forms ─────────────────────────────────────────── */}
+        {activeTab === 'Bonds & Forms' && (
+          <SectionCard
+            icon={<Buildings size={17} weight="duotone" color={GOLD} />}
+            title="AIA Bonds & Standard Forms"
+            action={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <select
+                  value={selectedProject}
+                  onChange={e => setSelectedProject(e.target.value)}
+                  style={projectSelectStyle}
+                >
+                  {projects.length === 0 && <option value="">No projects</option>}
+                  {projects.map(pr => (
+                    <option key={pr.id} value={pr.id}>{pr.name ?? pr.project_number ?? pr.id}</option>
+                  ))}
+                </select>
+                <button
+                  disabled={busyKey === 'bond-new'}
+                  onClick={() => {
+                    const projectId = requireProject();
+                    if (!projectId) return;
+                    openOrGenerate('bond-new', null, { ...BOND_ROUTES['A312-P'], body: BOND_ROUTES['A312-P'].body(projectId) });
+                  }}
+                  className="pmBtn"
+                  style={{ ...goldButtonStyle, opacity: busyKey === 'bond-new' ? 0.6 : 1 }}
+                >{busyKey === 'bond-new' ? 'Generating…' : (<><Plus size={15} weight="bold" /> Generate New</>)}</button>
+              </div>
+            }
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              {BOND_CARDS.map(card => (
+                <div key={card.code} className="pmHover" style={{
+                  background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))',
+                  border: `1px solid rgba(255,255,255,0.08)`,
+                  borderRadius: 14, padding: 20,
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                  boxShadow: '0 10px 30px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <IconChip size={40}>{React.createElement(card.icon, { size: 22, weight: 'duotone', color: GOLD })}</IconChip>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 13, color: TEXT }}>{card.name}</div>
+                      <div style={{ fontSize: 11, color: GOLD, fontWeight: 700 }}>{card.code}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>{card.desc}</div>
+                  <button
+                    disabled={busyKey === `bond-${card.code}` || !BOND_ROUTES[card.code]}
+                    onClick={() => {
+                      const route = BOND_ROUTES[card.code];
+                      if (!route) { alert(`No generator for ${card.code}.`); return; }
+                      const projectId = requireProject();
+                      if (!projectId) return;
+                      openOrGenerate(`bond-${card.code}`, null, { ...route, body: route.body(projectId) });
+                    }}
+                    className="pmBtn"
+                    style={{
+                      ...goldButtonStyle, marginTop: 4, width: '100%',
+                      opacity: busyKey === `bond-${card.code}` ? 0.6 : 1,
+                    }}>{busyKey === `bond-${card.code}` ? 'Generating…' : `Generate ${card.code}`}</button>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ── Payroll ───────────────────────────────────────────────── */}
+        {activeTab === 'Payroll' && (
+          <SectionCard
+            flush
+            icon={<NotePencil size={17} weight="duotone" color={GOLD} />}
+            title="Certified Payroll (WH-347)"
+            action={
+              <Link href="/app/projects" style={goldButtonStyle} className="pmBtn">
+                <Plus size={15} weight="bold" /> Generate WH-347
+              </Link>
+            }
+          >
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    {['Week Ending', '# Employees', 'Total Gross', 'Status', 'Download'].map(h => (
+                      <th key={h} style={thStyle}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingPayroll ? (
+                    <SkeletonRows cols={5} />
+                  ) : errorPayroll ? (
+                    <ErrorRow colSpan={5} message="Couldn't load certified payroll" onRetry={loadPayroll} />
+                  ) : payroll.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: 0 }}>
+                      <PremiumEmpty
+                        compact
+                        icon={<NotePencil size={30} weight="duotone" color={GOLD} />}
+                        title="No certified payroll records yet"
+                        description="WH-347 certified payroll filings you generate will appear here."
+                        action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate WH-347</Link>}
+                      />
+                    </td></tr>
+                  ) : payroll.map(pr => {
+                    const sc = statusConfig[pr.status] || statusConfig.draft;
+                    return (
+                      <tr key={pr.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
+                        <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{pr.weekEnding ?? pr.week_ending}</td>
+                        <td style={{ padding: '12px 16px', color: DIM }}>{pr.employees}</td>
+                        <td style={{ padding: '12px 16px', color: TEXT }}>{fmt(pr.totalGross ?? pr.total_gross ?? 0)}</td>
+                        <td style={{ padding: '12px 16px' }}><Badge label={pr.status} color={sc.color} bg={sc.bg} /></td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <button
+                            onClick={() => openOrGenerate(
+                              `pr-${pr.id}`,
+                              pr.pdf_url ?? pr.pdfUrl ?? pr.url ?? pr.file_url,
+                              null,
+                            )}
+                            style={{
+                              background: 'none', border: `1px solid ${BORDER}`,
+                              borderRadius: 5, color: GOLD, fontSize: 11,
+                              padding: '3px 10px', cursor: 'pointer',
+                            }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><FileText size={12} weight="regular" color={GOLD} /> WH-347</span></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ── Closeout ──────────────────────────────────────────────── */}
+        {activeTab === 'Closeout' && (
+          <SectionCard
+            flush
+            icon={<Clipboard size={17} weight="duotone" color={GOLD} />}
+            title="Closeout Checklist"
+            action={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <select
+                  value={selectedProject}
+                  onChange={e => setSelectedProject(e.target.value)}
+                  style={projectSelectStyle}
+                >
+                  {projects.length === 0 && <option value="">No projects</option>}
+                  {projects.map(pr => (
+                    <option key={pr.id} value={pr.id}>{pr.name ?? pr.project_number ?? pr.id}</option>
+                  ))}
+                </select>
+                <button
+                  disabled={busyKey === 'closeout'}
+                  onClick={() => {
+                    const projectId = requireProject();
+                    if (!projectId) return;
+                    openOrGenerate('closeout', null, { path: '/api/documents/closeout', body: { projectId } });
+                  }}
+                  className="pmBtn"
+                  style={{ ...goldButtonStyle, opacity: busyKey === 'closeout' ? 0.6 : 1 }}
+                >{busyKey === 'closeout' ? 'Generating…' : (<><FileText size={15} weight="bold" /> Export Closeout Package</>)}</button>
+              </div>
+            }
+          >
+            {/* Progress bar — real completion across this project's closeout items. */}
+            {!loadingCloseout && !errorCloseout && closeoutItems.length > 0 && (() => {
+              const done = closeoutItems.filter(i => isCloseoutDone(i.status)).length;
+              const pct = Math.round((done / closeoutItems.length) * 100);
+              return (
+                <div style={{ padding: '16px 20px', borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Closeout Progress</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: GOLD }}>{done} / {closeoutItems.length} items ({pct}%)</span>
+                  </div>
+                  <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4 }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`,
+                      background: `linear-gradient(90deg,${GOLD},#FBBF24)`,
+                      borderRadius: 4, transition: 'width .3s',
+                    }} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {loadingCloseout ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: i < 4 ? `1px solid rgba(255,255,255,0.08)` : 'none' }}>
+                  <Skeleton height={18} width={18} />
+                  <Skeleton height={13} width="45%" />
+                </div>
+              ))
+            ) : errorCloseout ? (
+              <PremiumEmpty
+                tone="error"
+                compact
+                icon={<WarningCircle size={30} weight="duotone" color={RED} />}
+                title="Couldn't load closeout items"
+                description="We couldn't reach this project's closeout list. Your data is safe — try again."
+                action={<button onClick={() => selectedProject && loadCloseout(selectedProject)} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
+              />
+            ) : !selectedProject ? (
+              <PremiumEmpty
+                compact
+                icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
+                title="Select a project"
+                description="Choose a project above to view its closeout checklist."
+              />
+            ) : closeoutItems.length === 0 ? (
+              <PremiumEmpty
+                compact
+                icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
+                title="No closeout items yet"
+                description="Closeout items (warranties, O&M manuals, as-builts, certificates) added to this project will appear here."
+              />
+            ) : (
+              closeoutItems.map((item, idx) => {
+                const done = isCloseoutDone(item.status);
+                const sc = CLOSEOUT_STATUS[item.status] ?? CLOSEOUT_STATUS.pending;
+                const busy = togglingId === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '14px 20px',
+                      borderBottom: idx < closeoutItems.length - 1 ? `1px solid rgba(255,255,255,0.08)` : 'none',
+                      background: done ? 'rgba(61,214,140,.03)' : 'transparent',
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleCloseoutItem(item)}
+                      disabled={busy}
+                      title={done ? 'Mark as pending' : 'Mark as complete'}
+                      style={{
+                        background: 'none', border: 'none', padding: 0, cursor: busy ? 'default' : 'pointer',
+                        display: 'inline-flex', opacity: busy ? 0.5 : 1,
+                      }}
+                    >
+                      {done ? <CheckCircle size={20} weight="fill" color={GREEN} /> : <Square size={20} weight="regular" color={DIM} />}
+                    </button>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: done ? TEXT : DIM }}>{item.title}</div>
+                      <div style={{ fontSize: 11, color: DIM, marginTop: 2 }}>
+                        {[CLOSEOUT_TYPE_LABEL[item.item_type] ?? item.item_type, item.trade, item.responsible_party]
+                          .filter(Boolean).join(' · ')}
+                        {item.due_date ? `  ·  Due ${item.due_date}` : ''}
+                      </div>
+                    </div>
+                    <div style={{ marginLeft: 'auto' }}>
+                      <Badge label={sc.label} color={sc.color} bg={sc.bg} />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </SectionCard>
+        )}
+      </div>
+    </PremiumSurface>
+  );
+}

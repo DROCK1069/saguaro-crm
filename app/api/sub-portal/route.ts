@@ -1,0 +1,255 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/sub-portal
+ *
+ * Returns everything the Sub Portal management screen renders, tenant-scoped:
+ *   {
+ *     data:          portal_users (portal_type='sub') — the roster,
+ *     activity:      portal_activity mapped to the Activity Log shape,
+ *     documents:     portal_documents mapped to the Shared-Document shape
+ *                    (visibility derived from `status`, same convention as
+ *                     /api/sub-portal/doc-visibility),
+ *     compliance:    portal_sub_compliance_docs joined to the roster,
+ *     announcements: portal_messages rows tagged sender_type='announcement'
+ *                    (see POST /api/sub-portal/announce),
+ *   }
+ *
+ * Every list is a REAL query against the live tables; when a table is genuinely
+ * empty the array is empty and the UI shows an honest empty state. Service role
+ * bypasses RLS, so every query is pinned to the caller's tenant_id.
+ */
+
+/** Keep in sync with /api/sub-portal/doc-visibility statusFromVisibility(). */
+function visibilityFromStatus(status: string | null): string[] {
+  if (status === 'visible') return ['all'];
+  if (status === 'restricted') return ['restricted'];
+  if (status === 'hidden') return [];
+  // Unknown/legacy statuses (e.g. a doc uploaded elsewhere): treat as visible to
+  // all subs so a real document is never silently hidden from the sharing view.
+  return status ? ['all'] : [];
+}
+
+function fmtBytes(n: number | null): string {
+  if (!n || n <= 0) return '--';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let v = n;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${i === 0 || v >= 10 ? Math.round(v) : v.toFixed(1)} ${units[i]}`;
+}
+
+function basename(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const clean = url.split('?')[0].split('#')[0];
+    const parts = clean.split('/');
+    const last = decodeURIComponent(parts[parts.length - 1] || '');
+    return last || null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeDocType(dt: string): string {
+  const s = (dt || '').toLowerCase();
+  if (s.includes('insur') || s === 'coi' || s.includes('liab')) return 'insurance';
+  if (s.includes('w9') || s.includes('w-9')) return 'w9';
+  if (s.includes('licen')) return 'license';
+  return s || 'license';
+}
+
+function complianceStatus(
+  expiry: string | null,
+  hasFile: boolean,
+): 'valid' | 'expiring' | 'expired' | 'missing' {
+  if (!hasFile) return 'missing';
+  if (expiry) {
+    const days = Math.ceil((new Date(expiry).getTime() - Date.now()) / 86_400_000);
+    if (!Number.isNaN(days)) {
+      if (days < 0) return 'expired';
+      if (days <= 30) return 'expiring';
+    }
+  }
+  return 'valid';
+}
+
+export async function GET(req: NextRequest) {
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = createServerClient();
+  const tenantId = user.tenantId;
+
+  // ── roster (sub portal users) ── this one is load-bearing: a real DB error here
+  // is an actual outage, so surface it as 500 (the page shows its error state).
+  const { data: rosterRows, error: rosterErr } = await db
+    .from('portal_users')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('portal_type', 'sub')
+    .order('created_at', { ascending: false });
+  if (rosterErr) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+  const roster = rosterRows || [];
+
+  // sub id -> { name, company, trade } lookup for joins
+  const subById = new Map<string, { name: string; company: string; trade: string }>();
+  for (const r of roster) {
+    const row = r as Record<string, unknown>;
+    subById.set(String(row.id), {
+      name: (row.name as string) || '',
+      company: (row.company as string) || '',
+      trade: (row.role as string) || '',
+    });
+  }
+
+  // ── activity ──
+  let activity: unknown[] = [];
+  try {
+    const { data } = await db
+      .from('portal_activity')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    activity = (data || []).map((a) => {
+      const row = a as Record<string, unknown>;
+      const meta =
+        row.metadata && typeof row.metadata === 'object'
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+      const subId = (meta.sub_id as string) || (meta.subId as string) || null;
+      const joined = subId ? subById.get(String(subId)) : undefined;
+      const subName =
+        joined?.name ||
+        (meta.sub_name as string) ||
+        (meta.actor_name as string) ||
+        (meta.name as string) ||
+        'Portal User';
+      const company = joined?.company || (meta.company as string) || '';
+      return {
+        id: row.id,
+        subId: subId || row.id,
+        subName,
+        company,
+        action: (row.action as string) || 'Activity',
+        detail: (row.description as string) || '',
+        timestamp: (row.created_at as string) || new Date().toISOString(),
+      };
+    });
+  } catch {
+    activity = [];
+  }
+
+  // ── project-name lookup for documents ──
+  const projMap = new Map<string, string>();
+  try {
+    const { data } = await db.from('projects').select('id, name').eq('tenant_id', tenantId);
+    for (const p of data || []) {
+      const row = p as Record<string, unknown>;
+      projMap.set(String(row.id), (row.name as string) || '');
+    }
+  } catch {
+    /* project names are cosmetic; fall back to '--' below */
+  }
+
+  // ── shared documents ──
+  let documents: unknown[] = [];
+  try {
+    const { data } = await db
+      .from('portal_documents')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    documents = (data || []).map((d) => {
+      const row = d as Record<string, unknown>;
+      const projectId = row.project_id ? String(row.project_id) : '';
+      return {
+        id: row.id,
+        name: (row.title as string) || 'Untitled Document',
+        category: (row.category as string) || (row.doc_type as string) || 'Document',
+        projectName: (projectId && projMap.get(projectId)) || '--',
+        visibleToSubs: visibilityFromStatus((row.status as string) ?? null),
+        uploadedDate: (row.created_at as string) || '',
+        size: fmtBytes((row.file_size as number) ?? null),
+      };
+    });
+  } catch {
+    documents = [];
+  }
+
+  // ── compliance ──
+  let compliance: unknown[] = [];
+  try {
+    const { data } = await db
+      .from('portal_sub_compliance_docs')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    compliance = (data || []).map((c) => {
+      const row = c as Record<string, unknown>;
+      const sub = row.sub_id ? subById.get(String(row.sub_id)) : undefined;
+      const hasFile = !!row.file_url;
+      return {
+        id: row.id,
+        subId: (row.sub_id as string) || '',
+        subName: sub?.name || 'Unknown Sub',
+        company: sub?.company || '',
+        docType: normalizeDocType((row.doc_type as string) || ''),
+        status: complianceStatus((row.expiry_date as string) ?? null, hasFile),
+        expirationDate: (row.expiry_date as string) ?? null,
+        fileName: basename((row.file_url as string) ?? null),
+        uploadedDate: (row.created_at as string) ?? null,
+      };
+    });
+  } catch {
+    compliance = [];
+  }
+
+  // ── announcements (portal_messages tagged sender_type='announcement') ──
+  let announcements: unknown[] = [];
+  try {
+    const { data } = await db
+      .from('portal_messages')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('sender_type', 'announcement')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    announcements = (data || []).map((m) => {
+      const row = m as Record<string, unknown>;
+      const att =
+        row.attachments && typeof row.attachments === 'object'
+          ? (row.attachments as Record<string, unknown>)
+          : {};
+      return {
+        id: row.id,
+        subject: (att.subject as string) || '(no subject)',
+        body: (row.content as string) || '',
+        sentDate: (row.created_at as string) || '',
+        sentTo: Array.isArray(att.sentTo) ? (att.sentTo as string[]) : ['all'],
+        sentBy: (row.sender_name as string) || 'You',
+      };
+    });
+  } catch {
+    announcements = [];
+  }
+
+  // Real tenant project names for the roster filters / invite project-access
+  // pickers (the UI used to hard-code a fake Arizona project list here).
+  const projects = Array.from(projMap.values())
+    .filter((n): n is string => !!n)
+    .sort((a, b) => a.localeCompare(b));
+
+  return NextResponse.json({ data: roster, activity, documents, compliance, announcements, projects });
+}

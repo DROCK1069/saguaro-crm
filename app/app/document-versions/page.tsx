@@ -1,0 +1,879 @@
+'use client';
+
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { humanError } from '@/lib/errors';
+import {
+  Folder, UploadSimple, ClockCounterClockwise, ArrowsLeftRight, Info, Users,
+  LockSimple, LockSimpleOpen, DownloadSimple, CheckCircle, PaperPlaneTilt, Plus, X,
+  MagnifyingGlass, FileText, Trash, Files, Fingerprint, WarningCircle,
+} from '@phosphor-icons/react';
+import { getAuthHeaders, getSupabaseBrowser } from '@/lib/supabase-browser';
+
+// ─── Color Palette ────────────────────────────────────────────────
+const C = {
+  GOLD: '#F59E0B', BG: '#0a0a0a', RAISED: '#141416', BORDER: 'rgba(255,255,255,0.12)',
+  TEXT: '#FFFFFF', DIM: '#8094B0', GREEN: '#22C55E', RED: '#EF4444',
+  AMBER: '#F59E0B', BLUE: '#F59E0B', PURPLE: '#8B5CF6',
+};
+
+// The private `documents` bucket enforces this MIME allow-list on upload.
+const ACCEPT = [
+  '.pdf', '.png', '.jpg', '.jpeg', '.doc', '.docx', '.xls', '.xlsx',
+  'application/pdf', 'image/png', 'image/jpeg', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+].join(',');
+
+// ─── Types (mirror the /api/documents/versions response) ──────────
+type DocStatus = 'Draft' | 'Under Review' | 'Approved' | 'Superseded';
+
+type DocVersion = {
+  id: string;
+  version: number;
+  versionLabel: string;
+  revisionCode: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  fileName: string;
+  fileSize: number | null;
+  fileType: string | null;
+  checksum: string | null;
+  revisionNotes: string;
+  status: DocStatus;
+  approvedBy: string | null;
+  approvedAt: string | null;
+};
+
+type AccessEntry = { userId: string; name: string; role: 'viewer' | 'editor' | 'admin' };
+
+type Document = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+  projectId: string | null;
+  project: string;
+  currentVersion: string;
+  currentVersionNumber: number;
+  lastModified: string;
+  modifiedBy: string;
+  status: DocStatus;
+  checkedOutBy: string | null;
+  checkedOutById: string | null;
+  checkedOutAt: string | null;
+  createdAt: string;
+  versions: DocVersion[];
+  access: AccessEntry[];
+};
+
+type ProjectOpt = { id: string; name: string };
+type ModalView = 'none' | 'upload' | 'history' | 'compare' | 'metadata' | 'access' | 'bulk';
+
+const CATEGORIES = ['All', 'Contracts', 'Drawings', 'Specs', 'Submittals', 'RFIs', 'Change Orders', 'Safety', 'Uncategorized'];
+const UPLOAD_CATS = CATEGORIES.filter((c) => c !== 'All');
+
+const statusColor: Record<DocStatus, string> = {
+  Draft: C.DIM, 'Under Review': C.AMBER, Approved: C.GREEN, Superseded: C.RED,
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────
+function fmtDate(iso: string | null): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtDateTime(iso: string | null): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function fmtBytes(n: number | null): string {
+  if (n == null) return '—';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+async function sha256hex(buf: ArrayBuffer): Promise<string> {
+  try {
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return '';
+  }
+}
+
+// ─── Component ────────────────────────────────────────────────────
+export default function DocumentVersionsPage() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [projects, setProjects] = useState<ProjectOpt[]>([]);
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [modalView, setModalView] = useState<ModalView>('none');
+  const [compareA, setCompareA] = useState<string>('');
+  const [compareB, setCompareB] = useState<string>('');
+
+  // upload form
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadDesc, setUploadDesc] = useState('');
+  const [uploadCategory, setUploadCategory] = useState('Uncategorized');
+  const [uploadTags, setUploadTags] = useState('');
+  const [uploadProjectId, setUploadProjectId] = useState('');
+  const [uploadNotes, setUploadNotes] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // bulk
+  const [bulkFiles, setBulkFiles] = useState<File[]>([]);
+  const [bulkCategory, setBulkCategory] = useState('Uncategorized');
+  const [bulkProjectId, setBulkProjectId] = useState('');
+
+  // access
+  const [accessEmail, setAccessEmail] = useState('');
+  const [accessRole, setAccessRole] = useState<'viewer' | 'editor' | 'admin'>('viewer');
+
+  const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
+
+  const showToast = useCallback((msg: string, err?: boolean) => {
+    setToast({ msg, err });
+    setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  // ─ Data loaders ─
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const h = await getAuthHeaders();
+      const r = await fetch('/api/documents/versions', { headers: h, cache: 'no-store' });
+      if (r.status === 401) { setError('You must be signed in to view documents.'); setDocuments([]); return; }
+      if (!r.ok) { const body = await r.json().catch(() => ({})); console.error('load document versions failed', r.status, body?.error); throw new Error(body?.error || 'Request failed'); }
+      const data = await r.json();
+      setDocuments((data.documents || []) as Document[]);
+    } catch (e: any) {
+      console.error(e);
+      setError(humanError(e, 'Failed to load documents. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadProjects = useCallback(async () => {
+    try {
+      const h = await getAuthHeaders();
+      const r = await fetch('/api/projects/list', { headers: h, cache: 'no-store' });
+      if (!r.ok) return;
+      const data = await r.json();
+      setProjects((data.projects || []).map((p: any) => ({ id: p.id, name: p.name })));
+    } catch { /* projects picker is optional */ }
+  }, []);
+
+  useEffect(() => { load(); loadProjects(); }, [load, loadProjects]);
+
+  // Keep the open modal's doc in sync after a reload.
+  useEffect(() => {
+    if (selectedDoc) {
+      const fresh = documents.find((d) => d.id === selectedDoc.id);
+      if (fresh) setSelectedDoc(fresh);
+    }
+  }, [documents]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─ Filtering ─
+  const filtered = useMemo(() => {
+    let list = documents;
+    if (activeCategory !== 'All') list = list.filter((d) => d.category === activeCategory);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((d) =>
+        d.title.toLowerCase().includes(q) ||
+        d.tags.some((t) => t.toLowerCase().includes(q)) ||
+        d.description.toLowerCase().includes(q) ||
+        d.project.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [documents, activeCategory, search]);
+
+  const catCounts = useMemo(() => {
+    const map: Record<string, number> = { All: documents.length };
+    for (const d of documents) map[d.category] = (map[d.category] || 0) + 1;
+    return map;
+  }, [documents]);
+
+  // ─ Modal control ─
+  const openModal = (doc: Document | null, view: ModalView) => {
+    setSelectedDoc(doc);
+    setModalView(view);
+    if (view === 'compare' && doc && doc.versions.length >= 2) {
+      setCompareA(doc.versions[doc.versions.length - 2].id);
+      setCompareB(doc.versions[doc.versions.length - 1].id);
+    }
+    if (view === 'upload') {
+      setUploadTitle(''); setUploadDesc('');
+      setUploadCategory(doc ? doc.category : 'Uncategorized');
+      setUploadTags(doc ? doc.tags.join(', ') : '');
+      setUploadProjectId(doc ? doc.projectId || '' : '');
+      setUploadNotes(''); setUploadFile(null);
+    }
+    if (view === 'bulk') { setBulkFiles([]); setBulkCategory('Uncategorized'); setBulkProjectId(''); }
+    if (view === 'access') { setAccessEmail(''); setAccessRole('viewer'); }
+  };
+  const closeModal = () => { setModalView('none'); setSelectedDoc(null); setUploadFile(null); setBulkFiles([]); };
+
+  // ─ Core: upload a File to the private bucket via a signed upload URL ─
+  async function uploadToBucket(file: File, documentId?: string) {
+    const h = await getAuthHeaders();
+    const urlRes = await fetch('/api/documents/versions/upload-url', {
+      method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: file.name, documentId }),
+    });
+    if (!urlRes.ok) throw new Error((await urlRes.json().catch(() => ({})))?.error || 'Could not start upload');
+    const { bucket, path, token } = await urlRes.json();
+
+    const bytes = await file.arrayBuffer();
+    const checksum = await sha256hex(bytes);
+
+    const sb = getSupabaseBrowser();
+    const { error: upErr } = await sb.storage.from(bucket).uploadToSignedUrl(path, token, file, {
+      contentType: file.type || 'application/octet-stream',
+    });
+    if (upErr) throw new Error(upErr.message || 'Upload to storage failed');
+
+    return { path, checksum, fileSize: file.size, fileType: file.type || null, fileName: file.name };
+  }
+
+  async function finalize(payload: Record<string, unknown>) {
+    const h = await getAuthHeaders();
+    const r = await fetch('/api/documents/versions', {
+      method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || 'Failed to save version');
+    return r.json();
+  }
+
+  // ─ Handlers ─
+  const handleUpload = async () => {
+    if (!uploadFile) { showToast('Please choose a file.', true); return; }
+    if (!selectedDoc && !uploadTitle.trim()) { showToast('Title is required.', true); return; }
+    setBusy(true);
+    try {
+      const meta = await uploadToBucket(uploadFile, selectedDoc?.id);
+      await finalize({
+        documentId: selectedDoc?.id,
+        path: meta.path, fileName: meta.fileName, fileSize: meta.fileSize,
+        fileType: meta.fileType, checksum: meta.checksum, notes: uploadNotes,
+        name: uploadTitle, description: uploadDesc, category: uploadCategory,
+        tags: uploadTags.split(',').map((t) => t.trim()).filter(Boolean),
+        projectId: uploadProjectId || null,
+      });
+      showToast(selectedDoc ? 'New version uploaded.' : `Document "${uploadTitle}" created.`);
+      closeModal();
+      await load();
+    } catch (e: any) {
+      showToast(e?.message || 'Upload failed.', true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleBulkUpload = async () => {
+    if (bulkFiles.length === 0) { showToast('Add at least one file.', true); return; }
+    setBusy(true);
+    let ok = 0;
+    const fails: string[] = [];
+    for (const f of bulkFiles) {
+      try {
+        const meta = await uploadToBucket(f);
+        await finalize({
+          path: meta.path, fileName: meta.fileName, fileSize: meta.fileSize, fileType: meta.fileType,
+          checksum: meta.checksum, name: f.name.replace(/\.[^.]+$/, ''), category: bulkCategory,
+          projectId: bulkProjectId || null, notes: 'Bulk upload — initial version.',
+        });
+        ok += 1;
+      } catch (e: any) {
+        fails.push(`${f.name}: ${e?.message || 'failed'}`);
+      }
+    }
+    setBusy(false);
+    closeModal();
+    await load();
+    if (fails.length) showToast(`${ok} uploaded, ${fails.length} failed.`, true);
+    else showToast(`${ok} document${ok !== 1 ? 's' : ''} uploaded.`);
+  };
+
+  const doCheckout = async (docId: string, action: 'checkout' | 'checkin') => {
+    try {
+      const h = await getAuthHeaders();
+      const r = await fetch('/api/documents/versions/checkout', {
+        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId: docId, action }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || 'Lock update failed');
+      showToast(action === 'checkout' ? 'Document checked out.' : 'Document checked in.');
+      await load();
+    } catch (e: any) { showToast(e?.message || 'Lock update failed.', true); }
+  };
+
+  const doWorkflow = async (docId: string, versionId: string, action: 'submit' | 'approve') => {
+    try {
+      const h = await getAuthHeaders();
+      const r = await fetch('/api/documents/versions/approve', {
+        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId: docId, versionId, action }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || 'Action failed');
+      showToast(action === 'approve' ? 'Version approved.' : 'Submitted for review.');
+      await load();
+    } catch (e: any) { showToast(e?.message || 'Action failed.', true); }
+  };
+
+  const addAccess = async () => {
+    if (!accessEmail.trim() || !selectedDoc) return;
+    try {
+      const h = await getAuthHeaders();
+      const r = await fetch('/api/documents/versions/access', {
+        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId: selectedDoc.id, grantee: accessEmail.trim(), role: accessRole }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || 'Grant failed');
+      setAccessEmail('');
+      showToast(`Access granted to ${accessEmail.trim()}.`);
+      await load();
+    } catch (e: any) { showToast(e?.message || 'Grant failed.', true); }
+  };
+
+  const removeAccess = async (grantId: string) => {
+    try {
+      const h = await getAuthHeaders();
+      const r = await fetch(`/api/documents/versions/access?grantId=${encodeURIComponent(grantId)}`, { method: 'DELETE', headers: h });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || 'Revoke failed');
+      showToast('Access removed.');
+      await load();
+    } catch (e: any) { showToast(e?.message || 'Revoke failed.', true); }
+  };
+
+  const download = async (ver: DocVersion) => {
+    try {
+      const h = await getAuthHeaders();
+      const r = await fetch('/api/documents/versions/download', {
+        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ versionId: ver.id }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || 'Download failed');
+      const { url } = await r.json();
+      window.open(url, '_blank', 'noopener');
+    } catch (e: any) { showToast(e?.message || 'Download failed.', true); }
+  };
+
+  // ─── Styles ─────────────────────────────────────────────────────
+  const sBtn = (bg: string, small?: boolean): React.CSSProperties => ({
+    background: bg, color: '#fff', border: 'none', borderRadius: 6,
+    padding: small ? '5px 10px' : '8px 16px', cursor: 'pointer',
+    fontSize: small ? 12 : 13, fontWeight: 600, whiteSpace: 'nowrap',
+    display: 'inline-flex', alignItems: 'center', gap: 6, opacity: busy ? 0.85 : 1,
+  });
+  const sInput: React.CSSProperties = {
+    background: C.BG, border: `1px solid ${C.BORDER}`, borderRadius: 6,
+    padding: '8px 12px', color: C.TEXT, fontSize: 13, width: '100%', outline: 'none',
+  };
+  const sSelect: React.CSSProperties = { ...sInput, cursor: 'pointer' };
+  const sCard: React.CSSProperties = { background: C.RAISED, border: `1px solid ${C.BORDER}`, borderRadius: 10, padding: 16, marginBottom: 8 };
+  const sOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(2,6,15,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 };
+  const sModal: React.CSSProperties = { background: C.RAISED, border: `1px solid ${C.BORDER}`, borderRadius: 12, padding: 24, width: 660, maxWidth: '100%', maxHeight: '85vh', overflowY: 'auto', position: 'relative' };
+  const sBadge = (color: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: `${color}22`, color, border: `1px solid ${color}44` });
+  const sLabel: React.CSSProperties = { fontSize: 12, color: C.DIM, display: 'block', marginBottom: 4 };
+
+  const responsiveCSS = `
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .dvc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .dvc-tablewrap { overflow-x: auto; }
+    .dvc-row, .dvc-head { display: grid; grid-template-columns: 2fr 1fr 0.8fr 1fr 1fr 1.7fr; min-width: 880px; }
+    @media (max-width: 720px) { .dvc-stats { grid-template-columns: repeat(2, 1fr); } }
+  `;
+
+  if (loading) {
+    return (
+      <div style={{ background: C.BG, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 40, height: 40, border: `3px solid ${C.BORDER}`, borderTopColor: C.GOLD, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <div style={{ color: C.DIM, fontSize: 14 }}>Loading documents...</div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: C.BG, minHeight: '100vh', padding: '24px 32px', color: C.TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <style>{responsiveCSS}</style>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', top: 20, right: 20, background: toast.err ? C.RED : C.GREEN, color: '#fff', padding: '10px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, zIndex: 2000, boxShadow: '0 4px 20px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {toast.err ? <WarningCircle size={16} weight="fill" /> : <CheckCircle size={16} weight="fill" />}
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: `${C.GOLD}1A`, border: `1px solid ${C.GOLD}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Folder size={24} weight="duotone" color={C.GOLD} />
+          </div>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: C.GOLD }}>Document Version Control</h1>
+            <p style={{ margin: '4px 0 0', color: C.DIM, fontSize: 13 }}>
+              {documents.length} document{documents.length !== 1 ? 's' : ''} under version control
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button style={sBtn(C.PURPLE)} onClick={() => openModal(null, 'bulk')}><Files size={16} weight="bold" /> Bulk Upload</button>
+          <button style={sBtn(C.GOLD)} onClick={() => openModal(null, 'upload')}><Plus size={16} weight="bold" /> New Document</button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ ...sCard, borderLeft: `3px solid ${C.RED}`, display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <WarningCircle size={18} weight="fill" color={C.RED} />
+          <span style={{ color: C.DIM, fontSize: 13 }}>{error}</span>
+          <button style={{ ...sBtn(C.DIM, true), marginLeft: 'auto' }} onClick={load}>Retry</button>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="dvc-stats" style={{ marginBottom: 24 }}>
+        {([
+          ['Total Documents', documents.length, C.GOLD],
+          ['Approved', documents.filter((d) => d.status === 'Approved').length, C.GREEN],
+          ['Under Review', documents.filter((d) => d.status === 'Under Review').length, C.AMBER],
+          ['Drafts', documents.filter((d) => d.status === 'Draft').length, C.DIM],
+          ['Checked Out', documents.filter((d) => d.checkedOutBy).length, C.RED],
+        ] as [string, number, string][]).map(([label, count, color]) => (
+          <div key={label} style={{ ...sCard, textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color }}>{count}</div>
+            <div style={{ fontSize: 12, color: C.DIM, marginTop: 2 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+        <div style={{ position: 'relative', maxWidth: 380, flex: 1 }}>
+          <MagnifyingGlass size={16} color={C.DIM} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+          <input style={{ ...sInput, paddingLeft: 32 }} placeholder="Search by name, tags, description, or project..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Categories */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+        {CATEGORIES.map((cat) => (
+          <button key={cat} onClick={() => setActiveCategory(cat)} style={{
+            padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            border: `1px solid ${activeCategory === cat ? C.GOLD : C.BORDER}`,
+            background: activeCategory === cat ? `${C.GOLD}22` : 'transparent',
+            color: activeCategory === cat ? C.GOLD : C.DIM,
+          }}>
+            {cat} ({catCounts[cat] || 0})
+          </button>
+        ))}
+      </div>
+
+      {/* List */}
+      {filtered.length === 0 ? (
+        <div style={{ ...sCard, textAlign: 'center', padding: 48 }}>
+          <FileText size={44} weight="thin" color={C.DIM} style={{ opacity: 0.5, marginBottom: 12 }} />
+          <div style={{ color: C.DIM, fontSize: 14, marginBottom: 8 }}>No documents found</div>
+          <div style={{ color: C.DIM, fontSize: 12, marginBottom: 16 }}>
+            {search || activeCategory !== 'All' ? 'Try adjusting your search or category filter.' : 'Upload your first document to get started.'}
+          </div>
+          <button style={{ ...sBtn(C.GOLD), margin: '0 auto' }} onClick={() => openModal(null, 'upload')}><Plus size={16} weight="bold" /> New Document</button>
+        </div>
+      ) : (
+        <div className="dvc-tablewrap">
+          <div className="dvc-head" style={{ padding: '8px 16px', fontSize: 11, fontWeight: 700, color: C.DIM, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <span>Document</span><span>Category</span><span>Version</span><span>Status</span><span>Modified</span><span>Actions</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {filtered.map((doc) => (
+              <div key={doc.id} className="dvc-row" style={{ ...sCard, alignItems: 'center', padding: '12px 16px', marginBottom: 0, borderLeft: doc.checkedOutBy ? `3px solid ${C.RED}` : '3px solid transparent' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{doc.title}</div>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, color: C.DIM }}>{doc.project}</span>
+                    {doc.tags.map((t) => (
+                      <span key={t} style={{ fontSize: 10, color: C.BLUE, background: `${C.BLUE}18`, padding: '1px 6px', borderRadius: 4 }}>{t}</span>
+                    ))}
+                    {doc.checkedOutBy && (
+                      <span style={{ fontSize: 10, color: C.RED, background: `${C.RED}18`, padding: '1px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        <LockSimple size={10} weight="fill" /> {doc.checkedOutBy}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span style={{ fontSize: 12, color: C.DIM }}>{doc.category}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.GOLD, fontFamily: 'monospace' }}>{doc.currentVersion}</span>
+                <span style={sBadge(statusColor[doc.status])}>{doc.status}</span>
+                <div>
+                  <div style={{ fontSize: 12, color: C.TEXT }}>{fmtDate(doc.lastModified)}</div>
+                  <div style={{ fontSize: 11, color: C.DIM }}>{doc.modifiedBy}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button style={sBtn(C.BLUE, true)} onClick={() => openModal(doc, 'history')}><ClockCounterClockwise size={13} weight="bold" /> History</button>
+                  <button style={{ ...sBtn(C.PURPLE, true), opacity: doc.versions.length < 2 ? 0.4 : 1 }} onClick={() => openModal(doc, 'compare')} disabled={doc.versions.length < 2}><ArrowsLeftRight size={13} weight="bold" /> Compare</button>
+                  <button style={sBtn(C.GOLD, true)} onClick={() => openModal(doc, 'upload')}><UploadSimple size={13} weight="bold" /> Upload</button>
+                  {!doc.checkedOutBy ? (
+                    <button style={sBtn(C.DIM, true)} onClick={() => doCheckout(doc.id, 'checkout')}><LockSimpleOpen size={13} weight="bold" /> Check Out</button>
+                  ) : (
+                    <button style={sBtn(C.GREEN, true)} onClick={() => doCheckout(doc.id, 'checkin')}><LockSimple size={13} weight="bold" /> Check In</button>
+                  )}
+                  <button style={sBtn('#334155', true)} onClick={() => openModal(doc, 'metadata')}><Info size={13} weight="bold" /></button>
+                  <button style={sBtn('#334155', true)} onClick={() => openModal(doc, 'access')}><Users size={13} weight="bold" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── History Modal ── */}
+      {modalView === 'history' && selectedDoc && (
+        <div style={sOverlay} onClick={closeModal}>
+          <div style={sModal} onClick={(e) => e.stopPropagation()}>
+            <ModalHeader title="Version History" subtitle={selectedDoc.title} onClose={closeModal} />
+            {selectedDoc.versions.length === 0 ? (
+              <div style={{ color: C.DIM, fontSize: 13, padding: 12 }}>No versions yet.</div>
+            ) : (
+              <div style={{ position: 'relative', paddingLeft: 24 }}>
+                <div style={{ position: 'absolute', left: 8, top: 4, bottom: 4, width: 2, background: C.BORDER }} />
+                {[...selectedDoc.versions].reverse().map((ver, idx) => (
+                  <div key={ver.id} style={{ position: 'relative', marginBottom: 20, paddingBottom: 12, borderBottom: idx < selectedDoc.versions.length - 1 ? `1px solid ${C.BORDER}` : 'none' }}>
+                    <div style={{ position: 'absolute', left: -20, top: 4, width: 12, height: 12, borderRadius: '50%', background: idx === 0 ? C.GOLD : C.BORDER, border: `2px solid ${C.RAISED}` }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, fontSize: 15, color: C.TEXT, fontFamily: 'monospace' }}>{ver.versionLabel}</span>
+                          <span style={{ fontSize: 11, color: C.DIM, fontFamily: 'monospace' }}>{ver.revisionCode}</span>
+                          <span style={sBadge(statusColor[ver.status])}>{ver.status}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: C.DIM, marginBottom: 4 }}>
+                          Uploaded by <span style={{ color: C.TEXT }}>{ver.uploadedBy}</span> on {fmtDateTime(ver.uploadedAt)} · {fmtBytes(ver.fileSize)}
+                        </div>
+                        <div style={{ fontSize: 12, color: C.DIM, marginBottom: 6 }}>
+                          <span style={{ color: C.TEXT, fontWeight: 600 }}>Notes:</span> {ver.revisionNotes || '—'}
+                        </div>
+                        {ver.checksum && (
+                          <div style={{ fontSize: 11, color: C.DIM, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'monospace' }}>
+                            <Fingerprint size={12} /> {ver.checksum.slice(0, 16)}…
+                          </div>
+                        )}
+                        {ver.approvedBy && (
+                          <div style={{ fontSize: 11, color: C.GREEN, marginTop: 4 }}>Approved by {ver.approvedBy} on {fmtDate(ver.approvedAt)}</div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <button style={sBtn(C.BLUE, true)} onClick={() => download(ver)}><DownloadSimple size={13} weight="bold" /> Download</button>
+                        {ver.status === 'Draft' && <button style={sBtn(C.AMBER, true)} onClick={() => doWorkflow(selectedDoc.id, ver.id, 'submit')}><PaperPlaneTilt size={13} weight="bold" /> Submit</button>}
+                        {ver.status === 'Under Review' && <button style={sBtn(C.GREEN, true)} onClick={() => doWorkflow(selectedDoc.id, ver.id, 'approve')}><CheckCircle size={13} weight="bold" /> Approve</button>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Compare Modal (honest metadata comparison — no fabricated diff) ── */}
+      {modalView === 'compare' && selectedDoc && (
+        <div style={sOverlay} onClick={closeModal}>
+          <div style={{ ...sModal, width: 720 }} onClick={(e) => e.stopPropagation()}>
+            <ModalHeader title="Compare Versions" subtitle={selectedDoc.title} onClose={closeModal} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={sLabel}>Version A</label>
+                <select style={sSelect} value={compareA} onChange={(e) => setCompareA(e.target.value)}>
+                  {selectedDoc.versions.map((v) => <option key={v.id} value={v.id}>{v.versionLabel} ({v.revisionCode})</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={sLabel}>Version B</label>
+                <select style={sSelect} value={compareB} onChange={(e) => setCompareB(e.target.value)}>
+                  {selectedDoc.versions.map((v) => <option key={v.id} value={v.id}>{v.versionLabel} ({v.revisionCode})</option>)}
+                </select>
+              </div>
+            </div>
+            {(() => {
+              const vA = selectedDoc.versions.find((v) => v.id === compareA);
+              const vB = selectedDoc.versions.find((v) => v.id === compareB);
+              if (!vA || !vB) return <div style={{ color: C.DIM, fontSize: 13 }}>Select two versions to compare.</div>;
+              const identical = !!vA.checksum && vA.checksum === vB.checksum;
+              const rows: [string, string, string][] = [
+                ['Version', vA.versionLabel, vB.versionLabel],
+                ['Revision', vA.revisionCode, vB.revisionCode],
+                ['Uploaded by', vA.uploadedBy, vB.uploadedBy],
+                ['Uploaded', fmtDateTime(vA.uploadedAt), fmtDateTime(vB.uploadedAt)],
+                ['File', vA.fileName, vB.fileName],
+                ['Size', fmtBytes(vA.fileSize), fmtBytes(vB.fileSize)],
+                ['Status', vA.status, vB.status],
+                ['SHA-256', vA.checksum ? `${vA.checksum.slice(0, 20)}…` : '—', vB.checksum ? `${vB.checksum.slice(0, 20)}…` : '—'],
+                ['Notes', vA.revisionNotes || '—', vB.revisionNotes || '—'],
+              ];
+              return (
+                <div>
+                  <div style={{ ...sCard, borderLeft: `3px solid ${identical ? C.GREEN : C.AMBER}`, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    {identical ? <CheckCircle size={18} weight="fill" color={C.GREEN} /> : <ArrowsLeftRight size={18} weight="bold" color={C.AMBER} />}
+                    <span style={{ fontSize: 13, color: C.TEXT }}>
+                      {identical
+                        ? 'Identical file bytes — the SHA-256 checksums match, so these two versions are byte-for-byte the same file.'
+                        : 'File bytes differ — the SHA-256 checksums do not match. Metadata for both versions is compared below.'}
+                    </span>
+                  </div>
+                  <div style={{ border: `1px solid ${C.BORDER}`, borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', background: C.BG, padding: '8px 12px', fontSize: 11, fontWeight: 700, color: C.DIM, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      <span>Field</span><span style={{ color: C.RED }}>{vA.versionLabel}</span><span style={{ color: C.GREEN }}>{vB.versionLabel}</span>
+                    </div>
+                    {rows.map(([label, a, b], i) => {
+                      const diff = a !== b;
+                      return (
+                        <div key={label} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', padding: '8px 12px', fontSize: 12, borderTop: `1px solid ${C.BORDER}`, background: i % 2 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                          <span style={{ color: C.DIM }}>{label}</span>
+                          <span style={{ color: diff ? C.TEXT : C.DIM, wordBreak: 'break-word' }}>{a}</span>
+                          <span style={{ color: diff ? C.TEXT : C.DIM, wordBreak: 'break-word', fontWeight: diff ? 600 : 400 }}>{b}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
+                    <button style={sBtn(C.BLUE, false)} onClick={() => download(vA)}><DownloadSimple size={14} weight="bold" /> {vA.versionLabel}</button>
+                    <button style={sBtn(C.GREEN, false)} onClick={() => download(vB)}><DownloadSimple size={14} weight="bold" /> {vB.versionLabel}</button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── Upload / New Document Modal ── */}
+      {modalView === 'upload' && (
+        <div style={sOverlay} onClick={closeModal}>
+          <div style={sModal} onClick={(e) => e.stopPropagation()}>
+            <ModalHeader title={selectedDoc ? `Upload New Version` : 'New Document'} subtitle={selectedDoc?.title} onClose={closeModal} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={sLabel}>File</label>
+                <input ref={uploadInputRef} type="file" accept={ACCEPT} style={{ display: 'none' }} onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ ...sInput, flex: 1, display: 'flex', alignItems: 'center', gap: 8, color: uploadFile ? C.TEXT : C.DIM }}>
+                    <FileText size={16} color={uploadFile ? C.GOLD : C.DIM} />
+                    {uploadFile ? `${uploadFile.name} · ${fmtBytes(uploadFile.size)}` : 'No file selected'}
+                  </div>
+                  <button style={sBtn(C.BLUE)} onClick={() => uploadInputRef.current?.click()}><UploadSimple size={15} weight="bold" /> Choose</button>
+                </div>
+                <div style={{ fontSize: 11, color: C.DIM, marginTop: 4 }}>PDF, Word, Excel or image · up to 50 MB</div>
+              </div>
+
+              {!selectedDoc && (
+                <>
+                  <div>
+                    <label style={sLabel}>Title *</label>
+                    <input style={sInput} placeholder="Document title" value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={sLabel}>Description</label>
+                    <textarea style={{ ...sInput, minHeight: 56, resize: 'vertical' }} placeholder="Brief description..." value={uploadDesc} onChange={(e) => setUploadDesc(e.target.value)} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={sLabel}>Category</label>
+                      <select style={sSelect} value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)}>
+                        {UPLOAD_CATS.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={sLabel}>Project</label>
+                      <select style={sSelect} value={uploadProjectId} onChange={(e) => setUploadProjectId(e.target.value)}>
+                        <option value="">Unassigned</option>
+                        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={sLabel}>Tags (comma separated)</label>
+                    <input style={sInput} placeholder="structural, concrete, phase-1" value={uploadTags} onChange={(e) => setUploadTags(e.target.value)} />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label style={sLabel}>Revision Notes</label>
+                <textarea style={{ ...sInput, minHeight: 56, resize: 'vertical' }} placeholder="Describe what changed..." value={uploadNotes} onChange={(e) => setUploadNotes(e.target.value)} />
+              </div>
+
+              {selectedDoc && (
+                <div style={{ ...sCard, borderLeft: `3px solid ${C.BLUE}`, marginBottom: 0 }}>
+                  <div style={{ fontSize: 12, color: C.DIM }}>
+                    Current: <strong style={{ color: C.GOLD }}>{selectedDoc.currentVersion}</strong> · Next version:{' '}
+                    <strong style={{ color: C.TEXT }}>v{selectedDoc.currentVersionNumber + 1}</strong> (REV-{String(selectedDoc.currentVersionNumber + 1).padStart(3, '0')})
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+                <button style={sBtn('#334155')} onClick={closeModal} disabled={busy}>Cancel</button>
+                <button style={sBtn(C.GOLD)} onClick={handleUpload} disabled={busy}>
+                  {busy ? 'Uploading...' : selectedDoc ? 'Upload Version' : 'Create Document'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Metadata Modal ── */}
+      {modalView === 'metadata' && selectedDoc && (
+        <div style={sOverlay} onClick={closeModal}>
+          <div style={sModal} onClick={(e) => e.stopPropagation()}>
+            <ModalHeader title="Document Metadata" subtitle={selectedDoc.title} onClose={closeModal} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {([
+                ['Category', selectedDoc.category],
+                ['Project', selectedDoc.project],
+                ['Current Version', selectedDoc.currentVersion],
+                ['Status', selectedDoc.status],
+                ['Created', fmtDateTime(selectedDoc.createdAt)],
+                ['Last Modified', fmtDateTime(selectedDoc.lastModified)],
+                ['Total Versions', String(selectedDoc.versions.length)],
+                ['Checked Out', selectedDoc.checkedOutBy ? `${selectedDoc.checkedOutBy} (${fmtDateTime(selectedDoc.checkedOutAt)})` : 'No'],
+              ] as [string, string][]).map(([label, val]) => (
+                <div key={label}>
+                  <div style={{ fontSize: 11, color: C.DIM, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
+                  <div style={{ fontSize: 14, color: C.TEXT, fontWeight: 500 }}>{val}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 11, color: C.DIM, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Description</div>
+              <div style={{ fontSize: 13, color: C.TEXT, lineHeight: 1.5 }}>{selectedDoc.description || '—'}</div>
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 11, color: C.DIM, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Tags</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {selectedDoc.tags.length ? selectedDoc.tags.map((t) => <span key={t} style={{ ...sBadge(C.BLUE), fontSize: 12 }}>{t}</span>) : <span style={{ color: C.DIM, fontSize: 12 }}>No tags</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Access Modal ── */}
+      {modalView === 'access' && selectedDoc && (
+        <div style={sOverlay} onClick={closeModal}>
+          <div style={sModal} onClick={(e) => e.stopPropagation()}>
+            <ModalHeader title="Access Control" subtitle={selectedDoc.title} onClose={closeModal} />
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 12, color: C.DIM, marginBottom: 8, fontWeight: 600 }}>Current Access</div>
+              {selectedDoc.access.length === 0 && <div style={{ color: C.DIM, fontSize: 12 }}>No grants yet.</div>}
+              {selectedDoc.access.map((a) => (
+                <div key={a.userId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: C.BG, borderRadius: 6, marginBottom: 4, border: `1px solid ${C.BORDER}` }}>
+                  <div>
+                    <span style={{ fontSize: 13, color: C.TEXT, fontWeight: 500 }}>{a.name}</span>
+                    <span style={{ ...sBadge(a.role === 'admin' ? C.GOLD : a.role === 'editor' ? C.GREEN : C.DIM), marginLeft: 8, fontSize: 10 }}>{a.role}</span>
+                  </div>
+                  <button style={{ ...sBtn(C.RED, true) }} onClick={() => removeAccess(a.userId)}><Trash size={12} weight="bold" /> Remove</button>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: `1px solid ${C.BORDER}`, paddingTop: 16 }}>
+              <div style={{ fontSize: 12, color: C.DIM, marginBottom: 8, fontWeight: 600 }}>Grant Access</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input style={{ ...sInput, flex: 1 }} placeholder="Name or email" value={accessEmail} onChange={(e) => setAccessEmail(e.target.value)} />
+                <select style={{ ...sSelect, width: 120 }} value={accessRole} onChange={(e) => setAccessRole(e.target.value as any)}>
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button style={sBtn(C.GREEN)} onClick={addAccess}><Plus size={15} weight="bold" /> Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Upload Modal ── */}
+      {modalView === 'bulk' && (
+        <div style={sOverlay} onClick={closeModal}>
+          <div style={sModal} onClick={(e) => e.stopPropagation()}>
+            <ModalHeader title="Bulk Upload" subtitle="Each file becomes a new document at v1" onClose={closeModal} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={sLabel}>Category for all</label>
+                <select style={sSelect} value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)}>
+                  {UPLOAD_CATS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={sLabel}>Project for all</label>
+                <select style={sSelect} value={bulkProjectId} onChange={(e) => setBulkProjectId(e.target.value)}>
+                  <option value="">Unassigned</option>
+                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <input ref={bulkInputRef} type="file" accept={ACCEPT} multiple style={{ display: 'none' }} onChange={(e) => setBulkFiles(Array.from(e.target.files || []))} />
+            <button style={{ ...sBtn(C.BLUE), marginBottom: 16 }} onClick={() => bulkInputRef.current?.click()}><UploadSimple size={15} weight="bold" /> Choose Files</button>
+
+            {bulkFiles.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 28, color: C.DIM, fontSize: 13, border: `1px dashed ${C.BORDER}`, borderRadius: 8, marginBottom: 16 }}>
+                No files selected yet.
+              </div>
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                {bulkFiles.map((f, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: C.BG, borderRadius: 6, marginBottom: 4, border: `1px solid ${C.BORDER}` }}>
+                    <span style={{ fontSize: 13, color: C.TEXT, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                      <FileText size={14} color={C.GOLD} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                      <span style={{ color: C.DIM, flexShrink: 0 }}>· {fmtBytes(f.size)}</span>
+                    </span>
+                    <button style={{ ...sBtn(C.RED, true) }} onClick={() => setBulkFiles((prev) => prev.filter((_, i) => i !== idx))}><Trash size={12} weight="bold" /></button>
+                  </div>
+                ))}
+                <div style={{ fontSize: 12, color: C.DIM, marginTop: 8 }}>{bulkFiles.length} file(s) ready</div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button style={sBtn('#334155')} onClick={closeModal} disabled={busy}>Cancel</button>
+              <button style={sBtn(C.PURPLE)} onClick={handleBulkUpload} disabled={bulkFiles.length === 0 || busy}>
+                {busy ? 'Uploading...' : `Upload ${bulkFiles.length} File${bulkFiles.length !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Shared modal header ──────────────────────────────────────────
+function ModalHeader({ title, subtitle, onClose }: { title: string; subtitle?: string | null; onClose: () => void }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+      <div>
+        <h2 style={{ margin: 0, fontSize: 18, color: C.GOLD }}>{title}</h2>
+        {subtitle && <p style={{ margin: '4px 0 0', color: C.DIM, fontSize: 13 }}>{subtitle}</p>}
+      </div>
+      <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: C.DIM, padding: 4, display: 'flex' }} aria-label="Close">
+        <X size={20} weight="bold" />
+      </button>
+    </div>
+  );
+}

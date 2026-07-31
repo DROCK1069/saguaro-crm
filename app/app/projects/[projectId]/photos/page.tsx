@@ -1,0 +1,554 @@
+'use client';
+import React, { useState, useEffect, useCallback } from 'react';
+import { humanError } from '@/lib/errors';
+import { useParams } from 'next/navigation';
+import { getAuthHeaders } from '@/lib/supabase-browser';
+import PhotoEditor from '../../../../../components/PhotoEditor';
+import { Camera, X, PencilSimple, Plus, Images, CalendarBlank, FolderSimple, WarningCircle, MagnifyingGlass } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+
+const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
+const GREEN='#1a8a4a',RED='#c03030';
+
+const ALBUMS=['General','Progress','Inspections','Closeout','Issues','Other'];
+const ALBUM_COLORS:Record<string,string>={
+  General:DIM,
+  Progress:'#FBBF24',
+  Inspections:GOLD,
+  Closeout:GREEN,
+  Issues:RED,
+  Other:'#a78bfa',
+};
+
+const inp:React.CSSProperties={
+  width:'100%',padding:'9px 12px',background:'#1c1c1e',
+  border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,
+  fontSize:13,outline:'none',boxSizing:'border-box',
+};
+
+const EMPTY_FORM={
+  title:'',description:'',album:'General',location:'',
+  taken_at:'',url:'',taken_by:'',tags:'',
+};
+
+function Pill({label,color}:{label:string;color:string}){
+  return(
+    <span style={{fontSize:10,fontWeight:700,padding:'3px 9px',borderRadius:20,
+      background:`${color}22`,color,textTransform:'uppercase',letterSpacing:.3}}>
+      {label}
+    </span>
+  );
+}
+
+function FieldLabel({label}:{label:string}){
+  return(
+    <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
+      textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}</label>
+  );
+}
+
+function InfoCard({label,value}:{label:string;value:string|undefined|null}){
+  if(!value) return null;
+  return(
+    <div style={{background:'#141416',border:`1px solid ${BORDER}`,borderRadius:8,padding:'10px 12px'}}>
+      <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:4}}>{label}</div>
+      <div style={{fontSize:13,color:TEXT}}>{value}</div>
+    </div>
+  );
+}
+
+export default function PhotosPage(){
+  const {projectId}=useParams() as {projectId:string};
+  const [photos,setPhotos]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [loadError,setLoadError]=useState('');
+  const [selected,setSelected]=useState<any>(null);
+  const [mode,setMode]=useState<'view'|'edit'|'create'|null>(null);
+  const [form,setForm]=useState({...EMPTY_FORM});
+  const [saving,setSaving]=useState(false);
+  const [deleting,setDeleting]=useState(false);
+  const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
+  const [search,setSearch]=useState('');
+  const [filterAlbum,setFilterAlbum]=useState('All');
+  const [editingPhoto, setEditingPhoto] = useState<{id:string;url:string}|null>(null);
+
+  const showToast=(msg:string,type:'success'|'error'='success')=>{
+    setToast({msg,type}); setTimeout(()=>setToast(null),4000);
+  };
+
+  const load=useCallback(async()=>{
+    setLoading(true);
+    try{
+      setLoadError('');
+      const h=await getAuthHeaders();
+      const r=await fetch(`/api/photos/list?projectId=${projectId}`,{headers:h});
+      if (!r.ok) throw new Error('Failed to load data');
+      const d=await r.json();
+      setPhotos(d.photos||[]);
+    }catch{setPhotos([]);setLoadError('Failed to load. Please try again.');}
+    finally{setLoading(false);}
+  },[projectId]);
+
+  useEffect(()=>{load();},[load]);
+
+  function openCreate(){setForm({...EMPTY_FORM});setMode('create');setSelected(null);}
+  function openEdit(photo:any){
+    const tagsStr=Array.isArray(photo.tags)?photo.tags.join(', '):(photo.tags||'');
+    setForm({
+      title:photo.title||'',
+      description:photo.description||'',
+      album:photo.album||'General',
+      location:photo.location||'',
+      taken_at:photo.taken_at?photo.taken_at.substring(0,10):'',
+      url:photo.url||'',
+      taken_by:photo.taken_by||'',
+      tags:tagsStr,
+    });
+    setSelected(photo);setMode('edit');
+  }
+  function viewPhoto(photo:any){setSelected(photo);setMode('view');}
+  function closePanel(){setSelected(null);setMode(null);}
+
+  async function save(){
+    if(!form.title.trim()){showToast('Title is required','error');return;}
+    setSaving(true);
+    try{
+      const h=await getAuthHeaders();
+      const tagsArray=form.tags.split(',').map((t:string)=>t.trim()).filter(Boolean);
+      const payload={
+        ...form,
+        tags:tagsArray,
+        taken_at:form.taken_at?new Date(form.taken_at+'T12:00:00').toISOString():new Date().toISOString(),
+      };
+      if(mode==='create'){
+        const r=await fetch('/api/photos/create',{
+          method:'POST',
+          headers:{...h,'Content-Type':'application/json'},
+          body:JSON.stringify({...payload,projectId}),
+        });
+        if(!r.ok) throw new Error(await r.text());
+        showToast('Photo added');
+      }else if(mode==='edit'&&selected){
+        const r=await fetch(`/api/photos/${selected.id}`,{
+          method:'PUT',
+          headers:{...h,'Content-Type':'application/json'},
+          body:JSON.stringify(payload),
+        });
+        if(!r.ok) throw new Error(await r.text());
+        showToast('Photo updated');
+      }
+      await load();closePanel();
+    }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
+    finally{setSaving(false);}
+  }
+
+  async function deletePhoto(photo:any){
+    if(!confirm(`Delete "${photo.title}"?`)) return;
+    setDeleting(true);
+    try{
+      const h=await getAuthHeaders();
+      const dr=await fetch(`/api/photos/${photo.id}`,{method:'DELETE',headers:h});
+      if (!dr.ok) throw new Error('Delete failed');
+      showToast('Photo deleted');closePanel();await load();
+    }catch{showToast('Delete failed','error');}
+    finally{setDeleting(false);}
+  }
+
+  const today=new Date();
+  const thisMonth=photos.filter(p=>{
+    if(!p.taken_at) return false;
+    const d=new Date(p.taken_at);
+    return d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth();
+  }).length;
+  const albums=Array.from(new Set(photos.map((p:any)=>p.album).filter(Boolean)));
+  const issueCount=photos.filter((p:any)=>p.album==='Issues'||(Array.isArray(p.tags)&&p.tags.some((t:string)=>t.toLowerCase().includes('issue')))).length;
+
+  const filtered=photos.filter((p:any)=>{
+    const ms=!search||(p.title||'').toLowerCase().includes(search.toLowerCase())
+      ||(Array.isArray(p.tags)&&p.tags.some((t:string)=>t.toLowerCase().includes(search.toLowerCase())));
+    const ma=filterAlbum==='All'||p.album===filterAlbum;
+    return ms&&ma;
+  });
+
+  // Group by album for display
+  const grouped:Record<string,any[]>={};
+  if(filterAlbum==='All'){
+    for(const p of filtered){
+      const al=p.album||'General';
+      if(!grouped[al]) grouped[al]=[];
+      grouped[al].push(p);
+    }
+  }
+
+  function fmtDate(iso:string|null|undefined){
+    if(!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+
+  return(
+    <div style={{display:'flex',height:'100%',minHeight:0,position:'relative',background:DARK}}>
+      {toast&&(
+        <div style={{position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',zIndex:99999,
+          padding:'12px 20px',borderRadius:8,color:'#fff',fontWeight:700,fontSize:14,pointerEvents:'none',
+          background:toast.type==='success'?'rgba(26,138,74,.92)':'rgba(192,48,48,.92)'}}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Photo Editor Modal */}
+      {editingPhoto && (
+        <PhotoEditor
+          src={editingPhoto.url}
+          photoId={editingPhoto.id}
+          onClose={() => setEditingPhoto(null)}
+          onSave={async (blob, id) => {
+            try {
+              const formData = new FormData();
+              formData.append('file', blob, 'edited.jpg');
+              const headers = await getAuthHeaders();
+              const r = await fetch(`/api/photos/${id}/upload`, { method: 'POST', headers, body: formData });
+              if (r.ok) { showToast('Photo saved'); load(); }
+              else showToast('Save failed', 'error');
+            } catch { showToast('Save failed', 'error'); }
+            setEditingPhoto(null);
+          }}
+          onDelete={async (id) => {
+            try {
+              const headers = await getAuthHeaders();
+              const r = await fetch(`/api/photos/${id}`, { method: 'DELETE', headers: { ...headers, 'Content-Type': 'application/json' } });
+              if (!r.ok) throw new Error('delete failed');
+              setPhotos(prev => prev.filter(p => p.id !== id));
+              showToast('Photo deleted');
+            } catch { showToast('Delete failed', 'error'); }
+            setEditingPhoto(null);
+          }}
+        />
+      )}
+
+      {/* Main */}
+      <div style={{flex:1,overflow:'auto',minWidth:0}}>
+        <PremiumSurface maxWidth={1600}>
+          {/* Header */}
+          <ModuleHero
+            eyebrow="PHOTOS"
+            eyebrowIcon={<Camera size={13} weight="fill" color="#F59E0B" />}
+            title="Site"
+            accent="Photos"
+            subtitle="Site progress photos and documentation."
+            actions={
+              <button onClick={openCreate} style={goldButtonStyle} className="pmBtn">
+                <Plus size={15} weight="bold" /> Add Photo
+              </button>
+            }
+          />
+
+          {/* KPIs */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
+            <StatCard icon={<Images size={19} weight="duotone" color="#FBBF24" />} label="Total Photos" value={String(photos.length)} accent="#FBBF24" sub="all albums" delay={0.02} />
+            <StatCard icon={<CalendarBlank size={19} weight="duotone" color={GOLD} />} label="This Month" value={String(thisMonth)} accent={GOLD} sub="added this month" delay={0.06} />
+            <StatCard icon={<FolderSimple size={19} weight="duotone" color={GREEN} />} label="Albums" value={String(albums.length||ALBUMS.length)} accent={GREEN} sub="in use" delay={0.10} />
+            <StatCard icon={<WarningCircle size={19} weight="duotone" color={RED} />} label="Issues Tagged" value={String(issueCount)} accent={RED} sub="flagged" delay={0.14} />
+          </div>
+
+          {/* Filters */}
+          <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap'}}>
+            <div style={{position:'relative',flex:1,minWidth:200}}>
+              <MagnifyingGlass size={15} weight="bold" color={DIM} style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}} />
+              <input value={search} onChange={e=>setSearch(e.target.value)}
+                placeholder="Search by title or tag..."
+                style={{width:'100%',padding:'10px 14px 10px 38px',background:'rgba(255,255,255,0.04)',
+                  border:'1px solid rgba(255,255,255,0.10)',borderRadius:10,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box'}}/>
+            </div>
+            <select value={filterAlbum} onChange={e=>setFilterAlbum(e.target.value)}
+              style={{padding:'10px 14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.10)',
+                borderRadius:10,color:filterAlbum!=='All'?TEXT:DIM,fontSize:13,outline:'none'}}>
+              <option value="All">All Albums</option>
+              {ALBUMS.map(a=><option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+
+          {/* Gallery */}
+          <SectionCard
+            title="Gallery"
+            icon={<Images size={17} weight="duotone" color={GOLD} />}
+            action={<span style={{fontSize:12,color:'rgba(255,255,255,0.62)',fontWeight:600}}>{filtered.length} {filtered.length===1?'photo':'photos'}</span>}
+          >
+            {loading&&<div style={{padding:40,textAlign:'center',color:DIM}}>Loading photos...</div>}
+
+            {!loading&&loadError&&(
+              <PremiumEmpty
+                tone="error"
+                icon={<WarningCircle size={30} weight="duotone" color={RED} />}
+                title="Couldn't load photos"
+                description={loadError}
+                action={<button onClick={()=>load()} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
+                compact
+              />
+            )}
+
+            {!loading&&!loadError&&filtered.length===0&&(
+              <PremiumEmpty
+                icon={<Camera size={30} weight="duotone" color={GOLD} />}
+                title={photos.length===0?'No photos yet':'No photos match your filters'}
+                description={photos.length===0?'Add site photos to document project progress.':'Try adjusting your search or album filter.'}
+                action={photos.length===0?(
+                  <button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add First Photo</button>
+                ):undefined}
+              />
+            )}
+
+            {/* Album-grouped grid */}
+            {!loading&&!loadError&&filtered.length>0&&filterAlbum==='All'&&(
+              <div style={{display:'flex',flexDirection:'column',gap:28}}>
+                {Object.entries(grouped).map(([album,albumPhotos])=>(
+                  <div key={album}>
+                    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+                      <span style={{fontSize:13,fontWeight:700,color:ALBUM_COLORS[album]||DIM}}>{album}</span>
+                      <span style={{fontSize:11,color:DIM}}>({albumPhotos.length})</span>
+                      <div style={{flex:1,height:1,background:BORDER}}/>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
+                      {albumPhotos.map((photo:any)=>(
+                        <PhotoCard key={photo.id} photo={photo} selected={selected?.id===photo.id&&mode==='view'}
+                          onClick={()=>viewPhoto(photo)} albumColor={ALBUM_COLORS[photo.album]||DIM} onEdit={(id,url)=>setEditingPhoto({id,url})}/>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Flat grid when filtered by album */}
+            {!loading&&!loadError&&filtered.length>0&&filterAlbum!=='All'&&(
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
+                {filtered.map((photo:any)=>(
+                  <PhotoCard key={photo.id} photo={photo} selected={selected?.id===photo.id&&mode==='view'}
+                    onClick={()=>viewPhoto(photo)} albumColor={ALBUM_COLORS[photo.album]||DIM} onEdit={(id,url)=>setEditingPhoto({id,url})}/>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </PremiumSurface>
+      </div>
+
+      {/* Side Panel */}
+      {mode!==null&&(
+        <div style={{width:460,borderLeft:`1px solid ${BORDER}`,background:DARK,
+          overflow:'auto',flexShrink:0,display:'flex',flexDirection:'column'}}>
+          <div style={{padding:'16px 20px',borderBottom:`1px solid ${BORDER}`,
+            display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontWeight:800,fontSize:15,color:TEXT}}>
+              {mode==='create'?'Add Photo':mode==='edit'?'Edit Photo':'Photo Detail'}
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              {mode==='view'&&selected&&(
+                <>
+                  <button onClick={()=>openEdit(selected)}
+                    style={{padding:'6px 14px',background:'rgba(245,158,11,.1)',
+                      border:'1px solid rgba(245,158,11,.3)',borderRadius:6,
+                      color:'#FBBF24',fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                    Edit
+                  </button>
+                  <button onClick={()=>deletePhoto(selected)} disabled={deleting}
+                    style={{padding:'6px 14px',background:'rgba(192,48,48,.1)',
+                      border:`1px solid ${RED}44`,borderRadius:6,
+                      color:RED,fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                    {deleting?'...':'Delete'}
+                  </button>
+                </>
+              )}
+              <button onClick={closePanel}
+                style={{padding:'6px 10px',background:'rgba(143,163,192,.1)',
+                  border:`1px solid ${BORDER}`,borderRadius:6,color:DIM,fontSize:12,cursor:'pointer',display:'inline-flex',alignItems:'center'}}>
+                <X size={14} weight="regular" color={DIM} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{flex:1,overflow:'auto',padding:20}}>
+            {(mode==='create'||mode==='edit')?(
+              <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                <div>
+                  <FieldLabel label="Title *"/>
+                  <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}
+                    style={inp} placeholder="e.g. Foundation pour complete"/>
+                </div>
+                <div>
+                  <FieldLabel label="Album"/>
+                  <select value={form.album} onChange={e=>setForm(f=>({...f,album:e.target.value}))}
+                    style={{...inp,padding:'9px 10px'}}>
+                    {ALBUMS.map(a=><option key={a} value={a}>{a}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel label="Description"/>
+                  <textarea value={form.description}
+                    onChange={e=>setForm(f=>({...f,description:e.target.value}))}
+                    rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}
+                    placeholder="What does this photo show?"/>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                  <div>
+                    <FieldLabel label="Location"/>
+                    <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))}
+                      style={inp} placeholder="e.g. Level 2, North"/>
+                  </div>
+                  <div>
+                    <FieldLabel label="Date Taken"/>
+                    <input type="date" value={form.taken_at}
+                      onChange={e=>setForm(f=>({...f,taken_at:e.target.value}))}
+                      style={inp}/>
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel label="Photo URL"/>
+                  <input value={form.url} onChange={e=>setForm(f=>({...f,url:e.target.value}))}
+                    style={inp} placeholder="https://..."/>
+                </div>
+                <div>
+                  <FieldLabel label="Taken By"/>
+                  <input value={form.taken_by} onChange={e=>setForm(f=>({...f,taken_by:e.target.value}))}
+                    style={inp} placeholder="Name or initials"/>
+                </div>
+                <div>
+                  <FieldLabel label="Tags (comma-separated)"/>
+                  <input value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))}
+                    style={inp} placeholder="e.g. concrete, footing, issue"/>
+                </div>
+                <div style={{display:'flex',gap:10,paddingTop:4}}>
+                  <button onClick={save} disabled={saving} className="pmBtn"
+                    style={{...goldButtonStyle,flex:1,opacity:saving?0.6:1}}>
+                    {saving?'Saving...':mode==='create'?'Add Photo':'Save Changes'}
+                  </button>
+                  <button onClick={closePanel} className="pmBtn"
+                    style={ghostButtonStyle}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ):selected?(
+              <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                {/* Large image */}
+                {selected.url?(
+                  <div style={{borderRadius:10,overflow:'hidden',border:`1px solid ${BORDER}`}}>
+                    <img src={selected.url} alt={selected.title}
+                      style={{width:'100%',maxHeight:280,objectFit:'cover',display:'block'}}
+                      onError={e=>{(e.target as HTMLImageElement).style.display='none';}}/>
+                  </div>
+                ):(
+                  <div style={{height:160,background:RAISED,borderRadius:10,border:`1px solid ${BORDER}`,
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    color:DIM,fontSize:13}}>No image URL</div>
+                )}
+
+                {/* Title + album */}
+                <div>
+                  <div style={{fontSize:16,fontWeight:800,color:TEXT,marginBottom:8}}>{selected.title}</div>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    <Pill label={selected.album||'General'} color={ALBUM_COLORS[selected.album]||DIM}/>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selected.description&&(
+                  <div style={{background:'#141416',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6}}>Description</div>
+                    <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.description}</div>
+                  </div>
+                )}
+
+                {/* Metadata grid */}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  <InfoCard label="Date Taken" value={fmtDate(selected.taken_at)}/>
+                  <InfoCard label="Location" value={selected.location}/>
+                  <InfoCard label="Taken By" value={selected.taken_by}/>
+                </div>
+
+                {/* Tags */}
+                {Array.isArray(selected.tags)&&selected.tags.length>0&&(
+                  <div style={{background:'#141416',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>Tags</div>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                      {selected.tags.map((tag:string)=>(
+                        <span key={tag} style={{padding:'3px 10px',borderRadius:20,background:`${GOLD}22`,
+                          color:GOLD,fontSize:11,fontWeight:600}}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* URL link */}
+                {selected.url&&(
+                  <a href={selected.url} target="_blank" rel="noreferrer"
+                    style={{display:'block',padding:'10px 14px',background:'rgba(245,158,11,.1)',
+                      border:'1px solid rgba(245,158,11,.3)',borderRadius:8,
+                      color:'#FBBF24',fontSize:13,fontWeight:700,textDecoration:'none',textAlign:'center'}}>
+                    View Full Image
+                  </a>
+                )}
+              </div>
+            ):null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PhotoCard({photo,selected,onClick,albumColor,onEdit}:{
+  photo:any;selected:boolean;onClick:()=>void;albumColor:string;onEdit?:(id:string,url:string)=>void;
+}){
+  const BORDER_C='rgba(255,255,255,0.12)';
+  const RAISED_C='#141416';
+  const DIM_C='#CBD5E1';
+  const TEXT_C='#FFFFFF';
+  return(
+    <div onClick={onClick}
+      style={{background:selected?'rgba(245, 158, 11,.07)':RAISED_C,
+        border:`1px solid ${selected?'#F59E0B':BORDER_C}`,borderRadius:10,
+        overflow:'hidden',cursor:'pointer',transition:'border-color .15s'}}
+      onMouseEnter={e=>{if(!selected)e.currentTarget.style.borderColor='rgba(245, 158, 11,.4)';}}
+      onMouseLeave={e=>{if(!selected)e.currentTarget.style.borderColor=BORDER_C;}}>
+      {photo.url?(
+        <img src={photo.url} alt={photo.title}
+          style={{width:'100%',height:140,objectFit:'cover',display:'block'}}
+          onError={e=>{(e.target as HTMLImageElement).parentElement!.style.background='#1c1c1e';(e.target as HTMLImageElement).style.display='none';}}/>
+      ):(
+        <div style={{width:'100%',height:140,background:'#1c1c1e',display:'flex',
+          alignItems:'center',justifyContent:'center',color:DIM_C,fontSize:12}}>
+          No image
+        </div>
+      )}
+      <div style={{padding:'10px 12px'}}>
+        <div style={{fontWeight:700,fontSize:13,color:TEXT_C,marginBottom:6,
+          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+          {photo.title||'Untitled'}
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,
+            background:`${albumColor}22`,color:albumColor,textTransform:'uppercase'}}>
+            {photo.album||'General'}
+          </span>
+          {photo.taken_at&&(
+            <span style={{fontSize:11,color:DIM_C}}>
+              {new Date(photo.taken_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+            </span>
+          )}
+        </div>
+        {photo.location&&(
+          <div style={{fontSize:11,color:DIM_C,marginTop:5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+            {photo.location}
+          </div>
+        )}
+        {photo.url && onEdit && (
+          <button onClick={(e)=>{e.stopPropagation();onEdit(photo.id,photo.url);}}
+            style={{marginTop:8,width:'100%',padding:'6px',background:'rgba(245, 158, 11,.08)',border:`1px solid rgba(245, 158, 11,.2)`,borderRadius:6,color:'#F59E0B',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
+            <PencilSimple size={13} weight="regular" color="#F59E0B" /> Edit / Crop / Rotate
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

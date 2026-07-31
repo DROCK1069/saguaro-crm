@@ -1,0 +1,105 @@
+'use client';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useLongLead } from '@/lib/hooks/useFranchise';
+import { computeLongLead, num, type Severity } from '@/lib/franchise';
+import { C, font, fmtDate, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, Tile, SevBadge, EmptyState } from '@/components/franchise/kit';
+import { Truck, Wrench, Package } from '@phosphor-icons/react';
+
+const todayMs = () => Date.parse(new Date().toISOString().slice(0, 10));
+const bestDate = (it: any) => it.expected_delivery_date || it.delivery_appointment || it.needed_by_date || null;
+const daysOut = (d: any) => { if (!d) return null; const t = Date.parse(String(d)); return isNaN(t) ? null : Math.round((t - todayMs()) / 86400000); };
+const isInstall = (desc: string) => /full-?swing|simulat|launch monitor|projector|\bav\b|screen|turf|signage|hvac|rtu|switchgear|elevator/i.test(String(desc || ''));
+
+const BUCKETS = [
+  { key: 'delivered', label: 'Delivered', color: C.green },
+  { key: 'soon', label: 'Next 30 days', color: '#FF9500' },
+  { key: 'mid', label: '30–90 days', color: C.blue },
+  { key: 'later', label: 'Beyond 90 days', color: C.dim },
+];
+
+export default function VendorsPage() {
+  const { ready, loading: gateLoading } = useFranchiseGate();
+  const { items, loading } = useLongLead();
+
+  const rows = useMemo(() => (items as any[]).map((it) => {
+    const h = computeLongLead(it);
+    const bd = bestDate(it);
+    const d = daysOut(bd);
+    let bucket: string;
+    if (h.state === 'delivered') bucket = 'delivered';
+    else if (d != null && d <= 30) bucket = 'soon';
+    else if (d != null && d <= 90) bucket = 'mid';
+    else bucket = 'later';
+    return { it, h, bd, d, bucket };
+  }).sort((a, b) => (a.d ?? 99999) - (b.d ?? 99999)), [items]);
+
+  const summary = useMemo(() => {
+    const upcoming = rows.filter((r) => r.bucket === 'soon' && r.h.state !== 'delivered').length;
+    const atRisk = rows.filter((r) => r.h.severity !== 'green').length;
+    const delivered = rows.filter((r) => r.h.state === 'delivered').length;
+    const value = rows.reduce((s, r) => s + (num(r.it.unit_cost) ?? 0) * (num(r.it.quantity) ?? 1), 0);
+    return { total: rows.length, upcoming, atRisk, delivered, value };
+  }, [rows]);
+
+  if (gateLoading) return <GateLoading />;
+  if (!ready) return null;
+
+  return (
+    <div style={{ padding: '28px 24px 60px', maxWidth: 1200, margin: '0 auto', fontFamily: font, color: C.text }}>
+      <PageHeader title="Vendor & Install Schedule" subtitle="Every vendor delivery and equipment install across all sites, on one timeline — coordinate Full-Swing, AV, and long-lead so nothing lands late." />
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+        <Tile label="Scheduled Items" value={summary.total} />
+        <Tile label="Next 30 Days" value={summary.upcoming} color={C.blue} />
+        <Tile label="At Risk" value={summary.atRisk} color={summary.atRisk ? C.red : C.green} />
+        <Tile label="Delivered" value={summary.delivered} color={C.green} />
+        <Tile label="Committed Value" value={fmtMoneyShort(summary.value)} />
+      </div>
+
+      {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
+      : rows.length === 0 ? (
+        <EmptyState icon={<Truck size={34} weight="regular" color={C.dim} />} title="No vendor deliveries scheduled" body="Long-lead procurement and equipment installs (Full-Swing, AV, switchgear) appear here as a coordinated cross-site timeline." />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          {BUCKETS.map((b) => {
+            const list = rows.filter((r) => r.bucket === b.key);
+            if (!list.length) return null;
+            return (
+              <div key={b.key}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 3, background: b.color }} />
+                  <span style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>{b.label}</span>
+                  <span style={{ fontSize: 12, color: C.dim }}>{list.length}</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+                  {list.map(({ it, h, bd }) => (
+                    <div key={it.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${h.severity === 'red' ? C.red : h.severity === 'yellow' ? C.yellow : C.green}`, borderRadius: 12, padding: '13px 15px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 800 }}>{isInstall(it.item_description) ? <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 6 }}><Wrench size={16} weight="regular" color={C.text} /></span> : <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 6 }}><Package size={16} weight="regular" color={C.text} /></span>}{it.item_description}</div>
+                          <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>
+                            {it.project_id ? <Link href={`/app/projects/${it.project_id}`} style={{ color: C.blue, textDecoration: 'none' }}>{it.project_name || 'Site'}</Link> : 'Site'}
+                            {it.po_number ? ` · PO ${it.po_number}` : ''}
+                          </div>
+                        </div>
+                        <SevBadge sev={h.severity as Severity} label={h.state === 'delivered' ? 'Delivered' : h.label} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 14, marginTop: 11, fontSize: 12, color: C.dim, flexWrap: 'wrap' }}>
+                        <span><b style={{ color: C.text }}>Target:</b> {fmtDate(bd)}</span>
+                        <span>Need: {fmtDate(it.needed_by_date)}</span>
+                        {it.lead_time_days != null && <span>Lead {it.lead_time_days}d</span>}
+                        {it.quantity != null && <span>{num(it.quantity)}{it.unit ? ` ${it.unit}` : ''}</span>}
+                        <span style={{ textTransform: 'capitalize' }}>{it.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

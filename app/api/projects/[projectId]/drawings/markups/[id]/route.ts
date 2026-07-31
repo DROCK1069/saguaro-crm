@@ -1,0 +1,99 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+import type { Database } from '@/lib/database.types';
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ projectId: string; id: string }> }) {
+  const { projectId, id } = await params;
+  const g = await requirePermission(req, 'Documents', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+
+  try {
+    const body = await req.json();
+    const supabase = createServerClient();
+
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (body.markup_data !== undefined) updates.markup_data = body.markup_data;
+    if (body.title !== undefined) updates.title = body.title;
+    if (body.visibility !== undefined) updates.visibility = body.visibility;
+    if (body.color !== undefined) updates.color = body.color;
+    if (body.line_width !== undefined) updates.line_width = body.line_width;
+
+    // Tenant-scope the write — service-role bypasses RLS; project_id from the URL
+    // is attacker-controlled, so it alone does NOT prove tenant ownership.
+    const { data, error } = await supabase
+      .from('drawing_markups')
+      .update(updates)
+      .eq('id', id)
+      .eq('project_id', projectId)
+      .eq('tenant_id', user.tenantId)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: 'Failed to update markup' }, { status: 500 });
+    return NextResponse.json({ markup: data });
+  } catch {
+    return NextResponse.json({ error: 'Failed to update markup' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ projectId: string; id: string }> }) {
+  const { projectId, id } = await params;
+  const g = await requirePermission(req, 'Documents', 'Full');
+  if (!g.ok) return g.res;
+  const user = g.user;
+
+  try {
+    const supabase = createServerClient();
+
+    // Tenant-scope the delete — service-role bypasses RLS; project_id from the URL
+    // is attacker-controlled, so it alone does NOT prove tenant ownership.
+    const { error } = await supabase
+      .from('drawing_markups')
+      .delete()
+      .eq('id', id)
+      .eq('project_id', projectId)
+      .eq('tenant_id', user.tenantId);
+
+    if (error) return NextResponse.json({ error: 'Failed to delete markup' }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Failed to delete markup' }, { status: 500 });
+  }
+}
+
+/** POST a comment on a markup */
+export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string; id: string }> }) {
+  const { id } = await params;
+  const g = await requirePermission(req, 'Documents', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+
+  try {
+    const body = await req.json();
+    const supabase = createServerClient();
+
+    if (!body.comment?.trim()) {
+      return NextResponse.json({ error: 'comment is required' }, { status: 400 });
+    }
+
+    const row = {
+      markup_id: id,
+      comment: body.comment.trim(),
+      author: user.email,
+      author_name: body.author_name || user.email,
+    };
+
+    const { data, error } = await supabase
+      .from('drawing_markup_comments')
+      .insert(row as unknown as Database['public']['Tables']['drawing_markup_comments']['Insert'])
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ comment: data });
+  } catch {
+    return NextResponse.json({ error: 'Failed to add comment' }, { status: 500 });
+  }
+}

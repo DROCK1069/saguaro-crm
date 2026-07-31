@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+import type { Database } from '@/lib/database.types';
+import { onRFICreated } from '@/lib/triggers';
+
+export async function POST(req: NextRequest) {
+  const g = await requirePermission(req, 'RFIs', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+
+  let body: Record<string, unknown> = {};
+  try { body = await req.json(); } catch { /* empty body */ }
+
+  try {
+    const db = createServerClient();
+
+    const { count: rawCount } = await db
+      .from('rfis')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', user.tenantId);
+
+    const rfi_number = `RFI-${String((rawCount || 0) + 1).padStart(3, '0')}`;
+
+    // Accept both camelCase and snake_case from the client; default optionals to null.
+    const priority      = (body.priority as string) || 'medium';
+    const assignedToName = body.assignedToName || body.assigned_to_name || null;
+    const costImpactRaw  = body.costImpact ?? body.cost_impact;
+    const schedImpactRaw = body.scheduleImpactDays ?? body.schedule_impact_days;
+
+    const row = {
+      tenant_id:        user.tenantId,
+      project_id:       body.projectId   || body.project_id  || null,
+      rfi_number,
+      subject:          body.subject     || '',
+      question:         body.question    || body.description  || '',
+      priority,
+      spec_section:     body.specSection      || body.spec_section      || null,
+      drawing_reference: body.drawingReference || body.drawing_reference || null,
+      due_date:         body.dueDate     || body.due_date     || null,
+      assigned_to_name: assignedToName,
+      ball_in_court:    assignedToName,
+      is_urgent:        (body.isUrgent ?? body.is_urgent) === true,
+      cost_impact:
+        costImpactRaw === undefined || costImpactRaw === null || costImpactRaw === ''
+          ? null
+          : Number(costImpactRaw),
+      cost_impact_direction:
+        body.costImpactDirection || body.cost_impact_direction || null,
+      schedule_impact_days:
+        schedImpactRaw === undefined || schedImpactRaw === null || schedImpactRaw === ''
+          ? null
+          : Number(schedImpactRaw),
+      notes:            body.notes || null,
+      status:           'open',
+      submitted_by:     user.email       || 'Field User',
+    };
+
+    const { data, error } = await db
+      .from('rfis')
+      .insert(row as Database['public']['Tables']['rfis']['Insert'])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Fire the rfi.submitted lifecycle: architect email + in-app notification +
+    // outbound webhook fan-out. Non-blocking — never fail the create on this.
+    const rfiId = (data as { id?: string } | null)?.id;
+    if (rfiId) onRFICreated(rfiId).catch(console.error);
+
+    return NextResponse.json({ success: true, rfi: data });
+  } catch (err: unknown) {
+    const msg = 'Internal server error';
+    console.error('[rfis/create] error:', msg);
+    return NextResponse.json(
+      { error: `[rfis/create] Database error: ${msg}` },
+      { status: 500 }
+    );
+  }
+}

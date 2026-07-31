@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+
+export async function POST(req: NextRequest) {
+  const g = await requirePermission(req, 'Projects', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+  try {
+    const body = await req.json();
+    const projectId = body.project_id || body.projectId;
+    const name = body.name;
+    if (!projectId) {
+      return NextResponse.json({ error: 'project_id is required' }, { status: 400 });
+    }
+    if (!name) {
+      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    }
+    const db = createServerClient();
+    const { data: pkg, error } = await db.from('bid_packages').insert({
+      tenant_id: user.tenantId,
+      created_by: user.id,
+      project_id: projectId,
+      name,
+      trade: body.trade || null,
+      description: body.description || null,
+      scope_of_work: body.scope_of_work || body.scopeOfWork || null,
+      scope_summary: body.scope_summary || body.scopeSummary || null,
+      scope_narrative: body.scope_narrative || body.scopeNarrative || null,
+      due_date: body.due_date || body.dueDate || null,
+      pre_bid_date: body.pre_bid_date || body.preBidDate || null,
+      status: body.status || 'open',
+      budget_estimate: body.budget_estimate || body.budgetEstimate || null,
+      notes: body.notes || null,
+      bid_instructions: body.bid_instructions || body.bidInstructions || null,
+      csi_codes: body.csi_codes || body.csiCodes || [],
+      is_public_project: body.is_public_project || body.isPublicProject || false,
+      requires_bond: body.requires_bond || body.requiresBond || false,
+      insurance_requirements: body.insurance_requirements || body.insuranceRequirements || null,
+    }).select().single();
+    if (error) throw error;
+
+    if (body.lineItems && Array.isArray(body.lineItems) && body.lineItems.length > 0) {
+      await db.from('bid_package_items').insert(
+        body.lineItems.map((item: Record<string, unknown>) => ({
+          tenant_id: user.tenantId,
+          bid_package_id: (pkg as Record<string, unknown>).id,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unitPrice || item.unit_price,
+          total_amount: item.totalAmount || item.total_amount,
+          csi_code: item.csiCode || item.csi_code,
+          notes: item.notes,
+        }))
+      );
+    }
+
+    return NextResponse.json({ success: true, bidPackage: pkg });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

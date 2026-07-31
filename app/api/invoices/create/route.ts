@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+
+export async function POST(req: NextRequest) {
+  const g = await requirePermission(req, 'Budget', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+
+  try {
+    const body = await req.json().catch(() => ({}));
+
+    if (!body.project_id || !body.vendor_name) {
+      return NextResponse.json({ error: 'project_id and vendor_name are required' }, { status: 400 });
+    }
+
+    const db = createServerClient();
+
+    const { data, error } = await db
+      .from('invoices')
+      .insert({
+        tenant_id: user.tenantId,
+        created_by: user.id,
+        project_id: body.project_id,
+        vendor_name: body.vendor_name,
+        invoice_number: body.invoice_number || null,
+        vendor_email: body.vendor_email || null,
+        description: body.description || null,
+        category: body.category || null,
+        cost_code: body.cost_code || null,
+        amount: body.amount || null,
+        tax: body.tax || null,
+        total: body.total || null,
+        due_date: body.due_date || null,
+        status: body.status || null,
+        notes: body.notes || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ invoice: data });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

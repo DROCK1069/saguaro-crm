@@ -1,0 +1,65 @@
+/** @type {import('next').NextConfig} */
+
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : [];
+
+const nextConfig = {
+  reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  experimental: {
+    largePageDataBytes: 10 * 1024 * 1024,
+    // pdfjs-dist's legacy build is a Node-native lib (used server-side by
+    // /api/heatmap/parse-vector). Keep it external so it's require()'d at
+    // runtime instead of bundled — avoids webpack mangling its in-process
+    // worker + dynamic imports. Client-side pdfjs usage is unaffected.
+    serverComponentsExternalPackages: ['pdfjs-dist'],
+  },
+  compress: true,
+  generateEtags: true,
+  swcMinify: true,
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS[0] : '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization' },
+        ],
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      // The web PWA "field app" page is retired in favor of the one native iOS app
+      // (TestFlight). Point the old marketing URLs at the canonical app page.
+      { source: '/field-app', destination: '/get-the-app', permanent: false },
+      { source: '/field/install', destination: '/get-the-app', permanent: false },
+      // AI Design Studio retired — not an offering. Send any old/indexed links home.
+      { source: '/design', destination: '/', permanent: false },
+      { source: '/design/:path*', destination: '/', permanent: false },
+    ];
+  },
+};
+
+module.exports = nextConfig;

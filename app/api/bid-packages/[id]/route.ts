@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUser(req);
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const db = createServerClient();
+    const [{ data: pkg }, { data: items }, { data: invites }, { data: submissions }] = await Promise.all([
+      db.from('bid_packages').select('*, projects(*)').eq('id', id).eq('tenant_id', user.tenantId).single(),
+      db.from('bid_package_items').select('*').eq('bid_package_id', id).order('id'),
+      db.from('bid_package_invites').select('*').eq('bid_package_id', id).order('created_at', { ascending: false }),
+      db.from('bid_submissions').select('*').eq('bid_package_id', id).order('base_amount'),
+    ]);
+    if (!pkg) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ bidPackage: pkg, items: items || [], invites: invites || [], submissions: submissions || [] });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const g = await requirePermission(req, 'Projects', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+  try {
+    const body = await req.json();
+    const db = createServerClient();
+    const allowed = [
+      'name', 'trade', 'description', 'scope_of_work', 'scope_summary', 'scope_narrative',
+      'due_date', 'pre_bid_date', 'status', 'budget_estimate', 'notes',
+      'bid_instructions', 'is_public_project', 'requires_bond', 'insurance_requirements',
+      'csi_codes',
+    ];
+    const fields: Record<string, unknown> = {};
+    for (const k of allowed) {
+      if (body[k] !== undefined) fields[k] = body[k];
+    }
+    const { data, error } = await db
+      .from('bid_packages')
+      .update(fields)
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId)
+      .select()
+      .single();
+    if (error) throw error;
+    return NextResponse.json({ success: true, bidPackage: data });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  return PATCH(req, context);
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const g = await requirePermission(req, 'Projects', 'Full');
+  if (!g.ok) return g.res;
+  const user = g.user;
+  try {
+    const db = createServerClient();
+    const { error } = await db
+      .from('bid_packages')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', user.tenantId);
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

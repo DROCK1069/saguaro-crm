@@ -1,0 +1,181 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { requirePermission } from '@/lib/permissions';
+import { toCents, toDollars, sumCents, summarizeContract } from '@/lib/calc';
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
+  try {
+    const user = await getUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = createServerClient();
+    const [
+      { data: project },
+      { data: subs },
+      { data: payApps },
+      { data: changeOrders },
+      { data: rfis },
+      { data: team },
+      { data: budgetLines },
+      { data: punchItems },
+      { data: schedulePhases },
+      { data: alerts },
+    ] = await Promise.all([
+      db.from('projects').select('*').eq('id', projectId).eq('tenant_id', user.tenantId).single(),
+      db.from('contracts').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }),
+      db.from('pay_applications').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('app_number', { ascending: false }),
+      db.from('change_orders').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }),
+      db.from('rfis').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('created_at', { ascending: false }),
+      db.from('project_team').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId),
+      db.from('budget_lines').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('cost_code', { ascending: true }),
+      db.from('punch_list').select('id, status').eq('project_id', projectId).eq('tenant_id', user.tenantId),
+      db.from('schedule_phases').select('*').eq('project_id', projectId).eq('tenant_id', user.tenantId).order('start_date', { ascending: true }),
+      db.from('autopilot_alerts').select('id, alert_type, severity, body, status, created_at').eq('project_id', projectId).eq('tenant_id', user.tenantId).eq('status', 'active').order('created_at', { ascending: false }).limit(10),
+    ]);
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    const cos = (changeOrders || []) as any[];
+    const apps = (payApps || []) as any[];
+    const lines = (budgetLines || []) as any[];
+    const punch = (punchItems || []) as any[];
+    const p = project as any;
+
+    // Revised contract = original + APPROVED change orders only (exact cents).
+    // Original = first POSITIVE contract column (see project-report/route.ts):
+    // many projects leave contract_amount at 0 and carry the value elsewhere.
+    const contractSummary = summarizeContract(
+      toCents(p.original_contract_value || p.contract_value || p.original_contract || p.contract_amount || 0),
+      cos.map((co: any) => ({
+        id: String(co.id),
+        description: String(co.description ?? ''),
+        amount: toCents(co.amount || 0),
+        status: co.status,
+      })),
+    );
+    const contractSumToDate = toDollars(contractSummary.revisedContract);
+    const totalBilledToDate = apps.length > 0 ? toDollars(toCents(apps[0].total_completed_stored || 0)) : 0;
+
+    // Budget health aggregates — exact-cents sums, no float reduction.
+    const budgetHealth = {
+      originalBudget: toDollars(sumCents(lines.map((l: any) => toCents(l.original_budget || 0)))),
+      committedCost: toDollars(sumCents(lines.map((l: any) => toCents(l.committed || 0)))),
+      actualCost: toDollars(sumCents(lines.map((l: any) => toCents(l.actual || 0)))),
+      forecastCost: toDollars(sumCents(lines.map((l: any) => toCents(l.projected || l.original_budget || 0)))),
+      lineCount: lines.length,
+    };
+
+    // Punch list summary
+    const punchSummary = {
+      total: punch.length,
+      open: punch.filter((i: any) => i.status === 'open').length,
+      complete: punch.filter((i: any) => i.status === 'complete' || i.status === 'closed').length,
+    };
+
+    return NextResponse.json({
+      project: { ...p, contractSumToDate, totalBilledToDate },
+      subs: subs || [],
+      payApps: apps,
+      changeOrders: cos,
+      rfis: rfis || [],
+      team: team || [],
+      budgetLines: lines,
+      budgetHealth,
+      punchSummary,
+      schedulePhases: schedulePhases || [],
+      alerts: (alerts || []).map((a: any) => ({ ...a, title: a.alert_type, message: a.body })),
+    });
+  } catch {
+    return NextResponse.json({ error: 'Failed to load project' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
+  try {
+    const g = await requirePermission(req, 'Projects', 'Edit');
+    if (!g.ok) return g.res;
+    const user = g.user;
+    const body = await req.json();
+    const db = createServerClient();
+    const ALLOWED_PROJECT_COLUMNS = [
+      'name', 'address', 'type', 'contract_value', 'description', 'owner_name', 'owner_email',
+      'architect', 'architect_email', 'contract_type', 'retainage_pct', 'start_date', 'end_date',
+      'status', 'architect_entity', 'architect_license', 'gc_license', 'project_number', 'bid_date',
+      'substantial_completion', 'final_completion', 'contract_date', 'notice_to_proceed', 'bonded',
+      'prevailing_wage', 'county', 'state', 'zip', 'latitude', 'longitude', 'gc_name', 'gc_email',
+      'gc_phone', 'sub_name', 'sub_email', 'sub_phone', 'project_manager', 'superintendent', 'foreman',
+      'scope_of_work', 'divisions', 'tags', 'architect_name', 'architect_phone', 'architect_contact',
+      'engineer_name', 'engineer_email', 'engineer_phone', 'engineer_entity', 'inspector_name',
+      'inspector_email', 'inspector_phone', 'owner_phone', 'owner_entity', 'owner_address', 'gc_entity',
+      'gc_address', 'gc_license_number', 'gc_license_expiry', 'gc_insurance_expiry', 'sub_entity',
+      'sub_address', 'sub_license', 'pm_name', 'pm_email', 'pm_phone', 'super_name', 'super_email',
+      'super_phone', 'foreman_name', 'foreman_email', 'foreman_phone', 'bid_number', 'permit_number',
+      'permit_expiry', 'aia_project_number', 'federal_project_number', 'davis_bacon_wage_decision',
+      'liquidated_damages', 'liquidated_damages_per', 'mobilization_pct', 'stored_materials_allowed',
+      'certified_payroll_required', 'osha_required', 'leed_required', 'leed_level', 'insurance_required',
+      'performance_bond_required', 'payment_bond_required', 'bond_amount', 'work_hours_start',
+      'work_hours_end', 'work_days', 'logo_url', 'cover_photo_url', 'notes', 'internal_notes', 'phase',
+      'percent_complete', 'original_contract_value', 'approved_change_orders', 'revised_contract_value',
+      'billed_to_date', 'retainage_held', 'balance_to_finish', 'contract_amount', 'total_contract_amount',
+      'original_contract_amount', 'contract_sum', 'scheduled_value', 'total_earned', 'total_billed',
+      'total_paid', 'total_retainage', 'total_pending', 'cost_to_date', 'estimated_cost', 'projected_cost',
+      'contingency', 'overhead_pct', 'profit_pct', 'tax_pct', 'insurance_pct', 'bond_pct', 'sq_footage',
+      'num_floors', 'num_units', 'building_type', 'occupancy_type', 'construction_type', 'zoning',
+      'parcel_number', 'legal_description', 'created_by', 'updated_by', 'deleted_at', 'deleted_by',
+      'archived_at', 'archived_by', 'created_by_name', 'updated_by_name', 'assigned_to', 'assigned_to_name',
+      'project_lead', 'project_lead_name', 'last_activity_at', 'last_log_at', 'last_photo_at', 'last_rfi_at',
+      'last_pay_app_at', 'rfi_count', 'change_order_count', 'photo_count', 'punch_count', 'open_punch_count',
+      'pay_app_count', 'current_pay_app_number', 'is_archived', 'is_deleted', 'is_template', 'template_name',
+      'source', 'external_id', 'integration_source', 'custom_fields', 'metadata', 'final_completion_date',
+      'substantial_completion_date', 'notice_to_proceed_date', 'bid_due_date', 'award_date',
+      'contract_execution_date', 'groundbreaking_date', 'occupancy_date', 'warranty_expiry_date',
+      'closeout_date', 'projected_start_date', 'projected_end_date', 'actual_start_date', 'actual_end_date',
+      'revised_completion_date', 'owner_occupancy_date', 'punch_list_due_date', 'punch_list_complete_date',
+      'lien_deadline_date', 'retention_release_date', 'state_jurisdiction', 'project_type',
+      'original_contract', 'ntp_date', 'substantial_date', 'is_public_project', 'geofence_lat',
+      'geofence_lng', 'geofence_radius_meters', 'net_change_by_co', 'approved_co_count', 'city',
+      'estimated_completion', 'square_footage', 'architect_firm', 'completeness_score', 'setup_complete',
+      'setup_step', 'setup_dismissed', 'health_score', 'target_finish_date', 'updated_at',
+    ];
+    const updates: Record<string, any> = {};
+    for (const k of ALLOWED_PROJECT_COLUMNS) {
+      if (body[k] !== undefined) updates[k] = body[k];
+    }
+    const { data, error } = await db.from('projects').update(updates).eq('id', projectId).eq('tenant_id', user.tenantId).select().single();
+    if (error) throw error;
+    return NextResponse.json({ project: data });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// Soft-delete: archive the project (is_archived=true, archived_at=now). FKs make a
+// hard delete unsafe, so we never DELETE the row. Tenant-scoped by id+tenant_id.
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
+  try {
+    const g = await requirePermission(req, 'Projects', 'Full');
+    if (!g.ok) return g.res;
+    const user = g.user;
+
+    const db = createServerClient();
+    const { error } = await db
+      .from('projects')
+      .update({
+        is_archived: true,
+        archived_at: new Date().toISOString(),
+        archived_by: user.id ?? null,
+      })
+      .eq('id', projectId)
+      .eq('tenant_id', user.tenantId);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

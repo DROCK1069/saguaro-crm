@@ -1,0 +1,153 @@
+'use client';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { Skeleton } from '../../../components/ui/Skeleton';
+import { WarningCircle, FileText, CaretRight, Buildings, ShieldCheck } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+
+const GOLD = '#F59E0B';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
+const RED = '#ef4444';
+
+interface Project {
+  id: string;
+  name?: string | null;
+  project_number?: string | null;
+  address?: string | null;
+  client_name?: string | null;
+  status?: string | null;
+}
+
+const statusStyle = (s: string): { color: string; bg: string } => {
+  const k = (s || '').toLowerCase();
+  if (k.includes('active') || k.includes('progress')) return { color: '#3dd68c', bg: 'rgba(61,214,140,.12)' };
+  if (k.includes('complete') || k.includes('closed')) return { color: '#4a9de8', bg: 'rgba(26,95,168,.12)' };
+  return { color: GOLD, bg: 'rgba(245,158,11,.12)' };
+};
+
+export default function CertifiedPayrollPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
+    fetch('/api/projects/list')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => setProjects((d.projects ?? d.items ?? []) as Project[]))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = projects.filter(p => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (p.name || '').toLowerCase().includes(q)
+      || (p.project_number || '').toLowerCase().includes(q)
+      || (p.address || '').toLowerCase().includes(q);
+  });
+
+  return (
+    <PremiumSurface maxWidth={1600}>
+      {/* Header */}
+      <ModuleHero
+        eyebrow="Compliance"
+        eyebrowIcon={<ShieldCheck size={13} weight="fill" color={GOLD} />}
+        title="Certified"
+        accent="Payroll"
+        subtitle="WH-347 compliant, Davis-Bacon payroll is managed per project. Select a project to open its certified payroll."
+      />
+
+      {/* Projects list */}
+      <SectionCard
+        title="Projects"
+        icon={<Buildings size={17} weight="duotone" color={GOLD} />}
+        flush
+        action={
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search projects…"
+            style={{
+              background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: 10,
+              color: TEXT, fontSize: 13, padding: '9px 14px', outline: 'none', minWidth: 220,
+            }}
+          />
+        }
+      >
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ padding: '16px 20px', borderBottom: i < 3 ? `1px solid rgba(255,255,255,0.06)` : 'none' }}>
+              <Skeleton height={15} width="40%" />
+              <div style={{ height: 6 }} />
+              <Skeleton height={11} width="60%" />
+            </div>
+          ))
+        ) : error ? (
+          <PremiumEmpty
+            tone="error"
+            icon={<WarningCircle size={30} weight="duotone" color={RED} />}
+            title="Couldn't load projects"
+            description="We hit a problem loading your projects. Your data is safe — try again."
+            action={<button onClick={load} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
+          />
+        ) : filtered.length === 0 ? (
+          <PremiumEmpty
+            icon={<Buildings size={30} weight="duotone" color={GOLD} />}
+            title={projects.length === 0 ? 'No projects yet' : 'No projects match your search'}
+            description={projects.length === 0
+              ? 'Create a project to start tracking certified payroll.'
+              : 'Try a different search term.'}
+            action={projects.length === 0
+              ? <Link href="/app/projects" style={goldButtonStyle} className="pmBtn">Go to Projects</Link>
+              : undefined}
+          />
+        ) : (
+          filtered.map((p, idx) => {
+            const st = statusStyle(p.status || '');
+            return (
+              <Link
+                key={p.id}
+                href={`/app/projects/${p.id}/payroll`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none',
+                  padding: '16px 20px',
+                  borderBottom: idx < filtered.length - 1 ? `1px solid rgba(255,255,255,0.06)` : 'none',
+                }}
+              >
+                <span style={{
+                  width: 38, height: 38, borderRadius: 8, background: 'rgba(245,158,11,.1)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <FileText size={18} weight="regular" color={GOLD} />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {p.name || p.project_number || 'Untitled Project'}
+                  </div>
+                  <div style={{ fontSize: 12, color: DIM, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {[p.project_number, p.address].filter(Boolean).join(' · ') || 'No address set'}
+                  </div>
+                </div>
+                {p.status && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 4,
+                    background: st.bg, color: st.color, textTransform: 'uppercase', letterSpacing: 0.3, whiteSpace: 'nowrap',
+                  }}>{(p.status || '').replace(/_/g, ' ')}</span>
+                )}
+                <span style={{ fontSize: 12, fontWeight: 700, color: GOLD, whiteSpace: 'nowrap' }}>Open payroll</span>
+                <CaretRight size={16} weight="bold" color={DIM} />
+              </Link>
+            );
+          })
+        )}
+      </SectionCard>
+    </PremiumSurface>
+  );
+}

@@ -1,0 +1,452 @@
+<!doctype html><html><head><meta charset="utf-8"/><title>Copper Ridge Retail — Building A — Cost Estimate</title>
+<style>
+  @page { margin: 14mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Cross-platform stack: Windows gets Segoe UI (design target); Mac/Linux fall back to
+     Helvetica/Arial (present on 100% of print targets) — no ugly Times fallback, consistent metrics. */
+  body { font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', system-ui, -apple-system, sans-serif; color: #1a2232; margin: 0; background: #fff; font-size: 12.5px; line-height: 1.5; font-synthesis: none; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  /* cover */
+  .cover { min-height: 251mm; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(158deg,#0d1117 0%,#161b22 55%,#1b2330 100%); color: #e6edf3; border-radius: 6px; padding: 30px 34px 26px; page-break-after: always; }
+  .brandrow { display: flex; align-items: center; gap: 13px; }
+  .mark { width: 40px; height: 40px; display: inline-block; }
+  .brandrow .tag { color: #D4A017; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
+  .brandrow .tagsub { color: #8b97a8; font-size: 11.5px; letter-spacing: .3px; margin-top: 2px; }
+  .cover-mid { padding: 8px 2px; }
+  .doctype { color: #D4A017; font-size: 12px; text-transform: uppercase; letter-spacing: 2.4px; font-weight: 700; }
+  .projname { font-size: 40px; line-height: 1.08; font-weight: 800; letter-spacing: -0.02em; margin: 10px 0 12px; color: #fff; }
+  .projmeta { display: flex; flex-wrap: wrap; gap: 6px 20px; color: #a9b4c4; font-size: 13.5px; }
+  .projmeta b { color: #e6edf3; }
+  .selltotal { margin-top: 30px; border-top: 1px solid rgba(212,160,23,.35); border-bottom: 1px solid rgba(212,160,23,.35); padding: 20px 0; }
+  .selllabel { color: #8b97a8; text-transform: uppercase; letter-spacing: 1.6px; font-size: 11.5px; font-weight: 700; }
+  .sellbig { font-size: 62px; font-weight: 800; letter-spacing: -0.03em; color: #D4A017; font-variant-numeric: tabular-nums; line-height: 1; margin-top: 6px; }
+  .sellsub { color: #a9b4c4; font-size: 13px; margin-top: 8px; }
+  .sellrange { color: #D4A017; font-size: 12.5px; margin-top: 6px; font-weight: 600; }
+  .sellrange b { color: #f0c860; }
+  .prepgrid { display: flex; flex-wrap: wrap; gap: 18px 32px; margin-bottom: 16px; }
+  .prepgrid > div { min-width: 150px; }
+  .pk { color: #7f8b9c; text-transform: uppercase; letter-spacing: 1.2px; font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+  .pv { color: #fff; font-weight: 700; font-size: 14px; }
+  .pvs { color: #9aa6b6; font-size: 12px; margin-top: 1px; }
+  .confidence { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); border-left: 4px solid #D4A017; border-radius: 10px; padding: 14px 16px; }
+  .chip { display: inline-block; border: 1px solid rgba(212,160,23,.5); color: #D4A017; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; border-radius: 20px; padding: 3px 10px; margin: 0 6px 8px 0; }
+  .confidence p { color: #b9c3d0; font-size: 12px; line-height: 1.55; margin: 4px 0 0; }
+
+  /* sections */
+  .sect { padding: 0 4px; margin-top: 4px; }
+  .page { page-break-before: always; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: #0d1117; border-bottom: 2px solid #D4A017; padding-bottom: 6px; margin: 22px 0 12px; }
+  h3.subh { font-size: 11.5px; text-transform: uppercase; letter-spacing: .6px; color: #55627a; margin: 16px 0 7px; }
+  .narrative { font-size: 13px; line-height: 1.6; color: #2b3446; margin: 0 0 12px; }
+  .fine { font-size: 10.5px; color: #7a8598; line-height: 1.5; margin: 8px 0 0; }
+
+  /* cards */
+  .cards { display: flex; flex-wrap: wrap; gap: 10px; }
+  .card { flex: 1; min-width: 118px; border: 1px solid #e5e9f0; border-radius: 10px; padding: 12px 14px; background: #fafbfd; }
+  .card.hero { background: linear-gradient(160deg,#0d1117,#1b2330); border-color: #0d1117; }
+  .card.hero .k { color: #b79a54; } .card.hero .v { color: #D4A017; }
+  .card .k { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #7a8598; font-weight: 700; }
+  .card .v { font-size: 24px; font-weight: 800; color: #0d1117; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  /* stacked bar */
+  .bar { display: flex; width: 100%; height: 30px; border-radius: 7px; overflow: hidden; border: 1px solid #e5e9f0; }
+  .bar .seg { height: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 12px; }
+  .lg { display: flex; align-items: center; gap: 7px; font-size: 11.5px; min-width: 210px; flex: 1; }
+  .lgn { flex: 1; color: #2b3446; } .lgv { font-weight: 700; font-variant-numeric: tabular-nums; } .lgp { color: #8a94a6; width: 42px; text-align: right; }
+  .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: 0 0 9px; }
+
+  .split { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .minicard { flex: 1; min-width: 130px; border: 1px solid #e5e9f0; border-radius: 9px; padding: 10px 13px; background: #fff; }
+  .mk { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: #7a8598; font-weight: 700; }
+  .mv { font-size: 18px; font-weight: 800; color: #0d1117; margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+  /* scope */
+  .scopelist { margin-top: 6px; }
+  .scoperow { border: 1px solid #eceef3; border-radius: 9px; padding: 10px 13px; margin-bottom: 8px; page-break-inside: avoid; }
+  .scopehd { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #0d1117; }
+  .scopehd .scv { margin-left: auto; color: #55627a; font-weight: 600; font-size: 12px; }
+  .scopeitems { color: #6b7688; font-size: 11.5px; margin-top: 4px; padding-left: 17px; }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 2px; }
+  td, th { border-bottom: 1px solid #edeff3; padding: 7px 9px; }
+  th { text-align: left; background: #f4f6f9; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: #55627a; font-weight: 700; }
+  .c { text-align: center; } .r { text-align: right; font-variant-numeric: tabular-nums; }
+  .mono { font-family: 'SFMono-Regular',Consolas,monospace; font-size: 11px; color: #55627a; white-space: nowrap; }
+  tfoot td { font-weight: 800; border-top: 2px solid #0d1117; background: #fafbfc; }
+  .muted { color: #8a94a6; font-weight: 600; }
+
+  .divblock { page-break-inside: avoid; margin-top: 14px; }
+  .divhd { display: flex; align-items: center; background: #f7f9fc; border-radius: 7px 7px 0 0; padding: 8px 12px; font-size: 13px; color: #0d1117; }
+  .divhd span { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; }
+  table.li thead th { background: #fbfcfe; }
+  .ct { font-size: 8.5px; font-weight: 800; letter-spacing: .4px; border-radius: 4px; padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
+  .ct.sub { background: #e7f0ff; color: #2f6bff; } .ct.eq { background: #fdeede; color: #b45309; } .ct.typ { background: #eef7ee; color: #16794a; }
+  .rsdot { color: #16a34a; font-size: 9px; margin-left: 4px; vertical-align: middle; }
+  .alt { font-size: 9px; font-weight: 800; letter-spacing: .4px; border-radius: 4px; padding: 1px 6px; }
+  .alt.add { background: #e7f0ff; color: #2f6bff; } .alt.deduct { background: #fdecec; color: #c0392b; }
+  td.pos { color: #15803d; } td.neg { color: #c0392b; }
+  ul.bullets.alw li { color: #1f5136; }
+
+  /* markup stack */
+  table.stack td:first-child { font-weight: 600; }
+  table.stack tr.subttl td { background: #f2f5f9; border-top: 1px solid #cfd6e2; border-bottom: 1px solid #cfd6e2; }
+  table.stack tfoot tr.sell td { background: #0d1117; color: #D4A017; font-size: 15px; border: none; }
+  table.stack tfoot tr.sell td:first-child { color: #fff; }
+
+  /* lists */
+  ul.bullets { margin: 4px 0 0; padding-left: 18px; }
+  ul.bullets li { font-size: 12px; color: #2b3446; margin-bottom: 5px; line-height: 1.5; }
+  ul.flags { list-style: none; margin: 4px 0 0; padding: 0; }
+  ul.flags li { font-size: 12px; padding: 7px 11px; border-radius: 7px; margin-bottom: 6px; border: 1px solid #e5e9f0; display: flex; align-items: baseline; gap: 9px; }
+  ul.flags li.warn { background: #fff8ec; border-color: #f0d9a8; color: #7a5a12; }
+  ul.flags li.info { background: #f6f8fb; color: #55627a; }
+  .flev { font-size: 9px; font-weight: 800; letter-spacing: .5px; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,.06); flex: 0 0 auto; }
+  li.warn .flev { background: #e8b34a; color: #3a2a06; }
+
+  .foot { color: #9aa6b6; font-size: 10px; text-align: center; margin: 26px 0 6px; border-top: 1px solid #edeff3; padding-top: 12px; }
+</style></head>
+<body><div class="wrap">
+  
+  <section class="cover">
+    <div class="cover-top">
+      <div class="brandrow"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#D4A017" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 9c0-2 -1.6-3.5 -3.5-3.5S5 7 5 9v3c0 1.4 1.1 2.5 2.5 2.5S10 13.4 10 12M12 12c0-2 1.6-3.5 3.5-3.5S19 10 19 12v2c0 1.4-1.1 2.5-2.5 2.5S14 15.4 14 14"/></svg></span><div><div class="tag">Copper State Developments</div><div class="tagsub">Control Every Project. Deliver Every Promise.</div></div></div>
+    </div>
+    <div class="cover-mid">
+      <div class="doctype">Construction Cost Estimate &middot; Proposal</div>
+      <h1 class="projname">Copper Ridge Retail — Building A</h1>
+      <div class="projmeta">
+        
+        <span>Phoenix, AZ</span>
+        <span>July 27, 2026</span>
+      </div>
+      <div class="selltotal">
+        <div class="selllabel">Total Lump-Sum Proposal</div>
+        <div class="sellbig">$103,592</div>
+        <div class="sellrange">Expected range <b>$93,233 – $119,131</b> &nbsp;·&nbsp; AACE Class 3 · Budget/DD (-10% / +15%)</div>
+        <div class="sellsub">11 priced components across 4 divisions &nbsp;·&nbsp; Phoenix, AZ · CCI 1.04</div>
+      </div>
+    </div>
+    <div class="cover-bottom">
+      <div class="prepgrid">
+        <div><div class="pk">Prepared by</div><div class="pv">Copper State Developments</div><div class="pvs">estimating@copperstate.dev · (602) 555-0142</div><div class="pvs">ROC #334102</div></div>
+        <div><div class="pk">Prepared for</div><div class="pv">Copper State Developments</div><div class="pvs">Phoenix, AZ</div></div>
+        <div><div class="pk">Estimate date</div><div class="pv">July 27, 2026</div><div class="pvs">Valid 30 days from issue</div></div>
+      </div>
+      <div class="confidence">
+        <span class="chip">Deterministic Takeoff</span>
+        <span class="chip">AACE Class 3 &middot; Budget/DD</span>
+        <span class="chip">Expected accuracy &plusmn;10&ndash;15%</span>
+        <p>Every quantity in this estimate traces to measured geometry through Saguaro's shared measurement engine — the same figures the estimator sees live in the field and on the web, with no black-box AI in the money path. Pricing reflects cost data localized to Phoenix, AZ · CCI 1.04. Final numbers are subject to complete drawings, addenda, and confirmed subcontractor quotations.</p>
+      </div>
+    </div>
+  </section>
+  
+  <section class="sect page">
+    <h2>Executive Summary</h2>
+    <div class="cards">
+      <div class="card hero"><div class="k">Total Proposal</div><div class="v">$103,592</div></div>
+      <div class="card"><div class="k">Cost / SF</div><div class="v">—</div></div>
+      <div class="card"><div class="k">Divisions</div><div class="v">4</div></div>
+      <div class="card"><div class="k">Line items</div><div class="v">11</div></div>
+      <div class="card"><div class="k">Labor hours</div><div class="v">257.69</div></div>
+      <div class="card"><div class="k">Conditions</div><div class="v">6</div></div>
+    </div>
+    <h3 class="subh">Cost distribution by division</h3>
+    <div class="bar"><span class="seg" style="width:42.73278120833372%;background:#A855F7" title="Finishes — $28,963"></span><span class="seg" style="width:24.92717046044203%;background:#C9A96A" title="Concrete — $16,895"></span><span class="seg" style="width:19.81240851584427%;background:#8FC4F0" title="Openings — $13,428"></span><span class="seg" style="width:12.527639815379976%;background:#0D9488" title="Thermal &amp; Moisture — $8,491"></span></div>
+    <div class="legend"><div class="lg"><span class="dot" style="background:#A855F7"></span><span class="lgn">Div 09 · Finishes</span><span class="lgv">$28,963</span><span class="lgp">42.7%</span></div><div class="lg"><span class="dot" style="background:#C9A96A"></span><span class="lgn">Div 03 · Concrete</span><span class="lgv">$16,895</span><span class="lgp">24.9%</span></div><div class="lg"><span class="dot" style="background:#8FC4F0"></span><span class="lgn">Div 08 · Openings</span><span class="lgv">$13,428</span><span class="lgp">19.8%</span></div><div class="lg"><span class="dot" style="background:#0D9488"></span><span class="lgn">Div 07 · Thermal &amp; Moisture</span><span class="lgv">$8,491</span><span class="lgp">12.5%</span></div></div>
+    <div class="split">
+      <div class="minicard"><div class="mk">Direct cost</div><div class="mv">$76,895</div></div>
+      <div class="minicard"><div class="mk">Markup on cost</div><div class="mv">34.7%</div></div>
+      <div class="minicard"><div class="mk">Gross margin</div><div class="mv">25.8%</div></div>
+      <div class="minicard"><div class="mk">Overhead / Profit</div><div class="mv">10% / 8%</div></div>
+    </div>
+  </section>
+  
+  <section class="sect">
+    <h2>Base Bid &amp; Alternates</h2>
+    <p class="narrative">The <b>Base Bid</b> is the number on the cover. Each alternate below is a priced add or deduct the owner may elect; amounts include full markup on the same defensible stack.</p>
+    <table>
+      <thead><tr><th>#</th><th>Alternate</th><th class="c">Type</th><th class="r">Lines</th><th class="r">Amount</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">BASE</td><td><b>Base Bid</b></td><td class="c">base</td><td class="r">11</td><td class="r"><b>$103,592</b></td></tr>
+        <tr><td class="mono">ALT-1</td><td>Upgrade lobby flooring to LVT</td><td class="c"><span class="alt add">ADD</span></td><td class="r">1</td><td class="r pos">+$21,889</td></tr><tr><td class="mono">ALT-2</td><td>Delete north storefront</td><td class="c"><span class="alt deduct">DEDUCT</span></td><td class="r">1</td><td class="r neg">&minus;$28,582</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="4">Base + all add alternates</td><td class="r">$125,481</td></tr></tfoot>
+    </table>
+  </section>
+  
+  <section class="sect">
+    <h2>Scope of Work</h2>
+    <p class="narrative">This proposal delivers a complete, measured scope of work spanning <b>4 CSI divisions</b> over approximately <b>6,000 SF</b>. The work encompasses cast-in-place concrete — foundations, slabs-on-grade, walls and reinforcing; thermal & moisture protection — insulation, roofing, weatherproofing and sealants; openings — doors, frames, hardware, storefront and glazing; and interior finishes — drywall, ceilings, flooring, tile and paint. Quantities were derived directly from 6 measured conditions and exploded into 11 priced components by the Saguaro assembly engine.</p>
+    <div class="scopelist"><div class="scoperow">
+      <div class="scopehd"><span class="dot" style="background:#C9A96A"></span><b>Division 03 — Concrete</b><span class="scv">$16,895 · 2 items</span></div>
+      <div class="scopeitems">Concrete 3000psi &nbsp;·&nbsp; #4 rebar @ 18&quot; OC + temp</div>
+    </div><div class="scoperow">
+      <div class="scopehd"><span class="dot" style="background:#0D9488"></span><b>Division 07 — Thermal &amp; Moisture</b><span class="scv">$8,491 · 3 items</span></div>
+      <div class="scopeitems">R-13 batt insulation &nbsp;·&nbsp; Vapor barrier 10-mil &nbsp;·&nbsp; R-19 batt</div>
+    </div><div class="scoperow">
+      <div class="scopehd"><span class="dot" style="background:#8FC4F0"></span><b>Division 08 — Openings</b><span class="scv">$13,428 · 2 items</span></div>
+      <div class="scopeitems">Solid-core wood door + frame &nbsp;·&nbsp; Hardware set</div>
+    </div><div class="scoperow">
+      <div class="scopehd"><span class="dot" style="background:#A855F7"></span><b>Division 09 — Finishes</b><span class="scv">$28,963 · 4 items</span></div>
+      <div class="scopeitems">5/8&quot; Type-X drywall &nbsp;·&nbsp; 3-5/8&quot; metal studs @ 16&quot; OC &nbsp;·&nbsp; Top &amp; bottom track &nbsp;·&nbsp; Tape, mud &amp; finish L4</div>
+    </div></div>
+  </section>
+  
+  <section class="sect">
+    <h2>Division Rollup</h2>
+    <table>
+      <thead><tr><th>CSI Division</th><th class="c">Items</th><th class="r">Material / Sub</th><th class="r">Labor</th><th class="r">Hrs</th><th class="r">Extended</th><th class="r">%</th></tr></thead>
+      <tbody><tr>
+    <td><span class="dot" style="background:#C9A96A"></span>Div 03 — Concrete</td>
+    <td class="c">2</td>
+    <td class="r">$12,174</td>
+    <td class="r">$4,721</td>
+    <td class="r">60.53</td>
+    <td class="r"><b>$16,895</b></td>
+    <td class="r">24.9%</td>
+  </tr><tr>
+    <td><span class="dot" style="background:#0D9488"></span>Div 07 — Thermal &amp; Moisture</td>
+    <td class="c">3</td>
+    <td class="r">$6,632</td>
+    <td class="r">$1,859</td>
+    <td class="r">29.52</td>
+    <td class="r"><b>$8,491</b></td>
+    <td class="r">12.5%</td>
+  </tr><tr>
+    <td><span class="dot" style="background:#8FC4F0"></span>Div 08 — Openings</td>
+    <td class="c">2</td>
+    <td class="r">$10,733</td>
+    <td class="r">$2,696</td>
+    <td class="r">36</td>
+    <td class="r"><b>$13,428</b></td>
+    <td class="r">19.8%</td>
+  </tr><tr>
+    <td><span class="dot" style="background:#A855F7"></span>Div 09 — Finishes</td>
+    <td class="c">4</td>
+    <td class="r">$20,314</td>
+    <td class="r">$8,649</td>
+    <td class="r">131.64</td>
+    <td class="r"><b>$28,963</b></td>
+    <td class="r">42.7%</td>
+  </tr></tbody>
+      <tfoot><tr><td>Subtotal — bare cost of work</td><td class="c">11</td><td class="r">$49,853</td><td class="r">$17,925</td><td class="r">257.69</td><td class="r">$67,778</td><td class="r">100%</td></tr></tfoot>
+    </table>
+    <p class="fine">Material / Sub column combines material, equipment and subcontractor direct buckets. Extended = direct + bare labor (pre-tax, pre-burden, pre-markup). Sales tax, labor burden and markups are applied transparently in the Markup Basis section.</p>
+  </section>
+  
+  <section class="sect">
+    <h2>Cost by Location</h2>
+    <p class="narrative">Base-bid cost distributed across building / level / zone — for phasing, draw schedules and subcontractor scope splits.</p>
+    <table>
+      <thead><tr><th>Location</th><th class="r">Lines</th><th class="r">Material / Sub</th><th class="r">Labor</th><th class="r">Extended</th></tr></thead>
+      <tbody><tr><td>Bldg A &middot; Level 1</td><td class="r">8</td><td class="r">$36,278</td><td class="r">$14,530</td><td class="r"><b>$50,808</b></td></tr><tr><td>Bldg A &middot; Level 2</td><td class="r">3</td><td class="r">$13,575</td><td class="r">$3,395</td><td class="r"><b>$16,970</b></td></tr></tbody>
+    </table>
+  </section>
+  
+  <section class="sect page">
+    <h2>Detailed Line Items</h2>
+    <p class="fine"><span class="rsdot">●</span> = priced from your organization&rsquo;s historical rate. <span class="ct sub">SUB</span>/<span class="ct eq">EQ</span> = subcontractor / equipment bucket. <span class="ct typ">×N</span> = typical instance count. <b>Net</b> = measured quantity, <b>Order</b> = Net + per-assembly waste.</p>
+    <div class="divblock">
+      <div class="divhd" style="border-left:5px solid #C9A96A"><b>Division 03 — Concrete</b><span>$16,895</span></div>
+      <table class="li">
+        <thead><tr><th>CSI</th><th>Description</th><th class="r">Net</th><th class="c">Unit</th><th class="r">Unit $</th><th class="r">Waste</th><th class="r">Order</th><th class="r">Material / Sub</th><th class="r">Labor</th><th class="r">Extended</th></tr></thead>
+        <tbody><tr>
+          <td class="mono">03 21 00</td>
+          <td>#4 rebar @ 18&quot; OC + temp</td>
+          <td class="r">1,440</td>
+          <td class="c">LB</td>
+          <td class="r">$0.99</td>
+          <td class="r">5%</td>
+          <td class="r">1,512</td>
+          <td class="r">$1,497</td>
+          <td class="r">$562</td>
+          <td class="r"><b>$2,058</b></td>
+        </tr><tr>
+          <td class="mono">03 30 00</td>
+          <td>Concrete 3000psi</td>
+          <td class="r">59.26</td>
+          <td class="c">CY</td>
+          <td class="r">$171.60</td>
+          <td class="r">5%</td>
+          <td class="r">62.22</td>
+          <td class="r">$10,677</td>
+          <td class="r">$4,160</td>
+          <td class="r"><b>$14,837</b></td>
+        </tr></tbody>
+        <tfoot><tr><td colspan="7">Division 03 subtotal</td><td class="r">$12,174</td><td class="r">$4,721</td><td class="r">$16,895</td></tr></tfoot>
+      </table>
+    </div><div class="divblock">
+      <div class="divhd" style="border-left:5px solid #0D9488"><b>Division 07 — Thermal &amp; Moisture</b><span>$8,491</span></div>
+      <table class="li">
+        <thead><tr><th>CSI</th><th>Description</th><th class="r">Net</th><th class="c">Unit</th><th class="r">Unit $</th><th class="r">Waste</th><th class="r">Order</th><th class="r">Material / Sub</th><th class="r">Labor</th><th class="r">Extended</th></tr></thead>
+        <tbody><tr>
+          <td class="mono">07 21 00</td>
+          <td>R-13 batt insulation</td>
+          <td class="r">3,780</td>
+          <td class="c">SF</td>
+          <td class="r">$0.73</td>
+          <td class="r">8%</td>
+          <td class="r">4,082.4</td>
+          <td class="r">$2,980</td>
+          <td class="r">$943</td>
+          <td class="r"><b>$3,924</b></td>
+        </tr><tr>
+          <td class="mono">07 21 00</td>
+          <td>R-19 batt</td>
+          <td class="r">2,800</td>
+          <td class="c">SF</td>
+          <td class="r">$0.94</td>
+          <td class="r">8%</td>
+          <td class="r">3,024</td>
+          <td class="r">$2,843</td>
+          <td class="r">$699</td>
+          <td class="r"><b>$3,541</b></td>
+        </tr><tr>
+          <td class="mono">07 26 00</td>
+          <td>Vapor barrier 10-mil</td>
+          <td class="r">3,200</td>
+          <td class="c">SF</td>
+          <td class="r">$0.23</td>
+          <td class="r">10%</td>
+          <td class="r">3,520</td>
+          <td class="r">$810</td>
+          <td class="r">$216</td>
+          <td class="r"><b>$1,026</b></td>
+        </tr></tbody>
+        <tfoot><tr><td colspan="7">Division 07 subtotal</td><td class="r">$6,632</td><td class="r">$1,859</td><td class="r">$8,491</td></tr></tfoot>
+      </table>
+    </div><div class="divblock">
+      <div class="divhd" style="border-left:5px solid #8FC4F0"><b>Division 08 — Openings</b><span>$13,428</span></div>
+      <table class="li">
+        <thead><tr><th>CSI</th><th>Description</th><th class="r">Net</th><th class="c">Unit</th><th class="r">Unit $</th><th class="r">Waste</th><th class="r">Order</th><th class="r">Material / Sub</th><th class="r">Labor</th><th class="r">Extended</th></tr></thead>
+        <tbody><tr>
+          <td class="mono">08 14 00</td>
+          <td>Solid-core wood door + frame<span class="ct typ">×4</span></td>
+          <td class="r">12</td>
+          <td class="c">EA</td>
+          <td class="r">$499.20</td>
+          <td class="r">—</td>
+          <td class="r">12</td>
+          <td class="r">$5,990</td>
+          <td class="r">$1,797</td>
+          <td class="r"><b>$7,788</b></td>
+        </tr><tr>
+          <td class="mono">08 71 00</td>
+          <td>Hardware set<span class="ct typ">×4</span></td>
+          <td class="r">12</td>
+          <td class="c">EA</td>
+          <td class="r">$395.20</td>
+          <td class="r">—</td>
+          <td class="r">12</td>
+          <td class="r">$4,742</td>
+          <td class="r">$899</td>
+          <td class="r"><b>$5,641</b></td>
+        </tr></tbody>
+        <tfoot><tr><td colspan="7">Division 08 subtotal</td><td class="r">$10,733</td><td class="r">$2,696</td><td class="r">$13,428</td></tr></tfoot>
+      </table>
+    </div><div class="divblock">
+      <div class="divhd" style="border-left:5px solid #A855F7"><b>Division 09 — Finishes</b><span>$28,963</span></div>
+      <table class="li">
+        <thead><tr><th>CSI</th><th>Description</th><th class="r">Net</th><th class="c">Unit</th><th class="r">Unit $</th><th class="r">Waste</th><th class="r">Order</th><th class="r">Material / Sub</th><th class="r">Labor</th><th class="r">Extended</th></tr></thead>
+        <tbody><tr>
+          <td class="mono">09 22 16</td>
+          <td>3-5/8&quot; metal studs @ 16&quot; OC</td>
+          <td class="r">348</td>
+          <td class="c">EA</td>
+          <td class="r">$11.44</td>
+          <td class="r">3%</td>
+          <td class="r">359</td>
+          <td class="r">$4,107</td>
+          <td class="r">$1,231</td>
+          <td class="r"><b>$5,337</b></td>
+        </tr><tr>
+          <td class="mono">09 22 16</td>
+          <td>Top &amp; bottom track</td>
+          <td class="r">840</td>
+          <td class="c">LF</td>
+          <td class="r">$1.46</td>
+          <td class="r">5%</td>
+          <td class="r">882</td>
+          <td class="r">$1,288</td>
+          <td class="r">$594</td>
+          <td class="r"><b>$1,882</b></td>
+        </tr><tr>
+          <td class="mono">09 29 00</td>
+          <td>5/8&quot; Type-X drywall</td>
+          <td class="r">7,560</td>
+          <td class="c">SF</td>
+          <td class="r">$1.25</td>
+          <td class="r">10%</td>
+          <td class="r">8,316</td>
+          <td class="r">$10,395</td>
+          <td class="r">$3,900</td>
+          <td class="r"><b>$14,295</b></td>
+        </tr><tr>
+          <td class="mono">09 29 00</td>
+          <td>Tape, mud &amp; finish L4</td>
+          <td class="r">7,560</td>
+          <td class="c">SF</td>
+          <td class="r">$0.57</td>
+          <td class="r">5%</td>
+          <td class="r">7,938</td>
+          <td class="r">$4,525</td>
+          <td class="r">$2,925</td>
+          <td class="r"><b>$7,449</b></td>
+        </tr></tbody>
+        <tfoot><tr><td colspan="7">Division 09 subtotal</td><td class="r">$20,314</td><td class="r">$8,649</td><td class="r">$28,963</td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+  
+  <section class="sect page">
+    <h2>Markup Basis &amp; Price Build-Up</h2>
+    <p class="narrative">Full transparency on how direct cost becomes the proposal price. Each markup is applied in defensible AGC/CSI order — tax rides material, burden rides labor, general conditions and overhead ride the cost of work, contingency guards the whole, fee is applied pre-bond, and the bond premium is taken on the final contract value.</p>
+    <table class="stack">
+      <thead><tr><th>Component</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+      <tbody>
+        <tr class=""><td>Material</td><td class="r muted"></td><td class="r">$49,853</td></tr>
+        <tr class=""><td>Sales tax on material</td><td class="r muted">7.5%</td><td class="r">$3,739</td></tr>
+        <tr class=""><td>Labor (bare wage)</td><td class="r muted">257.69 hrs @ $65.00/hr</td><td class="r">$17,925</td></tr>
+        <tr class=""><td>Labor burden</td><td class="r muted">30%</td><td class="r">$5,377</td></tr>
+        
+        
+        <tr class="subttl"><td>Direct cost of construction</td><td></td><td class="r"><b>$76,895</b></td></tr>
+        <tr class=""><td>General conditions (Div 01)</td><td class="r muted">8%</td><td class="r">$6,152</td></tr>
+        <tr class="subttl"><td>Cost of work</td><td></td><td class="r"><b>$83,046</b></td></tr>
+        <tr class=""><td>Overhead</td><td class="r muted">10%</td><td class="r">$8,305</td></tr>
+        <tr class=""><td>Contingency</td><td class="r muted">5%</td><td class="r">$4,568</td></tr>
+        <tr class=""><td>Fee / Profit</td><td class="r muted">8%</td><td class="r">$7,673</td></tr>
+        <tr class=""><td>P&amp;P bond premium</td><td class="r muted">not applied</td><td class="r">$0</td></tr>
+      </tbody>
+      <tfoot><tr class="sell"><td>Total lump-sum proposal</td><td></td><td class="r">$103,592</td></tr></tfoot>
+    </table>
+    <div class="split">
+      <div class="minicard"><div class="mk">Markup on direct cost</div><div class="mv">34.7%</div></div>
+      <div class="minicard"><div class="mk">Gross margin (sell)</div><div class="mv">25.8%</div></div>
+      <div class="minicard"><div class="mk">Fee rate</div><div class="mv">8%</div></div>
+      <div class="minicard"><div class="mk">Total markup $</div><div class="mv">$26,697</div></div>
+    </div>
+  </section>
+  
+  <section class="sect page">
+    <h2>Basis of Estimate</h2>
+    <h3 class="subh">Pricing basis</h3>
+    <p class="narrative">All 11 priced components use the Saguaro national cost catalog (RSMeans-ballpark regional seed rates). Load your organization&rsquo;s historical rates to override any item.</p>
+    <h3 class="subh">Assumptions</h3>
+    <ul class="bullets"><li>Quantities derived from 6 measured conditions, exploded to 11 priced components by the Saguaro assembly engine (integer-cent, deterministic).</li><li>Per-trade crew labor rates: <b>$62.40–$78.00/hr per-trade</b>. Total 257.69 labor hours. Pricing localized to <b>Phoenix, AZ · CCI 1.04</b>.</li><li>Material waste factors are embedded per assembly (typ. 3–15%): the <b>Net</b> column is the measured quantity, <b>Order</b> is Net plus waste (what gets bought).</li><li>Markups applied — overhead <b>10%</b>, contingency <b>5%</b>, fee/profit <b>8%</b>, general conditions <b>8%</b>, material sales tax <b>7.5%</b>, labor burden <b>30%</b>.</li><li>Building area of <b>6,000 SF</b> used for the $/SF metric.</li></ul>
+    <h3 class="subh">Estimate quality checks</h3>
+    <ul class="flags"><li class="info"><span class="flev">NOTE</span>No P&amp;P bond in the number — confirm bonding required.</li></ul>
+    <h3 class="subh">Allowances carried</h3><ul class="bullets alw"><li>$25,000 allowance for owner-selected light fixtures</li><li>$10,000 allowance for signage</li></ul>
+    <h3 class="subh">Clarifications</h3>
+    <ul class="bullets"><li>Excludes work below finished floor except as shown.</li><li>Assumes concrete pump access on the north side.</li></ul>
+    <h3 class="subh">Exclusions</h3>
+    <ul class="bullets"><li>Permits and impact fees</li><li>Testing &amp; special inspection</li><li>Winter conditions</li><li>Payment &amp;amp; performance bond (not carried in this number)</li></ul>
+    <p class="fine">This is a deterministic, measurement-driven estimate (AACE International Class 3 · Budget/DD). Expected price range <b>$93,233 – $119,131</b> (-10% / +15%) pending complete construction documents, addenda, geotechnical data, and confirmed subcontractor pricing. Proposal valid 30 days from the estimate date.</p>
+  </section>
+  <div class="foot">Generated by Copper State Developments — deterministic measurement-driven estimating. July 27, 2026. This document is a proposal, not a contract.</div>
+</div></body></html>

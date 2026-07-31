@@ -1,0 +1,63 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+
+  "regions": ["iad1"],
+
+  "functions": {
+    "app/api/billing/[...path]/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/ai/[...path]/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/takeoff/[...path]/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/[...path]/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/pay-apps/[...path]/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/insurance/[...path]/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/documents/[...path]/route.ts": {
+      "maxDuration": 120
+    }
+  },
+
+  "crons": [
+    { "path": "/api/cron/insurance-check", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/trial-expiry",    "schedule": "0 15 * * *" },
+    { "path": "/api/cron/bid-reminders",   "schedule": "0 13 * * *" },
+    { "path": "/api/cron/lien-reminders",  "schedule": "0 12 * * *" },
+    { "path": "/api/cron/autopilot",       "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/report-schedules", "schedule": "0 11 * * *" }
+  ],
+
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options",  "value": "nosniff" },
+        { "key": "X-Frame-Options",          "value": "DENY" },
+        { "key": "X-XSS-Protection",         "value": "1; mode=block" }
+      ]
+    },
+    {
+      "source": "/api/billing/webhook",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache" }
+      ]
+    }
+  ],
+
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

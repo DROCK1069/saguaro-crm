@@ -1,0 +1,481 @@
+'use client';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { CheckCircle, Warning, CreditCard, DeviceMobile, Question, Lightning } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+
+const GOLD   = '#F59E0B';
+const RAISED = '#141416';
+const BORDER = 'rgba(255,255,255,0.12)';
+const DIM    = '#CBD5E1';
+const TEXT   = '#FFFFFF';
+const GREEN  = '#22c55e';
+const RED    = '#ef4444';
+
+// Semantic (destructive) button presets — kit-shaped but intentionally red,
+// so the Cancel / Update-Payment actions stay meaningful instead of gold.
+const dangerGhostStyle: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  padding: '11px 18px', borderRadius: 12, cursor: 'pointer',
+  background: 'rgba(239,68,68,0.10)', color: RED, border: '1px solid rgba(239,68,68,0.32)',
+  fontWeight: 700, fontSize: 13.5,
+};
+const dangerSolidStyle: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  padding: '11px 20px', borderRadius: 12, border: 'none', cursor: 'pointer',
+  background: `linear-gradient(135deg, ${RED}, #dc2626)`, color: '#fff',
+  fontWeight: 800, fontSize: 13.5, boxShadow: '0 10px 26px -10px rgba(239,68,68,0.6)',
+};
+
+interface Subscription {
+  plan_id: string | null;
+  plan_name: string;
+  status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused';
+  billing_interval: 'monthly' | 'annual';
+  price_cents: number;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  cancel_at: string | null;
+}
+
+const PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price_mo: 499,
+    price_yr: 449,
+    tagline: 'Up to 15 projects · 150 AI pages/mo',
+    features: ['Unlimited users', '15 active projects', 'AI Takeoff 150 pages/mo', 'G702/G703 Pay Apps', 'Lien Waivers all 50 states', 'Mobile iOS app', 'Free migration', 'Email support'],
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    price_mo: 750,
+    price_yr: 650,
+    tagline: 'Unlimited projects · Unlimited AI · Full compliance suite',
+    popular: true,
+    features: ['Unlimited projects', 'Unlimited AI Takeoff', 'All AIA Documents', 'Certified Payroll WH-347', 'ACORD 25 / COI Parser', 'Owner & Sub Portals', 'Bid Intelligence', 'Priority support'],
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price_mo: 0,
+    price_yr: 0,
+    tagline: 'Custom pricing · White label · Dedicated CSM',
+    features: ['Everything in Professional', 'White Label', 'QuickBooks Sync', 'Custom API', 'SAML SSO', 'Dedicated account manager', '99.9% SLA'],
+  },
+];
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; bg: string; color: string }> = {
+    trialing:  { label: 'Free Trial',  bg: 'rgba(245,158,11,0.12)', color: GOLD },
+    active:    { label: 'Active',      bg: 'rgba(34,197,94,0.12)',  color: GREEN },
+    past_due:  { label: 'Past Due',    bg: 'rgba(239,68,68,0.12)',  color: RED },
+    canceled:  { label: 'Canceled',    bg: 'rgba(110,110,115,0.1)', color: DIM },
+    paused:    { label: 'Paused',      bg: 'rgba(110,110,115,0.1)', color: DIM },
+  };
+  const s = map[status] ?? map.active;
+  return (
+    <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: s.bg, color: s.color, letterSpacing: 0.5 }}>
+      {s.label}
+    </span>
+  );
+}
+
+export default function BillingPage() {
+  const [sub, setSub] = useState<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [annual, setAnnual] = useState(false);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [canceling, setCanceling] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const loadSubscription = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetch('/api/billing/subscription');
+      if (!res.ok) {
+        setError(true);
+        setSub(null);
+        return;
+      }
+      const data = await res.json();
+      // GET /api/billing/subscription returns a nested envelope:
+      //   { hasSubscription, subscription, usage, isActive, ... }
+      // The subscription row itself carries plan_id + a joined plans({ name, ... })
+      // relation — NOT a top-level plan_name. Flatten it into the shape this page
+      // renders so the plan card + Manage/Cancel/Update-Payment buttons show for
+      // real subscribers instead of falling through to "No active subscription".
+      if (!data?.hasSubscription || !data?.subscription) {
+        setSub(null);
+        return;
+      }
+      const s = data.subscription;
+      const planRel = Array.isArray(s.plans) ? s.plans[0] : s.plans;
+      setSub({
+        plan_id: s.plan_id ?? null,
+        plan_name: planRel?.name ?? s.plan_id ?? 'Subscription',
+        status: s.status,
+        billing_interval: s.billing_interval ?? 'monthly',
+        price_cents: s.price_cents ?? 0,
+        trial_ends_at: s.trial_ends_at ?? null,
+        current_period_end: s.current_period_end ?? null,
+        cancel_at: s.cancel_at ?? null,
+      });
+    } catch {
+      setError(true);
+      setSub(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSubscription();
+  }, [loadSubscription]);
+
+  const daysLeft = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+    return diff > 0 ? diff : 0;
+  };
+
+  const handleUpgrade = async (planId: string) => {
+    if (planId === 'enterprise') {
+      window.location.href = 'mailto:sales@saguarocontrol.net?subject=Enterprise Inquiry';
+      return;
+    }
+    setActionError(null);
+    setUpgrading(planId);
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, interval: annual ? 'annual' : 'monthly', successUrl: `${window.location.origin}/app/billing?success=1`, cancelUrl: `${window.location.origin}/app/billing` }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return; // navigating away — keep the spinner until the page unloads
+      }
+      setActionError(data.error || 'Could not start checkout. Please try again or contact support.');
+    } catch {
+      setActionError('Could not start checkout. Please check your connection and try again.');
+    }
+    setUpgrading(null);
+  };
+
+  const handlePortal = async () => {
+    setActionError(null);
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/billing/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ returnUrl: `${window.location.origin}/app/billing` }) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.portalUrl) {
+        window.location.href = data.portalUrl;
+        return; // navigating away — keep the spinner until the page unloads
+      }
+      setActionError(data.error || 'Could not open the billing portal. Please try again.');
+    } catch {
+      setActionError('Could not open the billing portal. Please check your connection and try again.');
+    }
+    setPortalLoading(false);
+  };
+
+  const handleCancel = async () => {
+    setActionError(null);
+    setCanceling(true);
+    try {
+      const res = await fetch('/api/billing/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        window.location.reload();
+        return; // reloading — leave the modal/spinner until the page unloads
+      }
+      setActionError(data.error || 'Could not cancel your subscription. Please try again or contact support.');
+    } catch {
+      setActionError('Could not cancel your subscription. Please check your connection and try again.');
+    }
+    setCanceling(false);
+    setShowCancel(false);
+  };
+
+  const trialDays = sub?.trial_ends_at ? daysLeft(sub.trial_ends_at) : null;
+  const periodDays = sub?.current_period_end ? daysLeft(sub.current_period_end) : null;
+  // Match the DB plan id first (canonical: 'starter' | 'professional' | 'enterprise'),
+  // falling back to the display name — so the "Current Plan" badge + upgrade CTA are correct.
+  const currentPlanName = (sub?.plan_id ?? sub?.plan_name ?? '').toLowerCase();
+
+  return (
+    <>
+      <PremiumSurface maxWidth={1080}>
+
+        {/* Header */}
+        <ModuleHero
+          eyebrow="ACCOUNT"
+          eyebrowIcon={<CreditCard size={13} weight="fill" color={GOLD} />}
+          title="Billing &"
+          accent="Subscription"
+          subtitle="Manage your plan, payment method, and invoices."
+        />
+
+        {/* URL success message */}
+        {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('success') === '1' && (
+          <div style={{ background: 'rgba(34,197,94,0.1)', border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 12, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20, display: 'inline-flex', alignItems: 'center' }}><CheckCircle size={22} weight="fill" color={GREEN} /></span>
+            <div>
+              <div style={{ fontWeight: 700, color: GREEN, marginBottom: 2 }}>Payment successful — you're all set!</div>
+              <div style={{ fontSize: 13, color: DIM }}>Your subscription is now active. All features are unlocked.</div>
+            </div>
+          </div>
+        )}
+
+        {/* Current Plan Card */}
+        {loading ? (
+          <SectionCard style={{ marginBottom: 28 }}>
+            <Skeleton width={110} height={11} style={{ marginBottom: 12 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <Skeleton width={180} height={26} />
+              <Skeleton width={80} height={22} borderRadius={6} />
+            </div>
+            <Skeleton width={220} height={14} style={{ marginBottom: 20 }} />
+            <Skeleton width="100%" height={6} borderRadius={3} />
+          </SectionCard>
+        ) : error ? (
+          <SectionCard style={{ marginBottom: 28 }}>
+            <PremiumEmpty
+              tone="error"
+              icon={<Warning size={30} weight="fill" color={RED} />}
+              title="Couldn't load your subscription"
+              description="We hit a problem fetching your current plan. Your subscription is safe — please try again."
+              action={<button onClick={loadSubscription} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
+              compact
+            />
+          </SectionCard>
+        ) : sub ? (
+          <SectionCard
+            icon={<CreditCard size={17} weight="duotone" color={GOLD} />}
+            title="Current Plan"
+            accent={sub.status === 'past_due' ? RED : GOLD}
+            style={{ marginBottom: 28 }}
+            action={(sub.status === 'active' || sub.status === 'past_due') ? (
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {sub.status === 'active' && (
+                  <button onClick={handlePortal} disabled={portalLoading} style={ghostButtonStyle} className="pmBtn">
+                    {portalLoading ? 'Loading...' : 'Manage Payment & Invoices'}
+                  </button>
+                )}
+                {sub.status === 'active' && !sub.cancel_at && (
+                  <button onClick={() => setShowCancel(true)} style={dangerGhostStyle} className="pmBtn">
+                    Cancel Plan
+                  </button>
+                )}
+                {sub.status === 'past_due' && (
+                  <button onClick={handlePortal} style={dangerSolidStyle} className="pmBtn">
+                    Update Payment Method
+                  </button>
+                )}
+              </div>
+            ) : undefined}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 24, fontWeight: 900, color: TEXT }}>{sub.plan_name ?? 'Free Trial'}</span>
+              <StatusBadge status={sub.status} />
+            </div>
+            {sub.status === 'trialing' && trialDays !== null && (
+              <div style={{ fontSize: 14, color: trialDays <= 5 ? RED : GOLD, fontWeight: 600 }}>
+                {trialDays > 0 ? `${trialDays} days left in free trial` : 'Trial expired — upgrade to continue'}
+              </div>
+            )}
+            {sub.status === 'active' && periodDays !== null && (
+              <div style={{ fontSize: 13, color: DIM }}>Renews in {periodDays} days · {sub.billing_interval === 'annual' ? 'Annual' : 'Monthly'} billing</div>
+            )}
+            {sub.status === 'past_due' && (
+              <div style={{ fontSize: 14, color: RED, fontWeight: 600 }}>Payment failed — please update your payment method</div>
+            )}
+            {sub.cancel_at && (
+              <div style={{ fontSize: 13, color: RED }}>Cancels on {new Date(sub.cancel_at).toLocaleDateString()}</div>
+            )}
+
+            {/* Trial progress bar */}
+            {sub.status === 'trialing' && trialDays !== null && (
+              <div style={{ marginTop: 20 }}>
+                <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, ((30 - trialDays) / 30) * 100))}%`, background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, borderRadius: 3 }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: DIM }}>
+                  <span>Trial started</span>
+                  <span>{trialDays} days remaining</span>
+                </div>
+              </div>
+            )}
+          </SectionCard>
+        ) : (
+          <SectionCard style={{ marginBottom: 28 }}>
+            <PremiumEmpty
+              icon={<CreditCard size={30} weight="duotone" color={GOLD} />}
+              title="No active subscription"
+              description="Choose a plan below to get started."
+              compact
+            />
+          </SectionCard>
+        )}
+
+        {/* Plan Selection */}
+        <SectionCard
+          icon={<Lightning size={17} weight="duotone" color={GOLD} />}
+          title={sub?.status === 'trialing' ? 'Upgrade Your Plan' : 'Change Plan'}
+          style={{ marginBottom: 28 }}
+          action={
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '3px', border: `1px solid ${BORDER}` }}>
+              <button onClick={() => setAnnual(false)} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: !annual ? 'rgba(245,158,11,0.15)' : 'transparent', color: !annual ? GOLD : DIM, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Monthly</button>
+              <button onClick={() => setAnnual(true)} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: annual ? 'rgba(245,158,11,0.15)' : 'transparent', color: annual ? GOLD : DIM, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                Annual
+                <span style={{ fontSize: 10, fontWeight: 800, color: GREEN, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', padding: '1px 6px', borderRadius: 8 }}>-17%</span>
+              </button>
+            </div>
+          }
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+            {PLANS.map(plan => {
+              const isCurrent = currentPlanName.includes(plan.id) && sub?.status === 'active';
+              const isUpgrade = plan.id === 'professional' && currentPlanName.includes('starter');
+              return (
+                <div key={plan.id} style={{
+                  background: plan.popular ? 'linear-gradient(180deg, #141416, #141416)' : RAISED,
+                  border: `1.5px solid ${isCurrent ? GREEN : plan.popular ? GOLD : BORDER}`,
+                  borderRadius: 14, overflow: 'hidden', position: 'relative',
+                  boxShadow: plan.popular ? `0 0 40px rgba(245,158,11,0.08)` : 'none',
+                }}>
+                  {plan.popular && !isCurrent && (
+                    <div style={{ background: `linear-gradient(90deg, ${GOLD}, #FCD34D)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: '#1C1C1E', letterSpacing: 2, textTransform: 'uppercase' }}>Most Popular</div>
+                  )}
+                  {isCurrent && (
+                    <div style={{ background: 'rgba(34,197,94,0.15)', borderBottom: `1px solid rgba(34,197,94,0.25)`, textAlign: 'center', padding: '5px 0', fontSize: 10, fontWeight: 800, color: GREEN, letterSpacing: 2, textTransform: 'uppercase' }}>Current Plan</div>
+                  )}
+                  <div style={{ padding: '24px 22px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: plan.popular ? GOLD : DIM, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>{plan.name}</div>
+                    <div style={{ fontSize: 12, color: DIM, marginBottom: 16 }}>{plan.tagline}</div>
+
+                    {plan.price_mo > 0 ? (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
+                          <span style={{ fontSize: 40, fontWeight: 900, color: TEXT, lineHeight: 1 }}>${annual ? (plan.price_yr ?? 0) : (plan.price_mo ?? 0)}</span>
+                          <span style={{ fontSize: 13, color: DIM, paddingBottom: 6 }}>/mo</span>
+                        </div>
+                        {annual && <div style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>Save ${((plan.price_mo ?? 0) - (plan.price_yr ?? 0)) * 12}/yr</div>}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 22, fontWeight: 900, color: TEXT, marginBottom: 20 }}>Contact Sales</div>
+                    )}
+
+                    <button
+                      onClick={() => !isCurrent && handleUpgrade(plan.id)}
+                      disabled={isCurrent || upgrading === plan.id}
+                      style={{
+                        width: '100%', padding: '11px 0', borderRadius: 8, border: isCurrent ? `1px solid rgba(34,197,94,0.3)` : plan.popular ? 'none' : `1px solid ${BORDER}`,
+                        background: isCurrent ? 'rgba(34,197,94,0.08)' : plan.popular ? `linear-gradient(135deg, ${GOLD}, #D97706)` : 'rgba(255,255,255,0.06)',
+                        color: isCurrent ? GREEN : plan.popular ? '#000' : TEXT,
+                        fontWeight: 800, fontSize: 13, cursor: isCurrent ? 'default' : 'pointer', marginBottom: 20,
+                        boxShadow: plan.popular && !isCurrent ? `0 4px 16px rgba(245,158,11,0.3)` : 'none',
+                      }}
+                    >
+                      {isCurrent ? 'Current Plan' : upgrading === plan.id ? 'Loading...' : plan.id === 'enterprise' ? 'Contact Sales' : isUpgrade ? 'Upgrade Now' : 'Select Plan'}
+                    </button>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                      {plan.features.map(f => (
+                        <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+                            <circle cx="8" cy="8" r="8" fill="rgba(34,197,94,0.15)" />
+                            <path d="M4.5 8l2.5 2.5 4-5" stroke={GREEN} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <span style={{ fontSize: 12, color: DIM }}>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        {/* Install App Section */}
+        <SectionCard
+          icon={<DeviceMobile size={17} weight="duotone" color={GOLD} />}
+          title="Get the app for iPhone & iPad"
+          subtitle="Saguaro Control Systems App"
+          style={{ marginBottom: 28 }}
+          action={
+            <Link href="/get-the-app" style={{ ...goldButtonStyle, whiteSpace: 'nowrap' }} className="pmBtn">
+              Get Install Instructions
+            </Link>
+          }
+        >
+          <div style={{ fontSize: 13, color: DIM, maxWidth: 560, lineHeight: 1.6 }}>
+            Native iOS app, free on Apple TestFlight for every team member on your plan (App Store &amp; Android coming soon). The full platform also runs in any browser.
+          </div>
+        </SectionCard>
+
+        {/* FAQ */}
+        <SectionCard
+          icon={<Question size={17} weight="duotone" color={GOLD} />}
+          title="Billing FAQ"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {[
+              { q: 'When does my free trial end?', a: 'Your 30-day free trial gives you full access to all Professional features. No credit card is required until you decide to subscribe.' },
+              { q: 'Can I switch plans anytime?', a: 'Yes. Upgrades take effect immediately with prorated billing. Downgrades take effect at the next billing cycle.' },
+              { q: 'How do I update my payment method?', a: 'Click "Manage Payment & Invoices" above. You\'ll be taken to the Stripe customer portal where you can update your card, download invoices, and manage your subscription.' },
+              { q: 'What happens if my payment fails?', a: 'We\'ll retry your card 3 times over 7 days and email you each time. If payment still fails, your account is paused but your data is preserved for 30 days.' },
+              { q: 'Do you offer refunds?', a: 'We offer a full refund within 7 days of your first payment. After that, we don\'t offer refunds but you can cancel anytime and retain access until your period ends.' },
+            ].map((faq, i, arr) => (
+              <div key={i} style={{ padding: '18px 0', borderBottom: i < arr.length - 1 ? `1px solid rgba(255,255,255,0.08)` : 'none' }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: TEXT, marginBottom: 6 }}>{faq.q}</div>
+                <div style={{ fontSize: 13, color: DIM, lineHeight: 1.65 }}>{faq.a}</div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+      </PremiumSurface>
+
+      {/* Action error banner — fixed + above the cancel modal (z 500) so failures are never invisible */}
+      {actionError && (
+        <div role="alert" style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 600, width: 'calc(100% - 48px)', maxWidth: 480, background: 'rgba(239,68,68,0.14)', border: `1px solid rgba(239,68,68,0.45)`, borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.45)' }}>
+          <Warning size={20} weight="fill" color={RED} />
+          <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: TEXT }}>{actionError}</span>
+          <button onClick={() => setActionError(null)} aria-label="Dismiss" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '0 4px' }}>&times;</button>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancel && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: '#141416', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12, color: TEXT }}>Cancel your subscription?</div>
+            <div style={{ fontSize: 14, color: DIM, lineHeight: 1.65, marginBottom: 28 }}>
+              You'll retain access until the end of your current billing period. Your data will be preserved for 30 days after that. You can reactivate anytime.
+            </div>
+            <div style={{ background: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 8, padding: '12px 16px', marginBottom: 24, fontSize: 13, color: GOLD }}>
+              Before you go — email us at <strong>support@saguarocontrol.net</strong> and we'll give you 20% off your next 3 months.
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setShowCancel(false)} style={{ flex: 1, padding: '12px 0', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Keep My Plan</button>
+              <button onClick={handleCancel} disabled={canceling} style={{ flex: 1, padding: '12px 0', background: 'rgba(239,68,68,0.1)', border: `1px solid rgba(239,68,68,0.3)`, borderRadius: 8, color: RED, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                {canceling ? 'Canceling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </>
+  );
+}

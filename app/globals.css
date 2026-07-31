@@ -1,0 +1,529 @@
+:root {
+  /* Surfaces — Sonoran DARK (Rob's direction 2026-07-22): navy page + slate cards */
+  --bg-base: #0a0a0a;
+  --bg-surface: #141416;
+  --bg-surface-2: #1c1c1e;
+  --bg-elevated: #1E2A3F;
+  /* Hairlines — white-alpha on dark */
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.12);
+  --border-strong: rgba(255,255,255,0.20);
+  /* Text — bright on dark */
+  --text-primary: #FFFFFF;
+  --text-secondary: #CBD5E1;
+  --text-tertiary: #8094B0;
+  --text-disabled: #5B677A;
+  /* ── Brand primary — the single white-label override point. Defaults to
+     Saguaro gold; WhiteLabelProvider overrides --brand-primary (+ the derived
+     vars) per tenant on the white-label tier. The --gold* aliases below AND
+     design-tokens.ts `colors.gold` all resolve through it, so one override
+     reskins the whole app. ── */
+  --brand-primary: #F59E0B;
+  --brand-primary-strong: #FBBF24;
+  --brand-primary-hover: #D97706;
+  --brand-primary-12: rgba(245,158,11,0.12);
+  --brand-primary-18: rgba(245,158,11,0.18);
+  --brand-primary-25: rgba(245,158,11,0.25);
+  --brand-primary-35: rgba(245,158,11,0.35);
+  /* Brand gold aliases — track --brand-primary */
+  --gold: var(--brand-primary);
+  --gold-bright: var(--brand-primary-strong);
+  --gold-hover: var(--brand-primary-hover);
+  --gold-soft: var(--brand-primary-12);
+  --gold-ring: var(--brand-primary-35);
+  /* Status — brightened for dark surfaces */
+  --info: #F59E0B;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  /* Elevation — deeper shadows read on dark */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.38);
+  --shadow-lg: 0 16px 44px rgba(0,0,0,0.48);
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+html { font-size: 14px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; overflow-x: clip; max-width: 100%; }
+body { background: var(--bg-base); color: var(--text-primary); overflow-x: hidden; font-size: 13px; line-height: 1.5; font-weight: 400; letter-spacing: -0.006em; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+a { color: var(--brand-primary); text-decoration: none; }
+button { font-family: inherit; cursor: pointer; transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease; }
+button:hover { border-color: var(--border-strong); }
+button:active { transform: scale(0.98); }
+input, textarea, select { font-family: inherit; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+input:hover, textarea:hover, select:hover { border-color: var(--border-strong); }
+input:focus, textarea:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); outline: none; }
+
+/* Browser autofill was rendering dark text on the dark input (unreadable email/password).
+   Force white text + keep the dark field background. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0 1000px #1c1c1e inset !important;
+  box-shadow: 0 0 0 1000px #1c1c1e inset !important;
+  caret-color: #FFFFFF !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* ── Gold reserved for genuine emphasis: focus ring, links, active nav ── */
+*:focus-visible { outline: 2px solid var(--gold-ring); outline-offset: 2px; border-radius: 6px; }
+
+/* ── Smooth transitions on interactive elements only ── */
+a, button, input, textarea, select, [role="button"] { transition: color .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease, opacity .18s ease; }
+
+/* ── Card hover: clean neutral lift, no gold halo ── */
+.glass-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+/* ── Table row hover: subtle neutral ── */
+tr:hover td, [data-row]:hover { background: rgba(0,0,0,0.03); }
+
+/* ── Nav link gold on hover (gold belongs on nav) ── */
+nav a:hover { color: var(--gold); }
+
+/* ── Animations ── */
+@keyframes navDropFadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes goldGlow { 0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11,0.2); } 50% { box-shadow: 0 0 40px rgba(245, 158, 11,0.4); } }
+
+/* ── Apple-grade light select styling ── */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #141416;
+  color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 10px 36px 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: all .2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23CBD5E1' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+select:hover { border-color: rgba(0,0,0,0.14); background-color: #1c1c1e; }
+select:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245, 158, 11,0.12); color: #FFFFFF; }
+select option { background-color: #141416; color: #FFFFFF; font-size: 14px; padding: 8px 12px; }
+select option:checked, select option:hover { background-color: #1c1c1e; color: #F59E0B; }
+
+/* ── react-datepicker Apple light theme ── */
+.saguaro-calendar {
+  background: rgba(20,20,22,0.98) !important;
+  backdrop-filter: blur(40px) !important;
+  -webkit-backdrop-filter: blur(40px) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 14px !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,0.04) !important;
+}
+.saguaro-calendar .react-datepicker__header {
+  background: #1c1c1e !important;
+  border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+  border-radius: 14px 14px 0 0 !important;
+}
+.saguaro-calendar .react-datepicker__current-month,
+.saguaro-calendar .react-datepicker__day-name {
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+.saguaro-calendar .react-datepicker__day {
+  color: #FFFFFF !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+}
+.saguaro-calendar .react-datepicker__day:hover {
+  background: rgba(0,0,0,0.05) !important;
+  color: #F59E0B !important;
+}
+.saguaro-calendar .react-datepicker__day--selected,
+.saguaro-calendar .react-datepicker__day--keyboard-selected {
+  background: #F59E0B !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+.saguaro-calendar .react-datepicker__day--today {
+  border: 1px solid #F59E0B !important;
+  background: transparent !important;
+  color: #F59E0B !important;
+}
+.saguaro-calendar .react-datepicker__day--outside-month {
+  color: #5B677A !important;
+}
+.saguaro-calendar .react-datepicker__navigation-icon::before {
+  border-color: #8094B0 !important;
+}
+.saguaro-calendar .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+  border-color: #F59E0B !important;
+}
+.react-datepicker-wrapper {
+  width: 100%;
+  display: block;
+}
+.react-datepicker__input-container {
+  width: 100%;
+  display: block;
+}
+.react-datepicker-popper {
+  z-index: 9999 !important;
+}
+
+/* ── Minimal/premium typography — small, light, lots of air (Stripe/Linear) ── */
+h1 { font-size: 18px !important; font-weight: 600 !important; letter-spacing: -0.02em; line-height: 1.3; }
+h2 { font-size: 15px !important; font-weight: 600 !important; letter-spacing: -0.015em; line-height: 1.35; }
+h3 { font-size: 13.5px !important; font-weight: 600 !important; letter-spacing: -0.008em; line-height: 1.4; }
+h4, h5, h6 { font-size: 12px !important; font-weight: 600 !important; line-height: 1.35; }
+
+/* Body text: 13px base, not 14-16px */
+p, span, div, li, td, th, label, a {
+  font-weight: inherit;
+}
+
+/* Inputs: compact 13px */
+input, textarea, select {
+  font-size: 13px !important;
+}
+
+/* Buttons: compact, professional */
+button {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+/* Tables: tight professional rows */
+table { font-size: 13px; border-collapse: collapse; }
+th { font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 0.06em; }
+td { font-size: 13px !important; padding: 8px 12px; }
+
+/* Cards: reduce padding bloat */
+[style*="borderRadius"][style*="padding"] {
+  /* Handled by inline — this is a hint for dev */
+}
+
+/* Labels: small caps style */
+label {
+  font-size: 11px !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+/* Badge/chip styling */
+[style*="borderRadius: 20"] {
+  font-size: 11px !important;
+}
+
+/* Force REAL Inter on every element with !important — individual pages hardcode their own
+   `-apple-system, 'Segoe UI', …` stack inline on their root wrappers, and inline styles are
+   only beaten by an !important CSS declaration. `body *` reaches every descendant. */
+body, body * {
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif !important;
+}
+body, button, input, textarea, select {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Kill the "fat" — heavy 800/900 inline weights become semibold 600 */
+[style*="fontWeight: 900"], [style*="fontWeight: 800"] {
+  font-weight: 600 !important;
+}
+
+/* ── Responsive breakpoints ── */
+@media (max-width: 768px) {
+  html { font-size: 13px; }
+
+  /* Hide desktop nav links on mobile — hamburger handles it */
+  [data-nav-links] { display: none !important; }
+  [data-nav-desktop] { display: none !important; }
+
+  /* Mobile-safe modals */
+  [data-modal] { width: calc(100vw - 32px) !important; max-width: 100% !important; }
+
+  /* AI chat panel full-width on mobile */
+  [data-ai-panel] {
+    width: calc(100vw - 24px) !important;
+    right: 12px !important;
+    left: 12px !important;
+    bottom: 12px !important;
+  }
+
+  /* Tables scroll horizontally */
+  [data-table-wrap] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 12px; }
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/* ── DESIGN SYSTEM v2 — Glassmorphism + Animations ────── */
+/* ══════════════════════════════════════════════════════════ */
+
+/* ── Apple-grade Glassmorphism ── */
+.glass {
+  background: #141416;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.glass-sm {
+  background: #141416;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.glass-elevated {
+  background: #141416;
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+.glass-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-hover:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  background: var(--bg-elevated);
+}
+
+/* Page transition — fade in on mount */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+/* Slide in from right (for mobile page transitions) */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.slide-in {
+  animation: slideInRight 0.2s ease-out;
+}
+
+/* Shimmer loading skeleton */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.07) 50%, rgba(0,0,0,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Pulse animation (for recording, live indicators) */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* Spin animation */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+
+/* Bounce animation (for typing indicators) */
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* Scale tap feedback */
+.tap-scale:active { transform: scale(0.97); }
+.tap-scale { transition: transform 0.1s ease; }
+
+/* Gold glow on focus */
+input:focus, textarea:focus, select:focus {
+  border-color: #F59E0B !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
+  outline: none;
+}
+/* Apple-grade input styling */
+input, textarea {
+  background: #141416;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  color: #FFFFFF;
+  transition: all 0.2s ease;
+}
+input:hover, textarea:hover {
+  border-color: rgba(0,0,0,0.14);
+  background: #141416;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--text-disabled);
+}
+
+/* Status badge colors — iOS system hues on light tints */
+.badge-green { background: rgba(52, 199, 89, 0.14); color: #248A3D; border: 1px solid rgba(52, 199, 89, 0.30); }
+.badge-gold { background: rgba(245, 158, 11, 0.12); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.28); }
+.badge-red { background: rgba(255, 59, 48, 0.12); color: #D70015; border: 1px solid rgba(255, 59, 48, 0.28); }
+.badge-blue { background: rgba(245, 158, 11, 0.12); color: #0066CC; border: 1px solid rgba(245, 158, 11, 0.28); }
+.badge-purple { background: rgba(175, 82, 222, 0.12); color: #9A3CCB; border: 1px solid rgba(175, 82, 222, 0.28); }
+.badge-gray { background: rgba(142, 142, 147, 0.12); color: #CBD5E1; border: 1px solid rgba(142, 142, 147, 0.28); }
+[class^="badge-"] {
+  display: inline-flex; align-items: center; padding: 2px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.02em; white-space: nowrap;
+}
+
+/* Tooltip */
+.tooltip { position: relative; }
+.tooltip::after {
+  content: attr(data-tip); position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%); background: rgba(20,20,22,0.98); color: #FFFFFF;
+  padding: 6px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  border: 1px solid rgba(255,255,255,0.12); margin-bottom: 6px;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.tooltip:hover::after { opacity: 1; }
+
+/* Progress bar */
+.progress-bar {
+  height: 6px; background: rgba(0,0,0,0.08); border-radius: 4px; overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%; border-radius: 4px; transition: width 0.5s ease;
+  background: linear-gradient(90deg, #F59E0B, #E0A82E);
+}
+
+/* Divider */
+.divider {
+  height: 1px; background: rgba(0,0,0,0.08); margin: 16px 0;
+}
+
+/* Scrollbar for light glass containers */
+.glass::-webkit-scrollbar { width: 4px; }
+.glass::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 2px; }
+
+/* Confetti burst */
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Smooth transitions for all interactive elements */
+a, button, input, select, textarea {
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+/* Apple-grade table rows */
+tr { transition: background 0.15s ease; }
+tr:hover td { background: rgba(0, 0, 0, 0.03) !important; }
+thead th { background: #1c1c1e !important; border-bottom: 1px solid rgba(255,255,255,0.12) !important; }
+tbody td { border-bottom: 1px solid rgba(255,255,255,0.12) !important; }
+
+/* Gold accent button utility */
+.btn-gold {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #FFFFFF; font-weight: 700; border: none; border-radius: 10px;
+  padding: 10px 24px; cursor: pointer; transition: all 0.2s ease;
+  box-shadow: 0 2px 12px rgba(245, 158, 11,0.25);
+}
+.btn-gold:hover {
+  box-shadow: 0 4px 20px rgba(245, 158, 11,0.35);
+  transform: translateY(-1px);
+}
+.btn-gold:active { transform: scale(0.98) translateY(0); }
+
+/* Ghost button */
+.btn-ghost {
+  background: #141416; color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+  padding: 10px 24px; cursor: pointer; transition: all 0.2s ease;
+}
+.btn-ghost:hover {
+  background: #1c1c1e;
+  border-color: rgba(0,0,0,0.14);
+}
+
+/* Gradient mesh background utility */
+.mesh-bg {
+  position: relative;
+  overflow: hidden;
+}
+.mesh-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(ellipse at 20% 50%, rgba(245, 158, 11,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(245,158,11,0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(175,82,222,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scroll-triggered fade in */
+@keyframes fadeInOnScroll {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-section {
+  animation: fadeInOnScroll 0.6s ease-out both;
+}
+
+/* ── Landing page specific overrides ── */
+[data-landing] h1 { font-size: clamp(18px, 1.9vw, 23px) !important; font-weight: 600 !important; letter-spacing: -0.024em; line-height: 1.22; }
+[data-landing] h2 { font-size: clamp(14px, 1.4vw, 17px) !important; font-weight: 600 !important; letter-spacing: -0.016em; line-height: 1.32; }
+[data-landing] h3 { font-size: clamp(12.5px, 1.3vw, 15px) !important; font-weight: 600 !important; letter-spacing: -0.008em; }
+[data-landing] p { font-size: 13px !important; line-height: 1.65; }
+
+/* FIX: light-theme flip left inputs at color:#F5F5F7 (white) on a white field =
+   invisible typing in every form. Force dark text on a solid white field. */
+input, textarea, select {
+  background-color: #141416 !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #FFFFFF;
+}
+input::placeholder, textarea::placeholder { color: #CBD5E1 !important; opacity: 1; }
+/* FIX: Chrome/Safari autofill paints its OWN light background that background-color
+   can't override — only an inset box-shadow can. Without this, autofilled email/
+   password text is white-on-light = invisible (reported on the client portal). */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #141416 inset !important;
+  box-shadow: 0 0 0 1000px #141416 inset !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #FFFFFF !important;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+input:-webkit-autofill::first-line { color: #FFFFFF !important; font-size: 15px; }

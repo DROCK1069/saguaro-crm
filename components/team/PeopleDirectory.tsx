@@ -1,0 +1,207 @@
+'use client';
+/**
+ * People / HR (web) — tenant employee roster + full employee record: contact & pay,
+ * certifications, specialties, project assignments, and incident/warning history.
+ * Reads/writes go through the RLS-scoped browser Supabase client (auto_set_tenant_id
+ * trigger stamps the tenant). Mirrors the iOS People module.
+ */
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
+import { UsersThree, Plus, MagnifyingGlass, PencilSimple, Trash, X, SealCheck, Warning, Star, FirstAid, Eye, ChatDots, Folder, CurrencyDollar, Phone, Envelope, MapPin, Briefcase } from '@phosphor-icons/react';
+
+const GOLD = '#F59E0B', DARK = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)';
+const DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#3dd68c', RED = '#ef4444', AMBER = '#f59e0b';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const nameOf = (e: any) => (e?.full_name || `${e?.first_name ?? ''} ${e?.last_name ?? ''}`).trim() || 'Unnamed';
+const initials = (n: string) => n.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+const INC_TYPES = [
+  { v: 'warning', l: 'Warning', c: AMBER, I: ChatDots }, { v: 'incident', l: 'Incident', c: RED, I: Warning },
+  { v: 'injury', l: 'Injury', c: RED, I: FirstAid }, { v: 'near_miss', l: 'Near miss', c: AMBER, I: Eye }, { v: 'commendation', l: 'Commendation', c: GREEN, I: Star },
+];
+const incMeta = (t: string) => INC_TYPES.find((x) => x.v === t) ?? INC_TYPES[1];
+const fmtDate = (s: string | null) => { if (!s) return ''; const d = new Date(s); return isNaN(d.getTime()) ? String(s) : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); };
+
+export function PeopleDirectory() {
+  const sb = getSupabaseBrowser();
+  const [emps, setEmps] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [q, setQ] = useState('');
+  const [selId, setSelId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<any>(null);
+  const [assigns, setAssigns] = useState<any[]>([]);
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [loggingInc, setLoggingInc] = useState(false);
+  const [specInput, setSpecInput] = useState('');
+  const [f, setF] = useState<any>({});
+  const [inc, setInc] = useState<any>({ incident_type: 'incident', severity: 'low', occurred_at: new Date().toISOString().slice(0, 10) });
+
+  const loadRoster = useCallback(async () => {
+    const { data } = await sb.from('employees').select('id, first_name, last_name, full_name, title, trade, email, phone, is_active, osha_10_certified, osha_30_certified, forklift_certified').order('first_name');
+    setEmps(data ?? []);
+  }, [sb]);
+  useEffect(() => { loadRoster(); sb.from('projects').select('id, name').order('name').then(({ data }) => setProjects(data ?? [])); }, [loadRoster, sb]);
+
+  const loadDetail = useCallback(async (id: string) => {
+    const [{ data: e }, { data: a }, { data: i }] = await Promise.all([
+      sb.from('employees').select('*').eq('id', id).maybeSingle(),
+      sb.from('employee_project_assignments').select('id, project_id, active').eq('employee_id', id),
+      sb.from('employee_incidents').select('*').eq('employee_id', id).order('occurred_at', { ascending: false }),
+    ]);
+    setDetail(e); setAssigns(a ?? []); setIncidents(i ?? []);
+  }, [sb]);
+  useEffect(() => { if (selId) loadDetail(selId); }, [selId, loadDetail]);
+
+  const filtered = useMemo(() => { const ql = q.trim().toLowerCase(); return emps.filter((e) => e.is_active !== false && (!ql || (nameOf(e) + ' ' + (e.title ?? '') + ' ' + (e.trade ?? '')).toLowerCase().includes(ql))); }, [emps, q]);
+  const projName = (pid: string) => projects.find((p) => p.id === pid)?.name ?? 'Project';
+  const specialties: string[] = Array.isArray(detail?.specialties) ? detail.specialties : [];
+
+  const addEmp = async () => {
+    if (!f.first_name?.trim() && !f.last_name?.trim()) return;
+    const { data } = await sb.from('employees').insert({ first_name: f.first_name || null, last_name: f.last_name || null, full_name: `${f.first_name ?? ''} ${f.last_name ?? ''}`.trim() || null, title: f.title || null, trade: f.trade || null, email: f.email || null, phone: f.phone || null, employment_type: f.employment_type || 'hourly', regular_rate: parseFloat(f.regular_rate) || 0, is_active: true }).select('id').maybeSingle();
+    setAdding(false); setF({}); await loadRoster(); if (data?.id) setSelId(data.id);
+  };
+  const patch = async (payload: any) => { if (!selId) return; await sb.from('employees').update(payload).eq('id', selId); await loadDetail(selId); await loadRoster(); };
+  const saveEdit = async () => { await patch({ first_name: f.first_name || null, last_name: f.last_name || null, full_name: `${f.first_name ?? ''} ${f.last_name ?? ''}`.trim() || null, title: f.title || null, trade: f.trade || null, email: f.email || null, phone: f.phone || null, address: f.address || null, regular_rate: parseFloat(f.regular_rate) || 0, overtime_rate: parseFloat(f.overtime_rate) || 0, emergency_contact_name: f.emergency_contact_name || null, emergency_contact_phone: f.emergency_contact_phone || null }); setEditing(false); };
+  const addSpec = async () => { const s = specInput.trim(); if (!s) return; await patch({ specialties: [...specialties, s] }); setSpecInput(''); };
+  const addAssign = async (pid: string) => { if (!selId) return; await sb.from('employee_project_assignments').insert({ employee_id: selId, project_id: pid, active: true }); loadDetail(selId); };
+  const rmAssign = async (aid: string) => { await sb.from('employee_project_assignments').delete().eq('id', aid); if (selId) loadDetail(selId); };
+  const saveInc = async () => { if (!selId || (!inc.description?.trim() && !inc.title?.trim())) return; await sb.from('employee_incidents').insert({ employee_id: selId, incident_type: inc.incident_type, title: inc.title || null, description: inc.description || null, severity: inc.severity, equipment_involved: inc.equipment_involved || null, occurred_at: new Date(inc.occurred_at).toISOString(), action_taken: inc.action_taken || null, status: 'open' }); setLoggingInc(false); setInc({ incident_type: 'incident', severity: 'low', occurred_at: new Date().toISOString().slice(0, 10) }); loadDetail(selId); };
+
+  const inp: React.CSSProperties = { background: DARK, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, padding: '9px 11px', fontSize: 14, width: '100%' };
+  const btn: React.CSSProperties = { background: GOLD, color: DARK, fontWeight: 700, border: 'none', borderRadius: 8, padding: '9px 16px', cursor: 'pointer', fontSize: 14 };
+  const unassigned = projects.filter((p) => !assigns.some((a) => a.project_id === p.id));
+
+  return (
+    <div style={{ background: DARK, color: TEXT, minHeight: '100vh', fontFamily: 'system-ui,Segoe UI,sans-serif' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 20px 80px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <UsersThree size={26} weight="fill" color={GOLD} />
+          <div style={{ flex: 1 }}><h1 style={{ fontSize: 26, fontWeight: 800, margin: 0 }}>People</h1><p style={{ color: DIM, margin: 0, fontSize: 13.5 }}>Your crew — records, certifications, assignments, and incident history.</p></div>
+          <button onClick={() => { setF({ employment_type: 'hourly' }); setAdding(true); }} style={{ ...btn, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={15} weight="bold" />Add employee</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 340px) minmax(0, 1fr)', gap: 16, marginTop: 20, alignItems: 'start' }}>
+          {/* roster */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
+              <MagnifyingGlass size={16} color={DIM} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" style={{ background: 'none', border: 'none', color: TEXT, outline: 'none', flex: 1, fontSize: 14 }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '72vh', overflowY: 'auto' }}>
+              {filtered.length === 0 ? <div style={{ color: DIM, fontSize: 13, padding: 12 }}>{emps.length ? 'No matches' : 'No employees yet — add your first.'}</div> : filtered.map((e) => (
+                <button key={e.id} onClick={() => setSelId(e.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', background: selId === e.id ? 'rgba(245,158,11,0.12)' : RAISED, border: `1px solid ${selId === e.id ? GOLD : BORDER}`, borderRadius: 10, padding: 10, cursor: 'pointer', color: TEXT }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 19, background: 'rgba(245,158,11,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, fontWeight: 800, fontSize: 13 }}>{initials(nameOf(e))}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{nameOf(e)}</div><div style={{ color: DIM, fontSize: 12.5 }}>{[e.title, e.trade].filter(Boolean).join(' · ') || 'No title'}</div></div>
+                  {e.osha_30_certified ? <span style={{ fontSize: 10, color: GREEN, fontWeight: 700 }}>OSHA30</span> : e.osha_10_certified ? <span style={{ fontSize: 10, color: GREEN, fontWeight: 700 }}>OSHA10</span> : null}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* detail */}
+          <div>
+            {!detail ? (
+              <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 40, textAlign: 'center', color: DIM }}>Select an employee to view their record.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 28, background: 'rgba(245,158,11,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, fontWeight: 800, fontSize: 19 }}>{initials(nameOf(detail))}</div>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: 20, fontWeight: 800 }}>{nameOf(detail)}</div><div style={{ color: DIM, fontSize: 14 }}>{[detail.title, detail.trade].filter(Boolean).join(' · ') || 'No title'}</div></div>
+                  <button onClick={() => { setF({ first_name: detail.first_name ?? '', last_name: detail.last_name ?? '', title: detail.title ?? '', trade: detail.trade ?? '', email: detail.email ?? '', phone: detail.phone ?? '', address: detail.address ?? '', regular_rate: String(detail.regular_rate ?? ''), overtime_rate: String(detail.overtime_rate ?? ''), emergency_contact_name: detail.emergency_contact_name ?? '', emergency_contact_phone: detail.emergency_contact_phone ?? '' }); setEditing(true); }} style={{ ...btn, background: 'transparent', color: TEXT, border: `1px solid ${BORDER}`, display: 'inline-flex', gap: 6, alignItems: 'center' }}><PencilSimple size={14} />Edit</button>
+                  <button onClick={() => patch({ is_active: !(detail.is_active !== false) })} style={{ ...btn, background: 'transparent', color: detail.is_active !== false ? GREEN : DIM, border: `1px solid ${BORDER}` }}>{detail.is_active !== false ? 'Active' : 'Inactive'}</button>
+                </div>
+
+                <Section title="Contact & pay">
+                  <Info I={Envelope} k="Email" v={detail.email} /><Info I={Phone} k="Phone" v={detail.phone} /><Info I={MapPin} k="Address" v={detail.address} />
+                  <Info I={Briefcase} k="Type" v={detail.employment_type} /><Info I={CurrencyDollar} k="Rate" v={detail.regular_rate ? `$${detail.regular_rate}/hr${detail.overtime_rate ? ` · OT $${detail.overtime_rate}` : ''}` : null} />
+                  <Info I={FirstAid} k="Emergency" v={detail.emergency_contact_name ? `${detail.emergency_contact_name}${detail.emergency_contact_phone ? ` · ${detail.emergency_contact_phone}` : ''}` : null} />
+                </Section>
+
+                <Section title="Certifications">
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {[['osha_10_certified', 'OSHA 10'], ['osha_30_certified', 'OSHA 30'], ['forklift_certified', 'Forklift']].map(([col, label]) => (
+                      <button key={col} onClick={() => patch({ [col]: !detail[col] })} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: `1px solid ${detail[col] ? GREEN : BORDER}`, background: detail[col] ? 'rgba(61,214,140,0.12)' : 'transparent', color: detail[col] ? GREEN : DIM, borderRadius: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}><SealCheck size={16} weight={detail[col] ? 'fill' : 'regular'} />{label}</button>
+                    ))}
+                  </div>
+                </Section>
+
+                <Section title="Specialties">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                    {specialties.map((s) => <button key={s} onClick={() => patch({ specialties: specialties.filter((x) => x !== s) })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: DARK, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '6px 10px', color: TEXT, cursor: 'pointer', fontSize: 13 }}>{s}<X size={11} color={DIM} /></button>)}
+                    {specialties.length === 0 ? <span style={{ color: DIM, fontSize: 13 }}>None yet.</span> : null}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}><input value={specInput} onChange={(e) => setSpecInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSpec()} placeholder="Add a specialty (e.g. Welding)" style={inp} /><button onClick={addSpec} style={btn}><Plus size={15} weight="bold" /></button></div>
+                </Section>
+
+                <Section title="Project assignments" action={unassigned.length ? <select onChange={(e) => { if (e.target.value) addAssign(e.target.value); e.target.value = ''; }} defaultValue="" style={{ ...inp, width: 'auto', fontSize: 13 }}><option value="">+ Assign to…</option>{unassigned.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select> : null}>
+                  {assigns.length === 0 ? <span style={{ color: DIM, fontSize: 13 }}>Not assigned to any project.</span> : assigns.map((a) => (
+                    <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: `1px solid ${BORDER}` }}><Folder size={16} color={GOLD} weight="fill" /><span style={{ flex: 1 }}>{projName(a.project_id)}</span><button onClick={() => rmAssign(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={15} color={DIM} /></button></div>
+                  ))}
+                </Section>
+
+                <Section title="Incidents & notes" action={<button onClick={() => setLoggingInc(true)} style={{ ...btn, padding: '6px 12px', fontSize: 13 }}>+ Log</button>}>
+                  {incidents.length === 0 ? <span style={{ color: DIM, fontSize: 13 }}>No incidents on record.</span> : incidents.map((it) => { const m = incMeta(it.incident_type); const sc = it.severity === 'high' || it.severity === 'critical' ? RED : it.severity === 'medium' ? AMBER : DIM; return (
+                    <div key={it.id} style={{ borderLeft: `3px solid ${sc}`, background: DARK, borderRadius: 8, padding: 12, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><m.I size={15} color={m.c} weight="fill" /><span style={{ color: m.c, fontWeight: 800, fontSize: 11.5, textTransform: 'uppercase' }}>{m.l}</span><span style={{ marginLeft: 'auto', color: DIM, fontSize: 12 }}>{fmtDate(it.occurred_at)}</span></div>
+                      {it.title ? <div style={{ fontWeight: 700, marginTop: 4 }}>{it.title}</div> : null}
+                      {it.description ? <div style={{ color: DIM, fontSize: 13.5, marginTop: 2 }}>{it.description}</div> : null}
+                      {(it.equipment_involved || it.action_taken) ? <div style={{ color: DIM, fontSize: 12, marginTop: 4 }}>{it.equipment_involved ? `Equipment: ${it.equipment_involved}. ` : ''}{it.action_taken ? `Action: ${it.action_taken}` : ''}</div> : null}
+                    </div>
+                  ); })}
+                </Section>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {(adding || editing) && (
+        <Modal title={adding ? 'Add employee' : 'Edit employee'} onClose={() => { setAdding(false); setEditing(false); }}>
+          <div style={{ display: 'flex', gap: 8 }}><input value={f.first_name ?? ''} onChange={(e) => setF({ ...f, first_name: e.target.value })} placeholder="First name" style={inp} /><input value={f.last_name ?? ''} onChange={(e) => setF({ ...f, last_name: e.target.value })} placeholder="Last name" style={inp} /></div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input value={f.title ?? ''} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="Title" style={inp} /><input value={f.trade ?? ''} onChange={(e) => setF({ ...f, trade: e.target.value })} placeholder="Trade" style={inp} /></div>
+          <input value={f.email ?? ''} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="Email" style={{ ...inp, marginTop: 8 }} />
+          <input value={f.phone ?? ''} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="Phone" style={{ ...inp, marginTop: 8 }} />
+          {editing && <input value={f.address ?? ''} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Address" style={{ ...inp, marginTop: 8 }} />}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input value={f.regular_rate ?? ''} onChange={(e) => setF({ ...f, regular_rate: e.target.value })} placeholder="Rate $/hr" style={inp} />{editing && <input value={f.overtime_rate ?? ''} onChange={(e) => setF({ ...f, overtime_rate: e.target.value })} placeholder="OT $/hr" style={inp} />}</div>
+          {editing && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input value={f.emergency_contact_name ?? ''} onChange={(e) => setF({ ...f, emergency_contact_name: e.target.value })} placeholder="Emergency contact" style={inp} /><input value={f.emergency_contact_phone ?? ''} onChange={(e) => setF({ ...f, emergency_contact_phone: e.target.value })} placeholder="Emergency phone" style={inp} /></div>}
+          <button onClick={adding ? addEmp : saveEdit} style={{ ...btn, marginTop: 14, width: '100%' }}>{adding ? 'Add employee' : 'Save'}</button>
+        </Modal>
+      )}
+
+      {loggingInc && (
+        <Modal title="Log incident / note" onClose={() => setLoggingInc(false)}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>{INC_TYPES.map((t) => { const on = inc.incident_type === t.v; return <button key={t.v} onClick={() => setInc({ ...inc, incident_type: t.v })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${on ? t.c : BORDER}`, background: on ? `${t.c}22` : 'transparent', color: on ? t.c : DIM, borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700 }}><t.I size={14} weight="fill" />{t.l}</button>; })}</div>
+          <input value={inc.title ?? ''} onChange={(e) => setInc({ ...inc, title: e.target.value })} placeholder="Title / summary" style={inp} />
+          <textarea value={inc.description ?? ''} onChange={(e) => setInc({ ...inc, description: e.target.value })} placeholder="What happened…" style={{ ...inp, marginTop: 8, minHeight: 64, resize: 'vertical' }} />
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input type="date" value={inc.occurred_at} onChange={(e) => setInc({ ...inc, occurred_at: e.target.value })} style={inp} /><select value={inc.severity} onChange={(e) => setInc({ ...inc, severity: e.target.value })} style={inp}>{['low', 'medium', 'high', 'critical'].map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+          <input value={inc.equipment_involved ?? ''} onChange={(e) => setInc({ ...inc, equipment_involved: e.target.value })} placeholder="Equipment involved (opt)" style={{ ...inp, marginTop: 8 }} />
+          <input value={inc.action_taken ?? ''} onChange={(e) => setInc({ ...inc, action_taken: e.target.value })} placeholder="Action taken (opt)" style={{ ...inp, marginTop: 8 }} />
+          <button onClick={saveInc} style={{ ...btn, marginTop: 14, width: '100%' }}>Log it</button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}><div style={{ fontSize: 12, color: DIM, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', flex: 1 }}>{title}</div>{action}</div>
+      {children}
+    </div>
+  );
+}
+function Info({ I, k, v }: { I: any; k: string; v: any }) {
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: `1px solid ${BORDER}` }}><I size={15} color={DIM} /><span style={{ color: DIM, fontSize: 13, width: 92 }}>{k}</span><span style={{ color: v ? TEXT : DIM, fontSize: 14 }}>{v || '—'}</span></div>;
+}
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 18, width: 'min(460px, 100%)', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}><div style={{ fontWeight: 800, fontSize: 17, flex: 1 }}>{title}</div><button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color={DIM} /></button></div>
+        {children}
+      </div>
+    </div>
+  );
+}

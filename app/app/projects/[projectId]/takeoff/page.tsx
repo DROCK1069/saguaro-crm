@@ -1,0 +1,1681 @@
+'use client';
+
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react';
+import { useParams } from 'next/navigation';
+import { applyMarkupStack } from '@/lib/takeoff/engine';
+import { humanError } from '@/lib/errors';
+import { useToast } from '../../../../../components/Toast';
+import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning, CheckCircle, Ruler, Robot, CircleNotch, Circle, Plus, Sparkle, ShieldCheck, Timer, Buildings, TrendUp, Stack, Target, MagicWand, FileText, Scroll, FolderSimple, SealCheck, Warning } from '@phosphor-icons/react';
+
+interface TakeoffItem {
+  csiCode: string;
+  csiDivision: string;
+  csiName: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  totalCost: number;
+  laborHours: number;
+  notes: string;
+}
+
+interface TakeoffResult {
+  takeoffId: string;
+  projectName: string;
+  buildingType: string;
+  estimatedSF: number;
+  confidence: number;
+  summary: string;
+  items: TakeoffItem[];
+  totalMaterialCost: number;
+  totalLaborCost: number;
+  totalProjectCost: number;
+  contingency: number;
+  recommendations: string[];
+  itemCount: number;
+  // honesty payload (present once analysis completes)
+  pagesTotal?: number;
+  pagesAnalyzed?: number;
+  sheetsTotal?: number;
+  sheetsAnalyzed?: number;
+  sheetsSkipped?: number;
+  disciplines?: string[];
+  truncated?: boolean;
+  truncationNote?: string;
+  elapsedSec?: number;
+  multiSheet?: boolean;
+}
+
+
+interface ProgressState {
+  step: number;
+  message: string;
+  pct: number;
+}
+
+// Construct each formatter ONCE at module scope — previously these built a new
+// Intl.NumberFormat on every call (~5×/row × hundreds of rows × 60fps slider drags
+// = thousands of allocations per render, a major cause of the main-thread freeze).
+const CURRENCY_FMT = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const NUMBER_FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const fmt$ = (n: number) => CURRENCY_FMT.format(Number.isFinite(n) ? n : 0);
+const fmtN = (n: number) => NUMBER_FMT.format(Number.isFinite(n) ? n : 0);
+// Safe numeric coercion for SSE done-payload fields (which arrive as unknown JSON).
+const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+// The compliance chain endpoint (task 2). SSE — SAME contract as sage-auto-docs:
+//   progress { step, pct, message } · error { message } · done { ...counts }
+// The "Yes, build it all" flow runs sage-auto-docs THEN this, streaming both.
+const complianceEndpoint = (takeoffId: string) => `/api/takeoff/${takeoffId}/sage-compliance`;
+
+interface AutoBuildSummary {
+  packages: number;
+  jackets: number;
+  sov: boolean;
+  lienWaivers: number;
+  w9s: number;
+  filed: number;
+}
+
+// Hard cap on synchronously-rendered rows so a huge AI extraction can't freeze the
+// page building thousands of DOM nodes at once. Beyond this, we show a "load more".
+const ROW_RENDER_CAP = 300;
+
+const CSI_DIVISION_NAMES: Record<string, string> = {
+  '01': 'General Requirements',
+  '02': 'Existing Conditions',
+  '03': 'Concrete',
+  '04': 'Masonry',
+  '05': 'Metals',
+  '06': 'Wood, Plastics, Composites',
+  '07': 'Thermal and Moisture Protection',
+  '08': 'Openings',
+  '09': 'Finishes',
+  '10': 'Specialties',
+  '11': 'Equipment',
+  '12': 'Furnishings',
+  '21': 'Fire Suppression',
+  '22': 'Plumbing',
+  '23': 'HVAC',
+  '26': 'Electrical',
+  '27': 'Communications',
+  '28': 'Electronic Safety',
+  '31': 'Earthwork',
+  '32': 'Exterior Improvements',
+  '33': 'Utilities',
+};
+
+const GOLD = '#F59E0B';
+const GOLD_HI = '#FBBF24';
+const AMBER = '#D97706';
+const GREEN = '#22C55E';
+const SURFACE = 'rgba(255,255,255,0.02)';
+const BORDER = 'rgba(255,255,255,0.05)';
+
+const ROW_GRID = '100px 1fr 80px 56px 80px 110px 110px';
+
+// ── Shared cinematic FX (keyframes + interaction classes) ──────────────────────
+// Rendered once per state via <style>. Every animation is disabled under
+// prefers-reduced-motion by the trailing media query.
+const FX_KEYFRAMES = `
+@keyframes tkRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tkPop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes tkFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes tkScanV{0%{transform:translateY(0);opacity:0}8%{opacity:1}92%{opacity:1}100%{transform:translateY(var(--tkScanH,420px));opacity:0}}
+@keyframes tkGlow{0%,100%{box-shadow:0 0 0 1px rgba(245,158,11,.30),0 22px 60px -18px rgba(245,158,11,.20),inset 0 0 60px rgba(245,158,11,.045)}50%{box-shadow:0 0 0 1px rgba(245,158,11,.55),0 26px 90px -14px rgba(245,158,11,.34),inset 0 0 90px rgba(245,158,11,.08)}}
+@keyframes tkRing{0%{transform:scale(.85);opacity:.75}70%{opacity:0}100%{transform:scale(1.75);opacity:0}}
+@keyframes tkAur1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(7%,5%) scale(1.14)}}
+@keyframes tkAur2{0%,100%{transform:translate(0,0) scale(1.06)}50%{transform:translate(-8%,6%) scale(1)}}
+@keyframes tkAur3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(5%,-7%) scale(1.16)}}
+@keyframes tkGridPan{from{background-position:0 0}to{background-position:34px 34px}}
+@keyframes tkShimmer{from{background-position:180% 0}to{background-position:-180% 0}}
+@keyframes tkSpin{to{transform:rotate(360deg)}}
+@keyframes tkSweep{0%{top:-8%}100%{top:108%}}
+@keyframes tkPulseA{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.34)}50%{box-shadow:0 0 0 22px rgba(245,158,11,0)}}
+@keyframes tkBarShine{0%{transform:translateX(-140%)}55%,100%{transform:translateX(360%)}}
+.tkHover{transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s ease,border-color .2s ease,background .2s ease}
+.tkHover:hover{transform:translateY(-5px);border-color:rgba(245,158,11,.45)}
+.tkHover:hover .tkIcon{box-shadow:0 0 22px rgba(245,158,11,.34)}
+.tkBtn{transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+.tkBtn:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.tkShine{background-size:200% 100%;animation:tkShimmer 3.4s linear infinite}
+/* Beat the global h1/h2 !important size caps (globals.css) with higher specificity */
+h1.tkH1{font-size:clamp(34px,5.6vw,62px)!important;font-weight:900!important;line-height:1.03!important;letter-spacing:-0.03em!important}
+h2.tkH2{font-size:clamp(22px,3vw,30px)!important;font-weight:800!important;line-height:1.15!important;letter-spacing:-0.02em!important}
+/* Tactile markup sliders — white knob with a colored glow (color set inline per slider) */
+.tkRange{-webkit-appearance:none;appearance:none;height:8px;border-radius:999px;outline:none}
+.tkRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid currentColor;box-shadow:0 0 10px currentColor,0 2px 6px rgba(0,0,0,.55);cursor:pointer;transition:transform .12s ease}
+.tkRange::-webkit-slider-thumb:hover{transform:scale(1.18)}
+.tkRange::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid currentColor;box-shadow:0 0 10px currentColor,0 2px 6px rgba(0,0,0,.55);cursor:pointer}
+@media (prefers-reduced-motion: reduce){
+  .tkRoot, .tkRoot *{animation:none!important;transition:none!important}
+  .tkHover:hover,.tkBtn:hover{transform:none!important}
+}
+`;
+
+// Scoped animated backdrop — aurora gold blobs + drifting blueprint grid + vignette.
+// position:absolute so it fills only the page's content column (never bleeds under the
+// project sidebar). Purely decorative; pointer-events:none keeps the dropzone clickable.
+function Aurora({ soft = false }: { soft?: boolean }) {
+  const grid =
+    'linear-gradient(rgba(245,158,11,0.055) 1px, transparent 1px),' +
+    'linear-gradient(90deg, rgba(245,158,11,0.055) 1px, transparent 1px)';
+  const gridMask = 'radial-gradient(120% 78% at 50% 14%, #000 24%, transparent 76%)';
+  return (
+    <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 90% at 50% -8%, rgba(245,158,11,0.10), transparent 55%)' }} />
+      <div style={{ position: 'absolute', width: 680, height: 680, left: '-16%', top: '-26%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,158,11,0.20), transparent 62%)', filter: 'blur(30px)', animation: 'tkAur1 17s ease-in-out infinite', opacity: soft ? 0.55 : 1 }} />
+      <div style={{ position: 'absolute', width: 560, height: 560, right: '-12%', top: '0%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(217,119,6,0.17), transparent 60%)', filter: 'blur(38px)', animation: 'tkAur2 21s ease-in-out infinite', opacity: soft ? 0.5 : 1 }} />
+      <div style={{ position: 'absolute', width: 540, height: 540, left: '28%', bottom: '-28%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.12), transparent 60%)', filter: 'blur(42px)', animation: 'tkAur3 24s ease-in-out infinite', opacity: soft ? 0.45 : 1 }} />
+      <div style={{ position: 'absolute', inset: -24, backgroundImage: grid, backgroundSize: '34px 34px', animation: 'tkGridPan 9s linear infinite', maskImage: gridMask, WebkitMaskImage: gridMask, opacity: soft ? 0.35 : 0.65 }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(130% 100% at 50% -6%, transparent 50%, rgba(2,4,8,0.62))' }} />
+    </div>
+  );
+}
+
+/**
+ * Memoized line-item table. Because `groupedItems` is memoized on the takeoff in the
+ * parent, this component's props are reference-stable across markup-slider drags, so
+ * React.memo skips re-rendering the (potentially thousands-of-rows) table entirely —
+ * killing the freeze. Rows are also capped to ROW_RENDER_CAP with a "show all" toggle
+ * so a huge AI extraction can't build thousands of DOM nodes in one synchronous commit.
+ */
+const LineItemTable = memo(function LineItemTable({ groupedItems, sellMult }: { groupedItems: Record<string, TakeoffItem[]>; sellMult: number }) {
+  const [showAll, setShowAll] = useState(false);
+  const entries = useMemo(
+    () => Object.entries(groupedItems).sort(([a], [b]) => a.localeCompare(b)),
+    [groupedItems],
+  );
+  const totalRows = useMemo(() => entries.reduce((s, [, items]) => s + items.length, 0), [entries]);
+  const capped = !showAll && totalRows > ROW_RENDER_CAP;
+
+  let budget = capped ? ROW_RENDER_CAP : Infinity;
+  return (
+    <>
+      {entries.map(([div, items]) => {
+        if (budget <= 0) return null;
+        const shown = budget === Infinity ? items : items.slice(0, budget);
+        budget -= shown.length;
+        const divTotal = items.reduce((s, i) => s + i.totalCost, 0);
+        const divName = CSI_DIVISION_NAMES[div] || `Division ${div}`;
+        return (
+          <div key={div}>
+            <div style={{ padding: '8px 16px', background: 'rgba(245, 158, 11,0.06)', borderBottom: `1px solid ${BORDER}`, borderTop: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <span>Division {div} — {divName}</span>
+              <span>{fmt$(divTotal)}</span>
+            </div>
+            {shown.map((item, idx) => (
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: ROW_GRID, padding: '10px 16px', borderBottom: `1px solid rgba(255,255,255,0.04)`, fontSize: 13, alignItems: 'center', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
+                <div style={{ color: GOLD, fontFamily: 'monospace', fontSize: 12 }}>{item.csiCode}</div>
+                <div style={{ color: 'rgba(255,255,255,0.85)', paddingRight: 8 }}>{item.description}</div>
+                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.7)' }}>{fmtN(item.quantity)}</div>
+                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{item.unit}</div>
+                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${item.unitCost.toFixed(2)}</div>
+                <div style={{ textAlign: 'right', color: GOLD, fontWeight: 600 }}>{fmt$(item.totalCost)}</div>
+                <div style={{ textAlign: 'right', color: '#22C55E', fontWeight: 600 }}>{fmt$(item.totalCost * sellMult)}</div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+      {capped && (
+        <button
+          onClick={() => setShowAll(true)}
+          style={{ width: '100%', padding: '12px', background: 'rgba(245, 158, 11,0.08)', border: 'none', borderTop: `1px solid ${BORDER}`, color: GOLD, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+        >
+          Showing first {fmtN(ROW_RENDER_CAP)} of {fmtN(totalRows)} line items — show all
+        </button>
+      )}
+    </>
+  );
+});
+
+export default function TakeoffPage() {
+  const { projectId } = useParams() as { projectId: string };
+  const { showToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [state, setState] = useState<'upload' | 'analyzing' | 'results'>('upload');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // Which analysis lane the server put us in (fast = single sheet / small set,
+  // the only path we promise "under 2 min" for). Null until the server reports.
+  const [lane, setLane] = useState<{ fast: boolean; pages: number; image: boolean } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [takeoffId, setTakeoffId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressState>({ step: 0, message: '', pct: 0 });
+  const [result, setResult] = useState<TakeoffResult | null>(null);
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [overheadPct, setOverheadPct] = useState(10);
+  const [profitPct, setProfitPct] = useState(10);
+  const [contingencyPct, setContingencyPct] = useState(10);
+  // Autonomous "Yes, build it all" flow: summary after the full chain, and the
+  // manual-picker toggle ("Let me pick" reveals the individual document actions).
+  const [autoSummary, setAutoSummary] = useState<AutoBuildSummary | null>(null);
+  const [pickMode, setPickMode] = useState(false);
+
+  // Load latest completed takeoff on mount
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      // Step 1: get list of takeoffs for this project
+      const listRes = await fetch(`/api/takeoff?projectId=${projectId}&limit=5`);
+      if (cancelled || !listRes.ok) return;
+      const { data: list } = await listRes.json();
+      if (cancelled || !Array.isArray(list) || list.length === 0) return;
+
+      // Find the most recent completed takeoff
+      const completed = list.find((t: { status: string }) => t.status === 'complete');
+      if (!completed) return;
+
+      // Step 2: load full detail (includes materials)
+      const detailRes = await fetch(`/api/takeoff/${completed.id}`);
+      if (cancelled || !detailRes.ok) return;
+      const { data } = await detailRes.json();
+      if (cancelled || !data || data.status !== 'complete') return;
+      const mats: Array<Record<string, unknown>> = data.materials || [];
+      if (mats.length === 0) return;
+
+      const items: TakeoffItem[] = mats
+        .filter((m) => Number(m.quantity) > 0 && Number(m.unit_cost) > 0)
+        .map((m) => ({
+          csiCode:     String(m.csi_code   || ''),
+          csiDivision: String(m.csi_code   || '').slice(0, 2),
+          csiName:     String(m.csi_name   || ''),
+          description: String(m.description || ''),
+          quantity:    Number(m.quantity)  || 0,
+          unit:        String(m.unit       || ''),
+          unitCost:    Number(m.unit_cost) || 0,
+          totalCost:   Number(m.total_cost) || (Number(m.quantity) * Number(m.unit_cost)),
+          laborHours:  Number(m.labor_hours) || 0,
+          notes:       String(m.notes      || ''),
+        }));
+
+      const materialTotal  = items.reduce((s, i) => s + i.totalCost, 0);
+      // Compute labor from hours × $65 if labor_cost not stored
+      const laborFromHrs   = items.reduce((s, i) => s + i.laborHours * 65, 0);
+      const laborTotal     = Number(data.labor_cost) > 0 ? Number(data.labor_cost) : laborFromHrs;
+      const contingencyPct = Number(data.contingency_pct) || 10;
+      const subtotal       = materialTotal + laborTotal;
+      const computedTotal  = Math.round(subtotal * (1 + contingencyPct / 100));
+
+      setResult({
+        takeoffId:         String(data.id),
+        projectName:       String(data.project_name_detected || data.project_name || ''),
+        buildingType:      String(data.building_type || ''),
+        estimatedSF:       Number(data.building_area) || 0,
+        confidence:        Number(data.confidence)    || 0,
+        summary:           String(data.summary        || ''),
+        items,
+        totalMaterialCost: materialTotal,
+        totalLaborCost:    laborTotal,
+        totalProjectCost:  Number(data.total_cost) > 0 ? Number(data.total_cost) : computedTotal,
+        contingency:       contingencyPct,
+        recommendations:   Array.isArray(data.recommendations) ? data.recommendations : [],
+        itemCount:         items.length,
+      });
+      if (cancelled) return;
+      setTakeoffId(String(data.id));
+      setState('results');
+    };
+    load().catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  const handleFileSelect = useCallback((file: File) => {
+    const valid = ['application/pdf', 'image/png', 'image/jpeg', 'image/tiff', 'image/webp'];
+    if (!valid.includes(file.type)) {
+      showToast('Invalid file type. Please use PDF, PNG, JPG, or TIFF.', 'error');
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('File too large. Maximum 50MB.', 'error');
+      return;
+    }
+    setSelectedFile(file);
+  }, [showToast]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  }, [handleFileSelect]);
+
+  const handleAnalyze = async () => {
+    if (!selectedFile) return;
+    setState('analyzing');
+    setLane(null);
+    setProgress({ step: 1, message: 'Creating takeoff record...', pct: 5 });
+
+    try {
+      // 1. Create takeoff record
+      const createRes = await fetch('/api/takeoff/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId }),
+      });
+      if (!createRes.ok) {
+        const e = await createRes.json();
+        throw new Error(e.error || 'Failed to create takeoff');
+      }
+      const { data: newTakeoff } = await createRes.json();
+      setTakeoffId(newTakeoff.id);
+
+      // 2. Upload file with XHR progress tracking
+      setProgress({ step: 2, message: 'Uploading blueprint...', pct: 10 });
+      setUploadPct(0);
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadResult = await new Promise<{ success: boolean; error?: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api/takeoff/${newTakeoff.id}/upload`);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            setUploadPct(pct);
+            setProgress({ step: 2, message: `Uploading blueprint... ${pct}%`, pct: 10 + Math.round(pct * 0.05) });
+          }
+        };
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) resolve({ success: true });
+            else resolve({ success: false, error: data.error || 'Upload failed' });
+          } catch { resolve({ success: false, error: 'Upload failed' }); }
+        };
+        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.send(formData);
+      });
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Upload failed');
+      }
+
+      // 3. Connect SSE analysis stream
+      setProgress({ step: 3, message: 'Connecting to AI...', pct: 15 });
+      const eventSource = new EventSource(`/api/takeoff/${newTakeoff.id}/analyze`);
+      let analysisResolved = false;
+
+      eventSource.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+
+          if (data.event === 'progress') {
+            setProgress({ step: data.step, message: data.message, pct: data.pct });
+          }
+
+          if (data.event === 'lane') {
+            setLane({ fast: !!data.fast, pages: Number(data.pages) || 1, image: !!data.image });
+          }
+
+          if (data.event === 'result') {
+            analysisResolved = true;
+            eventSource.close();
+            setResult(data as TakeoffResult);
+            setState('results');
+            const sheetsMsg = data.sheetsAnalyzed
+              ? ` from ${data.sheetsAnalyzed}${data.sheetsTotal && data.sheetsTotal !== data.sheetsAnalyzed ? ` of ${data.sheetsTotal}` : ''} sheet${data.sheetsAnalyzed === 1 ? '' : 's'}`
+              : '';
+            const timeMsg = data.elapsedSec ? ` in ${data.elapsedSec}s` : '';
+            showToast(`Analysis complete — ${data.itemCount} line items${sheetsMsg}${timeMsg}.`, 'success');
+            if (data.truncated && data.truncationNote) {
+              setTimeout(() => showToast(data.truncationNote, 'error'), 400);
+            }
+          }
+
+          if (data.event === 'error') {
+            analysisResolved = true;
+            eventSource.close();
+            console.error('takeoff analysis error', data.message);
+            showToast(humanError(data.message, 'Analysis failed. Please try again.'), 'error');
+            setState('upload');
+            setProgress({ step: 0, message: '', pct: 0 });
+          }
+
+          if (data.event === 'done') {
+            analysisResolved = true;
+            eventSource.close();
+          }
+        } catch { /* ignore parse errors on malformed chunks */ }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        // Guard: natural SSE stream close also fires onerror — only act if we never got a result
+        if (!analysisResolved) {
+          showToast('Connection lost during analysis. Please try again.', 'error');
+          setState('upload');
+          setProgress({ step: 0, message: '', pct: 0 });
+        }
+      };
+
+    } catch (err: unknown) {
+      console.error(err);
+      showToast(humanError(err, 'Analysis failed. Please try again.'), 'error');
+      setState('upload');
+      setProgress({ step: 0, message: '', pct: 0 });
+    }
+  };
+
+  const handleGenerateBidPackages = async () => {
+    if (!result) return;
+    setGenerating('bid-packages');
+    try {
+      const divisions = [...new Set(result.items.map(i => i.csiCode?.slice(0, 2)))].filter(Boolean);
+      let created = 0;
+
+      for (const div of divisions) {
+        const divItems = result.items.filter(i => i.csiCode?.startsWith(div));
+        const divTotal = divItems.reduce((sum, i) => sum + i.totalCost, 0);
+        const divName  = CSI_DIVISION_NAMES[div] || `Division ${div}`;
+
+        const res = await fetch('/api/bid-packages/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            name:         `Division ${div} — ${divName}`,
+            trade:        divName,
+            csiCodes:     [...new Set(divItems.map(i => i.csiCode))],
+            scopeSummary: divItems.map(i => `${i.description}: ${fmtN(i.quantity)} ${i.unit}`).join('\n'),
+            dueDate:      new Date(Date.now() + (divTotal > 250_000 ? 21 : 14) * 86_400_000).toISOString().split('T')[0],
+            requiresBond: divTotal > 100_000,
+            lineItems: divItems.map(i => ({
+              description: i.description,
+              quantity:    i.quantity,
+              unit:        i.unit,
+              unitPrice:   i.unitCost,
+              totalAmount: i.totalCost,
+              csiCode:     i.csiCode,
+            })),
+          }),
+        });
+        if (res.ok) created++;
+      }
+
+      showToast(`${created} bid package${created !== 1 ? 's' : ''} created!`, 'success');
+    } catch (err: unknown) {
+      console.error(err); showToast(humanError(err, 'Failed to create bid packages. Please try again.'), 'error');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleGenerateSOV = async () => {
+    if (!result) return;
+    setGenerating('sov');
+    try {
+      const res = await fetch('/api/pay-apps/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId,
+          periodFrom:    new Date().toISOString().split('T')[0],
+          periodTo:      new Date().toISOString().split('T')[0],
+          contractSum:   result.totalProjectCost,
+          // lineItems is what the API reads — each item maps to a schedule_of_values row
+          lineItems: result.items.map(i => ({
+            description:    `${i.csiCode} — ${i.description}`,
+            scheduledValue: i.totalCost,
+            csiCode:        i.csiCode,
+            balanceToFinish: i.totalCost,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error || 'Failed to create SOV');
+      }
+      showToast(`Schedule of Values created — ${result.items.length} line items`, 'success');
+    } catch (err: unknown) {
+      console.error(err); showToast(humanError(err, 'Failed to generate SOV. Please try again.'), 'error');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleSageAutoDocs = async () => {
+    if (!result || !takeoffId) return;
+    setGenerating('sage');
+    setProgress({ step: 1, message: 'Sage is starting...', pct: 5 });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const es = new EventSource(`/api/takeoff/${takeoffId}/sage-auto-docs`);
+        let resolved = false;
+        es.onmessage = (e) => {
+          try {
+            const evt = JSON.parse(e.data);
+            if (evt.event === 'progress') {
+              setProgress({ step: evt.step ?? 1, message: evt.message ?? 'Working...', pct: evt.pct ?? 50 });
+            }
+            if (evt.event === 'error') { es.close(); reject(new Error(evt.message)); }
+            if (evt.event === 'done') {
+              es.close();
+              resolved = true;
+              setProgress({ step: 0, message: '', pct: 0 });
+              const pkgs = evt.packagesCreated ?? 0;
+              const jkts = evt.jacketsGenerated ?? 0;
+              const sov  = evt.sovCreated ? ' + SOV' : '';
+              showToast(
+                pkgs > 0
+                  ? `Sage built ${pkgs} bid packages, ${jkts} bid jackets${sov}`
+                  : 'Documents generated',
+                'success'
+              );
+              resolve();
+            }
+          } catch { /* ignore malformed chunks */ }
+        };
+        es.onerror = () => {
+          es.close();
+          if (!resolved) reject(new Error('Connection lost. Please try again.'));
+        };
+      });
+    } catch (err: unknown) {
+      console.error(err); showToast(humanError(err, 'Document generation failed. Please try again.'), 'error');
+      setProgress({ step: 0, message: '', pct: 0 });
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  // Generic SSE runner — resolves with the `done` payload, rejects on `error` or a
+  // dropped connection. Reused by the autonomous chain so both phases stream progress.
+  const runSSE = useCallback(
+    (url: string, onProgress: (p: { step?: number; pct?: number; message?: string }) => void) =>
+      new Promise<Record<string, unknown>>((resolve, reject) => {
+        const es = new EventSource(url);
+        let resolved = false;
+        es.onmessage = (e) => {
+          try {
+            const evt = JSON.parse(e.data);
+            if (evt.event === 'progress') onProgress(evt);
+            else if (evt.event === 'error') { es.close(); reject(new Error(evt.message || 'Generation failed')); }
+            else if (evt.event === 'done') { resolved = true; es.close(); resolve(evt); }
+          } catch { /* ignore malformed chunks */ }
+        };
+        es.onerror = () => { es.close(); if (!resolved) reject(new Error('Connection lost. Please try again.')); };
+      }),
+    [],
+  );
+
+  // ── AUTONOMOUS: "Yes, build it all" ──────────────────────────────────────────
+  // Runs the existing sage-auto-docs chain (bid packages + jackets + SOV) THEN the
+  // new compliance chain (task 2 — lien waivers + W-9 requests, filed to Documents/
+  // Compliance) in one shot, streaming a single combined progress bar (phase 1 = 0-50%,
+  // phase 2 = 50-100%), then surfaces a summary card.
+  const handleBuildItAll = async () => {
+    if (!result || !takeoffId) return;
+    setPickMode(false);
+    setAutoSummary(null);
+    setGenerating('auto');
+    setProgress({ step: 1, message: 'Sage is reading your takeoff…', pct: 3 });
+    try {
+      // Single stream — sage-auto-docs now builds bid packages + jackets + SOV AND
+      // files the compliance package (lien waivers + W-9 + COI requests) inline, so
+      // one SSE run covers the whole thing (its internal progress already maps 0-100%).
+      const docs = await runSSE(
+        `/api/takeoff/${takeoffId}/sage-auto-docs`,
+        (p) => setProgress({
+          step: p.step ?? 1,
+          message: p.message ?? 'Building bid jackets + compliance…',
+          pct: Math.max(3, Math.round(p.pct ?? 0)),
+        }),
+      );
+
+      // Consume the done payload defensively (field-name variants tolerated).
+      const summary: AutoBuildSummary = {
+        packages:    num(docs.packagesCreated),
+        jackets:     num(docs.jacketsGenerated),
+        sov:         !!docs.sovCreated,
+        lienWaivers: num(docs.lienWaiversFiled ?? docs.lienWaiversCreated ?? docs.waiversCreated ?? docs.lienWaivers),
+        w9s:         num(docs.w9RequestsFiled ?? docs.w9RequestsCreated ?? docs.w9sCreated ?? docs.w9Requests ?? docs.w9s),
+        filed:       num(docs.coiRequestsFiled ?? docs.filedCount ?? docs.documentsFiled ?? docs.filed),
+      };
+      setProgress({ step: 0, message: '', pct: 100 });
+      setAutoSummary(summary);
+      showToast('Sage built your full bid + compliance package', 'success');
+    } catch (err: unknown) {
+      console.error(err);
+      showToast(humanError(err, 'Build failed. Please try again.'), 'error');
+    } finally {
+      setGenerating(null);
+      setProgress({ step: 0, message: '', pct: 0 });
+    }
+  };
+
+  const exportXLS = async () => {
+    if (!result || !takeoffId) return;
+    setGenerating('xls');
+    try {
+      const res = await fetch(`/api/takeoff/${takeoffId}/export-xls`);
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `takeoff-${projectId}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err: unknown) {
+      console.error(err); showToast(humanError(err, 'Export failed. Please try again.'), 'error');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  // ── Generate Budget from Takeoff ──
+  const handleCreateBudget = async () => {
+    if (!result) return;
+    setGenerating('budget');
+    try {
+      const subtotal = result.totalMaterialCost + result.totalLaborCost;
+      const overhead = Math.round(subtotal * (overheadPct / 100));
+      const profit = Math.round(subtotal * (profitPct / 100));
+      const contingency = Math.round(subtotal * (contingencyPct / 100));
+      const total = subtotal + overhead + profit + contingency;
+
+      const res = await fetch('/api/budgets/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          name: `${result.projectName || 'Project'} — Takeoff Budget`,
+          originalTotal: total,
+          revisedTotal: total,
+          overheadPct,
+          profitPct,
+          contingencyPct,
+          lineItems: result.items.map(i => ({
+            costCode: i.csiCode,
+            csiDivision: i.csiDivision,
+            description: i.description,
+            category: 'material',
+            unit: i.unit,
+            quantity: i.quantity,
+            unitCost: i.unitCost,
+            originalAmount: i.totalCost,
+            revisedAmount: i.totalCost,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error || 'Failed to create budget');
+      }
+      showToast(`Budget created — ${result.items.length} line items, total ${fmt$(total)}`, 'success');
+    } catch (err: unknown) {
+      console.error(err); showToast(humanError(err, 'Failed to create budget. Please try again.'), 'error');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  // ── Generate Lien Waiver Templates ──
+  const handleGenerateLienWaivers = async () => {
+    if (!result) return;
+    setGenerating('lien-waivers');
+    try {
+      const divisions = [...new Set(result.items.map(i => i.csiCode?.slice(0, 2)))].filter(Boolean);
+      let created = 0;
+
+      for (const div of divisions) {
+        const divItems = result.items.filter(i => i.csiCode?.startsWith(div));
+        const divTotal = divItems.reduce((sum, i) => sum + i.totalCost, 0);
+        const divName = CSI_DIVISION_NAMES[div] || `Division ${div}`;
+
+        const res = await fetch('/api/lien-waivers/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            claimantName: divName,
+            waiverType: 'conditional_partial',
+            amount: divTotal,
+            throughDate: new Date().toISOString().split('T')[0],
+            state: 'AZ',
+          }),
+        });
+        if (res.ok) created++;
+      }
+
+      showToast(`${created} lien waiver template${created !== 1 ? 's' : ''} created`, 'success');
+    } catch (err: unknown) {
+      console.error(err); showToast(humanError(err, 'Failed to generate lien waivers. Please try again.'), 'error');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  // ── Generate All Documents (Budget + Bid Packages + SOV + Lien Waivers) ──
+  const handleGenerateAll = async () => {
+    if (!result) return;
+    setGenerating('all');
+    try {
+      // 1. Create budget
+      setProgress({ step: 1, message: 'Creating project budget...', pct: 10 });
+      await handleCreateBudget();
+
+      // 2. Create bid packages
+      setProgress({ step: 2, message: 'Generating bid packages...', pct: 30 });
+      await handleGenerateBidPackages();
+
+      // 3. Create SOV
+      setProgress({ step: 3, message: 'Building schedule of values...', pct: 55 });
+      await handleGenerateSOV();
+
+      // 4. Create lien waiver templates
+      setProgress({ step: 4, message: 'Generating lien waiver templates...', pct: 75 });
+      await handleGenerateLienWaivers();
+
+      setProgress({ step: 5, message: 'Complete!', pct: 100 });
+      showToast('All documents generated — budget, bid packages, SOV, lien waivers', 'success');
+    } catch (err: unknown) {
+      console.error(err); showToast(humanError(err, 'Document generation failed. Please try again.'), 'error');
+    } finally {
+      setGenerating(null);
+      setProgress({ step: 0, message: '', pct: 0 });
+    }
+  };
+
+  // Computed cost values with adjustable markups. Memoized so it only recomputes
+  // when the takeoff or a markup actually changes (not on every unrelated render).
+  // The ONE markup multiplier (sell / direct) from the SAME engine stack the measured takeoff
+  // and Excel export use — replaces the old flat ×1.15 and the additive markup so this page can
+  // never show a different sell number than the rest of the app. Depends only on the sliders.
+  const sellMult = useMemo(() => {
+    const mk = applyMarkupStack({ materialCents: 1_000_000, laborCents: 0 }, { overheadPct, profitPct, contingencyPct });
+    return mk.sellCents / mk.directCents;
+  }, [overheadPct, profitPct, contingencyPct]);
+
+  const computedCosts = useMemo(() => {
+    if (!result) return null;
+    const matCost = result.totalMaterialCost;
+    const labCost = result.totalLaborCost;
+    const mk = applyMarkupStack(
+      { materialCents: Math.round(matCost * 100), laborCents: Math.round(labCost * 100) },
+      { overheadPct, profitPct, contingencyPct },
+    );
+    const subtotal = mk.directCents / 100;          // direct cost of work
+    const overhead = mk.overheadCents / 100;
+    const profit = mk.profitCents / 100;
+    const contingency = mk.contingencyCents / 100;
+    const totalJobCost = mk.sellCents / 100;        // the sell price (engine stack)
+    const costPerSF = result.estimatedSF > 0 ? totalJobCost / result.estimatedSF : 0;
+    return { matCost, labCost, subtotal, overhead, profit, contingency, totalJobCost, costPerSF };
+  }, [result, overheadPct, profitPct, contingencyPct]);
+
+  // Group items by CSI division. Memoized on `result` ONLY — moving a markup slider
+  // no longer rebuilds this map, so the giant line-item table is never re-derived on drag.
+  const groupedItems = useMemo<Record<string, TakeoffItem[]>>(() => {
+    if (!result) return {};
+    return result.items.reduce<Record<string, TakeoffItem[]>>((acc, item) => {
+      const div = item.csiCode?.slice(0, 2) || 'XX';
+      if (!acc[div]) acc[div] = [];
+      acc[div].push(item);
+      return acc;
+    }, {});
+  }, [result]);
+
+  // Copy values for the autonomous Sage card ("$X sell across N divisions, M items").
+  const divCount = Object.keys(groupedItems).length;
+  const sellTotal = (result?.totalProjectCost || 0) * sellMult;
+
+  // ── STATE A: UPLOAD ──────────────────────────────────────────────────────────
+  if (state === 'upload') {
+    return (
+      <div className="tkRoot" style={{ position: 'relative', overflow: 'hidden', minHeight: 'calc(100vh - 56px)' }}>
+        <style>{FX_KEYFRAMES}</style>
+        <Aurora />
+        <div style={{ position: 'relative', zIndex: 1, padding: '46px 24px 64px', maxWidth: 960, margin: '0 auto' }}>
+
+          {/* Cinematic hero */}
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <div style={{ animation: 'tkRise .5s ease both', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 999, background: 'linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.06))', border: '1px solid rgba(245,158,11,0.45)', color: GOLD_HI, fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', boxShadow: '0 0 34px -8px rgba(245,158,11,0.55)' }}>
+              <Sparkle size={13} weight="fill" /> AI Blueprint Takeoff
+            </div>
+            <h1 className="tkH1" style={{ animation: 'tkRise .55s ease .05s both', color: '#fff', margin: '18px 0 0' }}>
+              Drop a plan.<br />
+              <span className="tkShine" style={{ background: `linear-gradient(100deg, ${GOLD} 8%, ${GOLD_HI} 40%, #FDE68A 58%, ${GOLD} 90%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>
+                Get a priced bid in minutes.
+              </span>
+            </h1>
+            <p style={{ animation: 'tkRise .6s ease .1s both', color: 'rgba(255,255,255,0.62)', fontSize: 16, marginTop: 16, maxWidth: 610, marginInline: 'auto', lineHeight: 1.58 }}>
+              Claude reads every wall, footing, fixture and column — measures the quantities, and prices them by trade. No scale wheel. No manual counting.
+            </p>
+          </div>
+
+          {/* Drop Zone — glowing gradient border, breathing, blueprint interior + scan beam */}
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            style={{
+              position: 'relative', overflow: 'hidden',
+              borderRadius: 24,
+              padding: 2,
+              marginBottom: 24,
+              cursor: 'pointer',
+              animation: selectedFile ? 'none' : 'tkGlow 3.8s ease-in-out infinite',
+              transform: isDragging ? 'scale(1.012)' : 'none',
+              transition: 'transform .2s ease',
+              background: isDragging
+                ? `linear-gradient(135deg, ${GOLD}, ${GOLD_HI})`
+                : selectedFile
+                  ? 'linear-gradient(135deg, rgba(34,197,94,0.6), rgba(34,197,94,0.14))'
+                  : 'linear-gradient(135deg, rgba(245,158,11,0.5), rgba(245,158,11,0.12))',
+            }}
+          >
+            <div style={{
+              position: 'relative', overflow: 'hidden',
+              borderRadius: 22,
+              padding: '60px 32px',
+              textAlign: 'center',
+              background: isDragging
+                ? 'radial-gradient(circle at 50% 32%, rgba(245,158,11,0.22), rgba(11,14,21,0.97))'
+                : 'radial-gradient(circle at 50% 26%, rgba(245,158,11,0.08), rgba(10,13,20,0.97))',
+            }}>
+              {/* Blueprint grid interior */}
+              <div aria-hidden style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(245,158,11,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.10) 1px, transparent 1px)', backgroundSize: '26px 26px', maskImage: 'radial-gradient(80% 72% at 50% 42%, #000, transparent 78%)', WebkitMaskImage: 'radial-gradient(80% 72% at 50% 42%, #000, transparent 78%)', opacity: isDragging ? 0.95 : 0.5 }} />
+              {/* CAD corner brackets */}
+              <div aria-hidden style={{ position: 'absolute', left: 14, top: 14, width: 22, height: 22, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, borderRadius: 3, opacity: 0.7 }} />
+              <div aria-hidden style={{ position: 'absolute', right: 14, top: 14, width: 22, height: 22, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, borderRadius: 3, opacity: 0.7 }} />
+              <div aria-hidden style={{ position: 'absolute', left: 14, bottom: 14, width: 22, height: 22, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, borderRadius: 3, opacity: 0.7 }} />
+              <div aria-hidden style={{ position: 'absolute', right: 14, bottom: 14, width: 22, height: 22, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, borderRadius: 3, opacity: 0.7 }} />
+              {/* Scan beam — soft glow band that sweeps the plan (never a hard line) */}
+              {!selectedFile && (
+                <div aria-hidden style={{ position: 'absolute', left: 20, right: 20, top: -40, height: 90, background: 'linear-gradient(180deg, transparent, rgba(245,158,11,0.16) 45%, rgba(251,191,36,0.28) 50%, rgba(245,158,11,0.16) 55%, transparent)', filter: 'blur(1px)', animation: 'tkScanV 4s ease-in-out infinite', zIndex: 0 }} />
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.tiff,.tif,.webp"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileSelect(f);
+                }}
+              />
+
+              {selectedFile ? (
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ display: 'inline-flex', width: 88, height: 88, borderRadius: '50%', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, rgba(34,197,94,0.28), rgba(34,197,94,0.05))', border: '1px solid rgba(34,197,94,0.5)', marginBottom: 16, boxShadow: '0 0 44px -8px rgba(34,197,94,0.7)' }}>
+                    <CheckCircle size={46} weight="fill" color={GREEN} />
+                  </div>
+                  <div style={{ color: GREEN, fontWeight: 800, fontSize: 18, wordBreak: 'break-word' }}>{selectedFile.name}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 6 }}>
+                    {(selectedFile.size / 1024 / 1024).toFixed(1)} MB · ready to analyze — click to change
+                  </div>
+                </div>
+              ) : (
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ position: 'relative', display: 'inline-flex', width: 104, height: 104, borderRadius: '50%', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, rgba(245,158,11,0.24), rgba(245,158,11,0.04))', border: '1px solid rgba(245,158,11,0.42)', marginBottom: 20, animation: 'tkFloat 5s ease-in-out infinite' }}>
+                    <div aria-hidden style={{ position: 'absolute', inset: -1, borderRadius: '50%', border: `1px solid ${GOLD}`, animation: 'tkRing 3s ease-out infinite' }} />
+                    <Blueprint size={46} weight="duotone" color={GOLD_HI} />
+                  </div>
+                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 24, marginBottom: 8, letterSpacing: '-0.02em' }}>
+                    {isDragging ? 'Release to upload' : 'Drop your blueprint here'}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14.5 }}>
+                    or <span style={{ color: GOLD_HI, fontWeight: 800 }}>click to browse</span>
+                  </div>
+                  <div style={{ display: 'inline-flex', gap: 7, flexWrap: 'wrap', justifyContent: 'center', marginTop: 18 }}>
+                    {['PDF', 'PNG', 'JPG', 'TIFF', 'WEBP'].map((x) => (
+                      <span key={x} style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.72)', padding: '4px 11px', borderRadius: 7, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,158,11,0.22)', letterSpacing: '0.04em' }}>{x}</span>
+                    ))}
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', padding: '4px 6px' }}>up to 50MB</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Trust stat strip */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 26 }}>
+            {[
+              // Honest by default; once a real run is measured this session, show the
+              // actual elapsed instead of a marketing promise.
+              result?.elapsedSec
+                ? { icon: <Timer size={18} weight="duotone" color={GOLD_HI} />, big: `${result.elapsedSec < 90 ? `${Math.round(result.elapsedSec)}s` : `${(result.elapsedSec / 60).toFixed(1)} min`}`, small: 'Your last run, measured' }
+                : { icon: <Timer size={18} weight="duotone" color={GOLD_HI} />, big: 'Minutes, not hours', small: 'Full plan set → priced bid' },
+              { icon: <Stack size={18} weight="duotone" color={GOLD_HI} />, big: '16 Divisions', small: 'CSI, ground to finish' },
+              { icon: <ShieldCheck size={18} weight="duotone" color={GOLD_HI} />, big: '100% Traceable', small: 'Every qty to the sheet' },
+            ].map((s, i) => (
+              <div key={s.big} className="tkHover" style={{ animation: `tkRise .5s ease ${(0.12 + i * 0.07).toFixed(2)}s both`, display: 'flex', alignItems: 'center', gap: 12, background: 'linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 14, padding: '14px 16px' }}>
+                <div className="tkIcon" style={{ flex: '0 0 auto', display: 'inline-flex', width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', transition: 'box-shadow .2s' }}>{s.icon}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em' }}>{s.big}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 1 }}>{s.small}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* What AI extracts — premium cards */}
+          <div style={{ marginBottom: 30 }}>
+            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 16, fontWeight: 800 }}>
+              What the AI extracts
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(248px,1fr))', gap: 12 }}>
+              {[
+                { icon: <Blueprint size={20} weight="duotone" color={GOLD_HI} />, t: 'Every material by CSI division', s: '16 divisions, ground to finish' },
+                { icon: <Ruler size={20} weight="duotone" color={GOLD_HI} />, t: 'Quantities with real units', s: 'SF · LF · CY · EA, measured' },
+                { icon: <CurrencyDollar size={20} weight="duotone" color={GOLD_HI} />, t: 'Priced by trade', s: 'Your rates override the book' },
+                { icon: <Lightning size={20} weight="duotone" color={GOLD_HI} />, t: 'Labor hours + burden', s: 'Crew productivity built in' },
+                { icon: <Buildings size={20} weight="duotone" color={GOLD_HI} />, t: 'Building area & floors', s: 'Auto scale + $/SF' },
+                { icon: <Package size={20} weight="duotone" color={GOLD_HI} />, t: 'Bid-package ready', s: 'One tap to a priced jacket' },
+              ].map((c, i) => (
+                <div key={c.t} className="tkHover" style={{ animation: `tkRise .5s ease ${(0.18 + i * 0.06).toFixed(2)}s both`, position: 'relative', overflow: 'hidden', display: 'flex', gap: 13, alignItems: 'flex-start', background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px 18px' }}>
+                  <div aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg, ${GOLD}, transparent)` }} />
+                  <div className="tkIcon" style={{ flex: '0 0 auto', display: 'inline-flex', width: 42, height: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(150deg, rgba(245,158,11,0.18), rgba(245,158,11,0.05))', border: '1px solid rgba(245,158,11,0.3)', transition: 'box-shadow .2s' }}>{c.icon}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: '#fff', fontWeight: 700, fontSize: 14, lineHeight: 1.3 }}>{c.t}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12.5, marginTop: 3 }}>{c.s}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Analyze button */}
+          <button
+            onClick={handleAnalyze}
+            disabled={!selectedFile}
+            className={selectedFile ? 'tkBtn' : undefined}
+            style={{
+              position: 'relative', overflow: 'hidden',
+              width: '100%',
+              padding: '17px',
+              background: selectedFile ? `linear-gradient(135deg, ${GOLD}, ${AMBER})` : 'rgba(255,255,255,0.05)',
+              border: selectedFile ? 'none' : '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 14,
+              color: selectedFile ? '#1A1206' : 'rgba(255,255,255,0.35)',
+              fontSize: 16,
+              fontWeight: 800,
+              cursor: selectedFile ? 'pointer' : 'not-allowed',
+              letterSpacing: '0.02em',
+              boxShadow: selectedFile ? '0 18px 46px -14px rgba(245,158,11,0.7)' : 'none',
+            }}
+          >
+            {selectedFile && <span aria-hidden className="tkShine" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%)' }} />}
+            <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+              {selectedFile ? <><MagicWand size={19} weight="fill" color="#1A1206" /> Start AI Analysis <ArrowRight size={18} weight="bold" color="#1A1206" /></> : 'Select a blueprint to continue'}
+            </span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STATE B: ANALYZING ───────────────────────────────────────────────────────
+  if (state === 'analyzing') {
+    const steps = [
+      'Creating takeoff record',
+      `Uploading blueprint${uploadPct > 0 && uploadPct < 100 ? ` (${uploadPct}%)` : ''}`,
+      'Preparing for AI',
+      'AI reading blueprint',
+      'Identifying materials',
+      'Calculating quantities',
+      'Applying pricing',
+      'Saving results',
+    ];
+
+    return (
+      <div className="tkRoot" style={{ position: 'relative', overflow: 'hidden', minHeight: 'calc(100vh - 56px)' }}>
+        <style>{FX_KEYFRAMES}</style>
+        <Aurora soft />
+        <div style={{ position: 'relative', zIndex: 1, padding: '60px 24px', maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
+
+          {/* Blueprint scan motif */}
+          <div style={{ position: 'relative', margin: '0 auto 30px', width: '100%', maxWidth: 440, borderRadius: 22, padding: 2, background: 'linear-gradient(135deg, rgba(245,158,11,0.5), rgba(245,158,11,0.12))', animation: 'tkGlow 3.6s ease-in-out infinite' }}>
+            <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 20, height: 190, background: 'radial-gradient(circle at 50% 42%, rgba(245,158,11,0.10), rgba(10,13,20,0.98))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div aria-hidden style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(245,158,11,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.10) 1px, transparent 1px)', backgroundSize: '24px 24px', maskImage: 'radial-gradient(78% 78% at 50% 50%, #000, transparent 82%)', WebkitMaskImage: 'radial-gradient(78% 78% at 50% 50%, #000, transparent 82%)' }} />
+              {/* CAD corner brackets */}
+              <div aria-hidden style={{ position: 'absolute', left: 12, top: 12, width: 18, height: 18, borderLeft: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, opacity: 0.65 }} />
+              <div aria-hidden style={{ position: 'absolute', right: 12, top: 12, width: 18, height: 18, borderRight: `2px solid ${GOLD}`, borderTop: `2px solid ${GOLD}`, opacity: 0.65 }} />
+              <div aria-hidden style={{ position: 'absolute', left: 12, bottom: 12, width: 18, height: 18, borderLeft: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, opacity: 0.65 }} />
+              <div aria-hidden style={{ position: 'absolute', right: 12, bottom: 12, width: 18, height: 18, borderRight: `2px solid ${GOLD}`, borderBottom: `2px solid ${GOLD}`, opacity: 0.65 }} />
+              {/* Horizontal scanning sweep */}
+              <div aria-hidden style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 64, background: 'linear-gradient(180deg, transparent, rgba(245,158,11,0.24) 50%, transparent)', animation: 'tkSweep 1.9s linear infinite' }} />
+              {/* Pulsing robot */}
+              <div style={{ position: 'relative', display: 'inline-flex', width: 94, height: 94, borderRadius: '50%', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, rgba(245,158,11,0.24), rgba(245,158,11,0.04))', border: '1px solid rgba(245,158,11,0.42)', animation: 'tkPulseA 1.9s ease-out infinite' }}>
+                <Robot size={46} weight="duotone" color={GOLD_HI} />
+              </div>
+            </div>
+          </div>
+
+          <h2 className="tkH2" style={{ color: '#fff', marginBottom: 8 }}>
+            Reading your blueprint…
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 15, marginBottom: lane ? 16 : 30 }}>
+            {progress.message || 'Starting analysis…'}
+          </p>
+
+          {/* Lane badge — the fast lane is the ONLY path we promise "under 2 min" for */}
+          {lane && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 9, marginBottom: 28,
+              padding: '8px 16px', borderRadius: 999,
+              background: lane.fast ? 'rgba(69,179,125,0.12)' : 'rgba(245,158,11,0.10)',
+              border: `1px solid ${lane.fast ? 'rgba(69,179,125,0.42)' : 'rgba(245,158,11,0.28)'}`,
+            }}>
+              {lane.fast
+                ? <MagicWand size={16} weight="fill" color={GREEN} />
+                : <Stack size={16} weight="duotone" color={GOLD_HI} />}
+              <span style={{ fontSize: 13, fontWeight: 700, color: lane.fast ? GREEN : GOLD_HI }}>
+                {lane.fast
+                  ? `Fast lane${lane.image ? ' · single sheet' : lane.pages > 1 ? ` · ${lane.pages} sheets` : ''} · typically under 2 minutes`
+                  : `Full read · ${lane.pages} sheets · discipline by discipline · a few minutes`}
+              </span>
+            </div>
+          )}
+
+          {/* Progress bar */}
+          <div style={{
+            position: 'relative',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(245,158,11,0.15)',
+            borderRadius: 999, height: 10, marginBottom: 10, overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${progress.pct}%`,
+              background: `linear-gradient(90deg, ${AMBER}, ${GOLD}, ${GOLD_HI})`,
+              borderRadius: 999,
+              transition: 'width 0.5s ease',
+              boxShadow: '0 0 16px rgba(245,158,11,0.6)',
+            }} />
+          </div>
+          <div style={{ color: GOLD_HI, fontWeight: 800, fontSize: 22, marginBottom: 30, letterSpacing: '-0.02em' }}>
+            {progress.pct}%
+          </div>
+
+          {/* Step checklist */}
+          <div style={{ textAlign: 'left', background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '18px 22px' }}>
+            {steps.map((step, i) => {
+              const done = i < progress.step;
+              const active = i === progress.step;
+              return (
+                <div key={step} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '8px 0',
+                  color: done ? 'rgba(255,255,255,0.9)' : active ? GOLD_HI : 'rgba(255,255,255,0.32)',
+                  fontSize: 13.5,
+                  borderBottom: i < steps.length - 1 ? `1px solid ${BORDER}` : 'none',
+                }}>
+                  <span style={{ width: 22, height: 22, display: 'inline-flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', background: active ? 'rgba(245,158,11,0.14)' : 'transparent', boxShadow: active ? '0 0 0 1px rgba(245,158,11,0.4)' : 'none' }}>
+                    {done ? <CheckCircle size={16} weight="fill" color={GREEN} /> : active ? <CircleNotch size={16} weight="bold" style={{ animation: 'tkSpin 0.9s linear infinite' }} /> : <Circle size={13} weight="regular" />}
+                  </span>
+                  <span style={{ fontWeight: active ? 700 : 500 }}>{step}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STATE C: RESULTS ─────────────────────────────────────────────────────────
+  return (
+    <div className="tkRoot" style={{ position: 'relative', overflow: 'hidden', minHeight: 'calc(100vh - 56px)' }}>
+      <style>{FX_KEYFRAMES}</style>
+      <Aurora soft />
+      <div style={{ position: 'relative', zIndex: 1, padding: '24px', maxWidth: 1180, margin: '0 auto' }}>
+
+      {/* Summary header — hero sell number */}
+      <div style={{
+        position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(135deg, rgba(245,158,11,0.14), rgba(245,158,11,0.04))',
+        border: `1px solid rgba(245,158,11,0.28)`,
+        borderRadius: 18, padding: '24px 28px', marginBottom: 20,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 20,
+        boxShadow: '0 20px 60px -24px rgba(245,158,11,0.35)',
+        animation: 'tkPop .5s ease both',
+      }}>
+        <div aria-hidden style={{ position: 'absolute', width: 260, height: 260, right: '18%', top: '-70%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,158,11,0.22), transparent 62%)', filter: 'blur(24px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', minWidth: 200 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: GOLD_HI, fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            <CheckCircle size={13} weight="fill" color={GREEN} /> Takeoff complete
+          </div>
+          <div style={{ color: '#fff', fontWeight: 800, fontSize: 22, marginTop: 6, letterSpacing: '-0.02em' }}>
+            {result?.projectName || 'Material Takeoff'}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5, marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {result?.buildingType || 'Building'} · {fmtN(result?.estimatedSF || 0)} SF
+          </div>
+          {result?.summary && (
+            <div style={{ color: 'rgba(255,255,255,0.48)', fontSize: 12.5, marginTop: 8, maxWidth: 460, lineHeight: 1.5 }}>
+              {result.summary}
+            </div>
+          )}
+          {/* Honesty strip — exactly what was read, and how long it took */}
+          {(result?.sheetsAnalyzed || result?.elapsedSec) && (
+            <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+              {result?.sheetsAnalyzed != null && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.72)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,158,11,0.24)', borderRadius: 8, padding: '4px 10px' }}>
+                  <Stack size={13} weight="duotone" color={GOLD_HI} />
+                  {result.sheetsAnalyzed}{result.sheetsTotal && result.sheetsTotal !== result.sheetsAnalyzed ? ` of ${result.sheetsTotal}` : ''} sheet{result.sheetsAnalyzed === 1 ? '' : 's'} analyzed
+                </span>
+              )}
+              {result?.elapsedSec != null && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.72)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,158,11,0.24)', borderRadius: 8, padding: '4px 10px' }}>
+                  <Timer size={13} weight="duotone" color={GOLD_HI} />
+                  {result.elapsedSec < 90 ? `${Math.round(result.elapsedSec)}s` : `${(result.elapsedSec / 60).toFixed(1)} min`}
+                </span>
+              )}
+              {result?.disciplines && result.disciplines.length > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.72)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(245,158,11,0.24)', borderRadius: 8, padding: '4px 10px' }}>
+                  {result.disciplines.join(' · ')}
+                </span>
+              )}
+            </div>
+          )}
+          {result?.truncated && result?.truncationNote && (
+            <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', marginTop: 12, maxWidth: 500, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 10, padding: '10px 12px' }}>
+              <Warning size={16} weight="fill" color={GOLD_HI} style={{ flex: '0 0 auto', marginTop: 1 }} />
+              <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 1.5 }}>{result.truncationNote}</div>
+            </div>
+          )}
+        </div>
+        <div style={{ position: 'relative', textAlign: 'right', flex: '1 1 auto', minWidth: 220 }}>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Total Project Cost</div>
+          <div style={{ fontWeight: 900, fontSize: 'clamp(38px,5vw,56px)', lineHeight: 1.02, letterSpacing: '-0.03em', background: `linear-gradient(100deg, ${GOLD}, ${GOLD_HI} 55%, #FDE68A)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', textShadow: '0 0 50px rgba(245,158,11,0.3)', animation: 'tkPop .6s ease .1s both' }}>
+            {fmt$(result?.totalProjectCost || 0)}
+          </div>
+          <div style={{ display: 'inline-flex', gap: 8, marginTop: 10, justifyContent: 'flex-end' }}>
+            <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 9, padding: '6px 12px', textAlign: 'center' }}>
+              <div style={{ color: GREEN, fontWeight: 800, fontSize: 16 }}>{result?.confidence ?? 0}%</div>
+              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Confidence</div>
+            </div>
+            <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.28)', borderRadius: 9, padding: '6px 12px', textAlign: 'center' }}>
+              <div style={{ color: GOLD_HI, fontWeight: 800, fontSize: 16 }}>{result?.itemCount ?? 0}</div>
+              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Line Items</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Cost breakdown + adjustable markups */}
+      {computedCosts && (
+        <div style={{ marginBottom: 20 }}>
+          {/* Cost cards row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, marginBottom: 12 }}>
+            {[
+              { label: 'Material Cost', value: computedCosts.matCost, color: GOLD, icon: <Package size={15} weight="duotone" color={GOLD} /> },
+              { label: 'Labor Cost', value: computedCosts.labCost, color: '#FBBF24', icon: <Lightning size={15} weight="duotone" color="#FBBF24" /> },
+              { label: 'Subtotal', value: computedCosts.subtotal, color: '#fff', icon: <Table size={15} weight="duotone" color="rgba(255,255,255,0.8)" /> },
+              { label: 'Total Job Cost', value: computedCosts.totalJobCost, color: '#22C55E', icon: <TrendUp size={15} weight="duotone" color={GREEN} /> },
+            ].map((card, ci) => (
+              <div key={card.label} className="tkHover" style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.014))', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '15px 16px', animation: `tkPop .45s ease ${(0.05 * ci).toFixed(2)}s both` }}>
+                <div aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg, ${card.color}, transparent)` }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.5)', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{card.icon}{card.label}</div>
+                <div style={{ color: card.color, fontWeight: 800, fontSize: 22, letterSpacing: '-0.01em' }}>{fmt$(card.value)}</div>
+              </div>
+            ))}
+          </div>
+          {/* Markup sliders */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>
+            {[
+              { label: 'Overhead', pct: overheadPct, setPct: setOverheadPct, value: computedCosts.overhead, color: '#F97316' },
+              { label: 'Profit', pct: profitPct, setPct: setProfitPct, value: computedCosts.profit, color: '#22C55E' },
+              { label: 'Contingency', pct: contingencyPct, setPct: setContingencyPct, value: computedCosts.contingency, color: '#A78BFA' },
+            ].map((ctrl) => (
+              <div key={ctrl.label} style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.014))', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>{ctrl.label}</span>
+                  <span style={{ color: ctrl.color, fontWeight: 800, fontSize: 17 }}>{ctrl.pct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={25}
+                  value={ctrl.pct}
+                  onChange={(e) => ctrl.setPct(Number(e.target.value))}
+                  className="tkRange"
+                  style={{ width: '100%', color: ctrl.color, cursor: 'pointer', background: `linear-gradient(90deg, ${ctrl.color} ${(ctrl.pct / 25) * 100}%, rgba(255,255,255,0.12) ${(ctrl.pct / 25) * 100}%)` }}
+                />
+                <div style={{ color: ctrl.color, fontWeight: 700, fontSize: 14.5, marginTop: 8, textAlign: 'right' }}>{fmt$(ctrl.value)}</div>
+              </div>
+            ))}
+          </div>
+          {/* Cost per SF */}
+          {computedCosts.costPerSF > 0 && (
+            <div style={{ marginTop: 8, textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+              Cost/SF: <span style={{ color: GOLD, fontWeight: 600 }}>${computedCosts.costPerSF.toFixed(2)}</span> · {fmtN(result?.estimatedSF || 0)} SF
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Building visualization */}
+      {result && (result.estimatedSF > 0 || result.itemCount > 0) && (() => {
+        const floors  = Math.max(1, result.estimatedSF > 0 ? Math.min(result.itemCount > 0 ? (Object.keys(groupedItems).length > 5 ? 2 : 1) : 1, 6) : 1);
+        const floorCount = result.itemCount > 0 ? Math.ceil(result.totalProjectCost / 1_000_000) || 1 : 1;
+        const displayFloors = Math.min(floorCount, 8);
+        const bldgW   = 180;
+        const floorH  = 28;
+        const bldgH   = displayFloors * floorH;
+        const padX    = 20;
+        const padY    = 20;
+        const svgH    = bldgH + padY * 2 + 40;
+        const totalSell = (result.totalProjectCost || 0) * sellMult;
+
+        // Compute division breakdown for bar chart
+        const divTotals = Object.entries(groupedItems)
+          .map(([div, items]) => ({
+            div,
+            name: CSI_DIVISION_NAMES[div] || `Div ${div}`,
+            total: items.reduce((s, i) => s + i.totalCost, 0),
+          }))
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 8);
+        const maxDiv = divTotals[0]?.total || 1;
+
+        return (
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))',
+            gap: 16, marginBottom: 20,
+          }}>
+            {/* Building diagram */}
+            <div style={{
+              background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: `1px solid ${BORDER}`,
+              borderRadius: 14, padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            }}>
+              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8, fontWeight: 700 }}>
+                Building Profile
+              </div>
+              <svg width={bldgW + padX * 2} height={svgH} viewBox={`0 0 ${bldgW + padX * 2} ${svgH}`}>
+                {/* Ground line */}
+                <line x1={padX - 10} y1={padY + bldgH + 2} x2={padX + bldgW + 10} y2={padY + bldgH + 2}
+                  stroke="rgba(255,255,255,0.15)" strokeWidth={2} />
+                {/* Building floors */}
+                {Array.from({ length: displayFloors }).map((_, fi) => {
+                  const y = padY + fi * floorH;
+                  const isGround = fi === displayFloors - 1;
+                  return (
+                    <g key={fi}>
+                      <rect x={padX} y={y} width={bldgW} height={floorH}
+                        fill={isGround ? 'rgba(245, 158, 11,0.12)' : `rgba(245, 158, 11,${0.04 + (displayFloors - fi) * 0.01})`}
+                        stroke="rgba(245, 158, 11,0.25)" strokeWidth={1} />
+                      {/* Windows */}
+                      {[0.2, 0.45, 0.7].map((wx, wi) => (
+                        <rect key={wi}
+                          x={padX + bldgW * wx - 8} y={y + 6}
+                          width={16} height={floorH - 12}
+                          fill="rgba(96,165,250,0.2)" stroke="rgba(96,165,250,0.4)" strokeWidth={0.5} />
+                      ))}
+                      {/* Floor label */}
+                      <text x={padX + bldgW + 6} y={y + floorH / 2 + 4}
+                        fill="rgba(255,255,255,0.3)" fontSize={9}>
+                        {`L${displayFloors - fi}`}
+                      </text>
+                    </g>
+                  );
+                })}
+                {/* Roof triangle */}
+                <polygon
+                  points={`${padX},${padY} ${padX + bldgW / 2},${padY - 24} ${padX + bldgW},${padY}`}
+                  fill="rgba(245, 158, 11,0.18)" stroke="rgba(245, 158, 11,0.4)" strokeWidth={1.5} />
+                {/* SF label */}
+                <text x={padX + bldgW / 2} y={svgH - 6}
+                  fill="rgba(255,255,255,0.3)" fontSize={10} textAnchor="middle">
+                  {fmtN(result.estimatedSF)} SF · {displayFloors} {displayFloors === 1 ? 'Story' : 'Stories'}
+                </text>
+              </svg>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginTop: 4 }}>
+                {result.buildingType || 'Commercial'} · {result.confidence}% confidence
+              </div>
+            </div>
+
+            {/* Division cost bar chart */}
+            <div style={{
+              background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: `1px solid ${BORDER}`,
+              borderRadius: 14, padding: '16px 20px',
+            }}>
+              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14, fontWeight: 700 }}>
+                Cost by CSI Division
+              </div>
+              {divTotals.map(({ div, name, total }, bi) => {
+                const pct = total / maxDiv;
+                const sellAmt = total * sellMult;
+                return (
+                  <div key={div} style={{ marginBottom: 11 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
+                        <span style={{ color: GOLD_HI, fontFamily: 'monospace', marginRight: 6, fontWeight: 700 }}>{div}</span>
+                        {name}
+                      </span>
+                      <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
+                        {fmt$(total)}
+                        <span style={{ color: GREEN, marginLeft: 8, fontWeight: 600 }}>{fmt$(sellAmt)}</span>
+                      </span>
+                    </div>
+                    <div style={{ position: 'relative', height: 8, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
+                      <div style={{ position: 'relative', overflow: 'hidden', height: '100%', width: `${pct * 100}%`, background: `linear-gradient(90deg, ${GOLD}, ${GREEN})`, borderRadius: 999, transition: 'width 0.6s ease', boxShadow: '0 0 12px rgba(245,158,11,0.4)' }}>
+                        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%)', backgroundSize: '200% 100%', animation: `tkBarShine 2.8s ease-in-out ${(bi * 0.15).toFixed(2)}s infinite` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>Cost → Sell breakdown across {Object.keys(groupedItems).length} divisions</span>
+                <span style={{ color: '#22C55E', fontWeight: 600 }}>Sell Total: {fmt$(totalSell)}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Results table */}
+      <div style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: `1px solid ${BORDER}`,
+        borderRadius: 14, overflow: 'hidden', marginBottom: 20,
+      }}>
+       <div style={{ overflowX: 'auto' }}>
+        <div style={{ minWidth: 680 }}>
+        {/* Table header */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '100px 1fr 80px 56px 80px 110px 110px',
+          padding: '11px 16px',
+          background: 'rgba(0,0,0,0.34)',
+          borderBottom: '2px solid rgba(245, 158, 11,0.2)',
+          fontSize: 11, fontWeight: 600,
+          letterSpacing: '0.08em',
+          color: 'rgba(255,255,255,0.4)',
+          textTransform: 'uppercase',
+        }}>
+          <div>CSI Code</div>
+          <div>Description</div>
+          <div style={{ textAlign: 'right' }}>Qty</div>
+          <div style={{ textAlign: 'right' }}>Unit</div>
+          <div style={{ textAlign: 'right' }}>$/Unit</div>
+          <div style={{ textAlign: 'right' }}>Cost</div>
+          <div style={{ textAlign: 'right', color: '#22C55E' }}>Sell</div>
+        </div>
+
+        {/* Grouped rows — memoized + row-capped so slider drags and huge extractions don't freeze */}
+        <LineItemTable groupedItems={groupedItems} sellMult={sellMult} />
+
+        {/* Grand total row */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '100px 1fr 80px 56px 80px 110px 110px',
+          padding: '12px 16px',
+          background: 'rgba(245, 158, 11,0.08)',
+          borderTop: `2px solid rgba(245, 158, 11,0.3)`,
+          fontSize: 14, fontWeight: 700,
+        }}>
+          <div style={{ gridColumn: '1 / 6', color: GOLD, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Total — {result?.itemCount ?? 0} Line Items
+          </div>
+          <div style={{ textAlign: 'right', color: GOLD, fontSize: 16 }}>
+            {fmt$(result?.totalProjectCost || 0)}
+          </div>
+          <div style={{ textAlign: 'right', color: '#22C55E', fontSize: 16 }}>
+            {fmt$((result?.totalProjectCost || 0) * sellMult)}
+          </div>
+        </div>
+        </div>
+       </div>
+      </div>
+
+      {/* AI Recommendations */}
+      {(result?.recommendations?.length ?? 0) > 0 && (
+        <div style={{
+          borderLeft: `3px solid ${GOLD}`,
+          background: 'rgba(245, 158, 11,0.05)',
+          borderRadius: '0 8px 8px 0',
+          padding: '14px 18px',
+          marginBottom: 20,
+        }}>
+          <div style={{ color: GOLD, fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+            AI Recommendations
+          </div>
+          {result!.recommendations.map((rec, i) => (
+            <div key={i} style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginBottom: 4 }}>
+              • {rec}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Autonomous Sage CTA · streaming · summary · manual picker ──────────── */}
+      {autoSummary ? (
+        /* ── SUMMARY: what Sage built ── */
+        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 18, padding: '26px 28px', background: 'linear-gradient(135deg, rgba(34,197,94,0.14), rgba(34,197,94,0.03))', border: '1px solid rgba(34,197,94,0.32)', boxShadow: '0 22px 64px -26px rgba(34,197,94,0.4)', animation: 'tkPop .5s ease both' }}>
+          <div aria-hidden style={{ position: 'absolute', width: 280, height: 280, right: '10%', top: '-74%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.2), transparent 62%)', filter: 'blur(26px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+            <div style={{ flex: '0 0 auto', width: 54, height: 54, borderRadius: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, rgba(34,197,94,0.28), rgba(34,197,94,0.05))', border: '1px solid rgba(34,197,94,0.5)', boxShadow: '0 0 34px -8px rgba(34,197,94,0.7)' }}>
+              <SealCheck size={30} weight="fill" color={GREEN} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: GREEN, fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Package complete</div>
+              <div style={{ color: '#fff', fontWeight: 800, fontSize: 20, letterSpacing: '-0.01em', marginTop: 2 }}>Sage built your full bid + compliance package</div>
+            </div>
+          </div>
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12 }}>
+            {[
+              { icon: <Package size={16} weight="duotone" color={GOLD_HI} />, big: autoSummary.jackets || autoSummary.packages, label: 'Bid jackets' },
+              { icon: <Scroll size={16} weight="duotone" color={GOLD_HI} />, big: autoSummary.lienWaivers, label: 'Lien waivers' },
+              { icon: <FileText size={16} weight="duotone" color={GOLD_HI} />, big: autoSummary.w9s, label: 'W-9 requests' },
+              { icon: <FolderSimple size={16} weight="duotone" color={GOLD_HI} />, big: autoSummary.filed, label: 'Filed to Compliance' },
+            ].map((s) => (
+              <div key={s.label} style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.014))', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'rgba(255,255,255,0.55)', fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 700 }}>{s.icon}{s.label}</div>
+                <div style={{ color: '#fff', fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em' }}>{fmtN(s.big)}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ position: 'relative', color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CheckCircle size={15} weight="fill" color={GREEN} />
+            {autoSummary.packages} bid package{autoSummary.packages !== 1 ? 's' : ''} written{autoSummary.sov ? ', Schedule of Values built' : ''} — everything filed to Documents / Compliance.
+          </div>
+          <div style={{ position: 'relative', display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 18 }}>
+            <a href={`/app/projects/${projectId}/bid-packages`} className="tkBtn" style={{ textDecoration: 'none', padding: '11px 20px', background: `linear-gradient(135deg, ${GOLD}, ${AMBER})`, borderRadius: 10, color: '#1A1206', fontWeight: 800, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 7, boxShadow: '0 12px 30px -12px rgba(245,158,11,0.6)' }}>
+              <Package size={15} weight="duotone" color="#1A1206" /> View bid packages
+            </a>
+            <a href={`/app/projects/${projectId}/compliance`} style={{ textDecoration: 'none', padding: '11px 18px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <ShieldCheck size={15} weight="duotone" color="#fff" /> View compliance
+            </a>
+            <button onClick={() => { setAutoSummary(null); setPickMode(true); }} style={{ padding: '11px 18px', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+              Add more manually
+            </button>
+            <button onClick={() => { if (confirm('Start a new takeoff? Previous results are saved.')) { setAutoSummary(null); setState('upload'); setSelectedFile(null); setResult(null); setTakeoffId(null); } }} style={{ padding: '11px 18px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontWeight: 500, fontSize: 13, cursor: 'pointer', marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={13} weight="bold" color="rgba(255,255,255,0.4)" /> New analysis
+            </button>
+          </div>
+        </div>
+      ) : generating === 'auto' ? (
+        /* ── STREAMING: cinematic combined progress (phase 1 = 0-50%, phase 2 = 50-100%) ── */
+        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 18, padding: 2, background: 'linear-gradient(135deg, rgba(245,158,11,0.55), rgba(245,158,11,0.14))', animation: 'tkGlow 3.4s ease-in-out infinite' }}>
+          <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 16, padding: '24px 26px', background: 'radial-gradient(120% 130% at 50% -10%, rgba(245,158,11,0.12), rgba(10,13,20,0.97))' }}>
+            <div aria-hidden style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(245,158,11,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.06) 1px, transparent 1px)', backgroundSize: '26px 26px', maskImage: 'radial-gradient(80% 80% at 50% 30%, #000, transparent 78%)', WebkitMaskImage: 'radial-gradient(80% 80% at 50% 30%, #000, transparent 78%)' }} />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+              <div style={{ flex: '0 0 auto', width: 56, height: 56, borderRadius: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, rgba(245,158,11,0.24), rgba(245,158,11,0.04))', border: '1px solid rgba(245,158,11,0.42)', animation: 'tkPulseA 1.9s ease-out infinite' }}>
+                <Robot size={30} weight="duotone" color={GOLD_HI} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: '#fff', fontWeight: 800, fontSize: 17, letterSpacing: '-0.01em' }}>Sage is building your full package…</div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, marginTop: 3 }}>{progress.message || 'Working…'}</div>
+              </div>
+              <div style={{ color: GOLD_HI, fontWeight: 900, fontSize: 26, letterSpacing: '-0.02em' }}>{progress.pct}%</div>
+            </div>
+            <div style={{ position: 'relative', height: 10, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ position: 'relative', height: '100%', width: `${progress.pct}%`, background: `linear-gradient(90deg, ${AMBER}, ${GOLD}, ${GOLD_HI})`, borderRadius: 999, transition: 'width .5s ease', boxShadow: '0 0 16px rgba(245,158,11,0.6)' }}>
+                <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%)', backgroundSize: '200% 100%', animation: 'tkBarShine 2.4s ease-in-out infinite' }} />
+              </div>
+            </div>
+            <div style={{ position: 'relative', display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+              {[{ label: 'Bid jackets + SOV', phase: 0 }, { label: 'Compliance package', phase: 1 }].map(({ label, phase }) => {
+                const done = progress.pct >= (phase === 0 ? 50 : 100);
+                const active = phase === 0 ? progress.pct < 50 : (progress.pct >= 50 && progress.pct < 100);
+                return (
+                  <div key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, color: done ? GREEN : active ? GOLD_HI : 'rgba(255,255,255,0.4)', background: active ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${active ? 'rgba(245,158,11,0.3)' : BORDER}` }}>
+                    {done ? <CheckCircle size={15} weight="fill" color={GREEN} /> : active ? <CircleNotch size={15} weight="bold" style={{ animation: 'tkSpin .9s linear infinite' }} /> : <Circle size={12} weight="regular" />}
+                    {label}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : pickMode ? (
+        /* ── MANUAL PICKER: the individual document actions ── */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button onClick={() => setPickMode(false)} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: GOLD_HI, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
+            <ArrowRight size={14} weight="bold" color={GOLD_HI} style={{ transform: 'rotate(180deg)' }} /> Back to Sage
+          </button>
+
+          {/* Sage progress overlay (shown while building documents) */}
+          {generating === 'sage' && progress.pct > 0 && (
+            <div style={{
+              background: 'rgba(245, 158, 11,0.08)',
+              border: `1px solid rgba(245, 158, 11,0.25)`,
+              borderRadius: 10, padding: '12px 18px',
+              display: 'flex', alignItems: 'center', gap: 14,
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: GOLD, fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
+                  Sage is building your documents...
+                </div>
+                <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${progress.pct}%`, background: `linear-gradient(90deg, ${GOLD}, #FBBF24)`, borderRadius: 4, transition: 'width 0.5s ease' }} />
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 5 }}>
+                  {progress.message}
+                </div>
+              </div>
+              <div style={{ color: GOLD, fontWeight: 700, fontSize: 16, minWidth: 40, textAlign: 'right' }}>
+                {progress.pct}%
+              </div>
+            </div>
+          )}
+
+          {/* Generate All progress */}
+          {generating === 'all' && progress.pct > 0 && (
+            <div style={{
+              background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+              borderRadius: 10, padding: '12px 18px',
+              display: 'flex', alignItems: 'center', gap: 14,
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: '#22C55E', fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
+                  Building all project documents...
+                </div>
+                <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${progress.pct}%`, background: 'linear-gradient(90deg, #22C55E, #34D399)', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 5 }}>{progress.message}</div>
+              </div>
+              <div style={{ color: '#22C55E', fontWeight: 700, fontSize: 16 }}>{progress.pct}%</div>
+            </div>
+          )}
+
+          {/* Action buttons — two rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Primary actions */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={handleGenerateAll} disabled={!!generating} className="tkBtn"
+            style={{ padding: '13px 28px', background: `linear-gradient(135deg, #22C55E, #16A34A)`, border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 14, cursor: generating ? 'wait' : 'pointer', letterSpacing: '0.03em', opacity: generating ? 0.6 : 1, boxShadow: '0 14px 34px -12px rgba(34,197,94,0.7)' }}>
+            {generating === 'all' ? 'Building...' : <><ArrowRight size={16} weight="bold" color="#fff" style={{marginRight:4, verticalAlign:'middle'}} /> Generate All Documents</>}
+          </button>
+          <button onClick={handleSageAutoDocs} disabled={!!generating} className="tkBtn"
+            style={{ padding: '13px 24px', background: generating === 'sage' ? 'rgba(245, 158, 11,0.3)' : `linear-gradient(135deg, ${GOLD}, ${AMBER})`, border: 'none', borderRadius: 10, color: '#1A1206', fontWeight: 800, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'sage') ? 0.5 : 1, boxShadow: '0 14px 34px -12px rgba(245,158,11,0.6)' }}>
+            {generating === 'sage' ? 'Sage building...' : <><Lightning size={16} weight="duotone" color="#1A1206" style={{marginRight:4, verticalAlign:'middle'}} /> Sage AI Documents</>}
+          </button>
+          <button onClick={exportXLS} disabled={!!generating}
+            style={{ padding: '11px 22px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: '#22C55E', fontWeight: 600, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'xls') ? 0.5 : 1 }}>
+            {generating === 'xls' ? 'Generating...' : <><FileXls size={16} weight="duotone" color="#22C55E" style={{marginRight:4, verticalAlign:'middle'}} /> Export Excel</>}
+          </button>
+        </div>
+        {/* Secondary actions */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={handleGenerateBidPackages} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'bid-packages') ? 0.5 : 1 }}>
+            {generating === 'bid-packages' ? 'Creating...' : <><Package size={16} weight="duotone" color="#fff" style={{marginRight:4, verticalAlign:'middle'}} /> Bid Packages</>}
+          </button>
+          <button onClick={handleGenerateSOV} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'sov') ? 0.5 : 1 }}>
+            {generating === 'sov' ? 'Creating...' : <><Table size={16} weight="duotone" color="#fff" style={{marginRight:4, verticalAlign:'middle'}} /> SOV</>}
+          </button>
+          <button onClick={handleCreateBudget} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'budget') ? 0.5 : 1 }}>
+            {generating === 'budget' ? 'Creating...' : <><CurrencyDollar size={16} weight="duotone" color="#fff" style={{marginRight:4, verticalAlign:'middle'}} /> Budget</>}
+          </button>
+          <button onClick={handleGenerateLienWaivers} disabled={!!generating}
+            style={{ padding: '9px 18px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff', fontWeight: 600, fontSize: 12, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'lien-waivers') ? 0.5 : 1 }}>
+            {generating === 'lien-waivers' ? 'Creating...' : <><Blueprint size={16} weight="duotone" color="#fff" style={{marginRight:4, verticalAlign:'middle'}} /> Lien Waivers</>}
+          </button>
+          <button
+            onClick={() => {
+              if (confirm('Start a new takeoff? Previous results are saved.')) {
+                setState('upload'); setSelectedFile(null); setResult(null); setTakeoffId(null);
+              }
+            }}
+            style={{ padding: '9px 18px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontWeight: 500, fontSize: 12, cursor: 'pointer', marginLeft: 'auto' }}>
+            <Plus size={13} weight="bold" color="rgba(255,255,255,0.4)" style={{ marginRight: 4, verticalAlign: 'middle' }} /> New Analysis
+          </button>
+        </div>
+          </div>
+        </div>
+      ) : (
+        /* ── AUTONOMOUS CTA: Sage's recommendation ── */
+        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 18, padding: 2, background: 'linear-gradient(135deg, rgba(245,158,11,0.55), rgba(245,158,11,0.12))', animation: 'tkGlow 3.8s ease-in-out infinite' }}>
+          <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 16, padding: '26px 28px', background: 'radial-gradient(120% 130% at 12% -10%, rgba(245,158,11,0.14), rgba(10,13,20,0.96))', display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div aria-hidden style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(245,158,11,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.05) 1px, transparent 1px)', backgroundSize: '26px 26px', maskImage: 'radial-gradient(90% 90% at 20% 0%, #000, transparent 72%)', WebkitMaskImage: 'radial-gradient(90% 90% at 20% 0%, #000, transparent 72%)' }} />
+            <div style={{ position: 'relative', flex: '0 0 auto', width: 70, height: 70, borderRadius: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle, rgba(245,158,11,0.28), rgba(245,158,11,0.05))', border: '1px solid rgba(245,158,11,0.5)', boxShadow: '0 0 40px -6px rgba(245,158,11,0.6)', animation: 'tkFloat 5s ease-in-out infinite' }}>
+              <div aria-hidden style={{ position: 'absolute', inset: -2, borderRadius: 20, border: `1px solid ${GOLD}`, animation: 'tkRing 3s ease-out infinite' }} />
+              <Robot size={38} weight="duotone" color={GOLD_HI} />
+            </div>
+            <div style={{ position: 'relative', flex: '1 1 320px', minWidth: 280 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: GOLD_HI, fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8 }}>
+                <Sparkle size={13} weight="fill" /> Sage · Autonomous
+              </div>
+              <div style={{ color: '#fff', fontWeight: 800, fontSize: 19, lineHeight: 1.42, letterSpacing: '-0.01em' }}>
+                I read the plan — <span style={{ color: GREEN }}>{fmt$(sellTotal)}</span> sell across {divCount} division{divCount !== 1 ? 's' : ''}, {fmtN(result?.itemCount || 0)} line items.
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14, marginTop: 6, lineHeight: 1.5 }}>
+                Want me to build the full bid jacket + compliance package? I&apos;ll write every scope, generate the jacket PDFs and Schedule of Values, then the lien waivers and W-9 requests — filed to Documents / Compliance.
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}>
+                <button onClick={handleBuildItAll} disabled={!!generating} className="tkBtn" style={{ position: 'relative', overflow: 'hidden', padding: '14px 26px', border: 'none', borderRadius: 12, background: `linear-gradient(135deg, ${GOLD}, ${AMBER})`, color: '#1A1206', fontWeight: 900, fontSize: 15, cursor: generating ? 'wait' : 'pointer', letterSpacing: '0.02em', boxShadow: '0 16px 40px -12px rgba(245,158,11,0.75)' }}>
+                  <span aria-hidden className="tkShine" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)' }} />
+                  <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 9 }}>
+                    <MagicWand size={18} weight="fill" color="#1A1206" /> Yes, build it all <ArrowRight size={17} weight="bold" color="#1A1206" />
+                  </span>
+                </button>
+                <button onClick={() => setPickMode(true)} disabled={!!generating} style={{ padding: '12px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 12, color: '#fff', fontWeight: 700, fontSize: 13, cursor: generating ? 'wait' : 'pointer' }}>
+                  Let me pick
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+                {[
+                  { icon: <Package size={13} weight="duotone" color={GOLD_HI} />, t: `${divCount} bid jacket${divCount !== 1 ? 's' : ''}` },
+                  { icon: <Table size={13} weight="duotone" color={GOLD_HI} />, t: 'Schedule of Values' },
+                  { icon: <Scroll size={13} weight="duotone" color={GOLD_HI} />, t: 'Lien waivers' },
+                  { icon: <FileText size={13} weight="duotone" color={GOLD_HI} />, t: 'W-9 requests' },
+                  { icon: <FolderSimple size={13} weight="duotone" color={GOLD_HI} />, t: 'Filed to Compliance' },
+                ].map((chip) => (
+                  <span key={chip.t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.72)', padding: '5px 11px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(245,158,11,0.22)' }}>
+                    {chip.icon}{chip.t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </div>
+  );
+}

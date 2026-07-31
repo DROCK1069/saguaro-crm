@@ -1,0 +1,290 @@
+'use client';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import ErrorBoundary from '../../../../../components/ErrorBoundary';
+import { Brain, ArrowRight } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard } from '@/components/ui/premium';
+
+const GOLD = '#F59E0B';
+const SOFT_BORDER = 'rgba(255,255,255,0.08)';
+const SURFACE = 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))';
+const DIM = '#CBD5E1';
+const TEXT = '#FFFFFF';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  isStreaming?: boolean;
+}
+
+const QUICK_QUESTIONS = [
+  "What needs my attention today?",
+  "What are my biggest cash flow risks?",
+  "Which lien waiver deadlines are coming up?",
+  "Analyze budget vs actual spending",
+  "What are the schedule risks on this project?",
+  "Which subs have compliance issues?",
+  "How should I handle a change order dispute?",
+  "What OSHA requirements apply to my site?",
+];
+
+function IntelligenceChat() {
+  const params = useParams();
+  const projectId = params?.projectId as string;
+
+  const [messages, setMessages] = useState<Message[]>([{
+    id: '0',
+    role: 'assistant',
+    content: "**Welcome to Saguaro Intelligence**\n\nI'm your AI construction expert with deep knowledge of CSI MasterFormat, AIA contracts, lien law, prevailing wages, estimating, and construction best practices.\n\nI have full context on this project — ask me anything about budget, RFIs, change orders, subs, schedule, or construction best practices.",
+    timestamp: new Date(),
+  }]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendMessage = useCallback(async (content: string) => {
+    if (!content.trim() || isLoading) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: content.trim(),
+      timestamp: new Date(),
+    };
+
+    const assistantId = (Date.now() + 1).toString();
+    const assistantMsg: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
+    setInput('');
+    setIsLoading(true);
+
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
+    try {
+      // Build history for context (last 20 messages)
+      const history = [...messages, userMsg].slice(-20).map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: history,
+          projectId,
+          context: 'project_intelligence',
+        }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No stream');
+
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw || raw === '[DONE]') continue;
+          try {
+            const ev = JSON.parse(raw);
+            // Handle both old format (type:delta, text:...) and new format (type:content, content:...)
+            const chunk = ev.text || ev.delta || ev.content || '';
+            if (chunk && (ev.type === 'delta' || ev.type === 'content' || ev.delta || ev.text)) {
+              accumulated += chunk;
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: accumulated, isStreaming: true } : m
+              ));
+            }
+            if (ev.type === 'done') {
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, isStreaming: false } : m
+              ));
+            }
+          } catch {}
+        }
+      }
+
+      // Finalize
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId ? { ...m, isStreaming: false } : m
+      ));
+
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setMessages(prev => prev.filter(m => m.id !== assistantId));
+        return;
+      }
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId
+          ? { ...m, content: "I had a brief connection issue. Please try your question again — I'm ready to help.", isStreaming: false }
+          : m
+      ));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [messages, projectId, isLoading]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  const renderContent = (content: string, isUser: boolean) => {
+    if (!content) return null;
+    // Simple markdown: **bold** → strong, newlines → <br>
+    const lines = content.split('\n');
+    return lines.map((line, li) => {
+      const parts = line.split(/(\*\*[^*]+\*\*)/g);
+      return (
+        <span key={li}>
+          {parts.map((part, pi) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={pi} style={{ color: isUser ? '#1A1206' : GOLD }}>{part.slice(2, -2)}</strong>;
+            }
+            return <span key={pi}>{part}</span>;
+          })}
+          {li < lines.length - 1 && <br />}
+        </span>
+      );
+    });
+  };
+
+  return (
+    <PremiumSurface maxWidth={1600} pad="40px 28px 40px">
+      <ModuleHero
+        eyebrow="Project Intelligence"
+        eyebrowIcon={<Brain size={13} weight="fill" color={GOLD} />}
+        title="Saguaro"
+        accent="Intelligence"
+        subtitle="Your AI construction expert with full context on this project — ask about budget, RFIs, change orders, subs, schedule, lien law, and best practices."
+      />
+
+      <SectionCard flush bodyStyle={{ padding: 0 }}>
+        <div style={{ display: 'flex', height: 'calc(100vh - 300px)', minHeight: 480, overflow: 'hidden', borderRadius: 18 }}>
+          {/* Sidebar */}
+          <div style={{ width: 260, background: 'rgba(255,255,255,0.015)', borderRight: `1px solid ${SOFT_BORDER}`, padding: '20px 16px', overflowY: 'auto', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <div style={{ width: '32px', height: '32px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}><Brain size={18} weight="bold" color="#1C1C1E" /></div>
+              <div>
+                <div style={{ color: TEXT, fontWeight: 700, fontSize: '13px' }}>Saguaro Intelligence</div>
+                <div style={{ color: DIM, fontSize: '11px' }}>AI Construction Expert</div>
+              </div>
+            </div>
+
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px #22C55E', marginBottom: '20px', display: 'inline-block' }} />
+            <span style={{ fontSize: '11px', color: DIM, marginLeft: '6px' }}>Online</span>
+
+            <div style={{ fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '10px', marginTop: '8px' }}>Quick Questions</div>
+            {QUICK_QUESTIONS.map(q => (
+              <button key={q} onClick={() => sendMessage(q)}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: '6px', background: 'rgba(245, 158, 11,0.06)', border: '1px solid rgba(245, 158, 11,0.15)', borderRadius: '6px', color: GOLD, fontSize: '11px', cursor: 'pointer', transition: 'background 0.15s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245, 158, 11,0.12)'}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245, 158, 11,0.06)'}
+              >{q}</button>
+            ))}
+
+            <div style={{ marginTop: '24px', fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '8px' }}>Expertise</div>
+            {['CSI MasterFormat', 'AIA Contracts', 'Lien Law (AZ/CA/TX)', 'Davis-Bacon / WH-347', 'OSHA 29 CFR 1926', 'Change Orders & Claims', 'Pay Application Process', 'Construction Finance'].map(item => (
+              <div key={item} style={{ fontSize: '11px', color: DIM, padding: '4px 0', borderBottom: `1px solid ${SOFT_BORDER}` }}>{item}</div>
+            ))}
+          </div>
+
+          {/* Chat area */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {messages.map(msg => (
+                <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  {msg.role === 'assistant' && (
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', marginRight: '8px', flexShrink: 0, alignSelf: 'flex-end', fontWeight: 900, color: '#1C1C1E' }}>S</div>
+                  )}
+                  <div style={{
+                    maxWidth: '78%',
+                    background: msg.role === 'user' ? `linear-gradient(135deg,${GOLD},#FBBF24)` : SURFACE,
+                    color: msg.role === 'user' ? '#1A1206' : TEXT,
+                    padding: '12px 16px',
+                    borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    fontSize: '13px', lineHeight: '1.6',
+                    whiteSpace: 'pre-wrap' as const, wordBreak: 'break-word' as const,
+                    border: msg.role === 'assistant' ? `1px solid ${SOFT_BORDER}` : 'none',
+                    boxShadow: msg.role === 'assistant' ? '0 10px 30px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)' : '0 10px 26px -12px rgba(245,158,11,0.5)',
+                  }}>
+                    {renderContent(msg.content, msg.role === 'user')}
+                    {msg.isStreaming && (
+                      <span style={{ display: 'inline-block', width: '2px', height: '14px', background: GOLD, marginLeft: '2px', animation: 'blink 0.8s infinite', verticalAlign: 'middle' }} />
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isLoading && messages[messages.length - 1]?.isStreaming === false && (
+                <div style={{ alignSelf: 'flex-start', padding: '12px 16px', borderRadius: '10px', background: SURFACE, border: `1px solid ${SOFT_BORDER}`, color: GOLD, fontSize: '18px', letterSpacing: '4px' }}>●●●</div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div style={{ padding: '12px 20px', borderTop: `1px solid ${SOFT_BORDER}`, display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(255,255,255,0.015)' }}>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about costs, schedules, lien waivers, change orders..."
+                disabled={isLoading}
+                style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: `1px solid ${SOFT_BORDER}`, borderRadius: '10px', padding: '10px 14px', color: TEXT, fontSize: '13px', outline: 'none' }}
+              />
+              <button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()}
+                style={{ padding: '10px 20px', background: isLoading || !input.trim() ? 'rgba(245, 158, 11,0.3)' : `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none', borderRadius: '10px', color: '#1A1206', fontSize: '13px', fontWeight: 800, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer', boxShadow: isLoading || !input.trim() ? 'none' : '0 10px 26px -10px rgba(245,158,11,0.6)' }}>
+                {isLoading ? '...' : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>Ask <ArrowRight size={14} weight="bold" color="#1A1206" /></span>}
+              </button>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      <style>{`
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+      `}</style>
+    </PremiumSurface>
+  );
+}
+
+export default function IntelligencePage() {
+  return (
+    <ErrorBoundary>
+      <IntelligenceChat />
+    </ErrorBoundary>
+  );
+}

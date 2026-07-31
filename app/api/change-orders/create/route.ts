@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { requirePermission } from '@/lib/permissions';
+import type { Database } from '@/lib/database.types';
+
+export async function POST(req: NextRequest) {
+  const g = await requirePermission(req, 'Change Orders', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+  try {
+    const body = await req.json();
+    const projectId = body.projectId ?? body.project_id;
+    const title = body.title;
+    if (!projectId || !title) {
+      return NextResponse.json({ error: 'projectId and title are required' }, { status: 400 });
+    }
+
+    // Accept both camelCase and snake_case for every field the clients send.
+    const amount = Number(body.amount ?? body.costImpact ?? body.cost_impact ?? 0) || 0;
+    const scheduleImpactDays = body.scheduleImpact ?? body.schedule_impact_days ?? body.scheduleImpactDays ?? body.schedule_impact ?? null;
+    const scheduleImpact = scheduleImpactDays != null ? Number(scheduleImpactDays) || 0 : 0;
+
+    const db = g.db;
+    const { data: last } = await db.from('change_orders').select('co_number').eq('project_id', projectId).order('co_number', { ascending: false }).limit(1).maybeSingle();
+    const coNumber = ((last as any)?.co_number || 0) + 1;
+
+    const { data: co, error } = await db.from('change_orders').insert({
+      tenant_id: user.tenantId,
+      project_id: projectId,
+      co_number: coNumber,
+      title,
+      description: body.description ?? null,
+      reason: body.reason ?? null,
+      status: 'pending',
+      // Lists & detail screens read `amount`; keep `cost_impact` in sync for callers that read it.
+      amount,
+      cost_impact: amount,
+      // Detail screens read `schedule_impact_days` (falling back to `schedule_impact`) — write both.
+      schedule_impact_days: scheduleImpactDays != null ? scheduleImpact : null,
+      schedule_impact: scheduleImpact,
+      submitted_by: user.id,
+    } as unknown as Database['public']['Tables']['change_orders']['Insert']).select().single();
+
+    if (error) throw error;
+    return NextResponse.json({ changeOrder: co, success: true });
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

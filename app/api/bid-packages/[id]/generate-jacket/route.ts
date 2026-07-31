@@ -1,0 +1,67 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient, getUser } from '@/lib/supabase-server';
+import { generateBidJacket, saveDocument } from '@/lib/pdf-engine';
+import { generateBidJacketContent } from '@/lib/construction-intelligence';
+import { requirePermission } from '@/lib/permissions';
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const g = await requirePermission(req, 'Projects', 'Edit');
+  if (!g.ok) return g.res;
+  const user = g.user;
+  const { id } = await params;
+  try {
+    const db = createServerClient();
+    const [{ data: pkg }, { data: items }] = await Promise.all([
+      db.from('bid_packages').select('*, projects(*)').eq('id', id).eq('tenant_id', user.tenantId).single(),
+      db.from('bid_package_items').select('*').eq('bid_package_id', id).eq('tenant_id', user.tenantId),
+    ]);
+    if (!pkg) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const p = pkg as any;
+    const project = p.projects;
+    const itemsList = (items || []) as any[];
+
+    // Generate scope narrative with AI
+    const { scopeNarrative, csiSections } = await generateBidJacketContent(
+      itemsList.map((i: any) => ({
+        description: i.description,
+        csiCode: i.csi_code,
+        quantity: i.quantity,
+        unit: i.unit,
+        totalCost: i.total_amount,
+      })),
+      { projectName: project?.name, projectType: project?.project_type, state: project?.state, trade: p.trade }
+    );
+
+    const pdfBytes = await generateBidJacket({
+      projectName: project?.name || p.name,
+      projectAddress: project?.address || '',
+      ownerName: project?.owner_entity?.name || '',
+      ownerAddress: project?.owner_entity?.address || '',
+      gcName: project?.gc_name || 'General Contractor',
+      gcAddress: project?.address || '',
+      gcLicense: project?.gc_license,
+      tradeName: p.trade,
+      dueDate: p.due_date || '',
+      scopeNarrative: p.scope_narrative || scopeNarrative,
+      csiSections: csiSections,
+      lineItems: itemsList.map((i: any) => ({
+        description: i.description,
+        quantity: i.quantity,
+        unit: i.unit,
+        unitPrice: i.unit_price,
+      })),
+      requiresBond: p.requires_bond || false,
+      insuranceRequirements: p.insurance_requirements || {},
+    });
+
+    const pdfUrl = await saveDocument(project?.id || id, 'bid-jacket', pdfBytes, { bidPackageId: id }, p.tenant_id);
+
+    // Update bid package with jacket URL (tenant-scoped — service-role bypasses RLS)
+    await db.from('bid_packages').update({ jacket_pdf_url: pdfUrl }).eq('id', id).eq('tenant_id', user.tenantId);
+
+    return NextResponse.json({ pdfUrl, success: true });
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
