@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef, useMemo, type CSSProperties } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useDragReorder } from '../../../../../../components/DragHandle';
 import BulkActionBar from '../../../../../../components/BulkActionBar';
 import PresenceIndicator from '../../../../../../components/PresenceIndicator';
@@ -416,9 +417,13 @@ function EstimatePage() {
 
       {/* HEADER */}
       <div style={{ marginBottom: 10 }}>
-        <a href={`/app/projects/${projectId}/takeoff`} style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
-          ← Back to Takeoff Studio
-        </a>
+        {/* Client-side nav, deliberately: a full-page <a> unload ABORTED any
+            in-flight cell-save PATCH and dropped the 400ms-debounced edit the
+            user just typed (review finding). And the label names where it
+            actually goes — the project takeoff, not the global Studio. */}
+        <Link href={`/app/projects/${projectId}/takeoff`} style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
+          ← Back to project takeoff
+        </Link>
       </div>
       <ModuleHero
         eyebrow="Takeoff Estimate"

@@ -847,6 +847,14 @@ export default function TakeoffPage() {
             <p style={{ animation: 'tkRise .6s ease .1s both', color: 'rgba(255,255,255,0.62)', fontSize: 16, marginTop: 16, maxWidth: 610, marginInline: 'auto', lineHeight: 1.58 }}>
               Claude reads every wall, footing, fixture and column — measures the quantities, and prices them by trade. No scale wheel. No manual counting.
             </p>
+            {/* The estimate workspace door must exist in EVERY page state — the
+                results-only placement left it unreachable for any project that
+                hadn't finished an analysis (review finding). */}
+            <p style={{ marginTop: 14 }}>
+              <a href={`/app/projects/${projectId}/takeoff/estimate`} style={{ color: 'rgba(245,158,11,0.9)', fontSize: 13.5, fontWeight: 600, textDecoration: 'none' }}>
+                Prefer to build it by hand? Open the estimate workspace →
+              </a>
+            </p>
           </div>
 
           {/* Drop Zone — glowing gradient border, breathing, blueprint interior + scan beam */}
@@ -1599,8 +1607,10 @@ export default function TakeoffPage() {
           </button>
           {/* The sheet-by-sheet estimate workspace shipped UNREACHABLE — no link
               anywhere in the app pointed at it (takeoff/estimate). This is its door. */}
-          <a href={`/app/projects/${projectId}/takeoff/estimate`}
-            style={{ padding: '11px 22px', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.32)', borderRadius: 8, color: '#F59E0B', fontWeight: 600, fontSize: 13, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+          <a href={generating ? undefined : `/app/projects/${projectId}/takeoff/estimate`}
+            aria-disabled={!!generating}
+            onClick={(e) => { if (generating) e.preventDefault(); }}
+            style={{ padding: '11px 22px', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.32)', borderRadius: 8, color: '#F59E0B', fontWeight: 600, fontSize: 13, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', opacity: generating ? 0.5 : 1, cursor: generating ? 'wait' : 'pointer' }}>
             <Calculator size={16} weight="duotone" color="#F59E0B" style={{marginRight:4, verticalAlign:'middle'}} /> Estimate workspace
           </a>
         </div>
