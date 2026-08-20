@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { applyMarkupStack } from '@/lib/takeoff/engine';
 import { humanError } from '@/lib/errors';
 import { useToast } from '../../../../../components/Toast';
-import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning, CheckCircle, Ruler, Robot, CircleNotch, Circle, Plus, Sparkle, ShieldCheck, Timer, Buildings, TrendUp, Stack, Target, MagicWand, FileText, Scroll, FolderSimple, SealCheck, Warning } from '@phosphor-icons/react';
+import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning, CheckCircle, Ruler, Robot, CircleNotch, Circle, Plus, Sparkle, ShieldCheck, Timer, Buildings, TrendUp, Stack, Target, MagicWand, FileText, Scroll, FolderSimple, SealCheck, Warning, Calculator } from '@phosphor-icons/react';
 
 interface TakeoffItem {
   csiCode: string;
@@ -1597,6 +1597,12 @@ export default function TakeoffPage() {
             style={{ padding: '11px 22px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: '#22C55E', fontWeight: 600, fontSize: 13, cursor: generating ? 'wait' : 'pointer', opacity: (generating && generating !== 'xls') ? 0.5 : 1 }}>
             {generating === 'xls' ? 'Generating...' : <><FileXls size={16} weight="duotone" color="#22C55E" style={{marginRight:4, verticalAlign:'middle'}} /> Export Excel</>}
           </button>
+          {/* The sheet-by-sheet estimate workspace shipped UNREACHABLE — no link
+              anywhere in the app pointed at it (takeoff/estimate). This is its door. */}
+          <a href={`/app/projects/${projectId}/takeoff/estimate`}
+            style={{ padding: '11px 22px', background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.32)', borderRadius: 8, color: '#F59E0B', fontWeight: 600, fontSize: 13, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            <Calculator size={16} weight="duotone" color="#F59E0B" style={{marginRight:4, verticalAlign:'middle'}} /> Estimate workspace
+          </a>
         </div>
         {/* Secondary actions */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Badge, Btn, Table, ProgressBar, T,
 } from '@/components/ui/shell';
@@ -7,7 +8,7 @@ import {
   PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty,
 } from '@/components/ui/premium';
 import {
-  Clipboard, Target, CurrencyDollar, Lightning, Buildings, Ruler,
+  Clipboard, Target, CurrencyDollar, Lightning, Buildings, Ruler, Stack,
   Check, Folder, Wall, HardHat, ChartBar, Lightbulb,
   Sparkle, CheckCircle, UploadSimple, DownloadSimple, ListChecks,
 } from '@phosphor-icons/react';
@@ -297,6 +298,9 @@ export default function TakeoffPage() {
     setPhase('idle');
     setPendingFile(null);
     setSelectedProjectId('');
+    // "New Analysis" from deep in a result must visibly land ON the upload card,
+    // not silently reset state a full viewport above the fold.
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
     setProgress({ pct: 0, message: '', step: 0 });
     setErrorMsg('');
   }
@@ -434,9 +438,9 @@ export default function TakeoffPage() {
         <ModuleHero
           eyebrow="Estimating"
           eyebrowIcon={<Ruler size={13} weight="fill" color={GOLD} />}
-          title="AI Blueprint"
-          accent="Takeoff"
-          subtitle="Upload a blueprint for instant AI-powered material and cost estimation"
+          title="Takeoff"
+          accent="Studio"
+          subtitle="AI blueprint analysis, measured takeoff, assemblies and cost rates — every estimating tool in one place."
           actions={
             <>
               <Badge label={`${takeoffs.length} Total`} color="muted" />
@@ -444,6 +448,25 @@ export default function TakeoffPage() {
             </>
           }
         />
+
+        {/* ── The Studio's doors. Measured takeoff / assemblies / rates already
+            shipped as siblings of this page but NOTHING linked to them — users
+            could only find them by typing URLs. One row, every tool. ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14, marginBottom: 28 }}>
+          {[
+            { href: '/app/takeoff/measured', title: 'Measured takeoff', sub: 'Trace and measure the drawing — deterministic, priced live', icon: <Ruler size={20} weight="duotone" color={GOLD} /> },
+            { href: '/app/takeoff/assemblies', title: 'Assembly library', sub: 'Cost templates that explode into full priced bills', icon: <Stack size={20} weight="duotone" color={GOLD} /> },
+            { href: '/app/takeoff/rates', title: 'Cost rates', sub: 'Your learned material & labor rates', icon: <CurrencyDollar size={20} weight="duotone" color={GOLD} /> },
+          ].map(d => (
+            <Link key={d.href} href={d.href} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderRadius: 12, border: '1px solid rgba(245,158,11,0.28)', background: 'linear-gradient(160deg, rgba(245,158,11,0.07), rgba(255,255,255,0.015))', textDecoration: 'none' }}>
+              {d.icon}
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{d.title}</span>
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, lineHeight: 1.45 }}>{d.sub}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
 
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: 28 }}>
@@ -513,7 +536,10 @@ export default function TakeoffPage() {
                     </div>
                     {projects.length === 0 ? (
                       <div style={{ color: T.amber, fontSize: 12, padding: '10px 0' }}>
-                        No projects found. Create a project first.
+                        No projects found.{' '}
+                        <Link href="/app/projects/new" style={{ color: T.amber, fontWeight: 700, textDecoration: 'underline' }}>
+                          Create a project first →
+                        </Link>
                       </div>
                     ) : (
                       <select

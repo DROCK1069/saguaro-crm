@@ -415,6 +415,11 @@ function EstimatePage() {
     <PremiumSurface maxWidth={1600}>
 
       {/* HEADER */}
+      <div style={{ marginBottom: 10 }}>
+        <a href={`/app/projects/${projectId}/takeoff`} style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
+          ← Back to Takeoff Studio
+        </a>
+      </div>
       <ModuleHero
         eyebrow="Takeoff Estimate"
         eyebrowIcon={<Calculator size={13} weight="fill" color={GOLD} />}

@@ -54,7 +54,7 @@ const CRM_CHIPS = [
 ];
 
 const QUICK_ACTION_MAP: Record<string, { label: string; icon: string; description: string; hrefTemplate: string }> = {
-  'takeoff': { label: 'Open AI Takeoff', icon: '📐', description: 'Start a new takeoff', hrefTemplate: '/app/projects/{id}/takeoff' },
+  'takeoff': { label: 'Open Takeoff Studio', icon: '📐', description: 'Start a new takeoff', hrefTemplate: '/app/projects/{id}/takeoff' },
   'pay app': { label: 'New Pay Application', icon: '📄', description: 'Generate G702/G703', hrefTemplate: '/app/projects/{id}/pay-apps' },
   'g702': { label: 'New Pay Application', icon: '📄', description: 'Generate G702/G703', hrefTemplate: '/app/projects/{id}/pay-apps' },
   'lien waiver': { label: 'Lien Waivers', icon: '🔒', description: 'Manage lien waivers', hrefTemplate: '/app/projects/{id}/lien-waivers' },

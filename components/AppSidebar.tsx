@@ -107,7 +107,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Pre-Construction',
     items: [
       { label: 'Bids & Estimates', href: '/app/bids',         icon: CurrencyDollar },
-      { label: 'AI Takeoff',       href: '/app/takeoff',      icon: Blueprint },
+      { label: 'Takeoff Studio',   href: '/app/takeoff',      icon: Blueprint },
       { label: 'Heatmap',          href: '/field/heatmap',    icon: WifiHigh },
       { label: 'Intelligence',     href: '/app/intelligence', icon: Brain },
     ],
