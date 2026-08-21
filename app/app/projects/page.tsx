@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FolderOpen, MagnifyingGlass, Plus, ArrowRight, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { colors } from '../../../lib/design-tokens';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { accentForProject, projectMonogram } from '@/lib/project-identity';
 
 // Reconciled to the design-token ramp (no more bluish slab literals).
 const GOLD=colors.gold,DIM=colors.textMuted,TEXT=colors.text;
@@ -169,15 +170,22 @@ export default function ProjectsPage() {
           {filtered.map((p:any)=>{
             const st = statusStyle(p.status||'');
             const contract = Number(p.contract_amount||0);
+            const acc = accentForProject(p.id);
             return (
               <Link key={p.id} href={`/app/projects/${p.id}`} className="pmHover"
                 style={{textDecoration:'none',position:'relative',overflow:'hidden',background:PANEL,border:`1px solid ${PANEL_BORDER}`,borderRadius:16,padding:18,boxShadow:PANEL_SHADOW,display:'block'}}
               >
-                <div aria-hidden style={{position:'absolute',left:0,top:0,bottom:0,width:3,background:`linear-gradient(180deg, ${st.c}, transparent)`,opacity:0.85}}/>
+                <div aria-hidden style={{position:'absolute',left:0,top:0,bottom:0,width:3,background:`linear-gradient(180deg, ${acc.hex}, transparent)`,opacity:0.85}}/>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14,gap:10}}>
-                  <div style={{minWidth:0}}>
-                    <div style={{fontWeight:800,fontSize:16,color:TEXT,marginBottom:3,lineHeight:1.3,letterSpacing:'-0.01em',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{p.name}</div>
-                    <div style={{fontSize:12,color:DIM,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{p.address||'No address set'}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
+                    {/* Project identity chip — curated accent, deterministic per project */}
+                    <div aria-hidden style={{width:34,height:34,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:acc.soft,border:`1px solid ${acc.ring}`,color:acc.hex,fontSize:12.5,fontWeight:900,letterSpacing:'0.03em'}}>
+                      {projectMonogram(p.name)}
+                    </div>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontWeight:800,fontSize:16,color:acc.hex,marginBottom:3,lineHeight:1.3,letterSpacing:'-0.01em',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{p.name}</div>
+                      <div style={{fontSize:12,color:DIM,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{p.address||'No address set'}</div>
+                    </div>
                   </div>
                   <span style={{fontSize:9.5,fontWeight:800,letterSpacing:.5,padding:'4px 10px',borderRadius:999,background:st.bg,color:st.c,whiteSpace:'nowrap' as const,border:'1px solid rgba(255,255,255,0.10)',flexShrink:0}}>{(p.status||'unknown').replace(/_/g,' ').toUpperCase()}</span>
                 </div>
@@ -221,7 +229,7 @@ export default function ProjectsPage() {
               <tbody>
                 {filtered.map((p:any)=>{ const st=statusStyle(p.status||''); const contract=Number(p.contract_amount||0); return (
                   <tr key={p.id} className="pmRow" style={{borderTop:`1px solid ${PANEL_BORDER}`,cursor:'pointer'}} onClick={()=>{window.location.href=`/app/projects/${p.id}`;}}>
-                    <td style={{padding:'12px'}}><div style={{fontWeight:700,color:TEXT}}>{p.name}</div><div style={{fontSize:11.5,color:DIM}}>{p.address||'No address set'}</div></td>
+                    <td style={{padding:'12px'}}><div style={{display:'flex',alignItems:'center',gap:8}}><span aria-hidden style={{width:22,height:22,borderRadius:7,flexShrink:0,display:'inline-flex',alignItems:'center',justifyContent:'center',background:accentForProject(p.id).soft,border:`1px solid ${accentForProject(p.id).ring}`,color:accentForProject(p.id).hex,fontSize:9,fontWeight:900}}>{projectMonogram(p.name)}</span><div style={{minWidth:0}}><div style={{fontWeight:700,color:accentForProject(p.id).hex}}>{p.name}</div><div style={{fontSize:11.5,color:DIM}}>{p.address||'No address set'}</div></div></div></td>
                     <td style={{padding:'12px'}}><span style={{fontSize:10,fontWeight:800,padding:'3px 9px',borderRadius:999,background:st.bg,color:st.c,whiteSpace:'nowrap' as const}}>{(p.status||'—').replace(/_/g,' ').toUpperCase()}</span></td>
                     <td style={{padding:'12px',color:DIM,textTransform:'capitalize' as const}}>{(p.project_type||'—').replace(/_/g,' ')}</td>
                     <td style={{padding:'12px',textAlign:'right',fontWeight:700,color:contract>0?GOLD:colors.textDim,fontVariantNumeric:'tabular-nums' as const}}>{contract>0?fmt(contract):'—'}</td>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
+import { accentForProject } from '@/lib/project-identity';
 import {
   SquaresFour, Ruler, Calculator, FileText, CalendarBlank, Package, Palette,
   Clipboard, NotePencil, Wallet, ArrowsClockwise, Money, Receipt, Signature,
@@ -156,7 +157,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       <div style={{ padding: '14px 12px', borderBottom: `1px solid ${BORDER}` }}>
         {!isCollapsed && (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, marginBottom: 2, lineHeight: 1.3 }}>{projectName || '—'}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: accentForProject(projectId as string).hex, marginBottom: 2, lineHeight: 1.3 }}>{projectName || '—'}</div>
             <div style={{ fontSize: 10, color: DIM, marginBottom: 8 }}>{projectNumber}</div>
             {/* Progress */}
             <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 3 }}>
@@ -296,7 +297,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             Modules
           </button>
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{projectName || '—'}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: accentForProject(projectId as string).hex, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{projectName || '—'}</div>
             {projectNumber && <div style={{ fontSize: 10, color: DIM }}>{projectNumber}</div>}
           </div>
         </div>
