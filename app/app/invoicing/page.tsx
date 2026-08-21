@@ -4,6 +4,7 @@
  * Uses DataTable with sorting, filtering, pagination.
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -378,7 +379,7 @@ export default function InvoicingPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Due Date{auto.due && <AutoChip />}</label>
-                  <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} style={inputStyle} />
+                  <SaguaroDatePicker value={form.due_date} onChange={(v) => setForm({ ...form, due_date: v })} style={inputStyle} />
                   <div style={hintStyle}>{auto.due ? 'Net 30 from today — adjust freely.' : 'Overdue flags itself from this date.'}</div>
                 </div>
                 <div>

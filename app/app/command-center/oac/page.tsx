@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { CalendarBlank, CheckCircle, User, Users, Warning, Check, X } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
@@ -208,7 +209,7 @@ function LogMeetingModal({ projects, onClose }: { projects: any[]; onClose: () =
           <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Meeting title *</label><input style={inp} placeholder="e.g. Back Nine Buckeye — OAC #3" value={f.title || ''} onChange={(e) => set('title', e.target.value)} /></div>
           <div><label style={lbl}>Site *</label><select style={inp} value={f.project_id || ''} onChange={(e) => set('project_id', e.target.value)}><option value="">Select site…</option>{projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
           <div><label style={lbl}>Type</label><select style={inp} value={f.meeting_type} onChange={(e) => set('meeting_type', e.target.value)}>{['OAC', 'GC Weekly Call', 'Progress', 'Preconstruction', 'Design', 'Coordination', 'Closeout'].map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
-          <div><label style={lbl}>Date *</label><input type="date" style={inp} value={f.meeting_date} onChange={(e) => set('meeting_date', e.target.value)} /></div>
+          <div><label style={lbl}>Date *</label><SaguaroDatePicker style={inp} value={f.meeting_date} onChange={(v) => set('meeting_date', v)} /></div>
           <div><label style={lbl}>Facilitator</label><input style={inp} value={f.facilitator_name || ''} onChange={(e) => set('facilitator_name', e.target.value)} /></div>
           <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Location</label><input style={inp} value={f.location || ''} onChange={(e) => set('location', e.target.value)} /></div>
           <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Agenda / notes</label><textarea style={{ ...inp, minHeight: 60, resize: 'vertical', fontFamily: font }} value={f.agenda || ''} onChange={(e) => set('agenda', e.target.value)} /></div>
@@ -240,7 +241,7 @@ function LogMeetingModal({ projects, onClose }: { projects: any[]; onClose: () =
             <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr auto', gap: 8, marginBottom: 6 }}>
               <input style={inp} placeholder="Action…" value={it.description} onChange={(e) => setItems((x) => x.map((r, j) => j === i ? { ...r, description: e.target.value } : r))} />
               <input style={inp} placeholder="Owner" value={it.assigned_to_name} onChange={(e) => setItems((x) => x.map((r, j) => j === i ? { ...r, assigned_to_name: e.target.value } : r))} />
-              <input type="date" style={inp} value={it.due_date} onChange={(e) => setItems((x) => x.map((r, j) => j === i ? { ...r, due_date: e.target.value } : r))} />
+              <SaguaroDatePicker style={inp} value={it.due_date} onChange={(v) => setItems((x) => x.map((r, j) => j === i ? { ...r, due_date: v } : r))} />
               <button onClick={() => setItems((x) => x.filter((_, j) => j !== i))} style={{ ...miniBtn, color: C.red }}><X size={12} weight="bold" color={C.red} /></button>
             </div>
           ))}

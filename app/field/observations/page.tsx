@@ -5,6 +5,7 @@
  * Templates, checklists, corrective actions, photo capture, GPS, offline queue.
  */
 import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
@@ -852,9 +853,9 @@ function ObservationsPage() {
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Date Range</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input type="date" value={filters.dateFrom} onChange={e => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1, colorScheme: 'light' }} />
+              <SaguaroDatePicker value={filters.dateFrom} onChange={v => setFilters(prev => ({ ...prev, dateFrom: v }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1 }} />
               <span style={{ color: DIM, fontSize: 12 }}>to</span>
-              <input type="date" value={filters.dateTo} onChange={e => setFilters(prev => ({ ...prev, dateTo: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1, colorScheme: 'light' }} />
+              <SaguaroDatePicker value={filters.dateTo} onChange={v => setFilters(prev => ({ ...prev, dateTo: v }))} style={{ ...inputStyle, fontSize: 12, padding: '6px 8px', flex: 1 }} />
             </div>
           </div>
           {/* Sort */}
@@ -1206,8 +1207,8 @@ function ObservationsPage() {
             style={{ ...inputStyle, marginBottom: 12 }}
           />
           <label style={labelStyle}>Due Date</label>
-          <input type="date" value={newCADue} onChange={e => setNewCADue(e.target.value)}
-            style={{ ...inputStyle, marginBottom: 12, colorScheme: 'light' }}
+          <SaguaroDatePicker value={newCADue} onChange={v => setNewCADue(v)}
+            style={{ ...inputStyle, marginBottom: 12 }}
           />
           <label style={labelStyle}>Action Description</label>
           <textarea value={newCADesc} onChange={e => setNewCADesc(e.target.value)}

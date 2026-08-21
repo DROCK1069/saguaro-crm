@@ -5,6 +5,7 @@
  * Offline queue support via enqueue.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
@@ -417,8 +418,8 @@ function CommissioningInner() {
         </div>
         <div><FieldLabel text="Assigned To" /><TextInput value={form.assigned_to} onChange={(v) => setF('assigned_to', v)} placeholder="Person or company" /></div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 1 }}><FieldLabel text="Scheduled Date" /><TextInput value={form.scheduled_date} onChange={(v) => setF('scheduled_date', v)} type="date" /></div>
-          <div style={{ flex: 1 }}><FieldLabel text="Completed Date" /><TextInput value={form.completed_date} onChange={(v) => setF('completed_date', v)} type="date" /></div>
+          <div style={{ flex: 1 }}><FieldLabel text="Scheduled Date" /><SaguaroDatePicker value={form.scheduled_date} onChange={(v) => setF('scheduled_date', v)} style={{ borderRadius: 10, fontSize: 14 }} /></div>
+          <div style={{ flex: 1 }}><FieldLabel text="Completed Date" /><SaguaroDatePicker value={form.completed_date} onChange={(v) => setF('completed_date', v)} style={{ borderRadius: 10, fontSize: 14 }} /></div>
         </div>
       </div>
 
@@ -434,8 +435,8 @@ function CommissioningInner() {
 
       <SectionHeader title="Warranty" />
       <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1 }}><FieldLabel text="Warranty Start" /><TextInput value={form.warranty_start} onChange={(v) => setF('warranty_start', v)} type="date" /></div>
-        <div style={{ flex: 1 }}><FieldLabel text="Warranty End" /><TextInput value={form.warranty_end} onChange={(v) => setF('warranty_end', v)} type="date" /></div>
+        <div style={{ flex: 1 }}><FieldLabel text="Warranty Start" /><SaguaroDatePicker value={form.warranty_start} onChange={(v) => setF('warranty_start', v)} style={{ borderRadius: 10, fontSize: 14 }} /></div>
+        <div style={{ flex: 1 }}><FieldLabel text="Warranty End" /><SaguaroDatePicker value={form.warranty_end} onChange={(v) => setF('warranty_end', v)} style={{ borderRadius: 10, fontSize: 14 }} /></div>
       </div>
 
       <SectionHeader title="Notes" />
@@ -963,8 +964,8 @@ function EquipmentPanel({ system, onPatch }: { system: CommissioningSystem; onPa
           </div>
           <div><FieldLabel text="Assigned To" /><TextInput value={s.assigned_to} onChange={(v) => onPatch({ assigned_to: v })} /></div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1 }}><FieldLabel text="Scheduled Date" /><TextInput value={s.scheduled_date} onChange={(v) => onPatch({ scheduled_date: v })} type="date" /></div>
-            <div style={{ flex: 1 }}><FieldLabel text="Completed Date" /><TextInput value={s.completed_date} onChange={(v) => onPatch({ completed_date: v })} type="date" /></div>
+            <div style={{ flex: 1 }}><FieldLabel text="Scheduled Date" /><SaguaroDatePicker value={s.scheduled_date} onChange={(v) => onPatch({ scheduled_date: v })} style={{ borderRadius: 10, fontSize: 14 }} /></div>
+            <div style={{ flex: 1 }}><FieldLabel text="Completed Date" /><SaguaroDatePicker value={s.completed_date} onChange={(v) => onPatch({ completed_date: v })} style={{ borderRadius: 10, fontSize: 14 }} /></div>
           </div>
         </div>
       </div>
@@ -972,8 +973,8 @@ function EquipmentPanel({ system, onPatch }: { system: CommissioningSystem; onPa
       <SectionHeader title="Warranty Tracking" />
       <div style={{ background: RAISED, border: `1px solid ${wStatus.color}44`, borderRadius: 12, padding: 14 }}>
         <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-          <div style={{ flex: 1 }}><FieldLabel text="Warranty Start" /><TextInput value={s.warranty_start} onChange={(v) => onPatch({ warranty_start: v })} type="date" /></div>
-          <div style={{ flex: 1 }}><FieldLabel text="Warranty End" /><TextInput value={s.warranty_end} onChange={(v) => onPatch({ warranty_end: v })} type="date" /></div>
+          <div style={{ flex: 1 }}><FieldLabel text="Warranty Start" /><SaguaroDatePicker value={s.warranty_start} onChange={(v) => onPatch({ warranty_start: v })} style={{ borderRadius: 10, fontSize: 14 }} /></div>
+          <div style={{ flex: 1 }}><FieldLabel text="Warranty End" /><SaguaroDatePicker value={s.warranty_end} onChange={(v) => onPatch({ warranty_end: v })} style={{ borderRadius: 10, fontSize: 14 }} /></div>
         </div>
         {s.warranty_end && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: `${wStatus.color}11`, border: `1px solid ${wStatus.color}33` }}>

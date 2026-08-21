@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 import MarketingNav from '@/components/MarketingNav';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',BORDER='rgba(255,255,255,0.08)',HAIRLINE='rgba(255,255,255,0.08)',CARD='rgba(255,255,255,0.02)',DIM='#CBD5E1',MUTED='rgba(255,255,255,0.45)',TEXT='#FFFFFF',GREEN='#3dd68c',RED='#c03030';
@@ -75,7 +76,15 @@ export default function IntelligencePage() {
           ))}
           <div><label style={{display:'block',fontSize:11,fontWeight:500,color:MUTED,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Trade Category</label>
             <select value={trade} onChange={e=>setTrade(e.target.value)} style={{width:'100%',padding:'9px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,cursor:'pointer'}}>
-              {['Residential','Commercial','Addition','Remodel','Healthcare','Education'].map(t=><option key={t}>{t}</option>)}
+              {!SUB_TRADES.includes(trade)&&<option value={trade}>{trade}</option>}
+              {SUB_TRADES_BY_DIVISION.map(g=>(
+                <optgroup key={g.division} label={g.division+' — '+g.name}>
+                  {g.trades.map(t=><option key={t} value={t}>{t}</option>)}
+                </optgroup>
+              ))}
+              <optgroup label="Other / Specialty">
+                {SUB_TRADES.filter(t=>!SUB_TRADES_BY_DIVISION.some(g=>g.trades.includes(t))).map(t=><option key={t} value={t}>{t}</option>)}
+              </optgroup>
             </select></div>
         </div>
         <div style={{marginBottom:14}}><label style={{display:'block',fontSize:11,fontWeight:500,color:MUTED,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Description</label>

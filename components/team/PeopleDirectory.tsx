@@ -6,6 +6,7 @@
  * trigger stamps the tenant). Mirrors the iOS People module.
  */
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import { UsersThree, Plus, MagnifyingGlass, PencilSimple, Trash, X, SealCheck, Warning, Star, FirstAid, Eye, ChatDots, Folder, CurrencyDollar, Phone, Envelope, MapPin, Briefcase } from '@phosphor-icons/react';
 
@@ -174,7 +175,7 @@ export function PeopleDirectory() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>{INC_TYPES.map((t) => { const on = inc.incident_type === t.v; return <button key={t.v} onClick={() => setInc({ ...inc, incident_type: t.v })} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${on ? t.c : BORDER}`, background: on ? `${t.c}22` : 'transparent', color: on ? t.c : DIM, borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700 }}><t.I size={14} weight="fill" />{t.l}</button>; })}</div>
           <input value={inc.title ?? ''} onChange={(e) => setInc({ ...inc, title: e.target.value })} placeholder="Title / summary" style={inp} />
           <textarea value={inc.description ?? ''} onChange={(e) => setInc({ ...inc, description: e.target.value })} placeholder="What happened…" style={{ ...inp, marginTop: 8, minHeight: 64, resize: 'vertical' }} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input type="date" value={inc.occurred_at} onChange={(e) => setInc({ ...inc, occurred_at: e.target.value })} style={inp} /><select value={inc.severity} onChange={(e) => setInc({ ...inc, severity: e.target.value })} style={inp}>{['low', 'medium', 'high', 'critical'].map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><SaguaroDatePicker value={inc.occurred_at} onChange={(v) => setInc({ ...inc, occurred_at: v })} style={inp} /><select value={inc.severity} onChange={(e) => setInc({ ...inc, severity: e.target.value })} style={inp}>{['low', 'medium', 'high', 'critical'].map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
           <input value={inc.equipment_involved ?? ''} onChange={(e) => setInc({ ...inc, equipment_involved: e.target.value })} placeholder="Equipment involved (opt)" style={{ ...inp, marginTop: 8 }} />
           <input value={inc.action_taken ?? ''} onChange={(e) => setInc({ ...inc, action_taken: e.target.value })} placeholder="Action taken (opt)" style={{ ...inp, marginTop: 8 }} />
           <button onClick={saveInc} style={{ ...btn, marginTop: 14, width: '100%' }}>Log it</button>

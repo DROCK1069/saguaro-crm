@@ -2,8 +2,9 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useFinancials } from '@/lib/hooks/useFranchise';
-import { C, font, fmtMoney, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, Tile, EmptyState } from '@/components/franchise/kit';
-import { CheckCircle, FileText } from '@phosphor-icons/react';
+import { C, font, fmtMoney, fmtMoneyShort, useFranchiseGate, GateLoading } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, PremiumEmpty } from '@/components/ui/premium';
+import { CheckCircle, FileText, Bank } from '@phosphor-icons/react';
 
 export default function FinancialsPage() {
   const { ready, loading: gateLoading } = useFranchiseGate();
@@ -11,11 +12,14 @@ export default function FinancialsPage() {
 
   const totals = useMemo(() => {
     const f = financials as any[];
+    // DB numerics can round-trip as strings — everything goes through Number().
     return {
-      retainage: f.reduce((s, x) => s + x.retainageHeld, 0),
-      lienCollected: f.reduce((s, x) => s + x.lienCollected, 0),
-      lienTotal: f.reduce((s, x) => s + x.lienTotal, 0),
+      retainage: f.reduce((s, x) => s + (Number(x.retainageHeld) || 0), 0),
+      lienCollected: f.reduce((s, x) => s + (Number(x.lienCollected) || 0), 0),
+      lienTotal: f.reduce((s, x) => s + (Number(x.lienTotal) || 0), 0),
+      wip: f.reduce((s, x) => s + (Number(x.actual) || 0), 0),
       tiReady: f.filter((x) => x.tiReady).length,
+      sites: f.length,
     };
   }, [financials]);
 
@@ -23,21 +27,36 @@ export default function FinancialsPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1100, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Financials — Retainage, Liens & TI" subtitle="Every dollar accounted for: 10% retainage held, lien releases on file, and TI-reimbursement readiness per location." />
+    <PremiumSurface maxWidth={1100} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Portfolio Money"
+        eyebrowIcon={<Bank size={13} weight="fill" color={C.gold} />}
+        title="Financial"
+        accent="Controls"
+        subtitle="Every dollar accounted for: retainage held, lien releases on file, and TI-reimbursement readiness per location."
+      />
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-        <Tile label="Retainage Held (10%)" value={fmtMoneyShort(totals.retainage)} color={C.gold} />
-        <Tile label="Lien Waivers Collected" value={`${totals.lienCollected}/${totals.lienTotal}`} />
-        <Tile label="Sites TI-Ready" value={totals.tiReady} color={totals.tiReady ? C.green : C.dim} />
-      </div>
+      {/* Money pulse — dense strip from the live financial rollup */}
+      <StatStrip items={[
+        { label: 'Retainage Held', value: fmtMoneyShort(totals.retainage), accent: C.gold, sub: 'released at closeout' },
+        { label: 'Work in Place', value: fmtMoneyShort(totals.wip), sub: `across ${totals.sites} site${totals.sites === 1 ? '' : 's'}` },
+        { label: 'Lien Waivers', value: `${totals.lienCollected}/${totals.lienTotal}`, accent: totals.lienTotal > 0 && totals.lienCollected < totals.lienTotal ? C.yellow : undefined, sub: totals.lienTotal > 0 && totals.lienCollected < totals.lienTotal ? `${totals.lienTotal - totals.lienCollected} still outstanding` : 'all releases on file' },
+        { label: 'Sites TI-Ready', value: String(totals.tiReady), accent: totals.tiReady ? C.green : undefined, sub: 'reimbursement package complete' },
+      ]} />
 
       {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
-      : (financials as any[]).length === 0 ? <EmptyState icon={<FileText size={34} weight="regular" color={C.dim} />} title="No financial data yet" body="Retainage, lien releases, and TI-reimbursement readiness roll up here as work is billed and closed out." />
+      : (financials as any[]).length === 0 ? (
+        <PremiumEmpty
+          icon={<FileText size={34} weight="duotone" color={C.gold} />}
+          title="No financial data yet"
+          description="This screen fills itself: bill work through pay applications and retainage accrues here automatically; lien waivers count up as subs sign; TI readiness flips green when the closeout package is complete. Nothing to type — just run the jobs."
+        />
+      )
       : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
           {(financials as any[]).map((f) => (
-            <div key={f.project_id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div key={f.project_id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
               <Link href={`/app/projects/${f.project_id}`} style={{ fontSize: 15, fontWeight: 800, color: C.text, textDecoration: 'none' }}>{f.project_name}</Link>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
                 <Metric label="Retainage Held" value={fmtMoney(f.retainageHeld)} color={C.gold} />
@@ -47,7 +66,7 @@ export default function FinancialsPage() {
               </div>
               <div style={{ marginTop: 12 }}>
                 <div style={{ fontSize: 11, color: C.dim, marginBottom: 4 }}>Closeout / TI package readiness</div>
-                <div style={{ height: 6, borderRadius: 3, background: '#EAEAEF', overflow: 'hidden' }}>
+                <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${f.tiPct}%`, background: f.tiReady ? C.green : C.gold }} />
                 </div>
               </div>
@@ -56,7 +75,8 @@ export default function FinancialsPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }
 

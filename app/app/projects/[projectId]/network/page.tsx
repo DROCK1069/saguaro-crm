@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Globe, ArrowsLeftRight, Shield, WifiHigh, Printer, VideoCamera, HardDrives, Laptop, Phone, Plug, CellSignalFull, BatteryFull, Package, Robot, Devices, Shuffle, Gear, ChartBar, Plus, MagnifyingGlass, CheckCircle, Warning, Circle, WarningCircle, Info, Lightning, SquaresFour } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B';
 const GREEN = '#34C759';
@@ -195,6 +195,17 @@ export default function NetworkDashboard() {
           accent="IT Network"
           subtitle="Design, document, and test this building's network — device inventory, VLAN segmentation, cable certification, WiFi coverage, and closeout-ready reports."
         />
+        {ctx && (
+          <div style={{ maxWidth: 1020 }}>
+            <StatStrip items={[
+              { label: 'Project', value: ctx.project?.name || '—', sub: ctx.project?.projectNumber ? `#${ctx.project.projectNumber}` : (ctx.project?.status || 'active') },
+              { label: 'Site Address', value: ctx.project?.address || '—', sub: 'the network documents against this site' },
+              { label: 'Subs On the Job', value: String((ctx.subs || []).length), sub: 'coordinate low-volt rough-in' },
+              { label: 'Open RFIs', value: String(Number(ctx.counts?.openRfis) || 0), sub: 'design questions in flight' },
+              { label: 'Schedule Tasks', value: String(Number(ctx.counts?.scheduleTasks) || 0), sub: Number(ctx.schedule?.criticalCount) ? `${ctx.schedule.criticalCount} critical` : 'plan cable pulls around them' },
+            ]} />
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 360px', gap: 22, alignItems: 'start', maxWidth: 1020 }}>
           <SectionCard
             icon={<Globe size={18} weight="duotone" color={GOLD} />}

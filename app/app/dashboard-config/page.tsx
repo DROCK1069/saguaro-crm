@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Package, FolderOpen, X, CaretUp, CaretDown, Gear, SquaresFour, GridFour } from '@phosphor-icons/react';
 import { WIDGET_CATALOG, WidgetBody, useWidgetMetrics, type WidgetSettings } from '@/components/dashboard-widgets';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
 const GOLD   = '#F59E0B';
@@ -572,6 +572,16 @@ export default function DashboardConfigPage() {
             </button>
           </>}
         />
+
+        {/* Layout intelligence strip — what this configuration holds right now */}
+        <StatStrip items={[
+          { label: 'Widgets Placed', value: String(layout.widgets.length), accent: layout.widgets.length > 0 ? GOLD : undefined, sub: `${WIDGET_CATALOG.length} widget types in the gallery` },
+          { label: 'Grid', value: `${layout.columns} columns`, sub: `${layout.widgets.filter(w => w.size === 'full-width').length} full-width row${layout.widgets.filter(w => w.size === 'full-width').length === 1 ? '' : 's'}` },
+          { label: 'Coverage', value: `${new Set(layout.widgets.map(w => WIDGET_CATALOG.find(c => c.id === w.catalogId)?.category).filter(Boolean)).size} of 5`, sub: 'widget categories in use' },
+          { label: 'Preset', value: layout.preset ? layout.preset.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Custom', sub: layout.preset ? 'starting template' : 'built by hand' },
+          { label: 'Status', value: isDirty ? 'Unsaved' : 'Saved', accent: isDirty ? AMBER : GREEN, sub: layout.updatedAt ? `last saved ${new Date(layout.updatedAt).toLocaleDateString()}` : 'save to keep this layout' },
+          { label: 'Preview Data', value: metricsLoading ? 'Syncing' : 'Live', accent: metricsLoading ? undefined : GREEN, sub: 'previews pull your real project metrics' },
+        ]} />
 
         {/* ── Layout Name & Preset Row ── */}
         <SectionCard style={{ marginBottom: 20 }}>

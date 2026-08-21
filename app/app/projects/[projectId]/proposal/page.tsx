@@ -195,7 +195,7 @@ export default function ProposalPage() {
     <PremiumSurface maxWidth={1600}>
       {/* Header */}
       <ModuleHero
-        eyebrow="Proposal"
+        eyebrow={ctx?.project?.name || 'Proposal'}
         eyebrowIcon={<FileText size={13} weight="fill" color="#F59E0B" />}
         title="Proposals &"
         accent="Contract Amounts"

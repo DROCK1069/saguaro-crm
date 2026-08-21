@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
@@ -587,8 +588,8 @@ export default function SchedulePage(){
 
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
                   <Field label={<>Start{auto.start&&<AutoChip/>}</>}>
-                    <input type="date" value={form.start_date}
-                      onChange={e=>setStartDate(e.target.value)}
+                    <SaguaroDatePicker value={form.start_date}
+                      onChange={v=>setStartDate(v)}
                       style={inp}/>
                   </Field>
                   <Field label="Duration (d)">
@@ -597,8 +598,8 @@ export default function SchedulePage(){
                       style={inp}/>
                   </Field>
                   <Field label={<>End{auto.end&&<AutoChip/>}</>}>
-                    <input type="date" value={form.end_date}
-                      onChange={e=>setEndDate(e.target.value)}
+                    <SaguaroDatePicker value={form.end_date}
+                      onChange={v=>setEndDate(v)}
                       style={inp}/>
                   </Field>
                 </div>

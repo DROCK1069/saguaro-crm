@@ -4,6 +4,7 @@
  * Track, filter, resolve coordination issues across trades. Offline queue support.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
@@ -716,11 +717,11 @@ function CoordinationPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
           <div>
             <label style={lbl}>Due Date</label>
-            <input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} style={inp} />
+            <SaguaroDatePicker value={form.due_date} onChange={v => setForm(f => ({ ...f, due_date: v }))} style={inp} />
           </div>
           <div>
             <label style={lbl}>Meeting Date</label>
-            <input type="date" value={form.meeting_date} onChange={e => setForm(f => ({ ...f, meeting_date: e.target.value }))} style={inp} />
+            <SaguaroDatePicker value={form.meeting_date} onChange={v => setForm(f => ({ ...f, meeting_date: v }))} style={inp} />
           </div>
         </div>
 

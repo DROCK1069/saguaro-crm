@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import {
@@ -26,7 +27,8 @@ const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
 
-const COST_CODES = ['General Conditions', 'Concrete', 'Masonry', 'Metals / Structural', 'Carpentry', 'Thermal & Moisture', 'Openings', 'Finishes', 'Electrical', 'Plumbing', 'HVAC / Mechanical', 'Earthwork / Site', 'Other'];
+// Canonical CSI-division cost codes — full taxonomy from lib/construction-intelligence.
+const COST_CODES = [...Object.entries(CSI_DIVISIONS).map(([code, d]) => `${code} — ${d.name}`), 'Other'];
 
 interface ClockState {
   clockedIn: boolean;
@@ -394,6 +396,7 @@ function ClockPage() {
 
                   <label style={lbl}>Cost Code</label>
                   <select value={clock.costCode} onChange={(e) => updateClock({ costCode: e.target.value })} style={{ ...inp, marginTop: 5 }}>
+                    {clock.costCode && !COST_CODES.includes(clock.costCode) && <option value={clock.costCode} style={{ background: '#141416' }}>{clock.costCode}</option>}
                     {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#141416' }}>{c}</option>)}
                   </select>
                 </div>
@@ -496,6 +499,7 @@ function ClockPage() {
                   <div style={{ marginBottom: 12 }}>
                     <label style={lbl}>Cost Code</label>
                     <select value={crewClockCostCode} onChange={(e) => setCrewClockCostCode(e.target.value)} style={{ ...inp, marginTop: 4 }}>
+                      {crewClockCostCode && !COST_CODES.includes(crewClockCostCode) && <option value={crewClockCostCode} style={{ background: '#141416' }}>{crewClockCostCode}</option>}
                       {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#141416' }}>{c}</option>)}
                     </select>
                   </div>

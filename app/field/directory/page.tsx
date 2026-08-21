@@ -4,6 +4,7 @@
  * Full contact management: companies, people, distribution groups, quick actions.
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 import FieldPageHeader from '../FieldPageHeader';
@@ -344,7 +345,7 @@ function DirectoryPage() {
               <div><label style={labelStyle}>Phone</label><input style={inputStyle} type="tel" value={formCompanyPhone} onChange={(e) => setFormCompanyPhone(e.target.value)} /></div>
               <div><label style={labelStyle}>Email</label><input style={inputStyle} type="email" value={formCompanyEmail} onChange={(e) => setFormCompanyEmail(e.target.value)} /></div>
               <div><label style={labelStyle}>Address</label><textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} value={formAddress} onChange={(e) => setFormAddress(e.target.value)} /></div>
-              <div><label style={labelStyle}>Insurance Expiry</label><input style={inputStyle} type="date" value={formInsuranceExpiry} onChange={(e) => setFormInsuranceExpiry(e.target.value)} /></div>
+              <div><label style={labelStyle}>Insurance Expiry</label><SaguaroDatePicker style={inputStyle} value={formInsuranceExpiry} onChange={(v) => setFormInsuranceExpiry(v)} /></div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -5,6 +5,7 @@
  * Offline queue support, batch submit, copy previous week, PDF export.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
@@ -567,11 +568,11 @@ function TimesheetsInner() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div>
                 <label style={labelStyle}>From</label>
-                <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ ...inputStyle, padding: '8px 10px' }} />
+                <SaguaroDatePicker value={filterDateFrom} onChange={(v) => setFilterDateFrom(v)} style={{ ...inputStyle, padding: '8px 10px' }} />
               </div>
               <div>
                 <label style={labelStyle}>To</label>
-                <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ ...inputStyle, padding: '8px 10px' }} />
+                <SaguaroDatePicker value={filterDateTo} onChange={(v) => setFilterDateTo(v)} style={{ ...inputStyle, padding: '8px 10px' }} />
               </div>
             </div>
           </div>
@@ -1032,7 +1033,7 @@ function TimesheetsInner() {
               {/* Date */}
               <div>
                 <label style={labelStyle}>Work Date *</label>
-                <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formDate} onChange={(v) => setFormDate(v)} style={inputStyle} />
               </div>
 
               {/* Hours */}

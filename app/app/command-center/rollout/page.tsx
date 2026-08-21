@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { moveStage, launchSite } from '@/lib/hooks/useFranchise';
@@ -187,7 +188,7 @@ function LaunchModal({ onClose }: { onClose: () => void }) {
               <div><label style={lbl}>City</label><input style={inp} value={f.city || ''} onChange={(e) => set('city', e.target.value)} /></div>
               <div><label style={lbl}>State</label><input style={inp} value={f.state || ''} onChange={(e) => set('state', e.target.value)} /></div>
               <div><label style={lbl}>Contract value</label><input type="number" style={inp} placeholder="e.g. 4200000" value={f.contract_value || ''} onChange={(e) => set('contract_value', e.target.value)} /></div>
-              <div><label style={lbl}>Target start date</label><input type="date" style={inp} value={f.start_date || ''} onChange={(e) => set('start_date', e.target.value)} /></div>
+              <div><label style={lbl}>Target start date</label><SaguaroDatePicker style={inp} value={f.start_date || ''} onChange={(v) => set('start_date', v)} /></div>
             </div>
             {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>

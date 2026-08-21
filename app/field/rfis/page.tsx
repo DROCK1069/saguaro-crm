@@ -4,6 +4,7 @@
  * List, view detail, respond to, and create RFIs from the field.
  */
 import React, { useState, useEffect, useRef, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
@@ -787,11 +788,11 @@ function RFIsPage() {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <div style={{ flex: 1 }}>
                       <label style={{ ...lbl, fontSize: 10, marginBottom: 2 }}>From</label>
-                      <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} style={{ ...inp, fontSize: 12, padding: '8px 10px' }} />
+                      <SaguaroDatePicker value={filterDateFrom} onChange={v => setFilterDateFrom(v)} style={{ ...inp, fontSize: 12, padding: '8px 10px' }} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label style={{ ...lbl, fontSize: 10, marginBottom: 2 }}>To</label>
-                      <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} style={{ ...inp, fontSize: 12, padding: '8px 10px' }} />
+                      <SaguaroDatePicker value={filterDateTo} onChange={v => setFilterDateTo(v)} style={{ ...inp, fontSize: 12, padding: '8px 10px' }} />
                     </div>
                   </div>
                 </div>
@@ -1308,7 +1309,7 @@ function RFIsPage() {
             </div>
             <div>
               <label style={lbl}>Need By</label>
-              <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} style={inp} />
+              <SaguaroDatePicker value={newDueDate} onChange={(v) => setNewDueDate(v)} style={inp} />
             </div>
           </div>
         </div>

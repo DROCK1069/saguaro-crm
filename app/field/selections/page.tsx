@@ -5,6 +5,7 @@
  * budget variance, due dates, vendor info, and batch updates. Offline queue.
  */
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
@@ -502,7 +503,7 @@ function SelectionsInner() {
           {/* Due Date */}
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>DUE DATE</label>
-            <input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} style={inputStyle} />
+            <SaguaroDatePicker value={formDueDate} onChange={v => setFormDueDate(v)} style={inputStyle} />
           </div>
           {/* Notes */}
           <div style={{ marginBottom: 16 }}>

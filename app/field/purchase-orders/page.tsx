@@ -5,6 +5,7 @@
  * receiving workflow, vendor contact, PDF export. Offline queue support.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -391,11 +392,11 @@ function PurchaseOrdersInner() {
             </div>
             <div>
               <label style={labelStyle}>Date From</label>
-              <input style={inputStyle} type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+              <SaguaroDatePicker style={inputStyle} value={filterDateFrom} onChange={v => setFilterDateFrom(v)} />
             </div>
             <div>
               <label style={labelStyle}>Date To</label>
-              <input style={inputStyle} type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+              <SaguaroDatePicker style={inputStyle} value={filterDateTo} onChange={v => setFilterDateTo(v)} />
             </div>
             <div>
               <label style={labelStyle}>Min Amount</label>
@@ -509,11 +510,11 @@ function PurchaseOrdersInner() {
           </div>
           <div>
             <label style={labelStyle}>Issued Date</label>
-            <input style={inputStyle} type="date" value={formIssuedDate} onChange={e => setFormIssuedDate(e.target.value)} />
+            <SaguaroDatePicker style={inputStyle} value={formIssuedDate} onChange={v => setFormIssuedDate(v)} />
           </div>
           <div>
             <label style={labelStyle}>Required Date</label>
-            <input style={inputStyle} type="date" value={formRequiredDate} onChange={e => setFormRequiredDate(e.target.value)} />
+            <SaguaroDatePicker style={inputStyle} value={formRequiredDate} onChange={v => setFormRequiredDate(v)} />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={labelStyle}>Description</label>

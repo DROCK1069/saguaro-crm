@@ -6,6 +6,7 @@
  * employees row by email. RLS-scoped browser client.
  */
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
 import { computeTimesheet, weekKey, fmtHours, liveElapsed, type TimeEntry } from '@/lib/timeclock';
@@ -273,7 +274,7 @@ export default function TimeClockPage() {
 
       {manual && (
         <Modal title={manual.id ? 'Edit time' : 'Add time'} onClose={() => setManual(null)}>
-          <input type="date" value={manual.date} onChange={(e) => setManual({ ...manual, date: e.target.value })} style={inp} />
+          <SaguaroDatePicker value={manual.date} onChange={(v) => setManual({ ...manual, date: v })} style={inp} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input type="time" value={manual.in} onChange={(e) => setManual({ ...manual, in: e.target.value })} style={inp} /><input type="time" value={manual.out} onChange={(e) => setManual({ ...manual, out: e.target.value })} style={inp} /></div>
           <input value={manual.meal} onChange={(e) => setManual({ ...manual, meal: e.target.value })} placeholder="Meal break (min)" style={{ ...inp, marginTop: 8 }} />
           <select value={manual.csi ?? ''} onChange={(e) => setManual({ ...manual, csi: e.target.value })} style={{ ...inp, marginTop: 8 }}>
@@ -287,7 +288,7 @@ export default function TimeClockPage() {
       {leave && (
         <Modal title="Log PTO / Sick" onClose={() => setLeave(null)}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>{['pto', 'sick', 'holiday', 'vacation'].map((t) => <button key={t} onClick={() => setLeave({ ...leave, type: t })} style={{ ...btn, background: leave.type === t ? GOLD : 'transparent', color: leave.type === t ? DARK : TEXT, border: `1px solid ${BORDER}`, padding: '7px 12px', fontSize: 13, textTransform: 'capitalize' }}>{t}</button>)}</div>
-          <input type="date" value={leave.date} onChange={(e) => setLeave({ ...leave, date: e.target.value })} style={inp} />
+          <SaguaroDatePicker value={leave.date} onChange={(v) => setLeave({ ...leave, date: v })} style={inp} />
           <input value={leave.hours} onChange={(e) => setLeave({ ...leave, hours: e.target.value })} placeholder="Hours" style={{ ...inp, marginTop: 8 }} />
           <button onClick={saveLeave} style={{ ...btn, marginTop: 14, width: '100%' }}>Log {leave.type}</button>
         </Modal>

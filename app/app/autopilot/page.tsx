@@ -1,7 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { ArrowsClockwise, Robot, CheckCircle, Bell, WarningOctagon, Warning } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import Link from 'next/link';
+import { ArrowsClockwise, Robot, CheckCircle, Bell, WarningOctagon, Warning, ListChecks, Buildings } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
+import { useProjects } from '@/lib/hooks/useProjects';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#c03030';
 
@@ -14,9 +16,23 @@ interface AutopilotAlert {
   summary: string;
   rule_code: string;
   entity_type: string;
+  project_id?: string | null;
+  created_at?: string;
   acknowledged?: boolean;
   dismissed?: boolean;
 }
+
+// The seven deterministic checks the scan engine runs (lib/autopilot/scan.ts),
+// in execution order — used to render the pipeline rail and bucket live alerts.
+const SCAN_RULES = [
+  { title: 'Overdue RFIs',         desc: 'Open RFIs past their response-due date.',       match: (a: AutopilotAlert) => /overdue rfi/i.test(a.title) },
+  { title: 'Expiring insurance',   desc: 'Active certificates expiring within 30 days.',  match: (a: AutopilotAlert) => /insurance/i.test(a.title) },
+  { title: 'Pending lien waivers', desc: 'Waivers still awaiting signature.',             match: (a: AutopilotAlert) => /lien waiver/i.test(a.title) },
+  { title: 'Stale change orders',  desc: 'COs sitting in pending for more than 14 days.', match: (a: AutopilotAlert) => /stale change order/i.test(a.title) },
+  { title: 'Budget overruns',      desc: 'Budget lines at 90% spent or beyond.',          match: (a: AutopilotAlert) => /budget/i.test(a.title) },
+  { title: 'Overdue invoices',     desc: 'Sent or pending invoices past their due date.', match: (a: AutopilotAlert) => /overdue invoice/i.test(a.title) },
+  { title: 'Scope-creep velocity', desc: 'CO / RFI spikes over the last 14 days.',        match: (a: AutopilotAlert) => /velocity/i.test(a.title) },
+];
 
 export default function AutopilotPage() {
   const [filter, setFilter] = useState<'all'|'critical'|'high'|'medium'>('all');
@@ -25,28 +41,30 @@ export default function AutopilotPage() {
   const [scanning, setScanning] = useState(false);
   const [allAlerts, setAllAlerts] = useState<AutopilotAlert[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadAlerts() {
-      try {
-        const r = await fetch('/api/autopilot/alerts');
-        if (!r.ok) return;
-        const data = await r.json();
-        if (cancelled) return;
-        const rows = Array.isArray(data.alerts) ? data.alerts : [];
-        setAllAlerts(rows.map((a: any): AutopilotAlert => ({
-          id: a.id,
-          severity: (a.severity || 'medium') as AlertSeverity,
-          title: a.title || '',
-          summary: a.summary || a.body || '',
-          rule_code: a.rule_code || '',
-          entity_type: a.entity_type || '',
-        })));
-      } catch { /* non-critical */ }
-    }
-    loadAlerts();
-    return () => { cancelled = true; };
+  const [scanStage, setScanStage] = useState(-1); // -1 idle; 0..6 = check currently running
+  const [lastScanAt, setLastScanAt] = useState<Date | null>(null);
+  const { projects } = useProjects();
+
+  const loadAlerts = React.useCallback(async () => {
+    try {
+      const r = await fetch('/api/autopilot/alerts');
+      if (!r.ok) return;
+      const data = await r.json();
+      const rows = Array.isArray(data.alerts) ? data.alerts : [];
+      setAllAlerts(rows.map((a: any): AutopilotAlert => ({
+        id: a.id,
+        severity: (a.severity || 'medium') as AlertSeverity,
+        title: a.title || '',
+        summary: a.summary || a.body || '',
+        rule_code: a.rule_code || a.alert_type || '',
+        entity_type: a.entity_type || '',
+        project_id: a.project_id || null,
+        created_at: a.created_at || '',
+      })));
+    } catch { /* non-critical */ }
   }, []);
+
+  useEffect(() => { loadAlerts(); }, [loadAlerts]);
 
   const visibleAlerts = allAlerts.filter(a => {
     if (alertStates[a.id] === 'dismissed') return false;
@@ -81,6 +99,9 @@ export default function AutopilotPage() {
 
   async function runScan() {
     setScanning(true);
+    // Walk the pipeline rail while the engine runs its checks server-side.
+    setScanStage(0);
+    const ticker = setInterval(() => setScanStage(s => Math.min(s + 1, SCAN_RULES.length - 1)), 600);
     try {
       // Tenant is derived server-side from the authenticated session — never
       // sent from the client. (The route ignores any body tenantId.)
@@ -91,9 +112,16 @@ export default function AutopilotPage() {
       });
       const data = await r.json();
       showFeedback(data.summary || 'Autopilot scan complete!');
+      // The scan replaces the open alert set server-side — refresh, and drop
+      // per-alert local state that was keyed to the previous set's ids.
+      await loadAlerts();
+      setAlertStates({});
+      setLastScanAt(new Date());
     } catch {
       showFeedback('Autopilot scan triggered!');
     }
+    clearInterval(ticker);
+    setScanStage(-1);
     setScanning(false);
   }
 
@@ -103,6 +131,15 @@ export default function AutopilotPage() {
   }
 
   const acknowledgedCount = Object.values(alertStates).filter(v => v === 'acknowledged').length;
+
+  // Pipeline + coverage intelligence derived from the live alert set.
+  const liveAlerts = allAlerts.filter(a => alertStates[a.id] !== 'dismissed');
+  const ruleCounts = SCAN_RULES.map(r => liveAlerts.filter(r.match).length);
+  const projName = (id?: string | null) => ((projects as any[]) || []).find((p: any) => p.id === id)?.name as string | undefined;
+  const byProject = Object.entries(liveAlerts.reduce<Record<string, number>>((m, a) => {
+    if (a.project_id) m[a.project_id] = (m[a.project_id] || 0) + 1;
+    return m;
+  }, {})).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   const filterTabs = (
     <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
@@ -145,7 +182,7 @@ export default function AutopilotPage() {
         <StatCard
           icon={<Bell size={19} weight="duotone" color={GOLD} />}
           label="Total Alerts" value={allAlerts.length.toString()}
-          sub="across all rules" delay={0.02}
+          sub={byProject.length > 0 ? `${SCAN_RULES.length} checks · ${byProject.length} project${byProject.length === 1 ? '' : 's'} affected` : `across ${SCAN_RULES.length} deterministic checks`} delay={0.02}
         />
         <StatCard
           icon={<WarningOctagon size={19} weight="duotone" color="#ff7070" />}
@@ -167,7 +204,8 @@ export default function AutopilotPage() {
         />
       </div>
 
-      {/* Alerts */}
+      {/* Alerts + scan-pipeline rail */}
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 320px',gap:18,alignItems:'start'}}>
       <SectionCard
         icon={<Robot size={17} weight="duotone" color={GOLD} />}
         title="Autopilot Alerts"
@@ -188,9 +226,15 @@ export default function AutopilotPage() {
                   <div style={{flex:1}}>
                     <div style={{fontWeight:800,color:TEXT,fontSize:15,marginBottom:5}}>{alert.title}</div>
                     <div style={{fontSize:13,color:'rgba(255,255,255,0.62)',lineHeight:1.6,marginBottom:12}}>{alert.summary}</div>
-                    <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
-                      <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{alert.rule_code.replace(/_/g,' ')}</span>
-                      <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{alert.entity_type}</span>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap' as const,alignItems:'center'}}>
+                      {alert.rule_code && <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{alert.rule_code.replace(/_/g,' ')}</span>}
+                      {alert.entity_type && <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{alert.entity_type}</span>}
+                      {alert.created_at && <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{new Date(alert.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>}
+                      {alert.project_id && (
+                        <Link href={`/app/projects/${alert.project_id}/autopilot`} style={{textDecoration:'none'}}>
+                          <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(245,158,11,0.10)',border:'1px solid rgba(245,158,11,0.30)',color:'#FBBF24',fontWeight:700}}>{projName(alert.project_id) || 'View project'}</span>
+                        </Link>
+                      )}
                     </div>
                   </div>
                   <div style={{display:'flex',gap:8,flexShrink:0}}>
@@ -219,7 +263,7 @@ export default function AutopilotPage() {
             <PremiumEmpty
               icon={<CheckCircle size={38} weight="duotone" color="#3dd68c" />}
               title="No autopilot alerts — all clear!"
-              description="All projects are running smoothly. Run a scan to check for new issues."
+              description="Every check came back clean: RFIs answered on time, insurance current, waivers signed, change orders moving, budgets inside 90%, invoices collected, and no scope-creep spikes. The engine re-scans automatically every 6 hours."
               action={
                 <button
                   onClick={runScan}
@@ -238,6 +282,40 @@ export default function AutopilotPage() {
           )}
         </div>
       </SectionCard>
+
+      {/* Context rail — every stage of the scan, its live output, and where the alerts live */}
+      <div style={{display:'flex',flexDirection:'column',gap:16}}>
+        <SectionCard
+          title="Scan Pipeline"
+          subtitle={scanning ? 'Running checks…' : lastScanAt ? `Last on-demand scan ${lastScanAt.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : 'Runs automatically every 6 hours'}
+          icon={<ListChecks size={17} weight="duotone" color={GOLD} />}
+        >
+          <FlowSteps title="" steps={SCAN_RULES.map((r, i) => ({
+            title: r.title + (scanning ? '' : ruleCounts[i] > 0 ? ` — ${ruleCounts[i]} alert${ruleCounts[i] === 1 ? '' : 's'}` : ' — clear'),
+            desc: scanning && scanStage === i ? 'Checking now…' : r.desc,
+            done: scanning ? scanStage > i : true,
+          }))}/>
+        </SectionCard>
+        <SectionCard title="Where the Alerts Are" icon={<Buildings size={17} weight="duotone" color={GOLD} />}>
+          {byProject.length > 0 ? (
+            <>
+              {byProject.map(([pid, n]) => (
+                <Link key={pid} href={`/app/projects/${pid}/autopilot`} style={{textDecoration:'none',display:'block'}}>
+                  <InsightRow label={projName(pid) || 'Project'} value={`${n} alert${n === 1 ? '' : 's'}`} accent={n >= 3 ? '#ff7070' : undefined}/>
+                </Link>
+              ))}
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:8,lineHeight:1.5}}>Click a project to work its alerts in context.</div>
+            </>
+          ) : (
+            <div style={{fontSize:12.5,color:DIM,lineHeight:1.6}}>No project-level alerts right now. Tenant-wide signals (waiver backlog, velocity spikes) still appear in the list when detected.</div>
+          )}
+          <div style={{height:1,background:'rgba(255,255,255,0.08)',margin:'10px 0'}}/>
+          <InsightRow label="Critical" value={String(liveAlerts.filter(a=>a.severity==='critical').length)} accent="#ff7070"/>
+          <InsightRow label="High" value={String(liveAlerts.filter(a=>a.severity==='high').length)} accent="#f97316"/>
+          <InsightRow label="Medium / low" value={String(liveAlerts.filter(a=>a.severity==='medium'||a.severity==='low').length)}/>
+        </SectionCard>
+      </div>
+      </div>
 
       {feedback && (
         <div style={{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',zIndex:99999,padding:'12px 20px',borderRadius:'10px',background:'rgba(34,197,94,0.92)',color:'#fff',fontWeight:600,fontSize:'14px',whiteSpace:'nowrap',boxShadow:'0 12px 30px -12px rgba(0,0,0,0.6)'}}>

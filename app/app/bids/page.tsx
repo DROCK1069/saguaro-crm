@@ -57,7 +57,7 @@ function BidsPageInner() {
   const [outcomeBid, setOutcomeBid] = useState<BidRecord|null>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
-  const fmt = (n: number | null | undefined) => '$' + ((n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const fmt = (n: number | null | undefined) => '$' + ((Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
 
   function openMenu(id: string) { setMenuId(id); setEditId(null); setAdjustId(null); setNoteId(null); setDeleteId(null); }
   function closeAll() { setMenuId(null); setEditId(null); setAdjustId(null); setNoteId(null); setDeleteId(null); }
@@ -255,6 +255,11 @@ function BidsPageInner() {
   const awardedTotal = awardedPkgs.reduce((s, p) => s + (Number(p.awarded_amount) || 0), 0);
   const widestSpread = activePackages.reduce((m: any, p: any) => (p.spread_pct != null && Number.isFinite(Number(p.spread_pct)) && (m == null || Number(p.spread_pct) > Number(m.spread_pct))) ? p : m, null as any);
   const spreadColor = (s: number) => s <= 10 ? GREEN : s <= 25 ? GOLD : '#ff7070';
+  const daysUntil = (d?: string|null) => {
+    if (!d) return null;
+    const t = new Date(String(d).slice(0, 10) + 'T00:00:00').getTime();
+    return isNaN(t) ? null : Math.ceil((t - Date.now()) / 86400000);
+  };
   const fmtDate = (d?: string|null) => {
     if (!d) return '—';
     const dt = new Date(String(d).length <= 10 ? String(d) + 'T00:00:00' : String(d));
@@ -424,7 +429,7 @@ function BidsPageInner() {
           <SectionCard title="Opportunity Pipeline" subtitle={`${opportunities.length} open ${opportunities.length===1?'opportunity':'opportunities'}`} icon={<ChartBar size={17} weight="duotone" color={GOLD} />} flush bodyStyle={{overflowX:'auto'}}>
           <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
             <thead><tr style={{background:'#1c1c1e'}}>
-              {['Package Name','Trade','Status','Bid Due','Bids In','Low Bid','Actions'].map(h=>(
+              {['Package Name','Trade','Status','Bid Due','Bids In','Low Bid','Spread','Actions'].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
               ))}
             </tr></thead>
@@ -433,9 +438,10 @@ function BidsPageInner() {
                 <td style={{padding:'12px 14px',color:TEXT,fontWeight:600}}>{op.name}</td>
                 <td style={{padding:'12px 14px',color:DIM}}>{op.trade}</td>
                 <td style={{padding:'12px 14px'}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(26,95,168,.12)',color:'#4a9de8',textTransform:'uppercase' as const}}>{op.status}</span></td>
-                <td style={{padding:'12px 14px',color:DIM}}>{op.bid_due_date || '—'}</td>
+                <td style={{padding:'12px 14px',color:DIM,whiteSpace:'nowrap' as const}}>{(()=>{const dd=daysUntil(op.bid_due_date||op.due_date);return <>{fmtDate(op.bid_due_date||op.due_date)}{dd!=null&&<span style={{marginLeft:6,fontWeight:700,fontSize:11,color:dd<0?'#ff7070':dd<=3?GOLD:DIM}}>{dd<0?`${Math.abs(dd)}d overdue`:dd===0?'due today':`${dd}d left`}</span>}</>;})()}</td>
                 <td style={{padding:'12px 14px'}}><span style={{color:(Number(op.num_responded ?? op.bid_count)||0)>0?GREEN:DIM,fontVariantNumeric:'tabular-nums'}}>{Number(op.num_responded ?? op.bid_count)||0}</span><span style={{color:DIM}}> / {Number(op.num_invited)||0} invited</span></td>
                 <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums',color:op.low_bid_amount?TEXT:DIM}}>{op.low_bid_amount ? fmt(Number(op.low_bid_amount)||0) : '—'}</td>
+                <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums'}}>{op.spread_pct!=null&&Number.isFinite(Number(op.spread_pct)) ? (<span style={{fontWeight:700,color:spreadColor(Number(op.spread_pct))}}>{Math.round(Number(op.spread_pct))}%<span style={{color:DIM,fontWeight:500,fontSize:11}}> {Number(op.spread_pct)<=10?'tight':Number(op.spread_pct)<=25?'level it':'wide'}</span></span>) : (<span style={{color:DIM,fontSize:11}}>{(Number(op.num_responded ?? op.bid_count)||0)===1?'needs 2 bids':'—'}</span>)}</td>
                 <td style={{padding:'12px 14px'}}>
                   <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
                 </td>
@@ -569,9 +575,11 @@ function BidsPageInner() {
         {!historyLoading&&!historyError&&historyBids.length===0&&<SectionCard>
           <PremiumEmpty
             icon={<ChartBar size={30} weight="duotone" color={GOLD} />}
-            title="No bid history found"
-            description="Score a bid or record an outcome and it will show up here."
-            action={<button onClick={()=>fetchHistory(historyFilter==='all'?undefined:historyFilter)} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
+            title={historyFilter==='all'?'No bid history yet':'No '+historyFilter+' bids found'}
+            description={historyFilter==='all'
+              ? 'Every scored bid lands here as pending, and every outcome you record trains the win-probability model. Score a live opportunity to start the ledger — win rate, average margin, and total pursued value build themselves.'
+              : 'No '+historyFilter+' bids on record. Record outcomes from the All view — each win or loss sharpens future fit scores.'}
+            action={<div style={{display:'flex',gap:10,flexWrap:'wrap' as const,justifyContent:'center'}}><button onClick={()=>setShowScore(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Score a Bid</button><button onClick={()=>fetchHistory(historyFilter==='all'?undefined:historyFilter)} style={goldOutlineButtonStyle} className="pmBtn">Refresh</button></div>}
           />
         </SectionCard>}
         {!historyLoading&&!historyError&&historyBids.length>0&&<table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
@@ -645,7 +653,7 @@ function BidsPageInner() {
                   </div>
                 )}
               </td>
-              <td style={{padding:'12px 14px',color:b.margin_pct>=15?'#3dd68c':b.margin_pct>=10?GOLD:'#ff7070',fontWeight:700}}>{b.margin_pct}%</td>
+              <td style={{padding:'12px 14px',color:(Number(b.margin_pct)||0)>=15?'#3dd68c':(Number(b.margin_pct)||0)>=10?GOLD:'#ff7070',fontWeight:700}}>{Number(b.margin_pct)||0}%</td>
               <td style={{padding:'12px 14px',color:DIM}}>{b.location}</td>
               <td style={{padding:'12px 14px'}}>
                 <span style={{fontSize:10,fontWeight:800,padding:'3px 10px',borderRadius:4,background:oc.bg,color:oc.c,textTransform:'uppercase' as const,display:'inline-flex',alignItems:'center',gap:4}}>

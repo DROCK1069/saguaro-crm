@@ -5,7 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useFeature } from '@/lib/hooks/useEntitlements';
 import { computeHealth, TRIAGE_ORDER, type HealthStatus } from '@/lib/portfolio-health';
-import { Warning } from '@phosphor-icons/react';
+import { useRisks, useEscalations, useLongLead, useMilestones } from '@/lib/hooks/useFranchise';
+import { computeRisk, computeLongLead, milestoneSlip } from '@/lib/franchise';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard } from '@/components/ui/premium';
+import {
+  Warning, SquaresFour, ChartLineUp, Wallet, Bank, ShieldWarning, Siren, Package, FlagCheckered,
+  NotePencil, UsersThree, PaperPlaneTilt, Truck, AddressBook, ListChecks, LinkSimple, MapPin,
+  CheckSquare, Rocket, SealCheck,
+} from '@phosphor-icons/react';
 
 const C = {
   gold: '#F59E0B', green: '#34C759', yellow: '#FF9500', red: '#FF3B30', blue: '#F59E0B',
@@ -22,13 +29,16 @@ const fmtDate = (s: string | null) => {
   return isNaN(t) ? '—' : new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
 };
 
-function Tile({ label, value, color, sub }: { label: string; value: string | number; color?: string; sub?: string }) {
+/** Inline primitive (hub-only): compact module link pill with a live-count badge. */
+function ModuleLink({ href, icon, label, count, accent }: { href: string; icon: React.ReactNode; label: string; count?: string | null; accent?: string }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', minWidth: 120, flex: '1 1 130px', boxShadow: 'var(--shadow-sm)' }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 900, color: color || C.text, lineHeight: 1.1, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{sub}</div>}
-    </div>
+    <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <div className="pmBtn" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${accent ? `${accent}44` : C.border}`, cursor: 'pointer', height: '100%' }}>
+        <span style={{ display: 'inline-flex', flexShrink: 0 }}>{icon}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{label}</span>
+        {count && <span style={{ fontSize: 11, fontWeight: 800, color: accent || C.dim, background: accent ? `${accent}14` : 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{count}</span>}
+      </div>
+    </Link>
   );
 }
 
@@ -48,6 +58,13 @@ export default function CommandCenterPage() {
   const { projects: raw, loading: isLoading } = useProjects();
   const [filter, setFilter] = useState<'all' | HealthStatus>('all');
   const [q, setQ] = useState('');
+
+  // Live module counts — the same SWR feeds the subpages run on, so every hub
+  // link walks in already knowing what's waiting behind it.
+  const { risks: rawRisks } = useRisks();
+  const { escalations: rawEsc } = useEscalations();
+  const { items: rawLL } = useLongLead();
+  const { milestones: rawMs } = useMilestones();
 
   // Per-site inspection status (passed / failed / pending) for the dashboard card.
   const [inspByProj, setInspByProj] = useState<Record<string, { passed: number; failed: number; pending: number; total: number }>>({});
@@ -86,6 +103,22 @@ export default function CommandCenterPage() {
     return { ...s, avg: s.cN ? Math.round(s.cSum / s.cN) : 0, total: rows.length };
   }, [rows]);
 
+  const modCounts = useMemo(() => {
+    const rk = ((rawRisks as any[]) || []).map((r) => computeRisk(r));
+    const openRisks = rk.filter((r) => r.isOpen).length;
+    const critRisks = rk.filter((r) => r.isOpen && r.severity === 'red').length;
+    const openEsc = ((rawEsc as any[]) || []).filter((e) => !/resolved|closed/i.test(String(e.status || ''))).length;
+    const ll = ((rawLL as any[]) || []).map((it) => computeLongLead(it));
+    const llAtRisk = ll.filter((x) => x.severity !== 'green').length;
+    const ms = ((rawMs as any[]) || []).map((m) => milestoneSlip(m.baseline_date, m.current_date, m.actual_date, m.float_days));
+    const msSlip = ms.filter((m) => m.severity !== 'green').length;
+    const insp = Object.values(inspByProj).reduce(
+      (s, m) => ({ passed: s.passed + m.passed, failed: s.failed + m.failed, total: s.total + m.total }),
+      { passed: 0, failed: 0, total: 0 },
+    );
+    return { openRisks, critRisks, openEsc, llTotal: ll.length, llAtRisk, msTotal: ms.length, msSlip, insp };
+  }, [rawRisks, rawEsc, rawLL, rawMs, inspByProj]);
+
   const filtered = rows.filter(({ p, h }) =>
     (filter === 'all' || h.status === filter) &&
     (!q || `${p.name || ''} ${p.city || ''} ${p.state || ''} ${p.project_number || ''}`.toLowerCase().includes(q.toLowerCase())),
@@ -98,25 +131,29 @@ export default function CommandCenterPage() {
   if (!enabled) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1280, margin: '0 auto', fontFamily: font, color: C.text }}>
+    <PremiumSurface maxWidth={1280} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 22 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, margin: '0 0 4px', letterSpacing: -0.4 }}>Command Center</h1>
-          <p style={{ fontSize: 14, color: C.dim, margin: 0 }}>Every project, one screen. Worst-first — handle red and yellow before anything else.</p>
-        </div>
-        <div style={{ fontSize: 12, color: C.dim }}>{summary.total} active {summary.total === 1 ? 'project' : 'projects'}</div>
-      </div>
+      <ModuleHero
+        eyebrow="Portfolio Operations"
+        eyebrowIcon={<SquaresFour size={13} weight="fill" color={C.gold} />}
+        title="Command"
+        accent="Center"
+        subtitle="Every project, one screen. Worst-first — handle red and yellow before anything else."
+        actions={<div style={{ fontSize: 12, color: C.dim }}>{summary.total} active {summary.total === 1 ? 'project' : 'projects'}</div>}
+      />
 
-      {/* Summary tiles */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Projects" value={summary.total} />
-        <Tile label="On Track" value={summary.green} color={C.green} />
-        <Tile label="Watch" value={summary.yellow} color={C.yellow} />
-        <Tile label="Escalate" value={summary.red} color={C.red} />
-        <Tile label="Portfolio Value" value={fmtMoney(summary.contract)} />
-        <Tile label="Avg Complete" value={`${summary.avg}%`} color={C.blue} />
-      </div>
+      {/* Portfolio pulse — live KPIs from the same feeds the subpages run on */}
+      <StatStrip items={[
+        { label: 'Projects', value: String(summary.total), sub: `${summary.green} on track` },
+        { label: 'Watch', value: String(summary.yellow), accent: summary.yellow > 0 ? C.yellow : undefined, sub: 'yellow health' },
+        { label: 'Escalate', value: String(summary.red), accent: summary.red > 0 ? C.red : undefined, sub: 'red — act today' },
+        { label: 'Portfolio Value', value: fmtMoney(summary.contract), sub: 'sum of contracts' },
+        { label: 'Avg Complete', value: `${summary.avg}%`, sub: 'across reporting projects' },
+        { label: 'Open Risks', value: String(modCounts.openRisks), accent: modCounts.critRisks > 0 ? C.red : undefined, sub: modCounts.critRisks ? `${modCounts.critRisks} critical` : 'register-wide' },
+        { label: 'Escalations', value: String(modCounts.openEsc), accent: modCounts.openEsc > 0 ? C.red : undefined, sub: 'open now' },
+        { label: 'Long-Lead Risk', value: `${modCounts.llAtRisk}/${modCounts.llTotal}`, accent: modCounts.llAtRisk > 0 ? C.yellow : undefined, sub: 'items off runway' },
+      ]} />
 
       {/* Needs-attention banner */}
       {needsAttention > 0 && (
@@ -128,6 +165,35 @@ export default function CommandCenterPage() {
           </span>
         </div>
       )}
+
+      {/* Command modules — every rollout screen, with live counts where the data is already fetched */}
+      <SectionCard
+        title="Command Modules"
+        subtitle="Deep-dive screens for the whole rollout — badges are live counts from the same data feeds"
+        icon={<SquaresFour size={17} weight="duotone" color={C.gold} />}
+        style={{ marginBottom: 18 }}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(215px, 1fr))', gap: 10 }}>
+          <ModuleLink href="/app/command-center/kpis" icon={<ChartLineUp size={17} weight="duotone" color={C.gold} />} label="KPI Dashboard" count={summary.total ? `${summary.total} sites` : null} />
+          <ModuleLink href="/app/command-center/budget" icon={<Wallet size={17} weight="duotone" color={C.gold} />} label="Budget & COs" />
+          <ModuleLink href="/app/command-center/financials" icon={<Bank size={17} weight="duotone" color={C.gold} />} label="Financials" />
+          <ModuleLink href="/app/command-center/risks" icon={<ShieldWarning size={17} weight="duotone" color={modCounts.critRisks ? C.red : C.gold} />} label="Risk Register" count={`${modCounts.openRisks} open`} accent={modCounts.critRisks ? C.red : undefined} />
+          <ModuleLink href="/app/command-center/escalations" icon={<Siren size={17} weight="duotone" color={modCounts.openEsc ? C.red : C.gold} />} label="Escalations" count={`${modCounts.openEsc} open`} accent={modCounts.openEsc ? C.red : undefined} />
+          <ModuleLink href="/app/command-center/long-lead" icon={<Package size={17} weight="duotone" color={modCounts.llAtRisk ? C.yellow : C.gold} />} label="Long-Lead" count={`${modCounts.llAtRisk} at risk`} accent={modCounts.llAtRisk ? C.yellow : undefined} />
+          <ModuleLink href="/app/command-center/milestones" icon={<FlagCheckered size={17} weight="duotone" color={modCounts.msSlip ? C.yellow : C.gold} />} label="Milestones" count={`${modCounts.msSlip} slipping`} accent={modCounts.msSlip ? C.yellow : undefined} />
+          <ModuleLink href="/app/command-center/daily-logs" icon={<NotePencil size={17} weight="duotone" color={C.gold} />} label="Daily Logs" />
+          <ModuleLink href="/app/command-center/oac" icon={<UsersThree size={17} weight="duotone" color={C.gold} />} label="OAC Meetings" />
+          <ModuleLink href="/app/command-center/owner-updates" icon={<PaperPlaneTilt size={17} weight="duotone" color={C.gold} />} label="Owner Updates" />
+          <ModuleLink href="/app/command-center/verify" icon={<SealCheck size={17} weight="duotone" color={modCounts.insp.failed ? C.red : C.gold} />} label="Remote Verify" count={modCounts.insp.total ? `${modCounts.insp.passed}/${modCounts.insp.total} passed` : null} accent={modCounts.insp.failed ? C.red : undefined} />
+          <ModuleLink href="/app/command-center/rollout" icon={<Rocket size={17} weight="duotone" color={C.gold} />} label="Rollout Pipeline" />
+          <ModuleLink href="/app/command-center/checklists" icon={<ListChecks size={17} weight="duotone" color={C.gold} />} label="Phase Checklists" />
+          <ModuleLink href="/app/command-center/pre-site" icon={<MapPin size={17} weight="duotone" color={C.gold} />} label="Pre-Site" />
+          <ModuleLink href="/app/command-center/qc" icon={<CheckSquare size={17} weight="duotone" color={C.gold} />} label="QC by Trade" />
+          <ModuleLink href="/app/command-center/vendors" icon={<Truck size={17} weight="duotone" color={C.gold} />} label="Vendors" />
+          <ModuleLink href="/app/command-center/directory" icon={<AddressBook size={17} weight="duotone" color={C.gold} />} label="Directory" />
+          <ModuleLink href="/app/command-center/portals" icon={<LinkSimple size={17} weight="duotone" color={C.gold} />} label="Franchisee Portals" />
+        </div>
+      </SectionCard>
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
@@ -156,7 +222,14 @@ export default function CommandCenterPage() {
         <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading portfolio…</div>
       ) : filtered.length === 0 ? (
         <div style={{ color: C.dim, padding: 48, textAlign: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: 14 }}>
-          {rows.length === 0 ? 'No active projects yet.' : 'Nothing matches this filter.'}
+          {rows.length === 0 ? (
+            <>
+              <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>No active projects yet</div>
+              <div style={{ fontSize: 13, maxWidth: 520, margin: '0 auto', lineHeight: 1.55 }}>
+                Add a project and this screen starts triaging for you — health scores from budget variance, RFI and punch backlog, schedule freshness, and inspections, ranked worst-first so the morning scan takes ten seconds.
+              </div>
+            </>
+          ) : 'Nothing matches this filter.'}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
@@ -217,7 +290,8 @@ export default function CommandCenterPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }
 

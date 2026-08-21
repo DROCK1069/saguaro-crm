@@ -4,6 +4,7 @@
  * Chronological timeline of all project changes with filters, search, and navigation.
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
@@ -323,11 +324,11 @@ function ActivityLogPage() {
               </div>
               <div>
                 <label style={filterLabel}>From</label>
-                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={selectStyle} />
+                <SaguaroDatePicker value={dateFrom} onChange={v => setDateFrom(v)} style={selectStyle} />
               </div>
               <div>
                 <label style={filterLabel}>To</label>
-                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={selectStyle} />
+                <SaguaroDatePicker value={dateTo} onChange={v => setDateTo(v)} style={selectStyle} />
               </div>
             </div>
             {hasActiveFilters && (

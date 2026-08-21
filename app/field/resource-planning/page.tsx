@@ -5,6 +5,7 @@
  * Mobile-first, offline-capable field page.
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
@@ -583,7 +584,7 @@ function ResourcePlanningInner() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 4 }}>Needed by</label>
-                    <input style={inp} type="date" value={reqDate} onChange={e => setReqDate(e.target.value)} />
+                    <SaguaroDatePicker style={inp} value={reqDate} onChange={v => setReqDate(v)} />
                   </div>
                 </div>
                 <div style={{ marginBottom: 10 }}>

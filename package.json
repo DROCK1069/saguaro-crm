@@ -14,6 +14,8 @@
     "cap:build:ios": "next build && cap sync ios",
     "cap:build:android": "next build && cap sync android",
     "type-check": "tsc --noEmit",
+    "audit": "node scripts/audit-ui-standards.mjs",
+    "ship": "node scripts/ship.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,css,md}\"",
     "test": "jest",

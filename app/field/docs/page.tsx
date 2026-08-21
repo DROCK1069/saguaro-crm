@@ -5,6 +5,7 @@
  * Enhanced: Folder tree, version control, search, document info panel.
  */
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useSearchParams } from 'next/navigation';
 import FieldPageHeader from '../FieldPageHeader';
@@ -1339,25 +1340,21 @@ function DocsPage() {
           <div style={{ marginBottom: 10 }}>
             <label style={{ fontSize: 11, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Date Range</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                type="date"
+              <SaguaroDatePicker
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={(v) => setDateFrom(v)}
                 style={{
                   flex: 1, padding: '6px 8px', borderRadius: 6, background: 'rgba(139,170,200,0.06)',
                   border: `1px solid ${BORDER}`, color: TEXT, fontSize: 12, outline: 'none',
-                  colorScheme: 'light',
                 }}
               />
               <span style={{ color: DIM, fontSize: 12 }}>to</span>
-              <input
-                type="date"
+              <SaguaroDatePicker
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={(v) => setDateTo(v)}
                 style={{
                   flex: 1, padding: '6px 8px', borderRadius: 6, background: 'rgba(139,170,200,0.06)',
                   border: `1px solid ${BORDER}`, color: TEXT, fontSize: 12, outline: 'none',
-                  colorScheme: 'light',
                 }}
               />
             </div>

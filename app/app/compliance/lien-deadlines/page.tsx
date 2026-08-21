@@ -4,6 +4,7 @@
  * Calendar-style view of upcoming lien deadlines with AZ auto-calculation.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
 import {
   PremiumSurface,
@@ -283,7 +284,7 @@ export default function LienDeadlinePage() {
               </div>
               <div>
                 <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Due Date *</label>
-                <input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formDueDate} onChange={v => setFormDueDate(v)} style={inputStyle} />
               </div>
               <div style={{ gridColumn: '2 / -1' }}>
                 <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Description</label>
@@ -298,7 +299,7 @@ export default function LienDeadlinePage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                   <div>
                     <label style={{ fontSize: 11, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>First Work Date</label>
-                    <input type="date" value={formFirstWork} onChange={e => setFormFirstWork(e.target.value)} style={inputStyle} />
+                    <SaguaroDatePicker value={formFirstWork} onChange={v => setFormFirstWork(v)} style={inputStyle} />
                     {azCalc.preliminary && (
                       <div style={{ fontSize: 11, color: GOLD, marginTop: 4 }}>
                         Preliminary 20-Day Notice: <strong>{azCalc.preliminary}</strong>
@@ -307,7 +308,7 @@ export default function LienDeadlinePage() {
                   </div>
                   <div>
                     <label style={{ fontSize: 11, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Completion Date</label>
-                    <input type="date" value={formCompletion} onChange={e => setFormCompletion(e.target.value)} style={inputStyle} />
+                    <SaguaroDatePicker value={formCompletion} onChange={v => setFormCompletion(v)} style={inputStyle} />
                     {azCalc.mechLien && (
                       <div style={{ fontSize: 11, color: GOLD, marginTop: 4 }}>
                         Mechanic&apos;s Lien (120d): <strong>{azCalc.mechLien}</strong>
@@ -316,7 +317,7 @@ export default function LienDeadlinePage() {
                   </div>
                   <div>
                     <label style={{ fontSize: 11, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Last Work Date</label>
-                    <input type="date" value={formLastWork} onChange={e => setFormLastWork(e.target.value)} style={inputStyle} />
+                    <SaguaroDatePicker value={formLastWork} onChange={v => setFormLastWork(v)} style={inputStyle} />
                     {azCalc.bondClaim && (
                       <div style={{ fontSize: 11, color: GOLD, marginTop: 4 }}>
                         Bond Claim (90d): <strong>{azCalc.bondClaim}</strong>

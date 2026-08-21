@@ -5,6 +5,7 @@
  * Kanban tabs, priority reorder, batch ops, offline queue.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
@@ -167,8 +168,8 @@ function QuickAddBar({ onAdd }: { onAdd: (title: string, dueDate: string) => voi
         onKeyDown={e => e.key === 'Enter' && submit()}
         style={{ flex: 1, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 14px', color: TEXT, fontSize: 14, outline: 'none' }}
       />
-      <input
-        type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+      <SaguaroDatePicker
+        value={dueDate} onChange={v => setDueDate(v)}
         style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px 10px', color: TEXT, fontSize: 13, outline: 'none', minWidth: 130 }}
       />
       <button onClick={submit} style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '12px 18px', color: '#000', fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
@@ -340,7 +341,7 @@ function TodoForm({ initial, onSave, onCancel }: { initial?: TodoItem | null; on
           </div>
           <div>
             <label style={labelStyle}>Due Date</label>
-            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={inputStyle} />
+            <SaguaroDatePicker value={dueDate} onChange={v => setDueDate(v)} style={inputStyle} />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>

@@ -5,6 +5,7 @@
  * Real API: /api/drone/upload, /api/drone/{jobId}/analyze
  */
 import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { Camera, Airplane } from '@phosphor-icons/react';
 
 const BASE = '#0a0a0a';
@@ -635,11 +636,10 @@ function DronePage() {
               {photos.length > 0 && (
                 <div style={{ ...glass, padding: 14, marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 }}>Captured Date</p>
-                  <input type="date" value={capturedDate} onChange={e => setCapturedDate(e.target.value)}
+                  <SaguaroDatePicker value={capturedDate} onChange={v => setCapturedDate(v)}
                     style={{
                       width: '100%', background: '#1c1c1e', border: `1px solid ${BORDER}`,
                       borderRadius: 10, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none',
-                      colorScheme: 'light',
                     }} />
                 </div>
               )}

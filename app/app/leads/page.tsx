@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useToast } from '@/components/Toast';
 import { humanError } from '@/lib/errors';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { BUILDING_TYPES } from '@/lib/contractor-trades';
-import { StatStrip, AutoChip } from '@/components/ui/premium';
+import { StatStrip, AutoChip, FlowSteps } from '@/components/ui/premium';
 
 /* ─── Palette ─── */
 const GOLD = '#F59E0B', BG = '#1c1c1e', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
@@ -1030,10 +1031,9 @@ export default function LeadsPage() {
                   Follow-up Date
                   {!editLead.id && !!editLead.next_action_date && editLead.next_action_date === plus3d() && <AutoChip />}
                 </label>
-                <input
-                  type="date"
+                <SaguaroDatePicker
                   value={editLead.next_action_date || ''}
-                  onChange={e => setEditLead({ ...editLead, next_action_date: e.target.value })}
+                  onChange={v => setEditLead({ ...editLead, next_action_date: v })}
                   style={inputS}
                 />
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4, lineHeight: 1.45 }}>
@@ -1076,6 +1076,16 @@ export default function LeadsPage() {
                 placeholder="Additional notes about this lead..."
               />
             </div>
+            {/* What happens next — create only: show the downstream automation before submit */}
+            {!editLead.id && (
+              <div style={{ marginTop: 18, padding: '14px 16px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+                <FlowSteps steps={[
+                  { title: `Lead lands in ${editLead.stage || 'New'}`, desc: 'Shows on the board with value and source, counted in the pipeline totals above.' },
+                  { title: 'Follow-up shows on the card', desc: editLead.next_action_date ? `Scheduled ${fmtDate(editLead.next_action_date)} — the card flags it in red if it slips past due.` : 'Set a date above and the card flags it in red if it slips past due.' },
+                  { title: 'Won or Lost feeds bid intelligence', desc: 'Moving this lead to Won or Lost opens outcome capture, so every decided deal sharpens future bids.' },
+                ]} />
+              </div>
+            )}
             <div style={{
               display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20,
             }}>
@@ -1249,12 +1259,21 @@ export default function LeadsPage() {
                       <option key={t} value={t}>{ACTIVITY_LABELS[t]}</option>
                     ))}
                   </select>
-                  <input
-                    type="datetime-local"
-                    value={actForm.scheduled_at}
-                    onChange={e => setActForm({ ...actForm, scheduled_at: e.target.value })}
-                    style={{ ...inputS, fontSize: 12 }}
-                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <SaguaroDatePicker
+                        value={(actForm.scheduled_at || '').split('T')[0] || ''}
+                        onChange={d => setActForm({ ...actForm, scheduled_at: d ? `${d}T${(actForm.scheduled_at || '').split('T')[1] || '09:00'}` : '' })}
+                        style={{ ...inputS, fontSize: 12 }}
+                      />
+                    </div>
+                    <input
+                      type="time"
+                      value={(actForm.scheduled_at || '').split('T')[1] || ''}
+                      onChange={e => setActForm({ ...actForm, scheduled_at: `${(actForm.scheduled_at || '').split('T')[0] || new Date().toISOString().slice(0, 10)}T${e.target.value}` })}
+                      style={{ ...inputS, fontSize: 12, width: 110, flexShrink: 0 }}
+                    />
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <input

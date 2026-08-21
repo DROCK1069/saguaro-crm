@@ -4,6 +4,7 @@
  * List deliveries, add new, mark arrived. Offline queue.
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
@@ -407,7 +408,7 @@ function DeliveriesPage() {
               </div>
               <div style={{ marginBottom: 10 }}>
                 <label style={{ display: 'block', fontSize: 12, color: DIM, marginBottom: 4 }}>ETA</label>
-                <input type="date" value={formEta} onChange={e => setFormEta(e.target.value)} style={{ ...inp, colorScheme: 'light' }} />
+                <SaguaroDatePicker value={formEta} onChange={v => setFormEta(v)} style={inp} />
               </div>
             </div>
             <div style={{ marginBottom: 10 }}>

@@ -5,6 +5,7 @@
  * assignee management, and warranty period lookup. Offline-capable via enqueue.
  */
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useSearchParams } from 'next/navigation';
 import { Toolbox, MapPin, Phone, Envelope } from '@phosphor-icons/react';
@@ -789,12 +790,12 @@ function WarrantyClaimsInner() {
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1 }}>
               <Field label="Due Date">
-                <input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formDueDate} onChange={(v) => setFormDueDate(v)} style={inputStyle} />
               </Field>
             </div>
             <div style={{ flex: 1 }}>
               <Field label="Warranty Expiry">
-                <input type="date" value={formWarrantyExpiry} onChange={(e) => setFormWarrantyExpiry(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formWarrantyExpiry} onChange={(v) => setFormWarrantyExpiry(v)} style={inputStyle} />
               </Field>
             </div>
           </div>

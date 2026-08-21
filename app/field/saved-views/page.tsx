@@ -4,6 +4,7 @@
  * Create, manage, and apply saved filter views across modules.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useRouter } from 'next/navigation';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
@@ -284,11 +285,11 @@ export default function SavedViewsPage() {
               </div>
               <div>
                 <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Date From</label>
-                <input type="date" value={formDateFrom} onChange={e => setFormDateFrom(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formDateFrom} onChange={v => setFormDateFrom(v)} style={inputStyle} />
               </div>
               <div>
                 <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Date To</label>
-                <input type="date" value={formDateTo} onChange={e => setFormDateTo(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formDateTo} onChange={v => setFormDateTo(v)} style={inputStyle} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>Assigned To</label>

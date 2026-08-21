@@ -5,6 +5,7 @@
  * PCO → CO pipeline, Email from app, PDF export.
  */
 import React, { useState, useEffect, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -956,9 +957,9 @@ function ChangeOrdersPage() {
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ ...lbl, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 8 }}>Date Range</label>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input type="date" value={advFilterDateFrom} onChange={e => setAdvFilterDateFrom(e.target.value)} style={{ ...inp, fontSize: 13, padding: '8px 10px', flex: 1 }} />
+                    <SaguaroDatePicker value={advFilterDateFrom} onChange={v => setAdvFilterDateFrom(v)} style={{ ...inp, fontSize: 13, padding: '8px 10px', flex: 1 }} />
                     <span style={{ color: DIM, fontSize: 12, flexShrink: 0 }}>to</span>
-                    <input type="date" value={advFilterDateTo} onChange={e => setAdvFilterDateTo(e.target.value)} style={{ ...inp, fontSize: 13, padding: '8px 10px', flex: 1 }} />
+                    <SaguaroDatePicker value={advFilterDateTo} onChange={v => setAdvFilterDateTo(v)} style={{ ...inp, fontSize: 13, padding: '8px 10px', flex: 1 }} />
                   </div>
                 </div>
 

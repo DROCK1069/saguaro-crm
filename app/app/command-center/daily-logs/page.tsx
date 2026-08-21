@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useDailyLogs, submitDailyLog } from '@/lib/hooks/useFranchise';
@@ -115,7 +116,7 @@ function SubmitForm({ projects, onDone }: { projects: any[]; onDone: () => void 
       <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>Daily superintendent report</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
         <div><label style={lbl}>Site *</label><select style={inp} value={f.project_id || ''} onChange={(e) => set('project_id', e.target.value)}><option value="">Select…</option>{projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-        <div><label style={lbl}>Date</label><input type="date" style={inp} value={f.log_date} onChange={(e) => set('log_date', e.target.value)} /></div>
+        <div><label style={lbl}>Date</label><SaguaroDatePicker style={inp} value={f.log_date} onChange={(v) => set('log_date', v)} /></div>
         <div><label style={lbl}>Superintendent</label><input style={inp} value={f.superintendent_name || ''} onChange={(e) => set('superintendent_name', e.target.value)} /></div>
         <div><label style={lbl}>Manpower count</label><input type="number" style={inp} value={f.manpower_count || ''} onChange={(e) => set('manpower_count', e.target.value)} /></div>
         <div><label style={lbl}>Weather</label><input style={inp} placeholder="Clear, 104°F" value={f.weather || ''} onChange={(e) => set('weather', e.target.value)} /></div>

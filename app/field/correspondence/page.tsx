@@ -5,6 +5,7 @@
  * Memos, and Email Records with read receipts, threading, and offline support.
  */
 import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
@@ -761,15 +762,15 @@ function CorrespondencePage() {
           <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <span style={label}>Date From</span>
-              <input type="date" value={advFilters.dateFrom}
-                onChange={e => setAdvFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                style={{ ...input, colorScheme: 'light' }} />
+              <SaguaroDatePicker value={advFilters.dateFrom}
+                onChange={v => setAdvFilters(prev => ({ ...prev, dateFrom: v }))}
+                style={input} />
             </div>
             <div style={{ flex: 1, minWidth: 140 }}>
               <span style={label}>Date To</span>
-              <input type="date" value={advFilters.dateTo}
-                onChange={e => setAdvFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                style={{ ...input, colorScheme: 'light' }} />
+              <SaguaroDatePicker value={advFilters.dateTo}
+                onChange={v => setAdvFilters(prev => ({ ...prev, dateTo: v }))}
+                style={input} />
             </div>
           </div>
 

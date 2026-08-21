@@ -44,6 +44,7 @@ type PageState = 'idle' | 'loading' | 'results';
 interface HistoryItem {
   query: string;
   projectId: string;
+  range: string;
   title: string;
   ts: number;
 }
@@ -234,7 +235,7 @@ export default function ReportsPage() {
     setToast({ msg, type: 'error' });
   }, []);
 
-  const runSageReport = useCallback((queryOverride?: string) => {
+  const runSageReport = useCallback((queryOverride?: string, opts?: { projectId?: string; range?: string }) => {
     const q = (queryOverride ?? sageQuery).trim();
     if (!q) {
       inputRef.current?.focus();
@@ -246,9 +247,13 @@ export default function ReportsPage() {
     setProgress({ step: 0, pct: 5, message: 'Connecting to Sage...' });
     setReportResult(null);
 
-    const rd = rangeDates(dateRange);
+    // Effective scope for THIS run - history reruns pass explicit overrides so
+    // the stored project/range apply immediately (state setters land a render late).
+    const effProject = opts?.projectId !== undefined ? opts.projectId : projectFilter;
+    const effRange = opts?.range !== undefined ? opts.range : dateRange;
+    const rd = rangeDates(effRange);
     const params = new URLSearchParams({ q: rd ? `${q} between ${rd.from} and ${rd.to}` : q });
-    if (projectFilter) params.set('projectId', projectFilter);
+    if (effProject) params.set('projectId', effProject);
 
     const es = new EventSource(`/api/reports/sage?${params.toString()}`);
     esRef.current = es;
@@ -267,7 +272,7 @@ export default function ReportsPage() {
           const result = evt as ReportResult;
           setReportResult(result);
           setHistory(prev => {
-            const item: HistoryItem = { query: q, projectId: projectFilter, title: result.title, ts: Date.now() };
+            const item: HistoryItem = { query: q, projectId: effProject, range: effRange, title: result.title, ts: Date.now() };
             return [item, ...prev.filter(h => h.query !== q)].slice(0, 5);
           });
           setPageState('results');
@@ -309,7 +314,10 @@ export default function ReportsPage() {
   };
 
   const handleChipClick = (chip: string) => {
-    const q = `Show me ${chip.toLowerCase()} for all projects`;
+    // Name the actual scope: with a project selected the query text matches the
+    // projectId param that rides along, instead of contradicting it.
+    const projName = projectFilter ? projects.find(p => p.id === projectFilter)?.name : '';
+    const q = `Show me ${chip.toLowerCase()} for ${projName || 'all projects'}`;
     setSageQuery(q);
     runSageReport(q);
   };
@@ -816,7 +824,10 @@ export default function ReportsPage() {
                   onClick={() => {
                     setSageQuery(item.query);
                     setProjectFilter(item.projectId);
-                    runSageReport(item.query);
+                    setDateRange(item.range || '');
+                    // Pass overrides so the rerun uses the STORED project + range
+                    // now - the state setters above only land next render.
+                    runSageReport(item.query, { projectId: item.projectId, range: item.range || '' });
                   }}
                   style={{
                     background: 'rgba(0,0,0,0.03)',

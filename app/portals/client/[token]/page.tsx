@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 import Link from 'next/link';
 
 /* ── Palette ──────────────────────────────────────────────────────── */
@@ -1713,9 +1714,18 @@ export default function ClientPortalPage() {
                 value={newClaim.category}
                 onChange={(e) => setNewClaim({ ...newClaim, category: e.target.value })}
               >
-                {['Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Flooring', 'Painting', 'Windows/Doors', 'Structural', 'Other'].map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                {newClaim.category && newClaim.category !== 'Other' && !SUB_TRADES.includes(newClaim.category) && (
+                  <option value={newClaim.category}>{newClaim.category}</option>
+                )}
+                {SUB_TRADES_BY_DIVISION.map((g) => (
+                  <optgroup key={g.division} label={g.division + ' — ' + g.name}>
+                    {g.trades.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </optgroup>
                 ))}
+                <optgroup label="Other / Specialty">
+                  {SUB_TRADES.filter((t) => !SUB_TRADES_BY_DIVISION.some((g) => g.trades.includes(t))).map((t) => <option key={t} value={t}>{t}</option>)}
+                  <option value="Other">Other</option>
+                </optgroup>
               </select>
             </div>
             <div>

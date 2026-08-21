@@ -4,6 +4,7 @@
  * Report incidents, track corrective actions, manage safety from the field. Offline queue.
  */
 import React, { useState, useEffect, useRef, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
@@ -771,12 +772,12 @@ function SafetyPage() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ ...lbl, fontSize: 10, marginBottom: 2 }}>From</label>
-                  <input type="date" value={sfFilterDateFrom} onChange={e => setSfFilterDateFrom(e.target.value)} style={{ ...inp, fontSize: 12, padding: '7px 8px' }} />
+                  <SaguaroDatePicker value={sfFilterDateFrom} onChange={v => setSfFilterDateFrom(v)} style={{ ...inp, fontSize: 12, padding: '7px 8px' }} />
                 </div>
                 <span style={{ color: DIM, fontSize: 12, marginTop: 14 }}>to</span>
                 <div style={{ flex: 1 }}>
                   <label style={{ ...lbl, fontSize: 10, marginBottom: 2 }}>To</label>
-                  <input type="date" value={sfFilterDateTo} onChange={e => setSfFilterDateTo(e.target.value)} style={{ ...inp, fontSize: 12, padding: '7px 8px' }} />
+                  <SaguaroDatePicker value={sfFilterDateTo} onChange={v => setSfFilterDateTo(v)} style={{ ...inp, fontSize: 12, padding: '7px 8px' }} />
                 </div>
               </div>
             </div>
@@ -1029,7 +1030,7 @@ function SafetyPage() {
                   </div>
                   <div>
                     <label style={lbl}>Due Date</label>
-                    <input type="date" value={bulkCADueDate} onChange={(e) => setBulkCADueDate(e.target.value)} style={inp} />
+                    <SaguaroDatePicker value={bulkCADueDate} onChange={(v) => setBulkCADueDate(v)} style={inp} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -1303,7 +1304,7 @@ function SafetyPage() {
               </div>
               <div>
                 <label style={lbl}>Due Date</label>
-                <input type="date" value={caDueDate} onChange={(e) => setCaDueDate(e.target.value)} style={inp} />
+                <SaguaroDatePicker value={caDueDate} onChange={(v) => setCaDueDate(v)} style={inp} />
               </div>
             </div>
           </div>
@@ -1341,7 +1342,7 @@ function SafetyPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
             <div>
               <label style={lbl}>Date *</label>
-              <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} style={inp} required />
+              <SaguaroDatePicker value={newDate} onChange={(v) => setNewDate(v)} style={inp} />
             </div>
             <div>
               <label style={lbl}>Type *</label>

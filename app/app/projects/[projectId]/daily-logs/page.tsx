@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
@@ -426,8 +427,8 @@ export default function DailyLogsPage(){
 
                 <Field label={<>Log Date{mode==='create'&&auto.date&&<AutoChip/>}</>}
                   hint={mode==='create'?'Defaulted to today — backfill any missed day.':undefined}>
-                  <input type="date" value={form.log_date}
-                    onChange={e=>setForm(f=>({...f,log_date:e.target.value}))}
+                  <SaguaroDatePicker value={form.log_date}
+                    onChange={v=>setForm(f=>({...f,log_date:v}))}
                     style={inp}/>
                 </Field>
 

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 import Link from 'next/link';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#22c55e';
@@ -227,7 +228,18 @@ export default function SignupPage(){
                 <div>
                   <label style={labelStyle}>Company Type</label>
                   <select value={form.role} onChange={e=>update('role',e.target.value)} style={selectStyle}>
-                    {['General Contractor','Electrical','Plumbing','Mechanical / HVAC','Concrete','Roofing','Specialty Contractor','Developer / Owner','Other'].map(r=><option key={r}>{r}</option>)}
+                    {form.role&&!['General Contractor','Developer / Owner','Specialty Contractor','Other'].includes(form.role)&&!SUB_TRADES.includes(form.role)&&<option value={form.role}>{form.role}</option>}
+                    <optgroup label="Company Type">
+                      {['General Contractor','Developer / Owner','Specialty Contractor','Other'].map(r=><option key={r} value={r}>{r}</option>)}
+                    </optgroup>
+                    {SUB_TRADES_BY_DIVISION.map(g=>(
+                      <optgroup key={g.division} label={g.division+' — '+g.name}>
+                        {g.trades.map(t=><option key={t} value={t}>{t}</option>)}
+                      </optgroup>
+                    ))}
+                    <optgroup label="Other / Specialty">
+                      {SUB_TRADES.filter(t=>!SUB_TRADES_BY_DIVISION.some(g=>g.trades.includes(t))).map(t=><option key={t} value={t}>{t}</option>)}
+                    </optgroup>
                   </select>
                 </div>
                 <div>

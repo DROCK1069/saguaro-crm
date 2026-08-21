@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES } from '@/lib/construction-intelligence';
 import {
@@ -198,7 +199,7 @@ export default function WarrantyClaimsPage() {
     const open = claims.filter(c => !['completed','denied','closed'].includes(c.status)).length;
     const closed = claims.filter(c => ['completed','closed'].includes(c.status)).length;
     const denied = claims.filter(c => c.status === 'denied').length;
-    const totalCost = claims.reduce((s, c) => s + (c.cost || 0), 0);
+    const totalCost = claims.reduce((s, c) => s + (Number(c.cost) || 0), 0);
     const expiredCount = claims.filter(c => isExpired(c.warranty_expiry)).length;
     const emergency = claims.filter(c => c.priority === 'emergency').length;
 
@@ -210,7 +211,7 @@ export default function WarrantyClaimsPage() {
 
     /* cost by category */
     const costByCat: Record<string, number> = {};
-    claims.forEach(c => { costByCat[c.category] = (costByCat[c.category] || 0) + (c.cost || 0); });
+    claims.forEach(c => { costByCat[c.category] = (costByCat[c.category] || 0) + (Number(c.cost) || 0); });
 
     /* claims by trade */
     const byTrade: Record<string, number> = {};
@@ -320,7 +321,7 @@ export default function WarrantyClaimsPage() {
       ``, `--- Resolution ---`, claim.resolution || '(pending)',
       ``, `Assigned Trade: ${claim.assigned_trade || 'N/A'}`, `Contractor: ${claim.assigned_contractor || 'N/A'}`,
       `Scheduled: ${claim.scheduled_date || 'N/A'}`, `Completed: ${claim.completed_date || 'N/A'}`,
-      `Cost: $${(claim.cost || 0).toLocaleString()}`,
+      `Cost: $${(Number(claim.cost) || 0).toLocaleString()}`,
       ``, `--- Notes ---`, claim.notes || '(none)',
       ``, `--- Communication Log ---`,
     ];
@@ -336,7 +337,7 @@ export default function WarrantyClaimsPage() {
   }
 
   /* bar chart helper */
-  function MiniBar({ data, colorMap }: { data: Record<string, number>; colorMap?: Record<string, string> }) {
+  function MiniBar({ data, colorMap, money }: { data: Record<string, number>; colorMap?: Record<string, string>; money?: boolean }) {
     const max = Math.max(...Object.values(data), 1);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -346,7 +347,7 @@ export default function WarrantyClaimsPage() {
             <div style={{ flex: 1, height: 16, background: BG, borderRadius: 4, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${(v / max) * 100}%`, background: colorMap?.[k] || GOLD, borderRadius: 4, transition: 'width .4s' }} />
             </div>
-            <span style={{ fontSize: 11, color: TEXT, width: 36, textAlign: 'right' }}>{typeof v === 'number' && v % 1 !== 0 ? `$${v.toLocaleString()}` : v}</span>
+            <span style={{ fontSize: 11, color: TEXT, minWidth: 36, textAlign: 'right', whiteSpace: 'nowrap' }}>{money ? `$${(Number(v) || 0).toLocaleString()}` : v}</span>
           </div>
         ))}
       </div>
@@ -459,7 +460,7 @@ export default function WarrantyClaimsPage() {
               <MiniBar data={stats.byCat} />
             </SectionCard>
             <SectionCard title="Cost by Category" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />}>
-              <MiniBar data={stats.costByCat} />
+              <MiniBar data={stats.costByCat} money />
             </SectionCard>
             <SectionCard title="Claims by Trade" icon={<Wrench size={17} weight="duotone" color={GOLD} />}>
               <MiniBar data={stats.byTrade} />
@@ -500,11 +501,11 @@ export default function WarrantyClaimsPage() {
             </div>
             <div style={{ ...css.field, flex: '0 1 140px' }}>
               <label style={css.label}>From Date</label>
-              <input style={css.input} type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} />
+              <SaguaroDatePicker style={css.input} value={fDateFrom} onChange={v => setFDateFrom(v)} />
             </div>
             <div style={{ ...css.field, flex: '0 1 140px' }}>
               <label style={css.label}>To Date</label>
-              <input style={css.input} type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} />
+              <SaguaroDatePicker style={css.input} value={fDateTo} onChange={v => setFDateTo(v)} />
             </div>
             <div style={{ ...css.field, flex: '0 0 auto' }}>
               <button style={css.btnOutline(DIM)} onClick={() => { setFCategory(''); setFStatus(''); setFPriority(''); setFDateFrom(''); setFDateTo(''); setFSearch(''); }}>Clear</button>
@@ -554,7 +555,7 @@ export default function WarrantyClaimsPage() {
                       <td style={css.td}><span style={css.badge(STATUS_COLORS[c.status] || DIM)}>{c.status.replace('_', ' ')}</span></td>
                       <td style={{ ...css.td, fontSize: 12, color: DIM }}>{c.reported_date}</td>
                       <td style={{ ...css.td, fontSize: 12 }}>{c.assigned_contractor || <span style={{ color: DIM }}>---</span>}</td>
-                      <td style={{ ...css.td, fontFamily: 'monospace' }}>{c.cost ? `$${c.cost.toLocaleString()}` : '---'}</td>
+                      <td style={{ ...css.td, fontFamily: 'monospace' }}>{Number(c.cost) ? `$${(Number(c.cost) || 0).toLocaleString()}` : '---'}</td>
                       <td style={css.td}>
                         {isExpired(c.warranty_expiry) ? <span style={css.expiredTag}>EXPIRED</span> : c.warranty_expiry ? <span style={{ fontSize: 11, color: GREEN }}>Active</span> : <span style={{ color: DIM, fontSize: 11 }}>N/A</span>}
                       </td>
@@ -599,7 +600,7 @@ export default function WarrantyClaimsPage() {
           <div style={css.row}>
             <div style={css.field}><label style={css.label}>Location</label><input style={css.input} value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} /></div>
             <div style={css.field}><label style={css.label}>Reported By</label><input style={css.input} value={form.reported_by} onChange={e => setForm({ ...form, reported_by: e.target.value })} /></div>
-            <div style={css.field}><label style={css.label}>Reported Date{form.reported_date === today && <AutoChip />}</label><input style={css.input} type="date" value={form.reported_date} onChange={e => setForm({ ...form, reported_date: e.target.value })} /><div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Defaults to today — resolution time is measured from this date.</div></div>
+            <div style={css.field}><label style={css.label}>Reported Date{form.reported_date === today && <AutoChip />}</label><SaguaroDatePicker style={css.input} value={form.reported_date} onChange={v => setForm({ ...form, reported_date: v })} /><div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Defaults to today — resolution time is measured from this date.</div></div>
           </div>
 
           <div style={css.row}>
@@ -611,11 +612,11 @@ export default function WarrantyClaimsPage() {
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Canonical trade list — drives the claims-by-trade cost rollup.</div>
             </div>
             <div style={css.field}><label style={css.label}>Assigned Contractor</label><input style={css.input} value={form.assigned_contractor} onChange={e => setForm({ ...form, assigned_contractor: e.target.value })} /></div>
-            <div style={css.field}><label style={css.label}>Scheduled Date</label><input style={css.input} type="date" value={form.scheduled_date} onChange={e => setForm({ ...form, scheduled_date: e.target.value })} /></div>
+            <div style={css.field}><label style={css.label}>Scheduled Date</label><SaguaroDatePicker style={css.input} value={form.scheduled_date} onChange={v => setForm({ ...form, scheduled_date: v })} /></div>
           </div>
 
           <div style={css.row}>
-            <div style={css.field}><label style={css.label}>Warranty Expiry Date</label><input style={css.input} type="date" value={form.warranty_expiry} onChange={e => setForm({ ...form, warranty_expiry: e.target.value })} /></div>
+            <div style={css.field}><label style={css.label}>Warranty Expiry Date</label><SaguaroDatePicker style={css.input} value={form.warranty_expiry} onChange={v => setForm({ ...form, warranty_expiry: v })} /></div>
             <div style={css.field}>
               <label style={css.label}>Covered Under Warranty</label>
               <select style={css.select} value={form.covered_under_warranty ? 'yes' : 'no'} onChange={e => setForm({ ...form, covered_under_warranty: e.target.value === 'yes' })}>
@@ -689,7 +690,7 @@ export default function WarrantyClaimsPage() {
               <div><span style={{ color: DIM }}>Contractor:</span> {detailClaim.assigned_contractor || '---'}</div>
               <div><span style={{ color: DIM }}>Scheduled:</span> {detailClaim.scheduled_date || '---'}</div>
               <div><span style={{ color: DIM }}>Completed:</span> {detailClaim.completed_date || '---'}</div>
-              <div><span style={{ color: DIM }}>Cost:</span> <span style={{ fontFamily: 'monospace', color: GOLD }}>${(detailClaim.cost || 0).toLocaleString()}</span></div>
+              <div><span style={{ color: DIM }}>Cost:</span> <span style={{ fontFamily: 'monospace', color: GOLD }}>${(Number(detailClaim.cost) || 0).toLocaleString()}</span></div>
             </div>
 
             {/* description */}
@@ -826,7 +827,7 @@ export default function WarrantyClaimsPage() {
             </div>
             <div style={{ ...css.field, marginTop: 4 }}>
               <label style={css.label}>Service Date</label>
-              <input style={css.input} type="date" value={dispatchForm.scheduled_date} onChange={e => setDispatchForm({ ...dispatchForm, scheduled_date: e.target.value })} />
+              <SaguaroDatePicker style={css.input} value={dispatchForm.scheduled_date} onChange={v => setDispatchForm({ ...dispatchForm, scheduled_date: v })} />
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
               <button style={css.btn(GREEN)} onClick={handleDispatch}>Dispatch</button>
@@ -853,7 +854,7 @@ export default function WarrantyClaimsPage() {
             <div>
               <span style={{ color: DIM, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Filtered Total Cost</span>
               <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'monospace', color: GOLD }}>
-                ${filtered.reduce((s, c) => s + (c.cost || 0), 0).toLocaleString()}
+                ${filtered.reduce((s, c) => s + (Number(c.cost) || 0), 0).toLocaleString()}
               </div>
             </div>
             <div>

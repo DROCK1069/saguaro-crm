@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { ChatCircleText, ChatsCircle, PaperPlaneTilt } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle } from '@/components/ui/premium';
 
 // Premium surface palette (matches components/ui/premium.tsx + the dashboard) ----
 const GOLD = '#F59E0B';
@@ -51,6 +51,17 @@ function relativeTime(ts: string): string {
   return new Date(ts).toLocaleDateString();
 }
 
+// Day separators for the thread — Today / Yesterday / weekday date.
+function dayLabel(ts: string): string {
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86400000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 export default function MessagesPage() {
   const params = useParams();
   const projectId = params.projectId as string;
@@ -82,6 +93,23 @@ export default function MessagesPage() {
   }, [projectId]);
 
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
+
+  // Project intelligence — one snapshot; names the thread and sizes the roster.
+  const [ctx, setCtx] = useState<any>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch { /* context is progressive enhancement */ }
+    })();
+  }, [projectId]);
+
+  const contributors = [...new Set(messages.map(m => m.sender).filter(Boolean))];
+  const todayCount = messages.filter(m => dayLabel(m.timestamp) === 'Today').length;
+  const lastMsg = messages[messages.length - 1] || null;
+  const subCount = (ctx?.subs || []).length;
 
   // Poll for new messages every 15 seconds
   useEffect(() => {
@@ -143,20 +171,30 @@ export default function MessagesPage() {
     <PremiumSurface maxWidth={1040} pad="40px 28px 40px">
       {/* Header */}
       <ModuleHero
-        eyebrow="Communication"
+        eyebrow={ctx?.project?.name || 'Communication'}
         eyebrowIcon={<ChatCircleText size={13} weight="fill" color={GOLD} />}
         title="Project"
         accent="Messages"
-        subtitle="Project team communication — stay in sync with everyone on the job."
+        subtitle="The project's running record — decisions, weather calls, and daily coordination, timestamped for everyone on the job."
       />
+
+      {/* Thread intelligence strip */}
+      {!loading && messages.length > 0 && (
+        <StatStrip items={[
+          { label: 'Messages', value: String(messages.length), sub: `${todayCount} today` },
+          { label: 'Contributors', value: String(contributors.length), sub: contributors.slice(0, 2).join(', ') || 'no one yet' },
+          { label: 'Last Activity', value: lastMsg ? relativeTime(lastMsg.timestamp) || '—' : '—', sub: lastMsg ? `from ${lastMsg.sender}` : undefined },
+          { label: 'Project Roster', value: String(subCount + (ctx?.project?.ownerName ? 1 : 0)), sub: subCount > 0 ? `${subCount} sub${subCount === 1 ? '' : 's'}${ctx?.project?.ownerName ? ' + owner' : ''}` : 'build the directory to grow it' },
+        ]} />
+      )}
 
       {/* Message thread — full-height card: thread scrolls internally, send bar pinned */}
       <SectionCard
         flush
         icon={<ChatCircleText size={17} weight="duotone" color={GOLD} />}
         title="Team Thread"
-        subtitle="Live conversation for this project"
-        style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)', minHeight: 460 }}
+        subtitle={messages.length > 0 ? `${messages.length} message${messages.length === 1 ? '' : 's'} · ${contributors.length} contributor${contributors.length === 1 ? '' : 's'} · refreshes every 15s` : 'Live conversation for this project — refreshes every 15s'}
+        style={{ display: 'flex', flexDirection: 'column', height: messages.length > 0 ? 'calc(100vh - 348px)' : 'calc(100vh - 260px)', minHeight: 460 }}
         bodyStyle={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
       >
         <div
@@ -169,14 +207,35 @@ export default function MessagesPage() {
             <PremiumEmpty
               icon={<ChatsCircle size={30} weight="duotone" color={GOLD} />}
               title="No messages yet"
-              description="Start the conversation — send the first message to your project team below."
+              description={`Everything posted here becomes the ${ctx?.project?.name ? `${ctx.project.name} ` : 'project '}running record — timestamped, searchable, and visible to the whole team${subCount > 0 ? `, with ${subCount} sub${subCount === 1 ? '' : 's'} on the roster to coordinate` : ''}. Start with one of these:`}
+              action={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {[
+                    { label: 'Kickoff note', text: `Kicking off the ${ctx?.project?.name || 'project'} thread — daily coordination, decisions, and weather calls all live here.` },
+                    { label: 'Schedule check', text: 'Schedule check: are we still tracking to this week\'s milestones? Flag any slips here so we can resequence early.' },
+                    { label: 'Safety reminder', text: 'Reminder: report near misses the same day and log toolbox talks under Safety — the log only works if we feed it.' },
+                  ].map(p => (
+                    <button key={p.label} onClick={() => setText(p.text)} className="pmBtn" style={{ padding: '7px 14px', borderRadius: 999, background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.4)', color: '#FBBF24', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{p.label}</button>
+                  ))}
+                </div>
+              }
             />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {messages.map(msg => {
+              {messages.map((msg, idx) => {
                 const isMe = !!myName && msg.sender === myName;
+                const day = dayLabel(msg.timestamp);
+                const prevDay = idx > 0 ? dayLabel(messages[idx - 1].timestamp) : null;
                 return (
-                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                  <React.Fragment key={msg.id}>
+                  {day && day !== prevDay && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0' }}>
+                      <div style={{ flex: 1, height: 1, background: BORDER }} />
+                      <span style={{ fontSize: 10.5, fontWeight: 800, color: FAINT, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{day}</span>
+                      <div style={{ flex: 1, height: 1, background: BORDER }} />
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: isMe ? GOLD : WHITE }}>{msg.sender}</span>
                       <span style={{ fontSize: 11, color: FAINT }}>{relativeTime(msg.timestamp)}</span>
@@ -196,6 +255,7 @@ export default function MessagesPage() {
                       {msg.text}
                     </div>
                   </div>
+                  </React.Fragment>
                 );
               })}
             </div>

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useParams } from 'next/navigation';
 import { Badge, Table, T } from '@/components/ui/shell';
 import {
@@ -244,7 +245,7 @@ export default function TimesheetsPage() {
               </div>
               <div>
                 <label style={lbl}>Date<AutoChip /></label>
-                <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} style={inp} />
+                <SaguaroDatePicker value={form.date} onChange={v => setForm(p => ({ ...p, date: v }))} style={inp} />
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4, lineHeight: 1.45 }}>Defaulted to today — edit to backfill.</div>
               </div>
               <div>

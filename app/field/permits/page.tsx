@@ -4,6 +4,7 @@
  * Track permits, expirations, renewals, fees, and authority contacts from the field. Offline queue.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
@@ -644,15 +645,15 @@ function PermitsPageInner() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 14 }}>
               <div>
                 <label style={labelStyle}>Applied Date</label>
-                <input type="date" value={formApplied} onChange={e => setFormApplied(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formApplied} onChange={v => setFormApplied(v)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Issued Date</label>
-                <input type="date" value={formIssued} onChange={e => setFormIssued(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formIssued} onChange={v => setFormIssued(v)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Expires Date</label>
-                <input type="date" value={formExpires} onChange={e => setFormExpires(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formExpires} onChange={v => setFormExpires(v)} style={inputStyle} />
               </div>
             </div>
           </div>

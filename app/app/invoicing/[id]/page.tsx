@@ -11,6 +11,7 @@
  *   DELETE /api/invoices/[id]/delete   -> { success }
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -481,7 +482,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Due Date</label>
-                  <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} style={inputStyle} />
+                  <SaguaroDatePicker value={form.due_date} onChange={(v) => setForm({ ...form, due_date: v })} style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Category</label>

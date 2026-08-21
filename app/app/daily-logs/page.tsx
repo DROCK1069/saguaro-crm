@@ -4,6 +4,7 @@
  * Uses DataTable with sorting, filtering, pagination.
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -290,7 +291,7 @@ export default function DailyLogsPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Date<AutoChip /></label>
-                  <input type="date" value={form.logDate} onChange={(e) => setForm({ ...form, logDate: e.target.value })} style={inputStyle} />
+                  <SaguaroDatePicker value={form.logDate} onChange={(v) => setForm({ ...form, logDate: v })} style={inputStyle} />
                   <div style={{ fontSize: font.size.sm, color: colors.textDim, marginTop: 4 }}>Defaulted to today — backfill any missed day.</div>
                 </div>
                 <div>

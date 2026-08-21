@@ -1,13 +1,15 @@
 'use client';
 import { useMemo, useState } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useRisks, createRisk } from '@/lib/hooks/useFranchise';
 import { computeRisk, SEVERITY_ORDER, type Severity } from '@/lib/franchise';
-import { Warning } from '@phosphor-icons/react';
+import { ShieldWarning, Plus } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatStrip, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import {
   C, font, fmtDate, useFranchiseGate, GateLoading,
-  PageHeader, Tile, SevDot, SevBadge, Chip, SearchInput, EmptyState, AttentionBanner, Metric, LiftCard,
+  SevDot, SevBadge, Chip, SearchInput, EmptyState, AttentionBanner, Metric, LiftCard,
 } from '@/components/franchise/kit';
 
 const SEV_LABEL: Record<Severity, string> = { red: 'Critical', yellow: 'At Risk', green: 'Low' };
@@ -30,10 +32,12 @@ export default function RisksPage() {
   }, [raw]);
 
   const summary = useMemo(() => {
-    const s = { green: 0, yellow: 0, red: 0, open: 0, total: rows.length };
-    rows.forEach(({ h }) => {
+    const s = { green: 0, yellow: 0, red: 0, open: 0, overdue: 0, unowned: 0, total: rows.length };
+    rows.forEach(({ it, h }) => {
       s[h.severity]++;
       if (h.isOpen) s.open++;
+      if (h.isOpen && it.due_date && Date.parse(String(it.due_date)) < Date.now()) s.overdue++;
+      if (h.isOpen && !it.owner) s.unowned++;
     });
     return s;
   }, [rows]);
@@ -46,26 +50,32 @@ export default function RisksPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1280, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="Risk Register"
+    <PremiumSurface maxWidth={1280} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Portfolio Exposure"
+        eyebrowIcon={<ShieldWarning size={13} weight="fill" color={C.gold} />}
+        title="Risk"
+        accent="Register"
         subtitle="Every risk across all sites, ranked by exposure. Attack the red ones first — likelihood times impact tells you where to spend attention."
-        right={
-          <button onClick={() => setAdding((v) => !v)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
-            {adding ? 'Close' : '+ Add Risk'}
+        actions={
+          <button onClick={() => setAdding((v) => !v)} className="pmBtn" style={adding ? ghostButtonStyle : goldButtonStyle}>
+            {adding ? 'Close' : <><Plus size={15} weight="bold" /> Add Risk</>}
           </button>
         }
       />
 
       {adding && <AddRiskForm projects={projects} onDone={() => setAdding(false)} />}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Total Risks" value={summary.total} />
-        <Tile label="Critical / High" value={summary.red} color={C.red} />
-        <Tile label="Medium" value={summary.yellow} color={C.yellow} />
-        <Tile label="Low" value={summary.green} color={C.green} />
-        <Tile label="Open" value={summary.open} />
-      </div>
+      {/* Register pulse — where the exposure sits and what needs an owner or a date */}
+      <StatStrip items={[
+        { label: 'Total Risks', value: String(summary.total), sub: `${summary.open} open` },
+        { label: 'Critical / High', value: String(summary.red), accent: summary.red > 0 ? C.red : undefined, sub: 'attack these first' },
+        { label: 'Medium', value: String(summary.yellow), accent: summary.yellow > 0 ? C.yellow : undefined, sub: 'review weekly' },
+        { label: 'Low', value: String(summary.green), accent: C.green, sub: 'monitor' },
+        { label: 'Past Due', value: String(summary.overdue), accent: summary.overdue > 0 ? C.red : undefined, sub: 'mitigation date blown' },
+        { label: 'No Owner', value: String(summary.unowned), accent: summary.unowned > 0 ? C.yellow : undefined, sub: 'assign accountability' },
+      ]} />
 
       <AttentionBanner red={summary.red} yellow={summary.yellow} noun="risk" />
 
@@ -84,9 +94,9 @@ export default function RisksPage() {
         <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading risks…</div>
       ) : filtered.length === 0 ? (
         rows.length === 0 ? (
-          <EmptyState icon={<Warning size={34} weight="fill" color={C.yellow} />} title="No risks logged yet"
-            body="Capture what could derail each site — permitting delays, weather, long-lead gaps, design churn. The register scores every risk by likelihood × impact and ranks the whole portfolio worst-first."
-            action={<button onClick={() => setAdding(true)} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>+ Log your first risk</button>} />
+          <PremiumEmpty icon={<ShieldWarning size={34} weight="duotone" color={C.gold} />} title="No risks logged yet"
+            description="Capture what could derail each site — permitting delays, weather, long-lead gaps, design churn. The register scores every risk by likelihood × impact, ranks the portfolio worst-first, and rolls the counts up to the Command Center and KPI dashboard automatically."
+            action={<button onClick={() => setAdding(true)} className="pmBtn" style={goldButtonStyle}><Plus size={15} weight="bold" /> Log your first risk</button>} />
         ) : (
           <EmptyState title="Nothing matches this filter" />
         )
@@ -127,7 +137,8 @@ export default function RisksPage() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }
 
@@ -184,7 +195,7 @@ function AddRiskForm({ projects, onDone }: { projects: any[]; onDone: () => void
           </select>
         </div>
         <div><label style={lbl}>Owner</label><input style={inp} placeholder="Accountable person" value={f.owner || ''} onChange={(e) => set('owner', e.target.value)} /></div>
-        <div><label style={lbl}>Due date</label><input type="date" style={inp} value={f.due_date || ''} onChange={(e) => set('due_date', e.target.value)} /></div>
+        <div><label style={lbl}>Due date</label><SaguaroDatePicker style={inp} value={f.due_date || ''} onChange={(v) => set('due_date', v)} /></div>
         <div>
           <label style={lbl}>Status</label>
           <select style={inp} value={f.status || 'open'} onChange={(e) => set('status', e.target.value)}>

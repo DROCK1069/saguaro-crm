@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -549,11 +550,11 @@ function InvoicesPage() {
                 </div>
                 <div>
                   <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 4 }}>Due From</label>
-                  <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={inputStyle} />
+                  <SaguaroDatePicker value={filterDateFrom} onChange={(v) => setFilterDateFrom(v)} style={inputStyle} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 4 }}>Due To</label>
-                  <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={inputStyle} />
+                  <SaguaroDatePicker value={filterDateTo} onChange={(v) => setFilterDateTo(v)} style={inputStyle} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 4 }}>Min Amount</label>
@@ -783,7 +784,7 @@ function InvoicesPage() {
               </div>
               <div>
                 <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 4 }}>Due Date *</label>
-                <input type="date" value={formDue} onChange={(e) => setFormDue(e.target.value)} style={inputStyle} />
+                <SaguaroDatePicker value={formDue} onChange={(v) => setFormDue(v)} style={inputStyle} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 4 }}>Description</label>

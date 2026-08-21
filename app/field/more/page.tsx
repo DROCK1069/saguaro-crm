@@ -1,7 +1,9 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import { ClipboardText, Ruler, FileText, CurrencyDollar, Warning, UsersThree, Cube, Wrench } from '@phosphor-icons/react';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
@@ -9,10 +11,10 @@ import { scopedFieldIcon } from '../field-icons';
 const GOLD='#F59E0B',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',TEXT='#FFFFFF',DIM='#CBD5E1';
 const GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',PURPLE='#8B5CF6',BLUE='#F59E0B',TEAL='#06B6D4';
 type Panel=null|'timesheet'|'rfi'|'safety';
-const COST_CODES=['General Conditions','Concrete','Masonry','Metals / Structural','Carpentry','Thermal & Moisture','Openings','Finishes','Electrical','Plumbing','HVAC / Mechanical','Earthwork / Site','Other'];
+const COST_CODES=[...Object.entries(CSI_DIVISIONS).map(([code,d])=>`${code} — ${d.name}`),'Other'];
 const SEVERITY=['Minor','Moderate','Serious','Critical'];
 const INJURY_TYPES=['No Injury','First Aid','Medical Treatment','Lost Time','Fatality'];
-const SPEC_SECTIONS=['Division 01 – Gen. Requirements','Division 03 – Concrete','Division 04 – Masonry','Division 05 – Metals','Division 06 – Wood & Plastics','Division 07 – Thermal','Division 08 – Openings','Division 09 – Finishes','Division 22 – Plumbing','Division 23 – HVAC','Division 26 – Electrical','Other'];
+const SPEC_SECTIONS=[...Object.entries(CSI_DIVISIONS).map(([code,d])=>`Division ${code} – ${d.name}`),'Other'];
 
 const ICONS: Record<string, React.ReactNode> = {
   clock:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}><circle cx={12} cy={12} r={10}/><polyline points="12 6 12 12 16 14"/></svg>,
@@ -220,7 +222,7 @@ function MorePage(){
             <F label="Employee Name *"><input value={tsEmployee} onChange={e=>setTsEmployee(e.target.value)} placeholder="Full name" style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <F label="Hours Worked"><input type="number" inputMode="decimal" step="0.5" min="0" max="24" value={tsHours} onChange={e=>setTsHours(e.target.value)} placeholder="e.g. 8.5" style={inp}/></F>
-              <F label="Cost Code"><select value={tsCostCode} onChange={e=>setTsCostCode(e.target.value)} style={inp}>{COST_CODES.map(c=><option key={c} value={c} style={{background:'#141416'}}>{c}</option>)}</select></F>
+              <F label="Cost Code"><select value={tsCostCode} onChange={e=>setTsCostCode(e.target.value)} style={inp}>{tsCostCode&&!COST_CODES.includes(tsCostCode)&&<option value={tsCostCode} style={{background:'#141416'}}>{tsCostCode}</option>}{COST_CODES.map(c=><option key={c} value={c} style={{background:'#141416'}}>{c}</option>)}</select></F>
             </div>
             <F label="Notes"><input value={tsNotes} onChange={e=>setTsNotes(e.target.value)} placeholder="Work area, task, OT reason..." style={inp}/></F>
           </S>
@@ -237,8 +239,8 @@ function MorePage(){
             <F label="Subject *"><input value={rfiSubject} onChange={e=>setRfiSubject(e.target.value)} placeholder="Brief description" style={inp} required/></F>
             <F label="Question / Description *"><textarea value={rfiQuestion} onChange={e=>setRfiQuestion(e.target.value)} placeholder="Describe the issue and what clarification you need..." rows={4} style={inp} required/></F>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <F label="Spec Section"><select value={rfiSpec} onChange={e=>setRfiSpec(e.target.value)} style={inp}>{SPEC_SECTIONS.map(s=><option key={s} value={s} style={{background:'#141416'}}>{s}</option>)}</select></F>
-              <F label="Need By"><input type="date" value={rfiDueDate} onChange={e=>setRfiDueDate(e.target.value)} style={inp}/></F>
+              <F label="Spec Section"><select value={rfiSpec} onChange={e=>setRfiSpec(e.target.value)} style={inp}>{rfiSpec&&!SPEC_SECTIONS.includes(rfiSpec)&&<option value={rfiSpec} style={{background:'#141416'}}>{rfiSpec}</option>}{SPEC_SECTIONS.map(s=><option key={s} value={s} style={{background:'#141416'}}>{s}</option>)}</select></F>
+              <F label="Need By"><SaguaroDatePicker value={rfiDueDate} onChange={v=>setRfiDueDate(v)} style={inp}/></F>
             </div>
           </S>
           <Sub saving={saving} label="File RFI" online={online} color={PURPLE}/>

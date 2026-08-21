@@ -7,6 +7,7 @@ import {
   WarningCircle, FolderOpen, CheckCircle, XCircle, Warning, ArrowRight,
   Buildings, CurrencyDollar, Receipt, HandCoins, Coins, CalendarBlank,
   Lightning, Plus, ChartLineUp, ClipboardText, ListChecks, CalendarCheck, UsersThree,
+  Question, Tray, ClockCounterClockwise, NotePencil, ArrowsLeftRight,
 } from '@phosphor-icons/react';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { toCents, toDollars, sumCents, subCents, summarizeContract } from '@/lib/calc';
@@ -15,6 +16,7 @@ import {
   CinematicPage, ModuleHero, HeroButton, StatCard, SectionCard, SectionLink, EmptyStatePremium, CIN,
 } from '@/components/ui/cinematic';
 import GettingStartedRail from '@/components/GettingStartedRail';
+import { StatStrip } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#22C55E',RED='#EF4444';
 const fmt = (n:number|null|undefined) => '$'+((n ?? 0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -54,6 +56,20 @@ export default function OverviewPage(){
   },[projectId]);
 
   useEffect(()=>{ load(); },[load]);
+
+  // Project-context snapshot — one fetch fills the money fallbacks, the
+  // open-items rollup, the schedule pulse, and the recent-activity rail.
+  // Enhancement-only: the page still renders fully without it.
+  const [ctx, setCtx] = useState<any>(null);
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if(!c.error) setCtx(c);
+      }catch{}
+    })();
+  },[projectId]);
 
   async function runAutopilot(){
     setScanning(true); setScanMsg('');
@@ -152,6 +168,29 @@ export default function OverviewPage(){
   const budgetVariance = toDollars(subCents(toCents(budgetHealth.forecastCost), toCents(budgetHealth.originalBudget)));
   const budgetPct = budgetHealth.originalBudget > 0 ? (budgetHealth.actualCost / budgetHealth.originalBudget * 100).toFixed(1) : '0';
 
+  // ── Context-snapshot intelligence (DB numerics can round-trip as strings — always Number()||0 before math) ──
+  const cm = ctx?.money;
+  const ctxRevised = Number(cm?.revisedContract)||0;
+  const ctxBilled = Number(cm?.billedToDate)||0;
+  const ctxPaid = Number(cm?.paidToDate)||0;
+  const ctxCoTotal = Number(cm?.approvedCoTotal)||0;
+  const ctxLastApp = cm?.lastPayApp||null;
+  const heroContract = contractToDate>0?contractToDate:ctxRevised;
+  const heroBilled = billedToDate>0?billedToDate:ctxBilled;
+  const heroPaid = paidToDate>0?paidToDate:ctxPaid;
+  const openRfiCount = Number(ctx?.counts?.openRfis)||0;
+  const openSubmittalCount = Number(ctx?.counts?.openSubmittals)||0;
+  const openPunchCount = Number(ctx?.counts?.openPunch)||punchSummary.open||0;
+  const criticalTasks = Number(ctx?.schedule?.criticalCount)||0;
+  const nextTasks = (ctx?.schedule?.nextTasks||[]) as any[];
+  const invoiceCount = Number(ctx?.counts?.invoices)||0;
+  const billCount = Number(ctx?.counts?.bills)||0;
+  const poCount = Number(ctx?.counts?.purchaseOrders)||0;
+  const moneyDocCount = invoiceCount+billCount+poCount;
+  const lastLogDate = ctx?.recent?.lastDailyLogDate?String(ctx.recent.lastDailyLogDate).slice(0,10):null;
+  const logAgeDays = lastLogDate?Math.max(0,Math.floor((Date.now()-new Date(lastLogDate+'T00:00:00').getTime())/86400000)):null;
+  const fmtShortDate = (d?:string|null) => d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
+
   const detailRow = (l:string,v:React.ReactNode) => (
     <div key={l} style={{display:'flex',padding:'8px 0',borderBottom:`1px solid ${CIN.border}`,fontSize:13}}>
       <span style={{minWidth:150,color:CIN.faint,fontWeight:600}}>{l}</span>
@@ -192,12 +231,22 @@ export default function OverviewPage(){
 
       {/* KPI stat tiles */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:14,marginBottom:22}}>
-        <StatCard delay={0.02} icon={<CurrencyDollar size={17} weight="duotone" color={CIN.goldHi}/>} label="Contract to Date" value={fmt(contractToDate)} sub={approvedCOs>0?'+'+fmt(approvedCOs)+' in COs':'No change orders'}/>
-        <StatCard delay={0.06} icon={<Receipt size={17} weight="duotone" color={CIN.goldHi}/>} label="Billed to Date" value={fmt(billedToDate)} sub={fmtPct(billedToDate,contractToDate)+' complete'}/>
-        <StatCard delay={0.10} icon={<HandCoins size={17} weight="duotone" color={CIN.goldHi}/>} label="Paid to Date" value={fmt(paidToDate)} sub={payApps.filter((pa:any)=>pa.status==='paid').length+' payment(s)'}/>
+        <StatCard delay={0.02} icon={<CurrencyDollar size={17} weight="duotone" color={CIN.goldHi}/>} label="Contract to Date" value={fmt(heroContract)} sub={approvedCOs>0?'+'+fmt(approvedCOs)+' in COs':ctxCoTotal>0?'+'+fmt(ctxCoTotal)+' in COs':'No change orders'}/>
+        <StatCard delay={0.06} icon={<Receipt size={17} weight="duotone" color={CIN.goldHi}/>} label="Billed to Date" value={fmt(heroBilled)} sub={fmtPct(heroBilled,heroContract)+' complete'}/>
+        <StatCard delay={0.10} icon={<HandCoins size={17} weight="duotone" color={CIN.goldHi}/>} label="Paid to Date" value={fmt(heroPaid)} sub={payApps.filter((pa:any)=>pa.status==='paid').length+' payment(s)'}/>
         <StatCard delay={0.14} icon={<Coins size={17} weight="duotone" color={CIN.goldHi}/>} label="Retainage Held" value={fmt(retainageHeld)} sub={(p.retainage_percent||10)+'% retained'}/>
         <StatCard delay={0.18} icon={<CalendarBlank size={17} weight="duotone" color={CIN.goldHi}/>} label="Days Remaining" value={daysRemaining>0?String(daysRemaining):'—'} valueColor={daysRemaining>0&&daysRemaining<14?CIN.red:undefined} sub={p.end_date?'Due '+p.end_date:'No end date set'}/>
       </div>
+
+      {/* Field pulse — open items, schedule risk, and documentation, from the context snapshot */}
+      {ctx&&<StatStrip items={[
+        {icon:<Question size={11} weight="bold" color={CIN.goldHi}/>, label:'Open RFIs', value:String(openRfiCount), accent:overdueRFIs.length>0?RED:openRfiCount>0?CIN.goldHi:undefined, sub:overdueRFIs.length>0?overdueRFIs.length+' overdue — respond now':openRfiCount>0?'awaiting answers':'all answered'},
+        {icon:<Tray size={11} weight="bold" color={CIN.goldHi}/>, label:'Open Submittals', value:String(openSubmittalCount), accent:openSubmittalCount>0?CIN.goldHi:undefined, sub:openSubmittalCount>0?'in review':'nothing in court'},
+        {icon:<ListChecks size={11} weight="bold" color={CIN.goldHi}/>, label:'Open Punch', value:String(openPunchCount), accent:openPunchCount>0?CIN.goldHi:undefined, sub:punchSummary.complete>0?punchSummary.complete+' closed to date':openPunchCount>0?'items to close':'list is clear'},
+        {icon:<Warning size={11} weight="bold" color={CIN.goldHi}/>, label:'Critical Path', value:String(criticalTasks), accent:criticalTasks>0?RED:undefined, sub:criticalTasks>0?'tasks can slip the finish':'no critical tasks open'},
+        {icon:<NotePencil size={11} weight="bold" color={CIN.goldHi}/>, label:'Last Daily Log', value:logAgeDays==null?'—':logAgeDays===0?'Today':logAgeDays+'d ago', accent:logAgeDays!=null&&logAgeDays>3?RED:undefined, sub:lastLogDate?fmtShortDate(lastLogDate):'no field logs yet'},
+        {icon:<CurrencyDollar size={11} weight="bold" color={CIN.goldHi}/>, label:'Money Docs', value:String(moneyDocCount), sub:invoiceCount+' inv · '+billCount+' bills · '+poCount+' POs'},
+      ]}/>}
 
       {overdueRFIs.length>0&&<div style={{background:'rgba(239,68,68,.07)',border:'1px solid rgba(239,68,68,.28)',borderRadius:14,padding:'14px 18px',marginBottom:18,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
         <span style={{fontWeight:700,color:TEXT,fontSize:14,display:'inline-flex',alignItems:'center',gap:8}}><Warning size={16} weight="fill" color={RED}/> {overdueRFIs.length} overdue RFI(s) need a response</span>
@@ -233,10 +282,70 @@ export default function OverviewPage(){
             </div>
             {[['Original Budget',fmt(budgetHealth.originalBudget)],['Committed Cost',fmt(budgetHealth.committedCost)],['Actual Cost',fmt(budgetHealth.actualCost)],['Forecast',fmt(budgetHealth.forecastCost)],['Variance',fmt(Math.abs(budgetVariance))+(budgetVariance>0?' over':' under')]].map(([l,v]:any)=>summaryRow(l,v,l==='Variance'?(budgetVariance>0?RED:GREEN):undefined))}
           </SectionCard>}
+          {ctx&&<SectionCard title="Next Scheduled Work" icon={<CalendarCheck size={18} weight="duotone" color={CIN.goldHi}/>} action={<SectionLink href={'/app/projects/'+projectId+'/schedule'}>Full Schedule <ArrowRight size={11} weight="bold" color={CIN.goldHi}/></SectionLink>} delay={0.15}>
+            {nextTasks.length===0
+              ?<div style={{color:CIN.faint,fontSize:13,lineHeight:1.6,padding:'4px 0'}}>
+                {Number(ctx?.counts?.scheduleTasks)>0
+                  ?'Every scheduled task is complete or past its window — update the schedule to keep this lookahead live.'
+                  :<>No schedule yet. <Link href={'/app/projects/'+projectId+'/schedule'} style={{color:CIN.goldHi,fontWeight:700}}>Build the schedule</Link> and the next tasks, critical-path count, and finish risk all light up here.</>}
+              </div>
+              :nextTasks.map((tk:any)=>(
+                <div key={tk.id} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderBottom:`1px solid ${CIN.border}`}}>
+                  <div style={{width:8,height:8,borderRadius:'50%',flexShrink:0,background:(Number(tk.pctComplete)||0)>0?GOLD:CIN.faint}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,color:TEXT,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{tk.name}</div>
+                    <div style={{fontSize:11.5,color:CIN.faint}}>{[tk.trade,fmtShortDate(tk.startDate)+' – '+fmtShortDate(tk.endDate)].filter(Boolean).join(' · ')}</div>
+                  </div>
+                  <span style={{fontSize:11,fontWeight:800,color:(Number(tk.pctComplete)||0)>0?CIN.goldHi:CIN.faint,whiteSpace:'nowrap' as const}}>{Number(tk.pctComplete)||0}%</span>
+                </div>
+              ))}
+            {criticalTasks>0&&<div style={{marginTop:12,padding:'9px 12px',borderRadius:10,background:'rgba(239,68,68,.07)',border:'1px solid rgba(239,68,68,.25)',fontSize:12,color:RED,fontWeight:600,display:'flex',alignItems:'center',gap:7}}>
+              <Warning size={14} weight="fill" color={RED}/> {criticalTasks} critical-path task{criticalTasks===1?'':'s'} open — a slip here moves the finish date.
+            </div>}
+          </SectionCard>}
+          {ctx&&<SectionCard title="Recent Activity" icon={<ClockCounterClockwise size={18} weight="duotone" color={CIN.goldHi}/>} delay={0.2}>
+            {[
+              {icon:<Receipt size={15} weight="duotone" color={CIN.goldHi}/>, href:'/app/projects/'+projectId+'/pay-apps',
+                title: ctxLastApp?'Pay App #'+ctxLastApp.appNumber+' · '+String(ctxLastApp.status||'draft').replace(/_/g,' '):'No pay applications yet',
+                sub: ctxLastApp?'billed through '+fmtShortDate(ctxLastApp.periodTo):'billing starts with App #1',
+                value: ctxLastApp?fmt(Number(ctxLastApp.currentPaymentDue)||0):'—'},
+              {icon:<ArrowsLeftRight size={15} weight="duotone" color={CIN.goldHi}/>, href:'/app/projects/'+projectId+'/change-orders',
+                title:(Number(cm?.approvedCoCount)||0)+' change order'+((Number(cm?.approvedCoCount)||0)===1?'':'s')+' approved',
+                sub:(Number(cm?.pendingCoCount)||0)>0?(Number(cm?.pendingCoCount)||0)+' pending decision':'none pending decision',
+                value:(ctxCoTotal>=0?'+':'')+fmt(ctxCoTotal)},
+              {icon:<NotePencil size={15} weight="duotone" color={CIN.goldHi}/>, href:'/app/projects/'+projectId+'/daily-logs',
+                title: lastLogDate?'Daily log filed':'No daily logs yet',
+                sub: lastLogDate?(logAgeDays===0?'today':logAgeDays+' day'+(logAgeDays===1?'':'s')+' ago'):'field history builds the claim file',
+                value: lastLogDate?fmtShortDate(lastLogDate):'—'},
+              {icon:<CurrencyDollar size={15} weight="duotone" color={CIN.goldHi}/>, href:'/app/projects/'+projectId+'/invoices',
+                title: moneyDocCount>0?'Outstanding receivable':'No billing documents yet',
+                sub: invoiceCount+' invoices · '+billCount+' bills · '+poCount+' POs',
+                value: fmt(Math.max(0,ctxBilled-ctxPaid))},
+            ].map(row=>(
+              <Link key={row.href} href={row.href} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderBottom:`1px solid ${CIN.border}`,textDecoration:'none'}}>
+                <span style={{width:28,height:28,borderRadius:8,flexShrink:0,display:'inline-flex',alignItems:'center',justifyContent:'center',background:'linear-gradient(150deg, rgba(245,158,11,0.16), rgba(245,158,11,0.04))',border:'1px solid rgba(245,158,11,0.26)'}}>{row.icon}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,color:TEXT,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{row.title}</div>
+                  <div style={{fontSize:11.5,color:CIN.faint}}>{row.sub}</div>
+                </div>
+                <span style={{fontSize:12,fontWeight:700,color:CIN.goldHi,whiteSpace:'nowrap' as const}}>{row.value}</span>
+                <ArrowRight size={11} weight="bold" color={CIN.faint}/>
+              </Link>
+            ))}
+          </SectionCard>}
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:18}}>
           <SectionCard title="Financial Summary" icon={<CurrencyDollar size={18} weight="duotone" color={CIN.goldHi}/>} action={<SectionLink href={'/app/projects/'+projectId+'/pay-apps'}>All Pay Apps <ArrowRight size={11} weight="bold" color={CIN.goldHi}/></SectionLink>} delay={0.05}>
-            {[['Original Contract',fmt(p.original_contract||p.contract_amount||0)],['Change Orders','+'+fmt(approvedCOs)],['Contract to Date',fmt(contractToDate)],['Billed to Date',fmt(billedToDate)+' ('+fmtPct(billedToDate,contractToDate)+')'],['Retainage Held',fmt(retainageHeld)],['Total Paid',fmt(paidToDate)],['Balance Due',fmt(balanceDue)]].map(([l,v]:any)=>summaryRow(l,v))}
+            {heroContract>0&&<div style={{marginBottom:14}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:7,fontSize:12}}>
+                <span style={{color:CIN.faint}}>Billed {fmt(heroBilled)} of {fmt(heroContract)}</span>
+                <span style={{color:CIN.goldHi,fontWeight:800}}>{fmtPct(heroBilled,heroContract)}</span>
+              </div>
+              <div style={{height:8,background:'rgba(255,255,255,0.06)',borderRadius:999,overflow:'hidden'}}>
+                <div style={{height:'100%',width:Math.min(100,heroContract>0?(heroBilled/heroContract)*100:0)+'%',background:`linear-gradient(90deg,${GOLD},#FBBF24)`,borderRadius:999,boxShadow:'0 0 12px rgba(245,158,11,.4)'}}/>
+              </div>
+            </div>}
+            {[['Original Contract',fmt(Number(p.original_contract)||Number(p.contract_amount)||Number(cm?.originalContract)||0)],['Change Orders','+'+fmt(approvedCOs>0?approvedCOs:ctxCoTotal)],['Contract to Date',fmt(heroContract)],['Billed to Date',fmt(heroBilled)+' ('+fmtPct(heroBilled,heroContract)+')'],['Retainage Held',fmt(retainageHeld)],['Total Paid',fmt(heroPaid)],['Balance Due',fmt(balanceDue)]].map(([l,v]:any)=>summaryRow(l,v))}
           </SectionCard>
           {punchSummary.total>0&&<SectionCard title="Punch List" icon={<ListChecks size={18} weight="duotone" color={CIN.goldHi}/>} action={<SectionLink href={'/app/projects/'+projectId+'/punch-list'}>View All <ArrowRight size={11} weight="bold" color={CIN.goldHi}/></SectionLink>} delay={0.1}>
             <div style={{display:'flex',gap:12,marginBottom:14}}>

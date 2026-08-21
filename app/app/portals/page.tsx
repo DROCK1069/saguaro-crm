@@ -569,8 +569,8 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
               </td>
               <td style={{ padding: '12px 16px', color: DIM, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.project_name || '—'}</td>
               <td style={{ padding: '12px 16px' }}><StatusBadge status={s.status} /></td>
-              <td style={{ padding: '12px 16px', color: DIM, whiteSpace: 'nowrap' }}>{fmt(s.last_accessed_at)}</td>
-              <td style={{ padding: '12px 16px', color: DIM, whiteSpace: 'nowrap' }}>{fmt(s.expires_at)}</td>
+              <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{s.last_accessed_at ? <span style={{ color: DIM }}>{fmt(s.last_accessed_at)}</span> : s.status === 'active' ? <span style={{ color: AMBER, fontWeight: 600 }}>Never opened</span> : <span style={{ color: DIM }}>—</span>}</td>
+              <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{(() => { if (!s.expires_at) return <span style={{ color: DIM }}>Never</span>; const dl = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000); return <span style={{ color: dl <= 0 ? RED : dl <= 30 ? AMBER : DIM, fontWeight: dl <= 30 ? 600 : 400 }}>{fmt(s.expires_at)}{dl <= 0 ? ' · expired' : dl <= 30 ? ` · ${dl}d left` : ''}</span>; })()}</td>
               {/* Resend invite column */}
               <td style={{ padding: '12px 16px' }}>
                 {s.status === 'active' && (
@@ -639,7 +639,7 @@ function SubTable({ sessions, copied, revoking, resending, resendMsg, onCopy, on
               </td>
               <td style={{ padding: '12px 16px', color: DIM, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.project_name || '—'}</td>
               <td style={{ padding: '12px 16px' }}><StatusBadge status={s.status} /></td>
-              <td style={{ padding: '12px 16px', color: DIM, whiteSpace: 'nowrap' }}>{fmt(s.last_login_at)}</td>
+              <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{s.last_login_at ? <span style={{ color: DIM }}>{fmt(s.last_login_at)}</span> : s.status === 'active' ? <span style={{ color: AMBER, fontWeight: 600 }}>Never opened</span> : <span style={{ color: DIM }}>—</span>}</td>
               {/* Resend invite column */}
               <td style={{ padding: '12px 16px' }}>
                 {s.status === 'active' && (

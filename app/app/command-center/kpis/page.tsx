@@ -6,9 +6,10 @@ import { useLongLead, useRisks, useMilestones, useEscalations, useOpKpis } from 
 import { computeHealth } from '@/lib/portfolio-health';
 import { computeLongLead, computeRisk, milestoneSlip, escalationSeverity, num, type Severity } from '@/lib/franchise';
 import {
-  C, font, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, Tile, SevBadge, Metric, LiftCard,
+  C, font, fmtMoneyShort, useFranchiseGate, GateLoading, Tile, SevBadge, Metric, LiftCard,
 } from '@/components/franchise/kit';
-import { CheckCircle, XCircle, Warning } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatStrip } from '@/components/ui/premium';
+import { CheckCircle, XCircle, Warning, ChartLineUp } from '@phosphor-icons/react';
 
 // Color a cycle-time metric against its spec target: green ≤ target, yellow ≤ 1.5×, red over.
 function dayColor(v: number | null | undefined, target: number): string | undefined {
@@ -47,7 +48,7 @@ function IndexBar({ label, pct, invert, hint }: { label: string; pct: number | n
         <span style={{ fontSize: 13, fontWeight: 700 }}>{label}</span>
         <span style={{ fontSize: 18, fontWeight: 900, color, fontVariantNumeric: 'tabular-nums' }}>{v == null ? '—' : `${v}%`}</span>
       </div>
-      <div style={{ height: 8, borderRadius: 4, background: '#EAEAEF', overflow: 'hidden' }}>
+      <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${v ?? 0}%`, background: color, borderRadius: 4, transition: 'width .3s' }} />
       </div>
       {hint && <div style={{ fontSize: 11, color: C.dim, marginTop: 6 }}>{hint}</div>}
@@ -133,24 +134,28 @@ export default function KpiDashboardPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1280, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="Franchise KPI Dashboard"
+    <PremiumSurface maxWidth={1280} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Portfolio Intelligence"
+        eyebrowIcon={<ChartLineUp size={13} weight="fill" color={C.gold} />}
+        title="KPI"
+        accent="Dashboard"
         subtitle="The whole portfolio in numbers — one screen a remote operator can scan in ten seconds."
-        right={<div style={{ fontSize: 12, color: C.dim }}>{k.sites} {k.sites === 1 ? 'site' : 'sites'}</div>}
+        actions={<div style={{ fontSize: 12, color: C.dim }}>{k.sites} {k.sites === 1 ? 'site' : 'sites'}</div>}
       />
 
-      {/* Headline KPIs */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-        <Tile label="Portfolio Value" value={fmtMoneyShort(k.portfolioValue)} />
-        <Tile label="Avg Complete" value={k.avgComplete == null ? '—' : `${k.avgComplete}%`} color={C.blue} />
-        <Tile label="Sites Needing Attn" value={k.sitesAttention} color={k.sitesAttention > 0 ? C.yellow : C.green} sub={`of ${k.sites}`} />
-        <Tile label="Long-Lead At Risk" value={k.llAtRisk} color={k.llAtRisk > 0 ? C.red : C.green} sub={`of ${k.llTotal}`} />
-        <Tile label="Open Critical Risks" value={k.openCritical} color={k.openCritical > 0 ? C.red : C.green} sub={`${k.openRisks} open total`} />
-        <Tile label="Open Escalations" value={k.openEsc} color={k.openEsc > 0 ? C.red : C.green} />
-        <Tile label="Milestones Slipping" value={k.slipping} color={k.slipping > 0 ? C.yellow : C.green} sub={`of ${k.msTotal}`} />
-        <Tile label="Overall Score" value={k.overall == null ? '—' : k.overall} color={k.overall == null ? C.dim : k.overall >= 80 ? C.green : k.overall >= 55 ? C.yellow : C.red} sub="/ 100" />
-      </div>
+      {/* Headline KPIs — dense strip, zero dead space */}
+      <StatStrip items={[
+        { label: 'Portfolio Value', value: fmtMoneyShort(k.portfolioValue), sub: `${k.sites} active site${k.sites === 1 ? '' : 's'}` },
+        { label: 'Avg Complete', value: k.avgComplete == null ? '—' : `${k.avgComplete}%`, sub: 'across reporting sites' },
+        { label: 'Sites Needing Attn', value: String(k.sitesAttention), accent: k.sitesAttention > 0 ? C.yellow : C.green, sub: `of ${k.sites}` },
+        { label: 'Long-Lead At Risk', value: String(k.llAtRisk), accent: k.llAtRisk > 0 ? C.red : C.green, sub: `of ${k.llTotal} tracked` },
+        { label: 'Critical Risks', value: String(k.openCritical), accent: k.openCritical > 0 ? C.red : C.green, sub: `${k.openRisks} open total` },
+        { label: 'Escalations', value: String(k.openEsc), accent: k.openEsc > 0 ? C.red : C.green, sub: 'open now' },
+        { label: 'Milestones Slipping', value: String(k.slipping), accent: k.slipping > 0 ? C.yellow : C.green, sub: `of ${k.msTotal}` },
+        { label: 'Overall Score', value: k.overall == null ? '—' : String(k.overall), accent: k.overall == null ? undefined : k.overall >= 80 ? C.green : k.overall >= 55 ? C.yellow : C.red, sub: 'site-health avg / 100' },
+      ]} />
 
       {/* Portfolio scorecard bars */}
       <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: C.dim, margin: '4px 2px 10px' }}>Portfolio Scorecard</div>
@@ -199,7 +204,12 @@ export default function KpiDashboardPage() {
       {pLoading ? (
         <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading sites…</div>
       ) : k.bySite.length === 0 ? (
-        <div style={{ color: C.dim, padding: 48, textAlign: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: 14 }}>No active sites yet.</div>
+        <div style={{ color: C.dim, padding: 48, textAlign: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: 14 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>No active sites yet</div>
+          <div style={{ fontSize: 13, maxWidth: 500, margin: '0 auto', lineHeight: 1.55 }}>
+            Every number on this screen computes itself from live project data — budgets, RFIs, milestones, long-lead items, escalations. Add your first site and the scorecard fills in on its own.
+          </div>
+        </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
           {k.bySite.map(({ p, h, llAtRisk, risksOpen, risksCrit, msSlip, esc }) => (
@@ -225,6 +235,7 @@ export default function KpiDashboardPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }

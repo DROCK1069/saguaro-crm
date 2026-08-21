@@ -33,7 +33,7 @@ const SOURCES = ['Website', 'Design Studio', 'Referral', 'Social Media', 'Sage C
 const STATES_LIST = ['AZ', 'CA', 'CO', 'FL', 'GA', 'IL', 'MA', 'MI', 'MN', 'NC', 'NJ', 'NV', 'NY', 'OH', 'OR', 'PA', 'TX', 'VA', 'WA', 'WI'];
 
 /* ─── Helpers ─── */
-const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString();
+const fmt = (n: number | string | null | undefined) => '$' + (Number(n) || 0).toLocaleString();
 const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 export default function CustomersPage() {
@@ -92,7 +92,7 @@ export default function CustomersPage() {
         c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
       );
     }
-    return list.sort((a, b) => b.lead_score - a.lead_score);
+    return [...list].sort((a, b) => (Number(b.lead_score) || 0) - (Number(a.lead_score) || 0));
   }, [customers, filterStatus, filterSource, filterState, search]);
 
   const exportCSV = useCallback(() => {
@@ -117,7 +117,7 @@ export default function CustomersPage() {
   // Portfolio KPI: average lead score across all profiles (derived, presentational)
   const avgScore = useMemo(() => {
     if (!customers.length) return 0;
-    return Math.round(customers.reduce((s, c) => s + (c.lead_score || 0), 0) / customers.length);
+    return Math.round(customers.reduce((s, c) => s + (Number(c.lead_score) || 0), 0) / customers.length);
   }, [customers]);
 
   // Per-customer project rollup: count + lifetime contract value. Projects have

@@ -5,6 +5,7 @@
  * Enhanced with Ball-in-Court, Distribution Matrix, Create Form, Revision History, Response Tracking.
  */
 import React, { useState, useEffect, Suspense, useRef } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
@@ -438,10 +439,9 @@ function SubmittalsPage() {
 
           {/* Due Date */}
           <label style={labelStyle}>Due Date</label>
-          <input
-            type="date"
+          <SaguaroDatePicker
             value={newDueDate}
-            onChange={(e) => setNewDueDate(e.target.value)}
+            onChange={(v) => setNewDueDate(v)}
             style={inputStyle}
           />
 

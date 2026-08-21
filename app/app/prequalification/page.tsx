@@ -649,9 +649,31 @@ export default function PrequalificationPage() {
                 </div>
               </div>
 
+              {/* Filtered-set intelligence — the list on screen, quantified: status mix,
+                  scoring vs threshold, docs compliance, and prequal-expiry pressure */}
+              {filtered.length > 0 && (() => {
+                const fApproved = filtered.filter(s => s.status === 'approved').length;
+                const fPending = filtered.filter(s => s.status === 'pending').length;
+                const fReview = filtered.filter(s => s.status === 'under_review').length;
+                const fScored = filtered.filter(s => s.max_score > 0);
+                const fAvg = fScored.length > 0 ? Math.round(fScored.reduce((a, s) => a + (s.total_score / s.max_score) * 100, 0) / fScored.length) : 0;
+                const fPass = avgThreshold > 0 ? fScored.filter(s => (s.total_score / s.max_score) * 100 >= avgThreshold).length : 0;
+                let fDocsUp = 0, fDocsTot = 0;
+                filtered.forEach(s => { fDocsTot += s.documents.length; fDocsUp += s.documents.filter(d => d.uploaded).length; });
+                const fExpiring = filtered.filter(s => s.expires_at && daysUntil(s.expires_at) <= 30).length;
+                return (
+                  <StatStrip items={[
+                    { label: 'Showing', value: `${filtered.length} of ${submissions.length}`, sub: `${fPending} pending · ${fReview} in review · ${fApproved} approved` },
+                    { label: 'Avg Score (shown)', value: fScored.length > 0 ? `${fAvg}%` : '—', accent: fScored.length > 0 ? pctColor(fAvg) : undefined, sub: avgThreshold > 0 && fScored.length > 0 ? `${fPass} of ${fScored.length} clear the ${avgThreshold}% threshold` : 'no scored submissions in view' },
+                    { label: 'Docs Complete', value: fDocsTot > 0 ? `${Math.round((fDocsUp / fDocsTot) * 100)}%` : '—', accent: fDocsTot === 0 ? undefined : fDocsUp === fDocsTot ? GREEN : AMBER, sub: fDocsTot > 0 ? `${fDocsUp} of ${fDocsTot} required documents uploaded` : 'no documents requested' },
+                    { label: 'Prequals Expiring', value: String(fExpiring), accent: fExpiring > 0 ? RED : GREEN, sub: fExpiring > 0 ? 'within 30 days — request a renewal' : 'none within 30 days' },
+                  ]} />
+                );
+              })()}
+
               {filtered.length === 0 ? (
                 <SectionCard>
-                  <PremiumEmpty icon={<Clipboard size={30} weight="duotone" color={GOLD} />} title="No Submissions Found" description={search || statusFilter !== 'all' || tradeFilter !== 'all' ? 'Try adjusting your filters' : 'Send prequal forms to subcontractors to get started'} />
+                  <PremiumEmpty icon={<Clipboard size={30} weight="duotone" color={GOLD} />} title="No Submissions Found" description={search || statusFilter !== 'all' || tradeFilter !== 'all' ? 'Try adjusting your filters' : 'Invite subcontractors to complete a scored questionnaire — answers grade automatically against your pass threshold, required documents are tracked with expiry dates, and every submission lands here for review.'} action={search || statusFilter !== 'all' || tradeFilter !== 'all' ? undefined : <button style={goldOutlineButtonStyle} className="pmBtn" onClick={() => setShowInviteModal(true)}><Envelope size={15} weight="fill" /> Send Prequal Form</button>} />
                 </SectionCard>
               ) : (
                 <SectionCard flush>
@@ -664,6 +686,7 @@ export default function PrequalificationPage() {
                         <th style={tableHeaderS}>Score</th>
                         <th style={tableHeaderS}>Status</th>
                         <th style={tableHeaderS}>Submitted</th>
+                        <th style={tableHeaderS}>Prequal Expires</th>
                         <th style={tableHeaderS}>Docs</th>
                         <th style={tableHeaderS}>Actions</th>
                       </tr>
@@ -688,6 +711,11 @@ export default function PrequalificationPage() {
                             </td>
                             <td style={tableCellS}><StatusBadge status={s.status} /></td>
                             <td style={tableCellS}>{fmtDate(s.submitted_at)}</td>
+                            <td style={tableCellS}>{s.expires_at ? (() => { const dl = daysUntil(s.expires_at); return (
+                              <span style={{ color: dl <= 0 ? RED : dl <= 30 ? AMBER : DIM, fontWeight: dl <= 30 ? 700 : 500 }}>
+                                {dl <= 0 ? 'EXPIRED' : `${fmtDate(s.expires_at)} · ${dl}d`}
+                              </span>
+                            ); })() : <span style={{ color: DIM }}>—</span>}</td>
                             <td style={tableCellS}>
                               <span style={{ color: docsOk === docsTotal ? GREEN : AMBER, fontWeight: 600, fontSize: 12 }}>{docsOk}/{docsTotal}</span>
                             </td>
@@ -764,6 +792,25 @@ export default function PrequalificationPage() {
                 <span style={{ color: DIM, fontSize: 13 }}>{invites.length} invite{invites.length !== 1 ? 's' : ''} sent</span>
                 <button style={goldOutlineButtonStyle} className="pmBtn" onClick={() => setShowInviteModal(true)}><Envelope size={15} weight="fill" /> Send Prequal Form</button>
               </div>
+              {/* Invite funnel — where every sent prequal form stands right now */}
+              {invites.length > 0 && (() => {
+                const iOpened = invites.filter(i => i.status === 'opened').length;
+                const iDone = invites.filter(i => i.status === 'completed').length;
+                const iWaiting = invites.length - iDone;
+                const tplUsed = new Set(invites.map(i => i.template_id).filter(Boolean)).size;
+                const oldest = invites.filter(i => i.status !== 'completed' && i.sent_at)
+                  .reduce((m, i) => { const t = new Date(i.sent_at).getTime(); return isNaN(t) ? m : (m === 0 ? t : Math.min(m, t)); }, 0);
+                const oldestDays = oldest > 0 ? Math.floor((Date.now() - oldest) / 86400000) : 0;
+                return (
+                  <StatStrip items={[
+                    { label: 'Forms Sent', value: String(invites.length), sub: tplUsed > 0 ? `${tplUsed} template${tplUsed === 1 ? '' : 's'} in use` : 'awaiting template link' },
+                    { label: 'Opened', value: String(iOpened), sub: 'clicked the secure link, not yet submitted' },
+                    { label: 'Submitted', value: String(iDone), accent: iDone > 0 ? GREEN : undefined, sub: `${Math.round((iDone / invites.length) * 100)}% completion rate` },
+                    { label: 'Still Waiting', value: String(iWaiting), accent: iWaiting > 0 ? AMBER : GREEN, sub: iWaiting === 0 ? 'every invite came back' : oldestDays > 0 ? `oldest outstanding ${oldestDays}d — resend below` : 'resend from the table below' },
+                  ]} />
+                );
+              })()}
+
               {invites.length === 0 ? (
                 <SectionCard>
                   <PremiumEmpty

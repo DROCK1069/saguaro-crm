@@ -17,6 +17,7 @@
  * assigned_to / notes columns — those are intentionally absent here.)
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
@@ -495,7 +496,7 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Start Date{auto.start && <AutoChip />}</label>
-                  <input type="date" value={form.startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
+                  <SaguaroDatePicker value={form.startDate} onChange={(v) => setStartDate(v)} style={inputStyle} />
                   {auto.start && <div style={{ fontSize: font.size.xs, color: colors.textDim, marginTop: 4 }}>Day after the predecessor ends — edit freely.</div>}
                 </div>
                 <div>
@@ -505,7 +506,7 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>End Date{auto.end && <AutoChip />}</label>
-                  <input type="date" value={form.endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+                  <SaguaroDatePicker value={form.endDate} onChange={(v) => setEndDate(v)} style={inputStyle} />
                   {auto.end && form.startDate && <div style={{ fontSize: font.size.xs, color: colors.textDim, marginTop: 4 }}>Start + {Number(duration) || 0}d — editing it re-syncs duration.</div>}
                 </div>
                 <div>

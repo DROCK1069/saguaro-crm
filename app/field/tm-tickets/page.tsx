@@ -5,6 +5,7 @@
  * Canvas-based signature capture, photo documentation, offline queue.
  */
 import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
@@ -1289,7 +1290,7 @@ function TMTicketsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
             <div>
               <label style={lbl}>Date *</label>
-              <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} style={inp} required />
+              <SaguaroDatePicker value={formDate} onChange={(v) => setFormDate(v)} style={inp} />
             </div>
             <div>
               <label style={lbl}>Reference / PO #</label>

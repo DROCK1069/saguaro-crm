@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, extend } from '@/lib/calc';
 import { X, Plus, ArrowLeft, ArrowRight, Package, FileText, Trophy, UsersThree, Tray, CalendarBlank, CurrencyDollar, ShieldCheck } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
@@ -86,14 +86,20 @@ const inp: React.CSSProperties = {
   color: TEXT, fontSize: 13, outline: 'none',
 };
 
+function defaultDue(): string {
+  const d = new Date(Date.now() + 14 * 86400000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function newLineItem(): LineItem {
   return { id: String(Date.now() + Math.random()), description: '', qty: '1', unit: 'LS', unitPrice: '0' };
 }
 
-function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onClose: () => void; onCreated: (id: string) => void }) {
+function WizardModal({ projectId, ctx, onClose, onCreated }: { projectId: string; ctx?: any; onClose: () => void; onCreated: (id: string) => void }) {
   const [step, setStep] = useState(1);
+  const [subsLoading, setSubsLoading] = useState(false);
   const [w, setW] = useState<WizardState>({
-    trade: '', scope: '', dueDate: '', requiresBond: false,
+    trade: '', scope: '', dueDate: defaultDue(), requiresBond: false,
     lineItems: [newLineItem()],
     suggestedSubs: [], addEmail: '', addName: '', extraInvites: [],
     submitting: false, error: '',
@@ -116,6 +122,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
   }
 
   async function loadSuggestedSubs() {
+    setSubsLoading(true);
     try {
       const r = await fetch(`/api/bid-packages/suggest-subs?trade=${encodeURIComponent(w.trade)}&projectId=${projectId}`);
       const d = await r.json() as any;
@@ -130,6 +137,8 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
       setField('suggestedSubs', subs);
     } catch {
       setField('suggestedSubs', []);
+    } finally {
+      setSubsLoading(false);
     }
   }
 
@@ -241,14 +250,35 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
                     {SUB_TRADES.filter(t => !SUB_TRADES_BY_DIVISION.some(g => g.trades.includes(t))).map(t => <option key={t} value={t}>{t}</option>)}
                   </optgroup>
                 </select>
+                {(() => {
+                  if (!w.trade) return null;
+                  const tl = w.trade.toLowerCase();
+                  const twins = (ctx?.bidPackages || []).filter((b: any) => String(b.trade || '').toLowerCase() === tl);
+                  const est = twins.reduce((s: number, b: any) => s + (Number(b.budgetEstimate) || 0), 0);
+                  const roster = (ctx?.subs || []).filter((sub: any) => {
+                    const st = String(sub.trade || '').toLowerCase();
+                    return st.length > 0 && (st.includes(tl) || tl.includes(st));
+                  }).length;
+                  const live = twins.some((b: any) => ['open', 'bidding', 'closed', 'awarded'].includes(String(b.status || '').toLowerCase()));
+                  return (
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 }}>
+                      {est > 0 && <>Budget carries <b style={{ color: TEXT }}>{fmt(est)}</b> for this trade — incoming bids will level against it. </>}
+                      {roster > 0
+                        ? <><b style={{ color: '#3dd68c' }}>{roster} roster sub{roster === 1 ? '' : 's'}</b> match this trade and will be suggested in Step 3.</>
+                        : <>No roster subs match this trade yet — add invites by email in Step 3.</>}
+                      {live && <> A {w.trade} package already exists on this project — this one will run alongside it.</>}
+                    </div>
+                  );
+                })()}
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Scope Summary</label>
                 <textarea value={w.scope} onChange={e => setField('scope', e.target.value)} placeholder="Describe the work scope..." rows={4} style={{ ...inp, resize: 'vertical' as const }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Bid Due Date</label>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Bid Due Date{w.dueDate === defaultDue() && <AutoChip />}</label>
                 <SaguaroDatePicker value={w.dueDate} onChange={v => setField('dueDate', v)} style={inp} />
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 }}>Defaulted two weeks out — subs typically need 10-15 business days to price a scope. Adjust freely.</div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <input type="checkbox" checked={w.requiresBond} onChange={e => setField('requiresBond', e.target.checked)} style={{ width: 16, height: 16, accentColor: GOLD }} />
@@ -303,7 +333,7 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
             <div>
               <div style={{ fontSize: 13, color: DIM, marginBottom: 16 }}>AI-suggested subs for <strong style={{ color: TEXT }}>{w.trade}</strong>. Pre-checked = recommended.</div>
               {w.suggestedSubs.length === 0 && (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: DIM, fontSize: 13 }}>Loading suggestions... or no subs found for this trade.</div>
+                <div style={{ padding: '20px 0', textAlign: 'center', color: DIM, fontSize: 13 }}>{subsLoading ? 'Matching your roster to this trade…' : 'No roster subs matched this trade — subs you add by email below get the same portal link and pricing form.'}</div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                 {w.suggestedSubs.map(sub => (
@@ -647,6 +677,7 @@ export default function BidPackagesPage() {
       {showWizard && (
         <WizardModal
           projectId={projectId}
+          ctx={ctx}
           onClose={() => setShowWizard(false)}
           onCreated={(id) => {
             setShowWizard(false);

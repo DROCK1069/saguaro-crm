@@ -4,6 +4,7 @@
  * Track construction waste, diversion rates, hauler manifests, LEED credits. Offline queue.
  */
 import React, { useState, useEffect, useMemo, Suspense, useRef } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
@@ -465,11 +466,11 @@ function WasteTrackingPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>From</label>
-                  <input type="date" style={inputStyle} value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+                  <SaguaroDatePicker style={inputStyle} value={filterDateFrom} onChange={v => setFilterDateFrom(v)} />
                 </div>
                 <div>
                   <label style={labelStyle}>To</label>
-                  <input type="date" style={inputStyle} value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+                  <SaguaroDatePicker style={inputStyle} value={filterDateTo} onChange={v => setFilterDateTo(v)} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
@@ -537,7 +538,7 @@ function WasteTrackingPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Date</label>
-                  <input type="date" style={inputStyle} value={fDate} onChange={e => setFDate(e.target.value)} />
+                  <SaguaroDatePicker style={inputStyle} value={fDate} onChange={v => setFDate(v)} />
                 </div>
                 <div>
                   <label style={labelStyle}>Waste Type</label>

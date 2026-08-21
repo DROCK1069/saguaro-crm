@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { CaretUp, CaretDown, Clipboard, CheckCircle, Asterisk, Stack, MagnifyingGlass, Plus } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
@@ -222,7 +223,7 @@ function FieldPreview({ field }: { field: CustomField }) {
           <span style={lbl}>
             Preview: {fieldLabel}{requiredMark}
           </span>
-          <input style={{ ...inp, colorScheme: 'light' }} type="date" readOnly />
+          <SaguaroDatePicker style={inp} value="" onChange={() => {}} />
         </div>
       );
     case 'checkbox':
@@ -1199,9 +1200,17 @@ export default function CustomFieldsPage() {
                 marginBottom: 16,
               }}
             >
-              <h3 style={{ margin: 0, color: GOLD, fontSize: 15 }}>
-                {editingId ? 'Edit Field' : 'Create New Field'}
-              </h3>
+              <div>
+                <h3 style={{ margin: 0, color: GOLD, fontSize: 15 }}>
+                  {editingId ? 'Edit Field' : `New ${activeModule} Field`}
+                </h3>
+                <div style={{ fontSize: 12, color: DIM, marginTop: 3, lineHeight: 1.5 }}>
+                  {editingId
+                    ? `Changes apply everywhere this field already shows on ${activeModule} records.`
+                    : `Shows on every ${activeModule} record the moment you save — validation rules and default value included.`}
+                </div>
+              </div>
+
               <button
                 style={{ ...btn('transparent', DIM), padding: '4px 10px' }}
                 onClick={resetForm}

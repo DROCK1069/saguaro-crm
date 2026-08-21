@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import Link from 'next/link';
 import { Package, ArrowRight } from '@phosphor-icons/react';
 import { useProjects } from '@/lib/hooks/useProjects';
@@ -192,9 +193,9 @@ function AddItemForm({ projects, onDone }: { projects: any[]; onDone: () => void
           </select>
         </div>
         <div><label style={lbl}>Vendor / PO #</label><input style={inp} value={f.po_number || ''} onChange={(e) => set('po_number', e.target.value)} /></div>
-        <div><label style={lbl}>Needed on site</label><input type="date" style={inp} value={f.needed_by_date || ''} onChange={(e) => set('needed_by_date', e.target.value)} /></div>
+        <div><label style={lbl}>Needed on site</label><SaguaroDatePicker style={inp} value={f.needed_by_date || ''} onChange={(v) => set('needed_by_date', v)} /></div>
         <div><label style={lbl}>Lead time (days)</label><input type="number" style={inp} value={f.lead_time_days || ''} onChange={(e) => set('lead_time_days', e.target.value)} /></div>
-        <div><label style={lbl}>Expected delivery</label><input type="date" style={inp} value={f.expected_delivery_date || ''} onChange={(e) => set('expected_delivery_date', e.target.value)} /></div>
+        <div><label style={lbl}>Expected delivery</label><SaguaroDatePicker style={inp} value={f.expected_delivery_date || ''} onChange={(v) => set('expected_delivery_date', v)} /></div>
         <div><label style={lbl}>Qty</label><input type="number" style={inp} value={f.quantity || ''} onChange={(e) => set('quantity', e.target.value)} /></div>
         <div><label style={lbl}>Unit</label><input style={inp} placeholder="ea / lot" value={f.unit || ''} onChange={(e) => set('unit', e.target.value)} /></div>
         <div><label style={lbl}>Unit cost</label><input type="number" style={inp} value={f.unit_cost || ''} onChange={(e) => set('unit_cost', e.target.value)} /></div>

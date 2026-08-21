@@ -10,6 +10,7 @@
  * (same numbers as iOS). Snapshots are saved/loaded via /api/cost-control/reports.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { CheckCircle, FloppyDisk, ClockCounterClockwise, ArrowClockwise, ArrowUUpLeft, X, Sparkle, ChartLineUp, Wallet, Handshake, Receipt, TrendUp, Scales, Table, Plus } from '@phosphor-icons/react';
 import { costControl, usd, type CostLine } from '@/lib/finance';
 import { humanError } from '@/lib/errors';
@@ -163,7 +164,7 @@ export default function CostControlPage() {
           <select onChange={(e) => { seedFromTakeoff(e.target.value); e.currentTarget.selectedIndex = 0; }} defaultValue="" style={{ ...inp, textAlign: 'left', width: 'auto' }}><option value="">Merge budget from takeoff…</option>{takeoffs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
           <div style={{ flex: 1 }} />
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: DIM }}>Report date
-            <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} style={{ ...inp, width: 'auto', textAlign: 'left' }} />
+            <SaguaroDatePicker value={reportDate} onChange={(v) => setReportDate(v)} style={{ ...inp, width: 'auto', textAlign: 'left' }} />
           </label>
           <button onClick={saveReport} style={{ ...toolGold, opacity: (saving || !rows.length) ? 0.55 : 1 }} className="pmBtn" disabled={saving || !rows.length}><FloppyDisk size={14} weight="fill" />{saving ? 'Saving…' : 'Save cost report'}</button>
           <button onClick={() => setShowHistory((s) => !s)} style={toolBtn} className="pmBtn"><ClockCounterClockwise size={14} weight="bold" />History{reports.length ? ` (${reports.length})` : ''}</button>

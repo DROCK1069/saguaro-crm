@@ -5,6 +5,7 @@
  * corrective actions, and safety analytics. Full offline support.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { ShieldCheck, MapPin, Bandaids, Thermometer, Warning, Buildings, Leaf, Car, Fire, Clipboard, Hourglass, Check, X, ArrowRight, ArrowLeft, CheckCircle } from '@phosphor-icons/react';
@@ -589,8 +590,8 @@ function IncidentsPage() {
                       {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                     </select>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} style={{ ...inputStyle, fontSize: 11, padding: '6px 4px', flex: 1 }} placeholder="From" />
-                      <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} style={{ ...inputStyle, fontSize: 11, padding: '6px 4px', flex: 1 }} placeholder="To" />
+                      <SaguaroDatePicker value={filterDateFrom} onChange={v => setFilterDateFrom(v)} style={{ ...inputStyle, fontSize: 11, padding: '6px 4px', flex: 1 }} placeholder="From" />
+                      <SaguaroDatePicker value={filterDateTo} onChange={v => setFilterDateTo(v)} style={{ ...inputStyle, fontSize: 11, padding: '6px 4px', flex: 1 }} placeholder="To" />
                     </div>
                   </div>
                   {(filterType || filterSeverity || filterStatus || filterDateFrom || filterDateTo) && (
@@ -673,7 +674,7 @@ function IncidentsPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <div>
                         <label style={labelStyle}>Date *</label>
-                        <input type="date" value={form.incident_date} onChange={e => setForm(f => ({ ...f, incident_date: e.target.value }))} style={inputStyle} />
+                        <SaguaroDatePicker value={form.incident_date} onChange={v => setForm(f => ({ ...f, incident_date: v }))} style={inputStyle} />
                       </div>
                       <div>
                         <label style={labelStyle}>Time</label>
@@ -856,7 +857,7 @@ function IncidentsPage() {
                       <input value={caDesc} onChange={e => setCaDesc(e.target.value)} style={{ ...inputStyle, marginBottom: 6 }} placeholder="Action description" />
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                         <input value={caAssigned} onChange={e => setCaAssigned(e.target.value)} style={{ ...inputStyle, fontSize: 12 }} placeholder="Assigned to" />
-                        <input type="date" value={caDue} onChange={e => setCaDue(e.target.value)} style={{ ...inputStyle, fontSize: 12 }} />
+                        <SaguaroDatePicker value={caDue} onChange={v => setCaDue(v)} style={{ ...inputStyle, fontSize: 12 }} />
                       </div>
                       <button onClick={() => {
                         if (!caDesc.trim()) return;
@@ -882,7 +883,7 @@ function IncidentsPage() {
                     <input value={form.investigation_by} onChange={e => setForm(f => ({ ...f, investigation_by: e.target.value }))} style={inputStyle} placeholder="Investigator name" />
 
                     <label style={labelStyle}>Investigation Date</label>
-                    <input type="date" value={form.investigation_date} onChange={e => setForm(f => ({ ...f, investigation_date: e.target.value }))} style={inputStyle} />
+                    <SaguaroDatePicker value={form.investigation_date} onChange={v => setForm(f => ({ ...f, investigation_date: v }))} style={inputStyle} />
 
                     <label style={labelStyle}>Investigation Notes</label>
                     <textarea value={form.investigation_notes} onChange={e => setForm(f => ({ ...f, investigation_notes: e.target.value }))}

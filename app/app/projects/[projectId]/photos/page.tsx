@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
@@ -470,8 +471,8 @@ export default function PhotosPage(){
                   </div>
                   <div>
                     <FieldLabel label="Date Taken" auto={mode==='create'&&auto.date}/>
-                    <input type="date" value={form.taken_at}
-                      onChange={e=>setForm(f=>({...f,taken_at:e.target.value}))}
+                    <SaguaroDatePicker value={form.taken_at}
+                      onChange={v=>setForm(f=>({...f,taken_at:v}))}
                       style={inp}/>
                     {mode==='create'&&auto.date&&(
                       <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>Defaulted to today — adjust freely.</div>

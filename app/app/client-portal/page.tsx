@@ -1169,11 +1169,11 @@ export default function ClientPortalPage() {
         </div>
       ) : (
         <>
-          {tab === 'Users' && <UsersTab />}
-          {tab === 'Messages' && <MessagesTab />}
-          {tab === 'Permissions' && <PermissionsTab />}
-          {tab === 'Access Matrix' && <AccessMatrixTab />}
-          {tab === 'Activity Log' && <ActivityLogTab />}
+          {tab === 'Users' && UsersTab()}
+          {tab === 'Messages' && MessagesTab()}
+          {tab === 'Permissions' && PermissionsTab()}
+          {tab === 'Access Matrix' && AccessMatrixTab()}
+          {tab === 'Activity Log' && ActivityLogTab()}
         </>
       )}
     </PremiumSurface>

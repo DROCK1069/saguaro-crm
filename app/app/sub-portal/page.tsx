@@ -237,6 +237,8 @@ export default function SubPortalPage() {
   const [invSending, setInvSending] = useState(false);
   /* trade was auto-inferred from the company name (drives the AUTO chip) */
   const [invTradeAuto, setInvTradeAuto] = useState(false);
+  /* project access was prefilled (single-project tenant) — drives its AUTO chip */
+  const [invProjAuto, setInvProjAuto] = useState(false);
 
   /* bulk invite */
   const [bulkText, setBulkText] = useState('');
@@ -285,6 +287,16 @@ export default function SubPortalPage() {
     }
     load();
   }, []);
+
+  /* Single-project tenant: the access choice is a foregone conclusion — prefill it.
+     Runs once when the real project list lands; the user can still uncheck it. */
+  useEffect(() => {
+    if (projects.length === 1 && invProjects.length === 0) {
+      setInvProjects([projects[0]]);
+      setInvProjAuto(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects]);
 
   /* filtered users */
   const filteredUsers = useMemo(() => {
@@ -348,7 +360,8 @@ export default function SubPortalPage() {
   const bulkStats = useMemo(() => {
     const lines = bulkText.trim() ? bulkText.trim().split('\n').filter(l => l.trim()) : [];
     const bad = lines.filter(l => !EMAIL_RE.test((l.split(',')[2] || '').trim())).length;
-    return { n: lines.length, bad };
+    const badTrade = lines.filter(l => { const t = (l.split(',')[3] || '').trim(); return t !== '' && !ALL_TRADES.some(x => x.toLowerCase() === t.toLowerCase()); }).length;
+    return { n: lines.length, bad, badTrade };
   }, [bulkText]);
 
   /* handlers */
@@ -366,10 +379,11 @@ export default function SubPortalPage() {
       lastLogin: null, avatarColor: AVATAR_COLORS[users.length % AVATAR_COLORS.length],
     };
     setUsers(prev => [...prev, newUser]);
-    setInvCompany(''); setInvContact(''); setInvEmail(''); setInvTrade(''); setInvProjects([]); setInvTradeAuto(false);
+    setInvCompany(''); setInvContact(''); setInvEmail(''); setInvTrade(''); setInvTradeAuto(false);
+    if (projects.length === 1) { setInvProjects([projects[0]]); setInvProjAuto(true); } else { setInvProjects([]); setInvProjAuto(false); }
     setInvSending(false);
     setInviteModal(false);
-  }, [invCompany, invContact, invEmail, invTrade, invProjects, users.length]);
+  }, [invCompany, invContact, invEmail, invTrade, invProjects, users.length, projects]);
 
   const handleBulkInvite = useCallback(async () => {
     if (!bulkText.trim()) return;
@@ -677,13 +691,14 @@ export default function SubPortalPage() {
                 {invTradeAuto && invTrade && <div style={{ color: DIM, fontSize: 11.5, marginTop: 4 }}>Inferred from the company name — change it if that is wrong.</div>}
               </div>
               <div>
-                <label style={labelStyle}>Project Access</label>
+                <label style={labelStyle}>Project Access{invProjAuto && invProjects.length > 0 ? <AutoChip /> : null}</label>
+                {invProjAuto && invProjects.length > 0 && <div style={{ color: DIM, fontSize: 11.5, marginBottom: 2 }}>Your only project — preselected. Uncheck to invite without project access.</div>}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
                   {projects.length === 0 && <span style={{ color: DIM, fontSize: 12 }}>No projects yet — create a project first to grant access.</span>}
                   {projects.map(p => (
                     <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, color: DIM, fontSize: 13, cursor: 'pointer' }}>
                       <input type="checkbox" checked={invProjects.includes(p)}
-                        onChange={() => setInvProjects(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])} />
+                        onChange={() => { setInvProjAuto(false); setInvProjects(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]); }} />
                       {p}
                     </label>
                   ))}
@@ -708,6 +723,7 @@ export default function SubPortalPage() {
               <span style={{ color: DIM, fontSize: 12 }}>
                 {bulkStats.n > 0 ? `${bulkStats.n} entr${bulkStats.n === 1 ? 'y' : 'ies'}` : 'No entries'}
                 {bulkStats.bad > 0 && <span style={{ color: RED }}> · {bulkStats.bad} invalid email{bulkStats.bad === 1 ? '' : 's'}</span>}
+                {bulkStats.badTrade > 0 && <span style={{ color: AMBER }}> · {bulkStats.badTrade} trade{bulkStats.badTrade === 1 ? '' : 's'} outside the canonical list</span>}
               </span>
               <button onClick={handleBulkInvite} disabled={bulkSending || !bulkText.trim()}
                 style={{ ...goldButtonStyle, opacity: (bulkSending || !bulkText.trim()) ? 0.5 : 1 }} className="pmBtn">
@@ -1111,13 +1127,14 @@ export default function SubPortalPage() {
             {invTradeAuto && invTrade && <div style={{ color: DIM, fontSize: 11.5, marginTop: 4 }}>Inferred from the company name — change it if that is wrong.</div>}
           </div>
           <div>
-            <label style={labelStyle}>Project Access</label>
+            <label style={labelStyle}>Project Access{invProjAuto && invProjects.length > 0 ? <AutoChip /> : null}</label>
+            {invProjAuto && invProjects.length > 0 && <div style={{ color: DIM, fontSize: 11.5, marginBottom: 2 }}>Your only project — preselected. Uncheck to invite without project access.</div>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
               {projects.length === 0 && <span style={{ color: DIM, fontSize: 12 }}>No projects yet — create a project first to grant access.</span>}
               {projects.map(p => (
                 <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, color: DIM, fontSize: 13, cursor: 'pointer' }}>
                   <input type="checkbox" checked={invProjects.includes(p)}
-                    onChange={() => setInvProjects(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])} />
+                    onChange={() => { setInvProjAuto(false); setInvProjects(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]); }} />
                   {p}
                 </label>
               ))}
@@ -1151,6 +1168,7 @@ export default function SubPortalPage() {
           <span style={{ color: DIM, fontSize: 12 }}>
             {bulkStats.n > 0 ? `${bulkStats.n} invitation${bulkStats.n === 1 ? '' : 's'} will be sent` : 'No entries'}
             {bulkStats.bad > 0 && <span style={{ color: RED }}> · {bulkStats.bad} invalid email{bulkStats.bad === 1 ? '' : 's'} — fix before sending</span>}
+            {bulkStats.badTrade > 0 && <span style={{ color: AMBER }}> · {bulkStats.badTrade} trade{bulkStats.badTrade === 1 ? '' : 's'} outside the canonical list — check spelling</span>}
           </span>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => setBulkInviteModal(false)} style={btnSecondary}>Cancel</button>

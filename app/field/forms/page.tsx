@@ -5,6 +5,7 @@
  * Glassmorphism design, real Supabase data via API routes.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { ClipboardText, Star } from '@phosphor-icons/react';
 import { useToast } from '@/components/Toast';
 import { humanError } from '@/lib/errors';
@@ -698,11 +699,10 @@ export default function FormsPage() {
               )}
 
               {field.type === 'date' && (
-                <input
-                  type="date"
+                <SaguaroDatePicker
                   value={responses[field.id] || ''}
-                  onChange={(e) => setResponse(field.id, e.target.value)}
-                  style={{ ...inputStyle(), colorScheme: 'light' }}
+                  onChange={(v) => setResponse(field.id, v)}
+                  style={inputStyle()}
                 />
               )}
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import { UsersThree, UserPlus, HardHat, EnvelopeSimple, Phone, IdentificationBadge, ClockCounterClockwise } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',BLUE='#1a5fa8';
 const fmt = (n:number) => '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -26,6 +26,7 @@ export default function TeamPage(){
   const [inviteRole, setInviteRole] = useState('Member');
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState('');
+  const [inviteAuto, setInviteAuto] = useState<{name?:boolean;email?:boolean;role?:boolean}>({});
   // Project intelligence — the roster walks in knowing the job's people and parties.
   const [proj, setProj] = useState<any>(null);
   const [ctx, setCtx] = useState<any>(null);
@@ -81,7 +82,7 @@ export default function TeamPage(){
       if (!res.ok) { setInviteMsg(json.error || 'Invite failed.'); }
       else {
         setInviteMsg('Invitation sent!');
-        setInviteEmail(''); setInviteName(''); setInviteRole('Member');
+        setInviteEmail(''); setInviteName(''); setInviteRole('Member'); setInviteAuto({});
         setTimeout(() => { setShowInvite(false); setInviteMsg(''); }, 1500);
       }
     } catch { setInviteMsg('Network error. Please try again.'); }
@@ -124,8 +125,8 @@ export default function TeamPage(){
     { role: 'Project Manager', name: proj?.pm_name || proj?.project_manager || '', email: proj?.pm_email || '', phone: proj?.pm_phone || '' },
     { role: 'Superintendent', name: proj?.super_name || proj?.superintendent || '', email: proj?.super_email || '', phone: proj?.super_phone || '' },
     { role: 'Foreman', name: proj?.foreman_name || proj?.foreman || '', email: proj?.foreman_email || '', phone: proj?.foreman_phone || '' },
-    { role: 'Owner', name: proj?.owner_name || '', email: proj?.owner_email || '', phone: proj?.owner_phone || '' },
-    { role: 'Architect', name: proj?.architect_name || proj?.architect || '', email: proj?.architect_email || '', phone: proj?.architect_phone || '' },
+    { role: 'Owner', name: proj?.owner_name || ctx?.project?.ownerName || '', email: proj?.owner_email || ctx?.project?.ownerEmail || '', phone: proj?.owner_phone || '' },
+    { role: 'Architect', name: proj?.architect_name || proj?.architect || ctx?.project?.architectName || '', email: proj?.architect_email || '', phone: proj?.architect_phone || '' },
   ];
   const leadersAssigned = leadership.filter(l => l.name).length;
   const ctxSubs = (ctx?.subs || []) as any[];
@@ -140,15 +141,29 @@ export default function TeamPage(){
     Client: 'Owner-facing view — approvals and shared documents only.',
     Sub: 'Subcontractor portal — their scope, waivers, and pay items.',
   };
+  // One-tap invite from the directory: prefill the form with the person's
+  // name, email, and a role mapped from their directory title.
+  const DIRECTORY_ROLE: Record<string, string> = {
+    'Project Manager': 'Manager', Superintendent: 'Member', Foreman: 'Member', Owner: 'Client', Architect: 'Guest',
+  };
+  const memberEmails = new Set(members.map(m=>(m.email||'').toLowerCase()).filter(Boolean));
+  function inviteFromDirectory(l:{role:string;name:string;email:string}){
+    setInviteName(l.name||'');
+    setInviteEmail(l.email||'');
+    setInviteRole(DIRECTORY_ROLE[l.role]||'Member');
+    setInviteAuto({name:!!l.name,email:!!l.email,role:true});
+    setShowInvite(true);
+    setInviteMsg('');
+  }
 
   return <PremiumSurface maxWidth={1600}>
     <ModuleHero
-      eyebrow="PROJECT TEAM"
+      eyebrow={ctx?.project?.name || 'Project Team'}
       eyebrowIcon={<UsersThree size={13} weight="fill" color={GOLD} />}
       title="Project"
       accent="Team"
       subtitle="Manage project team members and access"
-      actions={<button onClick={()=>setShowInvite(!showInvite)} style={goldButtonStyle} className="pmBtn"><UserPlus size={15} weight="bold" /> Invite Member</button>}
+      actions={<button onClick={()=>{setShowInvite(!showInvite);setInviteAuto({});}} style={goldButtonStyle} className="pmBtn"><UserPlus size={15} weight="bold" /> Invite Member</button>}
     />
 
     {!loading && (
@@ -175,18 +190,18 @@ export default function TeamPage(){
       <SectionCard title="Invite Team Member" icon={<UserPlus size={17} weight="duotone" color={GOLD} />} subtitle={ctx?.project?.name ? `Grants access to ${ctx.project.name}` : 'Send a role-scoped invitation to this project.'}>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:16}}>
           <div>
-            <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Email</label>
-            <input type="email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="email@company.com" style={inputStyle}/>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Email{inviteAuto.email && <AutoChip/>}</label>
+            <input type="email" value={inviteEmail} onChange={e=>{setInviteEmail(e.target.value);setInviteAuto(a=>({...a,email:false}));}} placeholder="email@company.com" style={inputStyle}/>
             <div style={hintStyle}>They get a secure accept link by email — it expires after 7 days.</div>
           </div>
           <div>
-            <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Name</label>
-            <input type="text" value={inviteName} onChange={e=>setInviteName(e.target.value)} placeholder="Full name" style={inputStyle}/>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Name{inviteAuto.name && <AutoChip/>}</label>
+            <input type="text" value={inviteName} onChange={e=>{setInviteName(e.target.value);setInviteAuto(a=>({...a,name:false}));}} placeholder="Full name" style={inputStyle}/>
             <div style={hintStyle}>Shown on the roster and in notifications.</div>
           </div>
           <div>
-            <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Role</label>
-            <select value={inviteRole} onChange={e=>setInviteRole(e.target.value)} style={{...inputStyle,cursor:'pointer'}}>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Role{inviteAuto.role && <AutoChip/>}</label>
+            <select value={inviteRole} onChange={e=>{setInviteRole(e.target.value);setInviteAuto(a=>({...a,role:false}));}} style={{...inputStyle,cursor:'pointer'}}>
               {['Admin','Manager','Member','Guest','Client','Sub'].map(r=><option key={r}>{r}</option>)}
             </select>
             <div style={hintStyle}>{ROLE_HINTS[inviteRole] || 'Access level for this member.'}</div>
@@ -221,6 +236,11 @@ export default function TeamPage(){
                   {l.email&&<a href={`mailto:${l.email}`} style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:11.5,color:'#FBBF24',textDecoration:'none'}}><EnvelopeSimple size={12} weight="bold" color="#FBBF24"/>{l.email}</a>}
                   {l.phone&&<a href={`tel:${l.phone}`} style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:11.5,color:DIM,textDecoration:'none'}}><Phone size={12} weight="bold" color={DIM}/>{l.phone}</a>}
                   {!l.email&&!l.phone&&<span style={{fontSize:11,color:'rgba(255,255,255,0.35)'}}>No contact on file</span>}
+                  {l.email && !memberEmails.has(l.email.toLowerCase()) && (
+                    <button onClick={()=>inviteFromDirectory(l)} className="pmBtn" style={{marginTop:6,alignSelf:'flex-start',display:'inline-flex',alignItems:'center',gap:5,padding:'4px 10px',background:'rgba(245,158,11,0.10)',border:'1px solid rgba(245,158,11,0.4)',borderRadius:7,color:'#FBBF24',fontSize:11,fontWeight:800,cursor:'pointer'}}>
+                      <UserPlus size={12} weight="bold" color="#FBBF24" /> Invite to project
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div style={{fontSize:11,color:'rgba(255,255,255,0.35)'}}>Set in Project Settings</div>

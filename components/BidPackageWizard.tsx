@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { CSI_DIVISIONS as CSI_TAXONOMY } from '@/lib/construction-intelligence';
 
 const GOLD = '#F59E0B';
@@ -555,7 +556,7 @@ function Step4({ trade, scope, lineItems, selectedSubCount, packageName, onPacka
         </div>
         <div>
           <Label>Bid Due Date</Label>
-          <input type="date" value={dueDate} onChange={e => onDueDateChange(e.target.value)}
+          <SaguaroDatePicker value={dueDate} onChange={v => onDueDateChange(v)}
             style={inputStyle()} />
         </div>
       </div>

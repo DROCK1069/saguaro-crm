@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useParams } from 'next/navigation';
 import { T, Badge } from '@/components/ui/shell';
 import {
@@ -8,10 +9,14 @@ import {
   StatCard,
   SectionCard,
   PremiumEmpty,
+  StatStrip,
+  FlowSteps,
+  InsightRow,
+  AutoChip,
   goldButtonStyle,
   ghostButtonStyle,
 } from '@/components/ui/premium';
-import { Clipboard, Circle, CheckCircle, Warning, Check, Plus } from '@phosphor-icons/react';
+import { Clipboard, Circle, CheckCircle, Warning, Check, Plus, ClockCounterClockwise } from '@phosphor-icons/react';
 
 interface TodoItem {
   id: string;
@@ -36,6 +41,11 @@ const RED = '#E0644E';
 
 const inp: React.CSSProperties = { width: '100%', padding: '8px 12px', background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 8, color: T.white, fontSize: 13, outline: 'none' };
 const lbl: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 };
+const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
+
+const localIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+interface TeamMember { id: string; name: string; email: string; role: string; }
 
 // Filter-tab pill styles derived from the kit presets -------------------------
 const tabActive: React.CSSProperties = { ...goldButtonStyle, padding: '8px 16px', fontSize: 12.5 };
@@ -71,6 +81,35 @@ export default function TodosPage() {
 
   useEffect(() => { fetchTodos(); }, [fetchTodos]);
 
+  // Project intelligence — roster for the assignee select + cross-module counts.
+  const [ctx, setCtx] = useState<any>(null);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [auto, setAuto] = useState<{ due?: boolean }>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch { /* context is progressive enhancement */ }
+      try {
+        const r = await fetch(`/api/projects/${projectId}/team`);
+        const j = await r.json();
+        setTeam(Array.isArray(j.team) ? j.team : []);
+      } catch { /* roster is progressive enhancement */ }
+    })();
+  }, [projectId]);
+
+  const subs = (ctx?.subs || []) as { membershipId?: string; id?: string; companyName: string; trade?: string }[];
+
+  // Prefilled add flow: due a week out, medium priority.
+  function openCreate() {
+    const due = new Date(Date.now() + 7 * 86400000);
+    setForm({ ...EMPTY_FORM, due_date: localIso(due) });
+    setAuto({ due: true });
+    setShowForm(true);
+  }
+
   const filtered = todos.filter(t => {
     if (filter === 'active') return !t.complete;
     if (filter === 'completed') return t.complete;
@@ -81,6 +120,15 @@ export default function TodosPage() {
   const activeCount = todos.filter(t => !t.complete).length;
   const completedCount = todos.filter(t => t.complete).length;
   const overdueCount = todos.filter(t => t.due_date && t.due_date < today && !t.complete).length;
+
+  const weekOut = localIso(new Date(Date.now() + 7 * 86400000));
+  const dueThisWeek = todos.filter(t => !t.complete && t.due_date && t.due_date >= today && t.due_date <= weekOut).length;
+  const unassigned = todos.filter(t => !t.complete && !t.assigned_to).length;
+  const highOpen = todos.filter(t => !t.complete && t.priority === 'high').length;
+  const completionPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const assigneeLoads = todos.filter(t => !t.complete && t.assigned_to).reduce<Record<string, number>>((m, t) => { m[t.assigned_to] = (m[t.assigned_to] || 0) + 1; return m; }, {});
+  const busiest = Object.entries(assigneeLoads).sort((a, b) => b[1] - a[1])[0] || null;
+  const nextDue = todos.filter(t => !t.complete && t.due_date && t.due_date >= today).sort((a, b) => a.due_date.localeCompare(b.due_date))[0] || null;
 
   async function handleAdd() {
     if (!form.title) return;
@@ -134,17 +182,29 @@ export default function TodosPage() {
 
       {/* Header */}
       <ModuleHero
-        eyebrow="Tasks"
+        eyebrow={ctx?.project?.name || 'Tasks'}
         eyebrowIcon={<Clipboard size={13} weight="fill" color={GOLD} />}
         title="Project"
         accent="To-Dos"
         subtitle="Project tasks and action items."
         actions={
-          <button onClick={() => setShowForm(p => !p)} style={goldButtonStyle} className="pmBtn">
+          <button onClick={() => { if (showForm) { setShowForm(false); } else { openCreate(); } }} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> Add Task
           </button>
         }
       />
+
+      {/* Task intelligence strip — where the work stands right now */}
+      {!loading && (todos.length > 0 || ctx) && (
+        <StatStrip items={[
+          { label: 'Due This Week', value: String(dueThisWeek), accent: dueThisWeek > 0 ? GOLD : undefined, sub: nextDue ? `next: ${nextDue.due_date} — ${nextDue.title.slice(0, 24)}` : 'nothing coming due' },
+          { label: 'Overdue', value: String(overdueCount), accent: overdueCount > 0 ? RED : GREEN, sub: overdueCount > 0 ? 'needs attention today' : 'nothing slipping' },
+          { label: 'High Priority Open', value: String(highOpen), accent: highOpen > 0 ? RED : undefined, sub: highOpen > 0 ? 'knock these out first' : 'no fires burning' },
+          { label: 'Unassigned', value: String(unassigned), accent: unassigned > 0 ? GOLD : undefined, sub: unassigned > 0 ? 'no owner yet — assign below' : 'every task has an owner' },
+          { label: 'Completion', value: `${completionPct}%`, accent: completionPct >= 75 ? GREEN : undefined, sub: `${completedCount} of ${totalCount} done` },
+          { label: 'Busiest Assignee', value: busiest ? busiest[0] : '—', sub: busiest ? `${busiest[1]} open task${busiest[1] === 1 ? '' : 's'}` : `${team.length + subs.length} people on the roster` },
+        ]} />
+      )}
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
@@ -187,7 +247,7 @@ export default function TodosPage() {
               </div>
               <div>
                 <label style={lbl}>Due Date</label>
-                <input type="date" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} style={inp} />
+                <SaguaroDatePicker value={form.due_date} onChange={v => setForm(p => ({ ...p, due_date: v }))} style={inp} />
               </div>
               <div>
                 <label style={lbl}>Priority</label>
@@ -211,9 +271,15 @@ export default function TodosPage() {
         ) : filtered.length === 0 ? (
           <PremiumEmpty
             icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
-            title="No tasks here"
-            description="No tasks in this category yet."
-            action={<button onClick={() => setShowForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Task</button>}
+            title={todos.length === 0 ? 'No tasks yet' : filter === 'completed' ? 'Nothing completed yet' : filter === 'active' ? 'No active tasks' : 'No tasks here'}
+            description={todos.length === 0
+              ? (ctx
+                ? `The project already tracks ${Number(ctx?.counts?.openRfis) || 0} open RFI${(Number(ctx?.counts?.openRfis) || 0) === 1 ? '' : 's'} and ${Number(ctx?.counts?.openPunch) || 0} open punch item${(Number(ctx?.counts?.openPunch) || 0) === 1 ? '' : 's'} in their own modules — to-dos capture everything smaller: callbacks, pickups, and field reminders, each with an owner and a due date.`
+                : 'To-dos capture the small field actions with an owner and a due date — callbacks, pickups, reminders. The first one takes ten seconds.')
+              : filter === 'completed'
+                ? `${activeCount} task${activeCount === 1 ? ' is' : 's are'} still active — completed ones land here as they are checked off.`
+                : 'Every task is checked off — switch to All or Completed to see the history.'}
+            action={<button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Task</button>}
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -238,13 +304,21 @@ export default function TodosPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ color: T.white, fontSize: 14, fontWeight: 500, textDecoration: todo.complete ? 'line-through' : 'none' }}>{todo.title}</div>
                     {todo.description && <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{todo.description}</div>}
-                    <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>
-                      {todo.assigned_to && <span>{todo.assigned_to}</span>}
+                    <div style={{ fontSize: 12, color: todo.assigned_to ? T.muted : 'rgba(245,158,11,0.75)', marginTop: 2 }}>
+                      {todo.assigned_to || (!todo.complete ? 'Unassigned' : '')}
                     </div>
                   </div>
                   {/* Due date */}
-                  <span style={{ fontSize: 12, color: overdue ? RED : T.muted, whiteSpace: 'nowrap' }}>
-                    {todo.due_date ? (overdue ? 'Overdue: ' : '') + todo.due_date : '---'}
+                  <span style={{ fontSize: 12, color: overdue ? RED : T.muted, whiteSpace: 'nowrap', fontWeight: overdue ? 700 : 400 }}>
+                    {todo.due_date
+                      ? overdue
+                        ? `Overdue: ${todo.due_date}`
+                        : todo.complete
+                          ? todo.due_date
+                          : todo.due_date === today
+                            ? 'Due today'
+                            : `${todo.due_date} (${Math.max(0, Math.round((new Date(todo.due_date + 'T00:00:00').getTime() - new Date(today + 'T00:00:00').getTime()) / 86400000))}d)`
+                      : '---'}
                   </span>
                   {/* Priority */}
                   <Badge label={todo.priority} color={PRIORITY_BADGE[todo.priority] || 'muted'} />

@@ -5,6 +5,7 @@
  * Offline queue support via enqueue(). PDF export via window.print().
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -828,11 +829,11 @@ function ContractsPage() {
             <div style={gridTwo}>
               <div>
                 <label style={labelStyle}>Start Date</label>
-                <input value={fStartDate} onChange={e => setFStartDate(e.target.value)} type="date" style={inputStyle} />
+                <SaguaroDatePicker value={fStartDate} onChange={v => setFStartDate(v)} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>End Date</label>
-                <input value={fEndDate} onChange={e => setFEndDate(e.target.value)} type="date" style={inputStyle} />
+                <SaguaroDatePicker value={fEndDate} onChange={v => setFEndDate(v)} style={inputStyle} />
               </div>
             </div>
           </div>

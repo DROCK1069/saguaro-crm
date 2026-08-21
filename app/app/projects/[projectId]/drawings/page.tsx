@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
@@ -606,8 +607,8 @@ export default function DrawingsPage(){
                 </div>
                 <div>
                   <FieldLabel label="Revision Date" auto={mode==='create'&&autoFields.date}/>
-                  <input type="date" value={form.revision_date}
-                    onChange={e=>{const v=e.target.value;setAutoFields(a=>({...a,date:false}));setForm(f=>({...f,revision_date:v}));}}
+                  <SaguaroDatePicker value={form.revision_date}
+                    onChange={v=>{setAutoFields(a=>({...a,date:false}));setForm(f=>({...f,revision_date:v}));}}
                     style={inp}/>
                   <div style={hint}>Defaults to today — the date on the title block wins.</div>
                 </div>

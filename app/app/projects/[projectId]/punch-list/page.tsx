@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
@@ -477,8 +478,8 @@ export default function PunchListPage(){
                     </div>
                   </Field>
                   <Field label={<>Due Date{autoDue&&mode==='create'&&<AutoChip/>}</>}>
-                    <input type="date" value={form.due_date}
-                      onChange={e=>setForm(f=>({...f,due_date:e.target.value}))}
+                    <SaguaroDatePicker value={form.due_date}
+                      onChange={v=>setForm(f=>({...f,due_date:v}))}
                       style={inp}/>
                     {mode==='create'&&(
                       <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>

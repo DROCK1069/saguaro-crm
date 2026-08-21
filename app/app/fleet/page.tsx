@@ -6,6 +6,7 @@
  * À-la-carte: hidden from the sidebar unless the tenant has features.fleet.
  */
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
 import { fleetSummary, assetHealth, expiryStatus, tripStats, STATUS_COLOR, type Asset, type MaintenanceRecord, type AssetDoc } from '@/lib/fleet';
 import { Truck, Wrench, Plus, MagnifyingGlass, PencilSimple, Trash, X, Warning, MapPin, FileText, Barcode, ArrowSquareOut, CalendarBlank, FilePdf, Broadcast, Copy, Check, CurrencyDollar } from '@phosphor-icons/react';
@@ -255,7 +256,7 @@ export default function FleetPage() {
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input value={f.license_plate ?? ''} onChange={(e) => setF({ ...f, license_plate: e.target.value })} placeholder="Plate" style={inp} /><input value={f.serial_number ?? ''} onChange={(e) => setF({ ...f, serial_number: e.target.value })} placeholder="Serial #" style={inp} /><input value={f.odometer ?? ''} onChange={(e) => setF({ ...f, odometer: e.target.value })} placeholder="Odometer" style={{ ...inp, width: 110 }} /></div>
           {editing && <>
             <div style={{ color: DIM, fontSize: 12, marginTop: 12, marginBottom: 4 }}>Expirations (for warnings)</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{EXPIRIES.map(([col, label]) => <label key={col} style={{ flex: 1, minWidth: 130, fontSize: 12, color: DIM }}>{label}<input type="date" value={f[col] ?? ''} onChange={(e) => setF({ ...f, [col]: e.target.value })} style={{ ...inp, marginTop: 2 }} /></label>)}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{EXPIRIES.map(([col, label]) => <label key={col} style={{ flex: 1, minWidth: 130, fontSize: 12, color: DIM }}>{label}<SaguaroDatePicker value={f[col] ?? ''} onChange={(v) => setF({ ...f, [col]: v })} style={{ ...inp, marginTop: 2 }} /></label>)}</div>
           </>}
           <button onClick={adding ? addAsset : saveEdit} style={{ ...btn, marginTop: 14, width: '100%' }}>{adding ? 'Add asset' : 'Save'}</button>
         </Modal>
@@ -264,9 +265,9 @@ export default function FleetPage() {
         <Modal title="Log service" onClose={() => setAddingMaint(false)}>
           <select value={m.kind} onChange={(e) => setM({ ...m, kind: e.target.value })} style={inp}>{['service', 'repair', 'inspection', 'other'].map((k) => <option key={k} value={k}>{k}</option>)}</select>
           <input value={m.description ?? ''} onChange={(e) => setM({ ...m, description: e.target.value })} placeholder="Description (e.g. Oil change)" style={{ ...inp, marginTop: 8 }} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input type="date" value={m.performed_at} onChange={(e) => setM({ ...m, performed_at: e.target.value })} style={inp} /><input value={m.odometer_at ?? ''} onChange={(e) => setM({ ...m, odometer_at: e.target.value })} placeholder="Odometer" style={inp} /><input value={m.cost ?? ''} onChange={(e) => setM({ ...m, cost: e.target.value })} placeholder="Cost $" style={inp} /></div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><SaguaroDatePicker value={m.performed_at} onChange={(v) => setM({ ...m, performed_at: v })} style={inp} /><input value={m.odometer_at ?? ''} onChange={(e) => setM({ ...m, odometer_at: e.target.value })} placeholder="Odometer" style={inp} /><input value={m.cost ?? ''} onChange={(e) => setM({ ...m, cost: e.target.value })} placeholder="Cost $" style={inp} /></div>
           <div style={{ color: DIM, fontSize: 12, marginTop: 12, marginBottom: 4 }}>Next due (triggers a warning)</div>
-          <div style={{ display: 'flex', gap: 8 }}><input value={m.next_due_odometer ?? ''} onChange={(e) => setM({ ...m, next_due_odometer: e.target.value })} placeholder="Next @ odometer" style={inp} /><input type="date" value={m.next_due_date ?? ''} onChange={(e) => setM({ ...m, next_due_date: e.target.value })} style={inp} /></div>
+          <div style={{ display: 'flex', gap: 8 }}><input value={m.next_due_odometer ?? ''} onChange={(e) => setM({ ...m, next_due_odometer: e.target.value })} placeholder="Next @ odometer" style={inp} /><SaguaroDatePicker value={m.next_due_date ?? ''} onChange={(v) => setM({ ...m, next_due_date: v })} style={inp} /></div>
           <button onClick={addMaint} style={{ ...btn, marginTop: 14, width: '100%' }}>Log it</button>
         </Modal>
       )}
@@ -279,7 +280,7 @@ export default function FleetPage() {
             <input type="file" accept="image/*,application/pdf" disabled={docUploading} style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocFile(f); }} />
           </label>
           <input value={doc.file_url ?? ''} onChange={(e) => setDoc({ ...doc, file_url: e.target.value })} placeholder="…or paste a file URL" style={{ ...inp, marginTop: 8 }} />
-          <label style={{ fontSize: 12, color: DIM, marginTop: 10, display: 'block' }}>Expires (for warnings)<input type="date" value={doc.expires_at ?? ''} onChange={(e) => setDoc({ ...doc, expires_at: e.target.value })} style={{ ...inp, marginTop: 2 }} /></label>
+          <label style={{ fontSize: 12, color: DIM, marginTop: 10, display: 'block' }}>Expires (for warnings)<SaguaroDatePicker value={doc.expires_at ?? ''} onChange={(v) => setDoc({ ...doc, expires_at: v })} style={{ ...inp, marginTop: 2 }} /></label>
           <button onClick={addDocument} style={{ ...btn, marginTop: 14, width: '100%' }}>Add</button>
         </Modal>
       )}

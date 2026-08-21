@@ -5,6 +5,7 @@
  * Enhanced: Batch ops, assignee notifications, advanced filters, statistics.
  */
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
@@ -346,11 +347,11 @@ function AdvancedFilterPanel({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
             <div>
               <label style={{ fontSize: 11, color: DIM }}>From</label>
-              <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={inp} />
+              <SaguaroDatePicker value={filterDateFrom} onChange={(v) => setFilterDateFrom(v)} style={inp} />
             </div>
             <div>
               <label style={{ fontSize: 11, color: DIM }}>To</label>
-              <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={inp} />
+              <SaguaroDatePicker value={filterDateTo} onChange={(v) => setFilterDateTo(v)} style={inp} />
             </div>
           </div>
         )}
@@ -1013,7 +1014,7 @@ function PunchListPage() {
               </datalist>
             </Fld>
             <Fld label="Due Date">
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={inp} />
+              <SaguaroDatePicker value={dueDate} onChange={(v) => setDueDate(v)} style={inp} />
             </Fld>
             <Fld label="Notes">
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional details, spec reference..." rows={2} style={inp} />

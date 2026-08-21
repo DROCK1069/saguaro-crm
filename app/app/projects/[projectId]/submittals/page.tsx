@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
@@ -575,14 +576,14 @@ export default function SubmittalsPage(){
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <div>
                     <FieldLabel label="Submitted Date"/>
-                    <input type="date" value={form.submitted_at}
-                      onChange={e=>setForm(f=>({...f,submitted_at:e.target.value}))}
+                    <SaguaroDatePicker value={form.submitted_at}
+                      onChange={v=>setForm(f=>({...f,submitted_at:v}))}
                       style={inp}/>
                   </div>
                   <div>
                     <FieldLabel label="Required Date" auto={auto.due}/>
-                    <input type="date" value={form.due_date}
-                      onChange={e=>{const v=e.target.value;setAuto(a=>({...a,due:false}));setForm(f=>({...f,due_date:v}));}}
+                    <SaguaroDatePicker value={form.due_date}
+                      onChange={v=>{setAuto(a=>({...a,due:false}));setForm(f=>({...f,due_date:v}));}}
                       style={inp}/>
                     {auto.due&&<div style={HINT}>Standard 14-day review window — adjust to the spec.</div>}
                   </div>

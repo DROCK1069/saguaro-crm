@@ -1,8 +1,10 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 import { Palette, X, Plus, Package, Hourglass, SealCheck, Scales, ChartBar, ListChecks, WarningCircle } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
@@ -402,10 +404,20 @@ export default function SelectionsPage(){
                   <Field label="Category">
                     <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
                       style={{...inp,padding:'9px 10px'}}>
-                      {form.category&&!CATEGORIES.includes(form.category)&&(
+                      {form.category&&!CATEGORIES.includes(form.category)&&!SUB_TRADES.includes(form.category)&&(
                         <option value={form.category}>{form.category}</option>
                       )}
-                      {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+                      <optgroup label="Material Categories">
+                        {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+                      </optgroup>
+                      {SUB_TRADES_BY_DIVISION.map(g=>(
+                        <optgroup key={g.division} label={'Trade Verticals — '+g.division+' '+g.name}>
+                          {g.trades.map(t=><option key={t} value={t}>{t}</option>)}
+                        </optgroup>
+                      ))}
+                      <optgroup label="Trade Verticals — Other / Specialty">
+                        {SUB_TRADES.filter(t=>!SUB_TRADES_BY_DIVISION.some(g=>g.trades.includes(t))).map(t=><option key={t} value={t}>{t}</option>)}
+                      </optgroup>
                     </select>
                   </Field>
                   <Field label="Status">
@@ -468,8 +480,8 @@ export default function SelectionsPage(){
                       style={inp} placeholder="Owner or designer name"/>
                   </Field>
                   <Field label="Decision Due" auto={auto.due}>
-                    <input type="date" value={form.due_date}
-                      onChange={e=>{const v=e.target.value;setAuto(a=>({...a,due:false}));setForm(f=>({...f,due_date:v}));}}
+                    <SaguaroDatePicker value={form.due_date}
+                      onChange={v=>{setAuto(a=>({...a,due:false}));setForm(f=>({...f,due_date:v}));}}
                       style={inp}/>
                     {auto.due&&<div style={HINT}>Defaulted 30 days out — tighten to order lead times.</div>}
                   </Field>

@@ -6,6 +6,7 @@
  * progress dashboard, warranty expiration countdown, bulk operations.
  */
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
@@ -444,7 +445,7 @@ function CloseoutInner() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
             <div>
               <label style={label}>Due Date</label>
-              <input style={input} type="date" value={form.due_date} onChange={(e) => set('due_date', e.target.value)} />
+              <SaguaroDatePicker style={input} value={form.due_date} onChange={(v) => set('due_date', v)} />
             </div>
             <div>
               <label style={label}>Status</label>
@@ -461,11 +462,11 @@ function CloseoutInner() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={label}>Warranty Start</label>
-                  <input style={input} type="date" value={form.warranty_start} onChange={(e) => set('warranty_start', e.target.value)} />
+                  <SaguaroDatePicker style={input} value={form.warranty_start} onChange={(v) => set('warranty_start', v)} />
                 </div>
                 <div>
                   <label style={label}>Warranty End</label>
-                  <input style={input} type="date" value={form.warranty_end} onChange={(e) => set('warranty_end', e.target.value)} />
+                  <SaguaroDatePicker style={input} value={form.warranty_end} onChange={(v) => set('warranty_end', v)} />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>

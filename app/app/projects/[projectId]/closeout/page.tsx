@@ -87,6 +87,8 @@ export default function CloseoutPage() {
   const billed = Number(money?.billedToDate) || 0;
   const billedPct = Number(money?.billedPct) || 0;
   const openPunch = Number(ctx?.counts?.openPunch) || 0;
+  const openRfis = Number(ctx?.counts?.openRfis) || 0;
+  const billCount = Number(ctx?.counts?.bills) || 0;
   const subCount = (ctx?.subs || []).length;
   const lastApp = money?.lastPayApp || null;
   const retainageHeld = billed * ((Number(money?.retainagePct) || 0) / 100);
@@ -106,6 +108,20 @@ export default function CloseoutPage() {
     w9_forms: subCount > 0 ? { hint: `Collect a W-9 from each of the ${subCount} subs before final payment.` } : {},
     equipment_warranties: subCount > 0 ? { hint: `Request warranty letters from all ${subCount} subs for the owner's turnover binder.` } : {},
     g704_certificate: pctComplete > 0 ? { hint: `Project is ${pctComplete}% complete — the G704 fixes the substantial completion date.` } : {},
+    g706_affidavit: billCount > 0
+      ? { hint: `Swears payrolls, bills, and sub debts are settled — ${billCount} bill${billCount === 1 ? '' : 's'} recorded on this project.` }
+      : { hint: 'Contractor affidavit that all debts are paid — generate it from live project data.' },
+    as_built_drawings: openRfis > 0
+      ? { hint: `${openRfis} RFI${openRfis === 1 ? '' : 's'} still open — close them so the as-builts capture the final answers.`, warn: true }
+      : { hint: 'Mark up the record set with every field change and closed RFI.' },
+    om_manuals: subCount > 0
+      ? { hint: `Collect operating and maintenance manuals from equipment subs — ${subCount} on the roster.` }
+      : { hint: 'Operating and maintenance manuals for every installed system, in one binder.' },
+    wh347_final: { hint: 'Required on prevailing-wage work — the final certified payroll closes the labor record.' },
+    bond_rider: { hint: 'Ask your surety to extend the performance bond through the warranty period.' },
+    certificate_of_occupancy: items.find(i => i.id === 'final_inspection')?.status === 'complete'
+      ? { hint: 'Final inspection passed — request the C of O from the building department.', ready: true }
+      : { hint: 'Issued by the building department once the final inspection passes.' },
   } : {};
 
   async function toggleItem(id: string) {

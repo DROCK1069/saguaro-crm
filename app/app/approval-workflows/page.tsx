@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import {
   Plus, PencilSimple, Copy, Trash, Power, TreeStructure, CheckCircle, XCircle,
   Clock, Users, ArrowRight, X, MagnifyingGlass, WarningCircle,
@@ -110,7 +111,7 @@ interface TeamUser { id: string; full_name: string | null; email: string | null;
 
 /* ── helpers ── */
 const uid = () => Math.random().toString(36).slice(2, 10); // local step ids only (not persisted identity)
-const fmtCurrency = (n: number) => '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmtCurrency = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtDate = (d: string | null) => {
   if (!d) return '—';
   try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
@@ -663,7 +664,18 @@ export default function ApprovalWorkflowsPage() {
         )}
 
         {/* ── DASHBOARD ── */}
-        {tab === 'dashboard' && (
+        {tab === 'dashboard' && (stats.length === 0 ? (
+          <SectionCard>
+            <PremiumEmpty
+              icon={<Gauge size={30} weight="duotone" color={GOLD} />}
+              title="Nothing routed yet"
+              description="This dashboard aggregates every item that enters an approval chain — pending, approved, rejected, average cycle time, and total dollars routed per module. Submit a change order, pay app, purchase order, or invoice through an active workflow and these numbers build themselves."
+              action={activeCount === 0
+                ? <button style={goldButtonStyle} className="pmBtn" onClick={openCreate}><Plus size={15} weight="bold" />Create First Workflow</button>
+                : <button style={goldOutlineButtonStyle} className="pmBtn" onClick={() => setTab('templates')}><TreeStructure size={15} weight="bold" />Review Templates</button>}
+            />
+          </SectionCard>
+        ) : (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
               {stats.map(s => (
@@ -687,7 +699,7 @@ export default function ApprovalWorkflowsPage() {
 
             <SectionCard title="Approval Pipeline by Module" icon={<Gauge size={17} weight="duotone" color={GOLD} />}>
               {stats.map(s => {
-                const total = s.pending + s.approved + s.rejected;
+                const total = (Number(s.pending) || 0) + (Number(s.approved) || 0) + (Number(s.rejected) || 0);
                 const pc = (n: number) => total > 0 ? (n / total) * 100 : 0;
                 return (
                   <div key={s.entityType} style={{ marginBottom: 18 }}>
@@ -718,7 +730,7 @@ export default function ApprovalWorkflowsPage() {
               </div>
             </SectionCard>
           </div>
-        )}
+        ))}
 
         {/* ── HISTORY ── */}
         {tab === 'history' && (
@@ -1053,11 +1065,11 @@ export default function ApprovalWorkflowsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div>
                   <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 6, fontWeight: 600 }}>Start Date *</label>
-                  <input style={inputStyle} type="date" value={delStart} onChange={e => setDelStart(e.target.value)} />
+                  <SaguaroDatePicker style={inputStyle} value={delStart} onChange={v => setDelStart(v)} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 6, fontWeight: 600 }}>End Date *</label>
-                  <input style={inputStyle} type="date" value={delEnd} onChange={e => setDelEnd(e.target.value)} />
+                  <SaguaroDatePicker style={inputStyle} value={delEnd} onChange={v => setDelEnd(v)} />
                 </div>
               </div>
               <div>

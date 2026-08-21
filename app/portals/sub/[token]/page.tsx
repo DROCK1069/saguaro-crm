@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 
@@ -470,7 +471,7 @@ export default function SubPortal(){
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:16,marginBottom:16}}>
             <div><div style={labelS}>Document Type *</div><select value={docUploadType} onChange={e=>setDocUploadType(e.target.value)} style={{...inputS,cursor:'pointer'}}><option value="">Select type...</option>{docTypes.map(t=><option key={t} value={t}>{docLabels[t]||t}</option>)}</select></div>
             <div><div style={labelS}>File Name *</div><input value={docFileName} onChange={e=>setDocFileName(e.target.value)} placeholder="insurance_cert_2026.pdf" style={inputS}/></div>
-            <div><div style={labelS}>Expiration Date</div><input type="date" value={docExpiry} onChange={e=>setDocExpiry(e.target.value)} style={inputS}/></div>
+            <div><div style={labelS}>Expiration Date</div><SaguaroDatePicker value={docExpiry} onChange={v=>setDocExpiry(v)} style={inputS}/></div>
           </div>
           {docUploadType==='insurance'&&(
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:16,marginBottom:16}}>
@@ -638,7 +639,7 @@ export default function SubPortal(){
       <div style={card()}>
         <div style={{fontSize:17,fontWeight:700,color:TEXT,marginBottom:16}}>Submit Daily Log</div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:16,marginBottom:16}}>
-          <div><div style={labelS}>Log Date *</div><input type="date" value={dlForm.log_date} onChange={e=>setDlForm(f=>({...f,log_date:e.target.value}))} style={inputS}/></div>
+          <div><div style={labelS}>Log Date *</div><SaguaroDatePicker value={dlForm.log_date} onChange={v=>setDlForm(f=>({...f,log_date:v}))} style={inputS}/></div>
           <div><div style={labelS}>Crew Count</div><input type="number" value={dlForm.crew_count} onChange={e=>setDlForm(f=>({...f,crew_count:e.target.value}))} placeholder="Number of workers" style={inputS}/></div>
           <div><div style={labelS}>Hours Worked</div><input type="number" step="0.5" value={dlForm.hours_worked} onChange={e=>setDlForm(f=>({...f,hours_worked:e.target.value}))} placeholder="Total hours" style={inputS}/></div>
           <div><div style={labelS}>Weather</div><input value={dlForm.weather} onChange={e=>setDlForm(f=>({...f,weather:e.target.value}))} placeholder="Clear, 85F" style={inputS}/></div>
@@ -914,7 +915,7 @@ export default function SubPortal(){
               </select></div>
             {['insurance','safety_cert','license','bond'].includes(docCategory)&&(
               <div><label style={labelS}>Expiration date</label>
-                <input type="date" value={docExpiry} onChange={e=>setDocExpiry(e.target.value)} style={{...inputS,width:170}}/></div>
+                <SaguaroDatePicker value={docExpiry} onChange={v=>setDocExpiry(v)} style={{...inputS,width:170}}/></div>
             )}
             <label style={{...btnS(GOLD),display:'inline-flex',alignItems:'center',gap:8,opacity:uploading?0.6:1}}>
               {uploading?'Uploading\u2026':'\u2191 Choose file & upload'}

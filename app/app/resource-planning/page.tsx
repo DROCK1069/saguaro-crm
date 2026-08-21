@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { TRADESPERSON_ROLES as ROLES } from '@/lib/contractor-trades';
 import { SUB_TRADES as TRADES } from '@/lib/construction-intelligence';
@@ -508,11 +509,11 @@ export default function ResourcePlanningPage() {
       </select>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={{ fontSize: 11, color: DIM }}>From:</span>
-        <input type="date" value={filterDateStart} onChange={e => setFilterDateStart(e.target.value)} style={{ ...inp(), width: 140 }} />
+        <SaguaroDatePicker value={filterDateStart} onChange={v => setFilterDateStart(v)} style={{ ...inp(), width: 140 }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={{ fontSize: 11, color: DIM }}>To:</span>
-        <input type="date" value={filterDateEnd} onChange={e => setFilterDateEnd(e.target.value)} style={{ ...inp(), width: 140 }} />
+        <SaguaroDatePicker value={filterDateEnd} onChange={v => setFilterDateEnd(v)} style={{ ...inp(), width: 140 }} />
       </div>
       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: DIM, cursor: 'pointer' }}>
         <input type="checkbox" checked={filterAvail} onChange={e => setFilterAvail(e.target.checked)} style={{ accentColor: GOLD }} /> Available Only
@@ -568,11 +569,11 @@ export default function ResourcePlanningPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>Start Date *</label>
-            <input type="date" value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} style={inp()} />
+            <SaguaroDatePicker value={form.start_date || ''} onChange={v => setForm({ ...form, start_date: v })} style={inp()} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>End Date *</label>
-            <input type="date" value={form.end_date || ''} onChange={e => setForm({ ...form, end_date: e.target.value })} style={inp()} />
+            <SaguaroDatePicker value={form.end_date || ''} onChange={v => setForm({ ...form, end_date: v })} style={inp()} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>Status</label>

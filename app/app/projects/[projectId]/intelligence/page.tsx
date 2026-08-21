@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import ErrorBoundary from '../../../../../components/ErrorBoundary';
 import { Brain, ArrowRight } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatStrip, InsightRow } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, InsightRow, AutoChip } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B';
 const SOFT_BORDER = 'rgba(255,255,255,0.08)';
@@ -49,6 +49,21 @@ function IntelligenceChat() {
       } catch {}
     })();
   }, [projectId]);
+
+  // Smart questions - generated from the live snapshot so the highest-value
+  // prompts surface first, each naming the real number it is about. Purely
+  // presentational: they feed the same sendMessage path as the static list.
+  const smartQuestions: string[] = [];
+  if (ctx) {
+    const pendCo = Number(ctx.money?.pendingCoCount) || 0;
+    if (pendCo > 0) smartQuestions.push(`Walk me through the ${pendCo} pending change order${pendCo === 1 ? '' : 's'} - approve or push back?`);
+    const openRfis = Number(ctx.counts?.openRfis) || 0;
+    if (openRfis > 0) smartQuestions.push(`Which of the ${openRfis} open RFI${openRfis === 1 ? '' : 's'} could hit cost or schedule?`);
+    const owed = (Number(ctx.money?.billedToDate) || 0) - (Number(ctx.money?.paidToDate) || 0);
+    if (owed > 0) smartQuestions.push(`${fmtMoney(owed)} is billed but not yet collected - how do I speed up payment?`);
+    const punch = Number(ctx.counts?.openPunch) || 0;
+    if (punch > 0) smartQuestions.push(`What is the fastest path to close the ${punch} open punch item${punch === 1 ? '' : 's'}?`);
+  }
 
   const [messages, setMessages] = useState<Message[]>([{
     id: '0',
@@ -245,6 +260,18 @@ function IntelligenceChat() {
                 <InsightRow label="Bid packages" value={String((ctx.bidPackages || []).length)} />
                 {ctx.recent?.lastDailyLogDate && <InsightRow label="Last daily log" value={new Date(ctx.recent.lastDailyLogDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />}
               </div>
+            )}
+            {smartQuestions.length > 0 && (
+              <>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '10px', marginTop: '8px' }}>From This Project<AutoChip /></div>
+                {smartQuestions.map(q => (
+                  <button key={q} onClick={() => sendMessage(q)}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: '6px', background: 'rgba(245, 158, 11,0.10)', border: '1px solid rgba(245, 158, 11,0.3)', borderRadius: '6px', color: '#FBBF24', fontSize: '11px', cursor: 'pointer', transition: 'background 0.15s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245, 158, 11,0.16)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245, 158, 11,0.10)'}
+                  >{q}</button>
+                ))}
+              </>
             )}
             <div style={{ fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '10px', marginTop: '8px' }}>Quick Questions</div>
             {QUICK_QUESTIONS.map(q => (

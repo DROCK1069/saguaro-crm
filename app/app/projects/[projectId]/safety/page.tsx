@@ -4,11 +4,13 @@ import { useParams } from 'next/navigation';
 import { Badge, Table, T } from '@/components/ui/shell';
 import {
   PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty,
-  goldButtonStyle, ghostButtonStyle,
+  StatStrip, FlowSteps, AutoChip,
+  goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
 import {
   ShieldCheck, ClipboardText, WarningCircle, CheckCircle, Warning,
   ClockCountdown, FilePdf, Plus, X, ArrowRight, Wrench,
+  ChalkboardTeacher, UsersThree,
 } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 
@@ -43,6 +45,31 @@ interface CorrectiveAction {
 }
 
 const TYPES = ['Near Miss', 'First Aid', 'Recordable', 'Lost Time'];
+
+// OSHA 29 CFR 1904: recordable = beyond first aid. Of this incident taxonomy,
+// Recordable and Lost Time land on the 300 log; Near Miss / First Aid do not.
+const OSHA_RECORDABLE_TYPES = ['Recordable', 'Lost Time'];
+const isOshaRecordable = (i: { type?: string; severity?: string }) =>
+  OSHA_RECORDABLE_TYPES.includes(String(i.type)) || OSHA_RECORDABLE_TYPES.includes(String(i.severity));
+
+// Toolbox talk topic suggestions — OSHA focus-four first.
+const TALK_TOPICS = [
+  'Fall Protection', 'Ladder Safety', 'Struck-By Hazards', 'Caught-In / Between',
+  'Electrical Safety', 'Trenching & Excavation', 'Heat Illness Prevention', 'PPE',
+  'Silica Dust', 'Scaffold Safety', 'Hand & Power Tools', 'Housekeeping & Fire Prevention',
+];
+
+const localIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const fmtDate = (d?: string | null) => d ? new Date(String(d).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+
+interface ToolboxTalk {
+  id: string;
+  topic: string;
+  conducted_by: string;
+  attendee_count: number;
+  talk_date: string;
+  notes: string;
+}
 
 const SEVERITY_BADGE: Record<string, 'amber' | 'gold' | 'red' | 'muted'> = {
   'Near Miss': 'amber',
@@ -113,6 +140,16 @@ export default function SafetyPage() {
   const [caForm, setCaForm] = useState(EMPTY_CA_FORM);
   const [caSaving, setCaSaving] = useState(false);
 
+  // Toolbox talks state
+  const [talks, setTalks] = useState<ToolboxTalk[]>([]);
+  const [showTalkForm, setShowTalkForm] = useState(false);
+  const [talkForm, setTalkForm] = useState({ topic: '', conducted_by: '', attendee_count: '', talk_date: '', notes: '' });
+  const [talkSaving, setTalkSaving] = useState(false);
+
+  // Project intelligence — one snapshot; forms walk in knowing the roster.
+  const [ctx, setCtx] = useState<any>(null);
+  const [auto, setAuto] = useState<{ incDate?: boolean; talkDate?: boolean; presenter?: boolean; attendees?: boolean; caDue?: boolean }>({});
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -139,7 +176,34 @@ export default function SafetyPage() {
     }
   }, [projectId]);
 
-  useEffect(() => { fetchData(); fetchActions(); }, [fetchData, fetchActions]);
+  const fetchTalks = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/safety/talks?projectId=${projectId}`);
+      const json = await res.json();
+      setTalks(Array.isArray(json.talks) ? json.talks.map((t: Record<string, unknown>) => ({
+        id: String(t.id ?? ''),
+        topic: String(t.topic ?? ''),
+        conducted_by: String(t.conducted_by ?? t.presenter ?? ''),
+        attendee_count: Number(t.attendee_count) || 0,
+        talk_date: String(t.talk_date ?? ''),
+        notes: String(t.notes ?? t.content ?? ''),
+      })) : []);
+    } catch {
+      setTalks([]);
+    }
+  }, [projectId]);
+
+  useEffect(() => { fetchData(); fetchActions(); fetchTalks(); }, [fetchData, fetchActions, fetchTalks]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch { /* context is progressive enhancement */ }
+    })();
+  }, [projectId]);
 
   const totalIncidents = incidents.length;
   const openCount = incidents.filter(i => i.status === 'Open').length;
@@ -161,6 +225,86 @@ export default function SafetyPage() {
       ? Math.floor((Date.now() - new Date(incidents[0].date).getTime()) / 86400000)
       : 0;
 
+  const recordables = incidents.filter(isOshaRecordable).length;
+  const nearMisses = incidents.filter(i => i.type === 'Near Miss' || i.severity === 'Near Miss').length;
+  const lastTalk = talks[0] || null;
+  const daysSinceTalk = lastTalk && lastTalk.talk_date
+    ? Math.floor((Date.now() - new Date(String(lastTalk.talk_date).slice(0, 10) + 'T00:00:00').getTime()) / 86400000)
+    : null;
+  const subCount = (ctx?.subs || []).length;
+
+  // The pending report is OSHA-recordable when its type or severity says so —
+  // shown live in the form and stamped onto the row at save.
+  const formIsRecordable = isOshaRecordable(form);
+
+  // Prefilled report flow: incident date defaults to today.
+  function openIncident() {
+    setForm({ ...EMPTY_FORM, date: localIso(new Date()) });
+    setAuto(a => ({ ...a, incDate: true }));
+    setShowForm(true);
+    setErrorMsg('');
+  }
+
+  // Prefilled toolbox talk: today's date, last presenter, last headcount.
+  function openTalk() {
+    setTalkForm({
+      topic: '',
+      conducted_by: lastTalk?.conducted_by || '',
+      attendee_count: lastTalk?.attendee_count ? String(lastTalk.attendee_count) : '',
+      talk_date: localIso(new Date()),
+      notes: '',
+    });
+    setAuto(a => ({ ...a, talkDate: true, presenter: !!lastTalk?.conducted_by, attendees: !!lastTalk?.attendee_count }));
+    setShowTalkForm(true);
+    setErrorMsg('');
+  }
+
+  // Prefilled corrective action: due a week out.
+  function openCA() {
+    const due = new Date(Date.now() + 7 * 86400000);
+    setCaForm({ ...EMPTY_CA_FORM, due_date: localIso(due) });
+    setAuto(a => ({ ...a, caDue: true }));
+    setShowCAForm(true);
+    setErrorMsg('');
+  }
+
+  async function handleLogTalk() {
+    if (!talkForm.topic) { setErrorMsg('Talk topic is required.'); return; }
+    setTalkSaving(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/safety/talks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId,
+          topic: talkForm.topic,
+          conducted_by: talkForm.conducted_by,
+          attendee_count: Number(talkForm.attendee_count) || 0,
+          talk_date: talkForm.talk_date || localIso(new Date()),
+          notes: talkForm.notes,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.talk) throw new Error(json.error || 'Create failed');
+      setTalks(prev => [{
+        id: String(json.talk.id ?? ''),
+        topic: String(json.talk.topic ?? talkForm.topic),
+        conducted_by: String(json.talk.presenter ?? talkForm.conducted_by),
+        attendee_count: Number(json.talk.attendee_count) || 0,
+        talk_date: String(json.talk.talk_date ?? talkForm.talk_date),
+        notes: String(json.talk.content ?? talkForm.notes),
+      }, ...prev]);
+      setShowTalkForm(false);
+      setSuccessMsg('Toolbox talk logged.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch {
+      setErrorMsg('Could not log the toolbox talk. Please try again.');
+    } finally {
+      setTalkSaving(false);
+    }
+  }
+
   async function handleSave() {
     if (!form.description || !form.date) { setErrorMsg('Date and description are required.'); return; }
     setSaving(true);
@@ -169,7 +313,7 @@ export default function SafetyPage() {
       const res = await fetch('/api/safety/incidents/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, status: 'Open', ...form }),
+        body: JSON.stringify({ projectId, status: 'Open', osha_recordable: formIsRecordable, near_miss: form.type === 'Near Miss', ...form }),
       });
       const json = await res.json();
       if (!res.ok || !json.incident) throw new Error(json.error || 'Create failed');
@@ -282,12 +426,13 @@ export default function SafetyPage() {
     border: `1px solid ${T.border}`, borderRadius: 8, color: T.white, fontSize: 13, outline: 'none',
   };
   const lbl: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 };
+  const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
 
   return (
     <PremiumSurface maxWidth={1600}>
       {/* Header */}
       <ModuleHero
-        eyebrow="HEALTH & SAFETY"
+        eyebrow={ctx?.project?.name || 'Health & Safety'}
         eyebrowIcon={<ShieldCheck size={13} weight="fill" color={GOLD} />}
         title="Safety"
         subtitle="Safety incidents, inspections, and OSHA records"
@@ -296,12 +441,27 @@ export default function SafetyPage() {
             <button onClick={handleGenerateJHA} style={ghostButtonStyle} className="pmBtn">
               <FilePdf size={15} weight="bold" /> Generate JHA
             </button>
-            <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
+            <button onClick={() => { if (showTalkForm) { setShowTalkForm(false); setErrorMsg(''); } else { openTalk(); } }} style={goldOutlineButtonStyle} className="pmBtn">
+              {showTalkForm ? <><X size={15} weight="bold" /> Cancel Talk</> : <><ChalkboardTeacher size={15} weight="bold" /> Log Toolbox Talk</>}
+            </button>
+            <button onClick={() => { if (showForm) { setShowForm(false); setErrorMsg(''); } else { openIncident(); } }} style={goldButtonStyle} className="pmBtn">
               {showForm ? <><X size={15} weight="bold" /> Cancel</> : <><Plus size={15} weight="bold" /> Report Incident</>}
             </button>
           </>
         }
       />
+
+      {/* Safety intelligence strip — leading and lagging indicators together */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'OSHA Recordables', value: String(recordables), accent: recordables > 0 ? RED : GREEN, sub: recordables > 0 ? 'on the 300 log' : 'clean 300 log' },
+          { label: 'Near Misses', value: String(nearMisses), accent: nearMisses > 0 ? AMBER : undefined, sub: 'leading indicator — keep reporting' },
+          { label: 'Toolbox Talks', value: String(talks.length), sub: lastTalk ? `last: ${fmtDate(lastTalk.talk_date)}` : 'none logged yet' },
+          { label: 'Talk Cadence', value: daysSinceTalk == null ? '—' : `${daysSinceTalk}d ago`, accent: daysSinceTalk != null && daysSinceTalk > 7 ? AMBER : daysSinceTalk != null ? GREEN : undefined, sub: daysSinceTalk != null && daysSinceTalk > 7 ? 'weekly cadence slipping' : 'weekly cadence target' },
+          { label: 'Days Incident-Free', value: String(daysSinceLast), accent: daysSinceLast > 30 ? GREEN : undefined, sub: lastIncident ? `since ${fmtDate(lastIncident.date)}` : 'no recordable incidents' },
+          { label: 'Crews On Site', value: String(subCount), sub: subCount > 0 ? 'subs to cover in talks' : 'no subs on the roster yet' },
+        ]} />
+      )}
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
@@ -352,32 +512,43 @@ export default function SafetyPage() {
 
       {/* Create Incident Form */}
       {showForm && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: ctx ? 'minmax(0, 1fr) 320px' : '1fr', gap: 18, alignItems: 'start', marginBottom: 20 }}>
           <SectionCard title="Report Safety Incident" icon={<Warning size={17} weight="duotone" color={RED} />} accent={RED}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
               <div>
-                <label style={lbl}>Date *</label>
+                <label style={lbl}>Date *{auto.incDate && <AutoChip />}</label>
                 <SaguaroDatePicker value={form.date} onChange={v => setForm(p => ({ ...p, date: v }))} style={inp} />
+                <div style={hint}>Defaulted to today — report the day it happened.</div>
               </div>
               <div>
                 <label style={lbl}>Type</label>
                 <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))} style={inp}>
                   {TYPES.map(t => <option key={t}>{t}</option>)}
                 </select>
+                <div style={hint}>Near Miss and First Aid stay off the OSHA 300 log.</div>
               </div>
               <div>
                 <label style={lbl}>Severity</label>
                 <select value={form.severity} onChange={e => setForm(p => ({ ...p, severity: e.target.value }))} style={inp}>
                   {TYPES.map(s => <option key={s}>{s}</option>)}
                 </select>
+                <div style={hint}>Drives the OSHA-recordable flag below.</div>
+              </div>
+              <div style={{ gridColumn: 'span 3' }}>
+                <div style={{ padding: '9px 12px', borderRadius: 8, fontSize: 12, lineHeight: 1.5, background: formIsRecordable ? 'rgba(224,100,78,0.10)' : 'rgba(69,179,125,0.08)', border: `1px solid ${formIsRecordable ? 'rgba(224,100,78,0.35)' : 'rgba(69,179,125,0.3)'}`, color: formIsRecordable ? '#F0A092' : GREEN }}>
+                  {formIsRecordable
+                    ? 'OSHA-recordable: this incident will be flagged for the 300 log. Recordables generally must be logged within 7 calendar days; fatalities reported within 8 hours, in-patient hospitalizations within 24.'
+                    : 'Not OSHA-recordable as classified — it will be saved for internal tracking and trend analysis only.'}
+                </div>
               </div>
               <div style={{ gridColumn: 'span 3' }}>
                 <label style={lbl}>Description *</label>
-                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inp, resize: 'vertical' }} />
+                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inp, resize: 'vertical' }} placeholder="What happened, who was involved, where on site..." />
               </div>
               <div style={{ gridColumn: 'span 3' }}>
                 <label style={lbl}>Corrective Action</label>
-                <textarea value={form.corrective_action} onChange={e => setForm(p => ({ ...p, corrective_action: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} />
+                <textarea value={form.corrective_action} onChange={e => setForm(p => ({ ...p, corrective_action: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} placeholder="What prevents a repeat..." />
+                <div style={hint}>Anything entered here auto-creates a tracked corrective action linked to this incident.</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
@@ -385,6 +556,16 @@ export default function SafetyPage() {
               <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={ghostButtonStyle} className="pmBtn">Cancel</button>
             </div>
           </SectionCard>
+          {ctx && (
+            <SectionCard title="After You Report" icon={<ShieldCheck size={17} weight="duotone" color={GOLD} />}>
+              <FlowSteps title="" steps={[
+                { title: 'Incident enters the log', desc: formIsRecordable ? 'Flagged OSHA-recordable for the 300 log.' : 'Saved for internal tracking and trends.' },
+                { title: 'Corrective action opens', desc: 'The corrective-action text becomes a tracked item with its own status flow.' },
+                { title: 'Verify and close', desc: 'Advance Open to In Progress to Verified to Closed as the fix lands.' },
+                { title: 'Stats update everywhere', desc: 'Days-incident-free and recordable counts refresh across the project.' },
+              ]} />
+            </SectionCard>
+          )}
         </div>
       )}
 
@@ -402,19 +583,93 @@ export default function SafetyPage() {
             <PremiumEmpty
               icon={<CheckCircle size={30} weight="duotone" color={GREEN} />}
               title="No incidents recorded"
-              description="Great work — no safety incidents have been logged for this project yet."
+              description={`A clean log${subCount > 0 ? ` with ${subCount} sub crew${subCount === 1 ? '' : 's'} on site` : ''} — keep it that way by reporting near misses too: they are the leading indicator that prevents the recordable. Anything logged here flags OSHA-recordable automatically by type.`}
+              action={<button onClick={openIncident} style={ghostButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Report a Near Miss</button>}
             />
           ) : (
             <Table
-              headers={['Date', 'Type', 'Description', 'Severity', 'Status']}
+              headers={['Date', 'Type', 'OSHA', 'Description', 'Severity', 'Status']}
               rows={incidents.map(i => [
                 <span key="d" style={{ color: T.muted, whiteSpace: 'nowrap' }}>{i.date}</span>,
                 i.type,
+                <span key="osha" style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.05em', color: isOshaRecordable(i) ? RED : T.muted }}>{isOshaRecordable(i) ? 'RECORDABLE' : '—'}</span>,
                 <span key="desc" style={{ maxWidth: 300, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {i.description}
                 </span>,
                 <Badge key="sev" label={i.severity} color={SEVERITY_BADGE[i.severity] || 'muted'} />,
                 <Badge key="st" label={i.status} color={STATUS_BADGE[i.status] || 'muted'} />,
+              ])}
+            />
+          )}
+        </SectionCard>
+      </div>
+
+      {/* Toolbox Talk form */}
+      {showTalkForm && (
+        <div style={{ marginBottom: 20 }}>
+          <SectionCard title="Log Toolbox Talk" icon={<ChalkboardTeacher size={17} weight="duotone" color={GOLD} />}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+              <div>
+                <label style={lbl}>Topic *</label>
+                <input value={talkForm.topic} onChange={e => setTalkForm(p => ({ ...p, topic: e.target.value }))} style={inp} placeholder="e.g. Fall Protection" list="sagTalkTopics" />
+                <datalist id="sagTalkTopics">
+                  {TALK_TOPICS.map(t => <option key={t} value={t} />)}
+                </datalist>
+                <div style={hint}>OSHA focus-four topics suggested first.</div>
+              </div>
+              <div>
+                <label style={lbl}>Date{auto.talkDate && <AutoChip />}</label>
+                <SaguaroDatePicker value={talkForm.talk_date} onChange={v => setTalkForm(p => ({ ...p, talk_date: v }))} style={inp} />
+                <div style={hint}>Defaulted to today.</div>
+              </div>
+              <div>
+                <label style={lbl}>Presenter{auto.presenter && <AutoChip />}</label>
+                <input value={talkForm.conducted_by} onChange={e => setTalkForm(p => ({ ...p, conducted_by: e.target.value }))} style={inp} placeholder="Who ran the talk" />
+                <div style={hint}>{auto.presenter ? 'Carried from the last talk.' : 'Usually the super or foreman.'}</div>
+              </div>
+              <div>
+                <label style={lbl}>Attendees{auto.attendees && <AutoChip />}</label>
+                <input type="number" min="0" value={talkForm.attendee_count} onChange={e => setTalkForm(p => ({ ...p, attendee_count: e.target.value }))} style={inp} placeholder="0" />
+                <div style={hint}>{subCount > 0 ? `${subCount} sub crew${subCount === 1 ? '' : 's'} on the roster.` : 'Headcount at the talk.'}</div>
+              </div>
+              <div style={{ gridColumn: 'span 4' }}>
+                <label style={lbl}>Notes</label>
+                <textarea value={talkForm.notes} onChange={e => setTalkForm(p => ({ ...p, notes: e.target.value }))} rows={2} style={{ ...inp, resize: 'vertical' }} placeholder="Key points covered, questions raised..." />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button onClick={handleLogTalk} disabled={talkSaving} className="pmBtn" style={{ ...goldButtonStyle, opacity: talkSaving ? 0.5 : 1, cursor: talkSaving ? 'not-allowed' : 'pointer' }}>{talkSaving ? 'Logging...' : 'Log Talk'}</button>
+              <button onClick={() => { setShowTalkForm(false); setErrorMsg(''); }} style={ghostButtonStyle} className="pmBtn">Cancel</button>
+            </div>
+          </SectionCard>
+        </div>
+      )}
+
+      {/* Toolbox Talks log */}
+      <div style={{ marginBottom: 28 }}>
+        <SectionCard
+          title="Toolbox Talks"
+          subtitle={lastTalk ? `${talks.length} logged · last ${fmtDate(lastTalk.talk_date)}` : 'Weekly safety briefings for the crew'}
+          icon={<ChalkboardTeacher size={17} weight="duotone" color={GOLD} />}
+          flush
+        >
+          {talks.length === 0 ? (
+            <PremiumEmpty
+              compact
+              icon={<ChalkboardTeacher size={26} weight="duotone" color={GOLD} />}
+              title="No toolbox talks logged"
+              description={`A five-minute weekly talk is the cheapest safety program there is${subCount > 0 ? ` — you have ${subCount} sub crew${subCount === 1 ? '' : 's'} on this project to cover` : ''}. Log the first one to start the cadence.`}
+              action={<button onClick={openTalk} style={goldButtonStyle} className="pmBtn"><ChalkboardTeacher size={15} weight="bold" /> Log Toolbox Talk</button>}
+            />
+          ) : (
+            <Table
+              headers={['Date', 'Topic', 'Presenter', 'Attendees', 'Notes']}
+              rows={talks.map(t => [
+                <span key="d" style={{ color: T.muted, whiteSpace: 'nowrap' }}>{fmtDate(t.talk_date)}</span>,
+                <span key="t" style={{ fontWeight: 600 }}>{t.topic}</span>,
+                <span key="p" style={{ color: t.conducted_by ? T.white : T.muted }}>{t.conducted_by || '—'}</span>,
+                <span key="a" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: T.muted }}><UsersThree size={13} color={T.muted} />{t.attendee_count}</span>,
+                <span key="n" style={{ maxWidth: 280, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: T.muted }}>{t.notes || '—'}</span>,
               ])}
             />
           )}
@@ -427,7 +682,7 @@ export default function SafetyPage() {
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>Corrective Actions</h2>
           <p style={{ margin: '3px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.62)' }}>Track and verify corrective actions from incidents</p>
         </div>
-        <button onClick={() => { setShowCAForm(p => !p); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
+        <button onClick={() => { if (showCAForm) { setShowCAForm(false); setErrorMsg(''); } else { openCA(); } }} style={goldButtonStyle} className="pmBtn">
           {showCAForm ? <><X size={15} weight="bold" /> Cancel</> : <><Plus size={15} weight="bold" /> New Action</>}
         </button>
       </div>
@@ -443,11 +698,16 @@ export default function SafetyPage() {
               </div>
               <div>
                 <label style={lbl}>Assigned To</label>
-                <input value={caForm.assigned_to} onChange={e => setCaForm(p => ({ ...p, assigned_to: e.target.value }))} style={inp} placeholder="Name or email" />
+                <input value={caForm.assigned_to} onChange={e => setCaForm(p => ({ ...p, assigned_to: e.target.value }))} style={inp} placeholder="Name or email" list="sagCaAssignees" />
+                <datalist id="sagCaAssignees">
+                  {(ctx?.subs || []).map((s: any) => <option key={s.membershipId || s.id} value={s.companyName} />)}
+                </datalist>
+                <div style={hint}>{subCount > 0 ? `${subCount} sub${subCount === 1 ? '' : 's'} on the roster to pick from.` : 'Who owns the fix.'}</div>
               </div>
               <div>
-                <label style={lbl}>Due Date</label>
+                <label style={lbl}>Due Date{auto.caDue && <AutoChip />}</label>
                 <SaguaroDatePicker value={caForm.due_date} onChange={v => setCaForm(p => ({ ...p, due_date: v }))} style={inp} />
+                <div style={hint}>One week out by default — overdue flags itself.</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>

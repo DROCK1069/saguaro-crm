@@ -4,6 +4,7 @@
  * Full meeting lifecycle: schedule, conduct minutes, track action items.
  */
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
@@ -899,7 +900,7 @@ function MeetingsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Date *</label>
-            <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
+            <SaguaroDatePicker value={form.date} onChange={v => setForm({ ...form, date: v })} style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Time</label>
@@ -1360,7 +1361,7 @@ function MeetingsPage() {
                   />
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                     <input placeholder="Assignee" value={ai.assignee} onChange={e => updateMinutesAction(activeAgendaIdx, aiIdx, 'assignee', e.target.value)} style={inputStyle} />
-                    <input type="date" value={ai.due_date} onChange={e => updateMinutesAction(activeAgendaIdx, aiIdx, 'due_date', e.target.value)} style={inputStyle} />
+                    <SaguaroDatePicker value={ai.due_date} onChange={v => updateMinutesAction(activeAgendaIdx, aiIdx, 'due_date', v)} style={inputStyle} />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                     <select value={ai.priority} onChange={e => updateMinutesAction(activeAgendaIdx, aiIdx, 'priority', e.target.value)} style={selectStyle}>
