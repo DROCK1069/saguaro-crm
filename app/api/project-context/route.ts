@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = tasks.filter((tk) => (tk.end_date ?? tk.start_date ?? '') >= today && tk.status !== 'complete');
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     project: {
       id: p.id, name: p.name, status: p.status, address: p.address,
       projectNumber: p.project_number, ownerName: p.owner_name, ownerEmail: p.owner_email,
@@ -146,4 +146,8 @@ export async function GET(req: NextRequest) {
       ownerName: p.owner_name, ownerEmail: p.owner_email, architectName: p.architect_name,
     },
   });
+  // Speed contract: 30s private browser cache dedupes the 14-query aggregate
+  // across module hops for every page that raw-fetches this route.
+  res.headers.set('Cache-Control', 'private, max-age=30');
+  return res;
 }
