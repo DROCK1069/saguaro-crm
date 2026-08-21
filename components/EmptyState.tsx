@@ -116,25 +116,16 @@ export function EmptyState({
       {actionLabel && (
         <button
           onClick={handleClick}
+          className="btn-gold"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: space.sm,
-            padding: `10px ${space.xl}px`,
-            background: colors.gold,
-            color: colors.darkAlt,
             fontSize: font.size.lg,
-            fontWeight: font.weight.bold,
-            border: 'none',
-            borderRadius: radius.xl,
+            padding: `10px ${space.xl}px`,
             cursor: 'pointer',
-            boxShadow: shadow.sm,
-            transition: 'filter 0.15s',
           }}
           onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.08)')}
           onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'none')}
         >
-          <Plus size={16} weight="bold" color={colors.darkAlt} />
+          <Plus size={16} weight="bold" color="currentColor" />
           {actionLabel}
         </button>
       )}

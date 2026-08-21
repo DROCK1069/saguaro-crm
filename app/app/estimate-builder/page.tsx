@@ -649,20 +649,25 @@ export default function EstimateBuilderPage() {
 
   /* ─── Styles ────────────────────────────────────────────────────── */
   const pageStyle: React.CSSProperties = { minHeight: '100vh', background: BG, color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '24px 32px' };
-  const cardStyle: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 20, marginBottom: 16 };
+  const cardStyle: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-sm)' };
   const btnStyle = (bg: string = GOLD, c: string = '#000'): React.CSSProperties => ({
-    background: bg, color: c, border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6,
+    background: bg === GOLD ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : bg,
+    color: bg === GOLD ? '#241500' : c,
+    border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6,
+    boxShadow: bg === GOLD ? '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : undefined,
   });
   const btnSmStyle = (bg: string = BORDER): React.CSSProperties => ({
     background: bg, color: TEXT, border: 'none', borderRadius: 4, padding: '4px 10px', cursor: 'pointer', fontSize: 12,
   });
   const inputStyle: React.CSSProperties = { background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, padding: '6px 10px', fontSize: 13, width: '100%' };
   const selectStyle: React.CSSProperties = { ...inputStyle, width: 'auto' };
-  const thStyle: React.CSSProperties = { textAlign: 'left', padding: '8px 10px', borderBottom: `1px solid ${BORDER}`, color: DIM, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' };
+  const thStyle: React.CSSProperties = { textAlign: 'left', padding: '8px 10px', borderBottom: `1px solid ${BORDER}`, color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' };
   const tdStyle: React.CSSProperties = { padding: '6px 10px', borderBottom: `1px solid ${BORDER}`, fontSize: 13, verticalAlign: 'middle' };
   const tabBtnStyle = (active: boolean): React.CSSProperties => ({
-    background: active ? GOLD : 'transparent', color: active ? '#000' : DIM, border: `1px solid ${active ? GOLD : BORDER}`,
-    borderRadius: 6, padding: '8px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'all 0.15s',
+    background: active ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : 'transparent',
+    color: active ? '#241500' : DIM, border: `1px solid ${active ? 'transparent' : BORDER}`,
+    borderRadius: 'var(--radius-sm)', padding: '8px 18px', cursor: 'pointer', fontWeight: active ? 700 : 600, fontSize: 13, transition: 'all 0.15s',
+    boxShadow: active ? '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : undefined,
   });
   const badgeStyle = (bg: string): React.CSSProperties => ({
     background: bg, color: '#fff', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 600,
@@ -918,7 +923,7 @@ export default function EstimateBuilderPage() {
               <input style={{ ...inputStyle, marginBottom: 12 }} placeholder="Search assemblies..." value={assemblySearch} onChange={e => setAssemblySearch(e.target.value)} />
               {filteredAssemblies.length === 0 && <div style={{ color: DIM, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>No assemblies match your search.</div>}
               {filteredAssemblies.map(asm => (
-                <div key={asm.id} style={{ padding: '10px 12px', border: `1px solid ${BORDER}`, borderRadius: 6, marginBottom: 8, cursor: 'pointer', background: BG }}
+                <div key={asm.id} className="lift" style={{ padding: '10px 12px', border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-sm)', marginBottom: 8, cursor: 'pointer', background: BG }}
                   onClick={() => { applyAssembly({ ...asm, division: addingToDivision }); setAddingToDivision(null); setAssemblySearch(''); }}
                 >
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{asm.name}</div>
@@ -943,7 +948,7 @@ export default function EstimateBuilderPage() {
                 <div style={{ color: DIM, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>No takeoff projects found for your account.</div>
               )}
               {!takeoffListLoading && takeoffList.map(tp => (
-                <div key={tp.id} style={{ padding: '10px 12px', border: `1px solid ${BORDER}`, borderRadius: 6, marginBottom: 8, cursor: saving ? 'default' : 'pointer', background: BG, opacity: saving ? 0.6 : 1 }}
+                <div key={tp.id} className="lift" style={{ padding: '10px 12px', border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-sm)', marginBottom: 8, cursor: saving ? 'default' : 'pointer', background: BG, opacity: saving ? 0.6 : 1 }}
                   onClick={() => { if (!saving) importFromTakeoff(tp.id); }}
                 >
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{tp.name}</div>
@@ -1342,21 +1347,21 @@ export default function EstimateBuilderPage() {
       {/* Page Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: GOLD }}>Estimate Builder</h1>
-          <div style={{ color: DIM, fontSize: 13, marginTop: 4 }}>CSI MasterFormat Division Structure | Construction Cost Estimating</div>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: TEXT, letterSpacing: '-0.02em' }}>Estimate Builder</h1>
+          <div style={{ color: DIM, fontSize: 13, marginTop: 4 }}>Build by CSI division, price every line, and lock your bid-day number.</div>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 18px', textAlign: 'center' }}>
-            <div style={{ color: DIM, fontSize: 11 }}>GRAND TOTAL</div>
-            <div style={{ fontWeight: 800, fontSize: 22, color: GOLD }}>{fmt(grandTotal)}</div>
+          <div className="lift" style={{ background: RAISED, border: '1px solid var(--brand-primary-25)', borderRadius: 'var(--radius-md)', padding: '10px 18px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em' }}>GRAND TOTAL</div>
+            <div style={{ fontWeight: 800, fontSize: 22, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(grandTotal)}</div>
           </div>
-          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 18px', textAlign: 'center' }}>
-            <div style={{ color: DIM, fontSize: 11 }}>LINE ITEMS</div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: TEXT }}>{allItems.length}</div>
+          <div className="lift" style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-md)', padding: '10px 18px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em' }}>LINE ITEMS</div>
+            <div style={{ fontWeight: 700, fontSize: 18, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{allItems.length}</div>
           </div>
-          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 18px', textAlign: 'center' }}>
-            <div style={{ color: DIM, fontSize: 11 }}>VERSIONS</div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: TEXT }}>{versions.length}</div>
+          <div className="lift" style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-md)', padding: '10px 18px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em' }}>VERSIONS</div>
+            <div style={{ fontWeight: 700, fontSize: 18, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{versions.length}</div>
           </div>
         </div>
       </div>

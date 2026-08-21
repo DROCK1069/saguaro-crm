@@ -73,7 +73,7 @@ export default function ProjectsPage() {
   });
 
   const toggleBtn = (v:'cards'|'table', label:string)=>(
-    <button onClick={()=>setViewPersist(v)} style={{padding:'8px 12px',fontSize:12,fontWeight:700,cursor:'pointer',border:'none',background:view===v?GOLD:'transparent',color:view===v?colors.dark:DIM,borderRadius:8}}>{label}</button>
+    <button onClick={()=>setViewPersist(v)} style={{padding:'8px 12px',fontSize:12,fontWeight:700,cursor:'pointer',border:'none',background:view===v?'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))':'transparent',color:view===v?colors.dark:DIM,borderRadius:8,boxShadow:view===v?'inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 6px var(--brand-primary-25)':'none'}}>{label}</button>
   );
 
   return (
@@ -137,7 +137,7 @@ export default function ProjectsPage() {
       {loading && (
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(360px,1fr))',gap:18}}>
           {[1,2,3,4].map(i=>(
-            <div key={i} className="pmSkeleton" style={{background:PANEL,border:`1px solid ${PANEL_BORDER}`,borderRadius:18,padding:22,height:200}}>
+            <div key={i} className="pmSkeleton" style={{background:PANEL,border:`1px solid ${PANEL_BORDER}`,borderRadius:16,padding:22,height:200}}>
               <div style={{height:16,background:'rgba(255,255,255,0.08)',borderRadius:6,marginBottom:10,width:'60%'}}/>
               <div style={{height:12,background:'rgba(255,255,255,0.06)',borderRadius:6,marginBottom:18,width:'40%'}}/>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>

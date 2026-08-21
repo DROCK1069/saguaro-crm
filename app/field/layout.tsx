@@ -462,11 +462,11 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
 
             <div style={{ padding: '14px 14px 4px' }}>
               <button onClick={() => { setShowMenu(false); router.push('/field/sage'); }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, background: 'linear-gradient(135deg,#F59E0B,#FBBF24)', border: 'none', borderRadius: 14, padding: '13px 15px', cursor: 'pointer', boxShadow: '0 3px 12px rgba(245, 158, 11,.3)' }}>
-                <svg width={22} height={22} viewBox="0 0 24 24" fill="#fff"><path d="M12 2l2.4 6.9L21 11l-6.6 2.1L12 20l-2.4-6.9L3 11l6.6-2.1z" /></svg>
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 'var(--radius-lg)', padding: '13px 15px', cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
+                <svg width={22} height={22} viewBox="0 0 24 24" fill="#241500"><path d="M12 2l2.4 6.9L21 11l-6.6 2.1L12 20l-2.4-6.9L3 11l6.6-2.1z" /></svg>
                 <span style={{ flex: 1, textAlign: 'left' }}>
-                  <span style={{ display: 'block', fontSize: 15, fontWeight: 800, color: '#fff' }}>Ask Sage AI</span>
-                  <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,.9)', marginTop: 1 }}>Your built-in construction assistant</span>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 800, color: '#241500' }}>Ask Sage AI</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: 'rgba(36,21,0,.78)', marginTop: 1 }}>Your built-in construction assistant</span>
                 </span>
               </button>
             </div>
@@ -624,7 +624,7 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
             display: flex; align-items: center; justify-content: space-between;
             height: 54px; padding: 0 28px; border-bottom: 1px solid rgba(255,255,255,0.08);
             position: sticky; top: 0; z-index: 40;
-            background: rgba(11,18,32,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(20,20,22,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
           }
         }
 
@@ -635,8 +635,8 @@ export default function FieldLayout({ children }: { children: React.ReactNode })
         .fld-sb-proj { padding: 0 12px 10px; position: relative; }
         .fld-sb-proj > button { width: 100%; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; padding: 9px 11px; color: ${TEXT}; font-size: 13px; font-weight: 600; cursor: pointer; }
         .fld-sb-proj-menu { position: absolute; top: 100%; left: 12px; right: 12px; margin-top: 4px; background: #141416; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; z-index: 70; max-height: 260px; overflow-y: auto; box-shadow: 0 12px 32px rgba(0,0,0,.55); }
-        .fld-sb-sage { margin: 0 12px 10px; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 9px; padding: 10px; color: ${GOLD}; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; }
-        .fld-sb-sage:hover { background: rgba(245,158,11,0.2); }
+        .fld-sb-sage { margin: 0 12px 10px; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover)); border: none; border-radius: var(--radius-md); padding: 10px; color: #241500; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35); transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+        .fld-sb-sage:hover { transform: translateY(-1px); box-shadow: 0 8px 22px var(--brand-primary-35), inset 0 1px 0 rgba(255,255,255,0.35); filter: brightness(1.04); }
         .fld-sb-nav { flex: 1; overflow-y: auto; padding: 2px 8px 10px; }
         .fld-sb-group { padding: 12px 12px 5px; font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.7px; text-transform: uppercase; }
         .fld-sb-link { width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: none; border-radius: 8px; padding: 7px 10px; color: ${DIM}; font-size: 13.5px; font-weight: 500; cursor: pointer; text-align: left; transition: background .12s, color .12s; }

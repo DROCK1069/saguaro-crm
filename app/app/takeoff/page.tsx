@@ -163,7 +163,7 @@ function ConfidenceRing({ value, size = 96, stroke = 9 }: { value: number; size?
 // One metric tile in the 4-up strip (DARK bg, phosphor icon, tabular value).
 function MetricCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: string }) {
   return (
-    <div style={{ background: DARK, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12 }}>
+    <div className="lift" style={{ background: DARK, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, boxShadow: 'var(--shadow-sm)' }}>
       <div style={{ color: MUTED, marginBottom: 8 }}>{icon}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color: accent || TEXT, lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: MUTED, marginTop: 4 }}>{label}</div>
@@ -458,7 +458,7 @@ export default function TakeoffPage() {
             { href: '/app/takeoff/assemblies', title: 'Assembly library', sub: 'Cost templates that explode into full priced bills', icon: <Stack size={20} weight="duotone" color={GOLD} /> },
             { href: '/app/takeoff/rates', title: 'Cost rates', sub: 'Your learned material & labor rates', icon: <CurrencyDollar size={20} weight="duotone" color={GOLD} /> },
           ].map(d => (
-            <Link key={d.href} href={d.href} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderRadius: 12, border: '1px solid rgba(245,158,11,0.28)', background: 'linear-gradient(160deg, rgba(245,158,11,0.07), rgba(255,255,255,0.015))', textDecoration: 'none' }}>
+            <Link key={d.href} href={d.href} className="lift" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderRadius: 12, border: '1px solid rgba(245,158,11,0.28)', background: 'linear-gradient(160deg, rgba(245,158,11,0.07), rgba(255,255,255,0.015))', textDecoration: 'none', boxShadow: 'var(--shadow-sm)' }}>
               {d.icon}
               <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{d.title}</span>
@@ -735,6 +735,7 @@ export default function TakeoffPage() {
                   display: 'flex', gap: 26, alignItems: 'center', flexWrap: 'wrap',
                   background: dragOver ? 'rgba(245,158,11,0.06)' : RAISED,
                   border: `1px solid ${dragOver ? GOLD : BORDER}`, borderRadius: 20, padding: 26,
+                  boxShadow: 'var(--shadow-lg)',
                   transition: 'border-color .15s, background .15s',
                 }}
               >
@@ -758,7 +759,8 @@ export default function TakeoffPage() {
                   </div>
                   <button
                     onClick={() => { if (phase !== 'idle') resetUpload(); fileInputRef.current?.click(); }}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: GOLD, color: DARK, fontWeight: 700, fontSize: 14, padding: '11px 22px', borderRadius: 10, border: 'none', cursor: 'pointer' }}
+                    className="btn-gold"
+                    style={{ fontSize: 14, padding: '11px 22px', cursor: 'pointer' }}
                   >
                     <UploadSimple size={16} weight="bold" /> Upload blueprint
                   </button>
@@ -829,7 +831,7 @@ export default function TakeoffPage() {
                       </div>
 
                       {/* hero card with gold accent bar + confidence ring */}
-                      <div style={{ position: 'relative', background: RAISED, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${GOLD}`, borderRadius: 20, padding: 26, overflow: 'hidden' }}>
+                      <div style={{ position: 'relative', background: RAISED, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${GOLD}`, borderRadius: 20, padding: 26, overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
                           <div style={{ minWidth: 240, flex: '1 1 auto' }}>
                             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.6, color: GOLD, textTransform: 'uppercase', marginBottom: 8 }}>AI Blueprint Estimate</div>
@@ -860,7 +862,7 @@ export default function TakeoffPage() {
 
                       {/* ═══ C. TRADE BREAKDOWN BAR — "where's the money" ═══ */}
                       {tradeSegments.length > 0 && (
-                        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16 }}>
+                        <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, boxShadow: 'var(--shadow-sm)' }}>
                           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: MUTED, textTransform: 'uppercase', marginBottom: 12 }}>Cost by Trade</div>
                           <div style={{ display: 'flex', height: 14, borderRadius: 7, overflow: 'hidden', gap: 1 }}>
                             {tradeSegments.map(s => (

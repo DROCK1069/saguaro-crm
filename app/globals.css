@@ -527,3 +527,78 @@ select:-webkit-autofill {
   transition: background-color 600000s 0s, color 600000s 0s;
 }
 input:-webkit-autofill::first-line { color: #FFFFFF !important; font-size: 15px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MATERIAL LAYER (2026-08-21) — the Signal Studio designer finish, promoted to
+   the WHOLE app. Element-level and token-driven so every page inherits it with
+   zero per-page edits. Tracks --brand-primary (white-label safe).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Keyboard focus: every interactive element gets a brand ring, never the UA default. */
+:where(button, a, select, input, textarea, [role="button"], [role="tab"], [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Buttons: material press + smooth ease everywhere (hover ease already global). */
+button:active { transform: translateY(0.5px); }
+button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* Selects: machined face + brand chevron instead of the browser default. */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23F59E0B' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 9px center !important;
+  background-size: 10px 6px !important;
+  padding-right: 26px !important;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--gold-ring) !important;
+  box-shadow: 0 0 0 3px var(--brand-primary-12) !important;
+  outline: none;
+}
+/* keep the autofill fix's inset shadow winning on autofilled fields */
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #141416 inset, 0 0 0 3px var(--brand-primary-12) !important;
+  box-shadow: 0 0 0 1000px #141416 inset, 0 0 0 3px var(--brand-primary-12) !important;
+}
+
+/* Scrollbars: the old thumb was black-alpha on a black track — invisible. */
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+
+/* Tables: micro-cap headers + hairline rows wherever plain <table> is used. */
+:where(table) th {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+:where(table) td { border-bottom: 1px solid var(--border-subtle); }
+:where(table) tbody tr { transition: background .12s ease; }
+:where(table) tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+/* Cards/links micro-interaction: anything opting in via .lift gets the standard hover. */
+.lift { transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease; }
+.lift:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+
+/* Brand material button — shared recipe for gold CTAs (opt-in class). */
+.btn-gold {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover));
+  color: #241500; font-weight: 800; border: none; border-radius: var(--radius-md);
+  padding: 10px 18px;
+  box-shadow: 0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.btn-gold:hover { transform: translateY(-1px); box-shadow: 0 8px 22px var(--brand-primary-35), inset 0 1px 0 rgba(255,255,255,0.35); filter: brightness(1.04); }
+.btn-gold:active { transform: translateY(0); }
+
+/* Reduced motion: every transition/animation collapses for users who ask. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}

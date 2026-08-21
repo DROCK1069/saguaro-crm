@@ -206,8 +206,8 @@ export default function FieldHome() {
         .fld-hub-pad  { padding: 0 16px; }
         .fld-hub-grid { display: block; }
         .fld-qa-grid  { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 16px; }
-        .fld-qa-tile  { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-decoration: none; transition: border-color .15s, background .15s, transform .12s; }
-        .fld-qa-tile:hover { border-color: rgba(245,158,11,0.4); background: rgba(255,255,255,0.04); transform: translateY(-2px); }
+        .fld-qa-tile  { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-lg); padding: 16px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-decoration: none; transition: border-color .15s, background .15s, transform .12s, box-shadow .15s; }
+        .fld-qa-tile:hover { border-color: rgba(245,158,11,0.4); background: rgba(255,255,255,0.04); transform: translateY(-2px); box-shadow: var(--shadow-md); }
         .fld-qa-badge { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg,#1b2330 0%,#141b26 100%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 6px 14px rgba(0,0,0,0.4); }
         .fld-qa-badge svg { display: block; }
         .fld-qa-label { font-size: 12px; font-weight: 600; color: #fff; text-align: center; letter-spacing: .1px; }
@@ -317,8 +317,8 @@ export default function FieldHome() {
               </div>
             )}
 
-            <button onClick={() => setSageOpen(true)}
-              style={{ width: '100%', background: RAISED, border: '1px solid rgba(245, 158, 11,.35)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}>
+            <button onClick={() => setSageOpen(true)} className="lift"
+              style={{ width: '100%', background: RAISED, border: '1px solid rgba(245, 158, 11,.35)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left', boxShadow: 'var(--shadow-sm)' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(245, 158, 11,.15)', border: '1px solid rgba(245, 158, 11,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, flexShrink: 0 }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={19} height={19}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               </div>
@@ -408,7 +408,7 @@ export default function FieldHome() {
                 <button
                   onClick={() => sendSage(sageInput)}
                   disabled={!sageInput.trim() || sageLoading}
-                  style={{ background: sageInput.trim() && !sageLoading ? GOLD : BORDER, border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: sageInput.trim() && !sageLoading ? 'pointer' : 'default', color: sageInput.trim() && !sageLoading ? '#000' : DIM, flexShrink: 0, transition: 'background .15s' }}
+                  style={{ background: sageInput.trim() && !sageLoading ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : BORDER, border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: sageInput.trim() && !sageLoading ? 'pointer' : 'default', color: sageInput.trim() && !sageLoading ? '#241500' : DIM, flexShrink: 0, boxShadow: sageInput.trim() && !sageLoading ? '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none', transition: 'background .15s, box-shadow .15s' }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><line x1={12} y1={19} x2={12} y2={5}/><polyline points="5 12 12 5 19 12"/></svg>
                 </button>
@@ -424,10 +424,10 @@ export default function FieldHome() {
 function Stat({ label, value, color = DIM }: { label: string; value: string; color?: string }) {
   return (
     <div>
-      <p style={{ margin: 0, fontSize: 10, color: DIM, fontWeight: 600, letterSpacing: 0.3 }}>{label}</p>
+      <p style={{ margin: 0, fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' }}>{label}</p>
       <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 800, color }}>{value}</p>
     </div>
   );
 }
 
-const sLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, color: DIM, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 };
+const sLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 };

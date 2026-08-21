@@ -54,19 +54,20 @@ export function FileDropzone({
         style={{
           display: 'flex', flexDirection: compact ? 'row' : 'column', alignItems: 'center', justifyContent: 'center',
           gap: 10, padding: compact ? '12px 16px' : '26px 20px', cursor: busy ? 'wait' : 'pointer',
-          border: `1.5px dashed ${over ? '#F59E0B' : 'rgba(255,255,255,0.18)'}`, borderRadius: 12,
-          background: over ? 'rgba(245,158,11,0.08)' : '#141416', transition: 'all .12s', textAlign: 'center',
+          border: `1.5px dashed ${over ? 'var(--brand-primary)' : 'rgba(255,255,255,0.18)'}`, borderRadius: 'var(--radius-lg)',
+          background: over ? 'var(--brand-primary-12)' : 'var(--bg-surface)', transition: 'all .12s', textAlign: 'center',
+          boxShadow: over ? '0 0 0 3px var(--brand-primary-12)' : 'none',
         }}
       >
         {busy ? <Spinner size={compact ? 18 : 26} color="#F59E0B" className="spin" /> : <UploadSimple size={compact ? 18 : 26} color={over ? '#F59E0B' : '#CBD5E1'} />}
-        <div style={{ color: '#CBD5E1', fontSize: compact ? 13 : 14 }}>
-          <b style={{ color: '#fff' }}>{busy ? msg || 'Uploading…' : 'Drop files or click to upload'}</b>
-          {!compact && !busy && <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>Images, video, PDF, Office, CAD — up to 500MB each</div>}
+        <div style={{ color: 'var(--text-secondary)', fontSize: compact ? 13 : 14 }}>
+          <b style={{ color: 'var(--text-primary)' }}>{busy ? msg || 'Uploading…' : 'Drop files or click to browse'}</b>
+          {!compact && !busy && <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 4 }}>Images, video, PDF, Office, CAD — up to 500 MB each</div>}
         </div>
         <input ref={inputRef} type="file" multiple style={{ display: 'none' }} disabled={busy}
           onChange={(e) => { if (e.target.files?.length) upload(e.target.files); e.currentTarget.value = ''; }} />
       </label>
-      {msg && !busy && <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 6 }}>{msg}</div>}
+      {msg && !busy && <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 6 }}>{msg}</div>}
       <style>{`.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );

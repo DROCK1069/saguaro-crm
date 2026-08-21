@@ -53,7 +53,7 @@ export default function FieldPageHeader({
         .fld-ph-back { background: none; border: none; color: ${TEXT}; cursor: pointer; padding: 4px; margin: 0 0 8px -4px; display: inline-flex; }
         .fld-ph-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
         .fld-ph-titles { display: flex; align-items: center; gap: 12px; min-width: 0; }
-        .fld-ph-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg,#1b2330,#141b26); border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+        .fld-ph-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg,#1b2330,#141b26); border: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 6px 14px rgba(0,0,0,0.4); }
         .fld-ph-icon svg { display: block; }
         .fld-ph-title { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: ${TEXT}; line-height: 1.15; }
         .fld-ph-sub { margin: 3px 0 0; font-size: 13px; color: ${DIM}; }

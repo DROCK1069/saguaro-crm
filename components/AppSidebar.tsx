@@ -177,8 +177,11 @@ export default function AppSidebar({
         left: 0,
         bottom: 0,
         width,
-        background: colors.darkAlt,
-        borderRight: `1px solid ${colors.border}`,
+        // machined rail: vertical gradient + a shadow cast INTO the content and a
+        // lit inset hairline — the shell reads as a surface, not a flat strip
+        background: `linear-gradient(180deg, ${colors.darkAlt}, #0c0d10)`,
+        borderRight: '1px solid rgba(0,0,0,0.55)',
+        boxShadow: '14px 0 34px rgba(0,0,0,0.35), inset -1px 0 0 rgba(255,255,255,0.05)',
         display: 'flex',
         flexDirection: 'column',
         zIndex: z.sidebar,
@@ -278,7 +281,10 @@ export default function AppSidebar({
                     fontSize: font.size.md,
                     fontWeight: active ? font.weight.semibold : font.weight.medium,
                     color: active ? colors.gold : colors.textMuted,
-                    background: active ? colors.goldDim : 'transparent',
+                    background: active
+                      ? 'linear-gradient(180deg, var(--brand-primary-18), var(--brand-primary-12))'
+                      : 'transparent',
+                    boxShadow: active ? 'inset 0 0 0 1px var(--brand-primary-25)' : 'none',
                     textDecoration: 'none',
                     transition: 'background .15s ease, color .15s ease',
                     position: 'relative',
@@ -287,7 +293,7 @@ export default function AppSidebar({
                   }}
                   onMouseEnter={(e) => {
                     if (!active) {
-                      e.currentTarget.style.background = 'rgba(0,0,0,.04)';
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
                       e.currentTarget.style.color = colors.text;
                     }
                   }}
@@ -374,7 +380,7 @@ export default function AppSidebar({
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  e.currentTarget.style.background = 'rgba(0,0,0,.04)';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
                   e.currentTarget.style.color = colors.text;
                 }
               }}
@@ -428,7 +434,7 @@ export default function AppSidebar({
             transition: 'background .15s ease, color .15s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(0,0,0,.04)';
+            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
             e.currentTarget.style.color = colors.text;
           }}
           onMouseLeave={(e) => {

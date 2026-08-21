@@ -208,7 +208,7 @@ export default function AppTopBar({
           minWidth: 220,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.14)';
+          e.currentTarget.style.borderColor = 'var(--border-strong)';
           e.currentTarget.style.background = '#141416';
         }}
         onMouseLeave={(e) => {
@@ -247,23 +247,24 @@ export default function AppTopBar({
           gap: 7,
           height: 36,
           padding: '0 14px',
-          background: 'rgba(245, 158, 11,0.12)',
-          border: '1px solid rgba(245, 158, 11,0.25)',
+          background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',
+          border: 'none',
           borderRadius: radius.xl,
-          color: '#F59E0B',
+          color: '#241500',
           fontSize: font.size.md,
-          fontWeight: font.weight.semibold,
+          fontWeight: font.weight.bold,
           letterSpacing: '0.01em',
           cursor: 'pointer',
-          transition: 'background .15s, border-color .15s',
+          boxShadow: '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
+          transition: 'box-shadow .15s, filter .15s, transform .12s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(245, 158, 11,0.18)';
-          e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.35)';
+          e.currentTarget.style.boxShadow = '0 4px 16px var(--brand-primary-35), inset 0 1px 0 rgba(255,255,255,0.35)';
+          e.currentTarget.style.filter = 'brightness(1.04)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(245, 158, 11,0.12)';
-          e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.25)';
+          e.currentTarget.style.boxShadow = '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)';
+          e.currentTarget.style.filter = 'none';
         }}
       >
         <Star size={15} weight="fill" />
@@ -289,7 +290,7 @@ export default function AppTopBar({
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = '#FFFFFF';
-          e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+          e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = '#CBD5E1';
@@ -341,7 +342,7 @@ export default function AppTopBar({
                 border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: radius['2xl'],
                 minWidth: 196,
-                boxShadow: '0 16px 44px rgba(0,0,0,0.10)',
+                boxShadow: 'var(--shadow-lg)',
                 zIndex: z.dropdown,
                 overflow: 'hidden',
                 padding: 6,
@@ -357,15 +358,15 @@ export default function AppTopBar({
               >
                 <UserCircle size={28} weight="fill" style={{ color: '#8094B0', flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: font.size.md, fontWeight: font.weight.semibold, color: '#FFFFFF', lineHeight: 1.2 }}>
-                    Signed in
+                  <div style={{ fontSize: '10px', fontWeight: font.weight.bold, color: '#8094B0', textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.4 }}>
+                    Signed in as
                   </div>
-                  <div style={{ fontSize: font.size.xs, color: '#8094B0', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: font.size.md, fontWeight: font.weight.semibold, color: '#FFFFFF', lineHeight: 1.3 }}>
                     {userInitials}
                   </div>
                 </div>
               </div>
-              <div style={{ height: 1, background: 'rgba(0,0,0,0.08)', margin: '2px 0 6px' }} />
+              <div style={{ height: 1, background: 'var(--border-default)', margin: '2px 0 6px' }} />
               <Link
                 href="/app/settings"
                 onClick={() => setShowUserMenu(false)}

@@ -1401,9 +1401,9 @@ export default function TakeoffPage() {
           padding: '11px 16px',
           background: 'rgba(0,0,0,0.34)',
           borderBottom: '2px solid rgba(245, 158, 11,0.2)',
-          fontSize: 11, fontWeight: 600,
-          letterSpacing: '0.08em',
-          color: 'rgba(255,255,255,0.4)',
+          fontSize: 10.5, fontWeight: 700,
+          letterSpacing: '0.06em',
+          color: 'var(--text-tertiary)',
           textTransform: 'uppercase',
         }}>
           <div>CSI Code</div>
@@ -1446,16 +1446,17 @@ export default function TakeoffPage() {
         <div style={{
           borderLeft: `3px solid ${GOLD}`,
           background: 'rgba(245, 158, 11,0.05)',
-          borderRadius: '0 8px 8px 0',
-          padding: '14px 18px',
+          borderRadius: '0 12px 12px 0',
+          padding: '16px 20px',
           marginBottom: 20,
+          boxShadow: 'var(--shadow-sm)',
         }}>
-          <div style={{ color: GOLD, fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
-            AI Recommendations
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: GOLD, fontWeight: 800, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+            <Sparkle size={13} weight="fill" color={GOLD} /> Estimator Recommendations
           </div>
           {result!.recommendations.map((rec, i) => (
-            <div key={i} style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginBottom: 4 }}>
-              • {rec}
+            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 1.55, marginBottom: 6 }}>
+              <CheckCircle size={14} weight="fill" color={GOLD} style={{ flexShrink: 0, marginTop: 2 }} /> {rec}
             </div>
           ))}
         </div>

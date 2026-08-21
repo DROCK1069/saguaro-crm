@@ -124,7 +124,7 @@ export default function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* ── Table ────────────────────────────────────────────────────── */}
-      <div style={{ borderRadius: radius.lg, border: `1px solid ${colors.border}`, background: colors.raised, overflow: 'hidden', boxShadow: shadow.sm }}>
+      <div style={{ borderRadius: 'var(--radius-lg)', border: `1px solid ${colors.border}`, background: colors.raised, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -142,11 +142,11 @@ export default function DataTable<T extends Record<string, any>>({
                           background: colors.darkAlt,
                           borderBottom: `1px solid ${colors.border}`,
                           textAlign: 'left',
-                          fontSize: 11,
-                          fontWeight: font.weight.semibold,
+                          fontSize: 10.5,
+                          fontWeight: font.weight.bold,
                           color: colors.textDim,
                           textTransform: 'uppercase',
-                          letterSpacing: 0.6,
+                          letterSpacing: '0.06em',
                           cursor: canSort ? 'pointer' : 'default',
                           userSelect: 'none',
                           whiteSpace: 'nowrap',
@@ -190,9 +190,9 @@ export default function DataTable<T extends Record<string, any>>({
                         <div
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            width: 48, height: 48, borderRadius: radius.lg,
-                            background: colors.raisedAlt, border: `1px solid ${colors.borderDim}`,
-                            color: colors.textDim,
+                            width: 48, height: 48, borderRadius: 'var(--radius-pill)',
+                            background: colors.goldDim, border: `1px solid ${colors.goldBorder}`,
+                            color: colors.gold,
                           }}
                         >
                           {emptyIcon}

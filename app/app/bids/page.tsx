@@ -322,7 +322,7 @@ function BidsPageInner() {
             {t==='active'?'Active Packages':t==='pipeline'?'Opportunity Pipeline':'Bid History'}
           </button>
         ))}
-        <a href="/app/bids/leveling" style={{padding:'10px 18px',borderBottom:'2px solid transparent',color:DIM,fontSize:13,fontWeight:500,textDecoration:'none',marginLeft:'auto'}}>Bid Leveling →</a>
+        <a href="/app/bids/leveling" style={{padding:'10px 18px',borderBottom:'2px solid transparent',color:'var(--brand-primary)',fontSize:13,fontWeight:700,textDecoration:'none',marginLeft:'auto',display:'inline-flex',alignItems:'center',gap:5}}>Bid Leveling <ArrowRight size={13} weight="bold" /></a>
       </div>
 
       {/* ── Pipeline Tab ──────────────────────────────────────────────────────── */}
@@ -363,7 +363,7 @@ function BidsPageInner() {
           <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
             <thead><tr style={{background:'#1c1c1e'}}>
               {['Package Name','Trade','Status','Bid Due','Actions'].map(h=>(
-                <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
+                <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{opportunities.map(op=>(
@@ -373,7 +373,7 @@ function BidsPageInner() {
                 <td style={{padding:'12px 14px'}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(26,95,168,.12)',color:'#4a9de8',textTransform:'uppercase' as const}}>{op.status}</span></td>
                 <td style={{padding:'12px 14px',color:DIM}}>{op.bid_due_date || '—'}</td>
                 <td style={{padding:'12px 14px'}}>
-                  <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
+                  <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
                 </td>
               </tr>
             ))}</tbody>
@@ -421,7 +421,7 @@ function BidsPageInner() {
           <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
             <thead><tr style={{background:'#1c1c1e'}}>
               {['Package','Trade','Status','Bid Due','Invited / Responded','Low Bid','Actions'].map(h=>(
-                <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
+                <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{activePackages.map(op=>{
@@ -440,7 +440,7 @@ function BidsPageInner() {
                   <td style={{padding:'12px 14px',color:DIM}}><span style={{display:'inline-flex',alignItems:'center',gap:5}}><Users size={13} weight="regular" color={DIM} /><span style={{color:TEXT,fontVariantNumeric:'tabular-nums'}}>{invited}</span> / <span style={{color:responded>0?GREEN:DIM,fontVariantNumeric:'tabular-nums'}}>{responded}</span></span></td>
                   <td style={{padding:'12px 14px',color:op.low_bid_amount?TEXT:DIM,fontVariantNumeric:'tabular-nums'}}>{op.low_bid_amount ? (<span style={{display:'inline-flex',alignItems:'center',gap:4}}><CurrencyDollar size={13} weight="regular" color={GREEN} />{fmt(op.low_bid_amount)}{op.low_bid_company?<span style={{color:DIM,fontSize:11}}> · {op.low_bid_company}</span>:null}</span>) : '—'}</td>
                   <td style={{padding:'12px 14px'}}>
-                    <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,padding:'4px 10px',fontWeight:700,cursor:'pointer'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
+                    <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
                   </td>
                 </tr>
               );
@@ -511,7 +511,7 @@ function BidsPageInner() {
         {!historyLoading&&!historyError&&historyBids.length>0&&<table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
           <thead><tr style={{background:'#1c1c1e'}}>
             {['Project','Type','Bid Date','Bid Amount','Margin %','Location','Outcome','Awarded To','Actions'].map(h=>(
-              <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
+              <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
             ))}
           </tr></thead>
           <tbody>{historyBids.map(b=>{
@@ -642,7 +642,7 @@ function BidsPageInner() {
               <div style={{fontSize:11,color:DIM,textAlign:'center' as const,marginBottom:12,display:'flex',alignItems:'center',justifyContent:'center',gap:5}}><CheckCircle size={13} weight="fill" color={GREEN} />Saved to your bid history as a pending bid</div>
               <div style={{display:'flex',gap:10}}>
                 <button onClick={()=>{setScoreResult(null);setScoreError(null);setScoreForm({projectName:'',bidAmount:'',margin:'',tradeType:'',notes:''});setPickProject('');setScoreMeta({});}} style={{flex:1,padding:'9px 16px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Score Another</button>
-                <button onClick={()=>{setShowScore(false);setScoreResult(null);setTab('history');fetchHistory(historyFilter==='all'?undefined:historyFilter);}} style={{flex:1,padding:'9px 16px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer'}}>View in History</button>
+                <button onClick={()=>{setShowScore(false);setScoreResult(null);setTab('history');fetchHistory(historyFilter==='all'?undefined:historyFilter);}} style={{flex:1,padding:'9px 16px',background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-md)',color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',boxShadow:'0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}>View in History</button>
               </div>
             </div>
           ) : (
@@ -678,7 +678,7 @@ function BidsPageInner() {
                 <span style={{display:'inline-flex',marginTop:1}}><WarningCircle size={15} weight="fill" color={RED} /></span>{scoreError}
               </div>}
               <div style={{display:'flex',gap:10}}>
-                <button onClick={submitScore} disabled={scoring||!scoreForm.projectName||!scoreForm.bidAmount} style={{flex:1,padding:'10px 18px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:7,color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',opacity:scoring||!scoreForm.projectName||!scoreForm.bidAmount?0.6:1}}>
+                <button onClick={submitScore} disabled={scoring||!scoreForm.projectName||!scoreForm.bidAmount} style={{flex:1,padding:'10px 18px',background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-md)',color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',boxShadow:'0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',opacity:scoring||!scoreForm.projectName||!scoreForm.bidAmount?0.6:1}}>
                   {scoring?'Scoring…':<span style={{display:'inline-flex',alignItems:'center',gap:6}}><Robot size={14} weight="regular" />Score This Bid</span>}
                 </button>
                 <button onClick={()=>{setShowScore(false);setPickProject('');setScoreMeta({});}} style={{padding:'10px 16px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>

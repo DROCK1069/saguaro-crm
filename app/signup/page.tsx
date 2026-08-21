@@ -101,7 +101,7 @@ export default function SignupPage(){
             </div>
           ))}
         </div>
-        <Link href="/login" style={{display:'block',padding:'12px',background:GOLD,borderRadius:8,color:DARK,fontWeight:600,fontSize:15,textDecoration:'none',marginBottom:16}}>
+        <Link href="/login" style={{display:'block',padding:'12px',background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',borderRadius:'var(--radius-md)',color:'#241500',fontWeight:700,fontSize:15,textDecoration:'none',marginBottom:16,boxShadow:'0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}>
           Go to Login →
         </Link>
         <p style={{fontSize:12,color:DIM}}>Didn't get it? Check spam or <button onClick={()=>setSuccess(false)} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',fontSize:12,fontWeight:600}}>try again</button></p>
@@ -116,7 +116,7 @@ export default function SignupPage(){
       <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(20,20,22,0.95)',backdropFilter:'blur(12px)',zIndex:50}}>
         <Link href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:10}}>
           <img src="/logo-full.jpg" alt="Saguaro" style={{height:34,width:'auto',borderRadius:4}}/>
-          <span style={{fontWeight:600,fontSize:15,color:TEXT,letterSpacing:0.5}}>SAGUARO</span>
+          <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:'linear-gradient(90deg, var(--brand-primary), var(--brand-primary-strong))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
         </Link>
         <Link href="/login" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>
           Already have an account? <span style={{color:GOLD}}>Log in →</span>
@@ -170,7 +170,7 @@ export default function SignupPage(){
           </div>
 
           {/* Testimonial */}
-          <div style={{marginTop:36,padding:'20px 24px',background:CARD,border:`1px solid ${HAIR}`,borderRadius:12}}>
+          <div className="lift" style={{marginTop:36,padding:'20px 24px',background:CARD,border:`1px solid ${HAIR}`,borderRadius:'var(--radius-lg)',boxShadow:'var(--shadow-sm)'}}>
             <p style={{fontSize:13,color:DIM,lineHeight:1.7,marginBottom:12,fontStyle:'italic'}}>
               "We compared Saguaro to Procore and Buildertrend. Saguaro has everything we need at a fraction of the cost — and the AI features actually work."
             </p>
@@ -185,7 +185,7 @@ export default function SignupPage(){
             <p style={{fontSize:13,color:DIM,margin:0}}>Takes 30 seconds. No credit card required.</p>
           </div>
 
-          <div style={{background:CARD,border:`1px solid ${HAIR}`,borderRadius:14,padding:32}}>
+          <div style={{background:RAISED,border:`1px solid ${HAIR}`,borderRadius:'var(--radius-lg)',padding:32,boxShadow:'var(--shadow-lg)'}}>
             {error&&(
               <div style={{background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.3)',borderRadius:8,padding:'10px 14px',marginBottom:20,fontSize:13,color:RED,display:'flex',alignItems:'flex-start',gap:8}}>
                 <span>⚠️</span><span>{error}</span>
@@ -238,7 +238,7 @@ export default function SignupPage(){
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} style={{marginTop:8,padding:'12px 0',background:loading?'rgba(245,158,11,.4)':GOLD,border:'none',borderRadius:8,color:DARK,fontSize:15,fontWeight:600,cursor:loading?'not-allowed':'pointer'}}>
+              <button type="submit" disabled={loading} style={{marginTop:8,padding:'12px 0',background:loading?'rgba(245,158,11,.4)':'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-md)',color:'#241500',fontSize:15,fontWeight:700,letterSpacing:'0.01em',cursor:loading?'not-allowed':'pointer',boxShadow:loading?'none':'0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',transition:'background .18s, box-shadow .18s, transform .12s'}}>
                 {loading?'Creating your account…':'Start Free Trial →'}
               </button>
             </form>
@@ -258,7 +258,7 @@ export default function SignupPage(){
               Already have an account? <Link href="/login" style={{color:GOLD,textDecoration:'none',fontWeight:600}}>Log in →</Link>
             </div>
             <div style={{marginTop:8,textAlign:'center',fontSize:11,color:'#CBD5E1'}}>
-              By signing up you agree to our <Link href="/terms" style={{color:DIM,textDecoration:'none'}}>Terms</Link> and <Link href="/privacy" style={{color:DIM,textDecoration:'none'}}>Privacy Policy</Link>
+              By signing up you agree to our <Link href="/terms" style={{color:DIM,textDecoration:'underline',textUnderlineOffset:3}}>Terms of Service</Link> and <Link href="/privacy" style={{color:DIM,textDecoration:'underline',textUnderlineOffset:3}}>Privacy Policy</Link>
             </div>
           </div>
         </div>

@@ -117,7 +117,7 @@ function TodayActionCard({ item }: { item: TodayItem }) {
         borderBottom: `1px solid ${BORDER_SUBTLE}`, borderLeft: `3px solid ${meta.borderColor}`,
         background: 'transparent', transition: 'background .15s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.03)')}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>{meta.icon}</span>
@@ -209,12 +209,12 @@ function BidScoreModal({ onClose }: { onClose: () => void }) {
                   />
                 </div>
               ))}
-              {error && <div style={{ color: RED, fontSize: 12, marginBottom: 12 }}>{error}</div>}
+              {error && <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: RED, fontSize: 12, fontWeight: 600, marginBottom: 12, padding: '10px 12px', borderRadius: 8, background: 'rgba(224,100,78,0.10)', border: '1px solid rgba(224,100,78,0.28)' }}><WarningCircle size={16} weight="duotone" /> {error}</div>}
               <button
                 type="submit" disabled={loading}
-                style={{ width: '100%', padding: '11px', background: loading ? 'rgba(245, 158, 11,0.4)' : GOLD, border: 'none', borderRadius: 8, color: '#FFFFFF', fontWeight: 800, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4 }}
+                style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px', background: loading ? 'rgba(245, 158, 11,0.4)' : 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 'var(--radius-md)', color: '#241500', fontWeight: 800, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4, boxShadow: loading ? 'none' : '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}
               >
-                {loading ? 'Analyzing...' : 'Score This Bid →'}
+                {loading ? 'Analyzing…' : <>Score This Bid <ArrowRight size={15} weight="bold" /></>}
               </button>
             </form>
           ) : (
@@ -291,17 +291,18 @@ function DrillDownPanel({ type, onClose }: { type: DrillDownType; onClose: () =>
         <Link
           href={link.href}
           onClick={onClose}
+          className="lift"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '14px 16px', background: DARK, borderRadius: 10, border: `1px solid ${BORDER}`,
-            textDecoration: 'none', marginBottom: 10,
+            textDecoration: 'none', marginBottom: 10, boxShadow: 'var(--shadow-sm)',
           }}
         >
           <div>
             <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{link.label}</div>
             <div style={{ fontSize: 12, color: DIM, marginTop: 3 }}>{link.desc}</div>
           </div>
-          <span style={{ color: GOLD, fontSize: 18 }}>→</span>
+          <ArrowRight size={18} weight="bold" color={GOLD} />
         </Link>
       </div>
     </div>
@@ -489,7 +490,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DIM, fontSize: 13 }}>
-                  No project data to display yet
+                  Add your first project to see budgets here
                 </div>
               )}
             </SectionCard>
@@ -649,7 +650,7 @@ export default function DashboardPage() {
               )}
               {!projectsLoading && !projectsError && projects.slice(0, 3).map(proj => (
                 <Link key={proj.id} href={`/app/projects/${proj.id}`} style={{ display: 'block', textDecoration: 'none', marginBottom: 10 }}>
-                  <div style={{ padding: '14px 16px', background: RAISED_ALT, borderRadius: 10, border: `1px solid ${BORDER_SUBTLE}`, cursor: 'pointer', transition: 'border-color .15s' }}
+                  <div className="lift" style={{ padding: '14px 16px', background: RAISED_ALT, borderRadius: 10, border: `1px solid ${BORDER_SUBTLE}`, cursor: 'pointer', boxShadow: 'var(--shadow-sm)' }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(245, 158, 11,0.5)')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = BORDER_SUBTLE)}
                   >
@@ -658,7 +659,7 @@ export default function DashboardPage() {
                         <div style={{ fontWeight: 700, color: TEXT, fontSize: 14, marginBottom: 2 }}>{proj.name}</div>
                         <div style={{ fontSize: 12, color: DIM }}>{proj.address}</div>
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 4, background: 'rgba(52,199,89,0.14)', color: '#248A3D', border: '1px solid rgba(52,199,89,0.3)', height: 'fit-content', textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: 'rgba(52,199,89,0.14)', color: GREEN, border: '1px solid rgba(52,199,89,0.3)', height: 'fit-content', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {proj.status}
                       </span>
                     </div>
@@ -708,7 +709,7 @@ export default function DashboardPage() {
                   <thead>
                     <tr style={{ background: RAISED_ALT }}>
                       {['RFI #', 'Subject', 'Status', 'Due'].map(h => (
-                        <th key={h} style={{ padding: '9px 16px', textAlign: 'left', fontWeight: 700, color: DIM, fontSize: 11, textTransform: 'uppercase', letterSpacing: .5 }}>{h}</th>
+                        <th key={h} style={{ padding: '9px 16px', textAlign: 'left', fontWeight: 700, color: DIM, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -720,7 +721,7 @@ export default function DashboardPage() {
                           <td style={{ padding: '10px 16px', color: DIM }}>{rfi.rfi_number}</td>
                           <td style={{ padding: '10px 16px', color: TEXT, maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rfi.subject}</td>
                           <td style={{ padding: '10px 16px' }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,149,0,0.14)', color: '#B25E00', border: `1px solid rgba(255,149,0,0.3)`, textTransform: 'uppercase' }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,149,0,0.14)', color: ORANGE, border: `1px solid rgba(255,149,0,0.3)`, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               {rfi.status}
                             </span>
                           </td>

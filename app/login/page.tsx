@@ -121,7 +121,7 @@ export default function LoginPage(){
           </div>
 
           {/* Card */}
-          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:'32px 28px',boxShadow:'0 8px 32px rgba(0,0,0,.25)'}}>
+          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:'var(--radius-lg)',padding:'32px 28px',boxShadow:'var(--shadow-lg)'}}>
             {info&&(
               <div style={{background:'rgba(34,197,94,.1)',border:'1px solid rgba(34,197,94,.3)',borderRadius:8,padding:'10px 14px',marginBottom:20,fontSize:13,color:'#22c55e',display:'flex',alignItems:'flex-start',gap:8}}>
                 <span>✅</span><span>{info}</span>
@@ -212,11 +212,11 @@ export default function LoginPage(){
               <button type="submit" disabled={loading}
                 style={{
                   marginTop:4,padding:'11px 0',
-                  background:loading?'rgba(245, 158, 11,.5)':GOLD,
-                  border:'none',borderRadius:8,color:'#1C1C1E',fontSize:14,fontWeight:600,letterSpacing:'0.01em',
-                  cursor:loading?'not-allowed':'pointer',transition:'background .18s, opacity .18s',
+                  background:loading?'rgba(245, 158, 11,.5)':'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',
+                  border:'none',borderRadius:'var(--radius-md)',color:'#241500',fontSize:14,fontWeight:700,letterSpacing:'0.01em',
+                  cursor:loading?'not-allowed':'pointer',transition:'background .18s, box-shadow .18s, transform .12s',
                   display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-                  boxShadow:'none',
+                  boxShadow:loading?'none':'0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
                 }}
               >
                 {loading && (
