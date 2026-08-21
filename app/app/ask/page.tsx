@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { humanError } from '@/lib/errors';
 import { Sparkle, PaperPlaneRight, FileText, CaretRight, Question } from '@phosphor-icons/react';
+import { Aurora, PremiumFX, ModuleHero, SectionCard, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)';
 const DIM = '#CBD5E1', TEXT = '#FFFFFF', BLUE = '#FBBF24';
@@ -46,25 +47,38 @@ export default function AskDocsPage() {
   const inp: React.CSSProperties = { background: DARK, border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, padding: '12px 14px', fontSize: 15, width: '100%' };
 
   return (
-    <div style={{ background: DARK, color: TEXT, minHeight: '100vh', fontFamily: 'system-ui,Segoe UI,sans-serif' }}>
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '26px 22px 40px', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(245,158,11,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Sparkle size={22} weight="fill" color={GOLD} /></div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>Ask your project docs</h1>
-            <p style={{ color: DIM, margin: '2px 0 0', fontSize: 13.5 }}>Sage answers from this project’s real records — RFIs, submittals, daily logs, change orders, safety — and cites every source.</p>
-          </div>
-          <select value={projectId} onChange={(e) => setProjectId(e.target.value)} style={{ ...inp, width: 'auto', padding: '9px 11px', fontSize: 14 }}>
-            {projects.length === 0 ? <option value="">No projects yet</option> : projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
+    // Inline premium surface (not the kit's PremiumSurface wrapper) — that wrapper sets
+    // overflow:hidden, which would break the sticky composer. Aurora clips itself.
+    <div className="pmRoot" style={{ position: 'relative', background: DARK, color: TEXT, minHeight: '100vh', fontFamily: 'system-ui,Segoe UI,sans-serif' }}>
+      <PremiumFX />
+      <Aurora soft />
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', padding: '34px 22px 40px', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <ModuleHero
+          eyebrow="Sage Intelligence"
+          eyebrowIcon={<Sparkle size={13} weight="fill" color={GOLD} />}
+          title="Ask your"
+          accent="Project Docs"
+          subtitle="Plain-English answers grounded in this project's real records — RFIs, submittals, daily logs, change orders, safety — with every source cited."
+          style={{ marginBottom: 16 }}
+          actions={
+            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} style={{ ...inp, width: 'auto', padding: '9px 11px', fontSize: 14 }}>
+              {projects.length === 0 ? <option value="">No projects yet</option> : projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          }
+        />
 
         <div style={{ flex: 1, marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {turns.length === 0 && !busy && (
-            <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 18 }}>
-              <div style={{ fontSize: 10.5, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>Try asking</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{EXAMPLES.map((ex) => <button key={ex} onClick={() => ask(ex)} style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', background: DARK, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', color: TEXT, cursor: 'pointer', fontSize: 14 }}><Question size={16} color={GOLD} />{ex}</button>)}</div>
-            </div>
+            <SectionCard title="Try asking" subtitle="One tap runs the question against this project's records" icon={<Question size={17} weight="duotone" color={GOLD} />}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{EXAMPLES.map((ex) => <button key={ex} onClick={() => ask(ex)} className="pmBtn" style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', background: DARK, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', color: TEXT, cursor: 'pointer', fontSize: 14 }}><Question size={16} color={GOLD} />{ex}</button>)}</div>
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontSize: 10.5, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Sage reads</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {Object.values(TYPE_LABEL).map((t) => <span key={t} style={{ padding: '3px 10px', borderRadius: 999, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: DIM, fontSize: 11.5 }}>{t}</span>)}
+                </div>
+                <div style={{ color: DIM, fontSize: 11.5, marginTop: 10, lineHeight: 1.5 }}>Answers cite the exact records they came from — click a citation to open it. If the records do not contain the answer, Sage says so instead of guessing.</div>
+              </div>
+            </SectionCard>
           )}
           {turns.map((t, i) => (
             <div key={i}>
@@ -91,7 +105,7 @@ export default function AskDocsPage() {
         <div style={{ position: 'sticky', bottom: 0, background: DARK, paddingTop: 12, marginTop: 8 }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !busy && ask()} placeholder="Ask anything about this project…" style={inp} />
-            <button onClick={() => ask()} disabled={busy || !q.trim()} className="btn-gold" style={{ padding: '0 16px', cursor: busy ? 'default' : 'pointer', opacity: busy || !q.trim() ? 0.6 : 1 }}><PaperPlaneRight size={20} weight="fill" /></button>
+            <button onClick={() => ask()} disabled={busy || !q.trim()} className="pmBtn" style={{ ...goldButtonStyle, padding: '0 18px', cursor: busy ? 'default' : 'pointer', opacity: busy || !q.trim() ? 0.6 : 1 }}><PaperPlaneRight size={20} weight="fill" /></button>
           </div>
           <div style={{ color: DIM, fontSize: 11, marginTop: 6, textAlign: 'center' }}>Grounded in your records only — Sage cites its sources and won’t invent answers.</div>
         </div>

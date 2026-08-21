@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import { SUB_TRADES as TRADES } from '@/lib/construction-intelligence';
 import { Clipboard, NotePencil, Envelope, CheckCircle, XCircle, CaretUp, CaretDown, X, ShieldCheck, Plus, WarningCircle, ChartBar, Clock } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 /* ─── Palette ─── */
 const GOLD = '#F59E0B', BG = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)',
@@ -39,6 +39,9 @@ const DEFAULT_DOCS = ['Certificate of Insurance (COI)', 'Performance Bond Letter
 const CATEGORY_COLORS: Record<string, string> = { Insurance: BLUE, Bonding: PURPLE, Safety: GREEN, References: GOLD, Certifications: AMBER };
 const STATUS_COLORS: Record<string, string> = { pending: AMBER, under_review: BLUE, approved: GREEN, rejected: RED };
 const STATUS_LABELS: Record<string, string> = { pending: 'Pending', under_review: 'Under Review', approved: 'Approved', rejected: 'Rejected' };
+
+/* Real address check — the invite email is delivered there. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function fmtDate(d: string) { return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'; }
@@ -246,6 +249,52 @@ export default function PrequalificationPage() {
     return { total, pending, review, approved, rejected, avgScore, expiring };
   }, [submissions]);
 
+  /* ─── Pipeline intelligence (invite funnel, docs compliance, expiry buckets,
+     score distribution) — derived entirely from already-fetched data ─── */
+  const inviteFunnel = useMemo(() => {
+    const sent = invites.length;
+    const completed = invites.filter(i => i.status === 'completed').length;
+    const opened = invites.filter(i => i.status === 'opened').length;
+    return { sent, completed, opened, rate: sent > 0 ? Math.round((completed / sent) * 100) : 0 };
+  }, [invites]);
+
+  const docStats = useMemo(() => {
+    let up = 0, tot = 0, expired = 0, exp30 = 0, exp60 = 0, exp90 = 0;
+    submissions.forEach(s => s.documents.forEach(d => {
+      tot++;
+      if (d.uploaded) up++;
+      if (d.expires_at) {
+        const dl = daysUntil(d.expires_at);
+        if (dl <= 0) expired++;
+        else if (dl <= 30) exp30++;
+        else if (dl <= 60) exp60++;
+        else if (dl <= 90) exp90++;
+      }
+    }));
+    return { up, tot, pct: tot > 0 ? Math.round((up / tot) * 100) : 0, expired, exp30, exp60, exp90 };
+  }, [submissions]);
+
+  const decidedRate = stats.approved + stats.rejected > 0
+    ? Math.round((stats.approved / (stats.approved + stats.rejected)) * 100) : 0;
+  const approvedTrades = useMemo(
+    () => new Set(submissions.filter(s => s.status === 'approved').map(s => s.sub_trade).filter(Boolean)).size,
+    [submissions]);
+  const avgThreshold = templates.length > 0
+    ? Math.round(templates.reduce((a, t) => a + (Number(t.threshold) || 0), 0) / templates.length) : 0;
+
+  /* 20-point score histogram buckets: 0-19, 20-39, 40-59, 60-79, 80-100 */
+  const scoreBuckets = useMemo(() => {
+    const b = [0, 0, 0, 0, 0];
+    submissions.forEach(s => {
+      if (s.max_score > 0) {
+        const p = (s.total_score / s.max_score) * 100;
+        b[Math.min(4, Math.floor(p / 20))]++;
+      }
+    });
+    return b;
+  }, [submissions]);
+  const scoredCount = scoreBuckets.reduce((a, n) => a + n, 0);
+
   /* ─── Status change ─── */
   // Real persistence: PATCH the tenant-scoped route and only reflect the change
   // locally when the server actually accepted it. No fake "updated" on failure.
@@ -416,6 +465,41 @@ export default function PrequalificationPage() {
           {/* ════════ DASHBOARD TAB ════════ */}
           {tab === 'dashboard' && (
             <div>
+              {/* Pipeline intelligence strip — funnel, decisions, compliance, expiry */}
+              {(submissions.length > 0 || invites.length > 0 || templates.length > 0) && (
+                <StatStrip items={[
+                  {
+                    label: 'Invite Funnel', value: `${inviteFunnel.completed}/${inviteFunnel.sent}`,
+                    sub: inviteFunnel.sent > 0 ? `${inviteFunnel.rate}% submitted${inviteFunnel.opened ? ` · ${inviteFunnel.opened} opened` : ''}` : 'no invites sent yet',
+                    accent: inviteFunnel.sent > 0 && inviteFunnel.rate < 50 ? AMBER : undefined,
+                  },
+                  {
+                    label: 'Approval Rate', value: `${decidedRate}%`,
+                    accent: stats.approved + stats.rejected === 0 ? undefined : decidedRate >= 70 ? GREEN : AMBER,
+                    sub: stats.approved + stats.rejected > 0 ? `${stats.approved} approved · ${stats.rejected} rejected` : 'no decisions yet',
+                  },
+                  {
+                    label: 'Docs on File', value: docStats.tot > 0 ? `${docStats.pct}%` : '—',
+                    accent: docStats.tot === 0 ? undefined : docStats.pct >= 80 ? GREEN : AMBER,
+                    sub: docStats.tot > 0 ? `${docStats.up} of ${docStats.tot} required documents` : 'no document requests yet',
+                  },
+                  {
+                    label: 'Expiry Pressure', value: String(docStats.expired + docStats.exp30),
+                    accent: docStats.expired + docStats.exp30 > 0 ? RED : GREEN,
+                    sub: `${docStats.expired} expired · ${docStats.exp30} in 30d · ${docStats.exp60} in 60d`,
+                  },
+                  {
+                    label: 'Templates', value: String(templates.length),
+                    sub: templates.length > 0 ? `avg pass threshold ${avgThreshold}%` : 'create your first form',
+                  },
+                  {
+                    label: 'Approved Bench', value: String(stats.approved),
+                    accent: stats.approved > 0 ? GREEN : undefined,
+                    sub: approvedTrades > 0 ? `covering ${approvedTrades} trade${approvedTrades === 1 ? '' : 's'}` : 'no approved subs yet',
+                  },
+                ]} />
+              )}
+
               {/* Stat cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 28 }}>
                 {[
@@ -451,7 +535,22 @@ export default function PrequalificationPage() {
 
                 {/* Expiring certs/insurance */}
                 <SectionCard title="Expiring Documents" icon={<Clock size={17} weight="duotone" color={GOLD} />}>
-
+                  {/* Expiry outlook buckets — the 90-day insurance/cert horizon at a glance */}
+                  {docStats.tot > 0 && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                      {[
+                        { l: 'Expired', n: docStats.expired, c: RED },
+                        { l: 'Within 30d', n: docStats.exp30, c: AMBER },
+                        { l: '31–60d', n: docStats.exp60, c: BLUE },
+                        { l: '61–90d', n: docStats.exp90, c: DIM },
+                      ].map(b => (
+                        <div key={b.l} style={{ flex: '1 1 100px', minWidth: 96, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: `1px solid ${b.n > 0 ? b.c + '55' : BORDER}` }}>
+                          <div style={{ fontSize: 17, fontWeight: 800, color: b.n > 0 ? b.c : DIM, lineHeight: 1.1 }}>{b.n}</div>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 2 }}>{b.l}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {(() => {
                     const expDocs: { subName: string; docName: string; expiresAt: string; daysLeft: number }[] = [];
                     submissions.forEach(s => {
@@ -479,8 +578,36 @@ export default function PrequalificationPage() {
                 </SectionCard>
               </div>
 
-              {/* Score distribution by trade */}
-              <SectionCard title="Score by Trade" icon={<ChartBar size={17} weight="duotone" color={GOLD} />} style={{ marginTop: 20 }}>
+              {/* Score visualization — distribution histogram + per-trade averages */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginTop: 20 }}>
+              <SectionCard title="Score Distribution" subtitle={scoredCount > 0 ? `${scoredCount} scored submission${scoredCount === 1 ? '' : 's'}` : undefined} icon={<ChartBar size={17} weight="duotone" color={GOLD} />}>
+                {scoredCount === 0 ? (
+                  <div style={{ color: DIM, fontSize: 13, padding: 20, textAlign: 'center' }}>Scores appear here as submissions arrive.</div>
+                ) : (
+                  <div>
+                    {['0–19%', '20–39%', '40–59%', '60–79%', '80–100%'].map((lbl, i) => {
+                      const n = scoreBuckets[i];
+                      const maxN = Math.max(...scoreBuckets, 1);
+                      const c = pctColor(i * 20 + 10);
+                      return (
+                        <div key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                          <span style={{ width: 64, fontSize: 11.5, color: DIM, fontWeight: 600, textAlign: 'right', flexShrink: 0 }}>{lbl}</span>
+                          <div style={{ flex: 1, height: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 5, overflow: 'hidden' }}>
+                            <div style={{ width: `${(n / maxN) * 100}%`, height: '100%', background: `linear-gradient(90deg, ${c}AA, ${c})`, borderRadius: 5, transition: 'width .3s' }} />
+                          </div>
+                          <span style={{ minWidth: 52, fontSize: 12, color: n > 0 ? c : DIM, fontWeight: 700 }}>{n} sub{n === 1 ? '' : 's'}</span>
+                        </div>
+                      );
+                    })}
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${BORDER}`, fontSize: 12, color: DIM, lineHeight: 1.5 }}>
+                      Average score <b style={{ color: pctColor(stats.avgScore) }}>{stats.avgScore}%</b>
+                      {templates.length > 0 && <> against an average pass threshold of <b style={{ color: TEXT }}>{avgThreshold}%</b></>}.
+                    </div>
+                  </div>
+                )}
+              </SectionCard>
+
+              <SectionCard title="Score by Trade" icon={<ChartBar size={17} weight="duotone" color={GOLD} />}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
                   {Array.from(new Set(submissions.map(s => s.sub_trade))).map(trade => {
                     const tradeSubs = submissions.filter(s => s.sub_trade === trade);
@@ -497,6 +624,7 @@ export default function PrequalificationPage() {
                   })}
                 </div>
               </SectionCard>
+              </div>
             </div>
           )}
 
@@ -1034,7 +1162,7 @@ function InviteModal({ templates, onSend, onClose }: { templates: Template[]; on
   const [sending, setSending] = useState(false);
 
   const handleSend = () => {
-    if (!email.trim() || !email.includes('@')) { setErr('Valid email is required'); return; }
+    if (!EMAIL_RE.test(email.trim())) { setErr('Enter a valid email address — the secure invite link is delivered there.'); return; }
     if (!subName.trim()) { setErr('Subcontractor name is required'); return; }
     if (!templateId) { setErr('Select a template'); return; }
     setSending(true);
@@ -1067,6 +1195,13 @@ function InviteModal({ templates, onSend, onClose }: { templates: Template[]; on
             {templates.length === 0 && <option value="">No templates available</option>}
             {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.questions.length} questions)</option>)}
           </select>
+          {templates.length === 0 ? (
+            <p style={{ color: AMBER, fontSize: 11.5, margin: '6px 0 0', lineHeight: 1.5 }}>No templates yet — create one first (New Template). The form needs scored questions before it can be sent.</p>
+          ) : (
+            (() => { const t = templates.find(x => x.id === templateId); return t ? (
+              <p style={{ color: DIM, fontSize: 11.5, margin: '6px 0 0', lineHeight: 1.5 }}>Pass threshold {t.threshold}% · {t.requiredDocs.length} required document{t.requiredDocs.length === 1 ? '' : 's'}. Their answers score automatically on submit.</p>
+            ) : null; })()
+          )}
         </div>
 
         <div style={{ background: BG, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 14, marginBottom: 18 }}>

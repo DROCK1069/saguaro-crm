@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { WarningCircle, FileText, CaretRight, Buildings, ShieldCheck } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B';
 const BORDER = 'rgba(255,255,255,0.12)';
@@ -32,6 +32,21 @@ export default function CertifiedPayrollPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState('');
+
+  // Org-wide WH-347 rollup — /api/payroll/list without a projectId returns
+  // every certified payroll on the tenant, so the module opens knowing what
+  // has been filed, for how much gross, and how recently.
+  const [records, setRecords] = useState<{ id: string; week_ending: string; employee_count: number; total_gross: number; status: string }[]>([]);
+  useEffect(() => {
+    fetch('/api/payroll/list')
+      .then(r => r.json())
+      .then(d => setRecords(Array.isArray(d.records) ? d.records : []))
+      .catch(() => setRecords([]));
+  }, []);
+  const grossFiled = records.reduce((s, r) => s + (Number(r.total_gross) || 0), 0);
+  const lastFiled = records[0] || null;
+  const certifiedCount = records.filter(r => (r.status || '').toLowerCase() === 'certified').length;
+  const fmt0 = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -63,6 +78,17 @@ export default function CertifiedPayrollPage() {
         accent="Payroll"
         subtitle="WH-347 certified payroll for Davis-Bacon work, tracked per project. Select a project to open its payroll records."
       />
+
+      {/* Org-wide compliance rollup — real filed totals, Number-coerced */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Projects', value: String(projects.length), sub: projects.filter(p => ((p.status || '').toLowerCase().includes('active') || (p.status || '').toLowerCase().includes('progress'))).length + ' active' },
+          { label: 'WH-347s Filed', value: String(records.length), sub: records.length > 0 ? 'across all projects' : 'none filed yet' },
+          { label: 'Gross Wages Certified', value: fmt0(grossFiled), accent: grossFiled > 0 ? '#3dd68c' : undefined, sub: 'total across filed payrolls' },
+          { label: 'Last Filed Week', value: lastFiled ? lastFiled.week_ending : '—', sub: lastFiled ? (Number(lastFiled.employee_count) || 0) + ' employees · ' + fmt0(Number(lastFiled.total_gross) || 0) : 'open a project to file' },
+          { label: 'Certified', value: String(certifiedCount), sub: (records.length - certifiedCount) + ' submitted / draft' },
+        ]} />
+      )}
 
       {/* Projects list */}
       <SectionCard
@@ -102,7 +128,7 @@ export default function CertifiedPayrollPage() {
             icon={<Buildings size={30} weight="duotone" color={GOLD} />}
             title={projects.length === 0 ? 'No projects yet' : 'No projects match your search'}
             description={projects.length === 0
-              ? 'Create a project to start tracking certified payroll.'
+              ? 'Certified payroll is filed per project — create a project first, then file a WH-347 for every week worked on Davis-Bacon or public jobs.'
               : 'Try a different search term.'}
             action={projects.length === 0
               ? <Link href="/app/projects" style={goldButtonStyle} className="pmBtn">Go to Projects</Link>

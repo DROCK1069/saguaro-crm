@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import PhotoEditor from '../../../../../components/PhotoEditor';
 import { Camera, X, PencilSimple, Plus, Images, CalendarBlank, FolderSimple, WarningCircle, MagnifyingGlass } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -40,10 +40,10 @@ function Pill({label,color}:{label:string;color:string}){
   );
 }
 
-function FieldLabel({label}:{label:string}){
+function FieldLabel({label,auto}:{label:string;auto?:boolean}){
   return(
     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
-      textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}</label>
+      textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}{auto&&<AutoChip/>}</label>
   );
 }
 
@@ -91,7 +91,25 @@ export default function PhotosPage(){
 
   useEffect(()=>{load();},[load]);
 
-  function openCreate(){setForm({...EMPTY_FORM});setMode('create');setSelected(null);}
+  // Project intelligence — one snapshot; the gallery walks in knowing the job.
+  const [ctx,setCtx]=useState<any>(null);
+  const [auto,setAuto]=useState<{date?:boolean;album?:boolean}>({});
+  useEffect(()=>{(async()=>{
+    try{
+      const r=await fetch(`/api/project-context?projectId=${projectId}`);
+      const c=await r.json();
+      if(!c.error)setCtx(c);
+    }catch{}
+  })();},[projectId]);
+
+  function openCreate(){
+    // Prefill what the system already knows: today's date, and the album in view.
+    const d=new Date();
+    const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    setForm({...EMPTY_FORM,taken_at:iso,album:filterAlbum!=='All'?filterAlbum:'General'});
+    setAuto({date:true,album:filterAlbum!=='All'});
+    setMode('create');setSelected(null);
+  }
   function openEdit(photo:any){
     const tagsStr=Array.isArray(photo.tags)?photo.tags.join(', '):(photo.tags||'');
     setForm({
@@ -162,6 +180,7 @@ export default function PhotosPage(){
   }).length;
   const albums=Array.from(new Set(photos.map((p:any)=>p.album).filter(Boolean)));
   const issueCount=photos.filter((p:any)=>p.album==='Issues'||(Array.isArray(p.tags)&&p.tags.some((t:string)=>t.toLowerCase().includes('issue')))).length;
+  const lastPhotoAt=photos.reduce<string|null>((m,p)=>(p.taken_at&&(!m||p.taken_at>m)?p.taken_at:m),null);
 
   const filtered=photos.filter((p:any)=>{
     const ms=!search||(p.title||'').toLowerCase().includes(search.toLowerCase())
@@ -170,13 +189,19 @@ export default function PhotosPage(){
     return ms&&ma;
   });
 
-  // Group by album for display
+  // Group by date (default) or album for display
+  const [groupBy,setGroupBy]=useState<'date'|'album'>('date');
   const grouped:Record<string,any[]>={};
   if(filterAlbum==='All'){
-    for(const p of filtered){
-      const al=p.album||'General';
-      if(!grouped[al]) grouped[al]=[];
-      grouped[al].push(p);
+    const src=groupBy==='date'
+      ?[...filtered].sort((a,b)=>String(b.taken_at||'').localeCompare(String(a.taken_at||'')))
+      :filtered;
+    for(const p of src){
+      const key=groupBy==='album'
+        ?(p.album||'General')
+        :(p.taken_at?new Date(p.taken_at).toLocaleDateString('en-US',{month:'long',year:'numeric'}):'No date');
+      if(!grouped[key]) grouped[key]=[];
+      grouped[key].push(p);
     }
   }
 
@@ -230,7 +255,7 @@ export default function PhotosPage(){
         <PremiumSurface maxWidth={1600}>
           {/* Header */}
           <ModuleHero
-            eyebrow="PHOTOS"
+            eyebrow={ctx?.project?.name||'Photos'}
             eyebrowIcon={<Camera size={13} weight="fill" color="#F59E0B" />}
             title="Site"
             accent="Photos"
@@ -241,6 +266,18 @@ export default function PhotosPage(){
               </button>
             }
           />
+
+          {/* Project intelligence strip — what the system already knows */}
+          {ctx&&(
+            <StatStrip items={[
+              {label:'Project',value:`${Number(ctx?.project?.percentComplete)||0}%`,sub:'complete — the gallery is the proof'},
+              {label:'Photos',value:String(photos.length),sub:albums.length>0?`${albums.length} album${albums.length===1?'':'s'} in use`:'no albums yet'},
+              {label:'This Month',value:String(thisMonth),accent:thisMonth>0?'#3dd68c':undefined,sub:'added since the 1st'},
+              {label:'Last Photo',value:lastPhotoAt?fmtDate(lastPhotoAt):'—',sub:lastPhotoAt?'most recent capture':'nothing documented yet'},
+              {label:'Issues Tagged',value:String(issueCount),accent:issueCount>0?RED:undefined,sub:issueCount>0?'flagged for follow-up':'clean so far'},
+              {label:'Last Daily Log',value:ctx?.recent?.lastDailyLogDate?fmtDate(ctx.recent.lastDailyLogDate):'—',sub:Number(ctx?.counts?.openPunch)>0?`${ctx.counts.openPunch} open punch`:'field activity'},
+            ]}/>
+          )}
 
           {/* KPIs */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
@@ -265,6 +302,17 @@ export default function PhotosPage(){
               <option value="All">All Albums</option>
               {ALBUMS.map(a=><option key={a} value={a}>{a}</option>)}
             </select>
+            {filterAlbum==='All'&&(
+              <div style={{display:'flex',background:'rgba(255,255,255,0.04)',borderRadius:10,padding:3,border:'1px solid rgba(255,255,255,0.10)'}}>
+                {(['date','album'] as const).map(g=>(
+                  <button key={g} onClick={()=>setGroupBy(g)}
+                    style={{padding:'7px 14px',borderRadius:8,border:'none',fontWeight:700,fontSize:12,cursor:'pointer',
+                      background:groupBy===g?'rgba(245,158,11,0.15)':'transparent',color:groupBy===g?'#FBBF24':DIM,transition:'all .15s'}}>
+                    {g==='date'?'By Date':'By Album'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Gallery */}
@@ -287,14 +335,38 @@ export default function PhotosPage(){
             )}
 
             {!loading&&!loadError&&filtered.length===0&&(
-              <PremiumEmpty
-                icon={<Camera size={30} weight="duotone" color={GOLD} />}
-                title={photos.length===0?'No photos yet':'No photos match your filters'}
-                description={photos.length===0?'Add site photos to document project progress.':'Try adjusting your search or album filter.'}
-                action={photos.length===0?(
-                  <button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add First Photo</button>
-                ):undefined}
-              />
+              photos.length===0?(
+                <div style={{display:'grid',gridTemplateColumns:ctx?'minmax(0,1fr) 320px':'1fr',alignItems:'stretch'}}>
+                  <PremiumEmpty
+                    icon={<Camera size={30} weight="duotone" color={GOLD} />}
+                    title="No photos yet"
+                    description="Photos are the project record — progress proof, inspection evidence, punch documentation, closeout backup. Add the first one to start the timeline."
+                    action={<button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add First Photo</button>}
+                  />
+                  {ctx&&(
+                    <div style={{borderLeft:'1px solid rgba(255,255,255,0.08)',padding:'22px 24px'}}>
+                      <div style={{fontSize:10.5,fontWeight:900,color:'rgba(255,255,255,0.45)',textTransform:'uppercase',letterSpacing:'0.09em',marginBottom:10}}>What Belongs Here</div>
+                      <InsightRow label="Progress" value="weekly site walks"/>
+                      <InsightRow label="Inspections" value="pass / fail evidence"/>
+                      <InsightRow label="Issues" value="defects to chase"/>
+                      <InsightRow label="Closeout" value="final condition"/>
+                      <div style={{height:1,background:'rgba(255,255,255,0.08)',margin:'10px 0'}}/>
+                      <InsightRow label="Project" value={`${Number(ctx?.project?.percentComplete)||0}% complete`}/>
+                      {ctx?.recent?.lastDailyLogDate&&<InsightRow label="Last daily log" value={fmtDate(ctx.recent.lastDailyLogDate)}/>}
+                      {Number(ctx?.counts?.openPunch)>0&&<InsightRow label="Open punch" value={String(ctx.counts.openPunch)} accent="#FBBF24"/>}
+                      <div style={{marginTop:12,fontSize:12,color:DIM,lineHeight:1.55}}>
+                        Field photos from daily logs and punch items document the same work — album them here by phase and closeout builds itself.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ):(
+                <PremiumEmpty
+                  icon={<Camera size={30} weight="duotone" color={GOLD} />}
+                  title="No photos match your filters"
+                  description="Try adjusting your search or album filter."
+                />
+              )
             )}
 
             {/* Album-grouped grid */}
@@ -303,7 +375,7 @@ export default function PhotosPage(){
                 {Object.entries(grouped).map(([album,albumPhotos])=>(
                   <div key={album}>
                     <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
-                      <span style={{fontSize:13,fontWeight:700,color:ALBUM_COLORS[album]||DIM}}>{album}</span>
+                      <span style={{fontSize:13,fontWeight:700,color:groupBy==='album'?(ALBUM_COLORS[album]||DIM):'#FBBF24'}}>{album}</span>
                       <span style={{fontSize:11,color:DIM}}>({albumPhotos.length})</span>
                       <div style={{flex:1,height:1,background:BORDER}}/>
                     </div>
@@ -374,11 +446,14 @@ export default function PhotosPage(){
                     style={inp} placeholder="e.g. Foundation pour complete"/>
                 </div>
                 <div>
-                  <FieldLabel label="Album"/>
+                  <FieldLabel label="Album" auto={mode==='create'&&auto.album}/>
                   <select value={form.album} onChange={e=>setForm(f=>({...f,album:e.target.value}))}
                     style={{...inp,padding:'9px 10px'}}>
                     {ALBUMS.map(a=><option key={a} value={a}>{a}</option>)}
                   </select>
+                  {mode==='create'&&auto.album&&(
+                    <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>Matched your current album filter — change freely.</div>
+                  )}
                 </div>
                 <div>
                   <FieldLabel label="Description"/>
@@ -394,10 +469,13 @@ export default function PhotosPage(){
                       style={inp} placeholder="e.g. Level 2, North"/>
                   </div>
                   <div>
-                    <FieldLabel label="Date Taken"/>
+                    <FieldLabel label="Date Taken" auto={mode==='create'&&auto.date}/>
                     <input type="date" value={form.taken_at}
                       onChange={e=>setForm(f=>({...f,taken_at:e.target.value}))}
                       style={inp}/>
+                    {mode==='create'&&auto.date&&(
+                      <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>Defaulted to today — adjust freely.</div>
+                    )}
                   </div>
                 </div>
                 <div>

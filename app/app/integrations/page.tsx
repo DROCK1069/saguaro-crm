@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { IntegrationStrip } from '@/components/Integrations';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, InsightRow, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { Plugs, MagnifyingGlass } from '@phosphor-icons/react';
 
 const GOLD = '#F59E0B', DARK = '#1c1c1e', CARD = '#141416', BORDER = 'rgba(255,255,255,0.12)';
 const DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#22C55E', RED = '#EF4444';
@@ -272,9 +274,15 @@ export default function IntegrationsPage() {
   });
 
   const connectedCount = integrations.filter((i) => i.connected).length;
+  const availableCount = integrations.filter((i) => i.available && !i.connected).length;
+  const comingSoonCount = integrations.filter((i) => !i.available).length;
+  const categoryCount = new Set(integrations.map((i) => i.category)).size;
+  const lastSynced = integrations
+    .filter((i) => i.connected && i.last_sync_at)
+    .sort((a, b) => new Date(b.last_sync_at as string).getTime() - new Date(a.last_sync_at as string).getTime())[0] || null;
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
+    <PremiumSurface maxWidth={1400}>
       {/* Notification Banner */}
       {notification && (
         <div style={{
@@ -362,12 +370,12 @@ export default function IntegrationsPage() {
             <div
               key={intg.key}
               style={{
-                background: CARD,
-                border: `1px solid ${intg.connected ? 'rgba(34,197,94,0.3)' : BORDER}`,
-                borderRadius: 14,
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))',
+                border: `1px solid ${intg.connected ? 'rgba(34,197,94,0.35)' : intg.available ? 'rgba(245,158,11,0.22)' : BORDER}`,
+                borderRadius: 16,
                 padding: 22,
                 position: 'relative',
-                backdropFilter: 'blur(16px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
                 transition: 'all 0.25s',
               }}
               className="lift"
@@ -387,9 +395,17 @@ export default function IntegrationsPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{intg.name}</span>
-                    {intg.connected && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: GREEN, background: 'rgba(34,197,94,0.12)', padding: '2px 8px', borderRadius: 10 }}>
+                    {intg.connected ? (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: GREEN, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>
                         Connected
+                      </span>
+                    ) : intg.available ? (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#FBBF24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>
+                        Available
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: DIM, background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>
+                        Coming Soon
                       </span>
                     )}
                   </div>
@@ -410,15 +426,10 @@ export default function IntegrationsPage() {
 
               {/* Connected Details */}
               {intg.connected && (
-                <div style={{ marginBottom: 14, padding: '10px 12px', background: 'rgba(34,197,94,0.06)', borderRadius: 8, fontSize: 12, color: DIM }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span>Last sync</span>
-                    <span style={{ color: TEXT }}>{timeAgo(intg.last_sync_at)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Status</span>
-                    <span style={{ color: GREEN }}>Active</span>
-                  </div>
+                <div style={{ marginBottom: 14, padding: '6px 12px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.18)', borderRadius: 10 }}>
+                  <InsightRow label="Last sync" value={timeAgo(intg.last_sync_at)} />
+                  <InsightRow label="Status" value="Active" accent={GREEN} />
+                  <InsightRow label="Auth" value={String(intg.auth_type || 'credentials').replace(/_/g, ' ')} />
                 </div>
               )}
 
@@ -491,11 +502,19 @@ export default function IntegrationsPage() {
       )}
 
       {!loading && filtered.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-          <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>{'\u{1F50C}'}</div>
-          <div style={{ fontSize: 15, fontWeight: 600 }}>No integrations found</div>
-          <div style={{ fontSize: 13, marginTop: 6 }}>Try adjusting your search or category filter</div>
-        </div>
+        <SectionCard flush>
+          <PremiumEmpty
+            icon={<MagnifyingGlass size={30} weight="duotone" color={GOLD} />}
+            title={search ? `No integrations match "${search}"` : 'No integrations in this category yet'}
+            description="Every connector Saguaro supports lives in this marketplace — accounting (QuickBooks, Sage 300, Xero), documents, storage, plus a full REST API and outbound webhooks for anything custom."
+            action={
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button onClick={() => { setSearch(''); setCategory('all'); }} style={ghostButtonStyle} className="pmBtn">Clear Filters</button>
+                <Link href="/app/integrations/api-docs" className="pmBtn" style={{ ...goldButtonStyle, textDecoration: 'none' }}>Browse the API Docs</Link>
+              </div>
+            }
+          />
+        </SectionCard>
       )}
 
       {/* Sage 300 Setup Modal */}
@@ -595,6 +614,6 @@ export default function IntegrationsPage() {
           </div>
         </div>
       )}
-    </div>
+    </PremiumSurface>
   );
 }

@@ -8,6 +8,7 @@ import {
   MagnifyingGlass, FileText, Trash, Files, Fingerprint, WarningCircle,
 } from '@phosphor-icons/react';
 import { getAuthHeaders, getSupabaseBrowser } from '@/lib/supabase-browser';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 // ─── Color Palette ────────────────────────────────────────────────
 const C = {
@@ -398,18 +399,20 @@ export default function DocumentVersionsPage() {
 
   if (loading) {
     return (
-      <div style={{ background: C.BG, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: `3px solid ${C.BORDER}`, borderTopColor: C.GOLD, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-          <div style={{ color: C.DIM, fontSize: 14 }}>Loading documents...</div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <PremiumSurface maxWidth={1600}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: 40, height: 40, border: `3px solid ${C.BORDER}`, borderTopColor: C.GOLD, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+            <div style={{ color: C.DIM, fontSize: 14 }}>Loading documents...</div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
         </div>
-      </div>
+      </PremiumSurface>
     );
   }
 
   return (
-    <div style={{ background: C.BG, minHeight: '100vh', padding: '24px 32px', color: C.TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <PremiumSurface maxWidth={1600}>
       <style>{responsiveCSS}</style>
 
       {/* Toast */}
@@ -421,23 +424,19 @@ export default function DocumentVersionsPage() {
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: `${C.GOLD}1A`, border: `1px solid ${C.GOLD}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Folder size={24} weight="duotone" color={C.GOLD} />
-          </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: C.GOLD }}>Document Version Control</h1>
-            <p style={{ margin: '4px 0 0', color: C.DIM, fontSize: 13 }}>
-              {documents.length} document{documents.length !== 1 ? 's' : ''} under version control
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button style={sBtn(C.PURPLE)} onClick={() => openModal(null, 'bulk')}><Files size={16} weight="bold" /> Bulk Upload</button>
-          <button style={sBtn(C.GOLD)} onClick={() => openModal(null, 'upload')}><Plus size={16} weight="bold" /> New Document</button>
-        </div>
-      </div>
+      <ModuleHero
+        eyebrow="Version Control"
+        eyebrowIcon={<Folder size={13} weight="fill" color={C.GOLD} />}
+        title="Document"
+        accent="Versions"
+        subtitle={`${documents.length} document${documents.length !== 1 ? 's' : ''} under version control — every revision checksummed, approvals tracked, check-outs locked.`}
+        actions={
+          <>
+            <button style={ghostButtonStyle} className="pmBtn" onClick={() => openModal(null, 'bulk')}><Files size={16} weight="bold" /> Bulk Upload</button>
+            <button style={goldButtonStyle} className="pmBtn" onClick={() => openModal(null, 'upload')}><Plus size={16} weight="bold" /> New Document</button>
+          </>
+        }
+      />
 
       {error && (
         <div style={{ ...sCard, borderLeft: `3px solid ${C.RED}`, display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -447,21 +446,15 @@ export default function DocumentVersionsPage() {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="dvc-stats" style={{ marginBottom: 24 }}>
-        {([
-          ['Total Documents', documents.length, C.GOLD],
-          ['Approved', documents.filter((d) => d.status === 'Approved').length, C.GREEN],
-          ['Under Review', documents.filter((d) => d.status === 'Under Review').length, C.AMBER],
-          ['Drafts', documents.filter((d) => d.status === 'Draft').length, C.DIM],
-          ['Checked Out', documents.filter((d) => d.checkedOutBy).length, C.RED],
-        ] as [string, number, string][]).map(([label, count, color]) => (
-          <div key={label} style={{ ...sCard, textAlign: 'center' }}>
-            <div style={{ fontSize: 28, fontWeight: 700, color }}>{count}</div>
-            <div style={{ fontSize: 12, color: C.DIM, marginTop: 2 }}>{label}</div>
-          </div>
-        ))}
-      </div>
+      {/* Stats — live version-control intelligence, not bare counts */}
+      <StatStrip items={[
+        { label: 'Documents', value: String(documents.length), sub: (() => { const n = documents.reduce((s, d) => s + d.versions.length, 0); return `${n} revision${n === 1 ? '' : 's'} on file`; })() },
+        { label: 'Approved', value: String(documents.filter((d) => d.status === 'Approved').length), accent: C.GREEN, sub: 'released & current' },
+        { label: 'Under Review', value: String(documents.filter((d) => d.status === 'Under Review').length), accent: documents.some((d) => d.status === 'Under Review') ? C.AMBER : undefined, sub: 'awaiting approval' },
+        { label: 'Drafts', value: String(documents.filter((d) => d.status === 'Draft').length), sub: 'not yet submitted' },
+        { label: 'Checked Out', value: String(documents.filter((d) => d.checkedOutBy).length), accent: documents.some((d) => d.checkedOutBy) ? C.RED : undefined, sub: (() => { const names = Array.from(new Set(documents.filter((d) => d.checkedOutBy).map((d) => d.checkedOutBy as string))); return names.length ? `locked by ${names.slice(0, 2).join(', ')}${names.length > 2 ? '…' : ''}` : 'nothing locked'; })() },
+        { label: 'Last Activity', value: (() => { const m = documents.reduce<string | null>((acc, d) => (d.lastModified && (!acc || d.lastModified > acc) ? d.lastModified : acc), null); return m ? fmtDate(m) : '—'; })(), sub: 'most recent revision' },
+      ]} />
 
       {/* Search */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
@@ -487,14 +480,28 @@ export default function DocumentVersionsPage() {
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div style={{ ...sCard, textAlign: 'center', padding: 48 }}>
-          <FileText size={44} weight="thin" color={C.DIM} style={{ opacity: 0.5, marginBottom: 12 }} />
-          <div style={{ color: C.DIM, fontSize: 14, marginBottom: 8 }}>No documents found</div>
-          <div style={{ color: C.DIM, fontSize: 12, marginBottom: 16 }}>
-            {search || activeCategory !== 'All' ? 'Try adjusting your search or category filter.' : 'Upload your first document to get started.'}
-          </div>
-          <button style={{ ...sBtn(C.GOLD), margin: '0 auto' }} onClick={() => openModal(null, 'upload')}><Plus size={16} weight="bold" /> New Document</button>
-        </div>
+        <SectionCard>
+          {search || activeCategory !== 'All' ? (
+            <PremiumEmpty
+              compact
+              icon={<MagnifyingGlass size={30} weight="duotone" color={C.GOLD} />}
+              title="No documents match"
+              description="Try adjusting your search or category filter."
+            />
+          ) : (
+            <PremiumEmpty
+              icon={<FileText size={30} weight="duotone" color={C.GOLD} />}
+              title="Nothing under version control yet"
+              description="Contracts, drawings, specs, and submittals belong here. Every upload becomes v1; each revision after that is checksummed and comparable, approvals gate what's current, and check-out locks stop two people revising the same file."
+              action={
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button style={goldButtonStyle} className="pmBtn" onClick={() => openModal(null, 'upload')}><Plus size={16} weight="bold" /> New Document</button>
+                  <button style={ghostButtonStyle} className="pmBtn" onClick={() => openModal(null, 'bulk')}><Files size={16} weight="bold" /> Bulk Upload</button>
+                </div>
+              }
+            />
+          )}
+        </SectionCard>
       ) : (
         <div className="dvc-tablewrap">
           <div className="dvc-head" style={{ padding: '8px 16px', fontSize: 11, fontWeight: 700, color: C.DIM, textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -516,6 +523,12 @@ export default function DocumentVersionsPage() {
                       </span>
                     )}
                   </div>
+                  {doc.versions.length > 0 && (
+                    <div style={{ fontSize: 10.5, color: C.DIM, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {doc.versions.length} version{doc.versions.length !== 1 ? 's' : ''}
+                      {doc.versions[doc.versions.length - 1]?.revisionNotes ? ` · latest: ${doc.versions[doc.versions.length - 1].revisionNotes}` : ''}
+                    </div>
+                  )}
                 </div>
                 <span style={{ fontSize: 12, color: C.DIM }}>{doc.category}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: C.GOLD, fontFamily: 'monospace' }}>{doc.currentVersion}</span>
@@ -859,7 +872,7 @@ export default function DocumentVersionsPage() {
           </div>
         </div>
       )}
-    </div>
+    </PremiumSurface>
   );
 }
 

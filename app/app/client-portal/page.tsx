@@ -1,6 +1,8 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { humanError } from '@/lib/errors';
+import { PremiumSurface, ModuleHero, StatStrip, PremiumEmpty } from '@/components/ui/premium';
+import { UsersThree, ChatCircleDots, Buildings, ClockCounterClockwise } from '@phosphor-icons/react';
 
 /* ── palette ──────────────────────────────────────────── */
 const GOLD='#F59E0B',BG='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',TEXT='#FFFFFF',DIM='#CBD5E1';
@@ -285,6 +287,24 @@ export default function ClientPortalPage() {
     return Array.from(s).sort();
   }, [actLog]);
 
+  // Portal intelligence — reach, unread client traffic, recency — before any tab.
+  const portalStats = useMemo(() => {
+    const active = users.filter(u => u.status === 'active').length;
+    const pending = users.filter(u => u.status === 'pending').length;
+    const unreadMsgs = messages.filter(m => !m.read && m.fromRole === 'client');
+    const sharedProjects = new Set(users.flatMap(u => u.projectIds)).size;
+    const weekActivity = actLog.filter(e => Date.now() - new Date(e.ts).getTime() < 604800000).length;
+    const lastLogin = users.reduce<{ name: string; ts: string } | null>((best, u) => {
+      if (!u.lastLogin) return best;
+      return (!best || new Date(u.lastLogin) > new Date(best.ts)) ? { name: u.name, ts: u.lastLogin } : best;
+    }, null);
+    return {
+      active, pending, sharedProjects, weekActivity, lastLogin,
+      unread: unreadMsgs.length,
+      unreadThreads: new Set(unreadMsgs.map(m => m.userId)).size,
+    };
+  }, [users, messages, actLog]);
+
   /* ── actions ────────────────────────────────────────── */
   async function inviteUser() {
     setInvError('');
@@ -467,10 +487,17 @@ export default function ClientPortalPage() {
           </thead>
           <tbody>
             {filteredUsers.length === 0 && (
-              <tr><td colSpan={8} style={{ ...tdS, textAlign: 'center', color: DIM, padding: 48 }}>
-                {search || statusFilter !== 'all' || roleFilter !== 'all'
-                  ? 'No users match your filters'
-                  : 'No portal users yet. Invite your first client above.'}
+              <tr><td colSpan={8} style={{ ...tdS, borderBottom: 'none' }}>
+                {search || statusFilter !== 'all' || roleFilter !== 'all' ? (
+                  <div style={{ textAlign: 'center', color: DIM, padding: 32 }}>No users match your filters</div>
+                ) : (
+                  <PremiumEmpty
+                    icon={<UsersThree size={30} weight="duotone" color={GOLD} />}
+                    title="No portal clients yet"
+                    description={`Invite an owner or stakeholder and they get a secure link to a live view of their project${projects.length ? ` — ${projects.length} project${projects.length === 1 ? ' is' : 's are'} ready to share` : ''}. They see only the sections you toggle on (budget, schedule, photos, RFIs, documents, and more), and every login and page view lands in the Activity Log.`}
+                    action={<button onClick={() => { resetInviteForm(); setInviteOpen(true); }} style={btnGold}>+ Invite Your First Client</button>}
+                  />
+                )}
               </td></tr>
             )}
             {filteredUsers.map(u => (
@@ -705,8 +732,11 @@ export default function ClientPortalPage() {
           </div>
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {threads.length === 0 && (
-              <div style={{ padding: 24, color: DIM, fontSize: 13, textAlign: 'center' }}>
-                No conversations yet. Messages from clients will appear here.
+              <div style={{ padding: '22px 18px', color: DIM, fontSize: 12.5, lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 700, color: TEXT, marginBottom: 6 }}>No conversations yet</div>
+                Every portal client gets a private thread with you — no email chains. When
+                {users.length > 0 ? ` any of your ${users.length} portal user${users.length === 1 ? '' : 's'} writes` : ' a client writes'} from
+                their portal, the thread lands here with an unread badge.
               </div>
             )}
             {threads.map(t => (
@@ -739,8 +769,15 @@ export default function ClientPortalPage() {
         {/* message area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', ...card, padding: 0, overflow: 'hidden' }}>
           {!selectedThread ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: DIM, fontSize: 14 }}>
-              Select a conversation to view messages
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+              <PremiumEmpty
+                compact
+                icon={<ChatCircleDots size={26} weight="duotone" color={GOLD} />}
+                title={threads.length > 0 ? 'Select a conversation' : 'Two-way client messaging'}
+                description={threads.length > 0
+                  ? 'Pick a thread on the left to read and reply. Replies appear instantly in the client portal.'
+                  : 'Clients message you from inside their portal and your replies appear there instantly — every exchange stays attached to the project instead of a lost email thread.'}
+              />
             </div>
           ) : (
             <>
@@ -806,8 +843,10 @@ export default function ClientPortalPage() {
   function PermissionsTab() {
     const activeUsers = users.filter(u => u.status !== 'disabled');
     return (<>
-      <p style={{ color: DIM, fontSize: 13, margin: '0 0 18px' }}>
-        Control what each client can see in their portal. Changes are saved automatically.
+      <p style={{ color: DIM, fontSize: 13, margin: '0 0 18px', lineHeight: 1.6 }}>
+        Each toggle controls a section of that client&apos;s portal — switch off Budget and they never
+        see a dollar figure; switch on Photos and they get the live progress gallery. Changes save
+        automatically and apply on the client&apos;s next page load.
       </p>
       <div style={{ ...card, padding: 0, overflow: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1000 }}>
@@ -819,8 +858,13 @@ export default function ClientPortalPage() {
           </thead>
           <tbody>
             {activeUsers.length === 0 && (
-              <tr><td colSpan={PERM_KEYS.length + 1} style={{ ...tdS, textAlign: 'center', color: DIM, padding: 48 }}>
-                No active portal users to manage permissions for.
+              <tr><td colSpan={PERM_KEYS.length + 1} style={{ ...tdS, borderBottom: 'none' }}>
+                <PremiumEmpty
+                  compact
+                  icon={<UsersThree size={26} weight="duotone" color={GOLD} />}
+                  title="No active portal users"
+                  description={`Invite a client from the Users tab, then tune all ${PERM_KEYS.length} portal sections per person here — or apply a preset below in one click.`}
+                />
               </td></tr>
             )}
             {activeUsers.map(u => (
@@ -878,8 +922,12 @@ export default function ClientPortalPage() {
         Manage which clients can access which projects. Check a box to grant access.
       </p>
       {projects.length === 0 ? (
-        <div style={{ ...card, textAlign: 'center', color: DIM, padding: 48 }}>
-          No projects found. Create projects first to manage access.
+        <div style={{ ...card, padding: 0 }}>
+          <PremiumEmpty
+            icon={<Buildings size={30} weight="duotone" color={GOLD} />}
+            title="No projects to share yet"
+            description="Create a project and it appears here as a column — check a box to give a client a live portal view of that job. Clients only ever see the projects you explicitly grant."
+          />
         </div>
       ) : (
         <div style={{ ...card, padding: 0, overflow: 'auto' }}>
@@ -982,9 +1030,18 @@ export default function ClientPortalPage() {
       {/* log entries */}
       <div style={{ ...card, maxHeight: 520, overflowY: 'auto' }}>
         {filteredLog.length === 0 && (
-          <div style={{ color: DIM, fontSize: 13, textAlign: 'center', padding: 40 }}>
-            No activity entries found.
-          </div>
+          logSearch || logSection !== 'all' ? (
+            <div style={{ color: DIM, fontSize: 13, textAlign: 'center', padding: 40 }}>
+              No activity matches your search or section filter.
+            </div>
+          ) : (
+            <PremiumEmpty
+              compact
+              icon={<ClockCounterClockwise size={26} weight="duotone" color={GOLD} />}
+              title="No portal activity yet"
+              description="Every client action is audited automatically — logins, page views, document opens, and approvals land here with a timestamp and IP, so you always know who saw what and when."
+            />
+          )
         )}
         {filteredLog.slice(0, 100).map((e, i) => (
           <div key={e.id || i} style={{
@@ -1059,16 +1116,26 @@ export default function ClientPortalPage() {
   /* ── RENDER ─────────────────────────────────────────── */
   /* ══════════════════════════════════════════════════════ */
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1440, margin: '0 auto', minHeight: '100vh' }}>
+    <PremiumSurface maxWidth={1440}>
       {/* header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: TEXT }}>Client Portal Management</h1>
-          <div style={{ fontSize: 13, color: DIM, marginTop: 5 }}>
-            Manage portal access, messaging, permissions, and activity for your clients and owners
-          </div>
-        </div>
-      </div>
+      <ModuleHero
+        eyebrow="Client Experience"
+        eyebrowIcon={<UsersThree size={13} weight="fill" color={GOLD} />}
+        title="Client"
+        accent="Portal"
+        subtitle="Owners and stakeholders get a live, permission-gated window into their projects — budget, schedule, photos, RFIs, documents. Manage who sees what, message them directly, and audit every view from here."
+      />
+
+      {/* Portal intelligence strip — what the system already knows */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Portal Users', value: String(users.length), sub: users.length ? `${portalStats.active} active${portalStats.pending ? ` · ${portalStats.pending} pending` : ''}` : 'invite your first client' },
+          { label: 'Unread From Clients', value: String(portalStats.unread), accent: portalStats.unread > 0 ? GOLD : undefined, sub: portalStats.unread > 0 ? `across ${portalStats.unreadThreads} conversation${portalStats.unreadThreads === 1 ? '' : 's'}` : 'inbox clear' },
+          { label: 'Projects Shared', value: String(portalStats.sharedProjects), sub: projects.length ? `of ${projects.length} project${projects.length === 1 ? '' : 's'}` : 'no projects yet' },
+          { label: 'Activity (7 Days)', value: String(portalStats.weekActivity), accent: portalStats.weekActivity > 0 ? GREEN : undefined, sub: 'client actions logged' },
+          { label: 'Last Client Login', value: portalStats.lastLogin ? relTime(portalStats.lastLogin.ts) : 'Never', sub: portalStats.lastLogin ? portalStats.lastLogin.name : 'no logins recorded yet' },
+        ]} />
+      )}
 
       {/* error banner */}
       {error && (
@@ -1109,6 +1176,6 @@ export default function ClientPortalPage() {
           {tab === 'Activity Log' && <ActivityLogTab />}
         </>
       )}
-    </div>
+    </PremiumSurface>
   );
 }

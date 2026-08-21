@@ -2,11 +2,11 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty,
+  PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow,
   goldButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
 import {
-  ChartLineUp, TrendUp, TrendDown, Scales, Vault, ChartBar,
+  ChartLineUp, TrendUp, TrendDown, Scales, Vault, ChartBar, Wallet,
   Table as TableIcon, Buildings, WarningCircle, CaretDown, ArrowsClockwise,
 } from '@phosphor-icons/react';
 
@@ -73,6 +73,32 @@ function CashFlowContent() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [generating, setGenerating] = useState(false);
 
+  // Live project money snapshot (/api/project-context) — so this screen never
+  // renders $0 dead space when the project has real contract money.
+  const [ctx, setCtx] = useState<any>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
+
+  const money = ctx?.money;
+  const budget = ctx?.budget;
+  const ctxOriginal = Number(money?.originalContract) || 0;
+  const ctxCoTotal = Number(money?.approvedCoTotal) || 0;
+  const ctxRevised = Number(money?.revisedContract) || (ctxOriginal + ctxCoTotal);
+  const ctxBilled = Number(money?.billedToDate) || 0;
+  const ctxPaid = Number(money?.paidToDate) || 0;
+  const ctxOutstanding = Math.max(0, ctxBilled - ctxPaid);
+  const budgetOriginal = Number(budget?.original) || 0;
+  const budgetCommitted = Number(budget?.committed) || 0;
+  const budgetActual = Number(budget?.actual) || 0;
+  const fmt0 = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 4000);
@@ -85,6 +111,14 @@ function CashFlowContent() {
       const r = await fetch(`/api/projects/${projectId}/cash-flow`);
       if (!r.ok) throw new Error('Failed to load');
       const d = await r.json();
+      // DB numerics can round-trip as strings — coerce every money field once
+      // on ingest so chart math and totals never string-concat dollars.
+      const num = (x: any) => Number(x) || 0;
+      if (d && d.project) {
+        d.project = { ...d.project, contract_amount: num(d.project.contract_amount), adjusted_contract: num(d.project.adjusted_contract), retainage_pct: num(d.project.retainage_pct), total_billed: num(d.project.total_billed), remaining_to_bill: num(d.project.remaining_to_bill), total_retainage_held: num(d.project.total_retainage_held) };
+        d.periods = (d.periods || []).map((per: any) => ({ ...per, receivables: num(per.receivables), payables: num(per.payables), retainage_release: num(per.retainage_release), net: num(per.net), running_balance: num(per.running_balance), line_items: (per.line_items || []).map((li: any) => ({ ...li, amount: num(li.amount) })) }));
+        d.summary = { ...(d.summary || {}), total_receivables: num(d.summary?.total_receivables), total_payables: num(d.summary?.total_payables), net_cash_flow: num(d.summary?.net_cash_flow), retainage_due: num(d.summary?.retainage_due), danger_zone: !!d.summary?.danger_zone };
+      }
       setData(d);
     } catch {
       setError('Unable to generate cash flow projection.');
@@ -118,12 +152,20 @@ function CashFlowContent() {
   if (error || !data) {
     return (
       <PremiumSurface maxWidth={1300}>
+        {ctx && (
+          <StatStrip items={[
+            { label: 'Revised Contract', value: fmt0(ctxRevised), sub: (Number(money?.approvedCoCount) || 0) + ' approved COs' },
+            { label: 'Billed to Date', value: fmt0(ctxBilled), sub: (Number(money?.billedPct) || 0) + '% of revised' },
+            { label: 'Collected', value: fmt0(ctxPaid), accent: GREEN, sub: 'paid on the contract' },
+            { label: 'Outstanding AR', value: fmt0(ctxOutstanding), accent: ctxOutstanding > 0 ? GOLD : GREEN, sub: 'billed, not collected' },
+          ]} />
+        )}
         <SectionCard>
           <PremiumEmpty
             tone="error"
             icon={<WarningCircle size={30} weight="duotone" color={RED} />}
             title="Couldn't generate cash flow"
-            description={error || 'No data available.'}
+            description={error || (ctx ? 'The projection did not return — the live contract money above is still current. Retry to rebuild the 6-month forecast.' : 'No data available.')}
             action={<button onClick={loadData} style={goldOutlineButtonStyle} className="pmBtn">Retry</button>}
           />
         </SectionCard>
@@ -133,6 +175,12 @@ function CashFlowContent() {
 
   const { project, periods, summary } = data;
 
+  // Several projects carry the contract in a different column — when the
+  // projection's own numbers are $0, defer to the live ctx.money snapshot.
+  const adjContract = (Number(project.adjusted_contract) || 0) > 0 ? Number(project.adjusted_contract) : ctxRevised;
+  const billedToDate = (Number(project.total_billed) || 0) > 0 ? Number(project.total_billed) : ctxBilled;
+  const remainingToBill = (Number(project.remaining_to_bill) || 0) > 0 ? Number(project.remaining_to_bill) : Math.max(0, adjContract - billedToDate);
+
   // Chart calculations
   const maxVal = Math.max(
     ...periods.map(p => Math.max(p.receivables, p.payables)),
@@ -140,10 +188,10 @@ function CashFlowContent() {
   );
 
   const kpis = [
-    { label: 'Expected Receivables (30d)', value: fmt(periods[0]?.receivables || 0), color: GREEN, icon: <TrendUp size={19} weight="duotone" color={GREEN} /> },
-    { label: 'Scheduled Payables (30d)', value: fmt(periods[0]?.payables || 0), color: RED, icon: <TrendDown size={19} weight="duotone" color={RED} /> },
-    { label: 'Net Cash Flow (6mo)', value: fmt(summary.net_cash_flow), color: summary.net_cash_flow >= 0 ? GREEN : RED, icon: <Scales size={19} weight="duotone" color={summary.net_cash_flow >= 0 ? GREEN : RED} /> },
-    { label: 'Retainage Due', value: fmt(summary.retainage_due), color: GOLD, icon: <Vault size={19} weight="duotone" color={GOLD} /> },
+    { label: 'Expected Receivables (30d)', value: fmt(Number(periods[0]?.receivables) || 0), sub: periods[0]?.month, color: GREEN, icon: <TrendUp size={19} weight="duotone" color={GREEN} /> },
+    { label: 'Scheduled Payables (30d)', value: fmt(Number(periods[0]?.payables) || 0), sub: periods[0]?.month, color: RED, icon: <TrendDown size={19} weight="duotone" color={RED} /> },
+    { label: 'Net Cash Flow (6mo)', value: fmt(summary.net_cash_flow), sub: summary.danger_zone ? 'goes negative — review' : 'incl. retainage release', color: summary.net_cash_flow >= 0 ? GREEN : RED, icon: <Scales size={19} weight="duotone" color={summary.net_cash_flow >= 0 ? GREEN : RED} /> },
+    { label: 'Retainage Due', value: fmt(summary.retainage_due), sub: 'held at ' + (Number(project.retainage_pct) || 0) + '%', color: GOLD, icon: <Vault size={19} weight="duotone" color={GOLD} /> },
   ];
 
   return (
@@ -177,7 +225,7 @@ function CashFlowContent() {
         eyebrowIcon={<ChartLineUp size={13} weight="fill" color={GOLD} />}
         title="Cash Flow"
         accent="Forecast"
-        subtitle={<>{project.name} &middot; Contract: {fmt(project.adjusted_contract)}</>}
+        subtitle={<>{project.name} &middot; Contract: {fmt(adjContract)}{ctxCoTotal !== 0 ? <> &middot; {Number(money?.approvedCoCount) || 0} approved COs</> : null}</>}
         actions={
           <button
             onClick={handleGenerate}
@@ -190,6 +238,18 @@ function CashFlowContent() {
           </button>
         }
       />
+
+      {/* Live money strip — what the system already knows about this project */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Revised Contract', value: fmt0(ctxRevised), sub: `${Number(money?.approvedCoCount) || 0} approved CO${(Number(money?.approvedCoCount) || 0) === 1 ? '' : 's'}` },
+          { label: 'Billed to Date', value: fmt0(ctxBilled), sub: `${Number(money?.billedPct) || 0}% of revised` },
+          { label: 'Collected', value: fmt0(ctxPaid), accent: GREEN, sub: `${Number(money?.payAppCount) || 0} pay app${(Number(money?.payAppCount) || 0) === 1 ? '' : 's'}` },
+          { label: 'Outstanding AR', value: fmt0(ctxOutstanding), accent: ctxOutstanding > 0 ? GOLD : GREEN, sub: 'billed, not yet collected' },
+          { label: 'Committed', value: fmt0(budgetCommitted), sub: budgetOriginal > 0 ? `of ${fmt0(budgetOriginal)} budget` : 'no budget lines yet' },
+          { label: 'Cost to Date', value: fmt0(budgetActual), accent: budgetCommitted > 0 && budgetActual > budgetCommitted ? RED : undefined, sub: budgetCommitted > 0 ? `${Math.round((budgetActual / budgetCommitted) * 100)}% of committed` : 'from approved bills' },
+        ]} />
+      )}
 
       {/* Danger Zone Banner */}
       {summary.danger_zone && (
@@ -214,6 +274,7 @@ function CashFlowContent() {
             icon={kpi.icon}
             label={kpi.label}
             value={kpi.value}
+            sub={kpi.sub}
             accent={kpi.color}
             delay={0.04 * i}
           />
@@ -414,20 +475,40 @@ function CashFlowContent() {
         </div>
       </SectionCard>
 
+      {/* Live budget + collections — committed vs actual from the project snapshot */}
+      {ctx && (
+        <SectionCard title="Budget & Collections" icon={<Wallet size={17} weight="duotone" color={GOLD} />} subtitle={`${Number(budget?.lineCount) || 0} budget lines — committed vs actual, plus what the owner still owes`} style={{ marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0 40px' }}>
+            <div>
+              <InsightRow label="Budget (original)" value={fmt0(budgetOriginal)} />
+              <InsightRow label="Committed" value={fmt0(budgetCommitted)} />
+              <InsightRow label="Actual cost to date" value={fmt0(budgetActual)} accent={budgetCommitted > 0 && budgetActual > budgetCommitted ? RED : undefined} />
+              <InsightRow label="Budget variance" value={(budgetOriginal - budgetActual >= 0 ? '+' : '-') + fmt0(Math.abs(budgetOriginal - budgetActual))} accent={budgetOriginal - budgetActual >= 0 ? GREEN : RED} strong />
+            </div>
+            <div>
+              <InsightRow label="Billed to date" value={`${fmt0(ctxBilled)} (${Number(money?.billedPct) || 0}%)`} />
+              <InsightRow label="Collected" value={fmt0(ctxPaid)} accent={GREEN} />
+              <InsightRow label="Outstanding AR" value={fmt0(ctxOutstanding)} accent={ctxOutstanding > 0 ? GOLD : GREEN} strong />
+              <InsightRow label="Pay applications" value={`${Number(money?.payAppCount) || 0}${money?.lastPayApp ? ' — last #' + money.lastPayApp.appNumber : ''}`} />
+            </div>
+          </div>
+        </SectionCard>
+      )}
+
       {/* Project context card */}
       <SectionCard title="Contract Position" icon={<Buildings size={17} weight="duotone" color={GOLD} />}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 20 }}>
           <div>
             <div style={{ fontSize: 11, color: DIM, fontWeight: 600, marginBottom: 4 }}>Adjusted Contract</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{fmt(project.adjusted_contract)}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{fmt(adjContract)}</div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: DIM, fontWeight: 600, marginBottom: 4 }}>Billed to Date</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{fmt(project.total_billed)}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{fmt(billedToDate)}</div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: DIM, fontWeight: 600, marginBottom: 4 }}>Remaining to Bill</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: GOLD }}>{fmt(project.remaining_to_bill)}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: GOLD }}>{fmt(remainingToBill)}</div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: DIM, fontWeight: 600, marginBottom: 4 }}>Retainage Held ({project.retainage_pct}%)</div>

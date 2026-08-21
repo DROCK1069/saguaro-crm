@@ -3,13 +3,15 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import ErrorBoundary from '../../../../../components/ErrorBoundary';
 import { Brain, ArrowRight } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, InsightRow } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B';
 const SOFT_BORDER = 'rgba(255,255,255,0.08)';
 const SURFACE = 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))';
 const DIM = '#CBD5E1';
 const TEXT = '#FFFFFF';
+const GREEN = '#45B37D';
+const fmtMoney = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
 interface Message {
   id: string;
@@ -33,6 +35,20 @@ const QUICK_QUESTIONS = [
 function IntelligenceChat() {
   const params = useParams();
   const projectId = params?.projectId as string;
+
+  // Live project snapshot - one /api/project-context fetch so the chat opens
+  // already showing the money and open-item picture the AI reasons over.
+  const [ctx, setCtx] = useState<any>(null);
+  useEffect(() => {
+    if (!projectId) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
 
   const [messages, setMessages] = useState<Message[]>([{
     id: '0',
@@ -193,8 +209,20 @@ function IntelligenceChat() {
         subtitle="Your AI construction expert with full context on this project — ask about budget, RFIs, change orders, subs, schedule, lien law, and best practices."
       />
 
+      {/* What the AI already knows - live numbers from the project snapshot */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Revised Contract', value: fmtMoney(Number(ctx.money?.revisedContract) || 0), sub: `${Number(ctx.money?.approvedCoCount) || 0} approved CO${(Number(ctx.money?.approvedCoCount) || 0) === 1 ? '' : 's'}` },
+          { label: 'Billed to Date', value: fmtMoney(Number(ctx.money?.billedToDate) || 0), sub: `${Number(ctx.money?.billedPct) || 0}% of revised` },
+          { label: 'Paid to Date', value: fmtMoney(Number(ctx.money?.paidToDate) || 0), accent: GREEN, sub: `retainage ${Number(ctx.money?.retainagePct) || 0}%` },
+          { label: 'Open RFIs', value: String(Number(ctx.counts?.openRfis) || 0), accent: (Number(ctx.counts?.openRfis) || 0) > 5 ? '#E0644E' : undefined, sub: `${Number(ctx.counts?.openSubmittals) || 0} open submittal${(Number(ctx.counts?.openSubmittals) || 0) === 1 ? '' : 's'}` },
+          { label: 'Open Punch', value: String(Number(ctx.counts?.openPunch) || 0), sub: `${Number(ctx.counts?.scheduleTasks) || 0} schedule tasks` },
+          { label: 'Pending COs', value: String(Number(ctx.money?.pendingCoCount) || 0), accent: (Number(ctx.money?.pendingCoCount) || 0) > 0 ? '#F0A63C' : undefined, sub: `${(ctx.subs || []).length} sub${(ctx.subs || []).length === 1 ? '' : 's'} on the job` },
+        ]} />
+      )}
+
       <SectionCard flush bodyStyle={{ padding: 0 }}>
-        <div style={{ display: 'flex', height: 'calc(100vh - 300px)', minHeight: 480, overflow: 'hidden', borderRadius: 18 }}>
+        <div style={{ display: 'flex', height: ctx ? 'calc(100vh - 396px)' : 'calc(100vh - 300px)', minHeight: 480, overflow: 'hidden', borderRadius: 18 }}>
           {/* Sidebar */}
           <div style={{ width: 260, background: 'rgba(255,255,255,0.015)', borderRight: `1px solid ${SOFT_BORDER}`, padding: '20px 16px', overflowY: 'auto', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
@@ -208,6 +236,16 @@ function IntelligenceChat() {
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px #22C55E', marginBottom: '20px', display: 'inline-block' }} />
             <span style={{ fontSize: '11px', color: DIM, marginLeft: '6px' }}>Online</span>
 
+            {ctx && (
+              <div style={{ marginBottom: 16, padding: '10px 12px', background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 8 }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: 6 }}>Context Loaded</div>
+                <InsightRow label="Project" value={ctx.project?.name || '-'} />
+                <InsightRow label="Complete" value={`${Number(ctx.project?.percentComplete) || 0}%`} />
+                <InsightRow label="Budget lines" value={String(Number(ctx.budget?.lineCount) || 0)} />
+                <InsightRow label="Bid packages" value={String((ctx.bidPackages || []).length)} />
+                {ctx.recent?.lastDailyLogDate && <InsightRow label="Last daily log" value={new Date(ctx.recent.lastDailyLogDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />}
+              </div>
+            )}
             <div style={{ fontSize: '10px', fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '10px', marginTop: '8px' }}>Quick Questions</div>
             {QUICK_QUESTIONS.map(q => (
               <button key={q} onClick={() => sendMessage(q)}

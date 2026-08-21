@@ -697,6 +697,7 @@ export default function NotificationSettingsPage() {
       {/* Frequency selector */}
       <SectionCard
         title="Delivery Frequency"
+        subtitle="How events reach you — the moment they happen, or bundled into an hourly, daily, or weekly digest."
         icon={<CalendarBlank size={17} weight="duotone" color={GOLD} />}
         style={{ marginBottom: 20 }}
       >
@@ -790,6 +791,7 @@ export default function NotificationSettingsPage() {
       {/* Module notification matrix */}
       <SectionCard
         title="Module Notification Matrix"
+        subtitle="Per event, per channel — In-App rings the bell menu, Email lands in your inbox, Push alerts the iOS field app. Expand a module to tune single events, or flip whole columns with the buttons above the grid."
         icon={<Bell size={17} weight="duotone" color={GOLD} />}
         style={{ marginBottom: 20 }}
       >

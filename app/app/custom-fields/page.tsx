@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
-import { CaretUp, CaretDown } from '@phosphor-icons/react';
+import { CaretUp, CaretDown, Clipboard, CheckCircle, Asterisk, Stack, MagnifyingGlass, Plus } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 /* ── Color Palette ── */
 const GOLD = '#F59E0B';
@@ -995,14 +996,7 @@ export default function CustomFieldsPage() {
 
   /* ══════════ RENDER ══════════ */
   return (
-    <div
-      style={{
-        background: BG,
-        minHeight: '100vh',
-        color: TEXT,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}
-    >
+    <PremiumSurface maxWidth={1200}>
       {/* Toast Notification */}
       {toast && (
         <div
@@ -1043,58 +1037,42 @@ export default function CustomFieldsPage() {
       )}
 
       {/* ── Header ── */}
-      <div
-        style={{
-          padding: '28px 32px 0',
-          borderBottom: `1px solid ${BORDER}`,
-          background: RAISED,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 18,
-          }}
-        >
-          <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: TEXT }}>
-              Custom Fields
-            </h1>
-            <p style={{ margin: '4px 0 0', color: DIM, fontSize: 13 }}>
-              Add your own fields to any module — they appear on every matching record.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              style={btn(BORDER, DIM)}
-              onClick={() => loadSummaries()}
-              disabled={loadingSummary}
-            >
-              {loadingSummary ? 'Loading...' : 'Module Summary'}
-            </button>
-            <button style={btn(BORDER, DIM)} onClick={importFields}>
-              Import JSON
-            </button>
-            <button style={btn(BORDER, DIM)} onClick={exportFields}>
-              Export JSON
-            </button>
-            <button
-              className="btn-gold"
-              style={{ fontSize: 13, padding: '8px 16px' }}
-              onClick={() => {
-                resetForm();
-                setShowForm(true);
-              }}
-            >
-              + New Field
-            </button>
-          </div>
-        </div>
+      <ModuleHero
+        eyebrow="Workspace Configuration"
+        eyebrowIcon={<Clipboard size={13} weight="fill" color={GOLD} />}
+        title="Custom"
+        accent="Fields"
+        subtitle="Extend any module with your own fields — they appear on every matching record, carry your validation rules, and flow into exports."
+        actions={<>
+          <button
+            style={{ ...ghostButtonStyle, opacity: loadingSummary ? 0.6 : 1 }}
+            className="pmBtn"
+            onClick={() => loadSummaries()}
+            disabled={loadingSummary}
+          >
+            {loadingSummary ? 'Loading...' : 'Module Summary'}
+          </button>
+          <button style={ghostButtonStyle} className="pmBtn" onClick={importFields}>
+            Import JSON
+          </button>
+          <button style={ghostButtonStyle} className="pmBtn" onClick={exportFields}>
+            Export JSON
+          </button>
+          <button
+            style={goldButtonStyle}
+            className="pmBtn"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+          >
+            <Plus size={15} weight="bold" /> New Field
+          </button>
+        </>}
+      />
 
-        {/* Module Tabs */}
-        <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 0 }}>
+      {/* Module Tabs */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
           {MODULES.map((mod) => {
             const isActive = mod === activeModule;
             return (
@@ -1107,14 +1085,12 @@ export default function CustomFieldsPage() {
                   setShowPreview(null);
                 }}
                 style={{
-                  background: isActive ? BG : 'transparent',
+                  background: isActive ? 'rgba(245,158,11,0.12)' : 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
                   color: isActive ? GOLD : DIM,
-                  border: 'none',
-                  borderBottom: isActive
-                    ? `2px solid ${GOLD}`
-                    : '2px solid transparent',
-                  padding: '10px 16px',
-                  fontSize: 13,
+                  border: `1px solid ${isActive ? 'rgba(245,158,11,0.45)' : BORDER}`,
+                  borderRadius: 999,
+                  padding: '7px 16px',
+                  fontSize: 12.5,
                   fontWeight: isActive ? 700 : 500,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
@@ -1125,11 +1101,10 @@ export default function CustomFieldsPage() {
               </button>
             );
           })}
-        </div>
       </div>
 
       {/* ── Body ── */}
-      <div style={{ padding: '24px 32px', maxWidth: 1200, margin: '0 auto' }}>
+      <div>
         {/* Error Banner */}
         {error && (
           <div
@@ -1155,40 +1130,41 @@ export default function CustomFieldsPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 14,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 12,
             marginBottom: 20,
           }}
         >
-          {[
-            { label: 'Total Fields', value: stats.total, color: GOLD },
-            { label: 'Active', value: stats.active, color: GREEN },
-            { label: 'Required', value: stats.required, color: AMBER },
-            {
-              label: 'Field Types',
-              value: Object.keys(stats.byType).length,
-              color: BLUE,
-            },
-          ].map((s) => (
-            <div
-              key={s.label}
-              style={{
-                ...cardStyle(),
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: 16,
-                marginBottom: 0,
-              }}
-            >
-              <span style={{ fontSize: 28, fontWeight: 800, color: s.color }}>
-                {s.value}
-              </span>
-              <span style={{ color: DIM, fontSize: 12, fontWeight: 600 }}>
-                {s.label}
-              </span>
-            </div>
-          ))}
+          <StatCard
+            icon={<Clipboard size={19} weight="duotone" color={GOLD} />}
+            label={`${activeModule} Fields`}
+            value={stats.total}
+            sub={stats.total > 0 ? 'defined on this module' : 'none defined yet'}
+            delay={0.02}
+          />
+          <StatCard
+            icon={<CheckCircle size={19} weight="duotone" color={GREEN} />}
+            label="Active"
+            value={stats.active}
+            accent={stats.active > 0 ? GREEN : undefined}
+            sub={stats.active > 0 ? `showing on every ${activeModule} record` : 'toggle a field on to show it'}
+            delay={0.06}
+          />
+          <StatCard
+            icon={<Asterisk size={19} weight="duotone" color={AMBER} />}
+            label="Required"
+            value={stats.required}
+            accent={stats.required > 0 ? AMBER : undefined}
+            sub="block save until filled in"
+            delay={0.10}
+          />
+          <StatCard
+            icon={<Stack size={19} weight="duotone" color={PURPLE} />}
+            label="Field Types"
+            value={Object.keys(stats.byType).length}
+            sub={`of ${FIELD_TYPES.length} available types in use`}
+            delay={0.14}
+          />
         </div>
 
         {/* Search Bar */}
@@ -1478,21 +1454,29 @@ export default function CustomFieldsPage() {
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         ) : filteredFields.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-            <div style={{ fontSize: 14, marginBottom: 6 }}>
-              {searchTerm
+          <SectionCard flush>
+            <PremiumEmpty
+              icon={searchTerm
+                ? <MagnifyingGlass size={30} weight="duotone" color={GOLD} />
+                : <Clipboard size={30} weight="duotone" color={GOLD} />}
+              title={searchTerm
                 ? `No fields match "${searchTerm}"`
-                : `No custom fields defined for ${activeModule}`}
-            </div>
-            {!searchTerm && (
-              <div style={{ fontSize: 12 }}>
-                Click{' '}
-                <strong style={{ color: GOLD }}>+ New Field</strong> to create
-                one, or use <strong style={{ color: DIM }}>Import JSON</strong>{' '}
-                to load a configuration.
-              </div>
-            )}
-          </div>
+                : `${activeModule} has no custom fields yet`}
+              description={searchTerm
+                ? 'Try a different keyword, or clear the search to see every field defined on this module.'
+                : `Add a field and it appears on every ${activeModule} record instantly — text, numbers, dates, dropdowns, checkboxes, files, or URLs, each with optional validation rules and a default value. Already built a set elsewhere? Import JSON drops it in whole.`}
+              action={searchTerm ? (
+                <button style={ghostButtonStyle} className="pmBtn" onClick={() => setSearchTerm('')}>Clear Search</button>
+              ) : (
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button style={goldButtonStyle} className="pmBtn" onClick={() => { resetForm(); setShowForm(true); }}>
+                    <Plus size={15} weight="bold" /> New Field
+                  </button>
+                  <button style={ghostButtonStyle} className="pmBtn" onClick={importFields}>Import JSON</button>
+                </div>
+              )}
+            />
+          </SectionCard>
         ) : (
           <div>
             {/* Column Headers */}
@@ -1883,6 +1867,6 @@ export default function CustomFieldsPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PremiumSurface>
   );
 }

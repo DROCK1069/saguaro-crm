@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
-import { UsersThree, UserPlus, HardHat } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { UsersThree, UserPlus, HardHat, EnvelopeSimple, Phone, IdentificationBadge, ClockCounterClockwise } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',BLUE='#1a5fa8';
 const fmt = (n:number) => '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -26,6 +26,20 @@ export default function TeamPage(){
   const [inviteRole, setInviteRole] = useState('Member');
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState('');
+  // Project intelligence — the roster walks in knowing the job's people and parties.
+  const [proj, setProj] = useState<any>(null);
+  const [ctx, setCtx] = useState<any>(null);
+
+  useEffect(() => {
+    if (!projectId) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -33,6 +47,7 @@ export default function TeamPage(){
       try {
         const r = await fetch(`/api/projects/${projectId}`);
         const d = await r.json();
+        if (d.project) setProj(d.project);
         // The API returns the internal roster under `team` (from project_team),
         // not `members`. Map each row to the shape this table renders.
         setMembers((d.team ?? []).map((t: any) => ({
@@ -101,6 +116,30 @@ export default function TeamPage(){
   }
 
   const inputStyle = {width:'100%',padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const};
+  const hintStyle: React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
+
+  // Field leadership straight off the project record — PM, super, and foreman,
+  // plus the owner and architect of record, each with live contact links.
+  const leadership = [
+    { role: 'Project Manager', name: proj?.pm_name || proj?.project_manager || '', email: proj?.pm_email || '', phone: proj?.pm_phone || '' },
+    { role: 'Superintendent', name: proj?.super_name || proj?.superintendent || '', email: proj?.super_email || '', phone: proj?.super_phone || '' },
+    { role: 'Foreman', name: proj?.foreman_name || proj?.foreman || '', email: proj?.foreman_email || '', phone: proj?.foreman_phone || '' },
+    { role: 'Owner', name: proj?.owner_name || '', email: proj?.owner_email || '', phone: proj?.owner_phone || '' },
+    { role: 'Architect', name: proj?.architect_name || proj?.architect || '', email: proj?.architect_email || '', phone: proj?.architect_phone || '' },
+  ];
+  const leadersAssigned = leadership.filter(l => l.name).length;
+  const ctxSubs = (ctx?.subs || []) as any[];
+  const subTrades = Array.from(new Set(ctxSubs.map((s: any) => s.trade).filter(Boolean)));
+  const findCtxSub = (name: string) => ctxSubs.find((x: any) => (x.companyName || '').trim().toLowerCase() === (name || '').trim().toLowerCase());
+  const fmtMoney = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const ROLE_HINTS: Record<string, string> = {
+    Admin: 'Full control — settings, money, and team management.',
+    Manager: 'Runs the project — schedule, budget, and documents.',
+    Member: 'Day-to-day access — logs, photos, tasks, and field tools.',
+    Guest: 'Read-only visibility into this project.',
+    Client: 'Owner-facing view — approvals and shared documents only.',
+    Sub: 'Subcontractor portal — their scope, waivers, and pay items.',
+  };
 
   return <PremiumSurface maxWidth={1600}>
     <ModuleHero
@@ -113,28 +152,44 @@ export default function TeamPage(){
     />
 
     {!loading && (
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
-        <StatCard icon={<UsersThree size={19} weight="duotone" color={GOLD} />} label="Team Members" value={String(members.length)} accent={GOLD} sub={members.length===1?'1 with access':`${members.length} with access`} />
-        <StatCard icon={<HardHat size={19} weight="duotone" color={BLUE} />} label="Subcontractors" value={String(subs.length)} accent={subs.length?BLUE:undefined} sub="portal access" />
-      </div>
+      <>
+        {ctx && (
+          <StatStrip items={[
+            {label:'Project', value: ctx.project?.name || '—', sub: ctx.project?.projectNumber ? `#${ctx.project.projectNumber}` : (ctx.project?.status || 'active')},
+            {label:'Owner', value: ctx.defaults?.ownerName || '—', sub: ctx.defaults?.ownerEmail || 'no email on file'},
+            {label:'Architect', value: ctx.defaults?.architectName || '—', sub: 'design contact'},
+            {label:'Leadership', value: `${leadersAssigned}/5`, accent: leadersAssigned>=3?'#3dd68c':GOLD, sub: leadersAssigned>0?'directory roles assigned':'assign in Project Settings'},
+            {label:'Trades On the Job', value: String(subTrades.length), sub: ctxSubs.length?`across ${ctxSubs.length} sub${ctxSubs.length===1?'':'s'}`:'no subs yet'},
+          ]}/>
+        )}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
+          <StatCard icon={<UsersThree size={19} weight="duotone" color={GOLD} />} label="Team Members" value={String(members.length)} accent={GOLD} sub={members.length===1?'1 with access':`${members.length} with access`} />
+          <StatCard icon={<HardHat size={19} weight="duotone" color={BLUE} />} label="Subcontractors" value={String(subs.length)} accent={subs.length?BLUE:undefined} sub={subTrades.length?`${subTrades.length} trade${subTrades.length===1?'':'s'} — portal access`:'portal access'} />
+          <StatCard icon={<IdentificationBadge size={19} weight="duotone" color={leadersAssigned>=3?'#3dd68c':GOLD} />} label="Field Leadership" value={`${leadersAssigned}/5`} accent={leadersAssigned>=3?'#3dd68c':GOLD} sub="PM · super · foreman · owner · architect" />
+        </div>
+      </>
     )}
 
     {showInvite && <div style={{marginBottom:24}}>
-      <SectionCard title="Invite Team Member" icon={<UserPlus size={17} weight="duotone" color={GOLD} />}>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 320px',gap:18,alignItems:'start'}}>
+      <SectionCard title="Invite Team Member" icon={<UserPlus size={17} weight="duotone" color={GOLD} />} subtitle={ctx?.project?.name ? `Grants access to ${ctx.project.name}` : 'Send a role-scoped invitation to this project.'}>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:16}}>
           <div>
             <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Email</label>
             <input type="email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="email@company.com" style={inputStyle}/>
+            <div style={hintStyle}>They get a secure accept link by email — it expires after 7 days.</div>
           </div>
           <div>
             <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Name</label>
             <input type="text" value={inviteName} onChange={e=>setInviteName(e.target.value)} placeholder="Full name" style={inputStyle}/>
+            <div style={hintStyle}>Shown on the roster and in notifications.</div>
           </div>
           <div>
             <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Role</label>
             <select value={inviteRole} onChange={e=>setInviteRole(e.target.value)} style={{...inputStyle,cursor:'pointer'}}>
               {['Admin','Manager','Member','Guest','Client','Sub'].map(r=><option key={r}>{r}</option>)}
             </select>
+            <div style={hintStyle}>{ROLE_HINTS[inviteRole] || 'Access level for this member.'}</div>
           </div>
         </div>
         {inviteMsg&&<div style={{fontSize:13,marginBottom:12,color:inviteMsg==='Invitation sent!'?GREEN:RED}}>{inviteMsg}</div>}
@@ -143,9 +198,37 @@ export default function TeamPage(){
           <button onClick={()=>{setShowInvite(false);setInviteMsg('');}} style={ghostButtonStyle} className="pmBtn">Cancel</button>
         </div>
       </SectionCard>
+      <SectionCard title="After You Send" icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />}>
+        <FlowSteps title="" steps={[
+          {title:'Invitation email goes out', desc:'A secure accept link is emailed — it expires after 7 days.'},
+          {title:'They create their login', desc:'One click sets up their account under your company.'},
+          {title:'Roster updates itself', desc:`They appear below with ${inviteRole} access the moment they accept.`},
+          {title:'Access stays adjustable', desc:'Change or revoke roles any time from Roles & Access.'},
+        ]}/>
+      </SectionCard>
+      </div>
     </div>}
 
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      <SectionCard title="Project Directory" subtitle="Field leadership and parties of record — from project setup" icon={<IdentificationBadge size={17} weight="duotone" color={GOLD} />}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:12}}>
+          {leadership.map(l=>(
+            <div key={l.role} style={{padding:'12px 14px',borderRadius:12,border:`1px solid ${l.name?'rgba(245,158,11,0.25)':'rgba(255,255,255,0.08)'}`,background:l.name?'rgba(245,158,11,0.05)':'rgba(255,255,255,0.02)'}}>
+              <div style={{fontSize:10,fontWeight:800,color:DIM,textTransform:'uppercase' as const,letterSpacing:.6,marginBottom:6}}>{l.role}</div>
+              <div style={{fontSize:13.5,fontWeight:700,color:l.name?TEXT:'rgba(255,255,255,0.35)',marginBottom:6}}>{l.name||'Not assigned'}</div>
+              {l.name ? (
+                <div style={{display:'flex',flexDirection:'column' as const,gap:3}}>
+                  {l.email&&<a href={`mailto:${l.email}`} style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:11.5,color:'#FBBF24',textDecoration:'none'}}><EnvelopeSimple size={12} weight="bold" color="#FBBF24"/>{l.email}</a>}
+                  {l.phone&&<a href={`tel:${l.phone}`} style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:11.5,color:DIM,textDecoration:'none'}}><Phone size={12} weight="bold" color={DIM}/>{l.phone}</a>}
+                  {!l.email&&!l.phone&&<span style={{fontSize:11,color:'rgba(255,255,255,0.35)'}}>No contact on file</span>}
+                </div>
+              ) : (
+                <div style={{fontSize:11,color:'rgba(255,255,255,0.35)'}}>Set in Project Settings</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </SectionCard>
       <SectionCard title="Internal Team" icon={<UsersThree size={17} weight="duotone" color={GOLD} />}>
         {loading ? (
           <div style={{padding:'28px 12px',textAlign:'center',color:DIM,fontSize:13}}>Loading team members…</div>
@@ -153,7 +236,7 @@ export default function TeamPage(){
           <PremiumEmpty
             icon={<UsersThree size={30} weight="duotone" color={GOLD} />}
             title="No team members yet"
-            description="Invite someone to get started collaborating on this project."
+            description={leadersAssigned>0 ? `The directory above lists ${leadersAssigned} leadership role${leadersAssigned===1?'':'s'} — invite them so they can log in, post daily logs, and run the schedule.` : 'Invite your PM, superintendent, and office staff — each gets role-scoped access to this project.'}
             action={<button onClick={()=>setShowInvite(true)} style={goldButtonStyle} className="pmBtn"><UserPlus size={15} weight="bold" /> Invite Member</button>}
             compact
           />
@@ -180,23 +263,25 @@ export default function TeamPage(){
           <PremiumEmpty
             icon={<HardHat size={30} weight="duotone" color={GOLD} />}
             title="No subcontractors yet"
-            description="Subcontractors added to this project will appear here with portal access."
+            description={(ctx?.bidPackages || []).length > 0 ? `${ctx.bidPackages.length} bid package${ctx.bidPackages.length===1?'':'s'} exist on this project — award one, or add subs in the Subs module, and they land here with portal access, waivers, and pay items wired up.` : 'Add subs in the Subs module or award a bid package — each lands here with portal access, lien waivers, and pay items wired up.'}
             compact
           />
         ) : (
           <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch' as const}}>
             <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
               <thead><tr>
-                {['Company','Contact Email','Portal Access','Actions'].map(h=><th key={h} style={{padding:'8px 12px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
+                {['Company','Trade','Contact Email','Contract','Portal Access','Actions'].map(h=><th key={h} style={{padding:'8px 12px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
               </tr></thead>
-              <tbody>{subs.map(s=><tr key={s.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
+              <tbody>{subs.map(s=>{const cs=findCtxSub(s.name);return <tr key={s.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
                 <td style={{padding:'11px 12px',color:TEXT,fontWeight:600}}>{s.name}</td>
-                <td style={{padding:'11px 12px',color:DIM}}>{s.email}</td>
+                <td style={{padding:'11px 12px',color:DIM,fontSize:12}}>{cs?.trade || '—'}</td>
+                <td style={{padding:'11px 12px',color:DIM}}>{s.email || cs?.email || ''}</td>
+                <td style={{padding:'11px 12px',color:Number(cs?.contractAmount)>0?TEXT:DIM,fontWeight:Number(cs?.contractAmount)>0?700:400}}>{Number(cs?.contractAmount)>0?fmtMoney(Number(cs?.contractAmount)):'—'}</td>
                 <td style={{padding:'11px 12px'}}><Badge label="Sub Portal" color='#a78bfa' bg='rgba(167,139,250,.12)'/></td>
                 <td style={{padding:'11px 12px',display:'flex',gap:6}}>
                   <button onClick={()=>handleSendPortalLink(s)} disabled={sendingPortal===s.name} style={{background:'none',border:`1px solid ${BORDER}`,borderRadius:5,color:GOLD,fontSize:11,padding:'3px 8px',cursor:sendingPortal===s.name?'default':'pointer',opacity:sendingPortal===s.name?.6:1}}>{sendingPortal===s.name?'Working...':'Copy Portal Link'}</button>
                 </td>
-              </tr>)}</tbody>
+              </tr>;})}</tbody>
             </table>
           </div>
         )}

@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { XCircle, FileText, ShieldCheck, CurrencyDollar, Clock, Wallet, CalendarBlank, UserPlus, Table as TableIcon, SealCheck, ClockCounterClockwise } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030';
 const fmt = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0 = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '8px 11px', background: DARK,
@@ -20,6 +22,27 @@ const WORK_CLASSIFICATIONS = [
   'Laborer', 'Carpenter', 'Electrician', 'Plumber', 'Ironworker',
   'Operating Engineer', 'Roofer', 'Painter', 'Cement Mason', 'HVAC Tech', 'Foreman', 'Superintendent',
 ];
+
+/** Grouped classification options — the WH-347 labor classes first, then the
+ *  full CSI trade taxonomy (never a hardcoded partial list), plus the row's
+ *  current value when it came from a timesheet trade outside both lists. */
+function ClassificationOptions({ current }: { current?: string }) {
+  const known = new Set<string>(WORK_CLASSIFICATIONS);
+  SUB_TRADES_BY_DIVISION.forEach(g => g.trades.forEach(t => known.add(t)));
+  return (
+    <>
+      {current && !known.has(current) && <option value={current}>{current}</option>}
+      <optgroup label="Labor Classifications">
+        {WORK_CLASSIFICATIONS.map(c => <option key={c} value={c}>{c}</option>)}
+      </optgroup>
+      {SUB_TRADES_BY_DIVISION.map(g => (
+        <optgroup key={g.division} label={`Div ${g.division} — ${g.name}`}>
+          {g.trades.map(t => <option key={t} value={t}>{t}</option>)}
+        </optgroup>
+      ))}
+    </>
+  );
+}
 
 interface Employee {
   id: string;
@@ -120,7 +143,28 @@ export default function PayrollPage() {
   const [pwRates, setPwRates] = useState<PwRate[]>([]);
   const [pwNote, setPwNote] = useState('');
 
-  useEffect(() => { loadRecords(); loadPrevailingWage(); }, [pid]);
+  // Project intelligence snapshot + clocked field time — the screen walks in
+  // knowing the project and the hours the crew already logged.
+  const [ctx, setCtx] = useState<any>(null);
+  const [timeEntries, setTimeEntries] = useState<any[]>([]);
+
+  useEffect(() => { loadRecords(); loadPrevailingWage(); loadCtx(); loadTimesheets(); }, [pid]);
+
+  async function loadCtx() {
+    try {
+      const r = await fetch(`/api/project-context?projectId=${pid}`);
+      const c = await r.json();
+      if (!c.error) setCtx(c);
+    } catch {}
+  }
+
+  async function loadTimesheets() {
+    try {
+      const r = await fetch(`/api/projects/${pid}/timesheets`);
+      const d = await r.json() as any;
+      setTimeEntries(Array.isArray(d.entries) ? d.entries : []);
+    } catch { setTimeEntries([]); }
+  }
 
   async function loadPrevailingWage() {
     try {
@@ -194,6 +238,50 @@ export default function PayrollPage() {
     } finally {
       setRecordsLoading(false);
     }
+  }
+
+  // Field-time rollup for the selected week: time_entries whose work_date
+  // falls in the 7 days ending on the Week Ending Date, per-employee.
+  const weekEntries = React.useMemo(() => {
+    if (!weekEndingDate) return [] as any[];
+    const end = new Date(weekEndingDate + 'T00:00:00');
+    const start = new Date(end.getTime() - 6 * 86400000);
+    return timeEntries.filter((t: any) => {
+      if (!t.date) return false;
+      const d = new Date(String(t.date).slice(0, 10) + 'T00:00:00');
+      return d >= start && d <= end;
+    });
+  }, [timeEntries, weekEndingDate]);
+  const weekClockedHours = weekEntries.reduce((s: number, t: any) => s + (Number(t.regular_hrs) || 0) + (Number(t.ot_hrs) || 0), 0);
+  const weekClockedNames = Array.from(new Set(weekEntries.map((t: any) => t.employee).filter((n: any) => n && n !== '—')));
+
+  // WH-347 history rollups (records arrive newest-first).
+  const grossFiled = records.reduce((s, r) => s + (Number(r.total_gross) || 0), 0);
+  const lastFiled = records[0] || null;
+
+  /** Build employee rows from the clocked field time for the selected week. */
+  function importFromTimesheets() {
+    if (weekEntries.length === 0) return;
+    const dayName = (iso: string): Day => DAYS[(new Date(String(iso).slice(0, 10) + 'T00:00:00').getDay() + 6) % 7];
+    const byEmp = new Map<string, Employee>();
+    weekEntries.forEach((t: any, i: number) => {
+      const name = (t.employee && t.employee !== '—') ? String(t.employee) : 'Employee ' + (i + 1);
+      if (!byEmp.has(name)) {
+        byEmp.set(name, { ...defaultEmployee(), id: 'emp-ts-' + Date.now() + '-' + byEmp.size, name, classification: t.classification || 'Laborer', hours: { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 } });
+      }
+      const emp = byEmp.get(name)!;
+      const day = dayName(t.date);
+      emp.hours[day] = Math.round((emp.hours[day] + (Number(t.regular_hrs) || 0) + (Number(t.ot_hrs) || 0)) * 100) / 100;
+      if ((Number(t.ot_hrs) || 0) > 0) emp.overtime = true;
+    });
+    const imported = Array.from(byEmp.values());
+    setEmployees(prev => {
+      const blankOnly = prev.length === 1 && !prev[0].name && calcGross(prev[0]) === 0;
+      const base = blankOnly ? [] : prev.filter(e => e.name);
+      return [...base, ...imported.filter(im => !base.some(e => e.name.toLowerCase() === im.name.toLowerCase()))];
+    });
+    setSuccess('Imported ' + imported.length + ' employee' + (imported.length === 1 ? '' : 's') + ' (' + weekClockedHours.toFixed(1) + ' hrs) from the field time clock — set rates and deductions, then generate.');
+    setTimeout(() => setSuccess(''), 6000);
   }
 
   const totalWeekHours = employees.reduce((s, e) => s + Object.values(e.hours).reduce((h, v) => h + v, 0), 0);
@@ -276,7 +364,7 @@ export default function PayrollPage() {
 
       {/* Header */}
       <ModuleHero
-        eyebrow="Certified Payroll"
+        eyebrow={ctx?.project?.name || 'Certified Payroll'}
         eyebrowIcon={<ShieldCheck size={13} weight="fill" color={GOLD} />}
         title="Certified"
         accent="Payroll"
@@ -291,6 +379,18 @@ export default function PayrollPage() {
           </button>
         }
       />
+
+      {/* Project intelligence strip — what the system already knows */}
+      {(ctx || records.length > 0 || timeEntries.length > 0) && (
+        <StatStrip items={[
+          { label: 'Payroll', value: '#' + (records.length + 1), sub: lastFiled ? 'follows week ' + lastFiled.week_ending : 'first WH-347 on this project' },
+          { label: 'Filed to Date', value: String(records.length), sub: grossFiled > 0 ? fmt0(grossFiled) + ' gross certified' : 'no WH-347s yet' },
+          { label: 'Crew This Week', value: String(employees.length), sub: totalWeekHours.toFixed(1) + ' hrs entered' },
+          { label: 'Field Time Clock', value: weekEndingDate ? weekClockedHours.toFixed(1) + ' hrs' : timeEntries.length + ' entries', accent: weekClockedHours > 0 ? '#3dd68c' : undefined, sub: weekEndingDate ? weekClockedNames.length + ' employee' + (weekClockedNames.length === 1 ? '' : 's') + ' clocked this week' : 'pick a week ending to match' },
+          { label: 'Prevailing Wage', value: pw ? 'Flagged' : 'Standard', accent: pw ? GOLD : undefined, sub: pw ? pw.state + (pw.county ? ' · ' + pw.county : '') + (pw.wageDecision ? ' · ' + pw.wageDecision : '') : 'not a Davis-Bacon project' },
+          { label: 'Subs on Job', value: String((ctx?.subs || []).length), sub: 'on the project roster' },
+        ]} />
+      )}
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
@@ -355,6 +455,24 @@ export default function PayrollPage() {
       )}
       {pwNote && <div style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.3)', borderRadius: 8, padding: '9px 16px', marginBottom: 20, fontSize: 12.5, color: '#7fb3ff' }}>{pwNote}</div>}
 
+      {/* Field time clock rollup — import instead of retyping hours */}
+      {weekEndingDate && weekEntries.length > 0 && (
+        <div style={{ background: 'rgba(61,214,140,.07)', border: '1px solid rgba(61,214,140,.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 13, color: DIM }}>
+            <span style={{ fontWeight: 700, color: '#3dd68c' }}>{weekClockedHours.toFixed(1)} hrs clocked in the field</span>
+            {' — '}{weekEntries.length} time {weekEntries.length === 1 ? 'entry' : 'entries'} from {weekClockedNames.length} employee{weekClockedNames.length === 1 ? '' : 's'} fall in the 7 days ending {weekEndingDate}. Import them below instead of retyping.
+          </div>
+          <button onClick={importFromTimesheets} className="pmBtn" style={{ ...goldOutlineButtonStyle, padding: '8px 16px', fontSize: 12.5, whiteSpace: 'nowrap' }}>
+            <Clock size={15} weight="bold" /> Import clocked hours
+          </button>
+        </div>
+      )}
+      {weekEndingDate && weekEntries.length === 0 && timeEntries.length > 0 && (
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 16px', marginBottom: 20, fontSize: 12.5, color: DIM }}>
+          No field time entries fall in the 7 days ending {weekEndingDate} — {timeEntries.length} exist on this project overall. Enter hours manually below.
+        </div>
+      )}
+
       {/* Week Ending */}
       <SectionCard
         title="Pay Period"
@@ -386,7 +504,7 @@ export default function PayrollPage() {
             {[
               { label: 'Full Name *', el: <input value={newEmp.name} onChange={e => setNewEmp(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" style={inp} /> },
               { label: 'Last 4 SSN', el: <input value={newEmp.last4ssn} onChange={e => setNewEmp(p => ({ ...p, last4ssn: e.target.value }))} placeholder="1234" maxLength={4} style={inp} /> },
-              { label: 'Classification', el: <select value={newEmp.classification} onChange={e => setNewEmp(p => ({ ...p, classification: e.target.value }))} style={inp}>{WORK_CLASSIFICATIONS.map(c => <option key={c}>{c}</option>)}</select> },
+              { label: 'Classification', el: <select value={newEmp.classification} onChange={e => setNewEmp(p => ({ ...p, classification: e.target.value }))} style={inp}><ClassificationOptions current={newEmp.classification} /></select> },
               { label: 'Reg Rate ($)', el: <input type="number" value={newEmp.hourlyRate} onChange={e => setNewEmp(p => ({ ...p, hourlyRate: Number(e.target.value) }))} placeholder="28.50" style={{ ...inp, textAlign: 'right' }} /> },
               { label: 'OT Rate ($)', el: <input type="number" value={newEmp.otRate} onChange={e => setNewEmp(p => ({ ...p, otRate: Number(e.target.value) }))} placeholder="42.75" style={{ ...inp, textAlign: 'right' }} /> },
             ].map(({ label, el }) => (
@@ -462,7 +580,7 @@ export default function PayrollPage() {
                       </td>
                       <td style={{ padding: '7px 6px', minWidth: 120 }}>
                         <select value={emp.classification} onChange={e => updateEmp(emp.id, 'classification', e.target.value)} style={{ ...inp, fontSize: 11 }}>
-                          {WORK_CLASSIFICATIONS.map(c => <option key={c}>{c}</option>)}
+                          <ClassificationOptions current={emp.classification} />
                         </select>
                       </td>
                       <td style={{ padding: '7px 6px', width: 70 }}>
@@ -570,7 +688,11 @@ export default function PayrollPage() {
           <PremiumEmpty
             icon={<FileText size={30} weight="duotone" color={GOLD} />}
             title="No payroll records yet"
-            description="No payroll records submitted yet. Generate your first WH-347 above."
+            description={pw
+              ? `This project is flagged prevailing wage (${pw.state}${pw.county ? ' · ' + pw.county + ' County' : ''}) — a certified WH-347 is due for every week your crew works. Pick the week ending above, import clocked hours, and generate the first one.`
+              : timeEntries.length > 0
+                ? `Your crew has ${timeEntries.length} field time ${timeEntries.length === 1 ? 'entry' : 'entries'} on this project — pick a week ending above and import them to file the first WH-347.`
+                : 'Generate your first WH-347 above — weekly certified payroll is required on Davis-Bacon and most public work.'}
           />
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

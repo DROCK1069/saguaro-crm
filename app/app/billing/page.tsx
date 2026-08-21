@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { CheckCircle, Warning, CreditCard, DeviceMobile, Question, Lightning } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -85,6 +85,9 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function BillingPage() {
   const [sub, setSub] = useState<Subscription | null>(null);
+  // Raw envelope extras (plan limits + current-period usage + renewal countdown)
+  // from GET /api/billing/subscription — surfaced in the account stat strip.
+  const [envelope, setEnvelope] = useState<{ usage: any; plan: any; daysUntilRenewal: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [annual, setAnnual] = useState(false);
@@ -112,11 +115,17 @@ export default function BillingPage() {
       // renders so the plan card + Manage/Cancel/Update-Payment buttons show for
       // real subscribers instead of falling through to "No active subscription".
       if (!data?.hasSubscription || !data?.subscription) {
+        setEnvelope(null);
         setSub(null);
         return;
       }
       const s = data.subscription;
       const planRel = Array.isArray(s.plans) ? s.plans[0] : s.plans;
+      setEnvelope({
+        usage: data.usage ?? null,
+        plan: planRel ?? null,
+        daysUntilRenewal: data.daysUntilRenewal != null ? Number(data.daysUntilRenewal) : null,
+      });
       setSub({
         plan_id: s.plan_id ?? null,
         plan_name: planRel?.name ?? s.plan_id ?? 'Subscription',
@@ -211,6 +220,18 @@ export default function BillingPage() {
   // falling back to the display name — so the "Current Plan" badge + upgrade CTA are correct.
   const currentPlanName = (sub?.plan_id ?? sub?.plan_name ?? '').toLowerCase();
 
+  // Real account totals — Number-coerced because price/usage columns can
+  // round-trip as strings from the DB.
+  const planInfo = envelope?.plan;
+  const usageRow = envelope?.usage;
+  const priceCents = (Number(sub?.price_cents) || 0)
+    || (sub?.billing_interval === 'annual' ? Number(planInfo?.annual_price_cents) || 0 : Number(planInfo?.monthly_price_cents) || 0);
+  const unlimitedAi = !!planInfo?.feature_unlimited_ai;
+  const aiLimit = unlimitedAi ? null : (Number(planInfo?.ai_takeoffs_per_month) || null);
+  const aiUsed = Number(usageRow?.ai_takeoffs_used) || 0;
+  const renewDays = envelope?.daysUntilRenewal ?? (sub?.current_period_end ? daysLeft(sub.current_period_end) : null);
+  const fmtC = (cents: number) => '$' + ((Number(cents) || 0) / 100).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
   return (
     <>
       <PremiumSurface maxWidth={1080}>
@@ -223,6 +244,17 @@ export default function BillingPage() {
           accent="Subscription"
           subtitle="Manage your plan, payment method, and invoices."
         />
+
+        {/* Account intelligence strip — live plan, usage, and renewal totals */}
+        {sub && (
+          <StatStrip items={[
+            { label: 'Plan', value: sub.plan_name || 'Subscription', sub: sub.billing_interval === 'annual' ? 'annual billing' : 'monthly billing' },
+            { label: 'Status', value: sub.status === 'trialing' ? (trialDays ?? 0) + ' trial days left' : (sub.status || '').replace(/_/g, ' '), accent: sub.status === 'past_due' ? RED : sub.status === 'active' ? GREEN : GOLD, sub: sub.cancel_at ? 'cancels ' + new Date(sub.cancel_at).toLocaleDateString() : sub.status === 'trialing' ? 'full access during trial' : undefined },
+            { label: 'Price', value: priceCents > 0 ? fmtC(priceCents) : '—', sub: priceCents > 0 ? 'billed ' + (sub.billing_interval === 'annual' ? 'annually' : 'monthly') : 'no charge on file' },
+            { label: 'AI Takeoff Pages', value: unlimitedAi ? 'Unlimited' : aiLimit != null ? aiUsed + ' / ' + aiLimit : String(aiUsed), accent: !unlimitedAi && aiLimit != null && aiUsed >= aiLimit ? RED : undefined, sub: unlimitedAi ? aiUsed + ' used this period' : aiLimit != null ? Math.max(0, aiLimit - aiUsed) + ' left this period' : 'this billing period' },
+            { label: 'Renews In', value: renewDays != null ? renewDays + ' days' : '—', sub: sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString() : 'no period on file' },
+          ]} />
+        )}
 
         {/* URL success message */}
         {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('success') === '1' && (

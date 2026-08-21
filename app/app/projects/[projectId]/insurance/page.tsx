@@ -3,14 +3,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
-import { ShieldCheck, Plus, X, CheckCircle, Warning, WarningCircle } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ShieldCheck, Plus, X, CheckCircle, Warning, WarningCircle, Users } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 const INP:React.CSSProperties = {padding:'8px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box'};
 const LBL:React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
+const HINT:React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
 
 const POLICY_TYPES = ['GL','WC','Auto','Umbrella','E&O','Professional Liability','Other'];
 
@@ -49,6 +50,20 @@ export default function InsurancePage() {
   const [fExp,setFExp]         = useState('');
   const [fAmt,setFAmt]         = useState('');
   const [fFile,setFFile]       = useState<File|null>(null);
+  const [fCustomSub,setFCustomSub] = useState(false);
+
+  // Project intelligence — the roster from /api/project-context drives the
+  // per-sub coverage rollup and the sub picker in the add form.
+  const [ctx,setCtx] = useState<any>(null);
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if(!c.error) setCtx(c);
+      }catch{}
+    })();
+  },[projectId]);
 
   const load = useCallback(async()=>{
     setLoading(true); setError('');
@@ -116,6 +131,28 @@ export default function InsurancePage() {
   const expiringCount = certs.filter(c=>{ const d=daysUntilExpiry(c.expiry_date||c.expiryDate); return d>=0&&d<30; }).length;
   const expiredCount  = certs.filter(c=>daysUntilExpiry(c.expiry_date||c.expiryDate)<0).length;
 
+  // Per-sub coverage rollup — certificates match to the roster by company name
+  // (certs store sub_name text; the roster from project-context is authoritative).
+  const subs = (ctx?.subs||[]) as any[];
+  const norm = (v:any)=>String(v||'').toLowerCase().trim();
+  const subRollup = subs.map(s=>{
+    const own  = certs.filter(c=>norm(c.sub_name||c.subName||c.vendor_name)===norm(s.companyName));
+    const days = own.map(c=>daysUntilExpiry(c.expiry_date||c.expiryDate));
+    return {
+      ...s,
+      certCount: own.length,
+      state: own.length===0?'missing':!days.some(d=>d>=0)?'expired':days.some(d=>d>=0&&d<30)?'expiring':'covered',
+    };
+  });
+  const coveredSubs  = subRollup.filter(s=>s.state==='covered'||s.state==='expiring').length;
+  const missingSubs  = subRollup.filter(s=>s.state==='missing');
+  const expiringSoon = certs
+    .map(c=>({c,days:daysUntilExpiry(c.expiry_date||c.expiryDate)}))
+    .filter(x=>x.days>=0&&x.days<30)
+    .sort((a,b)=>a.days-b.days);
+  const expiredCerts = certs.filter(c=>daysUntilExpiry(c.expiry_date||c.expiryDate)<0);
+  const totalCoverage = certs.reduce((s,c)=>s+(Number(c.coverage_amount||c.coverageAmount)||0),0);
+
   return (
     <>
       {toast && (
@@ -141,6 +178,18 @@ export default function InsurancePage() {
           }
         />
 
+        {/* Sub-coverage strip — who on the roster is covered, lapsing, or bare */}
+        {ctx && subs.length>0 && (
+          <StatStrip items={[
+            {label:'Subs on Roster', value:String(subs.length), icon:<Users size={12} color={GOLD} />, sub:'active on this project'},
+            {label:'COI on File', value:`${coveredSubs} of ${subs.length}`, accent:coveredSubs===subs.length?'#3dd68c':'#FBBF24', sub:'subs holding a current certificate'},
+            {label:'No COI', value:String(missingSubs.length), accent:missingSubs.length>0?'#ff7070':'#3dd68c', sub:missingSubs.length>0?'uninsured exposure on site':'every sub is covered'},
+            {label:'Expiring ≤30d', value:String(expiringCount), accent:expiringCount>0?'#f59e0b':undefined, sub:'renewal window open'},
+            {label:'Expired', value:String(expiredCount), accent:expiredCount>0?'#ff7070':undefined, sub:'past expiry — request renewal'},
+            {label:'Coverage Tracked', value:fmt(totalCoverage), sub:`across ${totalCount} certificate${totalCount===1?'':'s'}`},
+          ]}/>
+        )}
+
         {/* Add Form */}
         {showForm && (
           <SectionCard
@@ -155,8 +204,26 @@ export default function InsurancePage() {
             )}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:14}}>
               <div style={{gridColumn:'1/-1'}}>
-                <label style={LBL}>Subcontractor Name *</label>
-                <input value={fSub} onChange={e=>setFSub(e.target.value)} placeholder="Desert Electrical Contractors" style={INP}/>
+                <label style={LBL}>Subcontractor Name *{!fCustomSub && !!fSub && subs.some(s=>s.companyName===fSub) && <AutoChip label="ROSTER"/>}</label>
+                {subs.length>0 && !fCustomSub ? (
+                  <select value={subs.some(s=>s.companyName===fSub)?fSub:''} onChange={e=>{
+                    if(e.target.value==='__custom'){ setFCustomSub(true); setFSub(''); }
+                    else setFSub(e.target.value);
+                  }} style={INP}>
+                    <option value="">Select a sub from the roster…</option>
+                    {subs.map((s:any)=><option key={s.id} value={s.companyName}>{s.companyName}{s.trade?` — ${s.trade}`:''}</option>)}
+                    <option value="__custom">Other — type a name…</option>
+                  </select>
+                ) : (
+                  <input value={fSub} onChange={e=>setFSub(e.target.value)} placeholder="Desert Electrical Contractors" style={INP}/>
+                )}
+                <div style={HINT}>
+                  {fCustomSub && subs.length>0
+                    ? <span onClick={()=>{setFCustomSub(false);setFSub('');}} style={{color:'#FBBF24',fontWeight:700,cursor:'pointer'}}>Back to the roster list</span>
+                    : subs.length>0
+                      ? `${subs.length} sub${subs.length===1?'':'s'} on the project roster — certificates match to subs by company name.`
+                      : 'Certificates match to roster subs by company name.'}
+                </div>
               </div>
               <div>
                 <label style={LBL}>Policy Type *</label>
@@ -219,6 +286,46 @@ export default function InsurancePage() {
           <StatCard icon={<WarningCircle size={19} weight="duotone" color={RED} />}   label="Expired"       value={expiredCount}  accent={RED}     sub="past due"      delay={0.14} />
         </div>
 
+        {/* Expiry & gap intelligence — what needs action this month */}
+        {!loading && (expiringSoon.length>0 || expiredCerts.length>0 || (ctx && missingSubs.length>0)) && (
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:12,marginBottom:24}}>
+            {expiredCerts.length>0 && (
+              <div style={{padding:'12px 16px',borderRadius:12,background:'rgba(192,48,48,.08)',border:'1px solid rgba(192,48,48,.35)'}}>
+                <div style={{fontSize:11,fontWeight:800,color:'#ff7070',textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Expired — request renewal now</div>
+                {expiredCerts.slice(0,4).map((c:any,i:number)=>(
+                  <div key={c.id||i} style={{fontSize:12.5,color:DIM,padding:'2px 0'}}>
+                    <b style={{color:TEXT}}>{c.sub_name||c.subName||'—'}</b> · {c.policy_type||c.policyType||'—'} lapsed {new Date(String(c.expiry_date||c.expiryDate)+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+                  </div>
+                ))}
+                {expiredCerts.length>4 && <div style={{fontSize:11.5,color:DIM,marginTop:4}}>+{expiredCerts.length-4} more in the table below</div>}
+              </div>
+            )}
+            {expiringSoon.length>0 && (
+              <div style={{padding:'12px 16px',borderRadius:12,background:'rgba(245,158,11,.07)',border:'1px solid rgba(245,158,11,.35)'}}>
+                <div style={{fontSize:11,fontWeight:800,color:'#f59e0b',textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Expiring within 30 days</div>
+                {expiringSoon.slice(0,4).map((x:any,i:number)=>(
+                  <div key={x.c.id||i} style={{fontSize:12.5,color:DIM,padding:'2px 0'}}>
+                    <b style={{color:TEXT}}>{x.c.sub_name||x.c.subName||'—'}</b> · {x.c.policy_type||x.c.policyType||'—'} — <b style={{color:'#f59e0b'}}>{x.days}d left</b>
+                  </div>
+                ))}
+                {expiringSoon.length>4 && <div style={{fontSize:11.5,color:DIM,marginTop:4}}>+{expiringSoon.length-4} more in the table below</div>}
+              </div>
+            )}
+            {ctx && missingSubs.length>0 && (
+              <div style={{padding:'12px 16px',borderRadius:12,background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.12)'}}>
+                <div style={{fontSize:11,fontWeight:800,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>On the roster, no COI on file</div>
+                {missingSubs.slice(0,4).map((s:any)=>(
+                  <div key={s.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,padding:'2px 0',fontSize:12.5,color:DIM}}>
+                    <span style={{minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}><b style={{color:TEXT}}>{s.companyName}</b>{s.trade?` · ${s.trade}`:''}</span>
+                    <span onClick={()=>{setFCustomSub(false);setFSub(s.companyName);setShowForm(true);}} style={{color:'#FBBF24',fontWeight:700,fontSize:11.5,cursor:'pointer',whiteSpace:'nowrap' as const}}>Add COI</span>
+                  </div>
+                ))}
+                {missingSubs.length>4 && <div style={{fontSize:11.5,color:DIM,marginTop:4}}>+{missingSubs.length-4} more subs</div>}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <SectionCard>
@@ -228,17 +335,34 @@ export default function InsurancePage() {
 
         {/* Empty */}
         {!loading && certs.length===0 && (
-          <SectionCard>
-            <PremiumEmpty
-              icon={<ShieldCheck size={30} weight="duotone" color={GOLD} />}
-              title="No certificates yet"
-              description="Upload COIs for all subcontractors to track expiration dates and maintain compliance."
-              action={
-                <button onClick={()=>setShowForm(true)} className="pmBtn" style={goldButtonStyle}>
-                  <Plus size={15} weight="bold" /> Add First Certificate
-                </button>
-              }
-            />
+          <SectionCard flush>
+            <div style={{display:'grid',gridTemplateColumns:ctx&&subs.length>0?'minmax(0,1fr) 340px':'1fr',alignItems:'stretch'}}>
+              <PremiumEmpty
+                icon={<ShieldCheck size={30} weight="duotone" color={GOLD} />}
+                title="No certificates yet"
+                description={subs.length>0
+                  ? `${subs.length} sub${subs.length===1?'':'s'} on the roster and no COI on file for any of them. Every sub should carry current GL and WC coverage — expiry alerts and renewal requests run from here, and coverage is checked at bid award.`
+                  : 'Upload COIs for your subcontractors to track expiration dates. Certificates are checked at bid award and flagged here 30 days before they lapse.'}
+                action={
+                  <button onClick={()=>setShowForm(true)} className="pmBtn" style={goldButtonStyle}>
+                    <Plus size={15} weight="bold" /> Add First Certificate
+                  </button>
+                }
+              />
+              {ctx && subs.length>0 && (
+                <div style={{borderLeft:'1px solid rgba(255,255,255,0.08)',padding:'22px 24px'}}>
+                  <div style={{fontSize:10.5,fontWeight:900,color:'rgba(255,255,255,0.45)',textTransform:'uppercase' as const,letterSpacing:'0.09em',marginBottom:10}}>Roster Awaiting COIs</div>
+                  {subs.slice(0,7).map((s:any)=>(
+                    <div key={s.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,padding:'5px 0'}}>
+                      <span style={{fontSize:12.5,color:TEXT,fontWeight:600,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{s.companyName}</span>
+                      <span onClick={()=>{setFCustomSub(false);setFSub(s.companyName);setShowForm(true);}} style={{color:'#FBBF24',fontWeight:700,fontSize:11.5,cursor:'pointer',whiteSpace:'nowrap' as const}}>Add COI</span>
+                    </div>
+                  ))}
+                  {subs.length>7 && <div style={{fontSize:11.5,color:DIM,marginTop:6}}>+{subs.length-7} more on the roster</div>}
+                  <div style={{marginTop:12,fontSize:11.5,color:DIM,lineHeight:1.55}}>Pick subs from the roster in the form — certificates match by company name and the coverage rollup tracks itself.</div>
+                </div>
+              )}
+            </div>
           </SectionCard>
         )}
 

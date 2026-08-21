@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Clipboard, CheckCircle, XCircle, ArrowLeft, ArrowRight, PencilSimple, FloppyDisk, FileText, Plus, X, CaretUp, CaretDown, Export, SealCheck, CurrencyDollar, Files, Lock, Receipt, CalendarBlank, TrendUp, Coins, ClockCounterClockwise, IdentificationCard } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, FlowSteps, InsightRow, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B', DARK='#0a0a0a',
       BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF',
@@ -91,6 +91,31 @@ export default function PayAppDetailPage() {
   const [toast, setToast]       = useState<{msg:string;type:'success'|'error'}|null>(null);
   const [downloading, setDownloading] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+
+  // Project intelligence — the detail walks in knowing the contract, the prior
+  // application, and every lien waiver tied to this one (single reads on mount).
+  const [ctx, setCtx] = useState<any>(null);
+  const [allApps, setAllApps] = useState<any[]>([]);
+  const [waivers, setWaivers] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+      try {
+        const r = await fetch(`/api/pay-apps/list?projectId=${projectId}`);
+        const d = await r.json();
+        setAllApps(d.payApps || []);
+      } catch {}
+      try {
+        const r = await fetch(`/api/lien-waivers/list?projectId=${projectId}`);
+        const d = await r.json();
+        setWaivers((d.lienWaivers || []).filter((w: any) => w.pay_application_id === id));
+      } catch {}
+    })();
+  }, [projectId, id]);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }, [toast]);
 
@@ -258,8 +283,29 @@ export default function PayAppDetailPage() {
   );
 
   const meta = STATUS_META[payApp.status] || STATUS_META.draft;
-  const contractToDate = payApp.contract_sum_to_date || payApp.contract_sum || 0;
-  const completePct = contractToDate > 0 ? Math.round((sovCompleted / contractToDate) * 100) : (payApp.percent_complete || 0);
+  const contractToDate = Number(payApp.contract_sum_to_date) || Number(payApp.contract_sum) || 0;
+  const completePct = contractToDate > 0 ? Math.round((sovCompleted / contractToDate) * 100) : (Number(payApp.percent_complete) || 0);
+
+  // Where this app sits in the approval / waiver / payment chain, plus the prior
+  // application for period-over-period comparison (from the mount-time snapshots).
+  const stageRank = ({ draft: 0, submitted: 1, approved: 2, certified: 3, paid: 4 } as Record<string, number>)[payApp.status] ?? 0;
+  const wTotal = waivers.length;
+  const wSigned = waivers.filter((w: any) => w.status === 'signed').length;
+  const wBlocking = waivers.filter((w: any) => w.blocks_payment !== false && (w.status === 'pending' || w.status === 'sent')).length;
+  const subCount = (ctx?.subs || []).length;
+  const priorApp = (() => {
+    const mine = Number((payApp as any).app_number ?? payApp.application_number) || 0;
+    if (!mine) return null;
+    let best: any = null;
+    for (const a of allApps) {
+      const n = Number(a.app_number ?? a.application_number) || 0;
+      if (a.id !== id && n > 0 && n < mine && (!best || n > best._n)) best = { ...a, _n: n };
+    }
+    return best;
+  })();
+  const priorThis = Number(priorApp?.this_period) || 0;
+  const priorDone = Number(priorApp?.total_completed_stored ?? priorApp?.total_completed) || 0;
+  const thisDelta = sovThis - priorThis;
 
   const timeline = [
     { label: 'Created', date: null, done: true, icon: <PencilSimple size={15} color={DIM} weight="regular" /> },
@@ -480,6 +526,47 @@ export default function PayAppDetailPage() {
 
           {/* Sidebar */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Approval / waiver / payment chain — where this app sits */}
+            <SectionCard title="Where This App Sits" icon={<SealCheck size={16} weight="duotone" color={GOLD} />}>
+              <FlowSteps title="" steps={[
+                { title: 'Draft & schedule of values', done: true,
+                  desc: `${lines.length} SOV line${lines.length === 1 ? '' : 's'} — ${fmt(sovScheduled)} scheduled.` },
+                { title: 'Submitted to owner', done: stageRank >= 1,
+                  desc: stageRank >= 1
+                    ? `Sent${payApp.submitted_date ? ` ${fmtDate(payApp.submitted_date)}` : ''} with a one-click owner approval link.`
+                    : 'Sends the G702/G703 packet with a one-click owner approval link.' },
+                { title: 'Owner approval', done: stageRank >= 2,
+                  desc: stageRank >= 2
+                    ? `Approved${payApp.approved_date ? ` ${fmtDate(payApp.approved_date)}` : ''} — conditional lien waivers generated for the subs.`
+                    : 'Approval auto-generates conditional waivers for every sub on the job.' },
+                { title: 'Lien waivers signed', done: stageRank >= 2 && wTotal > 0 && wBlocking === 0,
+                  desc: wTotal > 0
+                    ? `${wSigned} of ${wTotal} signed${wBlocking > 0 ? ` — ${wBlocking} still gate payment` : ' — payment gate clear'}.`
+                    : subCount > 0
+                      ? `Waivers for ${subCount} sub${subCount === 1 ? '' : 's'} generate at approval.`
+                      : 'Waivers generate automatically at approval.' },
+                { title: 'Payment received', done: payApp.status === 'paid',
+                  desc: payApp.status === 'paid'
+                    ? `${fmt(sovPayment)} collected — paid-to-date and the prime contract updated automatically.`
+                    : `Mark Paid releases ${fmt(sovPayment)}${wBlocking > 0 ? ` — currently held by ${wBlocking} unsigned waiver${wBlocking === 1 ? '' : 's'}` : ''}. Signed conditionals convert to unconditional waivers.` },
+              ]} />
+            </SectionCard>
+
+            {/* Prior application comparison */}
+            {priorApp && (
+              <SectionCard title={`Compared to App #${priorApp._n}`} icon={<TrendUp size={16} weight="duotone" color={GOLD} />}>
+                <InsightRow label="Prior period" value={`${fmtDate(priorApp.period_from)} – ${fmtDate(priorApp.period_to)}`} />
+                <InsightRow label="Prior billed (period)" value={fmt(priorThis)} />
+                <InsightRow label="This app (period)" value={fmt(sovThis)} strong />
+                <InsightRow label="Period-over-period" value={`${thisDelta < 0 ? '-' : '+'}${fmt(Math.abs(thisDelta))}`} accent={thisDelta >= 0 ? GREEN : ORANGE} />
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />
+                <InsightRow label="Completed then" value={fmt(priorDone)} />
+                <InsightRow label="Completed now" value={fmt(sovCompleted)} accent={GREEN} />
+                <InsightRow label="Prior payment due" value={fmt(Number(priorApp.current_payment_due) || 0)} />
+                <InsightRow label="This payment due" value={fmt(sovPayment)} accent={GREEN} strong />
+              </SectionCard>
+            )}
+
             {/* Status timeline */}
             <SectionCard
               title="Status Timeline"

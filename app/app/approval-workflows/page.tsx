@@ -7,7 +7,7 @@ import {
   CaretUp, CaretDown, ClipboardText, ChartBar, Gauge, ArrowClockwise, ListChecks,
 } from '@phosphor-icons/react';
 import {
-  PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty,
+  PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, FlowSteps,
   goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
 
@@ -411,6 +411,19 @@ export default function ApprovalWorkflowsPage() {
     );
   };
 
+  /* Vertical FlowSteps view of a chain — used in the diagram + decision modals.
+     When an item is mid-chain, steps already cleared get a done check. */
+  const chainSteps = (steps: ApprovalStep[], currentStep = 0) =>
+    [...steps].sort((a, b) => a.order - b.order).map((s, i) => ({
+      title: `${s.name || s.approverValue}${s.required ? '' : ' (optional)'}`,
+      desc: [
+        s.approverType === 'user' ? `Approver: ${userLabel(s.approverValue)}` : `Role: ${s.approverValue}`,
+        s.autoApproveThreshold !== null ? `auto-approves under ${fmtCurrency(Number(s.autoApproveThreshold) || 0)}` : '',
+        s.conditionalMinAmount !== null ? `only runs at ${fmtCurrency(Number(s.conditionalMinAmount) || 0)}+` : '',
+      ].filter(Boolean).join(' · '),
+      done: currentStep > 0 && i + 1 < currentStep,
+    }));
+
   const tabButton = (t: Tab, label: string, Icon: React.ElementType, count?: number) => (
     <button key={t} onClick={() => setTab(t)} style={{
       ...btnBase(t === tab ? GOLD : BORDER, t === tab ? '#241500' : DIM, t !== tab),
@@ -534,7 +547,18 @@ export default function ApprovalWorkflowsPage() {
         {/* ── PENDING ── */}
         {tab === 'pending' && (
           filteredPending.length === 0 ? (
-            <PremiumEmpty icon={<CheckCircle size={30} weight="duotone" color={GREEN} />} title="All caught up" description="No items awaiting approval — you're all caught up." />
+            <SectionCard>
+              <PremiumEmpty
+                icon={<CheckCircle size={30} weight="duotone" color={GREEN} />}
+                title="All caught up"
+                description={activeCount > 0
+                  ? `Nothing is waiting on you. ${activeCount} active workflow${activeCount === 1 ? '' : 's'} ${activeCount === 1 ? 'is' : 'are'} watching ${Array.from(new Set(workflows.filter(w => w.active).map(w => MODULE_LABEL[w.module]))).join(', ') || 'your modules'} — new submissions land here the moment they need a decision.`
+                  : 'Nothing is waiting on you — but no active workflow is routing items yet. Create a template so change orders, pay apps, purchase orders, and invoices require sign-off before they move.'}
+                action={activeCount === 0
+                  ? <button style={goldButtonStyle} className="pmBtn" onClick={openCreate}><Plus size={15} weight="bold" />Create First Workflow</button>
+                  : <button style={goldOutlineButtonStyle} className="pmBtn" onClick={() => setTab('history')}><ClipboardText size={15} weight="bold" />View Decision History</button>}
+              />
+            </SectionCard>
           ) : (
             <SectionCard flush title="Pending Approvals" icon={<Clock size={17} weight="duotone" color={GOLD} />}>
               <div style={{ overflowX: 'auto' }}>
@@ -581,12 +605,25 @@ export default function ApprovalWorkflowsPage() {
         {tab === 'templates' && (
           <div>
             {filteredWorkflows.length === 0 && (
-              <PremiumEmpty
-                icon={<TreeStructure size={30} weight="duotone" color={GOLD} />}
-                title="No workflow templates yet"
-                description="Create your first approval chain to route change orders, pay apps, purchase orders, and invoices."
-                action={<button style={goldButtonStyle} className="pmBtn" onClick={openCreate}><Plus size={15} weight="bold" />New Workflow</button>}
-              />
+              <SectionCard>
+                <PremiumEmpty
+                  icon={<TreeStructure size={30} weight="duotone" color={GOLD} />}
+                  title={search || moduleFilter ? 'No templates match your filters' : 'No workflow templates yet'}
+                  description={search || moduleFilter
+                    ? 'Clear the search or module filter to see every template on this tenant.'
+                    : 'A workflow is an ordered approval chain attached to a module — every change order, pay app, purchase order, or invoice that needs sign-off routes through it automatically. Steps can auto-approve small amounts and only engage above dollar thresholds.'}
+                  action={<button style={goldButtonStyle} className="pmBtn" onClick={openCreate}><Plus size={15} weight="bold" />New Workflow</button>}
+                />
+                {!search && !moduleFilter && (
+                  <div style={{ maxWidth: 460, margin: '0 auto', padding: '4px 20px 24px' }}>
+                    <FlowSteps title="A typical change-order chain" steps={[
+                      { title: 'PM Review', desc: 'Role: Project Manager · auto-approves under $5,000' },
+                      { title: 'Controller Sign-off', desc: 'Role: Controller · every change order' },
+                      { title: 'VP Operations', desc: 'Role: VP Operations · only runs at $50,000+' },
+                    ]} />
+                  </div>
+                )}
+              </SectionCard>
             )}
             {filteredWorkflows.map(wf => (
               <div key={wf.id} style={{ ...card, opacity: wf.active ? 1 : 0.6, transition: 'opacity .2s' }}>
@@ -638,7 +675,11 @@ export default function ApprovalWorkflowsPage() {
                     <div><div style={{ fontSize: 24, fontWeight: 700, color: AMBER }}>{s.pending}</div><div style={{ fontSize: 10, color: DIM }}>Pending</div></div>
                     <div><div style={{ fontSize: 24, fontWeight: 700, color: GREEN }}>{s.approved}</div><div style={{ fontSize: 10, color: DIM }}>Approved</div></div>
                     <div><div style={{ fontSize: 24, fontWeight: 700, color: RED }}>{s.rejected}</div><div style={{ fontSize: 10, color: DIM }}>Rejected</div></div>
-                    <div><div style={{ fontSize: 24, fontWeight: 700, color: BLUE }}>{s.avgDays.toFixed(1)}</div><div style={{ fontSize: 10, color: DIM }}>Avg Days</div></div>
+                    <div><div style={{ fontSize: 24, fontWeight: 700, color: BLUE }}>{(Number(s.avgDays) || 0).toFixed(1)}</div><div style={{ fontSize: 10, color: DIM }}>Avg Days</div></div>
+                  </div>
+                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 12, color: DIM, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span>Total value routed</span>
+                    <span style={{ fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{fmtCurrency(Number(s.totalAmount) || 0)}</span>
                   </div>
                 </div>
               ))}
@@ -909,6 +950,15 @@ export default function ApprovalWorkflowsPage() {
                 <div><span style={{ color: DIM }}>Progress: </span><span>{actionItem.currentStep > 0 ? `Step ${actionItem.currentStep} of ${actionItem.totalSteps}` : `${actionItem.totalSteps} step chain`}</span></div>
               </div>
             </div>
+            {(() => {
+              const wf = workflows.find(w => w.id === actionItem.workflowId);
+              if (!wf || !wf.steps.length) return null;
+              return (
+                <div style={{ padding: 16, background: BG, borderRadius: 8, border: `1px solid ${BORDER}`, marginBottom: 16 }}>
+                  <FlowSteps title={`Chain — ${wf.name}`} steps={chainSteps(wf.steps, actionItem.currentStep)} />
+                </div>
+              );
+            })()}
             <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 12, color: DIM, display: 'block', marginBottom: 6, fontWeight: 600 }}>Comment (optional)</label>
               <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical', fontFamily: 'inherit' }} value={actionComment} onChange={e => setActionComment(e.target.value)} placeholder="Reason for your decision…" />
@@ -938,6 +988,9 @@ export default function ApprovalWorkflowsPage() {
               <button style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', display: 'flex' }} onClick={() => setDiagramWf(null)}><X size={22} weight="bold" /></button>
             </div>
             <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 16px', overflowX: 'auto' }}>{renderDiagram(diagramWf.steps)}</div>
+            <div style={{ marginTop: 16, padding: 16, background: BG, borderRadius: 8, border: `1px solid ${BORDER}` }}>
+              <FlowSteps title="Chain sequence" steps={chainSteps(diagramWf.steps)} />
+            </div>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Step Details</div>
               <div style={{ overflowX: 'auto' }}>

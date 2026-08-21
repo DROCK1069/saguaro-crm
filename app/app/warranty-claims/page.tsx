@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
 import {
   ShieldWarning, ClipboardText, FolderOpen, CheckCircle, XCircle, Timer, Warning,
   CurrencyDollar, ShieldSlash, ChartBar, Tag, Wrench, FunnelSimple, PlusCircle, Buildings,
@@ -389,6 +390,25 @@ export default function WarrantyClaimsPage() {
         ))}
       </div>
 
+      {/* Pipeline intelligence strip — the warranty program at a glance */}
+      {selectedProject && !loading && claims.length > 0 && (
+        <>
+          <StatStrip items={[
+            { label: 'Claims', value: stats.total, sub: `${stats.open} open · ${stats.closed} closed` },
+            { label: 'Emergency', value: stats.emergency, accent: stats.emergency > 0 ? RED : undefined, sub: stats.emergency > 0 ? 'need immediate action' : 'none outstanding' },
+            { label: 'Avg Resolution', value: `${stats.avgDays}d`, sub: 'reported to completed' },
+            { label: 'Warranty Cost', value: `$${(Number(stats.totalCost) || 0).toLocaleString()}`, sub: `${claims.filter(c => c.covered_under_warranty).length} covered · ${claims.filter(c => !c.covered_under_warranty).length} not covered` },
+            { label: 'Expired Coverage', value: stats.expiredCount, accent: stats.expiredCount > 0 ? RED : undefined, sub: stats.expiredCount > 0 ? 'claims past warranty' : 'all inside warranty' },
+            { label: 'Denied', value: stats.denied, sub: `of ${stats.total} total claim${stats.total === 1 ? '' : 's'}` },
+          ]} />
+          <StatusPipeline
+            byStatus={stats.byStatus}
+            active={fStatus}
+            onPick={(s) => { setActiveTab('claims'); setFStatus(fStatus === s ? '' : s); }}
+          />
+        </>
+      )}
+
       {!selectedProject && (
         <SectionCard>
           <PremiumEmpty
@@ -403,8 +423,20 @@ export default function WarrantyClaimsPage() {
         <div style={{ textAlign: 'center', padding: 60, color: DIM }}>Loading warranty claims...</div>
       )}
 
+      {/* ═══ DASHBOARD TAB — teaching empty state when the program has no claims ═══ */}
+      {selectedProject && !loading && activeTab === 'dashboard' && claims.length === 0 && (
+        <SectionCard>
+          <PremiumEmpty
+            icon={<ShieldWarning size={30} weight="duotone" color={GOLD} />}
+            title="No warranty claims on this project"
+            description="Warranty claims track defects reported after closeout. Each one moves through a pipeline — submitted, acknowledged, scheduled, in progress, completed — with contractor dispatch, cost, and homeowner communication all on the record."
+            action={<button style={goldButtonStyle} className="pmBtn" onClick={() => { setForm(EMPTY_FORM); setActiveTab('create'); }}><PlusCircle size={16} weight="bold" /> Log the First Claim</button>}
+          />
+        </SectionCard>
+      )}
+
       {/* ═══ DASHBOARD TAB ═══ */}
-      {selectedProject && !loading && activeTab === 'dashboard' && (
+      {selectedProject && !loading && activeTab === 'dashboard' && claims.length > 0 && (
         <div>
           {/* stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
@@ -488,8 +520,8 @@ export default function WarrantyClaimsPage() {
             <SectionCard>
               <PremiumEmpty
                 icon={<ClipboardText size={30} weight="duotone" color={GOLD} />}
-                title="No warranty claims found"
-                description="Create one to get started."
+                title={claims.length > 0 ? 'No claims match these filters' : 'No warranty claims found'}
+                description={claims.length > 0 ? 'Clear the filters above to see the full pipeline again.' : 'Log the first homeowner defect — it enters the pipeline at submitted and tracks dispatch, cost, and communication through closeout.'}
                 action={<button style={goldButtonStyle} className="pmBtn" onClick={() => { setForm(EMPTY_FORM); setActiveTab('create'); }}><PlusCircle size={16} weight="bold" /> New Claim</button>}
               />
             </SectionCard>
@@ -543,9 +575,11 @@ export default function WarrantyClaimsPage() {
 
       {/* ═══ CREATE CLAIM TAB ═══ */}
       {selectedProject && !loading && activeTab === 'create' && (
-        <SectionCard title="New Warranty Claim" icon={<PlusCircle size={17} weight="duotone" color={GOLD} />}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 18, alignItems: 'start' }}>
+        <SectionCard title="New Warranty Claim" subtitle={`${projects.find(p => p.id === selectedProject)?.name || 'This project'} — homeowner defect intake`} icon={<PlusCircle size={17} weight="duotone" color={GOLD} />}>
           <div style={css.row}>
-            <div style={css.field}><label style={css.label}>Title *</label><input style={css.input} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
+            <div style={css.field}><label style={css.label}>Claim #<AutoChip /></label><div style={{ ...css.input, display: 'flex', alignItems: 'center', color: GOLD, fontFamily: 'monospace', fontWeight: 700 }}>{`WC-${String(claims.length + 1).padStart(4, '0')}`}</div><div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Numbered automatically — {claims.length} claim{claims.length === 1 ? '' : 's'} on this project so far.</div></div>
+            <div style={css.field}><label style={css.label}>Title *</label><input style={css.input} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Master bath shower pan leak" /></div>
             <div style={css.field}><label style={css.label}>Category</label>
               <select style={css.select} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -565,11 +599,17 @@ export default function WarrantyClaimsPage() {
           <div style={css.row}>
             <div style={css.field}><label style={css.label}>Location</label><input style={css.input} value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} /></div>
             <div style={css.field}><label style={css.label}>Reported By</label><input style={css.input} value={form.reported_by} onChange={e => setForm({ ...form, reported_by: e.target.value })} /></div>
-            <div style={css.field}><label style={css.label}>Reported Date</label><input style={css.input} type="date" value={form.reported_date} onChange={e => setForm({ ...form, reported_date: e.target.value })} /></div>
+            <div style={css.field}><label style={css.label}>Reported Date{form.reported_date === today && <AutoChip />}</label><input style={css.input} type="date" value={form.reported_date} onChange={e => setForm({ ...form, reported_date: e.target.value })} /><div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Defaults to today — resolution time is measured from this date.</div></div>
           </div>
 
           <div style={css.row}>
-            <div style={css.field}><label style={css.label}>Assigned Trade</label><input style={css.input} value={form.assigned_trade} onChange={e => setForm({ ...form, assigned_trade: e.target.value })} /></div>
+            <div style={css.field}><label style={css.label}>Assigned Trade</label>
+              <select style={css.select} value={form.assigned_trade} onChange={e => setForm({ ...form, assigned_trade: e.target.value })}>
+                <option value="">Not assigned yet</option>
+                {SUB_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>Canonical trade list — drives the claims-by-trade cost rollup.</div>
+            </div>
             <div style={css.field}><label style={css.label}>Assigned Contractor</label><input style={css.input} value={form.assigned_contractor} onChange={e => setForm({ ...form, assigned_contractor: e.target.value })} /></div>
             <div style={css.field}><label style={css.label}>Scheduled Date</label><input style={css.input} type="date" value={form.scheduled_date} onChange={e => setForm({ ...form, scheduled_date: e.target.value })} /></div>
           </div>
@@ -595,6 +635,26 @@ export default function WarrantyClaimsPage() {
             <button style={ghostButtonStyle} className="pmBtn" onClick={() => setActiveTab('claims')}>Cancel</button>
           </div>
         </SectionCard>
+
+        {/* Context rail — what the program already knows + what happens next */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <SectionCard title="Program Snapshot" icon={<ChartBar size={17} weight="duotone" color={GOLD} />}>
+            <InsightRow label="Open claims" value={stats.open} />
+            <InsightRow label="Emergency" value={stats.emergency} accent={stats.emergency > 0 ? RED : undefined} />
+            <InsightRow label="Avg resolution" value={`${stats.avgDays} days`} />
+            <InsightRow label="Warranty cost" value={`$${(Number(stats.totalCost) || 0).toLocaleString()}`} accent={GOLD} />
+            {Object.keys(stats.byCat).length > 0 && <InsightRow label="Most reported" value={Object.entries(stats.byCat).sort((a, b) => b[1] - a[1])[0][0]} />}
+          </SectionCard>
+          <SectionCard title="After You Create" icon={<Timer size={17} weight="duotone" color={GOLD} />}>
+            <FlowSteps title="" steps={[
+              { title: 'Claim enters the pipeline', desc: 'Starts at submitted — acknowledge it to start the clock.' },
+              { title: 'Dispatch the trade', desc: 'Assign a contractor and service date straight from the claims list.' },
+              { title: 'Work is tracked to completion', desc: 'Status, cost, and homeowner communication live on the claim.' },
+              { title: 'Close with a paper trail', desc: 'Resolution notes and the exportable report finish the record.' },
+            ]} />
+          </SectionCard>
+        </div>
+        </div>
       )}
 
       {/* ═══ CLAIM DETAIL MODAL ═══ */}
@@ -753,7 +813,11 @@ export default function WarrantyClaimsPage() {
             <div style={css.row}>
               <div style={css.field}>
                 <label style={css.label}>Trade</label>
-                <input style={css.input} value={dispatchForm.assigned_trade} onChange={e => setDispatchForm({ ...dispatchForm, assigned_trade: e.target.value })} placeholder="e.g., Plumbing, Electrical..." />
+                <select style={css.select} value={dispatchForm.assigned_trade} onChange={e => setDispatchForm({ ...dispatchForm, assigned_trade: e.target.value })}>
+                  <option value="">Select a trade...</option>
+                  {SUB_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {dispatchForm.assigned_trade && !SUB_TRADES.includes(dispatchForm.assigned_trade) && <option value={dispatchForm.assigned_trade}>{dispatchForm.assigned_trade}</option>}
+                </select>
               </div>
               <div style={css.field}>
                 <label style={css.label}>Contractor</label>
@@ -900,5 +964,32 @@ export default function WarrantyClaimsPage() {
         );
       })()}
     </PremiumSurface>
+  );
+}
+
+/* Inline primitive — StatusPipeline: the claim pipeline as a horizontal band with
+ * live counts per stage. Click a stage to filter the Claims tab; click again to clear. */
+function StatusPipeline({ byStatus, active, onPick }: { byStatus: Record<string, number>; active: string; onPick: (s: string) => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto', border: `1px solid ${BORDER}`, borderRadius: 14, padding: '12px 14px', marginBottom: 20, background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))' }}>
+      {STATUSES.map((s, i) => {
+        const n = Number(byStatus[s]) || 0;
+        const on = active === s;
+        const c = STATUS_COLORS[s] || DIM;
+        return (
+          <React.Fragment key={s}>
+            {i > 0 && <div style={{ alignSelf: 'center', width: 18, height: 1, background: 'rgba(255,255,255,0.14)', flexShrink: 0 }} />}
+            <button
+              onClick={() => onPick(s)}
+              title={`${n} ${s.replace('_', ' ')} claim${n === 1 ? '' : 's'} — click to filter the list`}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 10, cursor: 'pointer', flexShrink: 0, background: on ? 'rgba(245,158,11,0.14)' : 'transparent', border: `1px solid ${on ? 'rgba(245,158,11,0.45)' : 'transparent'}` }}
+            >
+              <span style={{ fontSize: 17, fontWeight: 800, color: n > 0 ? c : DIM, fontVariantNumeric: 'tabular-nums' }}>{n}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase', color: on ? GOLD : DIM, whiteSpace: 'nowrap' }}>{s.replace('_', ' ')}</span>
+            </button>
+          </React.Fragment>
+        );
+      })}
+    </div>
   );
 }

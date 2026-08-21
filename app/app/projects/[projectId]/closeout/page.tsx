@@ -7,6 +7,9 @@ import {
   ModuleHero,
   StatCard,
   SectionCard,
+  StatStrip,
+  FlowSteps,
+  InsightRow,
   goldButtonStyle,
   ghostButtonStyle,
 } from '@/components/ui/premium';
@@ -42,6 +45,19 @@ export default function CloseoutPage() {
   const [generating, setGenerating] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [exporting, setExporting] = useState(false);
+  // Project intelligence — punch, billing, retainage, and roster state.
+  const [ctx, setCtx] = useState<any>(null);
+
+  useEffect(() => {
+    if (!projectId) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
 
   useEffect(() => {
     (async () => {
@@ -63,6 +79,34 @@ export default function CloseoutPage() {
   const total = items.length;
   const pct = Math.round((completed / total) * 100);
   const exportDisabled = exporting || pct < 100;
+
+  // Live figures from the project snapshot (DB numerics may arrive as strings).
+  const fmtM = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const money = ctx?.money;
+  const revised = Number(money?.revisedContract) || 0;
+  const billed = Number(money?.billedToDate) || 0;
+  const billedPct = Number(money?.billedPct) || 0;
+  const openPunch = Number(ctx?.counts?.openPunch) || 0;
+  const subCount = (ctx?.subs || []).length;
+  const lastApp = money?.lastPayApp || null;
+  const retainageHeld = billed * ((Number(money?.retainagePct) || 0) / 100);
+  const balanceToFinish = Math.max(0, revised - billed);
+  const pctComplete = Number(ctx?.project?.percentComplete) || 0;
+  const docsDone = ['as_built_drawings', 'om_manuals', 'equipment_warranties', 'w9_forms'].every(id => items.find(i => i.id === id)?.status === 'complete');
+  const inspectDone = ['final_inspection', 'certificate_of_occupancy'].every(id => items.find(i => i.id === id)?.status === 'complete');
+  // What the data says about each checklist item — hints plus ready/attention flags.
+  const ITEM_SIGNALS: Record<string, { hint?: string; ready?: boolean; warn?: boolean }> = ctx ? {
+    final_pay_app: lastApp
+      ? { hint: `App #${lastApp.appNumber} ${String(lastApp.status || '').replace(/_/g, ' ')} — billed ${billedPct}% of ${fmtM(revised)}.`, ready: billedPct >= 100, warn: billedPct > 0 && billedPct < 100 }
+      : { hint: 'No pay applications yet — the final app closes out the contract sum.', warn: true },
+    all_lien_waivers: { hint: subCount > 0 ? `${subCount} sub${subCount === 1 ? '' : 's'} on the job — each needs an unconditional final waiver before retainage releases.` : 'No subs on the roster — only your own final waiver applies.' },
+    final_inspection: openPunch > 0
+      ? { hint: `${openPunch} punch item${openPunch === 1 ? '' : 's'} still open — clear the list before calling the inspection.`, warn: true }
+      : { hint: 'Punch list is clear — schedule the final inspection.', ready: true },
+    w9_forms: subCount > 0 ? { hint: `Collect a W-9 from each of the ${subCount} subs before final payment.` } : {},
+    equipment_warranties: subCount > 0 ? { hint: `Request warranty letters from all ${subCount} subs for the owner's turnover binder.` } : {},
+    g704_certificate: pctComplete > 0 ? { hint: `Project is ${pctComplete}% complete — the G704 fixes the substantial completion date.` } : {},
+  } : {};
 
   async function toggleItem(id: string) {
     const prevItems = items;
@@ -132,7 +176,7 @@ export default function CloseoutPage() {
     <PremiumSurface maxWidth={1600}>
       {/* Header */}
       <ModuleHero
-        eyebrow="Closeout"
+        eyebrow={ctx?.project?.name || 'Closeout'}
         eyebrowIcon={<Package size={13} weight="fill" color="#F59E0B" />}
         title="Project"
         accent="Closeout"
@@ -167,6 +211,18 @@ export default function CloseoutPage() {
         }
       />
 
+      {/* Contract intelligence strip — what the system already knows */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Revised Contract', value: fmtM(revised), sub: `${Number(money?.approvedCoCount) || 0} approved CO${(Number(money?.approvedCoCount) || 0) === 1 ? '' : 's'}` },
+          { label: 'Billed to Date', value: fmtM(billed), sub: `${billedPct}% of revised` },
+          { label: 'Balance to Finish', value: fmtM(balanceToFinish), accent: balanceToFinish > 0 ? '#FBBF24' : T.green, sub: balanceToFinish > 0 ? 'still to bill' : 'fully billed' },
+          { label: 'Retainage Held', value: `≈${fmtM(retainageHeld)}`, sub: `${Number(money?.retainagePct) || 0}% — releases at closeout` },
+          { label: 'Open Punch', value: String(openPunch), accent: openPunch > 0 ? '#ef4444' : T.green, sub: openPunch > 0 ? 'blocks final inspection' : 'list is clear' },
+          { label: 'Subs to Clear', value: String(subCount), sub: 'final waivers + W-9s' },
+        ]} />
+      )}
+
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
         <StatCard
@@ -200,6 +256,9 @@ export default function CloseoutPage() {
         </div>
       )}
 
+      {/* Checklist + context rail */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 22, alignItems: 'start' }}>
+      <div style={{ minWidth: 0 }}>
       {/* Progress Bar */}
       <SectionCard
         title="Closeout Progress"
@@ -220,7 +279,7 @@ export default function CloseoutPage() {
         icon={<ListChecks size={17} weight="duotone" color="#F59E0B" />}
         flush
       >
-        {items.map((item, idx) => (
+        {items.map((item, idx) => { const sig = ITEM_SIGNALS[item.id]; return (
           <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: idx === items.length - 1 ? 'none' : `1px solid rgba(255,255,255,0.06)` }}>
             <button
               onClick={() => toggleItem(item.id)}
@@ -234,12 +293,19 @@ export default function CloseoutPage() {
             >
               {item.status === 'complete' && <Check size={14} weight="bold" color="#000" />}
             </button>
-            <span style={{
-              flex: 1, fontSize: 14, color: item.status === 'complete' ? T.green : '#FFFFFF',
-              textDecoration: item.status === 'complete' ? 'line-through' : 'none',
-            }}>
-              {item.label}
-            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{
+                fontSize: 14, color: item.status === 'complete' ? T.green : '#FFFFFF',
+                textDecoration: item.status === 'complete' ? 'line-through' : 'none',
+              }}>
+                {item.label}
+              </span>
+              {sig?.hint && item.status !== 'complete' && (
+                <div style={{ fontSize: 11.5, color: sig.warn ? '#FBBF24' : sig.ready ? T.green : 'rgba(255,255,255,0.5)', marginTop: 3, lineHeight: 1.45 }}>{sig.hint}</div>
+              )}
+            </div>
+            {sig?.ready && item.status !== 'complete' && <Badge label="Ready" color="green" />}
+            {sig?.warn && item.status !== 'complete' && <Badge label="Attention" color="amber" />}
             <Badge label={item.status === 'complete' ? 'Complete' : 'Incomplete'} color={item.status === 'complete' ? 'green' : 'muted'} />
             {item.generateEndpoint && (
               <button
@@ -252,8 +318,35 @@ export default function CloseoutPage() {
               </button>
             )}
           </div>
-        ))}
+        ); })}
       </SectionCard>
+      </div>
+
+      {/* Context rail — the path to handover, from live project data */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <SectionCard title="Path to Handover" icon={<Package size={17} weight="duotone" color="#F59E0B" />}>
+          <FlowSteps title="" steps={[
+            { title: 'Clear the punch list', done: !!ctx && openPunch === 0, desc: openPunch > 0 ? `${openPunch} item${openPunch === 1 ? '' : 's'} still open.` : 'No open punch items on record.' },
+            { title: 'Bill the contract out', done: billedPct >= 100, desc: revised > 0 ? `${fmtM(billed)} of ${fmtM(revised)} billed (${billedPct}%).` : 'Contract money flows in from pay applications.' },
+            { title: 'Collect final waivers', done: items.find(i => i.id === 'all_lien_waivers')?.status === 'complete', desc: subCount > 0 ? `Unconditional finals from all ${subCount} subs release retainage cleanly.` : 'Your own final waiver clears the owner.' },
+            { title: 'Assemble turnover docs', done: docsDone, desc: 'As-builts, O&M manuals, warranties, and W-9s in one binder.' },
+            { title: 'Inspect and certify', done: inspectDone, desc: 'Final inspection, then the certificate of occupancy.' },
+            { title: 'Export the package', done: pct === 100, desc: pct === 100 ? 'All items complete — export the closeout package above.' : `Unlocks at 100% — ${total - completed} item${total - completed === 1 ? '' : 's'} to go.` },
+          ]} />
+        </SectionCard>
+        {ctx && (
+          <SectionCard title="What Saguaro Knows" icon={<ChartBar size={17} weight="duotone" color="#F59E0B" />}>
+            <InsightRow label="Revised contract" value={fmtM(revised)} strong />
+            <InsightRow label="Billed to date" value={`${fmtM(billed)} · ${billedPct}%`} />
+            <InsightRow label="Balance to finish" value={fmtM(balanceToFinish)} accent={balanceToFinish > 0 ? '#FBBF24' : T.green} />
+            <InsightRow label="Retainage held" value={`≈${fmtM(retainageHeld)}`} />
+            <InsightRow label="Open punch items" value={String(openPunch)} accent={openPunch > 0 ? '#ef4444' : T.green} />
+            <InsightRow label="Subs to clear" value={String(subCount)} />
+            {lastApp && <InsightRow label={`Pay App #${lastApp.appNumber}`} value={String(lastApp.status || '—').replace(/_/g, ' ')} />}
+          </SectionCard>
+        )}
+      </div>
+      </div>
     </PremiumSurface>
   );
 }

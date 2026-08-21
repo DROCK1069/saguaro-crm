@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { CreditCard, DeviceMobile, Bell, Users, Key, Clipboard, FileText, Gear, Rocket, GraduationCap, Books, ChatCircle, Clock, ArrowRight, CloudArrowUp, ShieldCheck, Plugs, UserCircle, Palette, Lifebuoy } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD  = '#F59E0B';
 const BORDER = 'rgba(255,255,255,0.12)';
@@ -142,6 +142,21 @@ export default function SettingsPage() {
         accent="& Preferences"
         subtitle="Manage your account, team, billing, and app preferences."
       />
+
+      {/* Workspace snapshot — what the system knows about this account */}
+      {(user || sub) && (
+        <StatStrip items={[
+          { label: 'Plan', value: sub?.plan_name || 'Free Trial', accent: isPastDue ? RED : undefined, sub: sub?.status === 'active' ? 'subscription active' : isTrialing ? 'trial in progress' : isPastDue ? 'payment failed — fix in Billing' : 'manage in Billing' },
+          ...(isTrialing && trialDays !== null
+            ? [{ label: 'Trial', value: `${trialDays}d left`, accent: trialDays <= 5 ? GOLD : undefined, sub: 'upgrade any time in Billing' }]
+            : sub?.current_period_end
+              ? [{ label: 'Renews', value: new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), sub: 'next billing date' }]
+              : []),
+          { label: 'Branding', value: (branding.logo_url || branding.company_name) ? 'Custom' : 'Default', accent: (branding.logo_url || branding.company_name) ? GREEN : undefined, sub: branding.company_name || 'set a name + logo below' },
+          { label: 'Brand Color', value: branding.primary_color || 'Saguaro Gold', sub: branding.primary_color ? 'white-label accent' : 'default accent' },
+          { label: 'Signed In As', value: user?.name || '—', sub: user?.email || undefined },
+        ]} />
+      )}
 
       {/* Account summary card */}
       {(user || sub) && (

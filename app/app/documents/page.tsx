@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Skeleton } from '../../../components/ui/Skeleton';
-import { WarningCircle, FileText, Clipboard, Shield, Hammer, Buildings, NotePencil, CheckCircle, Square, Receipt, Plus } from '@phosphor-icons/react';
+import { WarningCircle, FileText, Clipboard, Shield, Hammer, Buildings, NotePencil, CheckCircle, Square, Receipt, Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { humanError } from '@/lib/errors';
 import {
   PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip,
@@ -149,6 +149,7 @@ export default function DocumentsPage() {
   const [errorLienWaivers, setErrorLienWaivers] = useState(false);
   const [errorPayroll, setErrorPayroll] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   // Closeout tab — real per-project closeout items from the `closeout` table.
   const [closeoutItems, setCloseoutItems] = useState<CloseoutItem[]>([]);
@@ -285,6 +286,15 @@ export default function DocumentsPage() {
   // Live summary counts for the KPI stat row (guard values while loading / on error).
   const statVal = (loading: boolean, err: boolean, n: number) => (loading || err ? '—' : String(n));
 
+  // Text search across the active tab's rows — matches any visible field.
+  const q = query.trim().toLowerCase();
+  const rowMatch = (...vals: (string | number | null | undefined)[]) =>
+    !q || vals.some(v => String(v ?? '').toLowerCase().includes(q));
+  const visPayApps = payApps.filter(pa => rowMatch(pa.appNo ?? pa.app_no, pa.period, pa.amount, pa.status));
+  const visLienWaivers = lienWaivers.filter(lw => rowMatch(lw.subName ?? lw.sub_name, lw.type, lw.amount, lw.throughDate ?? lw.through_date, lw.status));
+  const visPayroll = payroll.filter(pr => rowMatch(pr.weekEnding ?? pr.week_ending, pr.employees, pr.totalGross ?? pr.total_gross, pr.status));
+  const visCloseout = closeoutItems.filter(i => rowMatch(i.title, i.item_type, i.trade, i.responsible_party, i.status));
+
   return (
     <PremiumSurface maxWidth={1600}>
 
@@ -321,9 +331,9 @@ export default function DocumentsPage() {
         />
       </div>
 
-      {/* Tab bar */}
+      {/* Tab bar + search */}
       <div style={{
-        display: 'flex', gap: 4,
+        display: 'flex', gap: 4, alignItems: 'center',
         borderBottom: `1px solid rgba(255,255,255,0.08)`,
         marginBottom: 24, overflowX: 'auto',
       }}>
@@ -346,6 +356,15 @@ export default function DocumentsPage() {
             >{tab}</button>
           );
         })}
+        <div style={{ marginLeft: 'auto', position: 'relative', minWidth: 230, flexShrink: 0, alignSelf: 'center', marginBottom: 6 }}>
+          <MagnifyingGlass size={14} color={DIM} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search this tab…"
+            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px 8px 30px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 8, color: TEXT, fontSize: 12.5, outline: 'none' }}
+          />
+        </div>
       </div>
 
       {/* Tab content */}
@@ -377,17 +396,17 @@ export default function DocumentsPage() {
                     <SkeletonRows cols={5} />
                   ) : errorPayApps ? (
                     <ErrorRow colSpan={5} message="Couldn't load pay applications" onRetry={loadPayApps} />
-                  ) : payApps.length === 0 ? (
+                  ) : visPayApps.length === 0 ? (
                     <tr><td colSpan={5} style={{ padding: 0 }}>
                       <PremiumEmpty
                         compact
                         icon={<Receipt size={30} weight="duotone" color={GOLD} />}
-                        title="No pay applications yet"
-                        description="Generated AIA G702 / G703 pay applications will appear here."
+                        title={payApps.length > 0 ? 'No pay applications match' : 'No pay applications yet'}
+                        description={payApps.length > 0 ? 'Clear the search above to see every record.' : 'Generated AIA G702 / G703 pay applications will appear here.'}
                         action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate New</Link>}
                       />
                     </td></tr>
-                  ) : payApps.map(pa => {
+                  ) : visPayApps.map(pa => {
                     const sc = statusConfig[pa.status] || statusConfig.draft;
                     return (
                       <tr key={pa.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
@@ -445,17 +464,17 @@ export default function DocumentsPage() {
                     <SkeletonRows cols={6} />
                   ) : errorLienWaivers ? (
                     <ErrorRow colSpan={6} message="Couldn't load lien waivers" onRetry={loadLienWaivers} />
-                  ) : lienWaivers.length === 0 ? (
+                  ) : visLienWaivers.length === 0 ? (
                     <tr><td colSpan={6} style={{ padding: 0 }}>
                       <PremiumEmpty
                         compact
                         icon={<Shield size={30} weight="duotone" color={GOLD} />}
-                        title="No lien waivers yet"
-                        description="Conditional and unconditional lien waivers you generate will be listed here."
+                        title={lienWaivers.length > 0 ? 'No lien waivers match' : 'No lien waivers yet'}
+                        description={lienWaivers.length > 0 ? 'Clear the search above to see every record.' : 'Conditional and unconditional lien waivers you generate will be listed here.'}
                         action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate New</Link>}
                       />
                     </td></tr>
-                  ) : lienWaivers.map(lw => {
+                  ) : visLienWaivers.map(lw => {
                     const sc = statusConfig[lw.status] || statusConfig.pending;
                     return (
                       <tr key={lw.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
@@ -591,17 +610,17 @@ export default function DocumentsPage() {
                     <SkeletonRows cols={5} />
                   ) : errorPayroll ? (
                     <ErrorRow colSpan={5} message="Couldn't load certified payroll" onRetry={loadPayroll} />
-                  ) : payroll.length === 0 ? (
+                  ) : visPayroll.length === 0 ? (
                     <tr><td colSpan={5} style={{ padding: 0 }}>
                       <PremiumEmpty
                         compact
                         icon={<NotePencil size={30} weight="duotone" color={GOLD} />}
-                        title="No certified payroll records yet"
-                        description="WH-347 certified payroll filings you generate will appear here."
+                        title={payroll.length > 0 ? 'No payroll records match' : 'No certified payroll records yet'}
+                        description={payroll.length > 0 ? 'Clear the search above to see every record.' : 'WH-347 certified payroll filings you generate will appear here.'}
                         action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate WH-347</Link>}
                       />
                     </td></tr>
-                  ) : payroll.map(pr => {
+                  ) : visPayroll.map(pr => {
                     const sc = statusConfig[pr.status] || statusConfig.draft;
                     return (
                       <tr key={pr.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
@@ -706,15 +725,15 @@ export default function DocumentsPage() {
                 title="Select a project"
                 description="Choose a project above to view its closeout checklist."
               />
-            ) : closeoutItems.length === 0 ? (
+            ) : visCloseout.length === 0 ? (
               <PremiumEmpty
                 compact
                 icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
-                title="No closeout items yet"
-                description="Closeout items (warranties, O&M manuals, as-builts, certificates) added to this project will appear here."
+                title={closeoutItems.length > 0 ? 'No closeout items match' : 'No closeout items yet'}
+                description={closeoutItems.length > 0 ? 'Clear the search above to see the full checklist.' : 'Closeout items (warranties, O&M manuals, as-builts, certificates) added to this project will appear here.'}
               />
             ) : (
-              closeoutItems.map((item, idx) => {
+              visCloseout.map((item, idx) => {
                 const done = isCloseoutDone(item.status);
                 const sc = CLOSEOUT_STATUS[item.status] ?? CLOSEOUT_STATUS.pending;
                 const busy = togglingId === item.id;
@@ -724,7 +743,7 @@ export default function DocumentsPage() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 14,
                       padding: '14px 20px',
-                      borderBottom: idx < closeoutItems.length - 1 ? `1px solid rgba(255,255,255,0.08)` : 'none',
+                      borderBottom: idx < visCloseout.length - 1 ? `1px solid rgba(255,255,255,0.08)` : 'none',
                       background: done ? 'rgba(61,214,140,.03)' : 'transparent',
                     }}
                   >

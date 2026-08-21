@@ -20,6 +20,8 @@ const usd = (c: number) => '$' + Math.round((c || 0) / 100).toLocaleString();
 const now = () => new Date().toISOString();
 const fmt = (s: string | null) => s ? new Date(s + (s.length === 10 ? 'T12:00:00' : '')).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 const EXPIRIES: [string, string][] = [['warranty_expires', 'Warranty'], ['registration_expires', 'Registration'], ['insurance_expires', 'Insurance'], ['contract_expires', 'Contract']];
+const ago = (iso: string | null | undefined) => { if (!iso) return null; const ms = Date.now() - Date.parse(iso); if (!Number.isFinite(ms)) return null; const m = Math.max(0, Math.round(ms / 60000)); if (m < 60) return `${m}m ago`; const h = Math.round(m / 60); if (h < 24) return `${h}h ago`; const d = Math.round(h / 24); return d < 30 ? `${d}d ago` : `${Math.round(d / 30)}mo ago`; };
+const STATUS_LABEL: Record<string, string> = { active: 'Active', in_shop: 'In shop', retired: 'Retired', out_of_service: 'Out of service' };
 
 export default function FleetPage() {
   const { showToast } = useToast();
@@ -140,12 +142,12 @@ export default function FleetPage() {
 
         {/* KPIs */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 20 }}>
-          <StatCard icon={<Truck size={19} weight="duotone" color={GOLD} />} label="Assets" value={summary.total} accent={GOLD} delay={0.02} />
-          <StatCard icon={<Warning size={19} weight="duotone" color={summary.maintenanceOverdue ? RED : GOLD} />} label="Maint. overdue" value={summary.maintenanceOverdue} accent={summary.maintenanceOverdue ? RED : undefined} delay={0.06} />
-          <StatCard icon={<Wrench size={19} weight="duotone" color={summary.maintenanceSoon ? AMBER : GOLD} />} label="Due soon" value={summary.maintenanceSoon} accent={summary.maintenanceSoon ? AMBER : undefined} delay={0.10} />
-          <StatCard icon={<FileText size={19} weight="duotone" color={summary.docsExpired ? RED : GOLD} />} label="Docs expired" value={summary.docsExpired} accent={summary.docsExpired ? RED : undefined} delay={0.14} />
-          <StatCard icon={<CalendarBlank size={19} weight="duotone" color={summary.docsExpiringSoon ? AMBER : GOLD} />} label="Expiring" value={summary.docsExpiringSoon} accent={summary.docsExpiringSoon ? AMBER : undefined} delay={0.18} />
-          <StatCard icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />} label="Maint. cost" value={usd(summary.totalMaintenanceCostCents)} delay={0.22} />
+          <StatCard icon={<Truck size={19} weight="duotone" color={GOLD} />} label="Assets" value={summary.total} accent={GOLD} sub={`${summary.byType.vehicle || 0} vehicle${(summary.byType.vehicle || 0) === 1 ? '' : 's'} · ${summary.byType.equipment || 0} equipment${summary.byStatus.in_shop ? ` · ${summary.byStatus.in_shop} in shop` : ''}`} delay={0.02} />
+          <StatCard icon={<Warning size={19} weight="duotone" color={summary.maintenanceOverdue ? RED : GOLD} />} label="Maint. overdue" value={summary.maintenanceOverdue} accent={summary.maintenanceOverdue ? RED : undefined} sub={summary.needsAttention.length ? summary.needsAttention.slice(0, 2).join(', ') + (summary.needsAttention.length > 2 ? ` +${summary.needsAttention.length - 2}` : '') : 'all caught up'} delay={0.06} />
+          <StatCard icon={<Wrench size={19} weight="duotone" color={summary.maintenanceSoon ? AMBER : GOLD} />} label="Due soon" value={summary.maintenanceSoon} accent={summary.maintenanceSoon ? AMBER : undefined} sub="within 500 mi or 14 days" delay={0.10} />
+          <StatCard icon={<FileText size={19} weight="duotone" color={summary.docsExpired ? RED : GOLD} />} label="Docs expired" value={summary.docsExpired} accent={summary.docsExpired ? RED : undefined} sub={summary.docsExpired ? 'renew to stay road-legal' : 'registrations & insurance current'} delay={0.14} />
+          <StatCard icon={<CalendarBlank size={19} weight="duotone" color={summary.docsExpiringSoon ? AMBER : GOLD} />} label="Expiring" value={summary.docsExpiringSoon} accent={summary.docsExpiringSoon ? AMBER : undefined} sub="docs inside the 30-day window" delay={0.18} />
+          <StatCard icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />} label="Maint. cost" value={usd(summary.totalMaintenanceCostCents)} sub={`across ${records.length} service record${records.length === 1 ? '' : 's'}`} delay={0.22} />
         </div>
 
         {assets.some((a) => a.last_lat) ? <SectionCard title="Live Map" icon={<MapPin size={17} weight="duotone" color={GOLD} />} style={{ marginBottom: 16 }}><FleetMap assets={assets} pings={selId ? pings : []} selId={selId} onSelect={setSelId} /></SectionCard> : null}
@@ -155,11 +157,29 @@ export default function FleetPage() {
           <SectionCard title="Fleet Registry" icon={<Truck size={17} weight="duotone" color={GOLD} />} bodyStyle={{ padding: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}><MagnifyingGlass size={16} color={DIM} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search fleet…" style={{ background: 'none', border: 'none', color: TEXT, outline: 'none', flex: 1, fontSize: 14 }} /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '68vh', overflowY: 'auto' }}>
-              {filtered.length === 0 ? (assets.length ? <div style={{ color: DIM, fontSize: 13, padding: 12 }}>No matches</div> : <PremiumEmpty compact icon={<Truck size={30} weight="duotone" color={GOLD} />} title="No assets yet" description="Add your first vehicle or piece of equipment to start tracking maintenance, documents, and location." action={<button onClick={() => { setF({ type: 'vehicle' }); setAdding(true); }} style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 13 }} className="pmBtn"><Plus size={14} weight="bold" />Add asset</button>} />) : filtered.map((a) => { const h = assetHealth(a as Asset, records as MaintenanceRecord[], docs as AssetDoc[], now()); return (
+              {filtered.length === 0 ? (assets.length ? <div style={{ color: DIM, fontSize: 13, padding: 12 }}>No matches</div> : <PremiumEmpty compact icon={<Truck size={30} weight="duotone" color={GOLD} />} title="No assets yet" description="Add your first vehicle or piece of equipment — the registry tracks maintenance schedules, expiring documents, GPS location, and lifetime cost per asset." action={<button onClick={() => { setF({ type: 'vehicle' }); setAdding(true); }} style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 13 }} className="pmBtn"><Plus size={14} weight="bold" />Add asset</button>} />) : filtered.map((a) => {
+                const h = assetHealth(a as Asset, records as MaintenanceRecord[], docs as AssetDoc[], now());
+                const mnt = h.maintenance;
+                const badExp = h.expiries.find((x) => x.status === 'expired') || h.expiries.find((x) => x.status === 'soon');
+                const issue = mnt.status === 'overdue' || mnt.status === 'soon'
+                  ? `${mnt.label || 'Service'} ${mnt.status === 'overdue' ? 'overdue' : 'due soon'}`
+                  : badExp ? `${badExp.category} ${badExp.status === 'expired' ? 'expired' : `expires in ${badExp.daysUntil}d`}` : null;
+                const seen = ago(a.last_location_at);
+                return (
                 <button key={a.id} onClick={() => setSelId(a.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', background: selId === a.id ? 'rgba(245,158,11,0.12)' : RAISED, border: `1px solid ${selId === a.id ? GOLD : BORDER}`, borderRadius: 10, padding: 10, cursor: 'pointer', color: TEXT }}>
                   {a.type === 'vehicle' ? <Truck size={20} color={DIM} /> : <Wrench size={20} color={DIM} />}
-                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{a.name}</div><div style={{ color: DIM, fontSize: 12.5 }}>{[a.license_plate, a.odometer ? `${Math.round(a.odometer).toLocaleString()} ${a.odometer_unit || 'mi'}` : null].filter(Boolean).join(' · ') || a.category || a.type}</div></div>
-                  <span title={h.overall} style={{ width: 10, height: 10, borderRadius: 5, background: (STATUS_COLOR as any)[h.overall] }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                      {a.status && a.status !== 'active' ? <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.4, textTransform: 'uppercase', padding: '1px 7px', borderRadius: 999, background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.4)', color: '#FBBF24' }}>{STATUS_LABEL[a.status] || a.status}</span> : null}
+                    </div>
+                    <div style={{ color: DIM, fontSize: 12.5 }}>{[a.license_plate, a.odometer ? `${Math.round(a.odometer).toLocaleString()} ${a.odometer_unit || 'mi'}` : null].filter(Boolean).join(' · ') || a.category || a.type}</div>
+                    {issue ? <div style={{ fontSize: 11.5, color: h.overall === 'overdue' ? RED : AMBER, marginTop: 2 }}>{issue}</div> : null}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                    <span title={h.overall} style={{ width: 10, height: 10, borderRadius: 5, background: (STATUS_COLOR as any)[h.overall] }} />
+                    <span style={{ fontSize: 10, color: DIM, whiteSpace: 'nowrap' }}>{seen ? <><MapPin size={9} style={{ verticalAlign: -1 }} /> {seen}</> : 'no GPS'}</span>
+                  </div>
                 </button>
               ); })}
             </div>
@@ -177,7 +197,7 @@ export default function FleetPage() {
                     <button onClick={() => delAsset(sel.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><Trash size={17} color={RED} /></button>
                   </div>
                   <div style={{ display: 'flex', gap: 18, marginTop: 12, flexWrap: 'wrap', fontSize: 13 }}>
-                    {[['VIN', sel.vin], ['Plate', sel.license_plate], ['S/N', sel.serial_number], ['Odometer', sel.odometer ? `${Math.round(sel.odometer).toLocaleString()} ${sel.odometer_unit || 'mi'}` : null], ['Status', sel.status]].filter((x) => x[1]).map(([k, v]) => <div key={k as string}><div style={{ color: DIM, fontSize: 11, textTransform: 'uppercase' }}>{k}</div><div style={{ fontWeight: 600 }}>{v}</div></div>)}
+                    {[['VIN', sel.vin], ['Plate', sel.license_plate], ['S/N', sel.serial_number], ['Odometer', sel.odometer ? `${Math.round(sel.odometer).toLocaleString()} ${sel.odometer_unit || 'mi'}` : null], ['Status', STATUS_LABEL[sel.status] || sel.status], ['Services', selRecords.length ? `${selRecords.length} logged` : null], ['Lifetime maint.', selRecords.some((r) => r.cost_cents) ? usd(selRecords.reduce((s, r) => s + (Number(r.cost_cents) || 0), 0)) : null], ['Docs', selDocs.length ? `${selDocs.length} on file` : null], ['Last seen', ago(sel.last_location_at)]].filter((x) => x[1]).map(([k, v]) => <div key={k as string}><div style={{ color: DIM, fontSize: 11, textTransform: 'uppercase' }}>{k}</div><div style={{ fontWeight: 600 }}>{v}</div></div>)}
                   </div>
                 </SectionCard>
 

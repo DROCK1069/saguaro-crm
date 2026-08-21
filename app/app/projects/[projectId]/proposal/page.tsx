@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { FileText, FilePlus, ClockCounterClockwise, SealCheck, Plus } from '@phosphor-icons/react';
 
 const GOLD='#F59E0B', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
@@ -60,6 +60,20 @@ export default function ProposalPage() {
   const [projectName, setProjectName] = useState('');
   // Win/Loss capture: after flipping accept/decline we open the universal outcome modal.
   const [outcomeModal, setOutcomeModal] = useState<{ proposalId: string; defaultOutcome: 'won' | 'lost'; ourAmount: number } | null>(null);
+  // Project intelligence — the proposal screen walks in knowing the contract money.
+  const [ctx, setCtx] = useState<any>(null);
+  const [auto, setAuto] = useState<{ amt?: boolean }>({});
+
+  useEffect(() => {
+    if (!projectId) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
 
   const fetchProposals = useCallback(async () => {
     setLoading(true);
@@ -86,6 +100,24 @@ export default function ProposalPage() {
 
   const accepted = proposals.find(p => p.status === 'Accepted');
   const latestVersion = proposals.length ? `v${proposals.length + 1}.0` : 'v1.0';
+
+  // Contract intelligence (from /api/project-context). DB numerics may be strings.
+  const fmt = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const money = ctx?.money;
+  const original = Number(money?.originalContract) || 0;
+  const coTotal = Number(money?.approvedCoTotal) || 0;
+  const revised = Number(money?.revisedContract) || (original + coTotal);
+  const lastProposal = proposals.length ? proposals[proposals.length - 1] : null;
+
+  // Prefill the new version from what the system already knows: the prior
+  // version's amount, else the live contract sum to date.
+  function openCreate() {
+    const seed = Number(lastProposal?.amount) || revised || original;
+    setForm({ amount: seed || 0, notes: '' });
+    setAuto({ amt: seed > 0 });
+    setShowForm(true);
+    setErrorMsg('');
+  }
 
   async function handleSave() {
     if (!form.amount) { setErrorMsg('Amount is required.'); return; }
@@ -169,11 +201,23 @@ export default function ProposalPage() {
         accent="Contract Amounts"
         subtitle="Version your project proposals, track contract amounts, and capture win/loss outcomes."
         actions={
-          <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
+          <button onClick={() => { if (showForm) { setShowForm(false); setErrorMsg(''); } else { openCreate(); } }} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> New Version
           </button>
         }
       />
+
+      {/* Contract intelligence strip — what the system already knows */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Original Contract', value: fmt(original), sub: 'base agreement' },
+          { label: 'Approved COs', value: (coTotal >= 0 ? '+' : '') + fmt(coTotal), accent: coTotal > 0 ? GREEN : undefined, sub: `${Number(money?.approvedCoCount) || 0} approved${Number(money?.pendingCoCount) ? ` · ${money.pendingCoCount} pending` : ''}` },
+          { label: 'Contract to Date', value: fmt(revised), sub: 'original + approved COs' },
+          { label: 'Versions', value: String(proposals.length), sub: lastProposal ? `latest ${lastProposal.version} — ${String(lastProposal.status || '').replace(/_/g, ' ')}` : 'none yet' },
+          { label: 'Accepted', value: accepted ? fmt(Number(accepted.amount) || 0) : '—', accent: accepted ? GREEN : undefined, sub: accepted ? accepted.version : 'no accepted version yet' },
+          { label: 'Billed to Date', value: fmt(Number(money?.billedToDate) || 0), sub: `${Number(money?.billedPct) || 0}% of contract` },
+        ]} />
+      )}
 
       {/* Accepted proposal callout — the headline KPI */}
       {accepted && (
@@ -183,7 +227,7 @@ export default function ProposalPage() {
             label="Accepted Proposal"
             value={`$${accepted.amount.toLocaleString()}`}
             accent={GREEN}
-            sub={accepted.notes ? `${accepted.version} — ${accepted.notes}` : accepted.version}
+            sub={(() => { const d = revised > 0 ? (Number(accepted.amount) || 0) - revised : 0; const base = accepted.notes ? `${accepted.version} — ${accepted.notes}` : accepted.version; return d !== 0 ? `${base} · ${d > 0 ? '+' : '-'}${fmt(Math.abs(d))} vs contract to date` : base; })()}
           />
         </div>
       )}
@@ -192,11 +236,25 @@ export default function ProposalPage() {
       {errorMsg && <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', borderRadius: 10, color: RED, fontSize: 13 }}>{errorMsg}</div>}
 
       {showForm && (
-        <div style={{ marginBottom: 24 }}>
-          <SectionCard title={`New Proposal Version (${latestVersion})`} icon={<FilePlus size={17} weight="duotone" color={GOLD} />}>
+        <div style={{ display: 'grid', gridTemplateColumns: ctx ? 'minmax(0, 1fr) 320px' : '1fr', gap: 18, alignItems: 'start', marginBottom: 24 }}>
+          <SectionCard title={`New Proposal Version (${latestVersion})`} icon={<FilePlus size={17} weight="duotone" color={GOLD} />} subtitle={lastProposal ? `Supersedes ${lastProposal.version} — prior versions stay in the history below.` : 'First version on this project.'}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 14 }}>
-              <div><label style={label}>Amount ($) *</label><input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} /></div>
-              <div><label style={label}>Notes</label><input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Revised after value engineering" style={inp} /></div>
+              <div>
+                <label style={label}>Amount ($) *{auto.amt && <AutoChip />}</label>
+                <input type="number" value={form.amount} onChange={e => { setForm(p => ({ ...p, amount: Number(e.target.value) })); setAuto({}); }} style={inp} />
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 }}>
+                  {lastProposal && Number(lastProposal.amount) > 0
+                    ? <>Seeded from {lastProposal.version} ({fmt(Number(lastProposal.amount) || 0)}).{revised > 0 && Number(form.amount) !== revised && <> Contract sum to date is <span onClick={() => { setForm(p => ({ ...p, amount: revised })); setAuto({ amt: true }); }} style={{ color: '#FBBF24', fontWeight: 700, cursor: 'pointer' }}>{fmt(revised)}</span>.</>}</>
+                    : revised > 0
+                      ? <>Contract sum to date — {fmt(original)} original{coTotal !== 0 ? ` + ${fmt(coTotal)} approved COs` : ''}.</>
+                      : <>No contract amount on file yet — enter the proposed sum.</>}
+                </div>
+              </div>
+              <div>
+                <label style={label}>Notes</label>
+                <input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Revised after value engineering" style={inp} />
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 }}>What changed in this version — shows in the history table.</div>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button onClick={handleSave} disabled={saving} style={{ ...goldButtonStyle, opacity: saving ? 0.7 : 1 }} className="pmBtn">
@@ -205,6 +263,31 @@ export default function ProposalPage() {
               <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={ghostButtonStyle} className="pmBtn">Cancel</button>
             </div>
           </SectionCard>
+          {ctx && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <SectionCard title="What Saguaro Knows" icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />}>
+                <InsightRow label="Original contract" value={fmt(original)} />
+                {coTotal !== 0 && <InsightRow label="Approved COs" value={(coTotal > 0 ? '+' : '') + fmt(coTotal)} accent={GREEN} />}
+                <InsightRow label="Contract to date" value={fmt(revised)} strong />
+                <InsightRow label="Billed to date" value={fmt(Number(money?.billedToDate) || 0)} />
+                {lastProposal && (
+                  <>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />
+                    <InsightRow label={`Last version — ${lastProposal.version}`} value={String(lastProposal.status || '—').replace(/_/g, ' ')} />
+                    <InsightRow label="Last amount" value={fmt(Number(lastProposal.amount) || 0)} accent={GOLD} />
+                  </>
+                )}
+              </SectionCard>
+              <SectionCard title="After You Create" icon={<SealCheck size={17} weight="duotone" color={GOLD} />}>
+                <FlowSteps title="" steps={[
+                  { title: 'Draft is versioned', desc: 'Prior versions mark themselves Superseded — the history stays intact.' },
+                  { title: 'Attach the PDF & send', desc: 'Upload the signed proposal and mark it sent to the client.' },
+                  { title: 'Capture the outcome', desc: 'Mark Accepted or Declined — win/loss feeds bidding analytics.' },
+                  { title: 'Accepted becomes the contract', desc: 'The accepted amount headlines this project going forward.' },
+                ]} />
+              </SectionCard>
+            </div>
+          )}
         </div>
       )}
 
@@ -216,10 +299,12 @@ export default function ProposalPage() {
           <PremiumEmpty
             icon={<FileText size={30} weight="duotone" color={GOLD} />}
             title="No proposals yet"
-            description="Create your first proposal version to start tracking contract amounts and outcomes."
+            description={revised > 0
+              ? `The contract sum to date is ${fmt(revised)} — start v1.0 prefilled at that amount, then version every revision and capture the win or loss.`
+              : 'Create your first proposal version to start tracking contract amounts and outcomes.'}
             action={
-              <button onClick={() => { setShowForm(true); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
-                <Plus size={15} weight="bold" /> New Version
+              <button onClick={openCreate} style={goldButtonStyle} className="pmBtn">
+                <Plus size={15} weight="bold" /> {revised > 0 ? `Start v1.0 at ${fmt(revised)}` : 'New Version'}
               </button>
             }
           />

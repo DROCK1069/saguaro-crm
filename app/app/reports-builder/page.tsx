@@ -1998,7 +1998,38 @@ export default function ReportsBuilderPage() {
                   </button>
                 </div>
                 <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-                  {draft.columns.map(col => (
+                  {(() => {
+                    /* Field pickers organized BY MODULE - each selected module
+                       renders its own header with live counts and All/None,
+                       so a multi-module report is scannable, not a flat wall. */
+                    const seen = new Set<string>();
+                    const groups: { mod: string; label: string; cols: ColumnDef[] }[] = draft.modules
+                      .map(mod => {
+                        const meta = MODULE_OPTIONS.find(o => o.key === mod);
+                        const cols = ALL_COLUMNS[mod]
+                          .map(mc => draft.columns.find(dc => dc.key === mc.key))
+                          .filter((c): c is ColumnDef => !!c && !seen.has(c.key));
+                        cols.forEach(c => seen.add(c.key));
+                        return { mod, label: meta?.label ?? mod, cols };
+                      })
+                      .filter(g => g.cols.length > 0);
+                    const leftover = draft.columns.filter(c => !seen.has(c.key));
+                    if (leftover.length > 0) groups.push({ mod: 'other', label: 'Other Fields', cols: leftover });
+                    const setGroup = (keys: string[], enabled: boolean) => {
+                      const ks = new Set(keys);
+                      setDraft(p => ({ ...p, columns: p.columns.map(c => (ks.has(c.key) ? { ...c, enabled } : c)) }));
+                    };
+                    return groups.map(g => (
+                      <div key={g.mod} style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: 0.5 }}>{g.label}</span>
+                          <span style={{ fontSize: 11, color: DIM }}>{g.cols.filter(c => c.enabled).length} of {g.cols.length} fields</span>
+                          <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                            <button style={{ ...btnSmall, padding: '2px 8px', fontSize: 11 }} onClick={() => setGroup(g.cols.map(c => c.key), true)}>All</button>
+                            <button style={{ ...btnSmall, padding: '2px 8px', fontSize: 11 }} onClick={() => setGroup(g.cols.map(c => c.key), false)}>None</button>
+                          </span>
+                        </div>
+                        {g.cols.map(col => (
                     <label
                       key={col.key}
                       style={{
@@ -2034,6 +2065,9 @@ export default function ReportsBuilderPage() {
                       </span>
                     </label>
                   ))}
+                      </div>
+                    ));
+                  })()}
                 </div>
                 {draft.columns.length === 0 && (
                   <p style={{ color: AMBER, fontSize: 13, marginTop: 8 }}>

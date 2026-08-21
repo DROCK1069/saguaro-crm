@@ -9,7 +9,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { Btn, T } from '@/components/ui/shell';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, ghostButtonStyle } from '@/components/ui/premium';
 import { FileThumb, FilePreview, KIND_TINT } from '@/components/FilePreview';
 import { FileDropzone } from '@/components/FileDropzone';
 import { FileCropper } from '@/components/FileCropper';
@@ -52,6 +52,18 @@ export default function FilesPage() {
   }, [projectId, trash]);
   useEffect(() => { load(); }, [load]);
 
+  // Project intelligence — one snapshot; the library walks in knowing the job.
+  const [ctx, setCtx] = useState<any>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
+
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3500); };
   const folders = useMemo(() => Array.from(new Set(files.map((f) => f.folder).filter(Boolean))).sort(), [files]);
   const filtered = files.filter((f) => {
@@ -69,13 +81,18 @@ export default function FilesPage() {
 
   const kinds: { k: string; label: string }[] = [{ k: 'all', label: 'All' }, ...(['image', 'video', 'pdf', 'doc', 'sheet', 'audio', 'cad', 'other'] as FileKind[]).map((k) => ({ k, label: KIND_LABEL[k] }))];
   const counts = { total: files.length, video: files.filter((f) => kindOf(f) === 'video').length, image: files.filter((f) => kindOf(f) === 'image').length };
+  const docCount = Math.max(0, counts.total - counts.video - counts.image);
+  const bytesTotal = files.reduce((s, f) => s + (Number(f.file_size) || 0), 0);
+  const weekAgo = Date.now() - 7 * 86400000;
+  const addedThisWeek = files.filter((f) => f.created_at && new Date(f.created_at).getTime() >= weekAgo).length;
+  const lastUpload = files.reduce<string | null>((m, f) => (f.created_at && (!m || f.created_at > m) ? f.created_at : m), null);
 
   return (
     <>
       <PremiumSurface maxWidth={1600}>
         {/* Header */}
         <ModuleHero
-          eyebrow="Media Library"
+          eyebrow={ctx?.project?.name || 'Media Library'}
           eyebrowIcon={<Folder size={13} weight="fill" color="#F59E0B" />}
           title="Files &"
           accent="Media"
@@ -87,6 +104,18 @@ export default function FilesPage() {
           }
         />
 
+        {/* Library intelligence — what the system already knows */}
+        {!loading && (
+          <StatStrip items={[
+            { label: 'Library', value: String(counts.total), sub: bytesTotal > 0 ? `${fmtSize(bytesTotal)} stored` : 'no storage used yet' },
+            { label: 'Added This Week', value: String(addedThisWeek), accent: addedThisWeek > 0 ? '#3dd68c' : undefined, sub: lastUpload ? `last upload ${fmtDate(lastUpload)}` : 'nothing uploaded yet' },
+            { label: 'Photos', value: String(counts.image), sub: 'site + progress shots' },
+            { label: 'Videos', value: String(counts.video), sub: 'walkthroughs, site video' },
+            { label: 'Docs & Drawings', value: String(docCount), sub: 'PDFs, sheets, CAD, docs' },
+            { label: 'Folders', value: String(folders.length), sub: folders.length > 0 ? folders.slice(0, 2).join(', ') + (folders.length > 2 ? '…' : '') : 'organize with Move' },
+          ]} />
+        )}
+
         {/* KPI row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
           <StatCard icon={<Folder size={19} weight="duotone" color={T.gold} />} label="Total Files" value={String(counts.total)} accent={T.gold} delay={0.02} />
@@ -94,7 +123,16 @@ export default function FilesPage() {
           <StatCard icon={<FilmSlate size={19} weight="duotone" color={KIND_TINT.video} />} label="Videos" value={String(counts.video)} accent={KIND_TINT.video} delay={0.10} />
         </div>
 
-        {!trash && <div style={{ marginBottom: 16 }}><FileDropzone projectId={projectId} folder={folder !== 'all' ? folder : null} onUploaded={(rows) => { if (rows?.length) { setFiles((prev) => [...rows, ...prev]); flash(`${rows.length} uploaded`); } }} /></div>}
+        {!trash && (
+          <div style={{ marginBottom: 16 }}>
+            <FileDropzone projectId={projectId} folder={folder !== 'all' ? folder : null} onUploaded={(rows) => { if (rows?.length) { setFiles((prev) => [...rows, ...prev]); flash(`${rows.length} uploaded`); } }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginTop: 8, fontSize: 11.5, color: 'rgba(255,255,255,0.45)' }}>
+              <span>Uploads land in {folder !== 'all' ? <b style={{ color: '#FBBF24' }}>{folder}</b> : 'the library root'}</span><AutoChip label={folder !== 'all' ? 'FOLDER' : 'AUTO'} />
+              <span style={{ marginLeft: 6 }}>· dated {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span><AutoChip />
+              <span style={{ marginLeft: 6 }}>· any format, video up to 500MB</span>
+            </div>
+          </div>
+        )}
 
         {toast && <div style={{ marginBottom: 14, padding: '9px 14px', background: T.greenDim, border: '1px solid rgba(52,199,89,0.3)', borderRadius: 8, color: T.green, fontSize: 13 }}>{toast}</div>}
 
@@ -125,12 +163,39 @@ export default function FilesPage() {
           {/* grid */}
           {loading ? <div style={{ textAlign: 'center', padding: 44, color: T.muted, fontSize: 13 }}>Loading…</div>
             : filtered.length === 0 ? (
-              <PremiumEmpty
-                icon={trash ? <Trash size={30} weight="duotone" color={T.gold} /> : files.length ? <MagnifyingGlass size={30} weight="duotone" color={T.gold} /> : <Folder size={30} weight="duotone" color={T.gold} />}
-                title={trash ? 'Trash is empty' : files.length ? 'No files match' : 'No files yet'}
-                description={trash ? 'Deleted files show up here and can be restored before permanent removal.' : files.length ? 'Try a different search term or filter to find what you’re looking for.' : 'Drop files above to get started — photos, video, PDFs, drawings, and documents.'}
-                compact
-              />
+              trash || files.length > 0 ? (
+                <PremiumEmpty
+                  icon={trash ? <Trash size={30} weight="duotone" color={T.gold} /> : <MagnifyingGlass size={30} weight="duotone" color={T.gold} />}
+                  title={trash ? 'Trash is empty' : 'No files match'}
+                  description={trash ? 'Deleted files show up here and can be restored before permanent removal.' : 'Try a different search term or filter to find what you’re looking for.'}
+                  compact
+                />
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: ctx ? 'minmax(0, 1fr) 320px' : '1fr', alignItems: 'stretch' }}>
+                  <PremiumEmpty
+                    icon={<Folder size={30} weight="duotone" color={T.gold} />}
+                    title="The project file room, empty for now"
+                    description="Drop files above — plans, permits, contracts, submittal PDFs, site photos and video all live here, previewable and shareable from one place."
+                    compact
+                  />
+                  {ctx && (
+                    <div style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '20px 22px' }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 900, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 10 }}>What Belongs Here</div>
+                      <InsightRow label="Drawings & specs" value="PDF · CAD" />
+                      <InsightRow label="Contracts & permits" value="PDF · DOC" />
+                      <InsightRow label="Site photos & video" value="up to 500MB" />
+                      <InsightRow label="Submittal & RFI backup" value="any format" />
+                      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '10px 0' }} />
+                      {ctx?.recent?.lastDailyLogDate && <InsightRow label="Last daily log" value={fmtDate(ctx.recent.lastDailyLogDate)} />}
+                      {Number(ctx?.counts?.openRfis) > 0 && <InsightRow label="Open RFIs" value={String(ctx.counts.openRfis)} accent="#FBBF24" />}
+                      {Number(ctx?.counts?.openSubmittals) > 0 && <InsightRow label="Open submittals" value={String(ctx.counts.openSubmittals)} accent="#FBBF24" />}
+                      <div style={{ marginTop: 12, fontSize: 12, color: T.muted, lineHeight: 1.55 }}>
+                        Photos and attachments captured in the field land alongside what you drop here — everything previews inline and shares by link, email, or SMS.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 1fr))', gap: 14 }}>
                 {filtered.map((f) => {

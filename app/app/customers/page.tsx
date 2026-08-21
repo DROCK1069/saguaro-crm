@@ -39,6 +39,7 @@ const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { mon
 export default function CustomersPage() {
   const { showToast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [assigning, setAssigning] = useState(false);
@@ -65,9 +66,20 @@ export default function CustomersPage() {
     }
   }, []);
 
+  // Live project rollup — project counts + lifetime contract value per customer.
+  const loadProjects = useCallback(async () => {
+    try {
+      const res = await fetch('/api/projects/list');
+      if (!res.ok) return;
+      const data = await res.json();
+      setProjects(Array.isArray(data?.projects) ? data.projects : []);
+    } catch { /* rollup is additive — the page still renders without it */ }
+  }, []);
+
   useEffect(() => {
     load();
-  }, [load]);
+    loadProjects();
+  }, [load, loadProjects]);
 
   const filtered = useMemo(() => {
     let list = customers;
@@ -108,6 +120,43 @@ export default function CustomersPage() {
     return Math.round(customers.reduce((s, c) => s + (c.lead_score || 0), 0) / customers.length);
   }, [customers]);
 
+  // Per-customer project rollup: count + lifetime contract value. Projects have
+  // no customer_id column, so match on owner email (strongest), owner name, or
+  // the "<Name> Project" naming Assign to Project uses. DB numerics can
+  // round-trip as strings — always Number() before math.
+  const projectRollup = useMemo(() => {
+    const map = new Map<string, { count: number; value: number; list: { id: string; name: string; status?: string; value: number }[] }>();
+    customers.forEach(c => {
+      const email = (c.email || '').trim().toLowerCase();
+      const name = (c.name || '').trim().toLowerCase();
+      const list = projects
+        .filter((p: any) => {
+          const pEmail = String(p?.owner_email || '').trim().toLowerCase();
+          const pOwner = String(p?.owner_name || '').trim().toLowerCase();
+          const pName = String(p?.name || '').trim().toLowerCase();
+          if (email && pEmail && pEmail === email) return true;
+          if (name && pOwner && pOwner === name) return true;
+          if (name && (pName === `${name} project` || pName.startsWith(`${name} `))) return true;
+          return false;
+        })
+        .map((p: any) => ({
+          id: String(p?.id ?? ''),
+          name: String(p?.name ?? 'Untitled'),
+          status: p?.status ? String(p.status) : undefined,
+          value: Number(p?.contract_value) || Number(p?.contract_amount) || Number(p?.original_contract) || 0,
+        }));
+      map.set(c.id, { count: list.length, value: list.reduce((s, p) => s + (Number(p.value) || 0), 0), list });
+    });
+    return map;
+  }, [customers, projects]);
+
+  // Portfolio lifetime value across every customer with matched projects.
+  const lifetimeTotals = useMemo(() => {
+    let value = 0, withProjects = 0;
+    projectRollup.forEach(r => { value += Number(r.value) || 0; if (r.count > 0) withProjects++; });
+    return { value, withProjects };
+  }, [projectRollup]);
+
   /* ─── Score Color ─── */
   const scoreColor = (s: number) => s >= 80 ? GREEN : s >= 50 ? AMBER : RED;
 
@@ -124,12 +173,13 @@ export default function CustomersPage() {
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       showToast(`Project created for ${c.name}`, 'success');
       await load();
+      loadProjects();
     } catch {
       showToast('Could not create project. Please try again.', 'error');
     } finally {
       setAssigning(false);
     }
-  }, [assigning, load, showToast]);
+  }, [assigning, load, loadProjects, showToast]);
 
   /* ─── Detail View ─── */
   if (selected) {
@@ -234,6 +284,36 @@ export default function CustomersPage() {
                   Send Email
                 </button>
               </div>
+            </SectionCard>
+
+            {/* Projects & lifetime value — matched from live project data */}
+            <SectionCard title="Projects & Lifetime Value" icon={<Buildings size={17} weight="duotone" color={GOLD} />}>
+              {(projectRollup.get(c.id)?.count || 0) > 0 ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                    <span style={{ fontSize: 12, color: DIM }}>
+                      {projectRollup.get(c.id)!.count} project{projectRollup.get(c.id)!.count === 1 ? '' : 's'} linked
+                    </span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: GOLD }}>{fmt(projectRollup.get(c.id)!.value)}</span>
+                  </div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {projectRollup.get(c.id)!.list.map(p => (
+                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 12px', background: `${BG}60`, borderRadius: 8, border: `1px solid ${BORDER}` }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                          {p.status && <div style={{ fontSize: 11, color: DIM, textTransform: 'capitalize' }}>{p.status}</div>}
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: p.value > 0 ? GOLD : DIM, whiteSpace: 'nowrap' }}>{p.value > 0 ? fmt(p.value) : '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 12.5, color: DIM, lineHeight: 1.6 }}>
+                  No projects linked yet. Use Assign to Project and the new job is created under this
+                  customer&apos;s name — its contract value rolls up here as lifetime value automatically.
+                </div>
+              )}
             </SectionCard>
           </div>
         )}
@@ -407,7 +487,7 @@ export default function CustomersPage() {
         eyebrowIcon={<UsersThree size={13} weight="fill" color={GOLD} />}
         title="Customer"
         accent="CRM"
-        subtitle={loading ? 'Loading profiles…' : error ? 'Unable to load profiles' : `${customers.length} total profiles in your pipeline`}
+        subtitle={loading ? 'Loading profiles…' : error ? 'Unable to load profiles' : `${customers.length} total profiles in your pipeline${lifetimeTotals.value > 0 ? ` · ${fmt(lifetimeTotals.value)} lifetime contract value` : ''}`}
         actions={
           <button onClick={exportCSV} className="pmBtn" style={goldOutlineButtonStyle}>
             <DownloadSimple size={15} weight="bold" /> Export Leads (CSV)
@@ -435,9 +515,14 @@ export default function CustomersPage() {
             sub="converted" delay={0.10}
           />
           <StatCard
+            icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />}
+            label="Lifetime Value" value={fmt(lifetimeTotals.value)} accent={GOLD}
+            sub={lifetimeTotals.withProjects > 0 ? `${lifetimeTotals.withProjects} customer${lifetimeTotals.withProjects === 1 ? '' : 's'} with projects` : 'assign customers to projects'} delay={0.14}
+          />
+          <StatCard
             icon={<Gauge size={19} weight="duotone" color={GOLD} />}
             label="Avg Lead Score" value={String(avgScore)} accent={scoreColor(avgScore)}
-            sub="across all leads" delay={0.14}
+            sub="across all leads" delay={0.18}
           />
         </div>
       )}
@@ -504,7 +589,7 @@ export default function CustomersPage() {
           <PremiumEmpty
             icon={<UsersThree size={30} weight="duotone" color={GOLD} />}
             title="No customers yet"
-            description="Customer profiles will appear here as leads come in through your design studio, Sage chat, and other sources."
+            description="Customer profiles appear here as leads come in through your design studio, Sage chat, and other sources. Each one tracks lead score, project count, and lifetime contract value once you assign them to projects."
           />
         </SectionCard>
       ) : (
@@ -527,10 +612,10 @@ export default function CustomersPage() {
             />
           ) : (
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 880 }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                    {['Name', 'Email', 'State', 'Status', 'Score', 'Source', 'Created'].map(h => (
+                    {['Name', 'Email', 'State', 'Status', 'Score', 'Projects', 'Lifetime Value', 'Source', 'Created'].map(h => (
                       <th key={h} style={{
                         padding: '12px 14px', textAlign: 'left', fontSize: 10.5,
                         color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
@@ -565,6 +650,12 @@ export default function CustomersPage() {
                         <span style={{
                           fontSize: 14, fontWeight: 800, color: scoreColor(c.lead_score),
                         }}>{c.lead_score}</span>
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 600, color: (projectRollup.get(c.id)?.count || 0) > 0 ? TEXT : DIM }}>
+                        {projectRollup.get(c.id)?.count || 0}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 700, color: (projectRollup.get(c.id)?.value || 0) > 0 ? GOLD : DIM }}>
+                        {(projectRollup.get(c.id)?.value || 0) > 0 ? fmt(projectRollup.get(c.id)?.value) : '—'}
                       </td>
                       <td style={{ padding: '12px 14px', fontSize: 13, color: DIM }}>{c.source}</td>
                       <td style={{ padding: '12px 14px', fontSize: 13, color: DIM }}>{fmtDate(c.created_at)}</td>

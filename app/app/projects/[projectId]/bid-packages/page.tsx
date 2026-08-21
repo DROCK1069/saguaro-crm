@@ -4,8 +4,8 @@ import { humanError } from '@/lib/errors';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, extend } from '@/lib/calc';
-import { X, Plus, ArrowLeft, ArrowRight, Package, FileText, Trophy, UsersThree, Tray } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { X, Plus, ArrowLeft, ArrowRight, Package, FileText, Trophy, UsersThree, Tray, CalendarBlank, CurrencyDollar, ShieldCheck } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
@@ -397,6 +397,51 @@ export default function BidPackagesPage() {
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
 
+  // The screen walks in knowing the project: budget, roster, award history —
+  // one /api/project-context snapshot (fetched once) powers the strip + rail.
+  const [ctx, setCtx] = useState<any>(null);
+  // Per-package leveling detail (invited / responded / low bid / spread),
+  // derived from the real invites + submissions tables. Number()-coerced.
+  const [detail, setDetail] = useState<Record<string, { invited: number; responded: number; low: number | null; lowWho: string | null; spread: number | null }>>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json() as any;
+        if (!c.error) setCtx(c);
+      } catch { /* context is additive — the list still renders without it */ }
+    })();
+  }, [projectId]);
+
+  async function enrichDetail(rows: BidPackageRow[]) {
+    const targets = rows.slice(0, 20);
+    if (targets.length === 0) return;
+    const results = await Promise.allSettled(targets.map(async pkg => {
+      const r = await fetch(`/api/bid-packages/${pkg.id}`);
+      if (!r.ok) throw new Error('detail failed');
+      const d = await r.json() as any;
+      const subs: any[] = (d.submissions || []).filter((s: any) => String(s.status || '').toLowerCase() !== 'withdrawn');
+      const amts = subs
+        .map((s: any) => ({ amt: Number(s.amount ?? s.base_amount ?? s.total_amount) || 0, who: s.company_name || s.sub_name || s.contact_name || '' }))
+        .filter(a => a.amt > 0)
+        .sort((a, b) => a.amt - b.amt);
+      const low = amts[0] || null;
+      const high = amts.length ? amts[amts.length - 1] : null;
+      return {
+        id: pkg.id,
+        invited: (d.invites || []).length,
+        responded: subs.length,
+        low: low ? low.amt : null,
+        lowWho: low ? low.who : null,
+        spread: low && high && amts.length >= 2 && low.amt > 0 ? ((high.amt - low.amt) / low.amt) * 100 : null,
+      };
+    }));
+    const next: Record<string, any> = {};
+    for (const res of results) if (res.status === 'fulfilled') next[(res.value as any).id] = res.value;
+    if (Object.keys(next).length) setDetail(prev => ({ ...prev, ...next }));
+  }
+
   useEffect(() => { loadPackages(); }, [projectId]);
 
   async function loadPackages() {
@@ -404,7 +449,9 @@ export default function BidPackagesPage() {
     try {
       const r = await fetch(`/api/bid-packages/list?projectId=${projectId}`);
       const d = await r.json() as any;
-      setPackages(d.bidPackages || []);
+      const rows: BidPackageRow[] = d.bidPackages || [];
+      setPackages(rows);
+      enrichDetail(rows);
     } catch {
       setPackages([]);
     } finally {
@@ -417,30 +464,61 @@ export default function BidPackagesPage() {
     .length;
 
   const totalInvited = packages.reduce((s, p) => {
-    const cnt = p.bid_package_invites?.[0]?.count ?? 0;
-    return s + cnt;
+    const cnt = detail[p.id]?.invited ?? p.bid_package_invites?.[0]?.count ?? 0;
+    return s + (Number(cnt) || 0);
   }, 0);
 
   const totalSubmissions = packages.reduce((s, p) => {
-    const cnt = p.bid_submissions?.[0]?.count ?? 0;
-    return s + cnt;
+    const cnt = detail[p.id]?.responded ?? p.bid_submissions?.[0]?.count ?? 0;
+    return s + (Number(cnt) || 0);
   }, 0);
+
+  // Award + budget intelligence from project-context (Number-coerced — several
+  // DB money columns round-trip as strings).
+  const ctxPkgById: Record<string, any> = {};
+  for (const cbp of (ctx?.bidPackages || [])) ctxPkgById[cbp.id] = cbp;
+  const awardedTotal = (ctx?.bidPackages || []).reduce((s: number, cbp: any) => s + (Number(cbp.awardedAmount) || 0), 0);
+  const budgetOriginal = Number(ctx?.budget?.original) || 0;
+  const budgetCommitted = Number(ctx?.budget?.committed) || 0;
+  const rosterCount = (ctx?.subs || []).length;
+  const spreadColor = (s: number) => s <= 10 ? '#3dd68c' : s <= 25 ? GOLD : '#ff7070';
+  const daysUntil = (d?: string | null) => {
+    if (!d) return null;
+    const t = new Date(String(d).slice(0, 10) + 'T00:00:00').getTime();
+    return isNaN(t) ? null : Math.ceil((t - Date.now()) / 86400000);
+  };
+  const fmtDue = (d?: string | null) => {
+    if (!d) return '—';
+    const dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
+    return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   return (
     <PremiumSurface maxWidth={1600}>
       {/* Header */}
       <ModuleHero
-        eyebrow="Procurement"
+        eyebrow={ctx?.project?.name || 'Procurement'}
         eyebrowIcon={<Package size={13} weight="fill" color="#F59E0B" />}
         title="Bid"
         accent="Packages"
-        subtitle="Manage subcontractor bid solicitations"
+        subtitle="Solicit, level, and award subcontractor bids — awards are compliance-gated (W-9 + COI) and write committed cost automatically"
         actions={
           <button onClick={() => setShowWizard(true)} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> Create Bid Package
           </button>
         }
       />
+
+      {/* Project money context — what the system already knows */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Budget', value: fmt(budgetOriginal), sub: `${Number(ctx?.budget?.lineCount) || 0} budget lines` },
+          { label: 'Committed', value: fmt(budgetCommitted), sub: budgetOriginal > 0 ? `${Math.round((budgetCommitted / budgetOriginal) * 100)}% of budget` : 'POs + subcontracts' },
+          { label: 'Awarded via Bids', value: fmt(awardedTotal), accent: awardedTotal > 0 ? GOLD : undefined, sub: `${totalAwarded} package${totalAwarded === 1 ? '' : 's'} placed` },
+          { label: 'Sub Roster', value: String(rosterCount), sub: rosterCount > 0 ? 'ready to invite' : 'invite by email works too' },
+          { label: 'Responses', value: `${totalSubmissions} / ${totalInvited}`, accent: totalSubmissions > 0 ? '#3dd68c' : undefined, sub: 'bids in vs invites out' },
+        ]} />
+      )}
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -476,7 +554,7 @@ export default function BidPackagesPage() {
           <PremiumEmpty
             icon={<Package size={30} weight="duotone" color={GOLD} />}
             title="No bid packages yet"
-            description="Create your first bid package to start soliciting subcontractors."
+            description={`A bid package sends one trade's scope to ${rosterCount > 0 ? `your ${rosterCount}-sub roster` : 'your subs'} with a portal link. Bids come back priced against your line items, leveling flags the spread, and the award is compliance-gated (W-9 + COI) before it books committed cost as a draft subcontract PO.`}
             action={
               <button onClick={() => setShowWizard(true)} style={goldButtonStyle} className="pmBtn">
                 <Plus size={15} weight="bold" /> Create Bid Package
@@ -485,54 +563,85 @@ export default function BidPackagesPage() {
           />
         </SectionCard>
       ) : (
-        <SectionCard
-          title="Bid Packages"
-          subtitle={`${packages.length} ${packages.length === 1 ? 'package' : 'packages'}`}
-          icon={<Package size={17} weight="duotone" color={GOLD} />}
-          flush
-        >
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#1c1c1e' }}>
-                  {['Trade', 'Package Name', 'Due Date', 'Status', '# Invited', '# Submitted', 'Bid Jacket', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: DIM, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {packages.map(pkg => {
-                  const invites = pkg.bid_package_invites?.[0]?.count ?? 0;
-                  const subs = pkg.bid_submissions?.[0]?.count ?? 0;
-                  return (
-                    <tr key={pkg.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
-                      <td style={{ padding: '12px 14px', color: GOLD, fontWeight: 700 }}>{pkg.trade || '—'}</td>
-                      <td style={{ padding: '12px 14px', color: TEXT, fontWeight: 600 }}>{pkg.name}</td>
-                      <td style={{ padding: '12px 14px', color: DIM }}>{pkg.bid_due_date?.slice(0, 10) || '—'}</td>
-                      <td style={{ padding: '12px 14px' }}><StatusBadge status={pkg.status} /></td>
-                      <td style={{ padding: '12px 14px', color: DIM, textAlign: 'center' }}>{invites}</td>
-                      <td style={{ padding: '12px 14px', color: subs > 0 ? '#1db954' : DIM, textAlign: 'center', fontWeight: subs > 0 ? 700 : 400 }}>{subs}</td>
-                      <td style={{ padding: '12px 14px' }}>
-                        {pkg.jacket_pdf_url ? (
-                          <a href={pkg.jacket_pdf_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: GOLD, fontWeight: 700, textDecoration: 'none' }}><FileText size={11} weight="regular" color={GOLD} style={{ verticalAlign: 'middle' }} /> PDF</a>
-                        ) : (
-                          <span style={{ fontSize: 11, color: DIM }}>—</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <button
-                          onClick={() => router.push(`/app/projects/${projectId}/bid-packages/${pkg.id}`)}
-                          style={{ padding: '4px 12px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 5, color: GOLD, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 22, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
+            {packages.map(pkg => {
+              const det = detail[pkg.id];
+              const invited = Number(det?.invited ?? pkg.bid_package_invites?.[0]?.count) || 0;
+              const responded = Number(det?.responded ?? pkg.bid_submissions?.[0]?.count) || 0;
+              const low = det?.low != null ? Number(det.low) || 0 : null;
+              const spread = det?.spread != null && Number.isFinite(Number(det.spread)) ? Number(det.spread) : null;
+              const cp = ctxPkgById[pkg.id];
+              const budgetEst = Number(cp?.budgetEstimate ?? (pkg as any).budget_estimate) || 0;
+              const awardedAmt = Number(cp?.awardedAmount ?? (pkg as any).awarded_amount) || 0;
+              const due = daysUntil(pkg.bid_due_date || (pkg as any).due_date);
+              const isAwarded = pkg.status === 'awarded';
+              return (
+                <div key={pkg.id} className="pmHover" style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '16px 18px', boxShadow: '0 10px 30px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)', cursor: 'pointer' }} onClick={() => router.push(`/app/projects/${projectId}/bid-packages/${pkg.id}`)}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 0.5 }}>{pkg.trade || 'General'}</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: TEXT, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pkg.name || 'Untitled Package'}</div>
+                    </div>
+                    <StatusBadge status={pkg.status} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: DIM, marginBottom: 12, flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><CalendarBlank size={13} weight="regular" color={DIM} />{fmtDue(pkg.bid_due_date || (pkg as any).due_date)}</span>
+                    {due != null && !isAwarded && <span style={{ fontWeight: 700, color: due < 0 ? '#ff7070' : due <= 3 ? GOLD : DIM }}>{due < 0 ? `${Math.abs(due)}d overdue` : due === 0 ? 'due today' : `${due}d left`}</span>}
+                    {pkg.jacket_pdf_url && <a href={pkg.jacket_pdf_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: GOLD, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}><FileText size={12} weight="regular" color={GOLD} />Jacket</a>}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
+                    <div style={{ background: '#101011', padding: '9px 12px' }}>
+                      <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 3 }}>Invited / Responded</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{invited} / <span style={{ color: responded > 0 ? '#3dd68c' : DIM }}>{responded}</span></div>
+                    </div>
+                    <div style={{ background: '#101011', padding: '9px 12px' }}>
+                      <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 3 }}>{isAwarded ? 'Awarded' : 'Low Bid'}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: isAwarded ? '#1db954' : low != null ? TEXT : DIM, fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isAwarded && awardedAmt > 0 ? fmt(awardedAmt) : low != null ? fmt(low) : '—'}</div>
+                      {(isAwarded ? (cp?.awardedTo || (pkg as any).awarded_to) : det?.lowWho) && <div style={{ fontSize: 10.5, color: DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isAwarded ? (cp?.awardedTo || (pkg as any).awarded_to) : det?.lowWho}</div>}
+                    </div>
+                    <div style={{ background: '#101011', padding: '9px 12px' }}>
+                      <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 3 }}>Spread</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: spread != null ? spreadColor(spread) : DIM }}>{spread != null ? `${Math.round(spread)}%` : responded === 1 ? 'needs 2 bids' : '—'}</div>
+                      {spread != null && <div style={{ fontSize: 10.5, color: DIM }}>{spread <= 10 ? 'tight — market agrees' : spread <= 25 ? 'level scope before award' : 'wide — check scope gaps'}</div>}
+                    </div>
+                    <div style={{ background: '#101011', padding: '9px 12px' }}>
+                      <div style={{ fontSize: 9.5, fontWeight: 800, color: 'rgba(255,255,255,0.42)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 3 }}>vs Budget</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: budgetEst > 0 && low != null ? (low <= budgetEst ? '#3dd68c' : '#ff7070') : DIM, fontVariantNumeric: 'tabular-nums' }}>{budgetEst > 0 && low != null ? `${low <= budgetEst ? '' : '+'}${fmt(low - budgetEst)}` : budgetEst > 0 ? fmt(budgetEst) : '—'}</div>
+                      {budgetEst > 0 && <div style={{ fontSize: 10.5, color: DIM }}>{low != null ? (low <= budgetEst ? 'low bid under budget' : 'low bid over budget') : 'budget estimate'}</div>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                    <button onClick={e => { e.stopPropagation(); router.push(`/app/projects/${projectId}/bid-packages/${pkg.id}`); }} style={{ padding: '5px 14px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, color: GOLD, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>{isAwarded ? 'View Award' : responded >= 2 ? 'Level Bids' : 'Open Package'} <ArrowRight size={12} weight="bold" color={GOLD} /></button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </SectionCard>
+
+          {/* Context rail — the pipeline this module actually enforces */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <SectionCard title="Award Pipeline" icon={<ShieldCheck size={17} weight="duotone" color={GOLD} />}>
+              <FlowSteps title="" steps={[
+                { title: 'Package out to subs', desc: rosterCount > 0 ? `Invites go to your roster (${rosterCount} subs) or any email — each gets a portal link.` : 'Invites go out by email — each sub gets a portal link.', done: totalInvited > 0 || packages.length > 0 },
+                { title: 'Bids come back priced', desc: 'Subs price your line items in the portal; responses land here in real time.', done: totalSubmissions > 0 },
+                { title: 'Level the spread', desc: 'Side-by-side leveling flags scope gaps — a wide spread usually means someone missed scope.', done: Object.values(detail).some(d => d.spread != null) },
+                { title: 'Compliance gate at award', desc: 'Award is blocked if the winning sub has no W-9 on file or an expired COI — proceeding anyway requires an explicit override.', done: totalAwarded > 0 },
+                { title: 'Award writes committed cost', desc: 'The winning amount books as a draft subcontract PO automatically — no re-keying into the budget.', done: totalAwarded > 0 },
+              ]} />
+            </SectionCard>
+            {ctx && (
+              <SectionCard title="Procurement Snapshot" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />}>
+                <InsightRow label="Project budget" value={fmt(budgetOriginal)} />
+                <InsightRow label="Committed to date" value={fmt(budgetCommitted)} />
+                <InsightRow label="Awarded via bids" value={fmt(awardedTotal)} accent={awardedTotal > 0 ? GOLD : undefined} strong />
+                <InsightRow label="Open packages" value={String(packages.filter(p => p.status === 'open').length)} />
+                <InsightRow label="Bids received" value={String(totalSubmissions)} accent={totalSubmissions > 0 ? '#3dd68c' : undefined} />
+                {rosterCount > 0 && <InsightRow label="Subs on roster" value={String(rosterCount)} />}
+              </SectionCard>
+            )}
+          </div>
+        </div>
       )}
 
       {showWizard && (

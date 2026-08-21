@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { WarningCircle, Brain, ChartBar, ArrowRight, Tray, CaretDown, PencilSimple, Clipboard, ChatCircle, Trash, CheckCircle, XCircle, Clock, Robot, X, Users, CalendarBlank, CurrencyDollar, Gavel, Plus, TrendUp } from '@phosphor-icons/react';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#3dd68c';
@@ -192,11 +192,49 @@ function BidsPageInner() {
       const all: any[] = (d.bidPackages || []).filter((bp: any) => !bp.deleted_at);
       setPackages(all);
       setOpportunities(all.filter((bp: any) => bp.status === 'open' || bp.status === 'bidding').slice(0, 20));
+      enrichPackages(all);
     } catch {
       setPipelineError(true);
     } finally {
       setPipelineLoading(false);
     }
+  }
+
+  // Leveling intelligence: /api/bid-packages/list returns bare rows, so pull
+  // invites + submissions per live package (bounded to 24) and derive invited /
+  // responded / low bid / spread. Every dollar is Number()-coerced — DB numerics
+  // can round-trip as strings. A failed detail fetch just leaves that row bare.
+  async function enrichPackages(all: any[]) {
+    const ENRICH_SKIP = ['closed','cancelled','canceled','complete','completed','archived','withdrawn','lost'];
+    const targets = all.filter(p => !ENRICH_SKIP.includes(String(p.status || '').toLowerCase())).slice(0, 24);
+    if (targets.length === 0) return;
+    const results = await Promise.allSettled(targets.map(async p => {
+      const r = await fetch(`/api/bid-packages/${p.id}`);
+      if (!r.ok) throw new Error('detail failed');
+      const d = await r.json();
+      const subs: any[] = (d.submissions || []).filter((s: any) => String(s.status || '').toLowerCase() !== 'withdrawn');
+      const amts = subs
+        .map((s: any) => ({ amt: Number(s.amount ?? s.base_amount ?? s.total_amount) || 0, who: s.company_name || s.sub_name || s.contact_name || '' }))
+        .filter(a => a.amt > 0)
+        .sort((a, b) => a.amt - b.amt);
+      const low = amts[0];
+      const high = amts[amts.length - 1];
+      return {
+        id: p.id,
+        num_invited: (d.invites || []).length,
+        num_responded: subs.length,
+        bid_count: subs.length,
+        low_bid_amount: low ? low.amt : null,
+        low_bid_company: low ? low.who : null,
+        spread_pct: amts.length >= 2 && low.amt > 0 ? ((high.amt - low.amt) / low.amt) * 100 : null,
+      };
+    }));
+    const byId: Record<string, any> = {};
+    for (const res of results) if (res.status === 'fulfilled') byId[(res.value as any).id] = res.value;
+    if (Object.keys(byId).length === 0) return;
+    const merge = (list: any[]) => list.map(p => byId[p.id] ? { ...p, ...byId[p.id] } : p);
+    setPackages(prev => merge(prev));
+    setOpportunities(prev => merge(prev));
   }
 
   useEffect(() => {
@@ -206,6 +244,17 @@ function BidsPageInner() {
   // Active = live packages across all projects, excluding terminal/awarded states.
   const TERMINAL_STATUSES = ['awarded','closed','cancelled','canceled','complete','completed','archived','withdrawn','lost'];
   const activePackages = packages.filter(p => !TERMINAL_STATUSES.includes(String(p.status || '').toLowerCase()));
+  // Bid Center pulse — leveling context across every project. All money passes
+  // through Number()||0 because DB numerics can arrive as strings.
+  const openNow = activePackages.filter(p => ['open','bidding'].includes(String(p.status||'').toLowerCase()));
+  const invitedTotal = activePackages.reduce((s, p) => s + (Number(p.num_invited) || 0), 0);
+  const respondedTotal = activePackages.reduce((s, p) => s + (Number(p.num_responded ?? p.bid_count) || 0), 0);
+  const lowBidPipeline = activePackages.reduce((s, p) => s + (Number(p.low_bid_amount) || 0), 0);
+  const coveredCount = activePackages.filter(p => (Number(p.num_responded ?? p.bid_count) || 0) > 0).length;
+  const awardedPkgs = packages.filter(p => String(p.status||'').toLowerCase() === 'awarded');
+  const awardedTotal = awardedPkgs.reduce((s, p) => s + (Number(p.awarded_amount) || 0), 0);
+  const widestSpread = activePackages.reduce((m: any, p: any) => (p.spread_pct != null && Number.isFinite(Number(p.spread_pct)) && (m == null || Number(p.spread_pct) > Number(m.spread_pct))) ? p : m, null as any);
+  const spreadColor = (s: number) => s <= 10 ? GREEN : s <= 25 ? GOLD : '#ff7070';
   const fmtDate = (d?: string|null) => {
     if (!d) return '—';
     const dt = new Date(String(d).length <= 10 ? String(d) + 'T00:00:00' : String(d));
@@ -316,6 +365,18 @@ function BidsPageInner() {
         </>}
       />
 
+      {/* Bid Center pulse — the page walks in knowing every live package */}
+      {!pipelineLoading && !pipelineError && packages.length > 0 && (
+        <StatStrip items={[
+          { label: 'Live Packages', value: String(activePackages.length), sub: `${openNow.length} open for bids` },
+          { label: 'Bids In', value: `${respondedTotal} / ${invitedTotal}`, accent: respondedTotal > 0 ? GREEN : undefined, sub: 'responses vs invites' },
+          { label: 'Coverage', value: activePackages.length ? `${coveredCount}/${activePackages.length}` : '—', accent: activePackages.length > 0 && coveredCount === activePackages.length ? GREEN : undefined, sub: activePackages.length - coveredCount > 0 ? `${activePackages.length - coveredCount} awaiting first bid` : 'every package has a bid' },
+          { label: 'Low-Bid Pipeline', value: fmt(lowBidPipeline), sub: 'sum of current low bids' },
+          { label: 'Awarded', value: fmt(awardedTotal), accent: awardedTotal > 0 ? GOLD : undefined, sub: `${awardedPkgs.length} package${awardedPkgs.length === 1 ? '' : 's'} placed` },
+          { label: 'Widest Spread', value: widestSpread ? `${Math.round(Number(widestSpread.spread_pct))}%` : '—', accent: widestSpread ? spreadColor(Number(widestSpread.spread_pct)) : undefined, sub: widestSpread ? `${widestSpread.name || 'package'} — level before award` : 'needs 2+ bids on a package' },
+        ]}/>
+      )}
+
       {/* Tabs */}
       <div style={{display:'flex',gap:2,borderBottom:`1px solid ${BORDER}`,marginBottom:24}}>
         {(['active','pipeline','history'] as const).map(t=>(
@@ -355,15 +416,15 @@ function BidsPageInner() {
             <PremiumEmpty
               icon={<ChartBar size={30} weight="duotone" color={GOLD} />}
               title="No Open Bid Packages"
-              description="Create bid packages on your projects to track your pipeline here."
-              action={<button onClick={()=>router.push('/app/projects')} style={goldButtonStyle} className="pmBtn">Go to Projects</button>}
+              description="The pipeline tracks every package with status open or bidding across all projects. Create one on a project — invites go out with portal links, sub bids come back priced against your line items, and the spread flags what to level before you award."
+              action={<div style={{display:'flex',gap:10,flexWrap:'wrap' as const,justifyContent:'center'}}><button onClick={()=>router.push('/app/projects')} style={goldButtonStyle} className="pmBtn">Go to Projects</button><button onClick={()=>setShowScore(true)} style={goldOutlineButtonStyle} className="pmBtn">Score a Bid First</button></div>}
             />
           </SectionCard>
         ) : (
           <SectionCard title="Opportunity Pipeline" subtitle={`${opportunities.length} open ${opportunities.length===1?'opportunity':'opportunities'}`} icon={<ChartBar size={17} weight="duotone" color={GOLD} />} flush bodyStyle={{overflowX:'auto'}}>
           <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
             <thead><tr style={{background:'#1c1c1e'}}>
-              {['Package Name','Trade','Status','Bid Due','Actions'].map(h=>(
+              {['Package Name','Trade','Status','Bid Due','Bids In','Low Bid','Actions'].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
               ))}
             </tr></thead>
@@ -373,6 +434,8 @@ function BidsPageInner() {
                 <td style={{padding:'12px 14px',color:DIM}}>{op.trade}</td>
                 <td style={{padding:'12px 14px'}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:'rgba(26,95,168,.12)',color:'#4a9de8',textTransform:'uppercase' as const}}>{op.status}</span></td>
                 <td style={{padding:'12px 14px',color:DIM}}>{op.bid_due_date || '—'}</td>
+                <td style={{padding:'12px 14px'}}><span style={{color:(Number(op.num_responded ?? op.bid_count)||0)>0?GREEN:DIM,fontVariantNumeric:'tabular-nums'}}>{Number(op.num_responded ?? op.bid_count)||0}</span><span style={{color:DIM}}> / {Number(op.num_invited)||0} invited</span></td>
+                <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums',color:op.low_bid_amount?TEXT:DIM}}>{op.low_bid_amount ? fmt(Number(op.low_bid_amount)||0) : '—'}</td>
                 <td style={{padding:'12px 14px'}}>
                   <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
                 </td>
@@ -413,7 +476,7 @@ function BidsPageInner() {
             <PremiumEmpty
               icon={<Tray size={30} weight="duotone" color={GOLD} />}
               title="No Active Bid Packages"
-              description="Create bid packages on your projects to manage them here."
+              description="Active packages are every non-awarded solicitation across your projects — invites, responses, low bid, and spread in one table. Create a package on a project to start collecting priced sub bids."
               action={<button onClick={()=>router.push('/app/projects')} style={goldButtonStyle} className="pmBtn">View Projects</button>}
             />
           </SectionCard>
@@ -421,7 +484,7 @@ function BidsPageInner() {
           <SectionCard title="Active Packages" subtitle={`${activePackages.length} live ${activePackages.length===1?'package':'packages'}`} icon={<Tray size={17} weight="duotone" color={GOLD} />} flush bodyStyle={{overflowX:'auto'}}>
           <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
             <thead><tr style={{background:'#1c1c1e'}}>
-              {['Package','Trade','Status','Bid Due','Invited / Responded','Low Bid','Actions'].map(h=>(
+              {['Package','Trade','Status','Bid Due','Invited / Responded','Low Bid','Spread','Actions'].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
               ))}
             </tr></thead>
@@ -439,7 +502,8 @@ function BidsPageInner() {
                   <td style={{padding:'12px 14px'}}><span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,background:stColor.bg,color:stColor.c,textTransform:'uppercase' as const}}>{op.status||'—'}</span></td>
                   <td style={{padding:'12px 14px',color:DIM}}><span style={{display:'inline-flex',alignItems:'center',gap:5}}><CalendarBlank size={13} weight="regular" color={DIM} />{fmtDate(op.bid_due_date||op.due_date)}</span></td>
                   <td style={{padding:'12px 14px',color:DIM}}><span style={{display:'inline-flex',alignItems:'center',gap:5}}><Users size={13} weight="regular" color={DIM} /><span style={{color:TEXT,fontVariantNumeric:'tabular-nums'}}>{invited}</span> / <span style={{color:responded>0?GREEN:DIM,fontVariantNumeric:'tabular-nums'}}>{responded}</span></span></td>
-                  <td style={{padding:'12px 14px',color:op.low_bid_amount?TEXT:DIM,fontVariantNumeric:'tabular-nums'}}>{op.low_bid_amount ? (<span style={{display:'inline-flex',alignItems:'center',gap:4}}><CurrencyDollar size={13} weight="regular" color={GREEN} />{fmt(op.low_bid_amount)}{op.low_bid_company?<span style={{color:DIM,fontSize:11}}> · {op.low_bid_company}</span>:null}</span>) : '—'}</td>
+                  <td style={{padding:'12px 14px',color:op.low_bid_amount?TEXT:DIM,fontVariantNumeric:'tabular-nums'}}>{op.low_bid_amount ? (<span style={{display:'inline-flex',alignItems:'center',gap:4}}><CurrencyDollar size={13} weight="regular" color={GREEN} />{fmt(Number(op.low_bid_amount)||0)}{op.low_bid_company?<span style={{color:DIM,fontSize:11}}> · {op.low_bid_company}</span>:null}</span>) : '—'}</td>
+                  <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums'}}>{op.spread_pct!=null&&Number.isFinite(Number(op.spread_pct)) ? (<span style={{fontWeight:700,color:spreadColor(Number(op.spread_pct))}}>{Math.round(Number(op.spread_pct))}%<span style={{color:DIM,fontWeight:500,fontSize:11}}> {Number(op.spread_pct)<=10?'tight':Number(op.spread_pct)<=25?'level it':'wide'}</span></span>) : (<span style={{color:DIM,fontSize:11}}>{(Number(responded)||0)===1?'needs 2 bids':'—'}</span>)}</td>
                   <td style={{padding:'12px 14px'}}>
                     <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
                   </td>
@@ -456,7 +520,7 @@ function BidsPageInner() {
         {/* Stats — skeletons while loading, real values once loaded (hidden on error) */}
         {historyLoading ? (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:20}}>
-            {Array.from({length:5}).map((_,i)=>(<SkeletonKPI key={i}/>))}
+            {Array.from({length:6}).map((_,i)=>(<SkeletonKPI key={i}/>))}
           </div>
         ) : (!historyError && historyStats) ? (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:20}}>
@@ -465,7 +529,8 @@ function BidsPageInner() {
               {l:'Won',v:(historyStats.wonBids ?? 0),c:'#3dd68c',icon:<CheckCircle size={19} weight="duotone" color={'#3dd68c'} />},
               {l:'Lost',v:(historyStats.lostBids ?? 0),c:'#ff7070',icon:<XCircle size={19} weight="duotone" color={'#ff7070'} />},
               {l:'Win Rate',v:(historyStats.winRate ?? 0)+'%',c:(historyStats.winRate ?? 0)>=50?'#3dd68c':GOLD,icon:<TrendUp size={19} weight="duotone" color={(historyStats.winRate ?? 0)>=50?'#3dd68c':GOLD} />},
-              {l:'Avg Margin',v:(historyStats.avgMargin ?? 0).toFixed(1)+'%',c:GOLD,icon:<ChartBar size={19} weight="duotone" color={GOLD} />},
+              {l:'Avg Margin',v:(Number(historyStats.avgMargin) || 0).toFixed(1)+'%',c:GOLD,icon:<ChartBar size={19} weight="duotone" color={GOLD} />},
+              {l:'Total Value',v:fmt(Number(historyStats.totalValue) || 0),c:GOLD,icon:<CurrencyDollar size={19} weight="duotone" color={GOLD} />},
             ].map((k,i)=>(
               <StatCard key={k.l} icon={k.icon} label={k.l} value={k.v} accent={k.c} delay={i*0.04} />
             ))}

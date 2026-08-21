@@ -365,6 +365,10 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
     const project = pkg?.projects;
     if (!project) return;
 
+    // Live bid_submissions carries the money in `amount` (there is no
+    // bid_amount column) — coalesce so the subcontract is never drafted at $0.
+    const awardAmount = Number(w.bid_amount ?? w.amount ?? w.base_amount ?? w.base_bid) || 0;
+
     // Email winner
     const { data: winnerInvite } = await db
       .from('bid_package_invites')
@@ -374,7 +378,7 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
     if (winnerInvite) {
       await sendBidAwarded(
         (winnerInvite as any).sub_email, w.sub_name, project.name,
-        w.bid_amount || 0, project.start_date || ''
+        awardAmount, project.start_date || ''
       );
     }
 
@@ -412,9 +416,9 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
         contract_type: 'subcontract',
         status: 'draft',
         title: `${pkg.trade || pkg.name} — ${w.sub_name}`,
-        amount: w.bid_amount || 0,
-        contract_amount: w.bid_amount || 0,
-        original_amount: String(w.bid_amount || 0), // TEXT column in the live schema
+        amount: awardAmount,
+        contract_amount: awardAmount,
+        original_amount: String(awardAmount), // TEXT column in the live schema
         party_name: w.sub_name,
         party_company: w.sub_name,
         party_email: winnerEmail,
@@ -437,7 +441,7 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
       if (bLine) {
         await db
           .from('budget_lines')
-          .update({ committed: ((bLine as any).committed || 0) + (w.bid_amount || 0) })
+          .update({ committed: (Number((bLine as any).committed) || 0) + awardAmount })
           .eq('id', (bLine as any).id);
       }
     }
@@ -445,11 +449,38 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
     if (w.sub_id) {
       onSubAddedToProject(project.id, w.sub_id).catch(() => {});
     }
+    // (d) FIRST award on the project → AI Auto-Build: 24 schedule tasks,
+    //     CSI-coded budget, draft sub packages, safety plan, QC checkpoints,
+    //     and the contact directory. Proven by scripts/proof-autobuild.ts.
+    try {
+      const { data: awardedPkgs } = await db
+        .from('bid_packages')
+        .select('id, status, awarded_at')
+        .eq('project_id', project.id);
+      const awardedCount = (awardedPkgs || []).filter(
+        (bp: any) => bp.awarded_at || bp.status === 'awarded' || bp.status === 'contracted'
+      ).length;
+      if (awardedCount <= 1) {
+        const { runKickoffAutoBuild } = await import('./kickoff');
+        const built = await runKickoffAutoBuild(db, {
+          tenantId: project.tenant_id, projectId: project.id, project, pkg,
+          subName: w.sub_name, subId: w.sub_id || null, subEmail: winnerEmail,
+        });
+        if (built.ran) {
+          await createNotification(
+            project.tenant_id, null, 'project_autobuild',
+            `Project auto-built on first award`,
+            `Saguaro created ${built.tasks} schedule tasks, ${built.budgetLines} budget lines, ${built.packages} sub packages, a safety plan, ${built.qcCheckpoints} QC checkpoints and ${built.contacts} contacts on ${project.name}.`,
+            `${APP_URL}/app/projects/${project.id}/schedule`, project.id
+          );
+        }
+      }
+    } catch (e) { console.error('[kickoff-autobuild]', e); }
 
     await createNotification(
       project.tenant_id, null, 'bid_awarded',
       `Bid awarded to ${w.sub_name}`,
-      `${w.sub_name} awarded ${pkg.trade} contract for $${(w.bid_amount || 0).toLocaleString()} on ${project.name}`,
+      `${w.sub_name} awarded ${pkg.trade} contract for $${awardAmount.toLocaleString()} on ${project.name}`,
       `${APP_URL}/app/projects/${project.id}/bid-packages/${pkg.id}`, project.id
     );
     await dispatchWebhookEvent(project.tenant_id, 'bid.awarded', {
@@ -459,7 +490,7 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
       project_name: project.name,
       trade: pkg.trade,
       sub_name: w.sub_name,
-      bid_amount: w.bid_amount ?? 0,
+      bid_amount: awardAmount,
     });
   } catch (err) {
     console.error('[onBidAwarded]', err);

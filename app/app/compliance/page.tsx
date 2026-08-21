@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Gauge, CheckCircle, WarningCircle, XCircle, FileText, Signature, MagnifyingGlass, Envelope, UsersThree, ArrowRight } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#45B37D',RED='#E0644E',AMBER='#F0A63C';
 
@@ -50,6 +50,18 @@ export default function CompliancePage(){
     return true;
   });
 
+  // Cross-project intelligence — what the paperwork means in dollars and follow-ups.
+  // contract_amount can round-trip as a string, so every sum coerces with Number().
+  const fmtMoney = (n:number) => '$' + (Math.round(Number(n)||0)).toLocaleString('en-US');
+  const totalContract = subs.reduce((t,s)=>t+(Number(s.contract_amount)||0),0);
+  const exposure = subs.filter(s=>s.compliance!=='compliant').reduce((t,s)=>t+(Number(s.contract_amount)||0),0);
+  const tradeCount = new Set(subs.map(s=>s.trade).filter(Boolean)).size;
+  const w9Missing = subs.filter(s=>!(s.w9?.status==='submitted'||s.w9?.status==='approved')).length;
+  const noInsurance = subs.filter(s=>(Number(s.insurance?.active_certs)||0)===0).length;
+  const certsExpiring = subs.reduce((t,s)=>t+(Number(s.insurance?.expiring_certs)||0),0);
+  const waiversPending = subs.reduce((t,s)=>t+(Number(s.lien_waivers?.pending)||0),0);
+  const countFor = (f:string) => f==='all' ? subs.length : subs.filter(s=>s.compliance===f).length;
+
   const complianceLabel = (c:string) => c==='compliant'?'Compliant':c==='at_risk'?'At Risk':'Non-Compliant';
   const complianceColor = (c:string) => c==='compliant'?GREEN:c==='at_risk'?AMBER:RED;
   const complianceBg = (c:string) => c==='compliant'?'rgba(69,179,125,.14)':c==='at_risk'?'rgba(240,166,60,.14)':'rgba(224,100,78,.14)';
@@ -64,6 +76,15 @@ export default function CompliancePage(){
       accent="Compliance"
       subtitle="W-9, insurance, and lien waiver scorecard across your subcontractors."
     />
+
+    {/* Risk intelligence strip — the paperwork translated into dollars */}
+    {!loading&&subs.length>0&&<StatStrip items={[
+      {label:'Subcontractors', value:subs.length, sub:`across ${tradeCount} trade${tradeCount===1?'':'s'}`},
+      {label:'Contract Exposure', value:fmtMoney(exposure), accent:exposure>0?RED:GREEN, sub:totalContract>0?`of ${fmtMoney(totalContract)} committed sits with non-compliant subs`:'held by non-compliant subs'},
+      {label:'W-9s Missing', value:w9Missing, accent:w9Missing>0?AMBER:GREEN, sub:w9Missing>0?'blocks 1099 filing at year end':'every sub is 1099-ready'},
+      {label:'Insurance Gaps', value:noInsurance, accent:noInsurance>0?RED:GREEN, sub:certsExpiring>0?`uninsured · ${certsExpiring} cert${certsExpiring===1?'':'s'} expiring in 30d`:'no uninsured subs on site'},
+      {label:'Waivers Pending', value:waiversPending, accent:waiversPending>0?AMBER:GREEN, sub:waiversPending>0?'unsigned — hold payment until released':'lien rights fully released'},
+    ]}/>}
 
     {/* Summary KPIs */}
     {summary&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:14,marginBottom:24}}>
@@ -106,7 +127,7 @@ export default function CompliancePage(){
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {(['all','compliant','at_risk','non_compliant'] as const).map(f=>(
               <button key={f} onClick={()=>setFilter(f)} style={{padding:'6px 14px',background:filter===f?'rgba(245, 158, 11,.15)':'rgba(255,255,255,0.04)',border:`1px solid ${filter===f?'rgba(245, 158, 11,.4)':BORDER}`,borderRadius:9,color:filter===f?GOLD:DIM,fontSize:12,fontWeight:700,cursor:'pointer',textTransform:'capitalize'}}>
-                {f==='all'?'All':f.replace('_',' ')}
+                {f==='all'?'All':f.replace('_',' ')} ({countFor(f)})
               </button>
             ))}
           </div>
@@ -116,13 +137,13 @@ export default function CompliancePage(){
         :filtered.length===0?<PremiumEmpty
             icon={<ShieldCheck size={30} weight="duotone" color={GOLD} />}
             title={search||filter!=='all'?'No matching subcontractors':'No subcontractors found'}
-            description={search||filter!=='all'?'Try clearing your search or filter to see all subcontractors.':'Subcontractor compliance records will appear here once subs are added to your projects.'}
+            description={search||filter!=='all'?'Try clearing your search or filter to see all subcontractors.':'Add subs to your projects and Saguaro scores each one automatically — W-9 (25 pts), insurance certificates (40 pts), and lien waivers (35 pts) roll into a single compliance score across every project.'}
             compact
           />
         :<div style={{border:`1px solid ${BORDER}`,borderRadius:12,overflow:'hidden',overflowX:'auto',WebkitOverflowScrolling:'touch' as const}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
             <thead><tr style={{background:'#1c1c1e'}}>
-              {['Subcontractor','Trade','Score','W-9','Insurance','Lien Waivers','Status',''].map(h=>(
+              {['Subcontractor','Trade','Contract','Score','W-9','Insurance','Lien Waivers','Status',''].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:10.5,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--text-tertiary)',borderBottom:`1px solid ${BORDER}`,whiteSpace:'nowrap'}}>{h}</th>
               ))}
             </tr></thead>
@@ -138,6 +159,7 @@ export default function CompliancePage(){
                   </div>
                 </td>
                 <td style={{padding:'11px 14px',color:DIM}}>{sub.trade||'—'}</td>
+                <td style={{padding:'11px 14px',color:Number(sub.contract_amount)>0?TEXT:DIM,fontWeight:600,whiteSpace:'nowrap'}}>{Number(sub.contract_amount)>0?fmtMoney(sub.contract_amount):'—'}</td>
                 <td style={{padding:'11px 14px',minWidth:120}}><ScoreBar score={sub.score}/></td>
                 <td style={{padding:'11px 14px'}}>
                   <Badge label={sub.w9.status==='submitted'||sub.w9.status==='approved'?'On File':sub.w9.status==='pending'?'Pending':'Missing'}
@@ -176,6 +198,11 @@ export default function CompliancePage(){
           <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:1,color:DIM,marginBottom:6}}>Compliance Score</div>
           <ScoreBar score={selected.score}/>
           <div style={{marginTop:6}}><Badge label={complianceLabel(selected.compliance)} color={complianceColor(selected.compliance)} bg={complianceBg(selected.compliance)}/></div>
+          <div style={{fontSize:11,color:DIM,marginTop:8,lineHeight:1.5}}>Score = W-9 (25 pts) + insurance (40 pts) + lien waivers (35 pts). 80+ is compliant; under 50 is non-compliant.</div>
+          <div style={{marginTop:10}}>
+            <InsightRow label="Contract value" value={Number(selected.contract_amount)>0?fmtMoney(selected.contract_amount):'—'} accent={selected.compliance!=='compliant'&&Number(selected.contract_amount)>0?RED:undefined} strong/>
+            {totalContract>0&&Number(selected.contract_amount)>0&&<InsightRow label="Share of committed" value={`${Math.round((Number(selected.contract_amount)/totalContract)*100)}%`}/>}
+          </div>
         </div>
         <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:14,marginBottom:12}}>
           <div style={{display:'flex',alignItems:'center',gap:7,fontSize:12,fontWeight:700,color:GOLD,marginBottom:10}}><FileText size={15} weight="duotone" color={GOLD} /> W-9 Status</div>
@@ -199,6 +226,17 @@ export default function CompliancePage(){
             </div>}
           <div style={{fontSize:11,color:DIM,marginTop:6}}>Score contribution: {selected.lien_waivers.score}/35 pts</div>
         </div>
+        {(()=>{
+          const gaps:{title:string;desc?:string}[] = [];
+          if(!(selected.w9.status==='submitted'||selected.w9.status==='approved')) gaps.push({title:'Collect the W-9', desc:selected.w9.status==='pending'?'Already requested — chase the sub for the signed form.':'Worth 25 pts and required before 1099 season.'});
+          if(!selected.insurance.has_gl) gaps.push({title:'Get a General Liability cert', desc:'20 pts — an uninsured sub on site is uncovered GC risk.'});
+          if(!selected.insurance.has_wc) gaps.push({title:'Get a Workers Comp cert', desc:'20 pts — required before crews mobilize in most states.'});
+          if(selected.insurance.expiring_certs>0) gaps.push({title:`Renew ${selected.insurance.expiring_certs} expiring cert${selected.insurance.expiring_certs===1?'':'s'}`, desc:'Inside the 30-day window — renew before coverage lapses.'});
+          if(selected.lien_waivers.pending>0) gaps.push({title:`Chase ${selected.lien_waivers.pending} unsigned waiver${selected.lien_waivers.pending===1?'':'s'}`, desc:'Unreleased lien rights — hold payment until signed.'});
+          return gaps.length>0
+            ? <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:14,marginBottom:12}}><FlowSteps title="Fix next" steps={gaps}/></div>
+            : <div style={{background:'rgba(69,179,125,.08)',border:'1px solid rgba(69,179,125,.3)',borderRadius:10,padding:'10px 14px',marginBottom:12,fontSize:12.5,color:GREEN}}>Fully compliant — W-9 on file, insurance active, waivers signed.</div>;
+        })()}
         <div style={{display:'flex',flexDirection:'column' as const,gap:8}}>
           {selected.email&&<a href={`mailto:${selected.email}?subject=Compliance%20Follow-Up`} className="pmBtn" style={{...goldButtonStyle,width:'100%'}}><Envelope size={15} weight="bold" /> Email Sub</a>}
           {selected.project_id&&<Link href={`/app/projects/${selected.project_id}/team`} className="pmBtn" style={{...ghostButtonStyle,width:'100%'}}><UsersThree size={15} weight="bold" /> View Project Team <ArrowRight size={13} weight="bold" /></Link>}

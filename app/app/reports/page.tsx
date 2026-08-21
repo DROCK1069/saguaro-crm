@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CurrencyDollar, ChartBar, Clipboard, ArrowsClockwise, Lock, ShieldCheck, CalendarBlank, CheckCircle, HardHat, Warning, Package, Clock, ArrowRight, X } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 // ── Color palette ──────────────────────────────────────────────
 const GOLD   = '#F59E0B';
@@ -63,6 +63,39 @@ const STANDARD_REPORTS = [
   { id: 'bid-pkg',      title: 'Bid Package Summary',     icon: Package,         desc: 'Bid packages with trade, due date, and status',  query: 'All bid packages with trade, due date, and status' },
   { id: 'timesheet',    title: 'Timesheet Report',        icon: Clock,           desc: 'Weekly summary with regular and overtime hours', query: 'Weekly timesheet summary with regular and overtime hours' },
 ] as const;
+
+// What each standard report actually answers - shown on the catalog card so a
+// GC picks by the question, not the table name.
+const REPORT_ANSWERS: Record<string, string> = {
+  'pay-app':      'How much have we billed, certified, and collected?',
+  'job-cost':     'Where is the budget over or under, by cost code?',
+  'rfi-log':      'Which RFIs are open, who owes answers, and what is at risk?',
+  'change-order': 'How much has the contract grown - approved vs pending?',
+  'lien-waiver':  'Which subs still owe waivers before money can move?',
+  'insurance':    'Whose COIs are expired or expiring soon?',
+  'daily-log':    'What happened on site - crews, delays, conditions?',
+  'punch-list':   'What is still open, by trade, before closeout?',
+  'sub-perf':     'Which subs carry the most contract value and risk?',
+  'safety':       'What incidents happened, and how severe were they?',
+  'bid-pkg':      'Which packages are out, due, or awarded - and for how much?',
+  'timesheet':    'Who worked, how many hours, and how much overtime?',
+};
+
+// Date-range quick filters - resolved to concrete dates so Sage receives an
+// exact window, not a vague phrase. Empty string = all time (no clause).
+const DATE_RANGES = ['Last 30 days', 'This month', 'Last month', 'This quarter', 'Year to date'] as const;
+function rangeDates(range: string): { from: string; to: string } | null {
+  const now = new Date();
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  switch (range) {
+    case 'Last 30 days': return { from: iso(new Date(now.getTime() - 30 * 86400000)), to: iso(now) };
+    case 'This month':   return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to: iso(now) };
+    case 'Last month':   return { from: iso(new Date(now.getFullYear(), now.getMonth() - 1, 1)), to: iso(new Date(now.getFullYear(), now.getMonth(), 0)) };
+    case 'This quarter': return { from: iso(new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1)), to: iso(now) };
+    case 'Year to date': return { from: iso(new Date(now.getFullYear(), 0, 1)), to: iso(now) };
+    default: return null;
+  }
+}
 
 const SUGGESTION_CHIPS = [
   'Pay App Status', 'Open RFIs', 'Change Orders', 'Insurance Compliance',
@@ -161,6 +194,7 @@ function timeAgo(ts: number): string {
 export default function ReportsPage() {
   const [sageQuery, setSageQuery] = useState('');
   const [projectFilter, setProjectFilter] = useState('');
+  const [dateRange, setDateRange] = useState('');
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
   const [pageState, setPageState] = useState<PageState>('idle');
   const [progress, setProgress] = useState<ReportProgress>({ step: 0, pct: 5, message: 'Connecting to Sage...' });
@@ -212,7 +246,8 @@ export default function ReportsPage() {
     setProgress({ step: 0, pct: 5, message: 'Connecting to Sage...' });
     setReportResult(null);
 
-    const params = new URLSearchParams({ q });
+    const rd = rangeDates(dateRange);
+    const params = new URLSearchParams({ q: rd ? `${q} between ${rd.from} and ${rd.to}` : q });
     if (projectFilter) params.set('projectId', projectFilter);
 
     const es = new EventSource(`/api/reports/sage?${params.toString()}`);
@@ -259,7 +294,7 @@ export default function ReportsPage() {
         setPageState('idle');
       }
     };
-  }, [sageQuery, projectFilter, showError]);
+  }, [sageQuery, projectFilter, dateRange, showError]);
 
   // Cleanup on unmount
   useEffect(() => () => { esRef.current?.close(); }, []);
@@ -461,6 +496,36 @@ export default function ReportsPage() {
           >
             {pageState === 'loading' ? 'Running...' : 'Ask Sage'}
           </button>
+        </div>
+
+        {/* Date-range AutoChips - the range resolves to real dates and rides along with every query and card run */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <CalendarBlank size={13} weight="bold" color={GOLD} /> Period
+          </span>
+          {['', ...DATE_RANGES].map(rg => {
+            const active = dateRange === rg;
+            return (
+              <button
+                key={rg || 'all-time'}
+                onClick={() => setDateRange(rg)}
+                disabled={pageState === 'loading'}
+                style={{
+                  padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                  background: active ? `${GOLD}22` : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${active ? GOLD + '66' : BORDER}`,
+                  color: active ? '#FBBF24' : DIM,
+                  cursor: pageState === 'loading' ? 'not-allowed' : 'pointer',
+                  transition: 'all .15s',
+                }}
+              >
+                {rg || 'All time'}
+              </button>
+            );
+          })}
+          {(() => { const rd = rangeDates(dateRange); return rd ? (
+            <span style={{ fontSize: 11, color: DIM }}>{rd.from} to {rd.to}<AutoChip /></span>
+          ) : null; })()}
         </div>
 
         {/* Quick suggestion chips */}
@@ -718,6 +783,11 @@ export default function ReportsPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, color: TEXT, marginBottom: 3 }}>{r.title}</div>
                       <div style={{ fontSize: 12, color: DIM, lineHeight: 1.5 }}>{r.desc}</div>
+                      {REPORT_ANSWERS[r.id] && (
+                        <div style={{ fontSize: 11.5, color: 'rgba(251,191,36,0.8)', lineHeight: 1.45, marginTop: 5 }}>
+                          Answers: {REPORT_ANSWERS[r.id]}
+                        </div>
+                      )}
                     </div>
                     {hoveredCard === r.id && (
                       <div style={{ color: GOLD, fontSize: 16, alignSelf: 'center', flexShrink: 0, marginLeft: 4, display: 'inline-flex' }}>

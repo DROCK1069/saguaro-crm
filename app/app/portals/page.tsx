@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 import { CheckCircle, XCircle, X, ArrowRight, Plus, House, HardHat, Copy, ShareNetwork, ListNumbers } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B';
 const DARK = '#1c1c1e';
@@ -38,6 +38,9 @@ function fmt(d: string | null) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
+/* Real address check — both the invite email and the portal login key off it. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string }> = {
@@ -79,6 +82,9 @@ export default function PortalsPage() {
 
   // Sub invite form
   const [subForm, setSubForm] = useState({ projectId: '', companyName: '', contactName: '', email: '' });
+
+  // True when the project select was prefilled (single-project tenant) — drives the AUTO chip.
+  const [autoProj, setAutoProj] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -140,6 +146,15 @@ export default function PortalsPage() {
 
   async function submitInvite(e: React.FormEvent) {
     e.preventDefault();
+
+    // Validate the address before anything leaves the browser — the invite
+    // email AND the passwordless portal login both key off it.
+    const email = (inviteTab === 'client' ? clientForm.clientEmail : subForm.email).trim();
+    if (!EMAIL_RE.test(email)) {
+      setInviteError('Enter a valid email address — the invite and the portal login both use it.');
+      return;
+    }
+
     setInviteLoading(true);
     setInviteError('');
     setInviteSuccess(null);
@@ -174,6 +189,15 @@ export default function PortalsPage() {
     setInviteTab(t);
     setInviteSuccess(null);
     setInviteError('');
+    // Single-project tenant: the project choice is a foregone conclusion — prefill it.
+    if (projects.length === 1) {
+      const pid = projects[0].id;
+      setClientForm(f => (f.projectId ? f : { ...f, projectId: pid }));
+      setSubForm(f => (f.projectId ? f : { ...f, projectId: pid }));
+      setAutoProj(true);
+    } else {
+      setAutoProj(false);
+    }
     setShowInvite(true);
   };
 
@@ -181,6 +205,25 @@ export default function PortalsPage() {
   // Derived counts for the KPI row (presentation only — uses already-fetched data)
   const clientActive = clientSessions.filter(s => s.status === 'active').length;
   const subActive = subSessions.filter(s => s.status === 'active').length;
+
+  // ── Portal intelligence (derived from already-fetched sessions/projects) ──
+  const activeClientSessions = clientSessions.filter(s => s.status === 'active');
+  const activeSubSessions = subSessions.filter(s => s.status === 'active');
+  const coveredProjects = new Set([
+    ...activeClientSessions.map(s => s.project_id),
+    ...activeSubSessions.map(s => s.project_id),
+  ]).size;
+  const neverOpened = activeClientSessions.filter(s => !s.last_accessed_at).length
+    + activeSubSessions.filter(s => !s.last_login_at).length;
+  const expiring30 = activeClientSessions.filter(s => {
+    if (!s.expires_at) return false;
+    const t = new Date(s.expires_at).getTime();
+    return t > Date.now() && t - Date.now() <= 30 * 86400000;
+  }).length;
+  const lastVisitTs = Math.max(0,
+    ...clientSessions.map(s => (s.last_accessed_at ? new Date(s.last_accessed_at).getTime() : 0)),
+    ...subSessions.map(s => (s.last_login_at ? new Date(s.last_login_at).getTime() : 0)));
+  const totalLinks = clientSessions.length + subSessions.length;
 
   return (
     <>
@@ -209,6 +252,35 @@ export default function PortalsPage() {
         <StatCard label="Active Sub Portals" value={loading ? '—' : String(subActive)} sub="subcontractors with access" accent={GOLD} icon={<HardHat size={19} weight="duotone" color={GOLD} />} />
         <StatCard label="Total Active Links" value={loading ? '—' : String(clientActive + subActive)} sub="secure portal links live" accent={GREEN} icon={<ShareNetwork size={19} weight="duotone" color={GREEN} />} />
       </div>
+
+      {/* Portal intelligence strip — coverage, engagement, and expiry pressure */}
+      {!loading && totalLinks > 0 && (
+        <StatStrip items={[
+          {
+            label: 'Projects Covered', value: `${coveredProjects} of ${projects.length}`,
+            sub: coveredProjects < projects.length ? `${projects.length - coveredProjects} project${projects.length - coveredProjects === 1 ? '' : 's'} without portal access` : 'every project has a live portal',
+            accent: projects.length > 0 && coveredProjects < projects.length ? GOLD : GREEN,
+          },
+          {
+            label: 'Never Opened', value: String(neverOpened),
+            accent: neverOpened > 0 ? AMBER : GREEN,
+            sub: neverOpened > 0 ? 'links sent but never visited — resend the invite' : 'every active link has been visited',
+          },
+          {
+            label: 'Expiring in 30 Days', value: String(expiring30),
+            accent: expiring30 > 0 ? RED : GREEN,
+            sub: expiring30 > 0 ? 'client links auto-expire — reinvite to extend' : 'no client links expiring soon',
+          },
+          {
+            label: 'Last Portal Visit', value: lastVisitTs > 0 ? fmt(new Date(lastVisitTs).toISOString()) : '—',
+            sub: 'most recent client or sub activity',
+          },
+          {
+            label: 'Links Issued', value: String(totalLinks),
+            sub: `${clientSessions.length} client · ${subSessions.length} sub`,
+          },
+        ]} />
+      )}
 
       {/* Workflow explainer */}
       <SectionCard title="How Portal Access Works" icon={<ListNumbers size={17} weight="duotone" color={GOLD} />} style={{ marginBottom: 24 }}>
@@ -305,12 +377,15 @@ export default function PortalsPage() {
               ) : (
                 <form onSubmit={submitInvite}>
                   {/* Project select */}
-                  <FormField label="Project">
+                  <FormField label={<>Project{autoProj && <AutoChip />}</>}>
                     <select
                       value={inviteTab === 'client' ? clientForm.projectId : subForm.projectId}
-                      onChange={e => inviteTab === 'client'
-                        ? setClientForm(f => ({ ...f, projectId: e.target.value }))
-                        : setSubForm(f => ({ ...f, projectId: e.target.value }))}
+                      onChange={e => {
+                        setAutoProj(false);
+                        const v = e.target.value;
+                        if (inviteTab === 'client') setClientForm(f => ({ ...f, projectId: v }));
+                        else setSubForm(f => ({ ...f, projectId: v }));
+                      }}
                       required
                       style={selectStyle}>
                       <option value="">Select a project…</option>
@@ -318,6 +393,7 @@ export default function PortalsPage() {
                         <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
                     </select>
+                    {autoProj && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5 }}>Your only project — preselected. The portal shows this project only.</div>}
                   </FormField>
 
                   {inviteTab === 'client' ? (
@@ -327,6 +403,7 @@ export default function PortalsPage() {
                       </FormField>
                       <FormField label="Client Email Address">
                         <input type="email" value={clientForm.clientEmail} onChange={e => setClientForm(f => ({ ...f, clientEmail: e.target.value }))} required placeholder="client@company.com" style={inputStyle} />
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5 }}>The invite is emailed here — and they can log in with this address, no password.</div>
                       </FormField>
                       <FormField label="Access Expires In">
                         <select value={clientForm.expiresInDays} onChange={e => setClientForm(f => ({ ...f, expiresInDays: e.target.value }))} style={selectStyle}>
@@ -336,6 +413,7 @@ export default function PortalsPage() {
                           <option value="365">1 year</option>
                           <option value="">Never expires</option>
                         </select>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5 }}>The link stops working after this date. You can revoke or reinvite at any time.</div>
                       </FormField>
                     </>
                   ) : (
@@ -374,7 +452,7 @@ export default function PortalsPage() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>{label}</label>
@@ -466,7 +544,7 @@ function ClientTable({ sessions, copied, revoking, resending, resendMsg, onCopy,
       <PremiumEmpty
         icon={<House size={30} weight="duotone" color={GOLD} />}
         title="No client portal access yet"
-        description="Create access for a client to get started."
+        description="Give an owner a secure, no-password window into their project — progress, schedule, photos, and invoices — through one link you can revoke at any time. The invitation email sends itself."
         action={<button onClick={onInvite} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Invite First Client</button>}
       />
     );
@@ -536,7 +614,7 @@ function SubTable({ sessions, copied, revoking, resending, resendMsg, onCopy, on
       <PremiumEmpty
         icon={<HardHat size={30} weight="duotone" color={GOLD} />}
         title="No subcontractor portal access yet"
-        description="Create access for a subcontractor to get started."
+        description="Invite a sub to a portal scoped to their work — their contract, schedule, RFIs, submittals, and shared documents. You control exactly what each subcontractor sees."
         action={<button onClick={onInvite} style={goldOutlineButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Invite First Subcontractor</button>}
       />
     );

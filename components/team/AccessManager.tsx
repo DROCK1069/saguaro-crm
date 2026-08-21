@@ -105,6 +105,9 @@ interface PendingInvite {
 /* Invites have no expires_at column — they expire 7 days after created_at. */
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+/* Invite email validation — a real address, not just any non-empty string. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /* ── style helpers ── */
 const btn = (bg: string, color = TEXT): React.CSSProperties => ({
   background: bg, color, border: 'none', borderRadius: 6, padding: '8px 18px',
@@ -528,6 +531,13 @@ export function AccessManager() {
       notify('Could not remove the assignment.', 'err');
     }
   };
+
+  /* ── invite-flow intelligence (validation + duplicate detection + role clarity) ── */
+  const inviteEmailTrim = inviteEmail.trim();
+  const inviteEmailValid = EMAIL_RE.test(inviteEmailTrim);
+  const inviteDupUser = inviteEmailTrim ? users.find(u => (u.email || '').toLowerCase() === inviteEmailTrim.toLowerCase()) : undefined;
+  const inviteDupPending = inviteEmailTrim ? pendingInvites.find(i => (i.email || '').toLowerCase() === inviteEmailTrim.toLowerCase()) : undefined;
+  const inviteRoleObj = inviteRole ? roles.find(r => r.name === inviteRole) ?? null : null;
 
   const sendInvite = async () => {
     if (!inviteEmail.trim()) return;
@@ -1210,7 +1220,16 @@ export function AccessManager() {
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle()}>Email</label>
           <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-            placeholder="name@company.com" style={inputStyle()} />
+            placeholder="name@company.com" style={{ ...inputStyle(), borderColor: inviteEmailTrim && !inviteEmailValid ? 'rgba(239,68,68,0.55)' : BORDER }} />
+          {inviteEmailTrim && !inviteEmailValid && (
+            <p style={{ color: RED, fontSize: 11, marginTop: 4, marginBottom: 0 }}>Enter a valid email address — the invite link is delivered there.</p>
+          )}
+          {inviteDupUser && (
+            <p style={{ color: AMBER, fontSize: 11, marginTop: 4, marginBottom: 0 }}>Already a team member ({inviteDupUser.name || inviteDupUser.email}) — no invite needed. Assign them a role from the Users tab instead.</p>
+          )}
+          {!inviteDupUser && inviteDupPending && (
+            <p style={{ color: AMBER, fontSize: 11, marginTop: 4, marginBottom: 0 }}>An invite to this address is already pending (sent {relTimeAgo(inviteDupPending.created_at)}) — resending resets its 7-day clock.</p>
+          )}
         </div>
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle()}>Name</label>
@@ -1223,12 +1242,36 @@ export function AccessManager() {
             <option value="">Member (default)</option>
             {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
           </select>
-          <p style={{ color: DIM, fontSize: 11, marginTop: 4 }}>An invite email is recorded and the team is notified.</p>
+          {/* Role clarity — what the selected role can actually do, before sending */}
+          {inviteRoleObj ? (
+            <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, borderRadius: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 4, background: inviteRoleObj.color, flexShrink: 0 }} />
+                <span style={{ color: TEXT, fontSize: 12.5, fontWeight: 700 }}>{inviteRoleObj.name}</span>
+                {inviteRoleObj.isBuiltIn && <span style={{ color: DIM, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Built-in</span>}
+              </div>
+              {inviteRoleObj.description && <p style={{ color: DIM, fontSize: 11.5, margin: '0 0 6px', lineHeight: 1.45 }}>{inviteRoleObj.description}</p>}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {PERM_LEVELS.slice().reverse().map(lv => {
+                  const n = Object.values(inviteRoleObj.permissions).filter(p => p === lv).length;
+                  if (!n) return null;
+                  return (
+                    <span key={lv} style={{ fontSize: 10.5, fontWeight: 700, color: permLevelColor(lv), background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 999, padding: '2px 8px' }}>
+                      {n} {lv === 'Full' ? 'Full' : lv}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <p style={{ color: DIM, fontSize: 11, marginTop: 6, marginBottom: 0 }}>Member — standard access with no elevated permissions. You can assign a granular role any time from the Users tab.</p>
+          )}
+          <p style={{ color: DIM, fontSize: 11, marginTop: 6 }}>An invite email is recorded and the team is notified. Invites expire 7 days after they are sent.</p>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={() => setShowInvite(false)} style={btn(RAISED, DIM)}>Cancel</button>
-          <button onClick={sendInvite} disabled={!inviteEmail.trim()} style={{
-            ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)', opacity: inviteEmail.trim() ? 1 : 0.5,
+          <button onClick={sendInvite} disabled={!inviteEmailValid} style={{
+            ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)', opacity: inviteEmailValid ? 1 : 0.5, cursor: inviteEmailValid ? 'pointer' : 'not-allowed',
           }}>Send Invite</button>
         </div>
       </Modal>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Globe, ArrowsLeftRight, Shield, WifiHigh, Printer, VideoCamera, HardDrives, Laptop, Phone, Plug, CellSignalFull, BatteryFull, Package, Robot, Devices, Shuffle, Gear, ChartBar, Plus, MagnifyingGlass, CheckCircle, Warning, Circle, WarningCircle, Info, Lightning, SquaresFour } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B';
 const GREEN = '#34C759';
@@ -97,6 +97,19 @@ export default function NetworkDashboard() {
   const [showSetup, setShowSetup] = useState(false);
   const [setupForm, setSetupForm] = useState({ site_type: 'commercial_office', total_sq_ft: 5000, floor_count: 1 });
   const [creating, setCreating] = useState(false);
+  // Project snapshot — names the job in the hero and grounds the setup screen.
+  const [ctx, setCtx] = useState<any>(null);
+
+  useEffect(() => {
+    if (!projectId) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -175,11 +188,18 @@ export default function NetworkDashboard() {
   if (showSetup) {
     return (
       <PremiumSurface maxWidth={1600}>
-        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+        <ModuleHero
+          eyebrow={ctx?.project?.name || 'Network Hub'}
+          eyebrowIcon={<Globe size={13} weight="fill" color={GOLD} />}
+          title="Low-Voltage &"
+          accent="IT Network"
+          subtitle="Design, document, and test this building's network — device inventory, VLAN segmentation, cable certification, WiFi coverage, and closeout-ready reports."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 360px', gap: 22, alignItems: 'start', maxWidth: 1020 }}>
           <SectionCard
             icon={<Globe size={18} weight="duotone" color={GOLD} />}
             title="Set Up Network Module"
-            subtitle="Configure your low voltage / IT network for this project."
+            subtitle={ctx?.project?.name ? `Configure the low voltage / IT network for ${ctx.project.name}.` : 'Configure your low voltage / IT network for this project.'}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
@@ -199,6 +219,7 @@ export default function NetworkDashboard() {
                   <option value="residential_mdu">Residential MDU</option>
                   <option value="mixed_use">Mixed Use</option>
                 </select>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 }}>Sets wizard defaults — VLAN plan, device density, and WiFi coverage targets.</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
@@ -209,6 +230,7 @@ export default function NetworkDashboard() {
                     onChange={e => setSetupForm({ ...setupForm, total_sq_ft: +e.target.value })}
                     style={inputStyle}
                   />
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 }}>Drives AP counts and cable-run estimates.</div>
                 </div>
                 <div>
                   <label style={{ color: MUTED, fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>Floor Count</label>
@@ -230,6 +252,14 @@ export default function NetworkDashboard() {
               </button>
             </div>
           </SectionCard>
+          <SectionCard icon={<Robot size={17} weight="duotone" color={GOLD} />} title="What You Get">
+            <FlowSteps title="" steps={[
+              { title: 'AI Network Wizard', desc: 'Describe the site — the wizard drafts the device list, VLAN plan, and IP scheme.' },
+              { title: 'Device & VLAN inventory', desc: 'Every switch, AP, and camera tracked with IP, MAC, VLAN, and location.' },
+              { title: 'Cable schedule & testing', desc: 'Label every run, log certification results, and watch the pass rate climb.' },
+              { title: 'WiFi heatmap & reports', desc: 'Coverage maps and client-ready closeout documentation.' },
+            ]} />
+          </SectionCard>
         </div>
       </PremiumSurface>
     );
@@ -239,7 +269,7 @@ export default function NetworkDashboard() {
     <PremiumSurface maxWidth={1600}>
       {/* Header */}
       <ModuleHero
-        eyebrow="Network Hub"
+        eyebrow={ctx?.project?.name || 'Network Hub'}
         eyebrowIcon={<Globe size={13} weight="fill" color={GOLD} />}
         title="Network"
         accent="Dashboard"
@@ -269,6 +299,9 @@ export default function NetworkDashboard() {
         <StatCard icon={<Warning size={19} weight="duotone" color={openAlerts > 0 ? RED : GREEN} />} label="Open Alerts" value={String(openAlerts)} accent={openAlerts > 0 ? RED : GREEN} delay={0.22} />
       </div>
 
+      {/* Quick Actions + modules, with a live readiness rail */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 22, alignItems: 'start', marginBottom: 24 }}>
+      <div style={{ minWidth: 0 }}>
       {/* Quick Actions */}
       <SectionCard
         icon={<Lightning size={17} weight="duotone" color={GOLD} />}
@@ -326,6 +359,28 @@ export default function NetworkDashboard() {
           ))}
         </div>
       </SectionCard>
+      </div>
+
+      {/* Readiness rail — derived from the live inventory */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <SectionCard icon={<CheckCircle size={17} weight="duotone" color={GOLD} />} title="Network Readiness">
+          <FlowSteps title="" steps={[
+            { title: 'Module configured', done: true, desc: `${(networkProject?.site_type || 'site').replace(/_/g, ' ')} · ${(networkProject?.total_sq_ft || 0).toLocaleString()} SF · ${networkProject?.floor_count || 1} floor${(networkProject?.floor_count || 1) > 1 ? 's' : ''}.` },
+            { title: 'Device inventory', done: devices.length > 0, desc: devices.length > 0 ? `${devices.length} device${devices.length === 1 ? '' : 's'} — ${devices.filter(d => d.status === 'online').length} online.` : 'Add devices by hand, or let the AI wizard draft the design.' },
+            { title: 'Network segmented', done: vlans.length > 0, desc: vlans.length > 0 ? `${vlans.length} VLAN${vlans.length === 1 ? '' : 's'} defined.` : 'Define VLANs to separate voice, data, cameras, and guests.' },
+            { title: 'Cabling tested', done: cables.length > 0 && testedCables === cables.length, desc: cables.length > 0 ? `${testedCables}/${cables.length} runs tested — ${passedCables} passed.` : 'Log cable runs, then record results as you certify.' },
+            { title: 'Alerts clear', done: openAlerts === 0, desc: openAlerts > 0 ? `${openAlerts} open alert${openAlerts === 1 ? '' : 's'} below need attention.` : 'No open alerts on this network.' },
+          ]} />
+        </SectionCard>
+        <SectionCard icon={<Globe size={17} weight="duotone" color={GOLD} />} title="Site Profile">
+          <InsightRow label="Site type" value={(networkProject?.site_type || '—').replace(/_/g, ' ')} />
+          <InsightRow label="Square footage" value={`${(networkProject?.total_sq_ft || 0).toLocaleString()} SF`} />
+          <InsightRow label="Floors" value={String(networkProject?.floor_count || 1)} />
+          <InsightRow label="Devices per 1k SF" value={networkProject?.total_sq_ft ? (devices.length / (networkProject.total_sq_ft / 1000)).toFixed(1) : '—'} />
+          {ctx?.project?.address && <InsightRow label="Address" value={ctx.project.address} />}
+        </SectionCard>
+      </div>
+      </div>
 
       {/* Devices by Type */}
       <SectionCard
@@ -337,7 +392,7 @@ export default function NetworkDashboard() {
           <PremiumEmpty
             icon={<Devices size={30} weight="duotone" color={GOLD} />}
             title="No devices added yet"
-            description="Add your first device to start building your network inventory."
+            description={`This ${(networkProject?.site_type || 'site').replace(/_/g, ' ')} covers ${(networkProject?.total_sq_ft || 0).toLocaleString()} SF — add devices by hand, or let the AI wizard draft the full design in one pass.`}
             action={<Link href={`/app/projects/${projectId}/network/devices`} className="pmBtn" style={goldButtonStyle}><Plus size={15} weight="bold" color="#1A1206" /> Add your first device</Link>}
             compact
           />

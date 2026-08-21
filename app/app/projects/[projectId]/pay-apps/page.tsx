@@ -4,12 +4,13 @@ import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import DragHandle, { useDragReorder } from '../../../../../components/DragHandle';
-import { Clipboard, ClipboardText, CheckCircle, FileText, CaretDown, PencilSimple, Copy, Trash, Receipt, Plus, Coins, Hourglass } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { Clipboard, ClipboardText, CheckCircle, FileText, CaretDown, PencilSimple, Copy, Trash, Receipt, Plus, Hourglass } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const SAGE='#45B37D',AMBER='#F0A63C';
-const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
+// MONEY: several DB numerics round-trip as strings — coerce before any math/format.
+const fmt = (n:number|string|null|undefined) => '$'+((Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 
 function statusBadge(s:string){
   const map:Record<string,{c:string,bg:string}> = {
@@ -24,6 +25,45 @@ function statusBadge(s:string){
     <span style={{fontSize:10,fontWeight:700,padding:'3px 9px',borderRadius:4,background:st.bg,color:st.c,textTransform:'uppercase' as const,letterSpacing:.3}}>
       {s}
     </span>
+  );
+}
+
+// Lifecycle mini pipeline — draft -> submitted -> approved -> paid (certified rides
+// between approved and paid), with waiver coverage under it once the project's lien
+// waivers load. Inline primitive: premium.tsx is shared and intentionally untouched.
+const STAGE_RANK:Record<string,number> = {draft:0,submitted:1,approved:2,certified:2.5,paid:3};
+const STAGE_LABELS = ['Draft','Submitted','Approved','Paid'];
+function MiniPipeline({status,waivers}:{status:string;waivers?:{total:number;signed:number}}){
+  const rank = STAGE_RANK[status] ?? 0;
+  const current = Math.min(3, Math.floor(rank));
+  const allSigned = !!waivers && waivers.total>0 && waivers.signed===waivers.total;
+  return (
+    <div style={{minWidth:150}} title={`Lifecycle: ${STAGE_LABELS.join(' -> ')} — now ${status}`}>
+      <div style={{display:'flex',alignItems:'center',marginBottom:5}}>
+        {STAGE_LABELS.map((label,i)=>{
+          const reached = rank>=i;
+          return (
+            <React.Fragment key={label}>
+              {i>0 && <div style={{width:16,height:2,background:reached?'rgba(245,158,11,0.55)':'rgba(255,255,255,0.14)'}}/>}
+              <div title={label} style={{
+                width:9,height:9,borderRadius:999,flexShrink:0,boxSizing:'border-box' as const,
+                background:reached?(i===3?'#3dd68c':GOLD):'transparent',
+                border:reached?'none':'1.5px solid rgba(255,255,255,0.28)',
+                boxShadow:current===i?`0 0 0 3px ${i===3?'rgba(61,214,140,0.16)':'rgba(245,158,11,0.16)'}`:'none',
+              }}/>
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:7}}>
+        {statusBadge(status)}
+        {waivers && waivers.total>0 && (
+          <span style={{fontSize:10,fontWeight:700,color:allSigned?'#3dd68c':AMBER,whiteSpace:'nowrap' as const}}>
+            {waivers.signed}/{waivers.total} waivers signed
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -43,6 +83,32 @@ export default function PayAppsPage() {
   const [copiedId, setCopiedId] = useState<string|null>(null);
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+
+  // Project intelligence + waiver coverage — fetched once on mount. The list walks
+  // in knowing the contract money and every lien waiver tied to a billing period.
+  const [ctx,setCtx] = useState<any>(null);
+  const [waiversByApp,setWaiversByApp] = useState<Record<string,{total:number;signed:number}>>({});
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if(!c.error) setCtx(c);
+      }catch{}
+      try{
+        const r = await fetch(`/api/lien-waivers/list?projectId=${projectId}`);
+        const d = await r.json();
+        const map:Record<string,{total:number;signed:number}> = {};
+        for(const w of (d.lienWaivers||[])){
+          if(!w?.pay_application_id) continue;
+          const m = map[w.pay_application_id] || (map[w.pay_application_id]={total:0,signed:0});
+          m.total++;
+          if(w.status==='signed') m.signed++;
+        }
+        setWaiversByApp(map);
+      }catch{}
+    })();
+  },[projectId]);
 
   const { dragHandlers, draggingIndex } = useDragReorder(payApps, (reordered) => {
     setPayApps(reordered);
@@ -169,8 +235,19 @@ export default function PayAppsPage() {
     }
   }
 
-  const totalCertified = payApps.filter(p=>p.status==='approved'||p.status==='certified'||p.status==='paid').reduce((s:number,p:any)=>s+(p.current_payment_due||0),0);
-  const retainageHeld  = payApps.reduce((s:number,p:any)=>s+(p.retainage_amount||0),0);
+  const totalCertified = payApps.filter(p=>p.status==='approved'||p.status==='certified'||p.status==='paid').reduce((s:number,p:any)=>s+(Number(p.current_payment_due)||0),0);
+  const retainageHeld  = payApps.reduce((s:number,p:any)=>s+(Number(p.total_retainage ?? p.retainage_amount)||0),0);
+
+  // Contract intelligence (from /api/project-context) + waiver coverage rollup
+  const money    = ctx?.money;
+  const original = Number(money?.originalContract)||0;
+  const coTotal  = Number(money?.approvedCoTotal)||0;
+  const revised  = Number(money?.revisedContract)||(original+coTotal);
+  const ctxBilled= Number(money?.billedToDate)||0;
+  const ctxPaid  = Number(money?.paidToDate)||0;
+  const subCount = (ctx?.subs||[]).length;
+  const outstandingCertified = Math.max(0, totalCertified - ctxPaid);
+  const waiverTotals = Object.values(waiversByApp).reduce((a,w)=>({total:a.total+w.total,signed:a.signed+w.signed}),{total:0,signed:0});
   const pendingApproval = payApps.filter((p:any)=>p.status==='submitted').length;
 
   return (
@@ -199,6 +276,18 @@ export default function PayAppsPage() {
         }
       />
 
+      {/* Contract intelligence strip — what the system already knows */}
+      {ctx && (
+        <StatStrip items={[
+          {label:'Original Contract', value:fmt(original), sub:'G702 line 1'},
+          {label:'Approved COs', value:(coTotal>=0?'+':'')+fmt(coTotal), accent:coTotal>0?'#3dd68c':undefined, sub:`${Number(money?.approvedCoCount)||0} approved${Number(money?.pendingCoCount)?` · ${money.pendingCoCount} pending`:''}`},
+          {label:'Revised Contract', value:fmt(revised), sub:'contract sum to date'},
+          {label:'Billed to Date', value:fmt(ctxBilled), sub:`${Number(money?.billedPct)||0}% of revised`},
+          {label:'Retainage Held', value:fmt(retainageHeld), sub:`at ${Number(money?.retainagePct)||10}% per contract`},
+          {label:'Paid to Date', value:fmt(ctxPaid), accent:ctxPaid>0?'#3dd68c':undefined, sub:outstandingCertified>0?`${fmt(outstandingCertified)} certified, unpaid`:'all certified money collected'},
+        ]}/>
+      )}
+
       {/* Error */}
       {error && (
         <div style={{background:'rgba(192,48,48,.12)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:8,padding:'12px 16px',marginBottom:20,color:RED,fontSize:13}}>
@@ -211,24 +300,25 @@ export default function PayAppsPage() {
         <StatCard
           icon={<ClipboardText size={19} weight="duotone" color={GOLD} />}
           label="Total Apps" value={String(payApps.length)} accent={GOLD}
-          sub={payApps.length===1?'1 application':`${payApps.length} applications`} delay={0.02}
+          sub={money?.lastPayApp?`latest #${money.lastPayApp.appNumber} · ${String(money.lastPayApp.status||'draft').replace(/_/g,' ')}`:(payApps.length===1?'1 application':`${payApps.length} applications`)} delay={0.02}
         />
         <StatCard
           icon={<CheckCircle size={19} weight="duotone" color={SAGE} />}
           label="Total Certified" value={fmt(totalCertified)} accent={SAGE}
-          sub="approved / paid" delay={0.06}
+          sub={ctxPaid>0?`${fmt(ctxPaid)} of it collected`:'approved / paid'} delay={0.06}
         />
         <StatCard
-          icon={<Coins size={19} weight="duotone" color={AMBER} />}
-          label="Retainage Held" value={fmt(retainageHeld)} accent={AMBER}
-          sub="held back" delay={0.10}
+          icon={<FileText size={19} weight="duotone" color={waiverTotals.total>0&&waiverTotals.signed===waiverTotals.total?SAGE:AMBER} />}
+          label="Lien Waivers" value={waiverTotals.total>0?`${waiverTotals.signed}/${waiverTotals.total}`:'—'}
+          accent={waiverTotals.total>0?(waiverTotals.signed===waiverTotals.total?SAGE:AMBER):undefined}
+          sub={waiverTotals.total>0?'signed — payment is waiver-gated':'generate at owner approval'} delay={0.10}
         />
         <StatCard
           icon={<Hourglass size={19} weight="duotone" color={AMBER} />}
           label="Pending Approval"
           value={String(pendingApproval)}
           accent={pendingApproval>0?AMBER:undefined}
-          sub="submitted" delay={0.14}
+          sub={pendingApproval>0?'awaiting owner sign-off':'nothing awaiting the owner'} delay={0.14}
         />
       </div>
 
@@ -239,23 +329,41 @@ export default function PayAppsPage() {
         </SectionCard>
       )}
 
-      {/* Empty */}
+      {/* Empty — teach the G702 flow instead of a bare button */}
       {!loading && payApps.length===0 && (
-        <SectionCard>
-          <PremiumEmpty
-            icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
-            title="No pay applications yet"
-            description="Create your first AIA G702/G703 pay application to bill the owner."
-            action={
-              <Link
-                href={`/app/projects/${projectId}/pay-apps/new`}
-                style={goldButtonStyle}
-                className="pmBtn"
-              >
-                <Plus size={15} weight="bold" /> Create First Pay Application
-              </Link>
-            }
-          />
+        <SectionCard flush>
+          <div style={{display:'grid',gridTemplateColumns:ctx?'minmax(0,1fr) 380px':'1fr',alignItems:'stretch'}}>
+            <PremiumEmpty
+              icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
+              title={revised>0?`${fmt(revised)} under contract — nothing billed yet`:'No pay applications yet'}
+              description={revised>0
+                ? `Application #1 builds your schedule of values against the ${fmt(revised)} contract${coTotal>0?` (${fmt(original)} base + ${fmt(coTotal)} approved COs)`:''}. Every application after it rolls the SOV forward — you only enter each period's work.`
+                : 'A pay application is the AIA G702/G703 packet that bills the owner for a period of work. Build the schedule of values once — it rolls forward automatically every period after.'}
+              action={
+                <Link
+                  href={`/app/projects/${projectId}/pay-apps/new`}
+                  style={goldButtonStyle}
+                  className="pmBtn"
+                >
+                  <Plus size={15} weight="bold" /> Create Application #1
+                </Link>
+              }
+            />
+            {ctx && (
+              <div style={{borderLeft:'1px solid rgba(255,255,255,0.08)',padding:'22px 24px'}}>
+                <FlowSteps title="How G702 billing works" steps={[
+                  {title:'Build the SOV & bill the period',desc:'Scheduled values, work completed, stored materials — retainage and payment due compute themselves.'},
+                  {title:'Submit to the owner',desc:'The G702/G703 packet goes out with a one-click owner approval link.'},
+                  {title:'Approval generates lien waivers',desc: subCount>0?`Conditional waivers for your ${subCount} sub${subCount===1?'':'s'}, each sized to their share of the period.`:'Conditional waivers for every sub on the job, sized to their share of the period.'},
+                  {title:'Payment is waiver-gated',desc:'Mark Paid is blocked until required waivers are signed — then paid-to-date and retainage update the ledger.'},
+                ]}/>
+                <div style={{height:1,background:'rgba(255,255,255,0.08)',margin:'16px 0 10px'}}/>
+                <InsightRow label="Revised contract" value={fmt(revised)} strong/>
+                <InsightRow label="Retainage rate" value={`${Number(money?.retainagePct)||10}%`}/>
+                <InsightRow label="Subs on the job" value={String(subCount)}/>
+              </div>
+            )}
+          </div>
         </SectionCard>
       )}
 
@@ -279,7 +387,7 @@ export default function PayAppsPage() {
                   <th style={{padding:'10px 8px',width:28,borderBottom:`1px solid ${BORDER}`}}>
                     <input type="checkbox" checked={bulkSelected.size === payApps.length && payApps.length > 0} onChange={() => { if (bulkSelected.size === payApps.length) setBulkSelected(new Set()); else setBulkSelected(new Set(payApps.map((p:any) => p.id))); }} style={{accentColor:GOLD,cursor:'pointer'}} />
                   </th>
-                  {['App #','Period From','Period To','Status','Contract Sum','This Period','Retainage','Payment Due','G702 PDF'].map(h=>(
+                  {['App #','Period','Lifecycle','Completed to Date','This Period','Retainage','Payment Due','G702 PDF'].map(h=>(
                     <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.5,color:DIM,borderBottom:`1px solid ${BORDER}`}}>
                       {h}
                     </th>
@@ -304,17 +412,23 @@ export default function PayAppsPage() {
                     <td style={{padding:'4px 8px'}} onClick={e=>e.stopPropagation()}>
                       <input type="checkbox" checked={bulkSelected.has(pa.id)} onChange={()=>toggleBulk(pa.id)} style={{accentColor:GOLD,cursor:'pointer'}} />
                     </td>
-                    <td style={{padding:'12px 14px',color:GOLD,fontWeight:800}}>#{pa.application_number}</td>
-                    <td style={{padding:'12px 14px',color:DIM}}>
-                      {pa.period_from ? new Date(pa.period_from+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}
-                    </td>
-                    <td style={{padding:'12px 14px',color:DIM}}>
+                    <td style={{padding:'12px 14px',color:GOLD,fontWeight:800,whiteSpace:'nowrap' as const}}>#{pa.app_number ?? pa.application_number}</td>
+                    <td style={{padding:'12px 14px',color:DIM,whiteSpace:'nowrap' as const}}>
+                      {pa.period_from ? new Date(pa.period_from+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}
+                      {' – '}
                       {pa.period_to ? new Date(pa.period_to+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}
                     </td>
-                    <td style={{padding:'12px 14px'}}>{statusBadge(pa.status||'draft')}</td>
-                    <td style={{padding:'12px 14px',color:TEXT}}>{fmt(pa.contract_sum||0)}</td>
+                    <td style={{padding:'12px 14px'}}>
+                      <MiniPipeline status={pa.status||'draft'} waivers={waiversByApp[pa.id]}/>
+                    </td>
+                    <td style={{padding:'12px 14px',color:TEXT,whiteSpace:'nowrap' as const}}>
+                      {(()=>{ const done=Number(pa.total_completed_stored ?? pa.total_completed)||0; const cs=Number(pa.contract_sum_to_date ?? pa.contract_sum)||0; return (<>
+                        <span style={{fontWeight:700}}>{fmt(done)}</span>
+                        {cs>0 && <div style={{fontSize:10.5,color:'rgba(255,255,255,0.45)',marginTop:2}}>{Math.round((done/cs)*100)}% of {fmt(cs)}</div>}
+                      </>); })()}
+                    </td>
                     <td style={{padding:'12px 14px',color:TEXT}}>{fmt(pa.this_period||0)}</td>
-                    <td style={{padding:'12px 14px',color:ORANGE}}>{fmt(pa.retainage_amount||0)}</td>
+                    <td style={{padding:'12px 14px',color:ORANGE}}>{fmt(pa.total_retainage ?? pa.retainage_amount)}</td>
                     <td style={{padding:'12px 14px',position:'relative' as const}} onClick={e=>e.stopPropagation()}>
                       {deleteId===pa.id ? (
                         <div style={{display:'flex',alignItems:'center',gap:6}}>

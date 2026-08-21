@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { CurrencyDollar, CheckCircle, ArrowsClockwise, Warning, Question, NotePencil, Trophy, Handshake, Buildings, FileText, WarningOctagon, Clock, Bell, X, ArrowRight } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldOutlineButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldOutlineButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B';
 const DARK = '#0a0a0a';
@@ -165,6 +165,17 @@ export default function NotificationsPage() {
         }
       />
 
+      {/* Activity intelligence strip — what the feed holds right now */}
+      {!loading && notifications.length > 0 && (
+        <StatStrip items={[
+          { label: 'Unread', value: String(unreadCount), accent: unreadCount > 0 ? GOLD : undefined, sub: unreadCount > 0 ? 'waiting on you' : 'all caught up' },
+          { label: 'In the Feed', value: String(notifications.length), sub: 'most recent 100 events' },
+          { label: 'Money Events', value: String((typeCounts['Pay App'] || 0) + (typeCounts['Change Order'] || 0)), sub: 'pay apps + change orders' },
+          { label: 'Alerts', value: String(typeCounts['Alert'] || 0), accent: (typeCounts['Alert'] || 0) > 0 ? RED : undefined, sub: (typeCounts['Alert'] || 0) > 0 ? 'budget / overdue flags' : 'nothing flagged' },
+          { label: 'Latest', value: notifications[0] ? timeAgo(notifications[0].created_at) : '—', sub: notifications[0] ? getConfig(notifications[0].type).label : undefined },
+        ]} />
+      )}
+
       {/* Read filter tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {(['all', 'unread'] as const).map(f => (
@@ -192,8 +203,15 @@ export default function NotificationsPage() {
         ) : displayed.length === 0 ? (
           <PremiumEmpty
             icon={<Bell size={30} weight="duotone" color={GOLD} />}
-            title={readFilter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
-            description="Activity from your projects will appear here."
+            title={readFilter === 'unread' ? 'No unread notifications' : typeFilter !== 'All' ? `No ${typeFilter} notifications` : 'No notifications yet'}
+            description={readFilter === 'unread' && notifications.length > 0
+              ? 'Everything in the feed has been read. New activity lands here the moment it happens.'
+              : typeFilter !== 'All' && notifications.length > 0
+                ? `Nothing filed under ${typeFilter} yet — switch back to All to see the full feed.`
+                : 'This feed fills itself as the job moves: pay apps submitted and approved, RFIs asked and answered, bids received, change orders signed, insurance expiring, and budget or overdue alerts — each with a one-click jump to the record.'}
+            action={(readFilter === 'unread' || typeFilter !== 'All') && notifications.length > 0 ? (
+              <button onClick={() => { setReadFilter('all'); setTypeFilter('All'); }} style={ghostButtonStyle} className="pmBtn">Show All Notifications</button>
+            ) : undefined}
           />
         ) : (
           displayed.map((n, i) => {

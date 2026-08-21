@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Badge, Btn, Table, T } from '@/components/ui/shell';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { CheckCircle, XCircle, Clipboard, Warning, ShieldCheck } from '@phosphor-icons/react';
 
 interface ComplianceSub {
@@ -51,6 +51,27 @@ export default function CompliancePage() {
   const [prequaling, setPrequaling] = useState<string | null>(null);
   const [prequals, setPrequals] = useState<Record<string, PrequalResult>>({});
 
+  // Live compliance intelligence — /api/compliance scores every sub from the
+  // real tables (insurance_certificates, w9_requests, lien_waivers) and
+  // /api/project-context supplies the roster. Merged into the matrix by name.
+  const [ctx, setCtx] = useState<any>(null);
+  const [scored, setScored] = useState<any[]>([]);
+  const [scoredSummary, setScoredSummary] = useState<any>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+      try {
+        const r = await fetch(`/api/compliance?projectId=${projectId}`);
+        const d = await r.json();
+        if (Array.isArray(d.subs)) { setScored(d.subs); setScoredSummary(d.summary || null); }
+      } catch {}
+    })();
+  }, [projectId]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -80,8 +101,49 @@ export default function CompliancePage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const compliantCount = subs.filter(s => s.coi_status === 'active' && s.license_status !== 'expired' && s.license_status !== 'missing').length;
-  const expiredCOIs = subs.filter(s => s.coi_status === 'expired' || s.coi_status === 'expiring').length;
+  const norm = (v: any) => String(v || '').toLowerCase().trim();
+  const scoredByName = new Map<string, any>(scored.map((s: any) => [norm(s.name), s]));
+  const ctxSubs = (ctx?.subs || []) as any[];
+
+  // Unified matrix: the contracts-derived rows enriched with live scores, plus
+  // any scored subs and roster members those rows miss. One list, no blind spots.
+  type MatrixRow = ComplianceSub & { live?: any };
+  const seenNames = new Set(subs.map(s => norm(s.name)).filter(Boolean));
+  const merged: MatrixRow[] = subs.map(s => ({ ...s, live: scoredByName.get(norm(s.name)) }));
+  for (const sc of scored) {
+    if (!norm(sc.name) || seenNames.has(norm(sc.name))) continue;
+    seenNames.add(norm(sc.name));
+    merged.push({
+      id: sc.id, name: sc.name, trade: sc.trade || '', contract_amount: Number(sc.contract_amount) || 0,
+      coi_status: 'pending', coi_expiry: null, license_status: 'pending', license_number: '',
+      w9_status: 'pending', is_prevailing_wage: false, live: sc,
+    });
+  }
+  for (const rs of ctxSubs) {
+    if (!norm(rs.companyName) || seenNames.has(norm(rs.companyName))) continue;
+    seenNames.add(norm(rs.companyName));
+    merged.push({
+      id: rs.id, name: rs.companyName, trade: rs.trade || '', contract_amount: Number(rs.contractAmount) || 0,
+      coi_status: 'pending', coi_expiry: null, license_status: 'pending', license_number: '',
+      w9_status: 'pending', is_prevailing_wage: false, live: scoredByName.get(norm(rs.companyName)),
+    });
+  }
+
+  // Live-first status readers: real table data when the compliance API has it,
+  // the contracts-derived fields otherwise.
+  const coiStateOf = (s: MatrixRow) => s.live
+    ? ((Number(s.live.insurance?.active_certs) || 0) > 0 ? ((Number(s.live.insurance?.expiring_certs) || 0) > 0 ? 'expiring' : 'active') : 'missing')
+    : s.coi_status;
+  const w9StateOf = (s: MatrixRow) => {
+    if (!s.live) return s.w9_status;
+    const w = String(s.live.w9?.status || '');
+    return (w === 'submitted' || w === 'approved' || w === 'received') ? 'on_file' : w === 'pending' ? 'pending' : 'not_requested';
+  };
+
+  const compliantCount = scoredSummary ? Number(scoredSummary.compliant) || 0 : subs.filter(s => s.coi_status === 'active' && s.license_status !== 'expired' && s.license_status !== 'missing').length;
+  const expiredCOIs = scored.length > 0
+    ? merged.filter(s => { const c = coiStateOf(s); return c === 'expired' || c === 'expiring' || c === 'missing'; }).length
+    : subs.filter(s => s.coi_status === 'expired' || s.coi_status === 'expiring').length;
   const missingLicenses = subs.filter(s => s.license_status === 'missing' || s.license_status === 'expired').length;
   const wageViolations = subs.filter(s => s.is_prevailing_wage && isPublicProject).length;
 
@@ -144,7 +206,7 @@ export default function CompliancePage() {
         eyebrowIcon={<ShieldCheck size={13} weight="fill" color="#F59E0B" />}
         title="Compliance"
         accent="Dashboard"
-        subtitle={`Insurance, licensing, and wage compliance · ${subs.length} subcontractors`}
+        subtitle={`Insurance, licensing, W-9, and lien-waiver compliance · ${merged.length} subcontractor${merged.length === 1 ? '' : 's'} tracked`}
         actions={
           <>
             {isPublicProject && (
@@ -170,10 +232,21 @@ export default function CompliancePage() {
         }
       />
 
+      {/* Compliance intelligence strip — live scores from certs, W-9s, and waivers */}
+      {scoredSummary && (
+        <StatStrip items={[
+          { label: 'Subs Tracked', value: String(merged.length), sub: ctxSubs.length ? `${ctxSubs.length} on the project roster` : 'from live compliance tables' },
+          { label: 'Compliant', value: String(Number(scoredSummary.compliant) || 0), accent: '#3dd68c', sub: 'score 80+ — cleared to work' },
+          { label: 'At Risk', value: String(Number(scoredSummary.at_risk) || 0), accent: Number(scoredSummary.at_risk) > 0 ? '#f59e0b' : undefined, sub: 'gaps to close this month' },
+          { label: 'Non-Compliant', value: String(Number(scoredSummary.non_compliant) || 0), accent: Number(scoredSummary.non_compliant) > 0 ? '#ff7070' : '#3dd68c', sub: 'hold payment and site access' },
+          { label: 'Avg Score', value: `${Number(scoredSummary.avg_score) || 0}/100`, sub: 'W-9 25 · insurance 40 · waivers 35' },
+        ]} />
+      )}
+
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
         <StatCard icon={<CheckCircle size={19} weight="duotone" color={T.green} />} label="Compliant Subs" value={String(compliantCount)} accent={T.green} delay={0.02} />
-        <StatCard icon={<XCircle size={19} weight="duotone" color={T.red} />} label="Expired COIs" value={String(expiredCOIs)} accent={expiredCOIs > 0 ? T.red : undefined} delay={0.06} />
+        <StatCard icon={<XCircle size={19} weight="duotone" color={T.red} />} label="COI Gaps" value={String(expiredCOIs)} accent={expiredCOIs > 0 ? T.red : undefined} delay={0.06} />
         <StatCard icon={<Clipboard size={19} weight="duotone" color={T.muted} />} label="Missing Licenses" value={String(missingLicenses)} accent={missingLicenses > 0 ? T.amber : undefined} delay={0.10} />
         <StatCard icon={<Warning size={19} weight="duotone" color={T.amber} />} label="Wage Flags" value={String(wageViolations)} accent={wageViolations > 0 ? T.amber : undefined} delay={0.14} />
       </div>
@@ -195,24 +268,41 @@ export default function CompliancePage() {
       <SectionCard title="Subcontractor Compliance" icon={<ShieldCheck size={17} weight="duotone" color="#F59E0B" />} flush>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: T.muted }}>Loading...</div>
+        ) : merged.length === 0 ? (
+          <PremiumEmpty
+            icon={<ShieldCheck size={30} weight="duotone" color="#F59E0B" />}
+            title="No subcontractors to track yet"
+            description="Subs join this matrix when you add them to the project roster or award a bid package. From then on their COI expiry, W-9, license, and lien-waiver status roll up here — and the award gate blocks buyout to anyone missing a W-9 or carrying lapsed insurance."
+            action={<a href={`/app/projects/${projectId}/bid-packages`} className="pmBtn" style={goldButtonStyle}>Go to Bid Packages</a>}
+          />
         ) : (
           <Table
-            headers={['Subcontractor', 'Trade', 'Contract', 'COI Status', 'COI Expiry', 'License', 'W-9', 'Actions']}
-            rows={subs.map(s => [
+            headers={['Subcontractor', 'Trade', 'Contract', 'COI', 'COI Expiry', 'License', 'W-9', 'Waivers', 'Score', 'Actions']}
+            rows={merged.map(s => {
+              const coi = coiStateOf(s);
+              const w9 = w9StateOf(s);
+              const lw = s.live?.lien_waivers;
+              return [
               <span key="n" style={{ fontWeight: 600 }}>{s.name}</span>,
               <span key="t" style={{ color: T.muted }}>{s.trade}</span>,
-              <span key="c" style={{ color: T.white }}>${s.contract_amount.toLocaleString()}</span>,
-              <Badge key="cs" label={STATUS_LABEL[s.coi_status] || s.coi_status} color={STATUS_BADGE[s.coi_status] || 'muted'} />,
-              <span key="ce" style={{ color: s.coi_status === 'expired' ? T.red : s.coi_status === 'expiring' ? T.amber : T.muted, whiteSpace: 'nowrap' }}>
-                {s.coi_expiry || '---'}
+              <span key="c" style={{ color: T.white }}>${(Number(s.contract_amount) || 0).toLocaleString()}</span>,
+              <Badge key="cs" label={STATUS_LABEL[coi] || coi} color={STATUS_BADGE[coi] || 'muted'} />,
+              <span key="ce" style={{ color: coi === 'expired' || coi === 'missing' ? T.red : coi === 'expiring' ? T.amber : T.muted, whiteSpace: 'nowrap' }}>
+                {s.coi_expiry || (s.live ? ((Number(s.live.insurance?.active_certs) || 0) > 0 ? `${s.live.insurance.active_certs} active cert${Number(s.live.insurance.active_certs) === 1 ? '' : 's'}` : 'none on file') : '---')}
               </span>,
               <Badge key="ls" label={STATUS_LABEL[s.license_status] || s.license_status} color={STATUS_BADGE[s.license_status] || 'muted'} />,
-              <Badge key="ws" label={STATUS_LABEL[s.w9_status] || s.w9_status} color={STATUS_BADGE[s.w9_status] || 'muted'} />,
+              <Badge key="ws" label={STATUS_LABEL[w9] || w9} color={STATUS_BADGE[w9] || 'muted'} />,
+              <span key="lw" style={{ color: lw ? (Number(lw.pending) > 0 ? T.amber : T.green) : T.muted, whiteSpace: 'nowrap', fontSize: 12 }}>
+                {lw ? (Number(lw.total) > 0 ? `${lw.signed}/${lw.total} signed` : 'none yet') : '---'}
+              </span>,
+              <span key="sc" style={{ fontWeight: 800, whiteSpace: 'nowrap', color: s.live ? (Number(s.live.score) >= 80 ? T.green : Number(s.live.score) >= 50 ? T.amber : T.red) : T.muted }}>
+                {s.live ? `${s.live.score}/100` : '---'}
+              </span>,
               <div key="act" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                {(s.coi_status === 'expired' || s.coi_status === 'expiring') && (
+                {(coi === 'expired' || coi === 'expiring' || coi === 'missing') && (
                   <Btn size="sm" variant="ghost" onClick={() => requestCOI(s.id, s.name)}>Request COI</Btn>
                 )}
-                <Btn size="sm" variant="ghost" onClick={() => scorePrequal(s)} disabled={prequaling === s.id}>
+                <Btn size="sm" variant="ghost" onClick={() => scorePrequal({ ...s, live: undefined } as any)} disabled={prequaling === s.id}>
                   {prequaling === s.id ? 'Scoring...' : prequals[s.id] ? 'Re-Score' : 'AI Score'}
                 </Btn>
                 {prequals[s.id] && (
@@ -225,7 +315,7 @@ export default function CompliancePage() {
                   </span>
                 )}
               </div>,
-            ])}
+            ];})}
           />
         )}
       </SectionCard>

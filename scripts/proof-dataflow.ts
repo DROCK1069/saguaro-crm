@@ -18,7 +18,32 @@ const check = (name: string, ok: boolean, detail: string) => {
   ok ? pass++ : fail++;
 };
 
+/** A crashed run must never strand fixtures in production: purge every row from
+ *  ANY prior CLAUDE-PROOF run (children first) before creating this run's. */
+async function purgeStrandedFixtures() {
+  const { data: stale } = await db.from('projects').select('id').like('name', 'CLAUDE-PROOF%');
+  const ids = (stale || []).map((p: any) => p.id);
+  if (ids.length) {
+    for (const t of ['lien_waivers', 'schedule_of_values', 'pay_applications', 'change_orders',
+                     'bid_analytics', 'commitments', 'contracts', 'budget_lines', 'project_subcontractors',
+                     'schedule_tasks', 'cost_entries', 'inspections', 'safety_plans', 'project_contacts',
+                     'w9_requests', 'purchase_orders', 'notifications', 'bid_submissions', 'bid_packages']) {
+      await db.from(t).delete().in('project_id', ids);
+    }
+    await db.from('projects').delete().in('id', ids);
+    console.log(`purged ${ids.length} stranded fixture project(s) from prior crashed runs`);
+  }
+  const { data: staleSubs } = await db.from('subcontractors').select('id').like('company_name', 'CLAUDE-PROOF%');
+  const subIds = (staleSubs || []).map((s: any) => s.id);
+  if (subIds.length) {
+    await db.from('project_subcontractors').delete().in('subcontractor_id', subIds);
+    await db.from('subcontractors').delete().in('id', subIds);
+    console.log(`purged ${subIds.length} stranded fixture subcontractor(s)`);
+  }
+}
+
 async function main() {
+  await purgeStrandedFixtures();
   // ── fixture: tenant borrowed from an existing project (never mutated) ──
   const { data: anyProject } = await db.from('projects').select('tenant_id').limit(1).single();
   const tenantId = (anyProject as any).tenant_id;

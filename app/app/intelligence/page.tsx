@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChartLineUp, ChartBar, SquaresFour, Warning, Heartbeat, Selection } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF';
 // Desert-dusk semantic palette — harmonized with the dashboard (muted emerald,
@@ -112,9 +112,9 @@ export default function IntelligencePage() {
         const rfis = d.rfis || [];
         const subs = d.subs || [];
 
-        const contractAmount = p.contract_amount || 0;
+        const contractAmount = Number(p.contract_amount) || 0;
         const approvedCOs = cos.filter((c: any) => c.status === 'approved');
-        const coTotal = approvedCOs.reduce((s: number, co: any) => s + (co.amount || 0), 0);
+        const coTotal = approvedCOs.reduce((s: number, co: any) => s + (Number(co.amount) || 0), 0);
 
         // Historical CO approval rate — real signal from this project's decided change
         // orders (approved vs. approved+rejected). Not a forecast; only shown when the
@@ -124,7 +124,7 @@ export default function IntelligencePage() {
         const coDecidedCount = coApprovedCount + rejectedCOs.length;
         const coApprovalRate = coDecidedCount > 0 ? Math.round((coApprovedCount / coDecidedCount) * 100) : 0;
         const adjustedContract = contractAmount + coTotal;
-        const totalBilled = payApps.length > 0 ? (payApps[0].total_completed_stored || 0) : 0;
+        const totalBilled = payApps.length > 0 ? (Number(payApps[0].total_completed_stored) || 0) : 0;
         const burnRate = adjustedContract > 0 ? (totalBilled / adjustedContract) * 100 : 0;
 
         // Schedule performance estimate
@@ -147,7 +147,7 @@ export default function IntelligencePage() {
         const openRfis = rfis.filter((r: any) => r.status === 'open' || r.status === 'pending').length;
 
         // Retainage
-        const retainageHeld = payApps.reduce((s: number, pa: any) => s + (pa.retainage_held || 0), 0);
+        const retainageHeld = payApps.reduce((s: number, pa: any) => s + (Number(pa.retainage_held) || 0), 0);
 
         // Sub health
         const activeSubs = subs.filter((s: any) => s.status === 'active' || s.status === 'approved').length;
@@ -208,6 +208,17 @@ export default function IntelligencePage() {
   const maxRet = Math.max(...selected.map(m => m.retainageHeld), 1);
 
   const barColors = ['#F59E0B', '#3dd68c', '#5ba3f5', '#e06be0', '#ff7070'];
+
+  // Portfolio roll-up - real sums across the selected projects (Number-guarded:
+  // DB numerics can round-trip as strings).
+  const totContract = selected.reduce((s, m) => s + (Number(m.contractAmount) || 0), 0);
+  const totBilled = selected.reduce((s, m) => s + (Number(m.totalBilled) || 0), 0);
+  const totCO = selected.reduce((s, m) => s + (Number(m.coTotal) || 0), 0);
+  const totCoCount = selected.reduce((s, m) => s + (Number(m.coCount) || 0), 0);
+  const totRfi = selected.reduce((s, m) => s + (Number(m.openRfis) || 0), 0);
+  const totRet = selected.reduce((s, m) => s + (Number(m.retainageHeld) || 0), 0);
+  const totActiveSubs = selected.reduce((s, m) => s + (Number(m.activeSubs) || 0), 0);
+  const totSubs = selected.reduce((s, m) => s + (Number(m.subCount) || 0), 0);
 
   if (loading) {
     return (
@@ -273,7 +284,7 @@ export default function IntelligencePage() {
                     <div>
                       <div style={{ fontSize: 13, color: TEXT, fontWeight: 600 }}>{p.name}</div>
                       <div style={{ fontSize: 11, color: DIM }}>
-                        {fmt(p.contract_amount)} &middot; {p.status}
+                        {fmt(Number(p.contract_amount) || 0)} &middot; {p.status}
                       </div>
                     </div>
                   </label>
@@ -303,17 +314,36 @@ export default function IntelligencePage() {
 
       {selected.length === 0 && !loadingMetrics && (
         <SectionCard>
-          <PremiumEmpty
-            icon={<Selection size={30} weight="duotone" color={GOLD} />}
-            title="No projects selected"
-            description='Click "Select Projects" to choose projects for comparison.'
-            action={<button onClick={() => setSelectorOpen(true)} style={goldButtonStyle} className="pmBtn">Select Projects</button>}
-          />
+          {projects.length === 0 ? (
+            <PremiumEmpty
+              icon={<Selection size={30} weight="duotone" color={GOLD} />}
+              title="No projects to analyze yet"
+              description="Intelligence compares budget burn, schedule performance, change-order risk, retainage, and sub health side by side. Create your first project and this page builds itself from pay apps, COs, RFIs, and sub rosters - no setup needed."
+              action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn">Go to Projects</Link>}
+            />
+          ) : (
+            <PremiumEmpty
+              icon={<Selection size={30} weight="duotone" color={GOLD} />}
+              title="No projects selected"
+              description={`You have ${projects.length} project${projects.length === 1 ? '' : 's'} available - pick up to 5 to compare budget burn, CO risk, open RFIs, retainage, and sub health side by side.`}
+              action={<button onClick={() => setSelectorOpen(true)} style={goldButtonStyle} className="pmBtn">Select Projects</button>}
+            />
+          )}
         </SectionCard>
       )}
 
       {selected.length > 0 && (
         <>
+          {/* Portfolio pulse - what the selected projects add up to */}
+          <StatStrip items={[
+            { label: 'Combined Contract', value: fmtK(totContract), sub: `across ${selected.length} project${selected.length === 1 ? '' : 's'}` },
+            { label: 'Billed to Date', value: fmtK(totBilled), sub: `${pct(totBilled, totContract)}% of combined contract` },
+            { label: 'Approved COs', value: fmtK(totCO), sub: `${totCoCount} change order${totCoCount === 1 ? '' : 's'} logged`, accent: totCO > 0 ? AMBER : undefined },
+            { label: 'Open RFIs', value: String(totRfi), accent: totRfi > 10 ? RED : totRfi > 5 ? AMBER : undefined, sub: totRfi > 0 ? 'awaiting answers' : 'all answered' },
+            { label: 'Retainage Held', value: fmtK(totRet), accent: GOLD, sub: 'releases at closeout' },
+            { label: 'Subcontractors', value: `${totActiveSubs}/${totSubs}`, sub: 'active / total on selected jobs' },
+          ]} />
+
           {/* Comparison Cards */}
           <SectionCard
             title="Project Comparison"

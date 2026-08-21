@@ -21,7 +21,8 @@ import { useState, useEffect } from 'react';
 import { UsersThree, ShieldCheck } from '@phosphor-icons/react';
 import { PeopleDirectory } from '@/components/team/PeopleDirectory';
 import { AccessManager } from '@/components/team/AccessManager';
-import { PremiumSurface, ModuleHero } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatStrip } from '@/components/ui/premium';
+import { getAuthHeaders, getSupabaseBrowser } from '@/lib/supabase-browser';
 
 // Kit-aligned literals (mirror components/ui/premium.tsx tokens)
 const GOLD = '#F59E0B', GOLD_HI = '#FBBF24';
@@ -35,9 +36,49 @@ const TABS = [
   { key: 'access' as const, label: 'Roles & Access', sub: 'Users, roles & permissions', Icon: ShieldCheck },
 ];
 
+/* Roster snapshot for the hub StatStrip — the screen walks in already knowing
+   the team: sign-ins, roles, assignment coverage, invite health, crew certs.
+   Read-only aggregation over the same tenant-scoped APIs the two child
+   surfaces use; non-fatal (strip simply hides) if anything fails. */
+interface HubSnap { users: number; roles: number; assigns: number; invites: number; expired: number; crew: number; osha: number }
+
 export default function PeopleAccessHub() {
   // Default landing = Roles & Access (the RBAC platform). Directory is one tap away.
   const [tab, setTab] = useState<Tab>('access');
+  const [snap, setSnap] = useState<HubSnap | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const sb = getSupabaseBrowser();
+        const [uRes, rRes, iRes, aRes, empRes] = await Promise.all([
+          fetch('/api/team/users', { headers }),
+          fetch('/api/roles', { headers }),
+          fetch('/api/team/invite', { headers }),
+          fetch('/api/roles/assignments', { headers }),
+          sb.from('employees').select('id, is_active, osha_10_certified, osha_30_certified'),
+        ]);
+        const uJson = uRes.ok ? await uRes.json() : {};
+        const userCount = Array.isArray(uJson?.users) ? uJson.users.length : 0;
+        const rJson = rRes.ok ? await rRes.json() : {};
+        const rolesArr: unknown[] = Array.isArray(rJson) ? rJson : Array.isArray(rJson?.roles) ? rJson.roles : [];
+        const iJson = iRes.ok ? await iRes.json() : {};
+        const invArr: { created_at?: string }[] = Array.isArray(iJson) ? iJson : Array.isArray(iJson?.invites) ? iJson.invites : [];
+        // Invites have no expires_at column — they expire 7 days after created_at.
+        const expired = invArr.filter(v => v?.created_at && Date.now() - new Date(v.created_at).getTime() > 7 * 86400000).length;
+        const aJson = aRes.ok ? await aRes.json() : {};
+        const assignArr: unknown[] = Array.isArray(aJson) ? aJson : Array.isArray(aJson?.assignments) ? aJson.assignments : [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const emp: any[] = (empRes as any)?.data ?? [];
+        const crewActive = emp.filter(e => e?.is_active !== false);
+        const osha = crewActive.filter(e => e?.osha_10_certified || e?.osha_30_certified).length;
+        if (alive) setSnap({ users: userCount, roles: rolesArr.length, assigns: assignArr.length, invites: invArr.length, expired, crew: crewActive.length, osha });
+      } catch { /* non-fatal — the strip hides */ }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // Deep-link support (?tab=directory|access) — read once on mount, client-only
   // so no prerender/Suspense requirement from useSearchParams.
@@ -68,6 +109,25 @@ export default function PeopleAccessHub() {
         accent="Access"
         subtitle="Crew & HR records and role-based access control — manage your workforce and permissions in one place."
       />
+
+      {/* ── roster intelligence strip — what the system already knows ── */}
+      {snap && (
+        <StatStrip items={[
+          { label: 'Team Members', value: String(snap.users), sub: 'platform sign-ins' },
+          { label: 'Roles Defined', value: String(snap.roles), sub: snap.roles > 0 ? 'permission templates in force' : 'built-ins seed on first visit' },
+          {
+            label: 'Role Assignments', value: String(snap.assigns),
+            accent: snap.users > 0 && snap.assigns === 0 ? '#FBBF24' : undefined,
+            sub: snap.assigns > 0 ? 'users mapped to roles' : snap.users > 0 ? 'no roles assigned yet — start in Users' : 'assign roles from Roles & Access',
+          },
+          {
+            label: 'Pending Invites', value: String(snap.invites),
+            accent: snap.expired > 0 ? '#ef4444' : snap.invites > 0 ? '#FBBF24' : undefined,
+            sub: snap.expired > 0 ? `${snap.expired} expired — resend from Users` : snap.invites > 0 ? 'invites expire after 7 days' : 'none outstanding',
+          },
+          { label: 'Crew Directory', value: String(snap.crew), sub: snap.crew > 0 ? `${snap.osha} OSHA certified` : 'add employees in Directory' },
+        ]} />
+      )}
 
       {/* ── unified segmented switch ── */}
       <div style={{ marginBottom: 26 }}>

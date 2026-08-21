@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useToast } from '@/components/Toast';
 import { humanError } from '@/lib/errors';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
+import { BUILDING_TYPES } from '@/lib/contractor-trades';
+import { StatStrip, AutoChip } from '@/components/ui/premium';
 
 /* ─── Palette ─── */
 const GOLD = '#F59E0B', BG = '#1c1c1e', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
@@ -25,6 +27,7 @@ type Lead = {
   id: string; company_name: string; contact_name: string; contact_email: string;
   contact_phone: string; source: string; estimated_value: number; stage: Stage;
   notes: string; tags: string[]; created_at: string; updated_at: string;
+  project_type?: string | null; next_action_date?: string | null;
 };
 type Activity = {
   id: string; lead_id: string; activity_type: string; description: string;
@@ -33,11 +36,19 @@ type Activity = {
 
 /* ─── Helpers ─── */
 const fmt = (n: number) =>
-  '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtDate = (d: string) =>
   d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '\u2014';
 const fmtTime = (d: string) =>
   d ? new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+
+/* DB numerics can round-trip as strings — coerce before any math. */
+const num = (v: unknown) => Number(v) || 0;
+/* Suggested first follow-up: 3 days out, while the lead is still warm. */
+const plus3d = () => {
+  const d = new Date(Date.now() + 3 * 86400000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 /* ─── Shared Styles ─── */
 const inputS: React.CSSProperties = {
@@ -73,6 +84,7 @@ const selectS: React.CSSProperties = { ...inputS, cursor: 'pointer', appearance:
 const emptyLead = (): Partial<Lead> => ({
   company_name: '', contact_name: '', contact_email: '', contact_phone: '',
   source: 'Website', stage: 'New', estimated_value: 0, notes: '', tags: [],
+  project_type: '', next_action_date: plus3d(),
 });
 
 /* ═══════════════════════════════ MAIN PAGE ═══════════════════════════════ */
@@ -109,7 +121,14 @@ export default function LeadsPage() {
       const r = await fetch('/api/leads');
       if (!r.ok) throw new Error('Failed to load leads');
       const d = await r.json();
-      setLeads(d.leads ?? []);
+      // DB rows come back with email/phone columns — surface them under the
+      // names the page renders so contact info never shows blank.
+      setLeads((d.leads ?? []).map((l: any) => ({
+        ...l,
+        contact_email: l.contact_email ?? l.email ?? '',
+        contact_phone: l.contact_phone ?? l.phone ?? '',
+        tags: Array.isArray(l.tags) ? l.tags : [],
+      })));
       setError('');
     } catch (e: any) {
       console.error(e);
@@ -141,8 +160,8 @@ export default function LeadsPage() {
     return leads.filter(l => {
       if (stageFilter !== 'all' && l.stage !== stageFilter) return false;
       if (sourceFilter !== 'all' && l.source !== sourceFilter) return false;
-      if (valueMin && l.estimated_value < Number(valueMin)) return false;
-      if (valueMax && l.estimated_value > Number(valueMax)) return false;
+      if (valueMin && num(l.estimated_value) < Number(valueMin)) return false;
+      if (valueMax && num(l.estimated_value) > Number(valueMax)) return false;
       if (search) {
         const q = search.toLowerCase();
         const fields = [l.company_name, l.contact_name, l.contact_email, l.contact_phone, ...(l.tags || [])];
@@ -157,6 +176,7 @@ export default function LeadsPage() {
     const arr = [...filtered];
     arr.sort((a: any, b: any) => {
       let va = a[sortCol] ?? '', vb = b[sortCol] ?? '';
+      if (sortCol === 'estimated_value') return sortDir === 'asc' ? num(va) - num(vb) : num(vb) - num(va);
       if (typeof va === 'number') return sortDir === 'asc' ? va - vb : vb - va;
       return sortDir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
     });
@@ -170,13 +190,13 @@ export default function LeadsPage() {
 
   /* ─── Pipeline Metrics ─── */
   const metrics = useMemo(() => {
-    const totalVal = leads.reduce((s, l) => s + (l.estimated_value || 0), 0);
+    const totalVal = leads.reduce((s, l) => s + num(l.estimated_value), 0);
     const won = leads.filter(l => l.stage === 'Won');
     const lost = leads.filter(l => l.stage === 'Lost');
-    const wonVal = won.reduce((s, l) => s + (l.estimated_value || 0), 0);
+    const wonVal = won.reduce((s, l) => s + num(l.estimated_value), 0);
     const activeVal = leads
       .filter(l => l.stage !== 'Won' && l.stage !== 'Lost')
-      .reduce((s, l) => s + (l.estimated_value || 0), 0);
+      .reduce((s, l) => s + num(l.estimated_value), 0);
     const winRate = won.length + lost.length > 0
       ? Math.round(won.length / (won.length + lost.length) * 100)
       : 0;
@@ -186,7 +206,7 @@ export default function LeadsPage() {
     leads.forEach(l => {
       if (byStage[l.stage]) {
         byStage[l.stage].count++;
-        byStage[l.stage].value += (l.estimated_value || 0);
+        byStage[l.stage].value += num(l.estimated_value);
       }
     });
     return { total: leads.length, totalVal, wonVal, activeVal, winRate, avgDeal, byStage };
@@ -210,6 +230,9 @@ export default function LeadsPage() {
         stage: editLead.stage,
         notes: editLead.notes,
         tags: editLead.tags || [],
+        // Parsed by both POST /api/leads and PATCH /api/leads/[id] (verified).
+        project_type: editLead.project_type || null,
+        next_action_date: editLead.next_action_date || null,
       };
       const r = await fetch(url, {
         method,
@@ -311,7 +334,7 @@ export default function LeadsPage() {
     const data = pipeline.map(s => {
       const count = leads.filter(l => l.stage === s).length;
       if (count > maxCount) maxCount = count;
-      const value = leads.filter(l => l.stage === s).reduce((a, l) => a + (l.estimated_value || 0), 0);
+      const value = leads.filter(l => l.stage === s).reduce((a, l) => a + num(l.estimated_value), 0);
       return { stage: s, count, value };
     });
     return { data, maxCount: maxCount || 1 };
@@ -425,6 +448,16 @@ export default function LeadsPage() {
         ))}
       </div>
 
+      {/* Stage-by-stage pipeline strip — the pipeline's shape at a glance */}
+      {!loading && leads.length > 0 && (
+        <StatStrip items={STAGES.map(s => ({
+          label: s,
+          value: fmt(metrics.byStage[s]?.value || 0),
+          accent: (metrics.byStage[s]?.count || 0) > 0 ? STAGE_COLORS[s] : undefined,
+          sub: `${metrics.byStage[s]?.count || 0} lead${(metrics.byStage[s]?.count || 0) === 1 ? '' : 's'}`,
+        }))} />
+      )}
+
       {/* ─── Filters ─── */}
       <div style={{
         display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center',
@@ -499,7 +532,7 @@ export default function LeadsPage() {
             No leads yet
           </div>
           <div style={{ fontSize: 14, marginBottom: 20 }}>
-            Start building your pipeline by adding your first lead.
+            Track every prospect from first contact to signed contract. Each new lead gets a follow-up scheduled 3 days out automatically, and win/loss outcomes feed your bid intelligence when deals close.
           </div>
           <button onClick={() => { setEditLead(emptyLead()); setShowModal(true); }}
             className="btn-gold" style={{ fontSize: 13 }}>
@@ -523,7 +556,7 @@ export default function LeadsPage() {
         <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 20 }}>
           {STAGES.map(stage => {
             const stageLeads = filtered.filter(l => l.stage === stage);
-            const stageVal = stageLeads.reduce((s, l) => s + (l.estimated_value || 0), 0);
+            const stageVal = stageLeads.reduce((s, l) => s + num(l.estimated_value), 0);
             return (
               <div key={stage} style={{ minWidth: 260, maxWidth: 300, flex: '1 0 260px' }}>
                 {/* Column header */}
@@ -572,6 +605,16 @@ export default function LeadsPage() {
                           </span>
                           <span style={{ fontSize: 11, color: DIM }}>{lead.source}</span>
                         </div>
+                        {(lead.project_type || lead.next_action_date) && (
+                          <div style={{ fontSize: 11, color: DIM, marginBottom: 6, display: 'flex', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lead.project_type || ''}</span>
+                            {lead.next_action_date && (
+                              <span style={{ color: stage !== 'Won' && stage !== 'Lost' && new Date(lead.next_action_date) < new Date() ? RED : DIM, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                Follow-up {fmtDate(lead.next_action_date)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {(lead.tags || []).length > 0 && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                             {lead.tags.slice(0, 3).map((t, i) => (
@@ -972,6 +1015,32 @@ export default function LeadsPage() {
                 />
               </div>
               <div>
+                <label style={labelS}>Project Type</label>
+                <select
+                  value={editLead.project_type || ''}
+                  onChange={e => setEditLead({ ...editLead, project_type: e.target.value })}
+                  style={selectS}
+                >
+                  <option value="">Select building type...</option>
+                  {BUILDING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelS}>
+                  Follow-up Date
+                  {!editLead.id && !!editLead.next_action_date && editLead.next_action_date === plus3d() && <AutoChip />}
+                </label>
+                <input
+                  type="date"
+                  value={editLead.next_action_date || ''}
+                  onChange={e => setEditLead({ ...editLead, next_action_date: e.target.value })}
+                  style={inputS}
+                />
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4, lineHeight: 1.45 }}>
+                  {editLead.id ? 'Next scheduled touch for this lead.' : 'Suggested 3 days out — first touch while the lead is warm.'}
+                </div>
+              </div>
+              <div>
                 <label style={labelS}>Tags</label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input
@@ -1071,7 +1140,7 @@ export default function LeadsPage() {
 
             {/* Lead info grid */}
             <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: 12, marginBottom: 20,
             }}>
               <div style={{ background: BG, borderRadius: 8, padding: 12 }}>
@@ -1299,7 +1368,7 @@ export default function LeadsPage() {
           sourceId={outcomeModal.lead.id}
           defaultOutcome={outcomeModal.outcome}
           projectName={outcomeModal.lead.company_name || outcomeModal.lead.contact_name}
-          ourAmount={outcomeModal.lead.estimated_value || undefined}
+          ourAmount={num(outcomeModal.lead.estimated_value) || undefined}
           onRecorded={() => { setOutcomeModal(null); fetchLeads(); }}
         />
       )}

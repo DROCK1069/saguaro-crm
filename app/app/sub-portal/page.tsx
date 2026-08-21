@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SUB_TRADES as ALL_TRADES } from '@/lib/construction-intelligence';
 import { humanError } from '@/lib/errors';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { UsersThree, CheckCircle, Clock, Prohibit, WarningCircle, XCircle, FileX, Plus, UploadSimple, ListChecks, ClockCounterClockwise, FileText, ShieldCheck, AddressBook, Megaphone, Envelope } from '@phosphor-icons/react';
 
 /* ── palette ── */
@@ -83,6 +83,29 @@ interface Announcement {
 
 /* ── helpers ── */
 function uid(): string { return Math.random().toString(36).slice(2, 11); }
+
+/* Real address check — the invitation email and the portal login both use it. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/* Generic words that shouldn't drive trade inference from a company name. */
+const TRADE_STOPWORDS = new Set(['general', 'services', 'systems', 'specialties', 'building', 'construction', 'work', 'works', 'installation', 'contractors', 'management', 'equipment', 'interior', 'exterior', 'finishes', 'other', 'misc', 'miscellaneous']);
+
+/** Suggest a canonical SUB_TRADES entry from a company name ("Apex Electric" ->
+ *  "Electrical"). Word-boundary stem match; suggestion only — the UI marks it
+ *  AUTO and the user can override. */
+function inferTrade(company: string): string {
+  const src = company.trim();
+  if (src.length < 3) return '';
+  const trades = [...ALL_TRADES].sort((a, b) => b.length - a.length);
+  for (const t of trades) {
+    for (const w of t.toLowerCase().split(/[^a-z]+/)) {
+      if (w.length < 4 || TRADE_STOPWORDS.has(w)) continue;
+      const stem = w.slice(0, Math.min(6, w.length));
+      if (new RegExp('\\b' + stem, 'i').test(src)) return t;
+    }
+  }
+  return '';
+}
 function fmtDate(d: string | null): string { return d ? new Date(d).toLocaleDateString() : '--'; }
 function fmtDateTime(d: string): string {
   const dt = new Date(d);
@@ -212,6 +235,8 @@ export default function SubPortalPage() {
   const [invTrade, setInvTrade] = useState('');
   const [invProjects, setInvProjects] = useState<string[]>([]);
   const [invSending, setInvSending] = useState(false);
+  /* trade was auto-inferred from the company name (drives the AUTO chip) */
+  const [invTradeAuto, setInvTradeAuto] = useState(false);
 
   /* bulk invite */
   const [bulkText, setBulkText] = useState('');
@@ -287,6 +312,45 @@ export default function SubPortalPage() {
     return { total, active, pending, disabled, compExpiring, compExpired, compMissing };
   }, [users, compliance]);
 
+  /* ── roster intelligence — adoption, engagement, compliance health (derived
+     entirely from the data already fetched; no extra requests) ── */
+  const intel = useMemo(() => {
+    const uniqueTrades = new Set(users.map(u => u.trade).filter(Boolean)).size;
+    const neverLogged = users.filter(u => u.status === 'active' && !u.lastLogin).length;
+    const adoption = users.length > 0 ? Math.round((users.filter(u => u.status === 'active').length / users.length) * 100) : 0;
+    const docsAll = docs.filter(d => d.visibleToSubs.includes('all')).length;
+    const now = Date.now();
+    const events7 = activity.filter(a => { const t = new Date(a.timestamp).getTime(); return !isNaN(t) && now - t <= 7 * 86400000; }).length;
+    const lastEventTs = activity.reduce((m, a) => { const t = new Date(a.timestamp).getTime(); return isNaN(t) ? m : Math.max(m, t); }, 0);
+    const logins = activity.filter(a => a.action.includes('Login') || a.action.includes('Logged in')).length;
+    const byCompany: Record<string, number> = {};
+    activity.forEach(a => { if (a.company) byCompany[a.company] = (byCompany[a.company] || 0) + 1; });
+    const mostActive = Object.entries(byCompany).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    const compValid = compliance.filter(c => c.status === 'valid').length;
+    const compPct = compliance.length > 0 ? Math.round((compValid / compliance.length) * 100) : 0;
+    const needAttention = compliance.filter(c => c.status !== 'valid').length;
+    return { uniqueTrades, neverLogged, adoption, docsAll, events7, lastEventTs, logins, mostActive, compPct, needAttention };
+  }, [users, docs, activity, compliance]);
+
+  /* ── invite-flow intelligence: trade inference + email validation + dupes ── */
+  const onInvCompanyChange = (v: string) => {
+    setInvCompany(v);
+    if (!invTrade || invTradeAuto) {
+      const t = inferTrade(v);
+      if (t) { setInvTrade(t); setInvTradeAuto(true); }
+      else if (invTradeAuto) { setInvTrade(''); setInvTradeAuto(false); }
+    }
+  };
+  const invEmailTrim = invEmail.trim();
+  const invEmailValid = EMAIL_RE.test(invEmailTrim);
+  const invDup = invEmailTrim ? users.find(u => (u.email || '').toLowerCase() === invEmailTrim.toLowerCase()) : undefined;
+  const invDisabled = invSending || !invCompany || !invContact || !invTrade || !invEmailValid;
+  const bulkStats = useMemo(() => {
+    const lines = bulkText.trim() ? bulkText.trim().split('\n').filter(l => l.trim()) : [];
+    const bad = lines.filter(l => !EMAIL_RE.test((l.split(',')[2] || '').trim())).length;
+    return { n: lines.length, bad };
+  }, [bulkText]);
+
   /* handlers */
   const handleInvite = useCallback(async () => {
     if (!invCompany || !invContact || !invEmail || !invTrade) return;
@@ -302,7 +366,7 @@ export default function SubPortalPage() {
       lastLogin: null, avatarColor: AVATAR_COLORS[users.length % AVATAR_COLORS.length],
     };
     setUsers(prev => [...prev, newUser]);
-    setInvCompany(''); setInvContact(''); setInvEmail(''); setInvTrade(''); setInvProjects([]);
+    setInvCompany(''); setInvContact(''); setInvEmail(''); setInvTrade(''); setInvProjects([]); setInvTradeAuto(false);
     setInvSending(false);
     setInviteModal(false);
   }, [invCompany, invContact, invEmail, invTrade, invProjects, users.length]);
@@ -467,6 +531,33 @@ export default function SubPortalPage() {
         ))}
       </div>
 
+      {/* ── roster intelligence strip — adoption, engagement, compliance health ── */}
+      {users.length > 0 && (
+        <StatStrip items={[
+          {
+            label: 'Portal Adoption', value: `${intel.adoption}%`,
+            accent: intel.adoption >= 70 ? GREEN : AMBER,
+            sub: `${stats.active} active of ${stats.total} invited`,
+          },
+          {
+            label: 'Never Logged In', value: String(intel.neverLogged),
+            accent: intel.neverLogged > 0 ? AMBER : GREEN,
+            sub: intel.neverLogged > 0 ? 'active accounts, zero visits — resend the link' : 'every active sub has visited',
+          },
+          { label: 'Trades Onboarded', value: String(intel.uniqueTrades), sub: 'distinct trades across the roster' },
+          {
+            label: 'Compliance Health', value: compliance.length > 0 ? `${intel.compPct}%` : '—',
+            accent: compliance.length === 0 ? undefined : intel.compPct >= 80 ? GREEN : intel.needAttention > 0 ? RED : AMBER,
+            sub: compliance.length > 0 ? `${intel.needAttention} document${intel.needAttention === 1 ? '' : 's'} need attention` : 'no compliance docs tracked yet',
+          },
+          { label: 'Docs Shared', value: String(docs.length), sub: docs.length > 0 ? `${intel.docsAll} visible to all subs` : 'nothing shared to the portal yet' },
+          {
+            label: 'Activity (7d)', value: String(intel.events7),
+            sub: intel.lastEventTs > 0 ? `last event ${fmtDateTime(new Date(intel.lastEventTs).toISOString())}` : 'no portal events yet',
+          },
+        ]} />
+      )}
+
       {/* ── tabs ── */}
       <div style={{ display: 'flex', gap: 0, borderBottom: `1px solid ${BORDER}`, marginBottom: 24, overflowX: 'auto' }}>
         {TABS.map(t => (
@@ -569,15 +660,21 @@ export default function SubPortalPage() {
           {/* single invite */}
           <SectionCard icon={<Plus size={17} weight="duotone" color={GOLD} />} title="Invite Subcontractor">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div><label style={labelStyle}>Company Name *</label><input value={invCompany} onChange={e => setInvCompany(e.target.value)} style={inputStyle} placeholder="Enter company name" /></div>
+              <div><label style={labelStyle}>Company Name *</label><input value={invCompany} onChange={e => onInvCompanyChange(e.target.value)} style={inputStyle} placeholder="Enter company name" /></div>
               <div><label style={labelStyle}>Contact Name *</label><input value={invContact} onChange={e => setInvContact(e.target.value)} style={inputStyle} placeholder="Full name" /></div>
-              <div><label style={labelStyle}>Email Address *</label><input type="email" value={invEmail} onChange={e => setInvEmail(e.target.value)} style={inputStyle} placeholder="email@company.com" /></div>
               <div>
-                <label style={labelStyle}>Trade *</label>
-                <select value={invTrade} onChange={e => setInvTrade(e.target.value)} style={selectStyle}>
+                <label style={labelStyle}>Email Address *</label>
+                <input type="email" value={invEmail} onChange={e => setInvEmail(e.target.value)} style={{ ...inputStyle, borderColor: invEmailTrim && !invEmailValid ? RED + '80' : BORDER }} placeholder="email@company.com" />
+                {invEmailTrim && !invEmailValid && <div style={{ color: RED, fontSize: 11.5, marginTop: 4 }}>Enter a valid email — the invitation and the portal login both use it.</div>}
+                {invDup && <div style={{ color: AMBER, fontSize: 11.5, marginTop: 4 }}>{invDup.company || invDup.contactName} is already on the roster ({invDup.status}) — sending again creates a duplicate. Use Resend from the Sub Users tab instead.</div>}
+              </div>
+              <div>
+                <label style={labelStyle}>Trade *{invTradeAuto && invTrade ? <AutoChip /> : null}</label>
+                <select value={invTrade} onChange={e => { setInvTrade(e.target.value); setInvTradeAuto(false); }} style={selectStyle}>
                   <option value="">Select trade</option>
                   {ALL_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
+                {invTradeAuto && invTrade && <div style={{ color: DIM, fontSize: 11.5, marginTop: 4 }}>Inferred from the company name — change it if that is wrong.</div>}
               </div>
               <div>
                 <label style={labelStyle}>Project Access</label>
@@ -592,8 +689,11 @@ export default function SubPortalPage() {
                   ))}
                 </div>
               </div>
-              <button onClick={handleInvite} disabled={invSending || !invCompany || !invContact || !invEmail || !invTrade}
-                style={{ ...goldButtonStyle, width: '100%', opacity: (invSending || !invCompany || !invContact || !invEmail || !invTrade) ? 0.5 : 1, marginTop: 8 }} className="pmBtn">
+              <div style={{ color: DIM, fontSize: 11.5, lineHeight: 1.5, padding: '9px 12px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.22)', borderRadius: 8 }}>
+                New subs start with <b style={{ color: TEXT }}>Their Contract + Schedule</b> visible. Fine-tune everything else in the Permissions tab after inviting.
+              </div>
+              <button onClick={handleInvite} disabled={invDisabled}
+                style={{ ...goldButtonStyle, width: '100%', opacity: invDisabled ? 0.5 : 1, marginTop: 8, cursor: invDisabled ? 'not-allowed' : 'pointer' }} className="pmBtn">
                 {invSending ? 'Sending...' : 'Send Invitation'}
               </button>
             </div>
@@ -606,7 +706,8 @@ export default function SubPortalPage() {
               placeholder={'Apex Electric, John Smith, john@apex.com, Electrical\nBlue Plumbing, Jane Doe, jane@blue.com, Plumbing'} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
               <span style={{ color: DIM, fontSize: 12 }}>
-                {bulkText.trim() ? `${bulkText.trim().split('\n').filter(l => l.trim()).length} entries` : 'No entries'}
+                {bulkStats.n > 0 ? `${bulkStats.n} entr${bulkStats.n === 1 ? 'y' : 'ies'}` : 'No entries'}
+                {bulkStats.bad > 0 && <span style={{ color: RED }}> · {bulkStats.bad} invalid email{bulkStats.bad === 1 ? '' : 's'}</span>}
               </span>
               <button onClick={handleBulkInvite} disabled={bulkSending || !bulkText.trim()}
                 style={{ ...goldButtonStyle, opacity: (bulkSending || !bulkText.trim()) ? 0.5 : 1 }} className="pmBtn">
@@ -633,6 +734,16 @@ export default function SubPortalPage() {
                 </div>
               ))}
             </div>
+          </SectionCard>
+
+          {/* what happens next */}
+          <SectionCard icon={<ListChecks size={17} weight="duotone" color={GOLD} />} title="After You Invite">
+            <FlowSteps title="" steps={[
+              { title: 'Invitation email goes out', desc: 'The sub gets a secure portal link tied to their email — no password to manage.' },
+              { title: 'They show as Pending', desc: 'The roster tracks them until first login. Resend the invite from Sub Users any time.' },
+              { title: 'Default access: Contract + Schedule', desc: 'New subs start seeing only their contract and the schedule. Expand access in Permissions.' },
+              { title: 'Every visit is logged', desc: 'Logins and document views land in the Activity Log automatically.' },
+            ]} />
           </SectionCard>
         </div>
       )}
@@ -692,7 +803,16 @@ export default function SubPortalPage() {
       {/*  TAB: ACTIVITY LOG                          */}
       {/* ════════════════════════════════════════════ */}
       {tab === 'activity' && (
-        <SectionCard flush icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />} title="Portal Activity Log" subtitle="Track when subs logged in and what they viewed" action={<span style={{ color: DIM, fontSize: 13 }}>{activity.length} entries</span>}>
+        <SectionCard flush icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />} title="Portal Activity Log" subtitle="Track when subs logged in and what they viewed" action={<span style={{ color: DIM, fontSize: 13 }}>{activity.length} entries{intel.events7 > 0 ? ` · ${intel.events7} this week` : ''}</span>}>
+          {/* activity context — engagement at a glance before the raw feed */}
+          {activity.length > 0 && (
+            <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', padding: '12px 20px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(255,255,255,0.02)', fontSize: 12.5, color: DIM }}>
+              <span>Last 7 days: <b style={{ color: TEXT }}>{intel.events7}</b> event{intel.events7 === 1 ? '' : 's'}</span>
+              <span>Logins: <b style={{ color: GREEN }}>{intel.logins}</b></span>
+              {intel.mostActive && <span>Most active: <b style={{ color: GOLD }}>{intel.mostActive}</b></span>}
+              {intel.lastEventTs > 0 && <span>Last event: <b style={{ color: TEXT }}>{fmtDateTime(new Date(intel.lastEventTs).toISOString())}</b></span>}
+            </div>
+          )}
           <div style={{ maxHeight: 500, overflow: 'auto' }}>
             {activity.length === 0 && (
               <PremiumEmpty compact icon={<ClockCounterClockwise size={30} weight="duotone" color={GOLD} />} title="No portal activity yet" description="Sub logins and document views will appear here." />
@@ -974,15 +1094,21 @@ export default function SubPortalPage() {
       {/* ════════════════════════════════════════════ */}
       <Modal open={inviteModal} onClose={() => setInviteModal(false)} title="Invite Subcontractor">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div><label style={labelStyle}>Company Name *</label><input value={invCompany} onChange={e => setInvCompany(e.target.value)} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Company Name *</label><input value={invCompany} onChange={e => onInvCompanyChange(e.target.value)} style={inputStyle} /></div>
           <div><label style={labelStyle}>Contact Name *</label><input value={invContact} onChange={e => setInvContact(e.target.value)} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Email *</label><input type="email" value={invEmail} onChange={e => setInvEmail(e.target.value)} style={inputStyle} /></div>
           <div>
-            <label style={labelStyle}>Trade *</label>
-            <select value={invTrade} onChange={e => setInvTrade(e.target.value)} style={selectStyle}>
+            <label style={labelStyle}>Email *</label>
+            <input type="email" value={invEmail} onChange={e => setInvEmail(e.target.value)} style={{ ...inputStyle, borderColor: invEmailTrim && !invEmailValid ? RED + '80' : BORDER }} />
+            {invEmailTrim && !invEmailValid && <div style={{ color: RED, fontSize: 11.5, marginTop: 4 }}>Enter a valid email — the invitation and the portal login both use it.</div>}
+            {invDup && <div style={{ color: AMBER, fontSize: 11.5, marginTop: 4 }}>{invDup.company || invDup.contactName} is already on the roster ({invDup.status}) — use Resend from Sub Users instead.</div>}
+          </div>
+          <div>
+            <label style={labelStyle}>Trade *{invTradeAuto && invTrade ? <AutoChip /> : null}</label>
+            <select value={invTrade} onChange={e => { setInvTrade(e.target.value); setInvTradeAuto(false); }} style={selectStyle}>
               <option value="">Select trade</option>
               {ALL_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
+            {invTradeAuto && invTrade && <div style={{ color: DIM, fontSize: 11.5, marginTop: 4 }}>Inferred from the company name — change it if that is wrong.</div>}
           </div>
           <div>
             <label style={labelStyle}>Project Access</label>
@@ -997,10 +1123,13 @@ export default function SubPortalPage() {
               ))}
             </div>
           </div>
+          <div style={{ color: DIM, fontSize: 11.5, lineHeight: 1.5 }}>
+            New subs start with <b style={{ color: TEXT }}>Their Contract + Schedule</b> visible — expand access in the Permissions tab after inviting.
+          </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
             <button onClick={() => setInviteModal(false)} style={btnSecondary}>Cancel</button>
-            <button onClick={handleInvite} disabled={invSending || !invCompany || !invContact || !invEmail || !invTrade}
-              style={{ ...btnPrimary, opacity: (invSending || !invCompany || !invContact || !invEmail || !invTrade) ? 0.5 : 1 }}>
+            <button onClick={handleInvite} disabled={invDisabled}
+              style={{ ...btnPrimary, opacity: invDisabled ? 0.5 : 1, cursor: invDisabled ? 'not-allowed' : 'pointer' }}>
               {invSending ? 'Sending...' : 'Send Invitation'}
             </button>
           </div>
@@ -1020,7 +1149,8 @@ export default function SubPortalPage() {
           placeholder={'Apex Electric, John Smith, john@apex.com, Electrical\nBlue Plumbing, Jane Doe, jane@blue.com, Plumbing'} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
           <span style={{ color: DIM, fontSize: 12 }}>
-            {bulkText.trim() ? `${bulkText.trim().split('\n').filter(l => l.trim()).length} invitations will be sent` : 'No entries'}
+            {bulkStats.n > 0 ? `${bulkStats.n} invitation${bulkStats.n === 1 ? '' : 's'} will be sent` : 'No entries'}
+            {bulkStats.bad > 0 && <span style={{ color: RED }}> · {bulkStats.bad} invalid email{bulkStats.bad === 1 ? '' : 's'} — fix before sending</span>}
           </span>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => setBulkInviteModal(false)} style={btnSecondary}>Cancel</button>
