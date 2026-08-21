@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
-import { CheckCircle, Check, MapPin, CalendarBlank, User, X, ArrowUUpLeft, Plus, WarningCircle, FolderOpen, CircleHalf, ListChecks } from '@phosphor-icons/react';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
+import { CheckCircle, Check, MapPin, CalendarBlank, User, X, ArrowUUpLeft, Plus, WarningCircle, FolderOpen, CircleHalf, ListChecks, Camera } from '@phosphor-icons/react';
 import {
   PremiumSurface,
   ModuleHero,
@@ -13,6 +14,9 @@ import {
   goldButtonStyle,
   ghostButtonStyle,
   goldOutlineButtonStyle,
+  StatStrip,
+  FlowSteps,
+  AutoChip,
 } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
@@ -20,8 +24,7 @@ const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
 
 const PRIORITIES=['Critical','High','Medium','Low'];
 const STATUSES=['open','in_progress','completed','voided'];
-const TRADES=['General Contractor','Electrical','Plumbing','HVAC','Framing','Drywall',
-  'Painting','Flooring','Roofing','Concrete','Masonry','Millwork','Landscaping','Other'];
+const TRADES=SUB_TRADES; // canonical taxonomy — do not hardcode partial trade lists
 const PRIORITY_COLORS:Record<string,string>={Critical:RED,High:ORANGE,Medium:GOLD,Low:GREEN};
 const STATUS_COLORS:Record<string,string>={open:'#FBBF24',in_progress:GOLD,completed:GREEN,voided:DIM};
 const STATUS_LABELS:Record<string,string>={open:'Open',in_progress:'In Progress',completed:'Completed',voided:'Voided'};
@@ -44,7 +47,7 @@ function Pill({label,color}:{label:string;color:string}){
     </span>
   );
 }
-function Field({label,children}:{label:string;children:React.ReactNode}){
+function Field({label,children}:{label:React.ReactNode;children:React.ReactNode}){
   return(
     <div>
       <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
@@ -69,6 +72,21 @@ export default function PunchListPage(){
   const [filterStatus,setFilterStatus]=useState('all');
   const [filterPriority,setFilterPriority]=useState('all');
   const [filterTrade,setFilterTrade]=useState('all');
+  // Project intelligence — sub roster + smart defaults for the create drawer.
+  const [ctx,setCtx]=useState<any>(null);
+  const [autoDue,setAutoDue]=useState(false);
+  const [autoAssign,setAutoAssign]=useState(false);
+  const [assignOther,setAssignOther]=useState(false);
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r=await fetch(`/api/project-context?projectId=${projectId}`);
+        const c=await r.json();
+        if(!c.error) setCtx(c);
+      }catch{/* enhancement only — the drawer still works without context */}
+    })();
+  },[projectId]);
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -89,8 +107,16 @@ export default function PunchListPage(){
 
   useEffect(()=>{load();},[load]);
 
-  function openCreate(){setForm({...EMPTY});setMode('create');setSelected(null);}
+  function openCreate(){
+    // Due date walks in at +7 days — the standard punch turnaround. Editable.
+    const d=new Date(Date.now()+7*86400000);
+    const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    setForm({...EMPTY,due_date:iso});
+    setAutoDue(true);setAutoAssign(false);setAssignOther(false);
+    setMode('create');setSelected(null);
+  }
   function openEdit(item:any){
+    setAutoDue(false);setAutoAssign(false);setAssignOther(false);
     setForm({description:item.description||'',location:item.location||'',
       trade:item.trade||'General Contractor',priority:item.priority||'Medium',
       status:item.status||'open',due_date:item.due_date||'',
@@ -372,6 +398,15 @@ export default function PunchListPage(){
           <div style={{flex:1,overflow:'auto',padding:20}}>
             {(mode==='create'||mode==='edit')?(
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                {mode==='create'&&items.length>0&&(
+                  <div style={{marginBottom:-20}}>
+                    <StatStrip items={[
+                      {label:'Open',value:String(openCount),accent:'#FBBF24',sub:'on the list now'},
+                      {label:'Critical',value:String(crit),accent:crit>0?RED:undefined,sub:crit>0?'need attention':'none open'},
+                      {label:'Done',value:String(done),accent:GREEN,sub:`${pct}% complete`},
+                    ]}/>
+                  </div>
+                )}
                 <Field label="Description *">
                   <textarea value={form.description}
                     onChange={e=>setForm(f=>({...f,description:e.target.value}))}
@@ -396,8 +431,18 @@ export default function PunchListPage(){
                 </div>
                 <Field label="Trade">
                   <select value={form.trade}
-                    onChange={e=>setForm(f=>({...f,trade:e.target.value}))}
+                    onChange={e=>{
+                      const t=e.target.value;
+                      // Roster intelligence: picking a trade auto-suggests the awarded sub.
+                      if(mode==='create'&&!assignOther&&(!form.assigned_to||autoAssign)){
+                        const match=(ctx?.subs||[]).find((s:any)=>s.trade===t);
+                        if(match){setForm(f=>({...f,trade:t,assigned_to:match.companyName}));setAutoAssign(true);return;}
+                        if(autoAssign){setForm(f=>({...f,trade:t,assigned_to:''}));setAutoAssign(false);return;}
+                      }
+                      setForm(f=>({...f,trade:t}));
+                    }}
                     style={{...inp,padding:'9px 10px'}}>
+                    {form.trade&&!TRADES.includes(form.trade)&&<option value={form.trade}>{form.trade}</option>}
                     {TRADES.map(t=><option key={t} value={t}>{t}</option>)}
                   </select>
                 </Field>
@@ -407,15 +452,39 @@ export default function PunchListPage(){
                     style={inp} placeholder="Room 204, North wall…"/>
                 </Field>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                  <Field label="Assigned To">
-                    <input value={form.assigned_to}
-                      onChange={e=>setForm(f=>({...f,assigned_to:e.target.value}))}
-                      style={inp} placeholder="Subcontractor or person"/>
+                  <Field label={<>Assigned To{autoAssign&&<AutoChip/>}</>}>
+                    {assignOther?(
+                      <input value={form.assigned_to} autoFocus
+                        onChange={e=>setForm(f=>({...f,assigned_to:e.target.value}))}
+                        style={inp} placeholder="Subcontractor or person"/>
+                    ):(
+                      <select value={form.assigned_to}
+                        onChange={e=>{
+                          if(e.target.value==='__other'){setAssignOther(true);setAutoAssign(false);setForm(f=>({...f,assigned_to:''}));return;}
+                          setAutoAssign(false);setForm(f=>({...f,assigned_to:e.target.value}));
+                        }}
+                        style={{...inp,padding:'9px 10px'}}>
+                        <option value="">Unassigned</option>
+                        {form.assigned_to&&!(ctx?.subs||[]).some((s:any)=>s.companyName===form.assigned_to)&&<option value={form.assigned_to}>{form.assigned_to}</option>}
+                        {(ctx?.subs||[]).map((s:any)=>(
+                          <option key={s.membershipId||s.id} value={s.companyName}>{s.companyName}{s.trade?` — ${s.trade}`:''}</option>
+                        ))}
+                        <option value="__other">Other — type a name…</option>
+                      </select>
+                    )}
+                    <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>
+                      {autoAssign?`Awarded ${form.trade} sub — change freely.`:(ctx?.subs?.length?`${ctx.subs.length} subs on the roster — pick or type anyone.`:'No subs awarded yet — type a name.')}
+                    </div>
                   </Field>
-                  <Field label="Due Date">
+                  <Field label={<>Due Date{autoDue&&mode==='create'&&<AutoChip/>}</>}>
                     <input type="date" value={form.due_date}
                       onChange={e=>setForm(f=>({...f,due_date:e.target.value}))}
                       style={inp}/>
+                    {mode==='create'&&(
+                      <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>
+                        Defaulted to +7 days — standard punch turnaround.
+                      </div>
+                    )}
                   </Field>
                 </div>
                 <Field label="Notes">
@@ -423,6 +492,10 @@ export default function PunchListPage(){
                     onChange={e=>setForm(f=>({...f,notes:e.target.value}))}
                     rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}
                     placeholder="Additional notes, photos needed, etc…"/>
+                  <div style={{display:'flex',alignItems:'flex-start',gap:6,fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>
+                    <Camera size={13} color={GOLD} style={{flexShrink:0,marginTop:1}}/>
+                    <span>Snap photos in Field Mode — documented deficiencies get corrected without a return trip.</span>
+                  </div>
                 </Field>
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving} className="pmBtn"
@@ -433,6 +506,15 @@ export default function PunchListPage(){
                     Cancel
                   </button>
                 </div>
+                {mode==='create'&&(
+                  <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'14px 16px'}}>
+                    <FlowSteps title="After you add" steps={[
+                      {title:'Lands on the punch log',desc:'Counted against open items and overall completion instantly.'},
+                      {title:'Assigned sub sees it in Field Mode',desc:form.assigned_to?`${form.assigned_to} gets it on their filtered field list.`:'Assign a sub and it shows on their filtered field list.'},
+                      {title:'Check-off rolls up closeout',desc:'Completion climbs live — critical items surface first.'},
+                    ]}/>
+                  </div>
+                )}
               </div>
             ):selected?(
               <div style={{display:'flex',flexDirection:'column',gap:14}}>

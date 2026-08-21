@@ -140,27 +140,54 @@ export async function onPayAppApproved(payAppId: string): Promise<void> {
       await sendPayAppApproved(gcEmail, project.gc_name || 'Contractor', project.name, pa.app_number, pa.current_payment_due || 0);
     }
 
-    // Auto-generate conditional lien waivers for all subs
-    const { data: subs } = await db.from('subcontractors').select('*').eq('project_id', project.id).neq('status', 'inactive');
-    if (subs && subs.length > 0) {
-      for (const sub of subs as any[]) {
-        if (!sub.email) continue;
-        // Generate lien waiver
-        const { data: waiver } = await db.from('lien_waivers').insert({
+    // Auto-generate conditional lien waivers for the project's subs.
+    // LIVE schema: membership lives in project_subcontractors (which carries the
+    // real per-sub contract_amount); the waiver FK is pay_application_id; and the
+    // type CHECK allows conditional_progress/unconditional_progress/(final).
+    // A conditional PROGRESS waiver is for THIS PERIOD'S payment — never the full
+    // contract value.
+    const { data: memberships, error: memErr } = await db
+      .from('project_subcontractors')
+      .select('subcontractor_id, contract_amount, status, subcontractors(company_name, email, contact_email)')
+      .eq('project_id', project.id)
+      .eq('tenant_id', project.tenant_id)
+      .neq('status', 'inactive');
+    if (memErr) console.error('[onPayAppApproved] membership query failed', memErr);
+    const activeSubs = ((memberships as any[]) || [])
+      .map((m) => ({
+        subId: m.subcontractor_id,
+        contractAmount: Number(m.contract_amount) || 0,
+        company: m.subcontractors?.company_name || 'Subcontractor',
+        email: m.subcontractors?.email || m.subcontractors?.contact_email || null,
+      }))
+      .filter((s) => s.email);
+    if (activeSubs.length > 0) {
+      // Period amount: current payment due split by each sub's share of total
+      // contract value (falls back to an even split when amounts are zero).
+      const periodTotal = Number(pa.current_payment_due) || 0;
+      const contractTotal = activeSubs.reduce((s, x) => s + x.contractAmount, 0);
+      for (const sub of activeSubs) {
+        const share = contractTotal > 0 ? sub.contractAmount / contractTotal : 1 / activeSubs.length;
+        const waiverAmount = Math.round(periodTotal * share * 100) / 100;
+        const { data: waiver, error: wErr } = await db.from('lien_waivers').insert({
           tenant_id: project.tenant_id,
           project_id: project.id,
-          sub_id: sub.id,
-          pay_app_id: payAppId,
-          waiver_type: 'conditional_partial',
+          sub_id: sub.subId,
+          subcontractor_id: sub.subId,
+          pay_application_id: payAppId,
+          waiver_type: 'conditional_progress',
           state: project.state || 'AZ',
-          amount: sub.contract_amount || 0,
+          amount: waiverAmount,
+          company_name: sub.company,
+          claimant_name: sub.company,
           through_date: pa.period_to,
           status: 'pending',
-        }).select().single();
+        } as never).select().single();
+        if (wErr) { console.error('[onPayAppApproved] waiver insert failed', wErr); continue; }
         if (waiver) {
           const w = waiver as any;
           await sendLienWaiverRequest(
-            sub.email, sub.name, project.name, sub.contract_amount || 0,
+            sub.email, sub.company, project.name, waiverAmount,
             `${APP_URL}/portals/lien-waiver/${w.token}`
           );
         }
@@ -367,6 +394,58 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
     }
 
     await db.from('bid_submissions').update({ status: 'not_awarded' }).eq('bid_package_id', pkg.id).neq('id', bidSubmissionId);
+
+    // ── THE AWARD CHAIN — an award is a MONEY event, not just an email. ──
+    // (a) Draft subcontract at the awarded amount, linked to the package.
+    const winnerEmail = (winnerInvite as any)?.sub_email || null;
+    const { data: existingContract } = await db
+      .from('contracts')
+      .select('id')
+      .eq('bid_package_id', pkg.id)
+      .eq('tenant_id', project.tenant_id)
+      .maybeSingle();
+    if (!existingContract) {
+      await db.from('contracts').insert({
+        tenant_id: project.tenant_id,
+        project_id: project.id,
+        bid_package_id: pkg.id,
+        contract_type: 'subcontract',
+        status: 'draft',
+        title: `${pkg.trade || pkg.name} — ${w.sub_name}`,
+        amount: w.bid_amount || 0,
+        contract_amount: w.bid_amount || 0,
+        original_amount: String(w.bid_amount || 0), // TEXT column in the live schema
+        party_name: w.sub_name,
+        party_company: w.sub_name,
+        party_email: winnerEmail,
+        counterparty_name: w.sub_name,
+        counterparty_email: winnerEmail,
+        notes: `Auto-created on bid award (package: ${pkg.name}).`,
+      } as never);
+    }
+    // (b) Budget commitment — same cost-code/division matching the CO cascade uses.
+    const csi = (pkg.csi_codes && pkg.csi_codes[0]) || pkg.csi_division || null;
+    if (csi) {
+      const div = String(csi).slice(0, 2);
+      const { data: bLine } = await db
+        .from('budget_lines')
+        .select('id, committed')
+        .eq('project_id', project.id)
+        .or(`cost_code.eq.${csi},division.eq.${div}`)
+        .limit(1)
+        .maybeSingle();
+      if (bLine) {
+        await db
+          .from('budget_lines')
+          .update({ committed: ((bLine as any).committed || 0) + (w.bid_amount || 0) })
+          .eq('id', (bLine as any).id);
+      }
+    }
+    // (c) Kick off the sub's W-9 request via the existing onboarding cascade.
+    if (w.sub_id) {
+      onSubAddedToProject(project.id, w.sub_id).catch(() => {});
+    }
+
     await createNotification(
       project.tenant_id, null, 'bid_awarded',
       `Bid awarded to ${w.sub_name}`,
@@ -508,26 +587,64 @@ export async function onRFIAnswered(rfiId: string): Promise<void> {
 export async function onChangeOrderApproved(changeOrderId: string): Promise<void> {
   try {
     const db = adminClient();
-    const { data: co } = await db.from('change_orders').select('*, projects(*)').eq('id', changeOrderId).single();
+    // Plain fetch + separate project lookup — the projects(*) embed silently
+    // returns null when the FK constraint is absent live, killing the cascade.
+    const { data: co, error: coFetchErr } = await db.from('change_orders').select('*').eq('id', changeOrderId).single();
+    if (coFetchErr) console.error('[onChangeOrderApproved] CO fetch failed', coFetchErr);
     if (!co) return;
     const c = co as any;
-    const project = c.projects;
+    const { data: projectRow, error: projErr } = await db.from('projects').select('*').eq('id', c.project_id).single();
+    if (projErr) console.error('[onChangeOrderApproved] project fetch failed', projErr);
+    const project = projectRow as any;
     if (!project) return;
 
     // Update project contract sum
     const { data: currentProject } = await db.from('projects').select('contract_amount').eq('id', project.id).single();
     if (currentProject) {
-      const newSum = ((currentProject as any).contract_amount || 0) + (c.cost_impact || 0);
+      // Number() both sides — contract_amount round-trips as a STRING from the
+      // live column, and `"100000" + 5000` CONCATENATES ("1000005000"), silently
+      // corrupting the project's contract value on every CO approval.
+      const newSum = (Number((currentProject as any).contract_amount) || 0) + (Number(c.cost_impact) || 0);
       await db.from('projects').update({ contract_amount: newSum }).eq('id', project.id);
     }
 
-    // Sync budget line committed cost if CO has a matching cost_code
-    if (c.cost_code) {
+    // Contracts module: revised_amount is GENERATED from original + approved_changes,
+    // so the prime contract's approved_changes MUST move on CO approval or the
+    // module shows a stale contract value forever.
+    const { data: prime } = await db
+      .from('contracts')
+      .select('id, approved_changes')
+      .eq('project_id', project.id)
+      .eq('contract_type', 'prime')
+      .limit(1)
+      .maybeSingle();
+    if (prime) {
+      await db
+        .from('contracts')
+        .update({ approved_changes: ((prime as any).approved_changes || 0) + (c.cost_impact || 0) } as never)
+        .eq('id', (prime as any).id);
+    }
+
+    // Sync budget line committed cost. LIVE change_orders has NO cost_code column
+    // (the old c.cost_code check was permanently undefined = silently dead) —
+    // resolve the CSI through the CO's related bid package instead.
+    let coCode: string | null = null;
+    if (c.related_bid_package_id) {
+      const { data: coPkg } = await db
+        .from('bid_packages')
+        .select('csi_codes, csi_division')
+        .eq('id', c.related_bid_package_id)
+        .maybeSingle();
+      coCode = ((coPkg as any)?.csi_codes?.[0]) || (coPkg as any)?.csi_division || null;
+    }
+    if (coCode) {
+      const div = String(coCode).slice(0, 2);
       const { data: budgetLine } = await db
         .from('budget_lines')
         .select('id, committed')
         .eq('project_id', project.id)
-        .eq('cost_code', c.cost_code)
+        .or(`cost_code.eq.${coCode},division.eq.${div}`)
+        .limit(1)
         .maybeSingle();
       if (budgetLine) {
         const bl = budgetLine as any;

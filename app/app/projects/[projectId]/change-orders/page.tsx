@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { toCents, toDollars, summarizeContract } from '@/lib/calc';
-import { Robot, X, Warning, CheckCircle, XCircle, Plus, Clipboard, CaretDown, PencilSimple, Copy, Trash, CurrencyDollar } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { Robot, X, Warning, CheckCircle, XCircle, Plus, Clipboard, CaretDown, PencilSimple, Copy, Trash, CurrencyDollar, ClockCounterClockwise } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const AMBER='#d97706';
@@ -12,6 +12,9 @@ const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDig
 
 const INP:React.CSSProperties = {padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box'};
 const LBL:React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
+const HINT:React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
+const fmtDate = (d?:string|null) => d ? new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+const padCo = (n:number|string) => String(n??0).padStart(3,'0');
 
 interface AIRiskResult {
   risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -131,12 +134,30 @@ export default function ChangeOrdersPage() {
   // project contract sum for running total
   const [contractSum,setContractSum] = useState(0);
 
+  // /api/project-context snapshot — the screen walks in knowing the contract
+  // money, CO history, bid packages, and schedule before the GC types anything.
+  const [ctx,setCtx] = useState<any>(null);
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if(!c.error){
+          setCtx(c);
+          const original = Number(c.money?.originalContract)||0;
+          if(original>0) setContractSum(prev=>prev||original);
+        }
+      }catch{}
+    })();
+  },[projectId]);
+
   // form
   const [fTitle,setFTitle]         = useState('');
   const [fDesc,setFDesc]           = useState('');
   const [fReason,setFReason]       = useState('');
   const [fCost,setFCost]           = useState('');
   const [fSchedule,setFSchedule]   = useState('');
+  const [fRelatedPkg,setFRelatedPkg] = useState('');
 
   async function analyzeRisk(coData: Record<string, unknown>, targetKey: 'form' | string) {
     setRiskTarget(targetKey);
@@ -187,10 +208,11 @@ export default function ChangeOrdersPage() {
       const r = await fetch('/api/change-orders/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         projectId,title:fTitle,description:fDesc,reason:fReason,
         costImpact:parseFloat(fCost)||0,scheduleImpact:parseFloat(fSchedule)||0,
+        relatedBidPackageId:fRelatedPkg||null,
       })});
       const d = await r.json();
       if(d.error) throw new Error(d.error);
-      setFTitle(''); setFDesc(''); setFReason(''); setFCost(''); setFSchedule('');
+      setFTitle(''); setFDesc(''); setFReason(''); setFCost(''); setFSchedule(''); setFRelatedPkg('');
       setShowForm(false);
       await load();
     }catch(e:any){
@@ -274,6 +296,20 @@ export default function ChangeOrdersPage() {
   const pendingCOs    = toDollars(contractSummary.pendingChangeOrders);
   const currentContract = toDollars(contractSummary.revisedContract);
 
+  // SmartCreate intelligence — the form walks in knowing the CO history, bid
+  // packages, and schedule. cost_impact is TEXT in the DB: Number() everything.
+  const approvedCount  = cos.filter(c=>c.status==='approved').length;
+  const pendingCount   = cos.filter(c=>c.status==='pending').length;
+  const lastCo         = cos.length>0 ? cos[cos.length-1] : null;
+  const nextCoNumber   = Math.max(cos.reduce((m,c)=>Math.max(m,Number(c.co_number)||0),0)+1, Number(ctx?.defaults?.nextCoNumber)||1);
+  const fCostNum       = Number(fCost)||0;
+  const fSchedNum      = Number(fSchedule)||0;
+  const newContractSum = toDollars(contractSummary.revisedContract + toCents(fCostNum));
+  const bidPkgs        = (ctx?.bidPackages||[]) as any[];
+  const selectedPkg    = bidPkgs.find(b=>b.id===fRelatedPkg) || null;
+  const projEnd        = ctx?.project?.endDate ? String(ctx.project.endDate) : null;
+  const pushedEnd      = projEnd && fSchedNum>0 ? new Date(new Date(projEnd.slice(0,10)+'T00:00:00').getTime()+fSchedNum*86400000) : null;
+
   return (
     <>
       {toast && (
@@ -300,57 +336,134 @@ export default function ChangeOrdersPage() {
           }
         />
 
-        {/* Create Form */}
+        {/* Contract intelligence strip — what the system already knows */}
+        {(ctx || !loading) && (
+          <StatStrip items={[
+            {label:'Original Contract', value:fmt(contractSum), sub:'prime contract baseline'},
+            {label:'Approved COs', value:(approvedCOs>=0?'+':'')+fmt(approvedCOs), accent:approvedCOs>0?'#3dd68c':approvedCOs<0?RED:undefined, sub:`${approvedCount} approved`},
+            {label:'Pending COs', value:(pendingCOs>=0?'+':'')+fmt(pendingCOs), accent:pendingCount>0?GOLD:undefined, sub:pendingCount>0?`${pendingCount} awaiting decision`:'none awaiting decision'},
+            {label:'Revised Contract', value:fmt(currentContract), accent:GOLD, sub:'original + approved COs'},
+            {label:'Next CO', value:`CO-${padCo(nextCoNumber)}`, sub:lastCo?`follows CO-${padCo(lastCo.co_number)}`:'first on this project'},
+          ]}/>
+        )}
+
+        {/* Create Form — walks in knowing the contract, CO history, and bid packages */}
         {showForm && (
-          <SectionCard title="New Change Order" icon={<Plus size={17} weight="duotone" color={GOLD} />} style={{ marginBottom: 24 }}>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
-            <div style={{gridColumn:'1/-1'}}>
-              <label style={LBL}>Title *</label>
-              <input value={fTitle} onChange={e=>setFTitle(e.target.value)} placeholder="e.g. Add electrical outlets in server room" style={INP}/>
-            </div>
-            <div>
-              <label style={LBL}>Reason</label>
-              <input value={fReason} onChange={e=>setFReason(e.target.value)} placeholder="e.g. Owner request, unforeseen conditions" style={INP}/>
-            </div>
-            <div>
-              <label style={LBL}>Cost Impact ($)</label>
-              <input type="number" value={fCost} onChange={e=>setFCost(e.target.value)} placeholder="0" style={INP}/>
-            </div>
-            <div>
-              <label style={LBL}>Schedule Impact (days)</label>
-              <input type="number" value={fSchedule} onChange={e=>setFSchedule(e.target.value)} placeholder="0" style={INP}/>
-            </div>
-            <div style={{gridColumn:'1/-1'}}>
-              <label style={LBL}>Description</label>
-              <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={3} placeholder="Describe the change in detail…"
-                style={{...INP,resize:'vertical' as const}}/>
+          <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:22,alignItems:'start',marginBottom:24}}>
+            <SectionCard title={`New Change Order — CO-${padCo(nextCoNumber)}`} icon={<Plus size={17} weight="duotone" color={GOLD} />}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+                <div>
+                  <label style={LBL}>CO Number<AutoChip/></label>
+                  <input value={`CO-${padCo(nextCoNumber)}`} readOnly style={{...INP,color:GOLD,fontWeight:800,cursor:'default'}}/>
+                  <div style={HINT}>{lastCo ? `Assigned automatically — follows CO-${padCo(lastCo.co_number)}.` : 'Assigned automatically — first change order on this project.'}</div>
+                </div>
+                <div>
+                  <label style={LBL}>Related Bid Package</label>
+                  <select value={fRelatedPkg} onChange={e=>setFRelatedPkg(e.target.value)} style={{...INP,cursor:'pointer'}}>
+                    <option value="">None — prime contract / general</option>
+                    {bidPkgs.map(b=>(<option key={b.id} value={b.id}>{b.name}{b.trade?` — ${b.trade}`:''}</option>))}
+                  </select>
+                  <div style={HINT}>
+                    {selectedPkg
+                      ? <>Awarded{selectedPkg.awardedTo?` to ${selectedPkg.awardedTo}`:''} at <b style={{color:TEXT}}>{fmt(Number(selectedPkg.awardedAmount)||0)}</b>{Number(selectedPkg.budgetEstimate)>0 && <> vs {fmt(Number(selectedPkg.budgetEstimate)||0)} budgeted</>}{selectedPkg.csiDivision?` — Div ${selectedPkg.csiDivision}`:''}.</>
+                      : bidPkgs.length>0 ? `Optional — ties this CO to one of the ${bidPkgs.length} bid packages so the budget sync lands on the right scope.` : 'No bid packages on this project yet — the CO posts against the prime contract.'}
+                  </div>
+                </div>
+                <div style={{gridColumn:'1/-1'}}>
+                  <label style={LBL}>Title *</label>
+                  <input value={fTitle} onChange={e=>setFTitle(e.target.value)} placeholder="e.g. Add electrical outlets in server room" style={INP}/>
+                </div>
+                <div>
+                  <label style={LBL}>Cost Impact ($)</label>
+                  <input type="number" value={fCost} onChange={e=>setFCost(e.target.value)} placeholder="0" style={INP}/>
+                  <div style={HINT}>
+                    New contract sum: <b style={{color:fCostNum>0?'#3dd68c':fCostNum<0?RED:TEXT}}>{fmt(newContractSum)}</b> — {fmt(contractSum)} original{approvedCOs!==0 && <> {approvedCOs>0?'+':'-'} {fmt(Math.abs(approvedCOs))} approved COs</>} + this CO. Enter a negative number for credits.
+                  </div>
+                </div>
+                <div>
+                  <label style={LBL}>Schedule Impact (days)</label>
+                  <input type="number" value={fSchedule} onChange={e=>setFSchedule(e.target.value)} placeholder="0" style={INP}/>
+                  <div style={HINT}>
+                    {pushedEnd
+                      ? <>Pushes completion from {fmtDate(projEnd)} to <b style={{color:ORANGE}}>{pushedEnd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</b>.</>
+                      : Number(ctx?.schedule?.criticalCount)>0
+                        ? `${Number(ctx?.schedule?.criticalCount)||0} critical task${Number(ctx?.schedule?.criticalCount)===1?'':'s'} on the schedule — added days land on the critical path.`
+                        : 'Days added to the project completion date, if any.'}
+                  </div>
+                </div>
+                <div style={{gridColumn:'1/-1'}}>
+                  <label style={LBL}>Reason</label>
+                  <input value={fReason} onChange={e=>setFReason(e.target.value)} placeholder="e.g. Owner request, unforeseen conditions" style={INP} list="co-reason-suggestions"/>
+                  <datalist id="co-reason-suggestions">
+                    <option value="Owner request"/>
+                    <option value="Unforeseen conditions"/>
+                    <option value="Design change"/>
+                    <option value="Code compliance"/>
+                    <option value="Material substitution"/>
+                    <option value="Allowance reconciliation"/>
+                  </datalist>
+                </div>
+                <div style={{gridColumn:'1/-1'}}>
+                  <label style={LBL}>Description</label>
+                  <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={3} placeholder="Describe the change in detail…"
+                    style={{...INP,resize:'vertical' as const}}/>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                <button onClick={createCO} disabled={saving||!fTitle.trim()}
+                  style={{...goldButtonStyle,cursor:saving?'wait':'pointer',opacity:(saving||!fTitle.trim())?0.6:1}} className="pmBtn">
+                  {saving ? 'Creating…' : 'Create Change Order'}
+                </button>
+                <button onClick={()=>{setShowForm(false);setError('');}}
+                  style={ghostButtonStyle} className="pmBtn">
+                  Cancel
+                </button>
+                <button
+                  onClick={()=>analyzeRisk({title:fTitle,description:fDesc,reason:fReason,cost_impact:parseFloat(fCost)||0,schedule_impact:parseFloat(fSchedule)||0},'form')}
+                  disabled={(riskLoading&&riskTarget==='form')||!fTitle.trim()}
+                  style={{...goldOutlineButtonStyle,opacity:!fTitle.trim()?0.5:1}} className="pmBtn">
+                  <Robot size={15} color={GOLD} weight="regular" />
+                  {riskLoading&&riskTarget==='form' ? 'Analyzing…' : 'Analyze Risk'}
+                </button>
+              </div>
+              {riskTarget==='form' && riskError && (
+                <div style={{marginTop:10,padding:'8px 12px',background:'rgba(192,48,48,.12)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:7,color:RED,fontSize:12}}>{riskError}</div>
+              )}
+              {riskTarget==='form' && riskResult && (
+                <AIRiskPanel result={riskResult} onClose={()=>{setRiskResult(null);setRiskTarget(null);}} />
+              )}
+            </SectionCard>
+
+            {/* Context rail — live contract position, prior CO, downstream automation */}
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+              <SectionCard title="Contract Position" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />}>
+                <InsightRow label="Original contract" value={fmt(contractSum)}/>
+                <InsightRow label={`Approved COs (${approvedCount})`} value={(approvedCOs>=0?'+':'')+fmt(approvedCOs)} accent={approvedCOs>0?'#3dd68c':undefined}/>
+                {pendingCount>0 && <InsightRow label={`Pending COs (${pendingCount})`} value={(pendingCOs>=0?'+':'')+fmt(pendingCOs)} accent={GOLD}/>}
+                <InsightRow label="This CO" value={(fCostNum>=0?'+':'')+fmt(fCostNum)} accent={fCostNum>0?ORANGE:fCostNum<0?RED:undefined}/>
+                <div style={{height:1,background:'rgba(255,255,255,0.08)',margin:'8px 0'}}/>
+                <InsightRow label="New contract sum" value={fmt(newContractSum)} accent={GREEN} strong/>
+                {fSchedNum>0 && <InsightRow label="Schedule impact" value={`+${fSchedNum} day${fSchedNum===1?'':'s'}`} accent={ORANGE}/>}
+              </SectionCard>
+              {lastCo && (
+                <SectionCard title={`Last CO — CO-${padCo(lastCo.co_number)}`} icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />}>
+                  <InsightRow label="Title" value={<span style={{display:'inline-block',maxWidth:170,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',verticalAlign:'bottom'}}>{lastCo.title||'—'}</span>}/>
+                  <InsightRow label="Status" value={String(lastCo.status||'pending')} accent={statusStyle(lastCo.status||'pending').c}/>
+                  <InsightRow label="Cost impact" value={(Number(lastCo.cost_impact||0)>=0?'+':'')+fmt(Number(lastCo.cost_impact)||0)} accent={Number(lastCo.cost_impact||0)>0?ORANGE:undefined}/>
+                  <InsightRow label="Schedule" value={Number(lastCo.schedule_impact||0)>0?`+${Number(lastCo.schedule_impact)||0} days`:'—'}/>
+                </SectionCard>
+              )}
+              <SectionCard title="After You Submit" icon={<CheckCircle size={17} weight="duotone" color={GOLD} />}>
+                <FlowSteps title="" steps={[
+                  {title:'CO logged as pending', desc:`Numbered CO-${padCo(nextCoNumber)} automatically and queued for a decision.`},
+                  {title:'Owner approval', desc:'Approve or reject right from this list — status flips instantly.'},
+                  {title:'Contract sum auto-updates', desc:`On approval the revised contract and prime contract move to ${fmt(newContractSum)} on their own.`},
+                  {title:'Budget line syncs', desc:'The matching budget line absorbs the approved amount — nothing re-typed in Budget.'},
+                ]}/>
+              </SectionCard>
             </div>
           </div>
-          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-            <button onClick={createCO} disabled={saving||!fTitle.trim()}
-              style={{...goldButtonStyle,cursor:saving?'wait':'pointer',opacity:(saving||!fTitle.trim())?0.6:1}} className="pmBtn">
-              {saving ? 'Creating…' : 'Create Change Order'}
-            </button>
-            <button onClick={()=>{setShowForm(false);setError('');}}
-              style={ghostButtonStyle} className="pmBtn">
-              Cancel
-            </button>
-            <button
-              onClick={()=>analyzeRisk({title:fTitle,description:fDesc,reason:fReason,cost_impact:parseFloat(fCost)||0,schedule_impact:parseFloat(fSchedule)||0},'form')}
-              disabled={(riskLoading&&riskTarget==='form')||!fTitle.trim()}
-              style={{...goldOutlineButtonStyle,opacity:!fTitle.trim()?0.5:1}} className="pmBtn">
-              <Robot size={15} color={GOLD} weight="regular" />
-              {riskLoading&&riskTarget==='form' ? 'Analyzing…' : 'Analyze Risk'}
-            </button>
-          </div>
-          {riskTarget==='form' && riskError && (
-            <div style={{marginTop:10,padding:'8px 12px',background:'rgba(192,48,48,.12)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:7,color:RED,fontSize:12}}>{riskError}</div>
-          )}
-          {riskTarget==='form' && riskResult && (
-            <AIRiskPanel result={riskResult} onClose={()=>{setRiskResult(null);setRiskTarget(null);}} />
-          )}
-        </SectionCard>
-      )}
+        )}
 
       {/* Error */}
       {error && (
@@ -358,34 +471,6 @@ export default function ChangeOrdersPage() {
           {error}
         </div>
       )}
-
-      {/* Contract Summary Bar */}
-      <SectionCard title="Contract Summary" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />} style={{ marginBottom: 20 }}>
-        <div style={{display:'flex',gap:32,flexWrap:'wrap' as const,alignItems:'center'}}>
-          <div>
-            <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:4}}>Original Contract</div>
-            <div style={{fontSize:18,fontWeight:800,color:TEXT}}>{fmt(contractSum)}</div>
-          </div>
-          <div style={{color:BORDER,fontSize:20}}>+</div>
-          <div>
-            <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:4}}>Approved COs</div>
-            <div style={{fontSize:18,fontWeight:800,color:approvedCOs>=0?GREEN:RED}}>{approvedCOs>=0?'+':''}{fmt(approvedCOs)}</div>
-          </div>
-          <div style={{color:BORDER,fontSize:20}}>=</div>
-          <div>
-            <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:4}}>Current Contract Sum</div>
-            <div style={{fontSize:22,fontWeight:800,color:GOLD}}>{fmt(currentContract)}</div>
-          </div>
-          {pendingCOs!==0 && (
-            <>
-              <div style={{marginLeft:'auto',padding:'8px 16px',background:'rgba(245, 158, 11,.08)',border:`1px solid rgba(245, 158, 11,.2)`,borderRadius:8}}>
-                <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:3}}>Pending Approval</div>
-                <div style={{fontSize:16,fontWeight:800,color:GOLD}}>{pendingCOs>=0?'+':''}{fmt(pendingCOs)}</div>
-              </div>
-            </>
-          )}
-        </div>
-      </SectionCard>
 
       {/* KPI Cards */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>

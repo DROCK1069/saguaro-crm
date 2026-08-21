@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { humanError } from '@/lib/errors';
-import { CONTRACTOR_TRADES as TRADES, TRADESPERSON_ROLES as ROLES } from '@/lib/contractor-trades';
+import { TRADESPERSON_ROLES as ROLES } from '@/lib/contractor-trades';
+import { SUB_TRADES as TRADES } from '@/lib/construction-intelligence';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { UsersThree, ClipboardText, UserGear, Warning, Gauge, Scales, Plus, DownloadSimple, ArrowsClockwise, FunnelSimple, CurrencyDollar, Clock, TrendDown, UserMinus, CalendarBlank, Buildings } from '@phosphor-icons/react';
 
@@ -27,7 +28,7 @@ interface Assignment {
 interface Project { id: string; name: string; status?: string; }
 
 /* ===== CONSTANTS ===== */
-// TRADES and ROLES imported from @/lib/contractor-trades
+// TRADES = canonical SUB_TRADES taxonomy (@/lib/construction-intelligence); ROLES from @/lib/contractor-trades
 const CERTS = ['OSHA 10','OSHA 30','First Aid/CPR','Confined Space','Fall Protection','Crane Operator','Welding','CDL','Master Electrician','Master Plumber','EPA 608','Rigging','Scaffolding'];
 const STATUS_COLORS: { [k: string]: string } = { assigned: BLUE, tentative: AMBER, confirmed: GREEN, released: DIM, unavailable: RED };
 const STATUS_OPTS: Assignment['status'][] = ['assigned','tentative','confirmed','released','unavailable'];
@@ -494,6 +495,7 @@ export default function ResourcePlanningPage() {
       </select>
       <select value={filterTrade} onChange={e => setFilterTrade(e.target.value)} style={{ ...sel(), width: 150 }}>
         <option value="">All Trades</option>
+        {filterTrade && !TRADES.includes(filterTrade) && <option value={filterTrade}>{filterTrade}</option>}
         {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
       </select>
       <select value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ ...sel(), width: 160 }}>
@@ -558,6 +560,7 @@ export default function ResourcePlanningPage() {
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>Trade</label>
             <select value={form.trade || ''} onChange={e => setForm({ ...form, trade: e.target.value })} style={sel()}>
+              {form.trade && !TRADES.includes(form.trade) && <option value={form.trade}>{form.trade}</option>}
               {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>

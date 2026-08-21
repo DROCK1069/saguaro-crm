@@ -66,6 +66,30 @@ export async function POST(req: NextRequest) {
     }
 
     const db = createServerClient();
+
+    // ── COMPLIANCE GATE — the reason GCs force subs onto portals: an invoice
+    //    cannot be submitted while required compliance docs are missing or
+    //    expired. Required: current insurance (COI) + W9 on file. ──
+    if (session.sub_id) {
+      const { data: cdocs } = await db
+        .from('portal_sub_compliance_docs')
+        .select('doc_type, expiry_date, status')
+        .eq('tenant_id', session.tenant_id)
+        .eq('sub_id', session.sub_id);
+      const now = Date.now();
+      const ok = (type: string) => (cdocs || []).some((d: { doc_type: string; expiry_date: string | null; status: string | null }) =>
+        d.doc_type === type && d.status !== 'rejected' && d.status !== 'expired' &&
+        (!d.expiry_date || new Date(d.expiry_date).getTime() > now));
+      const missing = ['insurance', 'w9'].filter((t) => !ok(t));
+      if (missing.length) {
+        return NextResponse.json({
+          error: 'Compliance hold — invoices are released once required documents are current.',
+          complianceBlock: true,
+          missing,
+        }, { status: 409 });
+      }
+    }
+
     const body = await req.json();
     const {
       period_start,
@@ -186,6 +210,16 @@ export async function POST(req: NextRequest) {
       .insert(lineItemRows);
 
     if (lineError) throw lineError;
+
+    // History — every submission timestamped for the sub's activity feed.
+    await db.from('portal_activity').insert({
+      tenant_id: session.tenant_id,
+      project_id: session.project_id,
+      session_id: session.id,
+      action: 'invoice_submitted',
+      description: `Submitted pay application (${lineItemRows.length} lines)`,
+      metadata: { pay_app_id: payApp.id, amount: (payApp as { amount?: number }).amount, period_end, lines: lineItemRows.length, by: session.sub_company },
+    } as never);
 
     return NextResponse.json(
       { pay_app: payApp, message: 'Pay application submitted successfully' },

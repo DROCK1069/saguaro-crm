@@ -32,6 +32,7 @@ import {
   ClipboardText,
   CalendarBlank,
   Truck,
+  Package,
   HardHat,
   Users,
   Warning,
@@ -108,6 +109,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Bids & Estimates', href: '/app/bids',         icon: CurrencyDollar },
       { label: 'Takeoff Studio',   href: '/app/takeoff',      icon: Blueprint },
+      { label: 'Catalog',          href: '/app/catalog',      icon: Package },
       { label: 'Heatmap',          href: '/field/heatmap',    icon: WifiHigh },
       { label: 'Intelligence',     href: '/app/intelligence', icon: Brain },
     ],

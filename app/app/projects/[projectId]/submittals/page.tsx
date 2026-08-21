@@ -4,7 +4,8 @@ import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Plus, Clipboard, X, CaretRight, ClipboardText, Clock, Eye, WarningCircle, Stack } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { CSI_DIVISIONS, SUB_TRADES } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#c07830';
@@ -41,6 +42,9 @@ const inp:React.CSSProperties={
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
 
+const HINT:React.CSSProperties={fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
+const isoDate=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
 const EMPTY_FORM={
   submittal_number:'',title:'',spec_section:'',trade:'',
   status:'pending',ball_in_court:'Contractor',
@@ -56,10 +60,10 @@ function Pill({label,color}:{label:string;color:string}){
   );
 }
 
-function FieldLabel({label}:{label:string}){
+function FieldLabel({label,auto}:{label:string;auto?:boolean}){
   return(
     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
-      textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}</label>
+      textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}{auto&&<AutoChip/>}</label>
   );
 }
 
@@ -93,6 +97,10 @@ export default function SubmittalsPage(){
   const [search,setSearch]=useState('');
   const [filterStatus,setFilterStatus]=useState('all');
   const [filterBIC,setFilterBIC]=useState('all');
+  // SmartCreate: the create panel walks in knowing the project — reviewer,
+  // sub roster, log state — via the one-shot /api/project-context snapshot.
+  const [ctx,setCtx]=useState<any>(null);
+  const [auto,setAuto]=useState<{num?:boolean;due?:boolean;bic?:boolean}>({});
 
   const today=new Date().toISOString().split('T')[0];
 
@@ -115,9 +123,21 @@ export default function SubmittalsPage(){
 
   useEffect(()=>{load();},[load]);
 
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r=await fetch(`/api/project-context?projectId=${projectId}`);
+        const c=await r.json();
+        if(!c.error) setCtx(c);
+      }catch{}
+    })();
+  },[projectId]);
+
   function openCreate(){
     const num=`S-${String(submittals.length+1).padStart(3,'0')}`;
-    setForm({...EMPTY_FORM,submittal_number:num});
+    const due=isoDate(new Date(Date.now()+14*86400000));
+    setForm({...EMPTY_FORM,submittal_number:num,due_date:due});
+    setAuto({num:true,due:true,bic:true});
     setMode('create');setSelected(null);
   }
   function openEdit(sub:any){
@@ -133,7 +153,7 @@ export default function SubmittalsPage(){
       revision_number:sub.revision_number??0,
       notes:sub.notes||'',
     });
-    setSelected(sub);setMode('edit');
+    setAuto({});setSelected(sub);setMode('edit');
   }
   function viewSub(sub:any){setSelected(sub);setMode('view');}
   function closePanel(){setSelected(null);setMode(null);}
@@ -225,6 +245,10 @@ export default function SubmittalsPage(){
   const overdue=submittals.filter(s=>
     s.due_date&&s.due_date.substring(0,10)<today&&s.status!=='approved'&&s.status!=='rejected'
   ).length;
+
+  // Canonical CSI spec-section options + the live sub roster for the create panel.
+  const specOptions=Object.entries(CSI_DIVISIONS).map(([code,d])=>`${code} — ${d.name}`);
+  const roster=(ctx?.subs||[]) as any[];
 
   const filtered=submittals.filter(s=>{
     const ms=!search
@@ -465,12 +489,21 @@ export default function SubmittalsPage(){
           <div style={{flex:1,overflow:'auto',padding:20}}>
             {(mode==='create'||mode==='edit')?(
               <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                {mode==='create'&&ctx&&(
+                  <StatStrip items={[
+                    {label:'Log', value:String(total), sub:`${ctx.counts?.openSubmittals??0} open now`},
+                    {label:'Reviewer', value:ctx.project?.architectName||'Architect', sub:'ball moves here on submit'},
+                    {label:'Sub Roster', value:String((ctx.subs||[]).length), sub:'trades to pick from'},
+                    {label:'Overdue', value:String(overdue), accent:overdue>0?RED:undefined, sub:overdue>0?'need attention first':'log is current'},
+                  ]}/>
+                )}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <div>
-                    <FieldLabel label="Submittal #"/>
+                    <FieldLabel label="Submittal #" auto={auto.num}/>
                     <input value={form.submittal_number}
-                      onChange={e=>setForm(f=>({...f,submittal_number:e.target.value}))}
+                      onChange={e=>{const v=e.target.value;setAuto(a=>({...a,num:false}));setForm(f=>({...f,submittal_number:v}));}}
                       style={inp} placeholder="S-001"/>
+                    {auto.num&&<div style={HINT}>Next in sequence — {total} already on the log.</div>}
                   </div>
                   <div>
                     <FieldLabel label="Revision"/>
@@ -487,15 +520,38 @@ export default function SubmittalsPage(){
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <div>
                     <FieldLabel label="Spec Section"/>
-                    <input value={form.spec_section}
+                    <select value={form.spec_section}
                       onChange={e=>setForm(f=>({...f,spec_section:e.target.value}))}
-                      style={inp} placeholder="e.g. 05 12 00"/>
+                      style={{...inp,padding:'9px 10px'}}>
+                      <option value="">Select division...</option>
+                      {form.spec_section&&!specOptions.includes(form.spec_section)&&(
+                        <option value={form.spec_section}>{form.spec_section}</option>
+                      )}
+                      {specOptions.map(o=><option key={o} value={o}>{o}</option>)}
+                    </select>
+                    <div style={HINT}>CSI MasterFormat divisions.</div>
                   </div>
                   <div>
-                    <FieldLabel label="Trade"/>
-                    <input value={form.trade}
+                    <FieldLabel label="Trade / Sub"/>
+                    <select value={form.trade}
                       onChange={e=>setForm(f=>({...f,trade:e.target.value}))}
-                      style={inp} placeholder="e.g. Structural"/>
+                      style={{...inp,padding:'9px 10px'}}>
+                      <option value="">Select trade...</option>
+                      {form.trade&&!roster.some((s:any)=>(s.trade||s.companyName)===form.trade)&&!SUB_TRADES.includes(form.trade)&&(
+                        <option value={form.trade}>{form.trade}</option>
+                      )}
+                      {roster.length>0&&(
+                        <optgroup label="On this project">
+                          {roster.map((s:any)=>(
+                            <option key={s.membershipId} value={s.trade||s.companyName||''}>{s.companyName}{s.trade?` — ${s.trade}`:''}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="All trades">
+                        {SUB_TRADES.map(t=><option key={t} value={t}>{t}</option>)}
+                      </optgroup>
+                    </select>
+                    {roster.length>0&&<div style={HINT}>{roster.length} sub{roster.length===1?'':'s'} on the project roster.</div>}
                   </div>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
@@ -507,12 +563,13 @@ export default function SubmittalsPage(){
                     </select>
                   </div>
                   <div>
-                    <FieldLabel label="Ball in Court"/>
+                    <FieldLabel label="Ball in Court" auto={auto.bic}/>
                     <select value={form.ball_in_court}
-                      onChange={e=>setForm(f=>({...f,ball_in_court:e.target.value}))}
+                      onChange={e=>{const v=e.target.value;setAuto(a=>({...a,bic:false}));setForm(f=>({...f,ball_in_court:v}));}}
                       style={{...inp,padding:'9px 10px'}}>
                       {BIC_OPTIONS.map(b=><option key={b} value={b}>{b}</option>)}
                     </select>
+                    {auto.bic&&<div style={HINT}>Starts with you — flips to {ctx?.project?.architectName||'the architect'} on submit.</div>}
                   </div>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
@@ -523,10 +580,11 @@ export default function SubmittalsPage(){
                       style={inp}/>
                   </div>
                   <div>
-                    <FieldLabel label="Required Date"/>
+                    <FieldLabel label="Required Date" auto={auto.due}/>
                     <input type="date" value={form.due_date}
-                      onChange={e=>setForm(f=>({...f,due_date:e.target.value}))}
+                      onChange={e=>{const v=e.target.value;setAuto(a=>({...a,due:false}));setForm(f=>({...f,due_date:v}));}}
                       style={inp}/>
+                    {auto.due&&<div style={HINT}>Standard 14-day review window — adjust to the spec.</div>}
                   </div>
                 </div>
                 <div>
@@ -536,6 +594,15 @@ export default function SubmittalsPage(){
                     rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}
                     placeholder="Additional notes or comments..."/>
                 </div>
+                {mode==='create'&&(
+                  <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'14px 16px'}}>
+                    <FlowSteps title="After you submit" steps={[
+                      {title:'Submitted for review', desc:`Ball-in-court flips to ${ctx?.project?.architectName||'the architect'} and the review clock starts.`},
+                      {title:'Under review', desc:'Advance the workflow in one click from the log — no form reopening.'},
+                      {title:'Approved — or Revise & Resubmit', desc:'A resubmittal keeps this number and auto-increments the revision (R1, R2...).'},
+                    ]}/>
+                  </div>
+                )}
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving}
                     style={{flex:1,padding:'11px 0',

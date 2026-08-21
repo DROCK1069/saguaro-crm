@@ -1,43 +1,163 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../components/SaguaroDatePicker';
-import { PremiumSurface, ModuleHero, SectionCard, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
-import { Plus, Buildings, CalendarBlank, UsersThree, FileText, Sparkle } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { BUILDING_TYPES } from '@/lib/contractor-trades';
+import { Plus, Buildings, MapPin, CalendarBlank, UsersThree, Sparkle, CurrencyDollar, ShieldCheck, Stack } from '@phosphor-icons/react';
 
-const GOLD='#F59E0B',DARK='#1c1c1e',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
+const GOLD='#F59E0B',DARK='#1c1c1e',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const INPUT_STYLE = {width:'100%',padding:'10px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none'};
 const SELECT_STYLE = {...INPUT_STYLE,cursor:'pointer'};
-const FIELD = ({label,children}:{label:string,children:React.ReactNode}) => (
+const HINT:React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
+const fmt = (n:number) => '$'+(Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtDate = (d?:string|null) => d ? new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+
+// Mirrors the projects.project_type DB check constraint — do not extend without a migration.
+const PROJECT_CATEGORIES = [
+  {value:'residential',label:'Residential'},
+  {value:'commercial',label:'Commercial'},
+  {value:'industrial',label:'Industrial'},
+  {value:'healthcare',label:'Healthcare'},
+  {value:'education',label:'Education'},
+  {value:'government',label:'Government'},
+  {value:'multifamily',label:'Multifamily'},
+  {value:'mixed_use',label:'Mixed-Use'},
+  {value:'addition',label:'Addition'},
+  {value:'remodel',label:'Remodel / TI'},
+];
+
+// Canonical building type (lib/contractor-trades BUILDING_TYPES) -> DB category enum.
+const CATEGORY_BY_BUILDING_TYPE: Record<string,string> = {
+  'Commercial Office':'commercial','Medical Office / MOB':'healthcare','Hospital / Healthcare':'healthcare',
+  'Retail':'commercial','Restaurant / Food Service':'commercial','Industrial / Warehouse':'industrial',
+  'Manufacturing / Production':'industrial','Cold Storage / Refrigerated':'industrial','Data Center':'industrial',
+  'Laboratory / R&D':'industrial','Educational — K-12':'education','Educational — Higher Ed / University':'education',
+  'Government / Municipal':'government','Courthouse / Justice':'government','Religious / Institutional':'commercial',
+  'Hospitality / Hotel':'commercial','Multi-Family Residential (5+ units)':'multifamily','Single-Family Residential':'residential',
+  'Senior Living / Assisted Living':'healthcare','Mixed-Use':'mixed_use','Sports & Recreation':'commercial',
+  'Arena / Stadium':'commercial','Parking Structure':'commercial','Auto Dealership':'commercial',
+  'Grocery / Supermarket':'commercial','Tenant Improvement (TI)':'remodel','Historic Renovation':'remodel',
+  'Civil / Infrastructure':'industrial','Other':'commercial',
+};
+
+const FIELD = ({label,auto,hint,children}:{label:string,auto?:boolean,hint?:React.ReactNode,children:React.ReactNode}) => (
   <div style={{marginBottom:16}}>
-    <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>{label}</label>
+    <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>{label}{auto && <AutoChip/>}</label>
     {children}
+    {hint && <div style={HINT}>{hint}</div>}
   </div>
 );
 
 export default function NewProjectPage() {
   const router = useRouter();
+  const year = new Date().getFullYear();
+
+  // Identity
   const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
+  const [projectNumber, setProjectNumber] = useState('');
+  const [buildingType, setBuildingType] = useState('');
   const [type, setType] = useState('residential');
+  const [description, setDescription] = useState('');
+  // Location
+  const [address, setAddress] = useState('');
+  const [stateJurisdiction, setStateJurisdiction] = useState('AZ');
+  // Contract & money
   const [budget, setBudget] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [subDate, setSubDate] = useState('');
+  const [contractType, setContractType] = useState('Lump Sum GMP');
+  const [retainage, setRetainage] = useState('10');
   const [awardDate, setAwardDate] = useState('');
   const [ntpDate, setNtpDate] = useState('');
+  const [startDate, setStartDate] = useState(todayIso());
+  const [subDate, setSubDate] = useState('');
   const [finalDate, setFinalDate] = useState('');
-  const [stateJurisdiction, setStateJurisdiction] = useState('AZ');
+  // Team & contacts
   const [owner, setOwner] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [arch, setArch] = useState('');
   const [archEmail, setArchEmail] = useState('');
-  const [description, setDescription] = useState('');
-  const [contractType, setContractType] = useState('Lump Sum GMP');
-  const [retainage, setRetainage] = useState('10');
+  // Compliance
   const [prevailingWage, setPrevailingWage] = useState('No');
   const [publicProject, setPublicProject] = useState('No — Private');
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Which fields the system filled in (AUTO chips) vs. what the GC typed.
+  const [auto, setAuto] = useState<{num?:boolean;cat?:boolean;ret?:boolean;start?:boolean;state?:boolean;ownerEmail?:boolean;archEmail?:boolean}>({ret:true,start:true,state:true});
+
+  // This page has no projectId, so /api/project-context does not apply. The
+  // portfolio itself is the context: numbering sequence, owner/architect
+  // contact book, and house defaults (retainage, jurisdiction) all seed from
+  // the projects the tenant already has.
+  const [pf, setPf] = useState<any>(null);
+
+  useEffect(()=>{
+    (async()=>{
+      const fallback = `${year}-001`;
+      try{
+        const r = await fetch('/api/projects/list');
+        const d = await r.json();
+        const list:any[] = Array.isArray(d.projects) ? d.projects : [];
+        // Next project number — continue this year's sequence (e.g. 2026-007).
+        let maxSeq = 0;
+        for(const p of list){
+          const m = String(p.project_number||'').match(/(\d{4})-(\d{1,4})\s*$/);
+          if(m && Number(m[1])===year) maxSeq = Math.max(maxSeq, Number(m[2])||0);
+        }
+        const createdThisYear = list.filter(p=>String(p.created_at||'').startsWith(String(year))).length;
+        const suggestion = `${year}-${String((maxSeq||createdThisYear)+1).padStart(3,'0')}`;
+        // Contact book + house defaults from prior projects (list is newest-first).
+        const owners:Record<string,string> = {}, archs:Record<string,string> = {};
+        const ownerCounts:Record<string,number> = {};
+        const stateCounts:Record<string,number> = {}, retCounts:Record<string,number> = {};
+        let value = 0, active = 0;
+        for(const p of list){
+          value += Number(p.contract_value ?? p.contract_amount ?? 0)||0;
+          if(String(p.status||'')==='active') active++;
+          const on = String(p.owner_name||'').trim();
+          if(on){
+            ownerCounts[on] = (ownerCounts[on]||0)+1;
+            if(!owners[on]) owners[on] = String(p.owner_email||'');
+          }
+          const an = String(p.architect_name||'').trim();
+          if(an && !archs[an]) archs[an] = String(p.architect_email||'');
+          const sj = String(p.state_jurisdiction||'').trim().toUpperCase();
+          if(sj) stateCounts[sj] = (stateCounts[sj]||0)+1;
+          const rp = Number(p.retainage_pct);
+          if(Number.isFinite(rp) && rp>0) retCounts[String(rp)] = (retCounts[String(rp)]||0)+1;
+        }
+        const top = (c:Record<string,number>) => Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0];
+        const stateMode = top(stateCounts), retMode = top(retCounts);
+        setPf({loaded:true,total:list.length,active,value,owners,archs,ownerCounts,stateMode,retMode});
+        setProjectNumber(prev=>{ if(!prev){ setAuto(a=>({...a,num:true})); return suggestion; } return prev; });
+        if(stateMode) setStateJurisdiction(prev=> prev==='AZ' ? stateMode : prev);
+        if(retMode) setRetainage(prev=> prev==='10' ? retMode : prev);
+      }catch{
+        setPf({loaded:true,total:0,active:0,value:0,owners:{},archs:{},ownerCounts:{}});
+        setProjectNumber(prev=>{ if(!prev){ setAuto(a=>({...a,num:true})); return fallback; } return prev; });
+      }
+    })();
+  },[year]);
+
+  // Picking a canonical building type derives the DB category automatically.
+  function onBuildingTypeChange(v:string){
+    setBuildingType(v);
+    const cat = CATEGORY_BY_BUILDING_TYPE[v];
+    if(cat){ setType(cat); setAuto(a=>({...a,cat:true})); }
+  }
+  // Repeat owner/architect: pull their email from the contact book.
+  function onOwnerChange(v:string){
+    setOwner(v);
+    const em = pf?.owners?.[v.trim()];
+    if(em) setOwnerEmail(prev=>{ if(!prev){ setAuto(a=>({...a,ownerEmail:true})); return em; } return prev; });
+  }
+  function onArchChange(v:string){
+    setArch(v);
+    const em = pf?.archs?.[v.trim()];
+    if(em) setArchEmail(prev=>{ if(!prev){ setAuto(a=>({...a,archEmail:true})); return em; } return prev; });
+  }
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -51,6 +171,7 @@ export default function NewProjectPage() {
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           name:name.trim(), address:address.trim(), projectType:type, contractAmount,
+          projectNumber:projectNumber.trim()||null, buildingType:buildingType||null,
           startDate:startDate||null, substantialCompletionDate:subDate||null,
           awardDate:awardDate||null, noticeToProceedDate:ntpDate||null, finalCompletionDate:finalDate||null,
           stateJurisdiction, ownerName:owner, ownerEmail, architectName:arch, architectEmail:archEmail,
@@ -78,85 +199,172 @@ export default function NewProjectPage() {
   }
 
   const submitDisabled = saving||!name.trim()||!address.trim();
+  const budgetNum = Number(budget.replace(/[^0-9.]/g,''))||0;
+  const ownerNames = Object.keys(pf?.owners||{});
+  const archNames = Object.keys(pf?.archs||{});
 
   return (
-    <PremiumSurface maxWidth={1000}>
+    <PremiumSurface maxWidth={1400}>
       <ModuleHero
         eyebrow="New Project"
         eyebrowIcon={<Plus size={13} weight="fill" color={GOLD} />}
         title="Create"
         accent="New Project"
-        subtitle="Fill in the details — AI will auto-build the full project structure on first bid award."
+        subtitle="Saguaro seeds the numbering, defaults and downstream automation — you only type what the system can't already know."
       />
+
+      {/* Portfolio snapshot — what the system already knows before you type */}
+      {pf && (
+        <StatStrip items={[
+          {label:'Project Number', value: projectNumber || `${year}-001`, sub: pf.total>0 ? `next in your ${year} sequence` : `first in the ${year} sequence`},
+          {label:'Portfolio', value: `${pf.total} project${pf.total===1?'':'s'}`, sub: `${pf.active} active`},
+          {label:'Under Management', value: fmt(pf.value), sub:'combined contract value'},
+          {label:'This Contract', value: budgetNum>0 ? fmt(budgetNum) : '—', accent: budgetNum>0 ? '#3dd68c' : undefined, sub: contractType},
+          {label:'Retainage', value: `${Number(retainage)||10}%`, sub: pf.retMode && auto.ret ? 'your portfolio standard' : 'default — editable'},
+          {label:'Jurisdiction', value: stateJurisdiction || '—', sub:'lien waiver + wage rules'},
+        ]}/>
+      )}
+
       {error&&<div style={{background:'rgba(192,48,48,.1)',border:'1px solid rgba(192,48,48,.3)',borderRadius:10,padding:'12px 16px',marginBottom:20,fontSize:13,color:'#ff7070'}}>{error}</div>}
+
       <form onSubmit={create}>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:22,alignItems:'start'}}>
+          {/* Form columns */}
           <div>
-            <SectionCard title="Project Information" icon={<Buildings size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
-              <FIELD label="Project Name"><input value={name} onChange={e=>setName(e.target.value)} required placeholder="e.g. Riverdale Medical Pavilion" style={INPUT_STYLE}/></FIELD>
-              <FIELD label="Project Address"><input value={address} onChange={e=>setAddress(e.target.value)} required placeholder="123 Main St, Phoenix, AZ 85001" style={INPUT_STYLE}/></FIELD>
-              <FIELD label="Project Type">
-                <select value={type} onChange={e=>setType(e.target.value)} style={SELECT_STYLE}>
-                  {['residential','commercial','industrial','addition','remodel','multifamily','healthcare','education','government'].map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
-                </select>
-              </FIELD>
-              <FIELD label="Contract Value / Budget"><input value={budget} onChange={e=>setBudget(e.target.value)} placeholder="$1,250,000" style={INPUT_STYLE}/></FIELD>
-              <FIELD label="Description"><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Brief project description..." style={{...INPUT_STYLE,resize:'vertical' as const}}/></FIELD>
-            </SectionCard>
-            <SectionCard title="Key Dates" icon={<CalendarBlank size={17} weight="duotone" color={GOLD} />}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-                <FIELD label="Award Date"><SaguaroDatePicker value={awardDate} onChange={setAwardDate} style={INPUT_STYLE}/></FIELD>
-                <FIELD label="Notice to Proceed"><SaguaroDatePicker value={ntpDate} onChange={setNtpDate} style={INPUT_STYLE}/></FIELD>
-                <FIELD label="Start Date"><SaguaroDatePicker value={startDate} onChange={setStartDate} style={INPUT_STYLE}/></FIELD>
-                <FIELD label="Substantial Completion"><SaguaroDatePicker value={subDate} onChange={setSubDate} style={INPUT_STYLE}/></FIELD>
-                <FIELD label="Final Completion"><SaguaroDatePicker value={finalDate} onChange={setFinalDate} style={INPUT_STYLE}/></FIELD>
-                <FIELD label="State Jurisdiction"><input value={stateJurisdiction} onChange={e=>setStateJurisdiction(e.target.value)} placeholder="AZ" style={INPUT_STYLE}/></FIELD>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+              <div>
+                <SectionCard title="Identity" icon={<Buildings size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
+                  <FIELD label="Project Name"><input value={name} onChange={e=>setName(e.target.value)} required placeholder="e.g. Riverdale Medical Pavilion" style={INPUT_STYLE}/></FIELD>
+                  <FIELD label="Project Number" auto={auto.num} hint={pf?.total>0 ? `Continues your ${year} sequence — prints on G702s, subcontracts and transmittals.` : 'Year-based sequence — prints on G702s, subcontracts and transmittals.'}>
+                    <input value={projectNumber} onChange={e=>{setProjectNumber(e.target.value);setAuto(a=>({...a,num:false}));}} placeholder={`${year}-001`} style={INPUT_STYLE}/>
+                  </FIELD>
+                  <FIELD label="Building Type" hint="Feeds takeoff assemblies, budget templates and bid intelligence.">
+                    <select value={buildingType} onChange={e=>onBuildingTypeChange(e.target.value)} style={SELECT_STYLE}>
+                      <option value="">Select building type…</option>
+                      {BUILDING_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </FIELD>
+                  <FIELD label="Category" auto={auto.cat} hint="Derived from building type — drives reporting and bid history matching.">
+                    <select value={type} onChange={e=>{setType(e.target.value);setAuto(a=>({...a,cat:false}));}} style={SELECT_STYLE}>
+                      {PROJECT_CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </FIELD>
+                  <FIELD label="Description"><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Brief project description..." style={{...INPUT_STYLE,resize:'vertical' as const}}/></FIELD>
+                </SectionCard>
+
+                <SectionCard title="Location" icon={<MapPin size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
+                  <FIELD label="Project Address"><input value={address} onChange={e=>setAddress(e.target.value)} required placeholder="123 Main St, Phoenix, AZ 85001" style={INPUT_STYLE}/></FIELD>
+                  <FIELD label="State Jurisdiction" auto={auto.state} hint="Sets statutory lien-waiver forms, preliminary notice deadlines and wage rules.">
+                    <input value={stateJurisdiction} onChange={e=>{setStateJurisdiction(e.target.value.toUpperCase());setAuto(a=>({...a,state:false}));}} maxLength={2} placeholder="AZ" style={{...INPUT_STYLE,width:90,textTransform:'uppercase' as const}}/>
+                  </FIELD>
+                </SectionCard>
+
+                <SectionCard title="Compliance" icon={<ShieldCheck size={17} weight="duotone" color={GOLD} />}>
+                  <FIELD label="Prevailing Wage" hint="Davis-Bacon or state law turns on certified payroll (WH-347) tracking for every sub.">
+                    <select value={prevailingWage} onChange={e=>setPrevailingWage(e.target.value)} style={SELECT_STYLE}>
+                      <option>No</option><option>Yes — Davis-Bacon</option><option>Yes — State Law</option>
+                    </select>
+                  </FIELD>
+                  <FIELD label="Public Project" hint="Public-agency work flags bond requirements and statutory retainage rules.">
+                    <select value={publicProject} onChange={e=>setPublicProject(e.target.value)} style={SELECT_STYLE}>
+                      <option>No — Private</option><option>Yes — Public Agency</option>
+                    </select>
+                  </FIELD>
+                </SectionCard>
               </div>
-            </SectionCard>
+
+              <div>
+                <SectionCard title="Contract & Money" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
+                  <FIELD label="Contract Value" hint={budgetNum>0 ? <>Reads as <b style={{color:TEXT}}>{fmt(budgetNum)}</b> — seeds the budget and prints as G702 line 1.</> : 'Seeds the budget and prints as G702 line 1 — refine after buyout.'}>
+                    <input value={budget} onChange={e=>setBudget(e.target.value)} placeholder="$1,250,000" style={INPUT_STYLE}/>
+                  </FIELD>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                    <FIELD label="Contract Type">
+                      <select value={contractType} onChange={e=>setContractType(e.target.value)} style={SELECT_STYLE}>
+                        {['Lump Sum GMP','Cost Plus Fixed Fee','Cost Plus Percentage','Unit Price','Design-Build'].map(t=><option key={t}>{t}</option>)}
+                      </select>
+                    </FIELD>
+                    <FIELD label="Retainage %" auto={auto.ret} hint={pf?.retMode && auto.ret ? `Your standard across ${pf.total} project${pf.total===1?'':'s'} — held on every pay app.` : 'Industry default — held on every pay app, editable per contract.'}>
+                      <input type="number" value={retainage} onChange={e=>{setRetainage(e.target.value);setAuto(a=>({...a,ret:false}));}} min="0" max="20" style={INPUT_STYLE}/>
+                    </FIELD>
+                  </div>
+                  <div style={{fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,margin:'2px 0 10px',display:'flex',alignItems:'center',gap:6}}>
+                    <CalendarBlank size={14} weight="duotone" color={GOLD}/> Contract Milestones
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                    <FIELD label="Award Date"><SaguaroDatePicker value={awardDate} onChange={setAwardDate} style={INPUT_STYLE}/></FIELD>
+                    <FIELD label="Notice to Proceed"><SaguaroDatePicker value={ntpDate} onChange={setNtpDate} style={INPUT_STYLE}/></FIELD>
+                    <FIELD label="Start Date" auto={auto.start} hint="Defaulted to today — adjust freely.">
+                      <SaguaroDatePicker value={startDate} onChange={v=>{setStartDate(v);setAuto(a=>({...a,start:false}));}} style={INPUT_STYLE}/>
+                    </FIELD>
+                    <FIELD label="Substantial Completion"><SaguaroDatePicker value={subDate} onChange={setSubDate} style={INPUT_STYLE}/></FIELD>
+                    <FIELD label="Final Completion"><SaguaroDatePicker value={finalDate} onChange={setFinalDate} style={INPUT_STYLE}/></FIELD>
+                  </div>
+                </SectionCard>
+
+                <SectionCard title="Team & Contacts" icon={<UsersThree size={17} weight="duotone" color={GOLD} />}>
+                  <FIELD label="Owner Name" hint={ownerNames.length>0 ? `${ownerNames.length} owner${ownerNames.length===1?'':'s'} on file — start typing to reuse.` : 'Owner approvals and pay-app routing start here.'}>
+                    <input list="np-owner-book" value={owner} onChange={e=>onOwnerChange(e.target.value)} placeholder="Desert Health Partners LLC" style={INPUT_STYLE}/>
+                  </FIELD>
+                  <FIELD label="Owner Email" auto={auto.ownerEmail} hint={auto.ownerEmail ? 'Pulled from a prior project with this owner.' : 'G702 packets route here for one-click approval.'}>
+                    <input value={ownerEmail} onChange={e=>{setOwnerEmail(e.target.value);setAuto(a=>({...a,ownerEmail:false}));}} placeholder="owner@example.com" style={INPUT_STYLE}/>
+                  </FIELD>
+                  <FIELD label="Architect / Designer" hint={archNames.length>0 ? `${archNames.length} on file — start typing to reuse.` : undefined}>
+                    <input list="np-arch-book" value={arch} onChange={e=>onArchChange(e.target.value)} placeholder="Sonoran Architecture Group" style={INPUT_STYLE}/>
+                  </FIELD>
+                  <FIELD label="Architect Email" auto={auto.archEmail} hint={auto.archEmail ? 'Pulled from a prior project with this architect.' : undefined}>
+                    <input value={archEmail} onChange={e=>{setArchEmail(e.target.value);setAuto(a=>({...a,archEmail:false}));}} placeholder="arch@example.com" style={INPUT_STYLE}/>
+                  </FIELD>
+                </SectionCard>
+              </div>
+            </div>
+
+            <div style={{display:'flex',gap:12,alignItems:'center',marginTop:20,flexWrap:'wrap' as const}}>
+              <button type="submit" disabled={submitDisabled} className="pmBtn" style={{...goldButtonStyle,padding:'13px 32px',fontSize:15,cursor:submitDisabled?'not-allowed':'pointer',opacity:submitDisabled?0.6:1}}>
+                {saving?'Creating…':'Create Project'}
+              </button>
+              <button type="button" onClick={()=>router.back()} className="pmBtn" style={{...ghostButtonStyle,padding:'13px 20px'}}>
+                Cancel
+              </button>
+              {submitDisabled && !saving && (
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>Name and address are required — everything else is pre-seeded or optional.</span>
+              )}
+            </div>
           </div>
-          <div>
-            <SectionCard title="Project Parties" icon={<UsersThree size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
-              <FIELD label="Owner Name"><input value={owner} onChange={e=>setOwner(e.target.value)} placeholder="Desert Health Partners LLC" style={INPUT_STYLE}/></FIELD>
-              <FIELD label="Owner Email"><input value={ownerEmail} onChange={e=>setOwnerEmail(e.target.value)} placeholder="owner@example.com" style={INPUT_STYLE}/></FIELD>
-              <FIELD label="Architect / Designer"><input value={arch} onChange={e=>setArch(e.target.value)} placeholder="Sonoran Architecture Group" style={INPUT_STYLE}/></FIELD>
-              <FIELD label="Architect Email"><input value={archEmail} onChange={e=>setArchEmail(e.target.value)} placeholder="arch@example.com" style={INPUT_STYLE}/></FIELD>
+
+          {/* Context rail — what gets created + what the system pre-filled */}
+          <div style={{position:'sticky' as const,top:80,display:'flex',flexDirection:'column',gap:16}}>
+            <SectionCard title="What Gets Created" icon={<Stack size={17} weight="duotone" color={GOLD} />}>
+              <FlowSteps title="" steps={[
+                {title:'Project workspace', desc:'Overview, directory, documents, daily logs and photo feed — live the moment you hit Create.'},
+                {title:'Budget & bid packages', desc:'CSI-coded budget lines and trade bid packages — sub awards commit dollars automatically.'},
+                {title:'Schedule & field tools', desc:'Baseline schedule plus RFIs, submittals, punch lists and safety checklists, wired to this project.'},
+                {title:'Billing — G702 pay apps', desc:'AIA G702/G703 applications with retainage math and automatic lien waivers for every sub.'},
+              ]}/>
             </SectionCard>
-            <SectionCard title="Contract Settings" icon={<FileText size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-                <FIELD label="Contract Type">
-                  <select value={contractType} onChange={e=>setContractType(e.target.value)} style={SELECT_STYLE}>
-                    {['Lump Sum GMP','Cost Plus Fixed Fee','Cost Plus Percentage','Unit Price','Design-Build'].map(t=><option key={t}>{t}</option>)}
-                  </select>
-                </FIELD>
-                <FIELD label="Retainage %"><input type="number" value={retainage} onChange={e=>setRetainage(e.target.value)} min="0" max="20" style={INPUT_STYLE}/></FIELD>
-                <FIELD label="Prevailing Wage">
-                  <select value={prevailingWage} onChange={e=>setPrevailingWage(e.target.value)} style={SELECT_STYLE}>
-                    <option>No</option><option>Yes — Davis-Bacon</option><option>Yes — State Law</option>
-                  </select>
-                </FIELD>
-                <FIELD label="Public Project">
-                  <select value={publicProject} onChange={e=>setPublicProject(e.target.value)} style={SELECT_STYLE}>
-                    <option>No — Private</option><option>Yes — Public Agency</option>
-                  </select>
-                </FIELD>
+
+            <SectionCard title="Smart Defaults" icon={<Sparkle size={17} weight="duotone" color={GOLD} />}>
+              <InsightRow label="Project number" value={projectNumber||'—'} accent={GOLD} strong/>
+              <InsightRow label="Category" value={PROJECT_CATEGORIES.find(c=>c.value===type)?.label||type}/>
+              <InsightRow label="Retainage" value={`${Number(retainage)||10}%`}/>
+              <InsightRow label="Start date" value={fmtDate(startDate)}/>
+              <InsightRow label="Jurisdiction" value={stateJurisdiction||'—'}/>
+              <div style={{fontSize:11.5,color:'rgba(255,255,255,0.45)',lineHeight:1.5,marginTop:10,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+                AUTO chips mark what Saguaro pre-filled. Every value stays editable — nothing locks until you create the project.
               </div>
             </SectionCard>
-            <div style={{background:'rgba(245, 158, 11,.06)',border:'1px solid rgba(245, 158, 11,.2)',borderRadius:12,padding:'14px 18px',marginBottom:20,fontSize:13,color:DIM,display:'flex',gap:10,alignItems:'flex-start'}}>
+
+            <div style={{background:'rgba(245, 158, 11,.06)',border:'1px solid rgba(245, 158, 11,.2)',borderRadius:12,padding:'14px 18px',fontSize:13,color:DIM,display:'flex',gap:10,alignItems:'flex-start'}}>
               <Sparkle size={16} weight="fill" color={GOLD} style={{flexShrink:0,marginTop:2}}/>
               <div>
-                <strong style={{color:TEXT}}>AI Auto-Build on First Award:</strong> When the first bid is awarded, Saguaro will automatically create: 24 schedule tasks, budget by CSI code, sub-packages, safety plan, QC checkpoints, and contact directory.
+                <strong style={{color:TEXT}}>AI Auto-Build on First Award:</strong> when the first bid is awarded, Saguaro automatically creates 24 schedule tasks, a CSI-coded budget, sub packages, a safety plan, QC checkpoints and the contact directory.
               </div>
             </div>
           </div>
         </div>
-        <div style={{display:'flex',gap:12,marginTop:8}}>
-          <button type="submit" disabled={submitDisabled} className="pmBtn" style={{...goldButtonStyle,padding:'13px 32px',fontSize:15,cursor:submitDisabled?'not-allowed':'pointer',opacity:submitDisabled?0.6:1}}>
-            {saving?'Creating…':'Create Project'}
-          </button>
-          <button type="button" onClick={()=>router.back()} className="pmBtn" style={{...ghostButtonStyle,padding:'13px 20px'}}>
-            Cancel
-          </button>
-        </div>
+
+        <datalist id="np-owner-book">{ownerNames.map(n=><option key={n} value={n}/>)}</datalist>
+        <datalist id="np-arch-book">{archNames.map(n=><option key={n} value={n}/>)}</datalist>
       </form>
     </PremiumSurface>
   );

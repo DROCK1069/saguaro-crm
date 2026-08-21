@@ -4,13 +4,13 @@ import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Palette, X, Plus, Package, Hourglass, SealCheck, Scales, ChartBar, ListChecks, WarningCircle } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
 
-const CATEGORIES=['Flooring','Countertops','Cabinetry','Fixtures','Hardware','Paint',
-  'Tile','Appliances','Lighting','Plumbing','Windows & Doors','Roofing','Exterior','Other'];
+const CATEGORIES=['Flooring','Countertops','Cabinets','Plumbing Fixtures','Lighting',
+  'Appliances','Tile','Paint','Hardware','Other'];
 const STATUSES=['pending','selected','ordered','delivered','installed'];
 const STATUS_COLORS:Record<string,string>={
   pending:ORANGE,selected:BLUE,ordered:GOLD,delivered:'#a78bfa',installed:GREEN,
@@ -27,17 +27,20 @@ const inp:React.CSSProperties={
   border:'1px solid rgba(255,255,255,0.12)',borderRadius:7,color:'#FFFFFF',
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
+const HINT:React.CSSProperties={fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
+const isoDate=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
 const EMPTY:Record<string,any>={
   category:'Flooring',item:'',manufacturer:'',model:'',color:'',finish:'',
   cost:'',allowance:'',status:'pending',selected_by:'',
   owner_approved:false,due_date:'',notes:'',link:'',
 };
 
-function Field({label,children}:{label:string;children:React.ReactNode}){
+function Field({label,children,auto}:{label:string;children:React.ReactNode;auto?:boolean}){
   return(
     <div>
       <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
-        textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}</label>
+        textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}{auto&&<AutoChip/>}</label>
       {children}
     </div>
   );
@@ -66,6 +69,9 @@ export default function SelectionsPage(){
   const [search,setSearch]=useState('');
   const [filterCat,setFilterCat]=useState('all');
   const [filterStatus,setFilterStatus]=useState('all');
+  // SmartCreate: one-shot project snapshot — known vendors, owner, allowance money.
+  const [ctx,setCtx]=useState<any>(null);
+  const [auto,setAuto]=useState<{due?:boolean}>({});
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -94,7 +100,21 @@ export default function SelectionsPage(){
 
   useEffect(()=>{load();},[load]);
 
-  function openCreate(){setForm({...EMPTY});setMode('create');setSelected(null);}
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r=await fetch(`/api/project-context?projectId=${projectId}`);
+        const c=await r.json();
+        if(!c.error) setCtx(c);
+      }catch{}
+    })();
+  },[projectId]);
+
+  function openCreate(){
+    setForm({...EMPTY,due_date:isoDate(new Date(Date.now()+30*86400000))});
+    setAuto({due:true});
+    setMode('create');setSelected(null);
+  }
   function openEdit(item:any){
     setForm({category:item.category||'Flooring',item:item.item||'',
       manufacturer:item.manufacturer||'',model:item.model||'',
@@ -103,7 +123,7 @@ export default function SelectionsPage(){
       status:item.status||'pending',selected_by:item.selected_by||'',
       owner_approved:item.owner_approved||false,due_date:item.due_date||'',
       notes:item.notes||'',link:item.link||''});
-    setSelected(item);setMode('edit');
+    setAuto({});setSelected(item);setMode('edit');
   }
   function viewItem(item:any){setSelected(item);setMode('view');}
   function closePanel(){setSelected(null);setMode(null);}
@@ -370,10 +390,21 @@ export default function SelectionsPage(){
           <div style={{flex:1,overflow:'auto',padding:20}}>
             {(mode==='create'||mode==='edit')?(
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                {mode==='create'&&(
+                  <StatStrip items={[
+                    {label:'Selections Made', value:String(items.length-pendingCount), sub:`of ${items.length} logged`},
+                    {label:'Pending', value:String(pendingCount), accent:pendingCount>0?ORANGE:undefined, sub:'awaiting decision'},
+                    {label:'Total Allowance', value:fmt(totalAllowance), sub:'across all items'},
+                    {label:'Variance', value:(overage>0?'+':'')+fmt(overage), accent:overage>0?RED:GREEN, sub:overage>0?'over allowances':'under allowances'},
+                  ]}/>
+                )}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <Field label="Category">
                     <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
                       style={{...inp,padding:'9px 10px'}}>
+                      {form.category&&!CATEGORIES.includes(form.category)&&(
+                        <option value={form.category}>{form.category}</option>
+                      )}
                       {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
                     </select>
                   </Field>
@@ -389,9 +420,13 @@ export default function SelectionsPage(){
                     style={inp} placeholder="Kitchen Faucet, Quartz Countertop..."/>
                 </Field>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                  <Field label="Manufacturer">
-                    <input value={form.manufacturer} onChange={e=>setForm(f=>({...f,manufacturer:e.target.value}))}
+                  <Field label="Manufacturer / Vendor">
+                    <input list="selVendors" value={form.manufacturer} onChange={e=>setForm(f=>({...f,manufacturer:e.target.value}))}
                       style={inp} placeholder="Kohler, Moen..."/>
+                    <datalist id="selVendors">
+                      {((ctx?.vendors||[]) as string[]).map(v=><option key={v} value={v}/>)}
+                    </datalist>
+                    {(ctx?.vendors||[]).length>0&&<div style={HINT}>{(ctx.vendors||[]).length} known vendors on this project — start typing to match.</div>}
                   </Field>
                   <Field label="Model / SKU">
                     <input value={form.model} onChange={e=>setForm(f=>({...f,model:e.target.value}))}
@@ -405,7 +440,7 @@ export default function SelectionsPage(){
                     <input value={form.finish} onChange={e=>setForm(f=>({...f,finish:e.target.value}))}
                       style={inp} placeholder="Brushed Nickel"/>
                   </Field>
-                  <Field label="Cost ($)">
+                  <Field label="Selected Price ($)">
                     <input type="number" value={form.cost} onChange={e=>setForm(f=>({...f,cost:e.target.value}))}
                       style={inp} placeholder="0" min={0}/>
                   </Field>
@@ -414,14 +449,29 @@ export default function SelectionsPage(){
                       style={inp} placeholder="0" min={0}/>
                   </Field>
                 </div>
+                {((Number(form.cost)||0)>0||(Number(form.allowance)||0)>0)&&(()=>{
+                  const price=Number(form.cost)||0, allow=Number(form.allowance)||0, v=price-allow;
+                  const over=v>0;
+                  return(
+                    <div style={{background:over?'rgba(192,48,48,.07)':'rgba(26,138,74,.07)',
+                      border:`1px solid ${over?RED:GREEN}33`,borderRadius:10,padding:'10px 14px'}}>
+                      <InsightRow label="Selected price" value={fmt(price)}/>
+                      <InsightRow label="Allowance" value={fmt(allow)}/>
+                      <InsightRow label={over?'Over allowance':v<0?'Under allowance':'On allowance'}
+                        value={(over?'+':'')+fmt(v)} accent={over?RED:'#3dd68c'} strong/>
+                    </div>
+                  );
+                })()}
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <Field label="Selected By">
                     <input value={form.selected_by} onChange={e=>setForm(f=>({...f,selected_by:e.target.value}))}
                       style={inp} placeholder="Owner or designer name"/>
                   </Field>
-                  <Field label="Decision Due">
-                    <input type="date" value={form.due_date} onChange={e=>setForm(f=>({...f,due_date:e.target.value}))}
+                  <Field label="Decision Due" auto={auto.due}>
+                    <input type="date" value={form.due_date}
+                      onChange={e=>{const v=e.target.value;setAuto(a=>({...a,due:false}));setForm(f=>({...f,due_date:v}));}}
                       style={inp}/>
+                    {auto.due&&<div style={HINT}>Defaulted 30 days out — tighten to order lead times.</div>}
                   </Field>
                 </div>
                 <Field label="Product Link">
@@ -439,6 +489,16 @@ export default function SelectionsPage(){
                     style={{width:16,height:16,cursor:'pointer'}}/>
                   <label htmlFor="oa" style={{fontSize:13,color:TEXT,cursor:'pointer'}}>Owner Approved</label>
                 </div>
+                <div style={{...HINT,marginTop:-8}}>Leave unchecked to track the decision{ctx?.project?.ownerName?` with ${ctx.project.ownerName}`:''} — approval can be recorded later from the detail view.</div>
+                {mode==='create'&&(
+                  <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'14px 16px'}}>
+                    <FlowSteps title="After you save" steps={[
+                      {title:'Owner decision tracked', desc:ctx?.project?.ownerName?`Shows as pending until ${ctx.project.ownerName} approves — record it in one click.`:'Shows as pending until owner approval is recorded in one click.'},
+                      {title:'Variance rolls up live', desc:'Price vs allowance feeds the budget bar and the over/under total the moment you save.'},
+                      {title:'Order to install', desc:'Advance status through Ordered, Delivered and Installed straight from the log.'},
+                    ]}/>
+                  </div>
+                )}
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving} className="pmBtn"
                     style={{...goldButtonStyle,flex:1,padding:'11px 0',fontSize:14,opacity:saving?0.6:1}}>

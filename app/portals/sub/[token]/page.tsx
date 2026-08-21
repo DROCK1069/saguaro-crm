@@ -9,11 +9,11 @@ const GREEN='#22c55e',RED='#ef4444',AMBER='#f59e0b',BLUE='#F59E0B',PURPLE='#8b5c
 const fmt=(n:number)=>'$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
 const fmtDate=(d:string)=>d?new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'--';
 
-type Tab='dashboard'|'compliance'|'payapps'|'daily'|'rfis'|'schedule'|'scorecard'|'messages';
+type Tab='dashboard'|'punch'|'daily'|'schedule'|'rfis'|'payapps'|'bids'|'documents'|'drawings'|'compliance'|'scorecard'|'messages'|'history';
 
 /* ── Shared styles ── */
-const card=(extra?:React.CSSProperties):React.CSSProperties=>({background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:20,...extra});
-const btnS=(color:string,small?:boolean):React.CSSProperties=>({background:color,color:'#fff',border:'none',borderRadius:7,padding:small?'6px 14px':'10px 20px',fontWeight:700,fontSize:small?12:14,cursor:'pointer'});
+const card=(extra?:React.CSSProperties):React.CSSProperties=>({background:RAISED,backgroundImage:'linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))',border:`1px solid ${BORDER}`,borderRadius:12,padding:20,boxShadow:'0 4px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)',...extra});
+const btnS=(color:string,small?:boolean):React.CSSProperties=>({background:color,backgroundImage:color===GOLD?'linear-gradient(180deg,#FFC14D,#F59E0B 60%,#E08A00)':'linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0) 55%)',color:color===GOLD?'#241500':'#fff',border:'none',borderRadius:9,padding:small?'6px 14px':'11px 20px',fontWeight:800,fontSize:small?12:14,cursor:'pointer',boxShadow:color===GOLD?'0 4px 14px rgba(245,158,11,0.28), inset 0 1px 0 rgba(255,255,255,0.35)':'0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12)'});
 const labelS:React.CSSProperties={display:'block',fontSize:11,fontWeight:700,color:DIM,marginBottom:5,textTransform:'uppercase',letterSpacing:.5};
 const inputS:React.CSSProperties={width:'100%',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,padding:'10px 14px',color:TEXT,fontSize:14,outline:'none',boxSizing:'border-box'};
 const textareaS:React.CSSProperties={...inputS,minHeight:80,resize:'vertical' as const};
@@ -70,6 +70,12 @@ export default function SubPortal(){
   const [documents,setDocuments]=useState<any[]>([]);
   const [messages,setMessages]=useState<any[]>([]);
   const [bids,setBids]=useState<any[]>([]);
+  const [drawings,setDrawings]=useState<any[]>([]);
+  const [punchItems,setPunchItems]=useState<any[]>([]);
+  const [activity,setActivity]=useState<any[]>([]);
+  const [uploading,setUploading]=useState(false);
+  const [docCategory,setDocCategory]=useState('other');
+  // docExpiry is declared with the compliance form states below — shared by both upload paths.
 
   /* ── Form states ── */
   const [dlForm,setDlForm]=useState({log_date:new Date().toISOString().split('T')[0],crew_count:'',hours_worked:'',work_completed:'',work_planned:'',weather:'',delays:'',safety_incidents:'',notes:''});
@@ -124,6 +130,9 @@ export default function SubPortal(){
           fetch(`/api/portal/sub/documents?token=${token}`,{headers}).then(r=>r.json()),
           fetch(`/api/portal/sub/messages?token=${token}`,{headers}).then(r=>r.json()),
           fetch(`/api/portal/sub/bids?token=${token}`,{headers}).then(r=>r.json()),
+          fetch(`/api/portal/sub/drawings?token=${token}`,{headers}).then(r=>r.json()),
+          fetch(`/api/portal/sub/punch?token=${token}`,{headers}).then(r=>r.json()),
+          fetch(`/api/portal/sub/activity?token=${token}`,{headers}).then(r=>r.json()),
         ]);
       })
       .then(results=>{
@@ -137,6 +146,9 @@ export default function SubPortal(){
         setDocuments(val(6).documents||[]);
         setMessages(val(7).messages||[]);
         setBids(val(8).bids||[]);
+        setDrawings(val(9).drawings||[]);
+        setPunchItems(val(10).punch_items||[]);
+        setActivity(val(11).events||[]);
       })
       .catch(e=>{ console.error(e); setError(humanError(e, 'Failed to load the portal. Please try again.')); })
       .finally(()=>setLoading(false));
@@ -147,6 +159,16 @@ export default function SubPortal(){
     const res=await fetch(`/api/portal/sub/${endpoint}?token=${token}`,{method:'POST',headers,body:JSON.stringify(body)});
     return res.json();
   };
+  const apiUpload=async(endpoint:string,form:FormData)=>{
+    const res=await fetch(`/api/portal/sub/${endpoint}?token=${token}`,{method:'POST',body:form});
+    return res.json();
+  };
+  const refreshActivity=()=>fetch(`/api/portal/sub/activity?token=${token}`,{headers}).then(r=>r.json()).then(d=>setActivity(d.events||[])).catch(()=>{});
+  /* Compliance gate: invoices are held until required docs are current. */
+  const requiredDocs=['insurance','w9'];
+  const docCurrent=(type:string)=>complianceDocs.some((d:any)=>d.doc_type===type&&d.status!=='rejected'&&d.status!=='expired'&&(!d.expiry_date||new Date(d.expiry_date).getTime()>Date.now()));
+  const complianceMissing=requiredDocs.filter(t=>!docCurrent(t));
+  const complianceGateOpen=complianceMissing.length===0;
 
   /* ── Actions ── */
   const handleClockIn=()=>{
@@ -309,15 +331,20 @@ export default function SubPortal(){
     </div>
   );
 
-  const TABS:{key:Tab;label:string;icon:string}[]=[
-    {key:'dashboard',label:'Dashboard',icon:'\u2302'},
-    {key:'compliance',label:'Compliance',icon:'\u2714'},
-    {key:'payapps',label:'Pay Apps',icon:'\u2709'},
-    {key:'daily',label:'Daily Logs',icon:'\u270D'},
-    {key:'rfis',label:'RFIs',icon:'\u2753'},
-    {key:'schedule',label:'Schedule',icon:'\u2630'},
-    {key:'scorecard',label:'Scorecard',icon:'\u2605'},
-    {key:'messages',label:'Messages',icon:'\u2709'},
+  const TABS:{key:Tab;label:string;icon:string;section:string}[]=[
+    {key:'dashboard',label:'Dashboard',icon:'\u2302',section:'Work'},
+    {key:'punch',label:'Punch List',icon:'\u2713',section:'Work'},
+    {key:'daily',label:'Daily Logs',icon:'\u270D',section:'Work'},
+    {key:'schedule',label:'Schedule',icon:'\u2630',section:'Work'},
+    {key:'rfis',label:'RFIs',icon:'\u2753',section:'Work'},
+    {key:'payapps',label:'Invoices',icon:'\u0024',section:'Money'},
+    {key:'bids',label:'Bid Invites',icon:'\u2709',section:'Money'},
+    {key:'documents',label:'Documents',icon:'\u2750',section:'Files'},
+    {key:'drawings',label:'Drawings',icon:'\u25A4',section:'Files'},
+    {key:'compliance',label:'Compliance',icon:'\u2714',section:'Account'},
+    {key:'scorecard',label:'Scorecard',icon:'\u2605',section:'Account'},
+    {key:'messages',label:'Messages',icon:'\u2709',section:'Account'},
+    {key:'history',label:'History',icon:'\u23F1',section:'Account'},
   ];
 
   /* ================================================================ */
@@ -850,6 +877,191 @@ export default function SubPortal(){
   /* ================================================================ */
   /*  RENDER ACTIVE TAB                                                */
   /* ================================================================ */
+  /* ── DOCUMENTS: multi-type uploads by category, expiry-tracked, media grid ── */
+  const DOC_CATS=[['insurance','Insurance / COI'],['w9','W-9'],['lien_waiver','Lien Waiver'],['safety_cert','Safety Cert'],['license','License'],['bond','Bond'],['closeout','Closeout Doc'],['photo','Photo'],['video','Video'],['other','Other']];
+  const isMedia=(d:any)=>/^(image|video)\//.test(d.doc_type||'')||d.category==='photo'||d.category==='video';
+  const handleDocUpload=async(file:File|null)=>{
+    if(!file)return;
+    setUploading(true);
+    try{
+      const form=new FormData();
+      form.append('file',file);form.append('category',docCategory);
+      if(docExpiry)form.append('expiry_date',docExpiry);
+      const res=await apiUpload('documents',form);
+      if(res.success){
+        setDocuments((ds:any[])=>[res.document,...ds]);
+        showToast('Uploaded — the GC can see it now');
+        if(['insurance','w9','lien_waiver','safety_cert','license','bond'].includes(docCategory)){
+          fetch(`/api/portal/sub/compliance?token=${token}`,{headers}).then(r=>r.json()).then(d=>setComplianceDocs(d.compliance_docs||[])).catch(()=>{});
+        }
+        refreshActivity();
+      } else showToast(res.error||'Upload failed');
+    }catch{showToast('Upload failed');}
+    setUploading(false);
+  };
+  const renderDocuments=()=>{
+    const files=documents.filter((d:any)=>!isMedia(d));
+    const media=documents.filter(isMedia);
+    return(
+      <div style={{display:'grid',gap:20}}>
+        <div style={card()}>
+          <div style={{fontSize:16,fontWeight:800,color:TEXT,marginBottom:4}}>Upload a document</div>
+          <div style={{fontSize:12,color:DIM,marginBottom:14}}>PDF, Excel, Word, CSV, photos or video &middot; 100 MB max. Insurance, W-9 and other compliance docs update your payment status automatically.</div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'flex-end'}}>
+            <div><label style={labelS}>Category</label>
+              <select value={docCategory} onChange={e=>setDocCategory(e.target.value)} style={{...inputS,width:200}}>
+                {DOC_CATS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+              </select></div>
+            {['insurance','safety_cert','license','bond'].includes(docCategory)&&(
+              <div><label style={labelS}>Expiration date</label>
+                <input type="date" value={docExpiry} onChange={e=>setDocExpiry(e.target.value)} style={{...inputS,width:170}}/></div>
+            )}
+            <label style={{...btnS(GOLD),display:'inline-flex',alignItems:'center',gap:8,opacity:uploading?0.6:1}}>
+              {uploading?'Uploading\u2026':'\u2191 Choose file & upload'}
+              <input type="file" accept=".pdf,.xls,.xlsx,.doc,.docx,.csv,image/*,video/*" style={{display:'none'}} disabled={uploading}
+                onChange={e=>{handleDocUpload(e.target.files?.[0]||null);e.currentTarget.value='';}}/>
+            </label>
+          </div>
+        </div>
+        <div style={card()}>
+          <div style={{fontSize:15,fontWeight:800,color:TEXT,marginBottom:12}}>Documents ({files.length})</div>
+          {files.length===0&&<div style={{color:DIM,fontSize:13}}>Nothing here yet — your uploads and documents the GC shares with you appear here.</div>}
+          {files.map((d:any)=>(
+            <div key={d.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:`1px solid ${BORDER}44`,flexWrap:'wrap'}}>
+              <span style={{fontSize:20}}>{/pdf/i.test(d.doc_type||'')?'\u{1F4C4}':/sheet|excel|csv/i.test(d.doc_type||'')?'\u{1F4CA}':/word/i.test(d.doc_type||'')?'\u{1F4DD}':'\u{1F4CE}'}</span>
+              <div style={{flex:1,minWidth:180}}>
+                <div style={{fontSize:13,fontWeight:700,color:TEXT}}>{d.title}</div>
+                <div style={{fontSize:11,color:DIM}}>{(DOC_CATS.find(c=>c[0]===d.category)?.[1])||d.category} &middot; {fmtDate(d.created_at)}{d.file_size?` \u00b7 ${(d.file_size/1024/1024).toFixed(1)} MB`:''}</div>
+              </div>
+              <span style={badge(d.status||'submitted')}>{d.status||'submitted'}</span>
+              {d.file_url&&<a href={d.file_url} target="_blank" rel="noreferrer" style={{...btnS(BORDER,true),textDecoration:'none',color:TEXT}}>View</a>}
+            </div>
+          ))}
+        </div>
+        <div style={card()}>
+          <div style={{fontSize:15,fontWeight:800,color:TEXT,marginBottom:12}}>Photos & Video ({media.length})</div>
+          {media.length===0&&<div style={{color:DIM,fontSize:13}}>Upload site-condition photos or work-proof video with the button above (category Photo or Video).</div>}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:10}}>
+            {media.map((d:any)=>(
+              <a key={d.id} href={d.file_url} target="_blank" rel="noreferrer" style={{display:'block',borderRadius:10,overflow:'hidden',border:`1px solid ${BORDER}`,background:DARK,textDecoration:'none'}}>
+                {/^video\//.test(d.doc_type||'')||d.category==='video'
+                  ?<video src={d.file_url} style={{width:'100%',height:110,objectFit:'cover',display:'block'}} muted/>
+                  :<img src={d.file_url} alt={d.title} style={{width:'100%',height:110,objectFit:'cover',display:'block'}}/>}
+                <div style={{padding:'6px 8px',fontSize:11,color:DIM,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{d.title}</div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+  /* ── DRAWINGS: read-only current set, grouped by discipline ── */
+  const renderDrawings=()=>{
+    const groups=drawings.reduce((m:Record<string,any[]>,d:any)=>{const k=d.discipline||'General';(m[k]=m[k]||[]).push(d);return m;},{} as Record<string,any[]>);
+    return(
+      <div style={{display:'grid',gap:20}}>
+        {drawings.length===0&&<div style={card()}><div style={{color:DIM,fontSize:13}}>No current drawings shared for this project yet.</div></div>}
+        {Object.entries(groups).map(([disc,list]:[string,any[]])=>(
+          <div key={disc} style={card()}>
+            <div style={{fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.8,marginBottom:10}}>{disc} &middot; {list.length} sheet{list.length===1?'':'s'}</div>
+            {list.map((d:any)=>(
+              <div key={d.id} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:`1px solid ${BORDER}44`,flexWrap:'wrap'}}>
+                <span style={{fontSize:12,fontWeight:800,color:GOLD,minWidth:64}}>{d.sheet_number||'--'}</span>
+                <div style={{flex:1,minWidth:160,fontSize:13,color:TEXT}}>{d.name}</div>
+                <span style={{fontSize:11,color:DIM}}>Rev {d.version??'--'}{d.revision_date?` \u00b7 ${fmtDate(d.revision_date)}`:''}</span>
+                {d.url&&<a href={d.url} target="_blank" rel="noreferrer" style={{...btnS(GOLD,true),textDecoration:'none'}}>Open</a>}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
+  /* ── PUNCH: items on the project, close with photo proof ── */
+  const handlePunchComplete=async(itemId:string,photo:File|null)=>{
+    const form=new FormData();
+    form.append('item_id',itemId);
+    if(photo)form.append('photo',photo);
+    const res=await apiUpload('punch',form);
+    if(res.success){
+      setPunchItems((ps:any[])=>ps.map(p=>p.id===itemId?{...p,status:'completed',completed_at:new Date().toISOString()}:p));
+      showToast('Punch item completed');refreshActivity();
+    } else showToast(res.error||'Could not complete item');
+  };
+  const renderPunch=()=>{
+    const open=punchItems.filter((p:any)=>p.status!=='completed'&&p.status!=='verified');
+    const done=punchItems.filter((p:any)=>p.status==='completed'||p.status==='verified');
+    return(
+      <div style={{display:'grid',gap:20}}>
+        <div style={card()}>
+          <div style={{fontSize:15,fontWeight:800,color:TEXT,marginBottom:12}}>Open items ({open.length})</div>
+          {open.length===0&&<div style={{color:DIM,fontSize:13}}>Nothing open — you're clear on this project.</div>}
+          {open.map((p:any)=>(
+            <div key={p.id} style={{padding:'12px 0',borderBottom:`1px solid ${BORDER}44`}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                <span style={badge(p.priority==='high'?'rejected':'pending')}>{p.priority||'normal'}</span>
+                <div style={{flex:1,minWidth:200,fontSize:13,fontWeight:700,color:TEXT}}>{p.description}</div>
+                <label style={{...btnS(GOLD,true),display:'inline-flex',alignItems:'center',gap:6}}>
+                  {'\u2713'} Complete w/ photo
+                  <input type="file" accept="image/*" capture="environment" style={{display:'none'}}
+                    onChange={e=>{handlePunchComplete(p.id,e.target.files?.[0]||null);e.currentTarget.value='';}}/>
+                </label>
+              </div>
+              {p.location&&<div style={{fontSize:11,color:DIM,marginTop:4}}>Location: {p.location}</div>}
+            </div>
+          ))}
+        </div>
+        <div style={card()}>
+          <div style={{fontSize:15,fontWeight:800,color:TEXT,marginBottom:12}}>Completed ({done.length})</div>
+          {done.map((p:any)=>(
+            <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:`1px solid ${BORDER}44`,flexWrap:'wrap'}}>
+              <span style={{color:GREEN,fontWeight:800}}>{'\u2713'}</span>
+              <div style={{flex:1,minWidth:200,fontSize:13,color:DIM}}>{p.description}</div>
+              <span style={{fontSize:11,color:DIM}}>{fmtDate(p.completed_at)}</span>
+              {(p.photo_urls||[]).slice(0,3).map((u:string,i:number)=>(<a key={i} href={u} target="_blank" rel="noreferrer"><img src={u} alt="proof" style={{width:36,height:36,objectFit:'cover',borderRadius:6,border:`1px solid ${BORDER}`}}/></a>))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+  /* ── HISTORY: every action, timestamped ── */
+  const renderHistory=()=>{
+    const label=(e:any)=>e.description||({document_uploaded:`Uploaded ${e.metadata?.title||'a document'}`,invoice_submitted:`Submitted invoice ${fmt(e.metadata?.amount||0)}`,punch_completed:'Completed punch item'}[e.action as string])||String(e.action||'activity').replace(/_/g,' ');
+    return(
+      <div style={card()}>
+        <div style={{fontSize:15,fontWeight:800,color:TEXT,marginBottom:14}}>Activity history</div>
+        {activity.length===0&&<div style={{color:DIM,fontSize:13}}>Your uploads, invoice submissions and completed work will appear here, timestamped.</div>}
+        {activity.map((e:any)=>(
+          <div key={e.id} style={{display:'flex',gap:12,padding:'10px 0',borderBottom:`1px solid ${BORDER}44`}}>
+            <div style={{width:8,height:8,borderRadius:'50%',background:GOLD,marginTop:6,flexShrink:0}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,color:TEXT}}>{label(e)}</div>
+              <div style={{fontSize:11,color:DIM,marginTop:2}}>{new Date(e.created_at).toLocaleString()}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+  /* ── BID INVITES: open invitations \u2192 scope \u2192 respond ── */
+  const renderBids=()=>(
+    <div style={{display:'grid',gap:20}}>
+      {bids.length===0&&<div style={card()}><div style={{color:DIM,fontSize:13}}>No open bid invitations right now.</div></div>}
+      {bids.map((b:any)=>(
+        <div key={b.id} style={card()}>
+          <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+            <div style={{flex:1,minWidth:220}}>
+              <div style={{fontSize:15,fontWeight:800,color:TEXT}}>{b.bid_packages?.name||b.package_name||'Bid Package'}</div>
+              <div style={{fontSize:12,color:DIM,marginTop:2}}>{b.bid_packages?.projects?.name||''}{b.due_date?` \u00b7 Due ${fmtDate(b.due_date)}`:''}</div>
+            </div>
+            <span style={badge(b.status||'open')}>{b.status||'open'}</span>
+          </div>
+          {b.bid_packages?.scope_of_work&&<div style={{fontSize:12,color:DIM,marginTop:10,lineHeight:1.6}}>{b.bid_packages.scope_of_work}</div>}
+        </div>
+      ))}
+    </div>
+  );
   const renderContent=()=>{
     switch(tab){
       case'dashboard':return renderDashboard();
@@ -860,6 +1072,11 @@ export default function SubPortal(){
       case'schedule':return renderSchedule();
       case'scorecard':return renderScorecard();
       case'messages':return renderMessages();
+      case'documents':return renderDocuments();
+      case'drawings':return renderDrawings();
+      case'punch':return renderPunch();
+      case'history':return renderHistory();
+      case'bids':return renderBids();
     }
   };
 
@@ -889,19 +1106,34 @@ export default function SubPortal(){
       </header>
 
       {/* Tabs - scrollable on mobile */}
-      <nav style={{background:RAISED,borderBottom:`1px solid ${BORDER}`,overflowX:'auto',display:'flex',WebkitOverflowScrolling:'touch'}}>
-        {TABS.map(t=>(
-          <button key={t.key} onClick={()=>setTab(t.key)} style={{padding:'12px 16px',background:'transparent',border:'none',borderBottom:tab===t.key?`2px solid ${GOLD}`:'2px solid transparent',color:tab===t.key?GOLD:DIM,fontSize:13,fontWeight:tab===t.key?700:500,cursor:'pointer',whiteSpace:'nowrap',transition:'color .2s,border .2s',display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+      <nav style={{background:'linear-gradient(180deg,#17181b,#101114)',borderBottom:'1px solid rgba(0,0,0,0.55)',boxShadow:'0 6px 18px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',overflowX:'auto',display:'flex',gap:6,padding:'10px 12px',WebkitOverflowScrolling:'touch',alignItems:'center'}}>
+        {TABS.map((t,i)=>(
+          <React.Fragment key={t.key}>
+          {i>0&&TABS[i-1].section!==t.section&&<span style={{width:1,height:20,background:BORDER,margin:'0 4px',flexShrink:0}}/>}
+          <button onClick={()=>setTab(t.key)} style={{padding:'8px 14px',background:tab===t.key?'linear-gradient(180deg,rgba(245,158,11,0.22),rgba(245,158,11,0.10))':'rgba(255,255,255,0.03)',border:`1px solid ${tab===t.key?'rgba(245,158,11,0.5)':BORDER}`,borderRadius:999,color:tab===t.key?'#FFD98A':DIM,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',cursor:'pointer',whiteSpace:'nowrap',transition:'all .15s',display:'flex',alignItems:'center',gap:6,flexShrink:0,boxShadow:tab===t.key?'0 0 0 3px rgba(245,158,11,0.10)':'none'}}>
             <span style={{fontSize:14}}>{t.icon}</span><span>{t.label}</span>
             {t.key==='messages'&&messages.filter((m:any)=>m.sender_type!=='sub'&&!m.read).length>0&&(
               <span style={{width:8,height:8,borderRadius:'50%',background:RED,flexShrink:0}}/>
             )}
           </button>
+          </React.Fragment>
         ))}
       </nav>
 
       {/* Content */}
-      <main style={{maxWidth:1100,margin:'0 auto',padding:'24px 20px'}}>{renderContent()}</main>
+      <main style={{maxWidth:1100,margin:'0 auto',padding:'24px 20px'}}>
+        {!complianceGateOpen&&(tab==='dashboard'||tab==='payapps')&&(
+          <div style={{...card({borderColor:RED+'66',background:RED+'0d',marginBottom:20}),display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
+            <span style={{fontSize:22}}>{'\u26A0'}</span>
+            <div style={{flex:1,minWidth:220}}>
+              <div style={{fontSize:14,fontWeight:800,color:RED}}>Payment hold \u2014 compliance documents needed</div>
+              <div style={{fontSize:12,color:DIM,marginTop:2}}>Missing or expired: {complianceMissing.map(m=>m==='w9'?'W-9':'Insurance / COI').join(', ')}. Invoices release automatically once these are current.</div>
+            </div>
+            <button onClick={()=>{setDocCategory(complianceMissing[0]==='w9'?'w9':'insurance');setTab('documents');}} style={btnS(GOLD,true)}>Upload now</button>
+          </div>
+        )}
+        {renderContent()}
+      </main>
 
       {/* Footer */}
       <footer style={{textAlign:'center',padding:'24px 20px',borderTop:`1px solid ${BORDER}`,marginTop:40}}>

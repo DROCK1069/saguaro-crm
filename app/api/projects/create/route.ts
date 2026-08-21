@@ -54,9 +54,12 @@ export async function POST(req: NextRequest) {
       is_public_project: body.publicProject || false,
       prevailing_wage: body.prevailingWage || false,
       // Extras stored in metadata
+      project_number: body.projectNumber || null,
+      building_type: body.buildingType || null,
       metadata: {
         awardDate: body.awardDate || null,
         contractType: body.contractType || 'Lump Sum GMP',
+        buildingType: body.buildingType || null,
       },
       created_by: user.id,
     } as unknown as Database['public']['Tables']['projects']['Insert']).select().single();

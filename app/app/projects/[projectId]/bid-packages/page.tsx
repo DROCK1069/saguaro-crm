@@ -6,6 +6,7 @@ import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, extend } from '@/lib/calc';
 import { X, Plus, ArrowLeft, ArrowRight, Package, FileText, Trophy, UsersThree, Tray } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -228,7 +229,18 @@ function WizardModal({ projectId, onClose, onCreated }: { projectId: string; onC
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Trade Name *</label>
-                <input value={w.trade} onChange={e => setField('trade', e.target.value)} placeholder="e.g. Electrical, Plumbing, HVAC" style={inp} />
+                <select value={w.trade} onChange={e => setField('trade', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  <option value="">— Select Trade —</option>
+                  {w.trade && !SUB_TRADES.includes(w.trade) && <option value={w.trade}>{w.trade}</option>}
+                  {SUB_TRADES_BY_DIVISION.map(g => (
+                    <optgroup key={g.division} label={g.division + ' — ' + g.name}>
+                      {g.trades.map(t => <option key={t} value={t}>{t}</option>)}
+                    </optgroup>
+                  ))}
+                  <optgroup label="Other / Specialty">
+                    {SUB_TRADES.filter(t => !SUB_TRADES_BY_DIVISION.some(g => g.trades.includes(t))).map(t => <option key={t} value={t}>{t}</option>)}
+                  </optgroup>
+                </select>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Scope Summary</label>

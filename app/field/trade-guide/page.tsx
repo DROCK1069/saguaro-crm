@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Robot } from '@phosphor-icons/react';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 
@@ -36,7 +37,7 @@ interface ChatMessage {
   content: string;
 }
 
-const TRADES = ['All', 'Low Volt', 'Electrical', 'Plumbing', 'HVAC', 'Framing', 'Drywall', 'Concrete', 'Roofing', 'Painting', 'Flooring', 'Landscaping'];
+const TRADES = ['All', ...SUB_TRADES];
 const CATEGORIES = ['All', 'How-To', 'Best Practice', 'Code Reference', 'Troubleshooting', 'Safety'];
 
 const TRADE_COLORS: Record<string, string> = {

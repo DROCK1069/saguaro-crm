@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
-import { Receipt, CurrencyDollar, CheckCircle, WarningCircle, PencilSimple, Percent, Copy, Trash, Plus, CaretDown } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { Receipt, CurrencyDollar, CheckCircle, WarningCircle, PencilSimple, Percent, Copy, Trash, Plus, CaretDown, ClockCounterClockwise, Calculator } from '@phosphor-icons/react';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -30,7 +30,7 @@ const STATUS_MAP: Record<string, { bg: string; color: string }> = {
   Overdue: { bg: 'rgba(239,68,68,.2)', color: RED },
 };
 
-const EMPTY_FORM = { invoice_number: '', vendor_name: '', vendor_email: '', description: '', amount: 0, due_date: '', notes: '' };
+const EMPTY_FORM = { invoice_number: '', vendor_name: '', vendor_email: '', description: '', amount: 0, tax: 0, cost_code: '', due_date: '', notes: '' };
 
 export default function InvoicesPage() {
   const params = useParams();
@@ -64,6 +64,55 @@ export default function InvoicesPage() {
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
+  // Project intelligence — one snapshot; the create flow walks in already knowing the money.
+  const [ctx, setCtx] = useState<any>(null);
+  const [auto, setAuto] = useState<{ num?: boolean; billto?: boolean; email?: boolean; due?: boolean; desc?: boolean; amt?: boolean }>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
+
+  const money = ctx?.money;
+  const original = Number(money?.originalContract) || 0;
+  const coTotal = Number(money?.approvedCoTotal) || 0;
+  const revised = Number(money?.revisedContract) || (original + coTotal);
+  const ctxBilled = Number(money?.billedToDate) || 0;
+  const ctxPaid = Number(money?.paidToDate) || 0;
+  const lastApp = money?.lastPayApp || null;
+  const certified = Number(lastApp?.currentPaymentDue) || 0;
+  const costCodes = (ctx?.costCodes || []) as { division: string; costCode: string; description: string }[];
+  const vendorNames = (ctx?.vendors || []) as string[];
+
+  function openCreate(useCertified?: boolean) {
+    const nextNum = Math.max(Number(ctx?.defaults?.nextInvoiceNumber) || 1, invoices.length + 1);
+    const due = new Date(Date.now() + 30 * 86400000);
+    const dueIso = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
+    setForm({
+      ...EMPTY_FORM,
+      invoice_number: `INV-${String(nextNum).padStart(3, '0')}`,
+      vendor_name: ctx?.defaults?.ownerName || '',
+      vendor_email: ctx?.defaults?.ownerEmail || '',
+      description: lastApp ? `Progress billing — Application #${lastApp.appNumber}` : '',
+      amount: useCertified && certified > 0 ? certified : 0,
+      due_date: dueIso,
+    });
+    setAuto({
+      num: true,
+      billto: !!ctx?.defaults?.ownerName,
+      email: !!ctx?.defaults?.ownerEmail,
+      due: true,
+      desc: !!lastApp,
+      amt: !!(useCertified && certified > 0),
+    });
+    setShowForm(true);
+    setErrorMsg('');
+  }
+
   const today = new Date().toISOString().split('T')[0];
   const totalBilled = toDollars(sumCents(invoices.map(i => toCents(i.amount || 0))));
   const totalPaid = toDollars(sumCents(invoices.filter(i => i.status === 'Paid').map(i => toCents(i.amount || 0))));
@@ -80,8 +129,10 @@ export default function InvoicesPage() {
         vendor_name: form.vendor_name,
         vendor_email: form.vendor_email || null,
         description: form.description,
-        amount: form.amount,
-        total: form.amount,
+        cost_code: form.cost_code || null,
+        amount: Number(form.amount) || 0,
+        tax: Number(form.tax) || 0,
+        total: (Number(form.amount) || 0) + (Number(form.tax) || 0),
         due_date: form.due_date || null,
         notes: form.notes,
         status: 'Draft',
@@ -171,6 +222,7 @@ export default function InvoicesPage() {
 
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#1c1c1e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
+  const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
 
   return (
     <PremiumSurface maxWidth={1600}>
@@ -183,28 +235,39 @@ export default function InvoicesPage() {
         accent="Invoices"
         subtitle="Owner billing and payment tracking."
         actions={
-          <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
+          <button onClick={() => { if (showForm) { setShowForm(false); setErrorMsg(''); } else { openCreate(); } }} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> New Invoice
           </button>
         }
       />
 
-      {/* KPIs */}
+      {/* Contract intelligence strip — what the system already knows */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Original Contract', value: fmt(original), sub: 'base agreement' },
+          { label: 'Approved COs', value: (coTotal >= 0 ? '+' : '') + fmt(coTotal), accent: coTotal > 0 ? GREEN : undefined, sub: `${Number(money?.approvedCoCount) || 0} approved${Number(money?.pendingCoCount) ? ` · ${money.pendingCoCount} pending` : ''}` },
+          { label: 'Revised Contract', value: fmt(revised), sub: 'contract sum to date' },
+          { label: 'Billed to Date', value: fmt(ctxBilled), sub: `${Number(money?.billedPct) || 0}% of revised` },
+          { label: 'Outstanding', value: fmt(Math.max(0, ctxBilled - ctxPaid)), accent: ctxBilled - ctxPaid > 0 ? GOLD : GREEN, sub: 'billed, not yet collected' },
+        ]} />
+      )}
+
+      {/* KPIs — invoice totals, falling back to live project money instead of $0 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
         <StatCard
           icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />}
-          label="Total Billed" value={`$${totalBilled.toLocaleString()}`}
-          sub="across all invoices" delay={0.02}
+          label="Total Billed" value={fmt(totalBilled > 0 ? totalBilled : ctxBilled)}
+          sub={totalBilled > 0 ? `across ${invoices.length} invoice${invoices.length === 1 ? '' : 's'}` : ctxBilled > 0 ? 'project billed to date (pay apps)' : 'across all invoices'} delay={0.02}
         />
         <StatCard
           icon={<CheckCircle size={19} weight="duotone" color={GREEN} />}
-          label="Total Paid" value={`$${totalPaid.toLocaleString()}`} accent={GREEN}
-          sub="collected" delay={0.06}
+          label="Total Paid" value={fmt(totalPaid > 0 ? totalPaid : ctxPaid)} accent={GREEN}
+          sub={totalPaid > 0 ? 'collected on invoices' : ctxPaid > 0 ? 'collected on the contract' : 'collected'} delay={0.06}
         />
         <StatCard
           icon={<WarningCircle size={19} weight="duotone" color={totalOutstanding > 0 ? GOLD : GREEN} />}
-          label="Outstanding" value={`$${totalOutstanding.toLocaleString()}`} accent={totalOutstanding > 0 ? GOLD : GREEN}
-          sub="awaiting payment" delay={0.10}
+          label="Outstanding" value={fmt(totalOutstanding > 0 ? totalOutstanding : Math.max(0, ctxBilled - ctxPaid))} accent={totalOutstanding > 0 || ctxBilled - ctxPaid > 0 ? GOLD : GREEN}
+          sub={totalOutstanding > 0 ? 'awaiting payment' : ctxBilled - ctxPaid > 0 ? 'billed less collected (contract)' : 'awaiting payment'} delay={0.10}
         />
       </div>
 
@@ -212,16 +275,83 @@ export default function InvoicesPage() {
       {errorMsg && <div style={{ margin: '0 0 16px', padding: '10px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', borderRadius: 10, color: RED, fontSize: 13 }}>{errorMsg}</div>}
 
       {showForm && (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: ctx ? 'minmax(0, 1fr) 320px' : '1fr', gap: 18, alignItems: 'start', marginBottom: 24 }}>
           <SectionCard title="New Invoice" icon={<Plus size={17} weight="bold" color={GOLD} />}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-              <div><label style={label}>Invoice # *</label><input type="text" value={form.invoice_number} onChange={e => setForm(p => ({ ...p, invoice_number: e.target.value }))} style={inp} /></div>
-              <div><label style={label}>Bill To *</label><input type="text" value={form.vendor_name} onChange={e => setForm(p => ({ ...p, vendor_name: e.target.value }))} placeholder="Client / owner name" style={inp} /></div>
-              <div><label style={label}>Bill To Email</label><input type="email" value={form.vendor_email} onChange={e => setForm(p => ({ ...p, vendor_email: e.target.value }))} placeholder="Required to email/send" style={inp} /></div>
-              <div><label style={label}>Amount ($) *</label><input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} /></div>
-              <div><label style={label}>Due Date</label><SaguaroDatePicker value={form.due_date} onChange={v => setForm(p => ({ ...p, due_date: v }))} style={inp} /></div>
-              <div><label style={label}>Description</label><input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. Mar 2026 progress" style={inp} /></div>
-              <div style={{ gridColumn: 'span 3' }}><label style={label}>Notes</label><input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} style={inp} /></div>
+              <div>
+                <label style={label}>Invoice # *{auto.num && <AutoChip />}</label>
+                <input type="text" value={form.invoice_number} onChange={e => setForm(p => ({ ...p, invoice_number: e.target.value }))} style={inp} />
+                <div style={hint}>Next in sequence — {invoices.length} invoice{invoices.length === 1 ? '' : 's'} on this project so far.</div>
+              </div>
+              <div>
+                <label style={label}>Bill To *{auto.billto && <AutoChip />}</label>
+                <input type="text" value={form.vendor_name} onChange={e => setForm(p => ({ ...p, vendor_name: e.target.value }))} placeholder="Client / owner name" list="sagInvBillTo" style={inp} />
+                <datalist id="sagInvBillTo">
+                  {ctx?.defaults?.ownerName && <option value={ctx.defaults.ownerName} />}
+                  {vendorNames.map(v => <option key={v} value={v} />)}
+                </datalist>
+                <div style={hint}>{auto.billto ? 'Owner of record from project setup.' : 'Who receives this invoice.'}</div>
+              </div>
+              <div>
+                <label style={label}>Bill To Email{auto.email && <AutoChip />}</label>
+                <input type="email" value={form.vendor_email} onChange={e => setForm(p => ({ ...p, vendor_email: e.target.value }))} placeholder="Required to email/send" style={inp} />
+                <div style={hint}>{auto.email ? 'From the project owner record — Send to Owner delivers here.' : 'Needed for one-click Send to Owner.'}</div>
+              </div>
+              <div>
+                <label style={label}>Amount ($) *{auto.amt && <AutoChip />}</label>
+                <input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} />
+                {lastApp && certified > 0 ? (
+                  <div style={hint}>
+                    App #{lastApp.appNumber} certified {fmt(certified)}.{' '}
+                    <span onClick={() => { setForm(p => ({ ...p, amount: certified })); setAuto(a => ({ ...a, amt: true })); }} style={{ color: '#FBBF24', fontWeight: 700, cursor: 'pointer' }}>Use certified amount</span>
+                  </div>
+                ) : (
+                  <div style={hint}>Pre-tax invoice amount.</div>
+                )}
+              </div>
+              <div>
+                <label style={label}>Tax ($)</label>
+                <input type="number" value={form.tax} onChange={e => setForm(p => ({ ...p, tax: Number(e.target.value) }))} style={inp} />
+                <div style={hint}>Optional sales / use tax.</div>
+              </div>
+              <div>
+                <label style={label}>Invoice Total</label>
+                <div style={{ ...inp, display: 'flex', alignItems: 'center', fontWeight: 800, color: GOLD, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.35)' }}>
+                  {'$' + ((Number(form.amount) || 0) + (Number(form.tax) || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div style={hint}>Amount + tax — computed live.</div>
+              </div>
+              <div>
+                <label style={label}>Issue Date<AutoChip /></label>
+                <div style={{ ...inp, display: 'flex', alignItems: 'center', color: DIM }}>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                <div style={hint}>Recorded automatically when the invoice is created.</div>
+              </div>
+              <div>
+                <label style={label}>Due Date{auto.due && <AutoChip />}</label>
+                <SaguaroDatePicker value={form.due_date} onChange={v => setForm(p => ({ ...p, due_date: v }))} style={inp} />
+                <div style={hint}>Net 30 from today — adjust freely. Overdue flags itself.</div>
+              </div>
+              <div>
+                <label style={label}>Cost Code</label>
+                {costCodes.length > 0 ? (
+                  <select value={form.cost_code} onChange={e => setForm(p => ({ ...p, cost_code: e.target.value }))} style={inp}>
+                    <option value="">No cost code</option>
+                    {costCodes.map(c => <option key={c.costCode} value={c.costCode}>{c.costCode} — {c.description}</option>)}
+                  </select>
+                ) : (
+                  <input type="text" value={form.cost_code} onChange={e => setForm(p => ({ ...p, cost_code: e.target.value }))} placeholder="e.g. 01-000" style={inp} />
+                )}
+                <div style={hint}>{costCodes.length > 0 ? `${costCodes.length} codes from the project budget.` : 'Optional — ties billing to the budget.'}</div>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={label}>Description{auto.desc && <AutoChip />}</label>
+                <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. Mar 2026 progress" style={inp} />
+                {auto.desc && lastApp && <div style={hint}>Suggested from Pay Application #{lastApp.appNumber}.</div>}
+              </div>
+              <div>
+                <label style={label}>Notes</label>
+                <input type="text" value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} style={inp} />
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button onClick={handleSave} disabled={saving} style={{ ...goldButtonStyle, opacity: saving ? 0.7 : 1 }} className="pmBtn">
@@ -230,17 +360,73 @@ export default function InvoicesPage() {
               <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={ghostButtonStyle} className="pmBtn">Cancel</button>
             </div>
           </SectionCard>
+          {ctx && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <SectionCard title="What Saguaro Knows" icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />}>
+                <InsightRow label="Original contract" value={fmt(original)} />
+                {coTotal !== 0 && <InsightRow label="Approved COs" value={(coTotal > 0 ? '+' : '') + fmt(coTotal)} accent={GREEN} />}
+                <InsightRow label="Revised contract" value={fmt(revised)} />
+                <InsightRow label="Billed to date" value={fmt(ctxBilled)} />
+                <InsightRow label="Paid to date" value={fmt(ctxPaid)} accent={GREEN} />
+                {lastApp && (
+                  <>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '8px 0' }} />
+                    <InsightRow label={`Pay App #${lastApp.appNumber}`} value={String(lastApp.status || '—').replace(/_/g, ' ')} />
+                    <InsightRow label="Certified this period" value={fmt(certified)} accent={GREEN} strong />
+                  </>
+                )}
+              </SectionCard>
+              <SectionCard title="After You Create" icon={<Calculator size={17} weight="duotone" color={GOLD} />}>
+                <FlowSteps title="" steps={[
+                  { title: 'Draft is saved', desc: 'Edit the amount or adjust by % any time before sending.' },
+                  { title: 'Send to owner', desc: 'One click emails the invoice to the bill-to address above.' },
+                  { title: 'Payment is tracked', desc: 'Outstanding and overdue status update automatically from the due date.' },
+                  { title: 'Ledger updates', desc: 'Billed and paid totals roll into the project money snapshot.' },
+                ]} />
+              </SectionCard>
+            </div>
+          )}
         </div>
       )}
 
       <SectionCard title="All Invoices" icon={<Receipt size={17} weight="duotone" color={GOLD} />} flush>
         {loading ? <div style={{ textAlign: 'center', padding: 40, color: DIM }}>Loading...</div> : invoices.length === 0 ? (
-          <PremiumEmpty
-            icon={<Receipt size={30} weight="duotone" color={GOLD} />}
-            title="No invoices yet"
-            description="Create your first invoice to start billing owners and tracking payments."
-            action={<button onClick={() => { setShowForm(true); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> New Invoice</button>}
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: ctx ? 'minmax(0, 1fr) 360px' : '1fr', alignItems: 'stretch' }}>
+            <PremiumEmpty
+              icon={<Receipt size={30} weight="duotone" color={GOLD} />}
+              title="No invoices yet"
+              description={ctxBilled > 0
+                ? `You have certified ${fmt(ctxBilled)} across ${Number(money?.payAppCount) || 0} pay application${(Number(money?.payAppCount) || 0) === 1 ? '' : 's'} — client invoices track the money you collect against it.`
+                : 'Create your first invoice to start billing owners and tracking payments.'}
+              action={<button onClick={() => openCreate(certified > 0)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> {certified > 0 ? `Invoice Certified ${fmt(certified)}` : 'New Invoice'}</button>}
+            />
+            {ctx && (
+              <div style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '22px 24px' }}>
+                <div style={{ fontSize: 10.5, fontWeight: 900, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 10 }}>What Saguaro Already Knows</div>
+                <InsightRow label="Original contract" value={fmt(original)} />
+                <InsightRow label="Approved COs" value={`${(coTotal > 0 ? '+' : '') + fmt(coTotal)} (${Number(money?.approvedCoCount) || 0})`} accent={coTotal > 0 ? GREEN : undefined} />
+                <InsightRow label="Revised contract" value={fmt(revised)} strong />
+                <InsightRow label="Billed to date" value={`${fmt(ctxBilled)} · ${Number(money?.billedPct) || 0}%`} />
+                <InsightRow label="Paid to date" value={fmt(ctxPaid)} accent={GREEN} />
+                {lastApp ? (
+                  <>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '10px 0' }} />
+                    <InsightRow label={`Last pay app — #${lastApp.appNumber}`} value={String(lastApp.status || '—').replace(/_/g, ' ')} />
+                    <InsightRow label="Certified this period" value={fmt(certified)} accent={GREEN} strong />
+                    {certified > 0 && (
+                      <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', fontSize: 12, color: '#FBBF24', lineHeight: 1.5 }}>
+                        Start by invoicing the certified amount from App #{lastApp.appNumber} — the form pre-fills it.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ marginTop: 12, fontSize: 12, color: DIM, lineHeight: 1.55 }}>
+                    No pay applications yet — invoices can bill any milestone or deposit against the contract.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

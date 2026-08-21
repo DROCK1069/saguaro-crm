@@ -9,6 +9,7 @@ import { useRealtimeDashboard } from '@/lib/useRealtime';
 import { CurrencyDollar, ShieldCheck, ClipboardText, CheckCircle, ChartBar, TrendUp, WarningCircle, SlidersHorizontal, Buildings, Receipt, Gavel, Plus, Sparkle, ArrowRight, Lightning } from '@phosphor-icons/react';
 import { useSavedLayout, ConfiguredDashboard } from '@/components/dashboard-widgets';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import GettingStartedRail from '@/components/GettingStartedRail';
 
 // Lazy-load Recharts to avoid SSR issues
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false });
@@ -387,6 +388,9 @@ export default function DashboardPage() {
             <Link href="/app/dashboard-config" title="Customize dashboard" style={ghostButtonStyle} className="pmBtn"><SlidersHorizontal size={15} weight="bold" /> Customize</Link>
           </>}
         />
+
+        {/* GC Guided Journey — 8 steps from first project to first payment */}
+        <GettingStartedRail />
 
         {hasCustomLayout && savedLayout ? (
           <ConfiguredDashboard layout={savedLayout} />

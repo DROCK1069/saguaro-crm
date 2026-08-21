@@ -41,6 +41,63 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .eq('id', id)
       .eq('tenant_id', user.tenantId);
     if (error) throw error;
+
+    // ── APPROVED LABOR IS JOB COST. On approval, the entry's total_cost becomes
+    //    a cost entry and rolls into the budget line's actual — labor stops
+    //    being invisible in the budget. Idempotent via the cost_entries note tag. ──
+    if (status === 'approved') {
+      try {
+        const { data: te } = await db
+          .from('time_entries')
+          .select('id, project_id, total_cost, total_hours, hours_worked, hourly_rate, csi_division, cost_code_description')
+          .eq('id', id)
+          .eq('tenant_id', user.tenantId)
+          .single();
+        const t = te as Record<string, any> | null;
+        const laborCost = Number(t?.total_cost) || (Number(t?.hours_worked ?? t?.total_hours) || 0) * (Number(t?.hourly_rate) || 0);
+        if (t?.project_id && laborCost > 0) {
+          const tag = `time_entry:${id}`;
+          const { data: dup } = await db
+            .from('cost_entries')
+            .select('id')
+            .eq('notes', tag)
+            .limit(1)
+            .maybeSingle();
+          if (!dup) {
+            await db.from('cost_entries').insert({
+              tenant_id: user.tenantId,
+              project_id: t.project_id,
+              entry_type: 'labor',
+              entry_date: new Date().toISOString().slice(0, 10),
+              description: `Approved labor — ${t.cost_code_description || 'field time'} (${Number(t.hours_worked ?? t.total_hours) || 0} hrs)`,
+              amount: laborCost,
+              csi_division: t.csi_division || null,
+              approved: true,
+              approved_by: user.id,
+              approved_at: new Date().toISOString(),
+              created_by: user.id,
+              notes: tag,
+            } as never);
+            if (t.csi_division) {
+              const { data: bLine } = await db
+                .from('budget_lines')
+                .select('id, actual')
+                .eq('project_id', t.project_id)
+                .eq('tenant_id', user.tenantId)
+                .eq('division', String(t.csi_division).slice(0, 2))
+                .limit(1)
+                .maybeSingle();
+              if (bLine) {
+                await db.from('budget_lines')
+                  .update({ actual: ((bLine as { actual: number | null }).actual || 0) + laborCost })
+                  .eq('id', (bLine as { id: string }).id);
+              }
+            }
+          }
+        }
+      } catch (e) { console.error('labor->cost wiring skipped:', e); }
+    }
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

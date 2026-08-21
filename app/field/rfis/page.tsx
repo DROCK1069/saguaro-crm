@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import EmailComposer from '@/components/EmailComposer';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
@@ -22,10 +23,8 @@ const BLUE   = '#F59E0B';
 const PURPLE = '#8B5CF6';
 
 const SPEC_SECTIONS = [
-  'Division 01 – Gen. Requirements', 'Division 03 – Concrete', 'Division 04 – Masonry',
-  'Division 05 – Metals', 'Division 06 – Wood & Plastics', 'Division 07 – Thermal',
-  'Division 08 – Openings', 'Division 09 – Finishes', 'Division 22 – Plumbing',
-  'Division 23 – HVAC', 'Division 26 – Electrical', 'Other',
+  ...Object.entries(CSI_DIVISIONS).map(([code, d]) => `Division ${code} – ${d.name}`),
+  'Other',
 ];
 
 interface RFI {

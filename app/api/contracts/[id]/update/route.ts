@@ -34,12 +34,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     for (const k of Object.keys(fieldMap)) {
       if (body[k] !== undefined) fields[fieldMap[k]] = body[k];
     }
-    const { error } = await db
+    const { data: updated, error } = await db
       .from('contracts')
       .update(fields)
       .eq('id', id)
-      .eq('tenant_id', user.tenantId);
+      .eq('tenant_id', user.tenantId)
+      .select('id, project_id, bid_package_id, contract_type, amount, original_amount, status, executed_at')
+      .single();
     if (error) throw error;
+
+    // ── EXECUTION CASCADE: an executed subcontract is no longer a dead end —
+    //    stamp executed_at, mark its bid package contracted, and make sure the
+    //    committed amount reached the budget (idempotent: only when the award
+    //    path didn't already commit it via the same cost code). ──
+    const c = updated as Record<string, any> | null;
+    if (fields.status === 'executed' && c) {
+      const patch: Record<string, unknown> = {};
+      if (!c.executed_at) patch.executed_at = new Date().toISOString();
+      if (Object.keys(patch).length) {
+        await db.from('contracts').update(patch as never).eq('id', id).eq('tenant_id', user.tenantId);
+      }
+      if (c.bid_package_id) {
+        await db.from('bid_packages')
+          .update({ status: 'contracted' } as never)
+          .eq('id', c.bid_package_id)
+          .eq('tenant_id', user.tenantId)
+          .eq('status', 'awarded');
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

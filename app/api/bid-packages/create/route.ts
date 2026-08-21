@@ -56,6 +56,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── BUDGET SEEDING: a package generated from a takeoff carries the trade's
+    //    estimated value — seed a budget line for its division so the project
+    //    budget builds itself instead of being typed by hand. Idempotent: skips
+    //    when a line for that division/cost-code already exists. ──
+    try {
+      const estimate = Number(body.budget_estimate ?? body.budgetEstimate) ||
+        (Array.isArray(body.lineItems) ? body.lineItems.reduce((s: number, it: Record<string, unknown>) => s + (Number(it.totalAmount ?? it.total_amount) || 0), 0) : 0);
+      const csi = (body.csi_codes || body.csiCodes || [])[0] as string | undefined;
+      if (estimate > 0 && csi) {
+        const div = String(csi).slice(0, 2);
+        const { data: existing } = await db
+          .from('budget_lines')
+          .select('id')
+          .eq('project_id', projectId)
+          .eq('tenant_id', user.tenantId)
+          .or(`cost_code.eq.${csi},division.eq.${div}`)
+          .limit(1)
+          .maybeSingle();
+        if (!existing) {
+          await db.from('budget_lines').insert({
+            tenant_id: user.tenantId,
+            project_id: projectId,
+            division: div,
+            cost_code: csi,
+            description: body.trade || name,
+            category: 'subcontract',
+            original_budget: estimate,
+            committed: 0,
+            actual: 0,
+            notes: 'Seeded from bid package (takeoff estimate).',
+          } as never);
+        }
+      }
+    } catch (e) { console.error('budget seed skipped:', e); }
+
     return NextResponse.json({ success: true, bidPackage: pkg });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

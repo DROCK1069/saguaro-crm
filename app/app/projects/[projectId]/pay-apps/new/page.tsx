@@ -4,11 +4,12 @@ import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../../components/SaguaroDatePicker';
-import { ArrowLeft, ArrowRight, Plus, X, Receipt, CalendarBlank, Table, Calculator } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { ArrowLeft, ArrowRight, Plus, X, Receipt, CalendarBlank, Table, Calculator, ClockCounterClockwise, Info } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
+const fmtDate = (d?:string|null) => d ? new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
 
 interface SovLine {
   lineNumber: number;
@@ -28,6 +29,7 @@ function blankLine(n:number):SovLine{
 
 const INP:React.CSSProperties = {padding:'8px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box'};
 const LBL:React.CSSProperties = {display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:6};
+const HINT:React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
 
 export default function NewPayAppPage() {
   const params    = useParams();
@@ -47,14 +49,48 @@ export default function NewPayAppPage() {
   // SOV
   const [lines,setLines] = useState<SovLine[]>([blankLine(1),blankLine(2),blankLine(3)]);
 
-  // Load project to pre-fill contract sum
+  // The screen walks in knowing the project: contract money, approved COs,
+  // the prior application, and the prior SOV — the GC types only this
+  // period's work. `ctx` = /api/project-context snapshot; `appNumber` from
+  // the pay-app seeder.
+  const [ctx,setCtx]                 = useState<any>(null);
+  const [appNumber,setAppNumber]     = useState<number|null>(null);
+  const [rolledForward,setRolledForward] = useState(false);
+  const [auto,setAuto]               = useState<{period?:boolean;sum?:boolean;ret?:boolean}>({});
+
   useEffect(()=>{
     (async()=>{
       try{
-        const r = await fetch('/api/projects/list');
-        const d = await r.json();
-        const p = (d.projects||[]).find((x:any)=>x.id===projectId);
-        if(p?.contract_amount) setContractSum(String(p.contract_amount));
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if(!c.error){
+          setCtx(c);
+          const original = c.money?.originalContract || 0;
+          if(original>0){ setContractSum(prev=>prev||String(original)); setAuto(a=>({...a,sum:true})); }
+          if(c.money?.retainagePct!=null){ setRetainagePct(String(c.money.retainagePct)); setAuto(a=>({...a,ret:true})); }
+          // Suggested billing period: the day after the last app's period end,
+          // through that month's end; first app defaults to the current month.
+          const lastTo = c.money?.lastPayApp?.periodTo as string|undefined;
+          const start = lastTo ? new Date(new Date(lastTo+'T00:00:00').getTime()+86400000) : new Date(new Date().getFullYear(),new Date().getMonth(),1);
+          const end   = new Date(start.getFullYear(),start.getMonth()+1,0);
+          const iso   = (d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          setPeriodFrom(prev=>{ if(!prev){ setAuto(a=>({...a,period:true})); return iso(start); } return prev; });
+          setPeriodTo(prev=>prev||iso(end));
+        }
+      }catch{}
+      try{
+        const r = await fetch(`/api/pay-apps/create?projectId=${projectId}`);
+        const seed = await r.json();
+        if(seed.nextAppNumber) setAppNumber(seed.nextAppNumber);
+        if(Array.isArray(seed.priorSov) && seed.priorSov.length>0){
+          setLines(seed.priorSov.map((s:any,i:number)=>({
+            lineNumber:i+1, description:s.description||'',
+            scheduledValue:s.scheduledValue||0, workFromPrev:s.workFromPrev||0,
+            workThisPeriod:0, materialsStored:0, percentComplete:0, balanceToFinish:0, retainage:0,
+          })));
+          setRolledForward(true);
+        }
+        if(seed.retainagePercent!=null) setRetainagePct(String(seed.retainagePercent));
       }catch{}
     })();
   },[projectId]);
@@ -93,6 +129,15 @@ export default function NewPayAppPage() {
   const earnedLessRet    = totalCompleted - retainageAmt;
   const paymentDue       = Math.max(0, earnedLessRet - prevTotal*(1-pct/100));
   const contractSumNum   = Number(contractSum)||0;
+
+  // Contract intelligence (from /api/project-context)
+  const money       = ctx?.money;
+  const original    = money?.originalContract || 0;
+  const coTotal     = money?.approvedCoTotal || 0;
+  const revised     = money?.revisedContract || (contractSumNum + coTotal);
+  const lastApp     = money?.lastPayApp;
+  const sovScheduled= lines.reduce((s,l)=>s+(l.scheduledValue||0),0);
+  const subCount    = (ctx?.subs||[]).length;
 
   async function save(status:'draft'|'submitted'){
     if(!periodFrom||!periodTo){ setError('Period From and Period To are required.'); return; }
@@ -153,10 +198,10 @@ export default function NewPayAppPage() {
 
       {/* Header */}
       <ModuleHero
-        eyebrow="Pay Application"
+        eyebrow={ctx?.project?.name || 'Pay Application'}
         eyebrowIcon={<Receipt size={13} weight="fill" color={GOLD} />}
-        title="New Pay"
-        accent="Application"
+        title={appNumber ? `Application #${appNumber}` : 'New Pay'}
+        accent={appNumber ? '' : 'Application'}
         subtitle="AIA G702/G703 — Application and Certificate for Payment"
         actions={
           /* Step tabs */
@@ -170,6 +215,18 @@ export default function NewPayAppPage() {
         }
       />
 
+      {/* Contract intelligence strip — what the system already knows */}
+      {ctx && (
+        <StatStrip items={[
+          {label:'Application', value:`#${appNumber ?? (money?.payAppCount??0)+1}`, sub: lastApp ? `follows App #${lastApp.appNumber}` : 'first on this project'},
+          {label:'Original Contract', value:fmt(original), sub:'G702 line 1'},
+          {label:'Approved COs', value:(coTotal>=0?'+':'')+fmt(coTotal), accent:coTotal>0?'#3dd68c':undefined, sub:`${money?.approvedCoCount||0} approved${money?.pendingCoCount?` · ${money.pendingCoCount} pending`:''}`},
+          {label:'Revised Contract', value:fmt(revised), sub:'contract sum to date'},
+          {label:'Billed to Date', value:fmt(money?.billedToDate||0), sub:`${money?.billedPct||0}% of revised`},
+          {label:'Retainage', value:`${pct}%`, sub: subCount ? `${subCount} sub${subCount===1?'':'s'} on the job` : 'per contract terms'},
+        ]}/>
+      )}
+
       <div>
         {error && (
           <div style={{background:'rgba(192,48,48,.12)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:8,padding:'12px 16px',marginBottom:20,color:RED,fontSize:13}}>
@@ -177,32 +234,91 @@ export default function NewPayAppPage() {
           </div>
         )}
 
-        {/* STEP 1: Period & Contract */}
+        {/* STEP 1: Period & Contract + automation rail */}
         {step===1 && (
-          <div style={{maxWidth:680}}>
-            <SectionCard title="Period & Contract Information" icon={<CalendarBlank size={17} weight="duotone" color={GOLD} />}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18,marginBottom:18}}>
-                <div>
-                  <label style={LBL}>Period From *</label>
-                  <SaguaroDatePicker value={periodFrom} onChange={setPeriodFrom} style={INP}/>
+          <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:22,alignItems:'start'}}>
+            <div>
+              <SectionCard title="Billing Period" icon={<CalendarBlank size={17} weight="duotone" color={GOLD} />} style={{marginBottom:16}}>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18,marginBottom:6}}>
+                  <div>
+                    <label style={LBL}>Period From *{auto.period && <AutoChip/>}</label>
+                    <SaguaroDatePicker value={periodFrom} onChange={setPeriodFrom} style={INP}/>
+                    {lastApp && <div style={HINT}>Suggested — App #{lastApp.appNumber} billed through {fmtDate(lastApp.periodTo)}.</div>}
+                  </div>
+                  <div>
+                    <label style={LBL}>Period To *{auto.period && <AutoChip/>}</label>
+                    <SaguaroDatePicker value={periodTo} onChange={setPeriodTo} style={INP}/>
+                    {auto.period && <div style={HINT}>Defaulted to month end — adjust freely.</div>}
+                  </div>
+                  <div>
+                    <label style={LBL}>Original Contract Sum ($){auto.sum && <AutoChip/>}</label>
+                    <input type="number" value={contractSum} onChange={e=>setContractSum(e.target.value)} placeholder="0" min="0" style={INP}/>
+                    <div style={HINT}>
+                      {coTotal>0
+                        ? <>G702 line 1. With {money?.approvedCoCount} approved CO{money?.approvedCoCount===1?'':'s'} ({fmt(coTotal)}), contract sum to date is <b style={{color:TEXT}}>{fmt(revised)}</b> — change orders print on line 2 automatically.</>
+                        : <>G702 line 1 — pulled from the project contract. Approved change orders will print on line 2 automatically.</>}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={LBL}>Retainage %{auto.ret && <AutoChip/>}</label>
+                    <input type="number" value={retainagePct} onChange={e=>setRetainagePct(e.target.value)} placeholder="10" min="0" max="100" style={INP}/>
+                    <div style={HINT}>{lastApp ? `Carried from App #${lastApp.appNumber}.` : 'From project contract terms.'}</div>
+                  </div>
                 </div>
-                <div>
-                  <label style={LBL}>Period To *</label>
-                  <SaguaroDatePicker value={periodTo} onChange={setPeriodTo} style={INP}/>
-                </div>
-                <div>
-                  <label style={LBL}>Contract Sum ($)</label>
-                  <input type="number" value={contractSum} onChange={e=>setContractSum(e.target.value)} placeholder="0" min="0" style={INP}/>
-                </div>
-                <div>
-                  <label style={LBL}>Retainage %</label>
-                  <input type="number" value={retainagePct} onChange={e=>setRetainagePct(e.target.value)} placeholder="10" min="0" max="100" style={INP}/>
-                </div>
-              </div>
-              <button onClick={()=>setStep(2)} style={goldButtonStyle} className="pmBtn">
-                Next: Schedule of Values <ArrowRight size={15} weight="bold" color="#1A1206" />
-              </button>
-            </SectionCard>
+              </SectionCard>
+
+              {/* SOV readiness — the rollforward the system already did */}
+              <SectionCard title="Schedule of Values — Ready" icon={<Table size={17} weight="duotone" color={GOLD} />} style={{marginBottom:16}}>
+                {rolledForward ? (
+                  <>
+                    <div style={{fontSize:13,color:DIM,lineHeight:1.55,marginBottom:14}}>
+                      <b style={{color:'#3dd68c'}}>{lines.length} lines rolled forward</b> from App #{lastApp?.appNumber ?? '—'} — scheduled values and completed-to-date are pre-filled. In Step 2 you only enter <b style={{color:TEXT}}>this period&apos;s work</b>.
+                    </div>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:11.5,color:DIM,marginBottom:6}}>
+                      <span>Billed {fmt(prevTotal)} of {fmt(sovScheduled)} scheduled</span>
+                      <span style={{fontWeight:800,color:GOLD}}>{sovScheduled>0?Math.round((prevTotal/sovScheduled)*100):0}%</span>
+                    </div>
+                    <div style={{height:7,borderRadius:999,background:'rgba(255,255,255,0.07)',overflow:'hidden',marginBottom:4}}>
+                      <div style={{height:'100%',width:`${sovScheduled>0?Math.min(100,(prevTotal/sovScheduled)*100):0}%`,background:`linear-gradient(90deg,${GOLD},#FBBF24)`,borderRadius:999}}/>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{display:'flex',gap:10,alignItems:'flex-start',fontSize:13,color:DIM,lineHeight:1.55}}>
+                    <Info size={17} color={GOLD} style={{flexShrink:0,marginTop:1}}/>
+                    <span>First application on this project — build the schedule of values in Step 2. It rolls forward automatically on every application after this one.</span>
+                  </div>
+                )}
+                <button onClick={()=>setStep(2)} style={{...goldButtonStyle,marginTop:16}} className="pmBtn">
+                  Next: Schedule of Values <ArrowRight size={15} weight="bold" color="#1A1206" />
+                </button>
+              </SectionCard>
+            </div>
+
+            {/* Context rail — prior app + what the system automates */}
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+              <SectionCard title={lastApp ? `Last Application — #${lastApp.appNumber}` : 'First Application'} icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />}>
+                {lastApp ? (
+                  <>
+                    <InsightRow label="Period" value={`${fmtDate(lastApp.periodFrom)} – ${fmtDate(lastApp.periodTo)}`}/>
+                    <InsightRow label="Status" value={String(lastApp.status||'—').replace(/_/g,' ')}/>
+                    <InsightRow label="Completed & stored" value={fmt(lastApp.totalCompletedStored)}/>
+                    <InsightRow label="Payment certified" value={fmt(lastApp.currentPaymentDue)} accent="#3dd68c" strong/>
+                  </>
+                ) : (
+                  <div style={{fontSize:12.5,color:DIM,lineHeight:1.6}}>
+                    This is the first pay application on {ctx?.project?.name || 'this project'}. Everything you enter here rolls forward automatically next month.
+                  </div>
+                )}
+              </SectionCard>
+              <SectionCard title="After You Submit" icon={<Calculator size={17} weight="duotone" color={GOLD} />}>
+                <FlowSteps title="" steps={[
+                  {title:'Owner receives the G702/G703', desc:'A signed application packet goes out for one-click owner approval.'},
+                  {title:'Lien waivers auto-generate', desc: subCount>0 ? `Conditional waivers for all ${subCount} subs, each sized to their share of this period.` : 'Conditional waivers for every sub on the job, sized to their share of this period.'},
+                  {title:'Payment is waiver-gated', desc:'Mark-paid is blocked until required waivers are signed — then unconditional waivers issue automatically.'},
+                  {title:'Money flows to the ledger', desc:'Paid-to-date, retainage held, and the prime contract update themselves.'},
+                ]}/>
+              </SectionCard>
+            </div>
           </div>
         )}
 
@@ -211,6 +327,11 @@ export default function NewPayAppPage() {
           <div style={{display:'flex',gap:22,alignItems:'flex-start'}}>
             {/* Table */}
             <div style={{flex:1,minWidth:0}}>
+              {rolledForward && (
+                <div style={{marginBottom:12,padding:'10px 14px',borderRadius:10,background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.3)',color:'#22C55E',fontSize:12.5,fontWeight:600}}>
+                  Rolled forward from App #{lastApp?.appNumber ?? '—'} — scheduled values and completed-to-date are pre-filled. Just enter this period&apos;s work.
+                </div>
+              )}
               <SectionCard
                 title="Schedule of Values (G703)"
                 icon={<Table size={17} weight="duotone" color={GOLD} />}
@@ -289,20 +410,17 @@ export default function NewPayAppPage() {
 
             {/* Live Calc Panel */}
             <div style={{width:256,flexShrink:0,position:'sticky' as const,top:80}}>
-              <SectionCard title="Live Summary" icon={<Calculator size={17} weight="duotone" color={GOLD} />}>
-                {[
-                  {l:'Contract Sum',v:fmt(contractSumNum),c:TEXT},
-                  {l:'Prev Completed',v:fmt(prevTotal),c:DIM},
-                  {l:'This Period',v:fmt(thisPeriodTotal),c:GOLD},
-                  {l:'Materials Stored',v:fmt(matsTotal),c:DIM},
-                  {l:'Total Completed',v:fmt(totalCompleted),c:TEXT},
-                  {l:`Retainage (${pct}%)`,v:fmt(retainageAmt),c:ORANGE},
-                ].map(row=>(
-                  <div key={row.l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-                    <span style={{fontSize:12,color:DIM}}>{row.l}</span>
-                    <span style={{fontSize:13,fontWeight:700,color:row.c}}>{row.v}</span>
-                  </div>
-                ))}
+              <SectionCard title="Live G702 Summary" icon={<Calculator size={17} weight="duotone" color={GOLD} />}>
+                <InsightRow label="Original contract" value={fmt(contractSumNum)}/>
+                {coTotal!==0 && <InsightRow label="Approved COs" value={(coTotal>0?'+':'')+fmt(coTotal)} accent="#3dd68c"/>}
+                {coTotal!==0 && <InsightRow label="Contract to date" value={fmt(contractSumNum+coTotal)}/>}
+                <div style={{height:1,background:'rgba(255,255,255,0.08)',margin:'8px 0'}}/>
+                <InsightRow label="Prev completed" value={fmt(prevTotal)}/>
+                <InsightRow label="This period" value={fmt(thisPeriodTotal)} accent={GOLD}/>
+                <InsightRow label="Materials stored" value={fmt(matsTotal)}/>
+                <InsightRow label="Total completed" value={fmt(totalCompleted)}/>
+                <InsightRow label={`Retainage (${pct}%)`} value={fmt(retainageAmt)} accent={ORANGE}/>
+                <InsightRow label="Balance to finish" value={fmt(Math.max(0,(contractSumNum+coTotal)-totalCompleted))}/>
                 <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid rgba(255,255,255,0.1)`}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <span style={{fontSize:12,fontWeight:800,color:TEXT}}>Payment Due</span>

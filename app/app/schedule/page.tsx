@@ -26,6 +26,8 @@ import {
 } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
+import { StatStrip, AutoChip } from '@/components/ui/premium';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 interface ScheduleTask {
   id: string;
@@ -65,10 +67,18 @@ function barColor(t: ScheduleTask) {
 }
 
 // ── Date-only helpers (no TZ drift: dates are 'YYYY-MM-DD') ─────────────────
+// Canonical trade taxonomy — CSI division groups plus the specialty markets outside them.
+const DIVISION_TRADE_SET = new Set(SUB_TRADES_BY_DIVISION.flatMap(d => d.trades));
+const EXTRA_TRADES = SUB_TRADES.filter(t => !DIVISION_TRADE_SET.has(t));
+
 const DAY = 86400000;
 function ymdToUTC(s: string): number {
   const [y, m, d] = s.split('-').map(Number);
   return Date.UTC(y, (m || 1) - 1, d || 1);
+}
+function ymdAddDays(s: string, days: number): string {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(Date.UTC(y, (m || 1) - 1, (d || 1) + days)).toISOString().slice(0, 10);
 }
 function fmtDate(s: string | null | undefined): string {
   if (!s) return '—';
@@ -101,6 +111,10 @@ export default function SchedulePage() {
     startDate: '', endDate: '', pctComplete: '0',
     status: 'not_started', predecessorId: '',
   });
+  // SmartCreate: once a project is chosen, the modal walks in knowing it.
+  const [ctx, setCtx] = useState<any>(null);
+  const [duration, setDuration] = useState('');
+  const [auto, setAuto] = useState<{ start?: boolean; end?: boolean }>({});
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -123,6 +137,17 @@ export default function SchedulePage() {
       .then(d => { if (d) setProjects(Array.isArray(d) ? d : d.projects ?? []); })
       .catch(() => {});
   }, [fetchTasks]);
+
+  // Project intelligence for the create modal — one snapshot per chosen project.
+  useEffect(() => {
+    if (!form.projectId) { setCtx(null); return; }
+    let alive = true;
+    fetch(`/api/project-context?projectId=${form.projectId}`)
+      .then(r => r.json())
+      .then(c => { if (alive && !c.error) setCtx(c); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [form.projectId]);
 
   const projectName = useCallback(
     (id: string | null) => projects.find(p => p.id === id)?.name ?? null,
@@ -166,6 +191,39 @@ export default function SchedulePage() {
     }
   }, [tasks]);
 
+  // SmartCreate wiring: duration drives the end date; a predecessor drives the start.
+  function setStartDate(v: string) {
+    const d = Number(duration) || 0;
+    const end = v && d > 0 ? ymdAddDays(v, d) : form.endDate;
+    setForm(f => ({ ...f, startDate: v, endDate: end }));
+    setAuto(a => ({ ...a, start: false, end: !!(v && d > 0) }));
+  }
+  function setDurationDays(v: string) {
+    setDuration(v);
+    const d = Number(v) || 0;
+    if (form.startDate && d > 0) {
+      setForm(f => ({ ...f, endDate: ymdAddDays(f.startDate, d) }));
+      setAuto(a => ({ ...a, end: true }));
+    }
+  }
+  function setEndDate(v: string) {
+    if (form.startDate && v) setDuration(String(Math.max(1, Math.round((ymdToUTC(v) - ymdToUTC(form.startDate)) / DAY))));
+    setForm(f => ({ ...f, endDate: v }));
+    setAuto(a => ({ ...a, end: false }));
+  }
+  function setPredecessor(id: string) {
+    const pred = tasks.find(t => t.id === id);
+    const patch: Record<string, any> = { predecessorId: id };
+    if (pred?.end_date && !form.startDate) {
+      // A task follows its predecessor — default to starting the day after it ends.
+      patch.startDate = ymdAddDays(pred.end_date, 1);
+      const d = Number(duration) || 0;
+      if (d > 0) patch.endDate = ymdAddDays(patch.startDate, d);
+      setAuto({ start: true, end: d > 0 });
+    }
+    setForm(f => ({ ...f, ...patch }));
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.projectId) return;
@@ -189,6 +247,7 @@ export default function SchedulePage() {
       if (!res.ok) throw new Error('Failed to create task');
       setShowCreate(false);
       setForm({ name: '', projectId: '', phase: '', trade: '', startDate: '', endDate: '', pctComplete: '0', status: 'not_started', predecessorId: '' });
+      setDuration(''); setAuto({});
       await fetchTasks();
     } catch (e: any) {
       console.error(e); setError(humanError(e, 'Something went wrong. Please try again.'));
@@ -391,6 +450,13 @@ export default function SchedulePage() {
               <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 22 }}>×</button>
             </div>
             <form onSubmit={handleCreate} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {form.projectId && (
+                <StatStrip items={[
+                  { label: 'Tasks', value: String(formProjectTasks.length), sub: `${formProjectTasks.filter(t => t.status === 'complete').length} complete on this project` },
+                  { label: 'Critical Path', value: String(ctx?.schedule?.criticalCount ?? 0), accent: (ctx?.schedule?.criticalCount ?? 0) > 0 ? colors.gold : undefined, sub: 'tasks drive the end date' },
+                  { label: 'Next Milestone', value: ctx?.schedule?.nextTasks?.[0]?.name || '—', sub: ctx?.schedule?.nextTasks?.[0]?.startDate ? `starts ${fmtDate(String(ctx.schedule.nextTasks[0].startDate).slice(0, 10))}` : 'nothing queued yet' },
+                ]} />
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={labelStyle}>Task Name *</label>
@@ -409,7 +475,17 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Trade</label>
-                  <input value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} style={inputStyle} placeholder="Concrete, Steel, MEP..." />
+                  <select value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} style={inputStyle}>
+                    <option value="">Select trade...</option>
+                    {SUB_TRADES_BY_DIVISION.map(d => (
+                      <optgroup key={d.division} label={`Div ${d.division} — ${d.name}`}>
+                        {d.trades.map(t => <option key={t} value={t}>{t}</option>)}
+                      </optgroup>
+                    ))}
+                    <optgroup label="Specialty & Site Markets">
+                      {EXTRA_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </optgroup>
+                  </select>
                 </div>
                 <div>
                   <label style={labelStyle}>Status</label>
@@ -418,12 +494,19 @@ export default function SchedulePage() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Start Date</label>
-                  <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} style={inputStyle} />
+                  <label style={labelStyle}>Start Date{auto.start && <AutoChip />}</label>
+                  <input type="date" value={form.startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
+                  {auto.start && <div style={{ fontSize: font.size.xs, color: colors.textDim, marginTop: 4 }}>Day after the predecessor ends — edit freely.</div>}
                 </div>
                 <div>
-                  <label style={labelStyle}>End Date</label>
-                  <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} style={inputStyle} />
+                  <label style={labelStyle}>Duration (days)</label>
+                  <input type="number" min="1" value={duration} onChange={(e) => setDurationDays(e.target.value)} style={inputStyle} placeholder="e.g. 10" />
+                  <div style={{ fontSize: font.size.xs, color: colors.textDim, marginTop: 4 }}>Computes the end date from the start.</div>
+                </div>
+                <div>
+                  <label style={labelStyle}>End Date{auto.end && <AutoChip />}</label>
+                  <input type="date" value={form.endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+                  {auto.end && form.startDate && <div style={{ fontSize: font.size.xs, color: colors.textDim, marginTop: 4 }}>Start + {Number(duration) || 0}d — editing it re-syncs duration.</div>}
                 </div>
                 <div>
                   <label style={labelStyle}>% Complete</label>
@@ -431,10 +514,18 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Predecessor</label>
-                  <select value={form.predecessorId} onChange={(e) => setForm({ ...form, predecessorId: e.target.value })} disabled={!form.projectId} style={inputStyle}>
+                  <select value={form.predecessorId} onChange={(e) => setPredecessor(e.target.value)} disabled={!form.projectId} style={inputStyle}>
                     <option value="">None</option>
-                    {formProjectTasks.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    {formProjectTasks.map(t => <option key={t.id} value={t.id}>{t.name}{t.end_date ? ` (ends ${fmtDate(t.end_date)})` : ''}</option>)}
                   </select>
+                  {form.predecessorId && (() => {
+                    const p = taskById.get(form.predecessorId);
+                    return p ? (
+                      <div style={{ fontSize: font.size.xs, color: colors.textDim, marginTop: 4 }}>
+                        Follows <span style={{ color: colors.text, fontWeight: font.weight.semibold }}>{p.name}</span>{p.end_date ? ` — ends ${fmtDate(p.end_date)}; this task starts the day after.` : ' — no end date on the predecessor yet.'}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>

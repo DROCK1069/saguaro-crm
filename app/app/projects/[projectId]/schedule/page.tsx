@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
 import { WarningCircle, CalendarBlank, X, Plus, TrendUp, CheckCircle, Clock, ListChecks } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -27,11 +28,15 @@ const inp:React.CSSProperties={
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
 const EMPTY:Record<string,any>={
-  name:'',phase:'',start_date:'',end_date:'',
-  pct_complete:0,status:'not_started',predecessor:'',assigned_to:'',notes:'',
+  name:'',phase:'',trade:'',start_date:'',end_date:'',
+  pct_complete:0,status:'not_started',predecessor:'',predecessor_id:'',assigned_to:'',notes:'',
 };
+// Canonical trade taxonomy — CSI division groups plus the specialty markets outside them.
+const DIVISION_TRADE_SET=new Set(SUB_TRADES_BY_DIVISION.flatMap(d=>d.trades));
+const EXTRA_TRADES=SUB_TRADES.filter(t=>!DIVISION_TRADE_SET.has(t));
+const HINT:React.CSSProperties={fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
 
-function Field({label,children}:{label:string;children:React.ReactNode}){
+function Field({label,children}:{label:React.ReactNode;children:React.ReactNode}){
   return(
     <div>
       <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
@@ -43,6 +48,16 @@ function Field({label,children}:{label:string;children:React.ReactNode}){
 
 function daysBetween(a:string,b:string){
   return Math.max(1,Math.round((new Date(b).getTime()-new Date(a).getTime())/86400000));
+}
+
+function addDaysISO(ymd:string,days:number){
+  const [y,m,d]=ymd.split('-').map(Number);
+  const dt=new Date(y,(m||1)-1,(d||1)+days);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+function fmtShort(d?:string|null){
+  return d?new Date(String(d).slice(0,10)+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
 }
 
 /* ── Gantt bar chart ────────────────────────────────────────────── */
@@ -165,6 +180,10 @@ export default function SchedulePage(){
   const [search,setSearch]=useState('');
   const [filterStatus,setFilterStatus]=useState('all');
   const [filterPhase,setFilterPhase]=useState('all');
+  // SmartCreate: the add flow walks in knowing the project — /api/project-context snapshot.
+  const [ctx,setCtx]=useState<any>(null);
+  const [duration,setDuration]=useState('');
+  const [auto,setAuto]=useState<{start?:boolean;end?:boolean}>({});
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -185,16 +204,62 @@ export default function SchedulePage(){
 
   useEffect(()=>{load();},[load]);
 
-  function openCreate(){setForm({...EMPTY});setMode('create');setSelected(null);}
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r=await fetch(`/api/project-context?projectId=${projectId}`);
+        const c=await r.json();
+        if(!c.error) setCtx(c);
+      }catch{}
+    })();
+  },[projectId]);
+
+  function openCreate(){setForm({...EMPTY});setDuration('');setAuto({});setMode('create');setSelected(null);}
   function openEdit(task:any){
-    setForm({name:task.name||'',phase:task.phase||'',
+    setForm({name:task.name||'',phase:task.phase||'',trade:task.trade||'',
       start_date:task.start_date||'',end_date:task.end_date||'',
       pct_complete:task.pct_complete??0,status:task.status||'not_started',
-      predecessor:task.predecessor||'',assigned_to:task.assigned_to||'',notes:task.notes||''});
+      predecessor:task.predecessor||'',predecessor_id:task.predecessor_id||'',
+      assigned_to:task.assigned_to||'',notes:task.notes||''});
+    setDuration(task.start_date&&task.end_date?String(daysBetween(task.start_date,task.end_date)):'');
+    setAuto({});
     setSelected(task);setMode('edit');
   }
   function viewTask(task:any){setSelected(task);setMode('view');}
   function closePanel(){setSelected(null);setMode(null);}
+
+  // SmartCreate wiring: duration drives the end date; a predecessor drives the start.
+  function setStartDate(v:string){
+    const d=Number(duration)||0;
+    const end=v&&d>0?addDaysISO(v,d):form.end_date;
+    setForm(f=>({...f,start_date:v,end_date:end}));
+    setAuto(a=>({...a,start:false,end:!!(v&&d>0)}));
+  }
+  function setDurationDays(v:string){
+    setDuration(v);
+    const d=Number(v)||0;
+    if(form.start_date&&d>0){
+      setForm(f=>({...f,end_date:addDaysISO(f.start_date,d)}));
+      setAuto(a=>({...a,end:true}));
+    }
+  }
+  function setEndDate(v:string){
+    if(form.start_date&&v) setDuration(String(daysBetween(form.start_date,v)));
+    setForm(f=>({...f,end_date:v}));
+    setAuto(a=>({...a,end:false}));
+  }
+  function setPredecessorTask(id:string){
+    const pred=tasks.find((t:any)=>t.id===id);
+    const patch:Record<string,any>={predecessor_id:id,predecessor:pred?.name||''};
+    if(pred?.end_date&&!form.start_date){
+      // A task follows its predecessor — default to starting the day after it ends.
+      patch.start_date=addDaysISO(pred.end_date,1);
+      const d=Number(duration)||0;
+      if(d>0) patch.end_date=addDaysISO(patch.start_date,d);
+      setAuto({start:true,end:d>0});
+    }
+    setForm(f=>({...f,...patch}));
+  }
 
   async function save(){
     if(!form.name.trim()){showToast('Task name is required','error');return;}
@@ -481,33 +546,68 @@ export default function SchedulePage(){
           <div style={{flex:1,overflow:'auto',padding:20}}>
             {(mode==='create'||mode==='edit')?(
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                {mode==='create'&&ctx&&(
+                  <StatStrip items={[
+                    {label:'Tasks',value:String(tasks.length),sub:`${completedCount} complete · ${delayedCount} delayed`},
+                    {label:'Critical Path',value:String(ctx.schedule?.criticalCount??0),accent:(ctx.schedule?.criticalCount??0)>0?GOLD:undefined,sub:'tasks drive the end date'},
+                    {label:'Next Milestone',value:ctx.schedule?.nextTasks?.[0]?.name||'—',sub:ctx.schedule?.nextTasks?.[0]?`starts ${fmtShort(ctx.schedule.nextTasks[0].startDate)}`:'nothing queued yet'},
+                  ]}/>
+                )}
                 <Field label="Task Name *">
                   <input value={form.name}
                     onChange={e=>setForm(f=>({...f,name:e.target.value}))}
                     style={inp} placeholder="Foundation excavation…"/>
                 </Field>
 
-                <Field label="Phase">
-                  <select value={form.phase}
-                    onChange={e=>setForm(f=>({...f,phase:e.target.value}))}
-                    style={{...inp,padding:'9px 10px'}}>
-                    <option value="">— Select Phase —</option>
-                    {PHASES.map(p=><option key={p} value={p}>{p}</option>)}
-                  </select>
-                </Field>
-
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                  <Field label="Start Date">
+                  <Field label="Phase">
+                    <select value={form.phase}
+                      onChange={e=>setForm(f=>({...f,phase:e.target.value}))}
+                      style={{...inp,padding:'9px 10px'}}>
+                      <option value="">— Select Phase —</option>
+                      {PHASES.map(p=><option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Trade">
+                    <select value={form.trade}
+                      onChange={e=>setForm(f=>({...f,trade:e.target.value}))}
+                      style={{...inp,padding:'9px 10px'}}>
+                      <option value="">— Select Trade —</option>
+                      {SUB_TRADES_BY_DIVISION.map(d=>(
+                        <optgroup key={d.division} label={`Div ${d.division} — ${d.name}`}>
+                          {d.trades.map(t=><option key={t} value={t}>{t}</option>)}
+                        </optgroup>
+                      ))}
+                      <optgroup label="Specialty & Site Markets">
+                        {EXTRA_TRADES.map(t=><option key={t} value={t}>{t}</option>)}
+                      </optgroup>
+                    </select>
+                  </Field>
+                </div>
+
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
+                  <Field label={<>Start{auto.start&&<AutoChip/>}</>}>
                     <input type="date" value={form.start_date}
-                      onChange={e=>setForm(f=>({...f,start_date:e.target.value}))}
+                      onChange={e=>setStartDate(e.target.value)}
                       style={inp}/>
                   </Field>
-                  <Field label="End Date">
+                  <Field label="Duration (d)">
+                    <input type="number" min={1} value={duration} placeholder="10"
+                      onChange={e=>setDurationDays(e.target.value)}
+                      style={inp}/>
+                  </Field>
+                  <Field label={<>End{auto.end&&<AutoChip/>}</>}>
                     <input type="date" value={form.end_date}
-                      onChange={e=>setForm(f=>({...f,end_date:e.target.value}))}
+                      onChange={e=>setEndDate(e.target.value)}
                       style={inp}/>
                   </Field>
                 </div>
+                {(auto.start||auto.end)&&(
+                  <div style={{...HINT,marginTop:-8}}>
+                    {auto.start&&<>Start defaulted to the day after the predecessor ends. </>}
+                    {auto.end&&form.start_date&&<>End = start + {Number(duration)||0}d — editing either re-syncs.</>}
+                  </div>
+                )}
 
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                   <Field label="Status">
@@ -527,13 +627,32 @@ export default function SchedulePage(){
                 <Field label="Assigned To">
                   <input value={form.assigned_to}
                     onChange={e=>setForm(f=>({...f,assigned_to:e.target.value}))}
-                    style={inp} placeholder="Subcontractor or person"/>
+                    style={inp} placeholder="Subcontractor or person" list="schedule-sub-roster"/>
+                  <datalist id="schedule-sub-roster">
+                    {(ctx?.subs||[]).map((s:any)=>(
+                      <option key={s.membershipId||s.id} value={s.companyName}>{s.trade?`${s.companyName} — ${s.trade}`:s.companyName}</option>
+                    ))}
+                  </datalist>
+                  {(ctx?.subs||[]).length>0&&(
+                    <div style={HINT}>{ctx.subs.length} sub{ctx.subs.length===1?'':'s'} on the project roster — start typing to pick one.</div>
+                  )}
                 </Field>
 
-                <Field label="Predecessor (task name or #)">
-                  <input value={form.predecessor}
-                    onChange={e=>setForm(f=>({...f,predecessor:e.target.value}))}
-                    style={inp} placeholder="e.g. Foundation"/>
+                <Field label="Predecessor">
+                  <select value={form.predecessor_id}
+                    onChange={e=>setPredecessorTask(e.target.value)}
+                    disabled={tasks.filter((t:any)=>t.id!==selected?.id).length===0}
+                    style={{...inp,padding:'9px 10px'}}>
+                    <option value="">None — starts independently</option>
+                    {tasks.filter((t:any)=>t.id!==selected?.id).map((t:any)=>(
+                      <option key={t.id} value={t.id}>{t.name}{t.end_date?` (ends ${fmtShort(t.end_date)})`:''}</option>
+                    ))}
+                  </select>
+                  {form.predecessor_id&&(()=>{
+                    const p=tasks.find((t:any)=>t.id===form.predecessor_id);
+                    if(!p) return null;
+                    return <div style={HINT}>Follows <b style={{color:TEXT}}>{p.name}</b>{p.end_date?<> — ends {fmtShort(p.end_date)}; this task starts the day after.</>:<> — predecessor has no end date yet.</>}</div>;
+                  })()}
                 </Field>
 
                 <Field label="Notes">
@@ -542,6 +661,16 @@ export default function SchedulePage(){
                     rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}
                     placeholder="Any additional notes…"/>
                 </Field>
+
+                {mode==='create'&&(
+                  <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:'14px 16px'}}>
+                    <FlowSteps title="After you add" steps={[
+                      {title:'Task lands on the Gantt',desc:'Bar plots start to end against the gold today marker.'},
+                      {title:'Dependency is tracked',desc:form.predecessor_id?'Chained finish-to-start behind its predecessor.':'Pick a predecessor to chain it into the build sequence.'},
+                      {title:'Progress rolls up',desc:'Its % complete feeds the completion and delayed KPIs above.'},
+                    ]}/>
+                  </div>
+                )}
 
                 <div style={{display:'flex',gap:10,paddingTop:4}}>
                   <button onClick={save} disabled={saving} className="pmBtn"
@@ -609,8 +738,9 @@ export default function SchedulePage(){
                     {l:'End Date',v:selected.end_date},
                     {l:'Duration',v:selected.start_date&&selected.end_date?
                       `${daysBetween(selected.start_date,selected.end_date)} days`:null},
+                    {l:'Trade',v:selected.trade},
                     {l:'Assigned To',v:selected.assigned_to},
-                    {l:'Predecessor',v:selected.predecessor},
+                    {l:'Predecessor',v:tasks.find((t:any)=>t.id===selected.predecessor_id)?.name||selected.predecessor},
                   ].filter(x=>x.v).map(x=>(
                     <div key={x.l} style={{background:'#141416',border:`1px solid ${BORDER}`,
                       borderRadius:8,padding:'10px 12px'}}>

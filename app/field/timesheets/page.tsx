@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 
@@ -28,21 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: 'Rejected', revision_requested: 'Revision',
 };
 
-const CSI_CODES = [
-  { code: '01', label: '01 — General Requirements' },
-  { code: '02', label: '02 — Existing Conditions' },
-  { code: '03', label: '03 — Concrete' },
-  { code: '04', label: '04 — Masonry' },
-  { code: '05', label: '05 — Metals' },
-  { code: '06', label: '06 — Wood, Plastics, Composites' },
-  { code: '07', label: '07 — Thermal & Moisture Protection' },
-  { code: '08', label: '08 — Openings' },
-  { code: '09', label: '09 — Finishes' },
-  { code: '22', label: '22 — Plumbing' },
-  { code: '23', label: '23 — HVAC' },
-  { code: '26', label: '26 — Electrical' },
-  { code: '31', label: '31 — Earthwork' },
-];
+const CSI_CODES = Object.entries(CSI_DIVISIONS).map(([code, d]) => ({ code, label: `${code} — ${d.name}` }));
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 

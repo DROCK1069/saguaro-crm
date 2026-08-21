@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useBudget, useChangeOrders, createChangeOrder, advanceChangeOrder } from '@/lib/hooks/useFranchise';
-import { C, font, fmtMoney, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, Tile, Chip, EmptyState } from '@/components/franchise/kit';
+import { C, font, fmtMoney, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, Chip, EmptyState } from '@/components/franchise/kit';
+import { StatStrip, FlowSteps } from '@/components/ui/premium';
 import { CurrencyDollar, NotePencil, ArrowRight } from '@phosphor-icons/react';
 
 const CO_STAGES: Record<string, { label: string; color: string }> = {
@@ -25,12 +26,17 @@ export default function BudgetPage() {
 
   const totals = useMemo(() => {
     const b = budgets as any[];
+    // DB numerics can round-trip as strings — Number() every figure before
+    // math so one stringly-typed row can never string-concat the totals.
+    const n = (v: unknown) => Number(v) || 0;
     return {
-      original: b.reduce((s, x) => s + x.original, 0),
-      approvedCO: b.reduce((s, x) => s + x.approvedCO, 0),
-      pendingCO: b.reduce((s, x) => s + x.pendingCO, 0),
-      forecast: b.reduce((s, x) => s + x.forecast, 0),
-      revised: b.reduce((s, x) => s + x.revised, 0),
+      original: b.reduce((s, x) => s + n(x.original), 0),
+      approvedCO: b.reduce((s, x) => s + n(x.approvedCO), 0),
+      pendingCO: b.reduce((s, x) => s + n(x.pendingCO), 0),
+      committed: b.reduce((s, x) => s + n(x.committed), 0),
+      actual: b.reduce((s, x) => s + n(x.actual), 0),
+      forecast: b.reduce((s, x) => s + n(x.forecast), 0),
+      revised: b.reduce((s, x) => s + n(x.revised), 0),
     };
   }, [budgets]);
   const portfolioVar = totals.revised - totals.forecast;
@@ -51,11 +57,17 @@ export default function BudgetPage() {
       <PageHeader title="Budget & Change Orders" subtitle="Where the money is across every site — original vs revised vs forecast, and every change order routed to approval. No surprises."
         right={tab === 'cos' ? <button onClick={() => setAdding((v) => !v)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>{adding ? 'Close' : '+ New Change Order'}</button> : undefined} />
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Portfolio Original" value={fmtMoneyShort(totals.original)} />
-        <Tile label="Approved COs" value={fmtMoneyShort(totals.approvedCO)} color={C.green} />
-        <Tile label="Pending COs" value={fmtMoneyShort(totals.pendingCO)} color={totals.pendingCO ? C.gold : C.dim} />
-        <Tile label="Forecast Variance" value={fmtMoneyShort(portfolioVar)} color={portfolioVar < 0 ? C.red : C.green} sub={portfolioVar < 0 ? 'over budget' : 'under budget'} />
+      {/* Portfolio money strip — Original / Committed / Actual / Variance plus CO exposure, every figure Number()-coerced in the totals memo */}
+      <div>
+      <StatStrip items={[
+        { label: 'Portfolio Original', value: fmtMoneyShort(Number(totals.original) || 0), sub: `${(budgets as any[]).length} site budget${(budgets as any[]).length === 1 ? '' : 's'}` },
+        { label: 'Committed', value: fmtMoneyShort(Number(totals.committed) || 0), sub: 'subcontracts + POs' },
+        { label: 'Actual to Date', value: fmtMoneyShort(Number(totals.actual) || 0), sub: 'billed against budgets' },
+        { label: 'Approved COs', value: '+' + fmtMoneyShort(Number(totals.approvedCO) || 0), accent: C.green, sub: 'in revised budgets' },
+        { label: 'Pending COs', value: fmtMoneyShort(Number(totals.pendingCO) || 0), accent: totals.pendingCO ? C.gold : undefined, sub: totals.pendingCO ? 'awaiting approval' : 'none in flight' },
+        { label: 'Revised Budget', value: fmtMoneyShort(Number(totals.revised) || 0), sub: 'original + approved COs' },
+        { label: 'Forecast Variance', value: (portfolioVar >= 0 ? '+' : '') + fmtMoneyShort(portfolioVar), accent: portfolioVar < 0 ? C.red : C.green, sub: portfolioVar < 0 ? 'over budget' : 'under budget' },
+      ]} />
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
@@ -67,7 +79,40 @@ export default function BudgetPage() {
 
       {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
       : tab === 'budget' ? (
-        (budgets as any[]).length === 0 ? <EmptyState icon={<CurrencyDollar size={34} color={C.dim} />} title="No budgets yet" body="Site budgets roll up here — original, approved & pending change orders, committed, actual, and forecast variance." />
+        (budgets as any[]).length === 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(250px,1fr)', gap: 14, alignItems: 'start' }}>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <CurrencyDollar size={20} color={C.gold} />
+                <div style={{ fontSize: 15, fontWeight: 800 }}>No site budgets yet — seed them per project</div>
+              </div>
+              <div style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.6, marginBottom: 14 }}>
+                Every project has its own Budget page — seed lines there by CSI division or pull bid-package estimates in one tap. Each site then rolls up here automatically: original, committed, actual, and forecast variance.
+              </div>
+              {((projects || []) as any[]).length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {((projects || []) as any[]).slice(0, 8).map((p: any) => (
+                    <Link key={p.id} href={`/app/projects/${p.id}/budget`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)', color: C.text, textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.gold, fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap' }}>Open budget <ArrowRight size={13} color={C.gold} /></span>
+                    </Link>
+                  ))}
+                  {((projects || []) as any[]).length > 8 && <div style={{ fontSize: 11.5, color: C.dim, paddingTop: 2 }}>+{((projects || []) as any[]).length - 8} more projects — open any project to reach its budget</div>}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12.5, color: C.dim }}>Create a project first — its budget page is ready the moment the project exists.</div>
+              )}
+            </div>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px 20px' }}>
+              <FlowSteps title="How the roll-up builds" steps={[
+                { title: 'Seed lines by CSI division', desc: 'On each project: pick a division, or pull bid-package estimates in one tap.' },
+                { title: 'Committed books itself', desc: 'Awarded subcontracts and POs land on their coded lines.' },
+                { title: 'Actuals flow from bills', desc: 'Approved invoices hit the lines — nothing re-typed.' },
+                { title: 'Variance rolls up here', desc: 'Original, committed, actual, and forecast across every site.' },
+              ]} />
+            </div>
+          </div>
+        )
         : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 14 }}>
           {(budgets as any[]).map((b) => (
             <div key={b.project_id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${b.variance < 0 ? C.red : C.green}`, borderRadius: 14, padding: '16px 18px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>

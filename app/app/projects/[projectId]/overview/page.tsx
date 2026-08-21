@@ -14,6 +14,7 @@ import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 import {
   CinematicPage, ModuleHero, HeroButton, StatCard, SectionCard, SectionLink, EmptyStatePremium, CIN,
 } from '@/components/ui/cinematic';
+import GettingStartedRail from '@/components/GettingStartedRail';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#22C55E',RED='#EF4444';
 const fmt = (n:number|null|undefined) => '$'+((n ?? 0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -180,6 +181,9 @@ export default function OverviewPage(){
           </HeroButton>
         </>}
       />
+
+      {/* GC Guided Journey — auto-hides once all 8 steps complete */}
+      <GettingStartedRail projectId={projectId}/>
 
       {scanMsg&&<div style={{marginBottom:20,padding:'13px 18px',background: scanMsg.includes('failed') ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)',border:`1px solid ${scanMsg.includes('failed') ? 'rgba(239,68,68,.35)' : 'rgba(34,197,94,.35)'}`,borderRadius:14,fontSize:13,fontWeight:600,color: scanMsg.includes('failed') ? RED : GREEN,display:'flex',alignItems:'center',gap:8}}>
         <span style={{fontSize:16,display:'inline-flex',verticalAlign:'middle'}}>{scanMsg.includes('failed') ? <XCircle size={16} weight="fill" color={RED}/> : <CheckCircle size={16} weight="fill" color={GREEN}/>}</span>

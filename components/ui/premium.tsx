@@ -34,7 +34,7 @@ const FAINT = 'rgba(255,255,255,0.42)';
 // ─── FX keyframes + interaction classes ──────────────────────────────────────
 // Rendered once per page. All motion is disabled under prefers-reduced-motion.
 export const PREMIUM_FX = `
-@keyframes pmRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pmRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}/* transform:none at rest — translateY(0) + fill-mode both left a PERMANENT stacking context that painted every hero dropdown UNDER later cards */
 @keyframes pmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes pmAur1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(7%,5%) scale(1.14)}}
 @keyframes pmAur2{0%,100%{transform:translate(0,0) scale(1.06)}50%{transform:translate(-8%,6%) scale(1)}}
@@ -390,3 +390,88 @@ export const goldOutlineButtonStyle: React.CSSProperties = {
   background: A12, color: GOLD_HI, border: `1px solid ${A45}`,
   fontWeight: 800, fontSize: 13.5, textDecoration: 'none',
 };
+
+// ─── SmartCreate kit ─────────────────────────────────────────────────────────
+// Shared anatomy for every add/create flow: the screen walks in already knowing
+// the project (contract, COs, prior records) and shows the user what the system
+// pre-filled and what happens after submit. No create screen ships a bare form.
+
+/** Tiny gold pill marking a field the system filled from live project data. */
+export function AutoChip({ label = 'AUTO' }: { label?: string }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', marginLeft: 8, padding: '1.5px 7px',
+      borderRadius: 999, background: A18, border: `1px solid ${A45}`,
+      color: GOLD_HI, fontSize: 8.5, fontWeight: 900, letterSpacing: '0.09em',
+      verticalAlign: 'middle', lineHeight: 1.6,
+    }}>{label}</span>
+  );
+}
+
+/** Dense full-width stat band for the top of create screens — kills dead space
+ *  by surfacing what the system already knows (sums, counts, prior records). */
+export function StatStrip({ items }: {
+  items: { label: string; value: React.ReactNode; sub?: React.ReactNode; accent?: string; icon?: React.ReactNode }[];
+}) {
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`, gap: 1,
+      background: BORDER, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden',
+      marginBottom: 20,
+    }}>
+      {items.map((it, i) => (
+        <div key={i} style={{ background: '#101011', padding: '13px 16px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 800, color: FAINT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5, whiteSpace: 'nowrap' }}>
+            {it.icon}{it.label}
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: it.accent || WHITE, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.value}</div>
+          {it.sub && <div style={{ fontSize: 11, color: MUTED, marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.sub}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Vertical "what happens next" pipeline for the create-screen context rail:
+ *  numbered gold nodes with a connector line, so the user sees the downstream
+ *  automation (approvals, waivers, budget sync) before they ever submit. */
+export function FlowSteps({ title = 'What happens next', steps }: {
+  title?: string;
+  steps: { title: string; desc?: string; done?: boolean }[];
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 10.5, fontWeight: 900, color: FAINT, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 14 }}>{title}</div>
+      <div style={{ position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 10, top: 8, bottom: 14, width: 1, background: `linear-gradient(180deg, ${A45}, ${BORDER})` }} />
+        {steps.map((s, i) => (
+          <div key={i} style={{ display: 'flex', gap: 12, marginBottom: i === steps.length - 1 ? 0 : 16, position: 'relative' }}>
+            <div style={{
+              width: 21, height: 21, borderRadius: 999, flexShrink: 0, zIndex: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: s.done ? `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})` : '#101011',
+              border: s.done ? 'none' : `1px solid ${A45}`,
+              color: s.done ? '#241500' : GOLD_HI, fontSize: 10, fontWeight: 900,
+            }}>{s.done ? '✓' : i + 1}</div>
+            <div style={{ minWidth: 0, paddingTop: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: WHITE, lineHeight: 1.35 }}>{s.title}</div>
+              {s.desc && <div style={{ fontSize: 11.5, color: MUTED, lineHeight: 1.5, marginTop: 2 }}>{s.desc}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Label/value row for context rails and snapshot cards. */
+export function InsightRow({ label, value, accent, strong }: {
+  label: React.ReactNode; value: React.ReactNode; accent?: string; strong?: boolean;
+}) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, padding: '5.5px 0' }}>
+      <span style={{ fontSize: 12, color: MUTED, whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontSize: strong ? 15 : 12.5, fontWeight: strong ? 800 : 700, color: accent || WHITE, textAlign: 'right', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</span>
+    </div>
+  );
+}

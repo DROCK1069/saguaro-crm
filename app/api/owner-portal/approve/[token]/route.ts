@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import { onPayAppApproved } from '@/lib/triggers';
 
 export async function GET(
   req: NextRequest,
@@ -66,15 +67,24 @@ export async function POST(
     // owner_notes -> approval_notes, owner_approved_at -> approved_at.
     // NOTE: pay_applications has no owner_approval_token column, so the .eq()
     // lookup below cannot resolve a row in the live schema — see flagged item.
-    const { error } = await db
+    const { data: updated, error } = await db
       .from('pay_applications')
       .update({
         status: newStatus,
         approval_notes: note,
         approved_at: new Date().toISOString(),
       })
-      .eq('owner_approval_token', token);
+      .eq('owner_approval_token', token)
+      .select('id')
+      .single();
     if (error) throw error;
+
+    // OWNER approval is the normal flow — it must fire the SAME cascade the
+    // internal approve route does (lien waivers generated + sign links emailed).
+    // Guarded against double-fire above by the approved_at check.
+    if (action === 'approved' && (updated as { id?: string })?.id) {
+      onPayAppApproved((updated as { id: string }).id).catch(console.error);
+    }
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

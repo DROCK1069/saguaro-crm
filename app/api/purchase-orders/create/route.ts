@@ -39,6 +39,26 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
+    // ── A PO is a COMMITMENT — roll its total into the matching budget line so
+    //    committed cost never goes stale (same matching the CO cascade uses). ──
+    const total = Number(body.total) || Number(body.subtotal) || 0;
+    if (total > 0 && body.cost_code) {
+      const div = String(body.cost_code).slice(0, 2);
+      const { data: bLine } = await db
+        .from('budget_lines')
+        .select('id, committed')
+        .eq('project_id', body.project_id)
+        .eq('tenant_id', user.tenantId)
+        .or(`cost_code.eq.${body.cost_code},division.eq.${div}`)
+        .limit(1)
+        .maybeSingle();
+      if (bLine) {
+        await db.from('budget_lines')
+          .update({ committed: ((bLine as { committed: number | null }).committed || 0) + total })
+          .eq('id', (bLine as { id: string }).id);
+      }
+    }
+
     return NextResponse.json({ purchaseOrder: data });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

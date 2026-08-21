@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { CONTRACTOR_TRADES as ALL_TRADES } from '@/lib/contractor-trades';
+import { SUB_TRADES as ALL_TRADES } from '@/lib/construction-intelligence';
 import { humanError } from '@/lib/errors';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { UsersThree, CheckCircle, Clock, Prohibit, WarningCircle, XCircle, FileX, Plus, UploadSimple, ListChecks, ClockCounterClockwise, FileText, ShieldCheck, AddressBook, Megaphone, Envelope } from '@phosphor-icons/react';
@@ -89,7 +89,7 @@ function fmtDateTime(d: string): string {
   return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// ALL_TRADES imported from @/lib/contractor-trades
+// ALL_TRADES = canonical SUB_TRADES taxonomy from @/lib/construction-intelligence
 // Project list is loaded from the tenant's real projects at runtime (see the
 // `projects` state / GET /api/sub-portal) — no hard-coded sample projects.
 const ALL_PERMISSIONS_LIST: { key: PortalPermission; label: string }[] = [
@@ -485,7 +485,7 @@ export default function SubPortalPage() {
             style={{ ...inputStyle, maxWidth: 280 }} />
           <select value={filterTrade} onChange={e => setFilterTrade(e.target.value)} style={{ ...selectStyle, maxWidth: 180 }}>
             <option value="">All Trades</option>
-            {ALL_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+            {Array.from(new Set([...ALL_TRADES, ...users.map(u => u.trade).filter(Boolean)])).sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t}</option>)}
           </select>
           <select value={filterProject} onChange={e => setFilterProject(e.target.value)} style={{ ...selectStyle, maxWidth: 220 }}>
             <option value="">All Projects</option>
@@ -918,11 +918,11 @@ export default function SubPortalPage() {
               </div>
               <div>
                 <label style={labelStyle}>Recipients</label>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4, maxHeight: 200, overflowY: 'auto' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: DIM, fontSize: 13, cursor: 'pointer' }}>
                     <input type="radio" name="recipients" checked={annRecipients.includes('all')} onChange={() => setAnnRecipients(['all'])} /> All Subs
                   </label>
-                  {ALL_TRADES.slice(0, 6).map(t => (
+                  {ALL_TRADES.map(t => (
                     <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, color: DIM, fontSize: 13, cursor: 'pointer' }}>
                       <input type="checkbox" checked={annRecipients.includes(t)}
                         onChange={() => {
@@ -1123,7 +1123,7 @@ export default function SubPortalPage() {
                 <input type="radio" name="ann-recipients" checked={annRecipients.includes('all')} onChange={() => setAnnRecipients(['all'])} /> All Subcontractors
               </label>
               <p style={{ color: DIM, fontSize: 12, margin: '4px 0' }}>Or select by trade:</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 220, overflowY: 'auto' }}>
                 {ALL_TRADES.map(t => (
                   <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, color: DIM, fontSize: 12, cursor: 'pointer' }}>
                     <input type="checkbox" checked={annRecipients.includes(t)}

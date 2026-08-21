@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { humanError } from '@/lib/errors';
 import { toCents, toDollars, extend, sumCents, scaleCents, percentOf, addCents } from '@/lib/calc';
+import { CSI_DIVISIONS as CANONICAL_CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
 const GOLD   = '#F59E0B';
@@ -113,31 +114,9 @@ interface TakeoffProjectRef {
 /* ─── Constants ─────────────────────────────────────────────────────── */
 const UNITS: UnitType[] = ['EA','SF','LF','CY','SY','TON','HR','LS','GAL','LB','MBF','CF'];
 
-const CSI_DIVISIONS: { code: string; name: string }[] = [
-  { code: '01', name: 'General Requirements' },
-  { code: '02', name: 'Existing Conditions' },
-  { code: '03', name: 'Concrete' },
-  { code: '04', name: 'Masonry' },
-  { code: '05', name: 'Metals' },
-  { code: '06', name: 'Wood, Plastics & Composites' },
-  { code: '07', name: 'Thermal & Moisture Protection' },
-  { code: '08', name: 'Openings' },
-  { code: '09', name: 'Finishes' },
-  { code: '10', name: 'Specialties' },
-  { code: '11', name: 'Equipment' },
-  { code: '12', name: 'Furnishings' },
-  { code: '13', name: 'Special Construction' },
-  { code: '14', name: 'Conveying Equipment' },
-  { code: '21', name: 'Fire Suppression' },
-  { code: '22', name: 'Plumbing' },
-  { code: '23', name: 'HVAC' },
+// Industrial/process divisions the canonical CSI map doesn't carry yet.
+const EXTRA_CSI_DIVISIONS: { code: string; name: string }[] = [
   { code: '25', name: 'Integrated Automation' },
-  { code: '26', name: 'Electrical' },
-  { code: '27', name: 'Communications' },
-  { code: '28', name: 'Electronic Safety & Security' },
-  { code: '31', name: 'Earthwork' },
-  { code: '32', name: 'Exterior Improvements' },
-  { code: '33', name: 'Utilities' },
   { code: '34', name: 'Transportation' },
   { code: '35', name: 'Waterway & Marine Construction' },
   { code: '40', name: 'Process Integration' },
@@ -149,6 +128,11 @@ const CSI_DIVISIONS: { code: string; name: string }[] = [
   { code: '46', name: 'Water & Wastewater Equipment' },
   { code: '48', name: 'Electrical Power Generation' },
 ];
+// Derived from THE canonical CSI taxonomy + extras, sorted ascending by code.
+const CSI_DIVISIONS: { code: string; name: string }[] = [
+  ...Object.entries(CANONICAL_CSI_DIVISIONS).map(([code, d]) => ({ code, name: d.name })),
+  ...EXTRA_CSI_DIVISIONS,
+].sort((a, b) => a.code.localeCompare(b.code));
 
 const SEED_ASSEMBLIES: Assembly[] = [
   {

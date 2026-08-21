@@ -75,6 +75,30 @@ export const CSI_DIVISIONS: Record<string, CSIDivision> = {
   '33': { name: 'Utilities', trades: ['Site Utilities', 'Underground Piping', 'Storm Drain'] },
 };
 
+/** THE canonical subcontractor vertical-market list — every trade dropdown in the
+ * app draws from THIS (flattened from the CSI division map + always-present
+ * markets), so no picker ever ships a partial list again. */
+export const SUB_TRADES: string[] = Array.from(new Set([
+  ...Object.values(CSI_DIVISIONS).flatMap((d) => d.trades),
+  'Low Voltage & Networking', 'Solar / PV', 'EV Charging', 'Pool & Spa',
+  'Foundation / Piers', 'Stucco / EIFS', 'Siding', 'Gutters', 'Garage Doors',
+  'Appliance Install', 'Countertops', 'Cabinets', 'Epoxy Coatings',
+  'Traffic Control', 'Trucking / Hauling', 'Crane & Rigging', 'Scaffolding',
+  'Temporary Power', 'Testing & Inspection', 'Surveying', 'Environmental',
+])).sort((a, b) => a.localeCompare(b));
+
+/** Trades grouped by CSI division, for pickers that show section headers. */
+export const SUB_TRADES_BY_DIVISION: { division: string; name: string; trades: string[] }[] =
+  Object.entries(CSI_DIVISIONS).map(([division, d]) => ({ division, name: d.name, trades: d.trades }));
+
+/** THE canonical drawing/sheet discipline list — every sheet/plan discipline
+ * dropdown in the app draws from THIS, so no picker ever ships a partial list. */
+export const SHEET_DISCIPLINES: string[] = [
+  'General', 'Architectural', 'Structural', 'Civil', 'Sitework', 'Demolition',
+  'Mechanical', 'Electrical', 'Plumbing', 'Fire Protection',
+  'Low Voltage / Technology', 'Landscape', 'Interiors', 'Specialties',
+];
+
 /**
  * Map a material/description string to a CSI MasterFormat division code.
  * Returns '01' (General Requirements) as a safe default.

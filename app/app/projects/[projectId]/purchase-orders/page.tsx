@@ -4,10 +4,12 @@ import { useParams } from 'next/navigation';
 import { Badge, Table, T } from '@/components/ui/shell';
 import {
   PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty,
+  StatStrip, FlowSteps, InsightRow, AutoChip,
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
-import { CurrencyDollar, PencilSimple, Export, Package, Plus, X } from '@phosphor-icons/react';
+import { CurrencyDollar, PencilSimple, Export, Package, Plus, X, Wallet } from '@phosphor-icons/react';
+import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
 interface LineItem {
   description: string;
@@ -36,7 +38,7 @@ const STATUS_BADGE: Record<string, 'muted' | 'blue' | 'green' | 'amber' | 'red'>
 };
 
 const EMPTY_LINE: LineItem = { description: '', quantity: 1, unit_price: 0 };
-const EMPTY_FORM = { vendor: '', description: '', delivery_date: '', line_items: [{ ...EMPTY_LINE }] };
+const EMPTY_FORM = { po_num: '', vendor: '', description: '', delivery_date: '', cost_code: '', tax_pct: 0, shipping: 0, line_items: [{ ...EMPTY_LINE }] };
 
 // Map a DB purchase_orders row (vendor_name/po_number/total/created_at) onto the display shape.
 function normalizePo(row: Record<string, unknown>): PurchaseOrder {
@@ -64,6 +66,9 @@ export default function PurchaseOrdersPage() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  // SmartCreate: the project-context snapshot — vendors, cost codes, budget, next PO number.
+  const [ctx, setCtx] = useState<any>(null);
+  const [autoDate, setAutoDate] = useState(false);
 
   const fetchPos = useCallback(async () => {
     setLoading(true);
@@ -79,6 +84,17 @@ export default function PurchaseOrdersPage() {
   }, [projectId]);
 
   useEffect(() => { fetchPos(); }, [fetchPos]);
+
+  // The form walks in knowing the project: budget lines, known vendors, next PO number.
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
 
   const totalValue = pos.reduce((s, p) => s + (p.amount || 0), 0);
   const draftCount = pos.filter(p => p.status === 'draft').length;
@@ -101,14 +117,52 @@ export default function PurchaseOrdersPage() {
     setForm(prev => ({ ...prev, line_items: prev.line_items.filter((_, i) => i !== index) }));
   }
 
-  const formTotal = form.line_items.reduce((s, li) => s + li.quantity * li.unit_price, 0);
+  // ── SmartCreate intelligence (all Number-coerced: DB numerics round-trip as strings) ──
+  const fmt = (n: number) => '$' + ((n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const poSubtotal = form.line_items.reduce((s, li) => s + (Number(li.quantity) || 0) * (Number(li.unit_price) || 0), 0);
+  const poTaxPct = Number(form.tax_pct) || 0;
+  const poTax = poSubtotal * (poTaxPct / 100);
+  const poShipping = Number(form.shipping) || 0;
+  const poTotal = poSubtotal + poTax + poShipping;
+
+  const budget = ctx?.budget;
+  const bOriginal = Number(budget?.original) || 0;
+  const bCommitted = Number(budget?.committed) || 0;
+  const bActual = Number(budget?.actual) || 0;
+  const bUncommitted = bOriginal - bCommitted;
+  const vendors: string[] = (ctx?.vendors || []).filter(Boolean);
+  const budgetLines: any[] = budget?.lines || [];
+  const costCodeOptions: any[] = (ctx?.costCodes || []).filter((c: any) => c.costCode);
+  const nextPoNum = Math.max(Number(ctx?.defaults?.nextPoNumber) || 0, pos.length + 1);
+  const nextPoStr = `PO-${String(nextPoNum).padStart(3, '0')}`;
+  // Same line-matching the server rollup uses: exact cost code, else its division.
+  const selLine = form.cost_code
+    ? (budgetLines.find((l: any) => String(l.costCode) === String(form.cost_code))
+      || budgetLines.find((l: any) => String(l.division) === String(form.cost_code).slice(0, 2)))
+    : null;
+  const lineBudget = Number(selLine?.original) || 0;
+  const lineCommitted = Number(selLine?.committed) || 0;
+  const lineRemaining = lineBudget - lineCommitted - poTotal;
+
+  function plus30() {
+    const d = new Date(Date.now() + 30 * 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function openForm(open: boolean) {
+    setErrorMsg('');
+    setShowForm(open);
+    if (open) {
+      setForm(f => f.delivery_date ? f : { ...f, delivery_date: plus30() });
+      setAutoDate(true);
+    }
+  }
 
   async function handleSave() {
     if (!form.vendor || !form.description) { setErrorMsg('Vendor and description are required.'); return; }
     setSaving(true);
     setErrorMsg('');
-    const num = `PO-${String(pos.length + 1).padStart(3, '0')}`;
-    const amount = formTotal;
+    const num = form.po_num || nextPoStr;
     try {
       const res = await fetch('/api/purchase-orders/create', {
         method: 'POST',
@@ -119,9 +173,12 @@ export default function PurchaseOrdersPage() {
           po_number: num,
           description: form.description,
           delivery_date: form.delivery_date || null,
+          cost_code: form.cost_code || null,
           line_items: form.line_items,
-          subtotal: amount,
-          total: amount,
+          subtotal: poSubtotal,
+          tax: poTax,
+          shipping: poShipping,
+          total: poTotal,
           status: 'draft',
         }),
       });
@@ -179,6 +236,7 @@ export default function PurchaseOrdersPage() {
     border: `1px solid ${T.border}`, borderRadius: 8, color: T.white, fontSize: 13, outline: 'none',
   };
   const lbl: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 };
+  const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
 
   // Compact button presets derived from the cinematic kit for inline/table actions.
   const smallGold: React.CSSProperties = { ...goldButtonStyle, padding: '7px 14px', fontSize: 12.5, borderRadius: 9 };
@@ -203,13 +261,24 @@ export default function PurchaseOrdersPage() {
         actions={
           <button
             className="pmBtn"
-            onClick={() => { setShowForm(p => !p); setErrorMsg(''); }}
+            onClick={() => openForm(!showForm)}
             style={showForm ? ghostButtonStyle : goldButtonStyle}
           >
             {showForm ? <><X size={15} weight="bold" /> Cancel</> : <><Plus size={15} weight="bold" /> New PO</>}
           </button>
         }
       />
+
+      {/* What the system already knows: the budget these POs commit against */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Budget', value: fmt(bOriginal), sub: `${Number(budget?.lineCount) || budgetLines.length} cost-coded lines` },
+          { label: 'Committed', value: fmt(bCommitted), sub: 'POs + subcontracts' },
+          { label: 'Actual to Date', value: fmt(bActual), sub: 'bills + invoices posted' },
+          { label: 'Uncommitted', value: fmt(bUncommitted), accent: bUncommitted < 0 ? T.red : T.green, sub: 'original less committed' },
+          { label: 'Next PO', value: nextPoStr, sub: 'numbered automatically' },
+        ]} />
+      )}
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 28 }}>
@@ -238,23 +307,68 @@ export default function PurchaseOrdersPage() {
         <div style={{ marginBottom: 16, padding: '10px 14px', background: T.redDim, border: `1px solid rgba(239,68,68,0.4)`, borderRadius: 10, color: T.red, fontSize: 13 }}>{errorMsg}</div>
       )}
 
-      {/* Create Form */}
+      {/* Create Form — walks in knowing the project: vendors, cost codes, budget, next number */}
       {showForm && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 20, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 16, alignItems: 'start' }}>
           <SectionCard title="New Purchase Order" icon={<Package size={17} weight="duotone" color="#F59E0B" />}>
+            <datalist id="sg-po-vendors">{vendors.map((v, i) => <option key={v + '-' + i} value={v} />)}</datalist>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
               <div>
-                <label style={lbl}>Vendor *</label>
-                <input value={form.vendor} onChange={e => setForm(p => ({ ...p, vendor: e.target.value }))} style={inp} />
+                <label style={lbl}>PO Number{!form.po_num && <AutoChip />}</label>
+                <input value={form.po_num || nextPoStr} onChange={e => setForm(p => ({ ...p, po_num: e.target.value }))} style={inp} />
+                <div style={hint}>Next in sequence — {pos.length} PO{pos.length === 1 ? '' : 's'} on this project so far.</div>
               </div>
               <div>
+                <label style={lbl}>Vendor *</label>
+                <input list="sg-po-vendors" value={form.vendor} onChange={e => setForm(p => ({ ...p, vendor: e.target.value }))} style={inp} />
+                <div style={hint}>{vendors.length > 0 ? `${vendors.length} known vendor${vendors.length === 1 ? '' : 's'} on this project — start typing.` : 'New vendors are remembered for next time.'}</div>
+              </div>
+              <div>
+                <label style={lbl}>Cost Code</label>
+                {costCodeOptions.length > 0 ? (
+                  <select value={form.cost_code} onChange={e => setForm(p => ({ ...p, cost_code: e.target.value }))} style={inp}>
+                    <option value="">— Select cost code —</option>
+                    {costCodeOptions.map((c: any) => (
+                      <option key={c.costCode} value={c.costCode}>{c.costCode + ' — ' + (c.description || CSI_DIVISIONS[String(c.division)]?.name || '')}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <select value={form.cost_code} onChange={e => setForm(p => ({ ...p, cost_code: e.target.value }))} style={inp}>
+                    <option value="">— CSI division —</option>
+                    {Object.entries(CSI_DIVISIONS).map(([dv, d]) => (
+                      <option key={dv} value={dv}>{dv + ' — ' + d.name}</option>
+                    ))}
+                  </select>
+                )}
+                <div style={hint}>{costCodeOptions.length > 0 ? "From this project's budget — the PO total commits against that line." : 'No cost-coded budget yet — commit by CSI division.'}</div>
+              </div>
+              <div>
+                <label style={lbl}>Delivery Date{autoDate && <AutoChip />}</label>
+                <SaguaroDatePicker value={form.delivery_date} onChange={v => setForm(p => ({ ...p, delivery_date: v }))} style={inp} />
+                <div style={hint}>{"Defaulted 30 days out — match the vendor's quoted lead time."}</div>
+              </div>
+              <div>
+                <label style={lbl}>Tax %</label>
+                <input type="number" value={form.tax_pct} onChange={e => setForm(p => ({ ...p, tax_pct: Number(e.target.value) }))} style={inp} />
+                <div style={hint}>Applied to the line-item subtotal below.</div>
+              </div>
+              <div>
+                <label style={lbl}>Shipping ($)</label>
+                <input type="number" value={form.shipping} onChange={e => setForm(p => ({ ...p, shipping: Number(e.target.value) }))} style={inp} />
+                <div style={hint}>Freight and delivery — leave 0 if included.</div>
+              </div>
+              <div style={{ gridColumn: 'span 3' }}>
                 <label style={lbl}>Description *</label>
                 <input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={inp} />
               </div>
-              <div>
-                <label style={lbl}>Delivery Date</label>
-                <SaguaroDatePicker value={form.delivery_date} onChange={v => setForm(p => ({ ...p, delivery_date: v }))} style={inp} />
-              </div>
+              {selLine && (
+                <div style={{ gridColumn: 'span 3', display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.3)', fontSize: 12.5, color: T.muted, lineHeight: 1.55 }}>
+                  <Wallet size={16} weight="duotone" color="#F59E0B" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>
+                    Commits <b style={{ color: T.white }}>{fmt(poTotal)}</b> against <b style={{ color: T.gold }}>{selLine.costCode || selLine.division}</b>{selLine.description ? ` (${selLine.description})` : ''} — budget <b style={{ color: T.white }}>{fmt(lineBudget)}</b>, committed <b style={{ color: T.white }}>{fmt(lineCommitted)}</b>, remaining <b style={{ color: lineRemaining < 0 ? T.red : T.green }}>{fmt(lineRemaining)}</b> after this PO.
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Line Items */}
@@ -279,8 +393,14 @@ export default function PurchaseOrdersPage() {
                   </button>
                 </div>
               ))}
-              <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: T.gold, marginTop: 8 }}>
-                Total: ${formTotal.toLocaleString()}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                <div style={{ minWidth: 250 }}>
+                  <InsightRow label="Subtotal" value={fmt(poSubtotal)} />
+                  <InsightRow label={`Tax (${poTaxPct}%)`} value={fmt(poTax)} />
+                  <InsightRow label="Shipping" value={fmt(poShipping)} />
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '6px 0' }} />
+                  <InsightRow label="PO Total" value={fmt(poTotal)} accent={T.gold} strong />
+                </div>
               </div>
             </div>
 
@@ -296,6 +416,26 @@ export default function PurchaseOrdersPage() {
               <button className="pmBtn" onClick={() => { setShowForm(false); setErrorMsg(''); }} style={ghostButtonStyle}>Cancel</button>
             </div>
           </SectionCard>
+
+          {/* Context rail — what creating this PO sets in motion */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {selLine && (
+              <SectionCard title={`Cost Code ${selLine.costCode || selLine.division}`} icon={<Wallet size={17} weight="duotone" color="#F59E0B" />}>
+                <InsightRow label="Line budget" value={fmt(lineBudget)} />
+                <InsightRow label="Committed to date" value={fmt(lineCommitted)} />
+                <InsightRow label="This PO" value={fmt(poTotal)} accent={T.gold} />
+                <InsightRow label="Remaining after" value={fmt(lineRemaining)} accent={lineRemaining < 0 ? T.red : T.green} strong />
+              </SectionCard>
+            )}
+            <SectionCard title="After You Create" icon={<Package size={17} weight="duotone" color="#F59E0B" />}>
+              <FlowSteps title="" steps={[
+                { title: 'Draft PO on the log', desc: `Saved as ${form.po_num || nextPoStr} in the procurement log for this project.` },
+                { title: 'Budget committed rolls up server-side', desc: form.cost_code ? `${fmt(poTotal)} commits against ${form.cost_code} the moment you save.` : 'Pick a cost code and the total commits against that budget line automatically.' },
+                { title: 'Send to the vendor', desc: 'One click generates the PO PDF and flips the status to Sent.' },
+                { title: 'Received closes the commitment', desc: 'Mark it Received on delivery — vendor bills then reconcile committed cost to actual.' },
+              ]} />
+            </SectionCard>
+          </div>
         </div>
       )}
 
@@ -309,7 +449,7 @@ export default function PurchaseOrdersPage() {
             title="No purchase orders yet"
             description="Create your first purchase order to track vendor and supplier commitments for this project."
             action={
-              <button className="pmBtn" onClick={() => { setShowForm(true); setErrorMsg(''); }} style={goldButtonStyle}>
+              <button className="pmBtn" onClick={() => openForm(true)} style={goldButtonStyle}>
                 <Plus size={15} weight="bold" /> New Purchase Order
               </button>
             }

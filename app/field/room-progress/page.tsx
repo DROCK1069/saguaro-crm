@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
 import { Crane, Ruler } from '@phosphor-icons/react';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
@@ -11,7 +12,7 @@ const inp:React.CSSProperties={width:'100%',background:BASE,border:'1px solid '+
 const HEAT=[{max:0,color:'#6E6E73'},{max:25,color:'#EF4444'},{max:50,color:'#F97316'},{max:75,color:'#EAB308'},{max:99,color:'#F59E0B'},{max:100,color:'#22C55E'}];
 function heatColor(p:number){for(const h of HEAT){if(p<=h.max)return h.color;}return GREEN;}
 const STATUSES=['not_started','in_progress','blocked','complete'];
-const TRADES=['','General','Electrical','Plumbing','HVAC','Framing','Drywall','Flooring','Paint','Tile','Millwork','Other'];
+const TRADES=['',...SUB_TRADES,'Other'];
 interface Room{id:string;room_name:string;floor_id?:string;drawing_id?:string;trade?:string;status:string;percent_complete:number;notes?:string;polygon_points?:{x:number;y:number}[];}
 interface Edit{percent_complete:number;status:string;notes:string;trade:string;}
 function RoomProgressPage(){
@@ -69,7 +70,7 @@ return(<div key={room.id} className="lift" style={{...glass,padding:14,borderLef
 <span style={{fontSize:16,fontWeight:900,color:heatColor(edit.percent_complete)}}>{edit.percent_complete}%</span></div>
 <input type='range' min={0} max={100} step={5} value={edit.percent_complete} onChange={e=>setEdits(p=>({...p,[room.id]:{...p[room.id],percent_complete:parseInt(e.target.value)}}))} style={{width:'100%',accentColor:heatColor(edit.percent_complete),marginBottom:8}}/>
 <div style={{height:5,background:'rgba(255,255,255,0.08)',borderRadius:4,overflow:'hidden',marginBottom:10}}><div style={{height:'100%',width:edit.percent_complete+'%',background:heatColor(edit.percent_complete),borderRadius:4,transition:'width 0.2s'}}/></div>
-<div style={{display:'flex',gap:8,marginBottom:dirty?10:0}}><select value={edit.status} onChange={e=>setEdits(p=>({...p,[room.id]:{...p[room.id],status:e.target.value}}))} style={{...inp,flex:1,padding:'7px 10px',fontSize:12}}>{STATUSES.map(s=><option key={s} value={s}>{s.replace('_',' ')}</option>)}</select><select value={edit.trade} onChange={e=>setEdits(p=>({...p,[room.id]:{...p[room.id],trade:e.target.value}}))} style={{...inp,flex:1,padding:'7px 10px',fontSize:12}}>{TRADES.map(t=><option key={t} value={t}>{t||'Trade...'}</option>)}</select></div>
+<div style={{display:'flex',gap:8,marginBottom:dirty?10:0}}><select value={edit.status} onChange={e=>setEdits(p=>({...p,[room.id]:{...p[room.id],status:e.target.value}}))} style={{...inp,flex:1,padding:'7px 10px',fontSize:12}}>{STATUSES.map(s=><option key={s} value={s}>{s.replace('_',' ')}</option>)}</select><select value={edit.trade} onChange={e=>setEdits(p=>({...p,[room.id]:{...p[room.id],trade:e.target.value}}))} style={{...inp,flex:1,padding:'7px 10px',fontSize:12}}>{edit.trade&&!TRADES.includes(edit.trade)?<option value={edit.trade}>{edit.trade}</option>:null}{TRADES.map(t=><option key={t} value={t}>{t||'Trade...'}</option>)}</select></div>
 {dirty&&<button onClick={()=>saveRoom(room.id)} disabled={saving} style={{width:'100%',background:GREEN,border:'none',borderRadius:10,padding:'9px',color:'#000',fontSize:13,fontWeight:800,cursor:'pointer',marginTop:6}}>{saving?'Saving...':'Save'}</button>}
 </div>);})}
 </div>)}

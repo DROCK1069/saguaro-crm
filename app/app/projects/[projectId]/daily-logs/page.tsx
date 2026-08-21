@@ -4,16 +4,27 @@ import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Clipboard, ClipboardText, Thermometer, HardHat, CalendarBlank, WarningCircle, Plus, X } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',BLUE='#F59E0B';
 
 const WEATHER_OPTS = ['Clear','Partly Cloudy','Overcast','Rain','Thunderstorm','Snow','Fog','Windy'];
 
+const fmtDay = (d?:string|null) => d ? new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) : '—';
+/** Workdays (Mon-Fri) strictly between two ISO dates — 0 across a plain weekend. */
+function missedWorkdays(fromIso:string,toIso:string){
+  let n = 0;
+  for(let d=new Date(fromIso+'T12:00:00').getTime()+86400000; d<new Date(toIso+'T12:00:00').getTime(); d+=86400000){
+    const wd = new Date(d).getDay();
+    if(wd!==0&&wd!==6) n++;
+  }
+  return n;
+}
+
 const EMPTY: Record<string,any> = {
   log_date: new Date().toISOString().split('T')[0],
-  weather:'', high_temp:'', low_temp:'', crew_count:'',
+  weather:'', high_temp:'', low_temp:'', crew_count:'', superintendent:'',
   work_performed:'', delays:'', safety_notes:'', materials_delivered:'', visitors:'', notes:'',
 };
 
@@ -23,12 +34,13 @@ const inp: React.CSSProperties = {
   fontSize:13, outline:'none', boxSizing:'border-box',
 };
 
-function Field({label,children}:{label:string;children:React.ReactNode}){
+function Field({label,hint,children}:{label:React.ReactNode;hint?:React.ReactNode;children:React.ReactNode}){
   return (
     <div>
       <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,
         textTransform:'uppercase',letterSpacing:.5,marginBottom:5}}>{label}</label>
       {children}
+      {hint && <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:4,lineHeight:1.45}}>{hint}</div>}
     </div>
   );
 }
@@ -59,6 +71,10 @@ export default function DailyLogsPage(){
   const [toast,setToast]     = useState<{msg:string;type:'success'|'error'}|null>(null);
   const [search,setSearch]   = useState('');
   const [monthFilter,setMonthFilter] = useState('');
+  // Project snapshot (/api/project-context) — the page walks in knowing the job:
+  // last log date, open items, schedule — so create prefills itself.
+  const [ctx,setCtx]         = useState<any>(null);
+  const [auto,setAuto]       = useState<{date?:boolean;crew?:boolean}>({});
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -79,14 +95,33 @@ export default function DailyLogsPage(){
 
   useEffect(()=>{load();},[load]);
 
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if(!c.error) setCtx(c);
+      }catch{/* strip and prefill hints simply stay hidden */}
+    })();
+  },[projectId]);
+
   function openCreate(){
-    setForm({...EMPTY});
+    // Walk in knowing the job: today's date, crew carried from the last log.
+    // The GC only types what changed since the previous report.
+    const prev = logs[0]; // list arrives sorted date-desc
+    setForm({
+      ...EMPTY,
+      log_date: new Date().toISOString().split('T')[0],
+      crew_count: prev?.crew_count ? String(prev.crew_count) : '',
+    });
+    setAuto({date:true, crew:!!(prev?.crew_count)});
     setMode('create'); setSelected(null);
   }
   function openEdit(log:any){
     setForm({
       log_date:log.log_date||'',weather:log.weather||'',
       high_temp:log.high_temp??'',low_temp:log.low_temp??'',
+      superintendent:log.superintendent||'',
       crew_count:log.crew_count??'',work_performed:log.work_performed||'',
       delays:log.delays||'',safety_notes:log.safety_notes||'',
       materials_delivered:log.materials_delivered||'',visitors:log.visitors||'',notes:log.notes||'',
@@ -203,6 +238,24 @@ export default function DailyLogsPage(){
               label="Days w/ Delays" value={String(delayDays)} accent={delayDays>0?RED:undefined}
               sub={delayDays>0?'flagged delays':'none flagged'} delay={0.14}/>
           </div>
+
+          {/* What the system already knows about this job */}
+          {ctx && (()=>{
+            const lastLog = ctx.recent?.lastDailyLogDate as string|null;
+            const gap = lastLog ? missedWorkdays(lastLog, new Date().toISOString().split('T')[0]) : 0;
+            return (
+              <StatStrip items={[
+                {label:'Last Log', value: lastLog ? fmtDay(lastLog) : 'None yet',
+                  accent: gap>0 ? '#f87171' : (lastLog ? '#3dd68c' : undefined),
+                  sub: lastLog ? (gap>0 ? `${gap} workday${gap===1?'':'s'} unlogged` : 'record is current') : 'start the record'},
+                {label:'% Complete', value:`${Number(ctx.project?.percentComplete)||0}%`, sub: ctx.project?.status ? String(ctx.project.status).replace(/_/g,' ') : 'project status'},
+                {label:'Schedule Tasks', value:String(ctx.counts?.scheduleTasks??0), sub: ctx.schedule?.criticalCount ? `${ctx.schedule.criticalCount} critical open` : 'on the schedule'},
+                {label:'Open RFIs', value:String(ctx.counts?.openRfis??0), accent:(Number(ctx.counts?.openRfis)||0)>0?'#FBBF24':undefined, sub:'awaiting answers'},
+                {label:'Open Submittals', value:String(ctx.counts?.openSubmittals??0), sub:'in review'},
+                {label:'Open Punch', value:String(ctx.counts?.openPunch??0), accent:(Number(ctx.counts?.openPunch)||0)>0?'#f87171':undefined, sub:'items to close'},
+              ]}/>
+            );
+          })()}
 
           {/* Filters + Log */}
           <SectionCard
@@ -345,20 +398,54 @@ export default function DailyLogsPage(){
             {(mode==='create'||mode==='edit')?(
               /* FORM */
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                <Field label="Log Date">
+                {mode==='create' && (()=>{
+                  const lastLog = ctx?.recent?.lastDailyLogDate || logs[0]?.log_date || null;
+                  const gap = lastLog ? missedWorkdays(lastLog, new Date().toISOString().split('T')[0]) : 0;
+                  const prev = logs[0];
+                  return (
+                    <div style={{background:gap>0?'rgba(192,48,48,.07)':RAISED,
+                      border:`1px solid ${gap>0?'rgba(192,48,48,.3)':BORDER}`,borderRadius:10,padding:'12px 14px'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,fontSize:12.5,fontWeight:700,color:gap>0?'#f87171':TEXT}}>
+                        {gap>0 && <WarningCircle size={16} weight="fill" color="#f87171"/>}
+                        {lastLog
+                          ? gap>0
+                            ? `Gap in the record — last log ${fmtDay(lastLog)}, ${gap} workday${gap===1?'':'s'} unlogged.`
+                            : `Last log: ${fmtDay(lastLog)} — record is current.`
+                          : 'First daily log on this project — it starts the field record.'}
+                      </div>
+                      {prev && (
+                        <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid rgba(255,255,255,0.08)`}}>
+                          <InsightRow label="Prev crew" value={`${prev.crew_count||0} on site`}/>
+                          {prev.weather ? <InsightRow label="Prev weather" value={`${prev.weather}${prev.high_temp!=null?` · ${prev.high_temp}°/${prev.low_temp??'—'}°F`:''}`}/> : null}
+                          {prev.superintendent ? <InsightRow label="Prev super" value={prev.superintendent}/> : null}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                <Field label={<>Log Date{mode==='create'&&auto.date&&<AutoChip/>}</>}
+                  hint={mode==='create'?'Defaulted to today — backfill any missed day.':undefined}>
                   <input type="date" value={form.log_date}
                     onChange={e=>setForm(f=>({...f,log_date:e.target.value}))}
                     style={inp}/>
                 </Field>
 
+                <Field label="Superintendent"
+                  hint={mode==='create'&&logs[0]?.superintendent?`Last log: ${logs[0].superintendent}.`:undefined}>
+                  <input value={form.superintendent}
+                    onChange={e=>setForm(f=>({...f,superintendent:e.target.value}))}
+                    style={inp} placeholder="Who ran the site today"/>
+                </Field>
+
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
                   <Field label="Weather">
-                    <select value={form.weather}
+                    <input value={form.weather} list="sgWeatherOpts"
                       onChange={e=>setForm(f=>({...f,weather:e.target.value}))}
-                      style={{...inp,padding:'9px 10px'}}>
-                      <option value="">—</option>
-                      {WEATHER_OPTS.map(w=><option key={w} value={w}>{w}</option>)}
-                    </select>
+                      style={inp} placeholder="Clear, 10 mph W, dusty..."/>
+                    <datalist id="sgWeatherOpts">
+                      {WEATHER_OPTS.map(w=><option key={w} value={w}/>)}
+                    </datalist>
                   </Field>
                   <Field label="High °F">
                     <input type="number" value={form.high_temp}
@@ -372,7 +459,8 @@ export default function DailyLogsPage(){
                   </Field>
                 </div>
 
-                <Field label="Crew Count">
+                <Field label={<>Crew Count{mode==='create'&&auto.crew&&<AutoChip/>}</>}
+                  hint={mode==='create'&&auto.crew?`Carried from your last log (${fmtDay(logs[0]?.log_date)}) — adjust for today.`:undefined}>
                   <input type="number" value={form.crew_count}
                     onChange={e=>setForm(f=>({...f,crew_count:e.target.value}))}
                     style={inp} placeholder="0" min={0}/>
@@ -449,6 +537,7 @@ export default function DailyLogsPage(){
                       <span><Thermometer size={15} weight="fill" color={DIM} style={{verticalAlign:'middle'}}/> {selected.high_temp??'?'}° / {selected.low_temp??'?'}°F</span>
                     )}
                     {selected.crew_count&&<span><HardHat size={15} weight="fill" color={DIM} style={{verticalAlign:'middle'}}/> {selected.crew_count} crew members</span>}
+                    {selected.superintendent&&<span>Super: {selected.superintendent}</span>}
                   </div>
                 </div>
                 <Section label="Work Performed" value={selected.work_performed}/>

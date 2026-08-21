@@ -6,6 +6,7 @@ import { WarningCircle, Brain, ChartBar, ArrowRight, Tray, CaretDown, PencilSimp
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#3dd68c';
 
@@ -665,7 +666,22 @@ function BidsPageInner() {
                 {([['Project Name','projectName','e.g. Scottsdale Office Buildout'],['Bid Amount ($)','bidAmount','e.g. 2,500,000'],['Target Margin (%)','margin','e.g. 15'],['Trade Type','tradeType','e.g. Commercial']]).map(([lbl,key,ph])=>(
                   <div key={key}>
                     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>{lbl}</label>
-                    <input value={(scoreForm as any)[key]} onChange={e=>setScoreForm(f=>({...f,[key]:e.target.value}))} placeholder={ph} style={{width:'100%',padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const}}/>
+                    {key==='tradeType' ? (
+                      <select value={scoreForm.tradeType} onChange={e=>setScoreForm(f=>({...f,tradeType:e.target.value}))} style={{width:'100%',padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:7,color:scoreForm.tradeType?TEXT:DIM,fontSize:13,outline:'none',cursor:'pointer',boxSizing:'border-box' as const}}>
+                        <option value="">Select a trade…</option>
+                        {scoreForm.tradeType&&!SUB_TRADES.includes(scoreForm.tradeType)&&<option value={scoreForm.tradeType} style={{color:'#111'}}>{scoreForm.tradeType}</option>}
+                        {SUB_TRADES_BY_DIVISION.map(g=>(
+                          <optgroup key={g.division} label={g.division+' — '+g.name}>
+                            {g.trades.map(t=><option key={t} value={t} style={{color:'#111'}}>{t}</option>)}
+                          </optgroup>
+                        ))}
+                        <optgroup label="Other / Specialty">
+                          {SUB_TRADES.filter(t=>!SUB_TRADES_BY_DIVISION.some(g=>g.trades.includes(t))).map(t=><option key={t} value={t} style={{color:'#111'}}>{t}</option>)}
+                        </optgroup>
+                      </select>
+                    ) : (
+                      <input value={(scoreForm as any)[key]} onChange={e=>setScoreForm(f=>({...f,[key]:e.target.value}))} placeholder={ph} style={{width:'100%',padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const}}/>
+                    )}
                   </div>
                 ))}
               </div>

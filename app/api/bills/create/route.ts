@@ -40,6 +40,26 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
+    // ── A bill is ACTUAL COST — roll it into the matching budget line so the
+    //    budget's actual column tracks reality without manual reconciliation. ──
+    const total = Number(body.total) || Number(body.amount) || 0;
+    if (total > 0 && body.cost_code) {
+      const div = String(body.cost_code).slice(0, 2);
+      const { data: bLine } = await db
+        .from('budget_lines')
+        .select('id, actual')
+        .eq('project_id', body.project_id)
+        .eq('tenant_id', user.tenantId)
+        .or(`cost_code.eq.${body.cost_code},division.eq.${div}`)
+        .limit(1)
+        .maybeSingle();
+      if (bLine) {
+        await db.from('budget_lines')
+          .update({ actual: ((bLine as { actual: number | null }).actual || 0) + total })
+          .eq('id', (bLine as { id: string }).id);
+      }
+    }
+
     return NextResponse.json({ bill: data });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

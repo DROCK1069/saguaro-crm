@@ -9,6 +9,7 @@ import { humanError } from '@/lib/errors';
 import { useSearchParams } from 'next/navigation';
 import { Toolbox, MapPin, Phone, Envelope } from '@phosphor-icons/react';
 import { enqueue } from '@/lib/field-db';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 
@@ -24,7 +25,7 @@ const AMBER  = '#F59E0B';
 const BLUE   = '#F59E0B';
 const PURPLE = '#8B5CF6';
 
-const CATEGORIES = ['HVAC', 'Plumbing', 'Electrical', 'Roofing', 'Windows & Doors', 'Flooring', 'Painting', 'Concrete', 'Framing', 'Drywall', 'Appliances', 'Landscaping', 'Other'];
+const CATEGORIES = [...SUB_TRADES, 'Other'];
 const PRIORITIES = ['Critical', 'High', 'Medium', 'Low'];
 const STATUSES   = ['Open', 'Assigned', 'In Progress', 'Resolved', 'Closed'];
 

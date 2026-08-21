@@ -4,6 +4,65 @@ import type { Database } from '@/lib/database.types';
 import { onPayAppCreated } from '@/lib/triggers';
 import { toCents, toDollars, percentOf, subCents, computePayApp } from '@/lib/calc';
 
+/** GET ?projectId= — seed data for a NEW pay app: next number, the prior app's
+ *  schedule of values (rolled forward), and the approved-CO total. The new-app
+ *  form starts pre-filled instead of blank. */
+export async function GET(req: NextRequest) {
+  const g = await requirePermission(req, 'Pay Apps', 'View');
+  if (!g.ok) return g.res;
+  const user = g.user;
+  try {
+    const db = g.db;
+    const projectId = req.nextUrl.searchParams.get('projectId');
+    if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
+
+    const { data: lastApp } = await db
+      .from('pay_applications')
+      .select('id, app_number, total_completed_stored, total_earned_less_retainage, retainage_percent')
+      .eq('project_id', projectId)
+      .eq('tenant_id', user.tenantId)
+      .order('app_number', { ascending: false })
+      .limit(1)
+      .single();
+    const prior = lastApp as any;
+
+    let priorSov: any[] = [];
+    if (prior?.id) {
+      const { data } = await db
+        .from('schedule_of_values')
+        .select('description, scheduled_value, total_completed, cost_code, line_number')
+        .eq('pay_app_id', prior.id)
+        .eq('tenant_id', user.tenantId)
+        .order('line_number', { ascending: true });
+      priorSov = (data as any[]) || [];
+    }
+
+    const { data: approvedCos } = await db
+      .from('change_orders')
+      .select('cost_impact')
+      .eq('project_id', projectId)
+      .eq('tenant_id', user.tenantId)
+      .eq('status', 'approved');
+    const changeOrdersTotal = (approvedCos || []).reduce((s: number, c: any) => s + (Number(c.cost_impact) || 0), 0);
+
+    return NextResponse.json({
+      nextAppNumber: (prior?.app_number || 0) + 1,
+      retainagePercent: prior?.retainage_percent ?? 10,
+      changeOrdersTotal,
+      priorSov: priorSov.map((r) => ({
+        description: r.description,
+        scheduledValue: Number(r.scheduled_value) || 0,
+        workFromPrev: Number(r.total_completed) || 0,
+        workThisPeriod: 0,
+        materialsStored: 0,
+        csiCode: r.cost_code,
+      })),
+    });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   const g = await requirePermission(req, 'Pay Apps', 'Edit');
   if (!g.ok) return g.res;
@@ -21,7 +80,7 @@ export async function POST(req: NextRequest) {
     // Get next application number
     const { data: lastApp } = await db
       .from('pay_applications')
-      .select('app_number, total_completed_stored, total_earned_less_retainage')
+      .select('id, app_number, total_completed_stored, total_earned_less_retainage')
       .eq('project_id', projectId)
       .eq('tenant_id', user.tenantId)
       .order('app_number', { ascending: false })
@@ -29,6 +88,17 @@ export async function POST(req: NextRequest) {
       .single();
     const prior = lastApp as any;
     const appNumber = (prior?.app_number || 0) + 1;
+
+    // ── G702 line 2 derives from APPROVED change orders — never hand-typed.
+    //    (The typed value wins only when the client explicitly sends one.) ──
+    const { data: approvedCos } = await db
+      .from('change_orders')
+      .select('cost_impact')
+      .eq('project_id', projectId)
+      .eq('tenant_id', user.tenantId)
+      .eq('status', 'approved');
+    const derivedCoTotal = (approvedCos || []).reduce((s: number, c: any) => s + (Number(c.cost_impact) || 0), 0);
+    const changeOrdersTotal = body.changeOrdersTotal != null ? Number(body.changeOrdersTotal) || 0 : derivedCoTotal;
 
     // Accept both camelCase and snake_case for the keys the mobile form sends.
     const periodTo = body.periodTo ?? body.period_to ?? null;
@@ -44,7 +114,34 @@ export async function POST(req: NextRequest) {
     // ── Derive every money field with the exact-cents calc engine. The server is
     // the source of truth — client-sent totals are never trusted. When a schedule
     // of values is provided, the full G702/G703 cross-footed calculator runs.
-    const rawLines: any[] = Array.isArray(body.lineItems) ? body.lineItems : [];
+    let rawLines: any[] = Array.isArray(body.lineItems) ? body.lineItems : [];
+    // ── SOV ROLLFORWARD: when no lines are sent and a prior pay app has a
+    //    schedule of values, CLONE it — scheduled values carry over, prior
+    //    completed rolls into "from previous", this period starts at 0. The GC
+    //    stops retyping a 20-100 line SOV every billing cycle. ──
+    let rolledForward = false;
+    // The clone must NEVER shadow the mobile lump-sum path: if the request
+    // carries period money (workCompleted/thisPeriod), that path owns the math.
+    const lumpMoney = Number(body.workCompleted ?? body.work_completed ?? body.thisPeriod ?? 0) > 0;
+    if (rawLines.length === 0 && !lumpMoney && prior?.id) {
+      const { data: priorSov } = await db
+        .from('schedule_of_values')
+        .select('description, scheduled_value, total_completed, cost_code, line_number')
+        .eq('pay_app_id', prior.id)
+        .eq('tenant_id', user.tenantId)
+        .order('line_number', { ascending: true });
+      if (priorSov && priorSov.length > 0) {
+        rolledForward = true;
+        rawLines = (priorSov as any[]).map((r) => ({
+          description: r.description,
+          scheduled_value: r.scheduled_value,
+          prev_completed: r.total_completed,
+          this_period: 0,
+          stored_materials: 0,
+          csi_code: r.cost_code,
+        }));
+      }
+    }
     let sovRows: any[] = [];
     let m: {
       contractSumToDate: number; thisPeriod: number; totalCompletedStored: number;
@@ -108,8 +205,13 @@ export async function POST(req: NextRequest) {
       period_from: periodFrom,
       period_to: periodTo,
       status: body.status || 'draft',
-      contract_sum: body.contractSum || p?.contract_amount || 0,
-      change_orders_total: body.changeOrdersTotal || 0,
+      // G702 line 1 must be the ORIGINAL contract sum. projects.contract_amount
+      // is CO-INCLUSIVE (the CO cascade bumps it), so pairing it with a derived
+      // change_orders_total double-counts every approved CO on the printed G702.
+      contract_sum: p?.original_contract_amount != null
+        ? Number(p.original_contract_amount) || 0
+        : Math.max(0, (Number(body.contractSum) || Number(p?.contract_amount) || 0) - changeOrdersTotal),
+      change_orders_total: changeOrdersTotal,
       contract_sum_to_date: m.contractSumToDate,
       prev_completed: prevCompletedDollars,
       this_period: m.thisPeriod,
@@ -142,7 +244,7 @@ export async function POST(req: NextRequest) {
     // Non-blocking trigger
     onPayAppCreated((payApp as any).id).catch(console.error);
 
-    return NextResponse.json({ payApp, success: true });
+    return NextResponse.json({ payApp, success: true, rolledForward, changeOrdersTotal });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

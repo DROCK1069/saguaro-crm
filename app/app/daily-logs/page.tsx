@@ -10,6 +10,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, Sun, CloudRain, Thermometer, UsersThree, Warning, ClipboardText } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
+import { StatStrip, InsightRow, AutoChip } from '@/components/ui/premium';
 
 interface DailyLog {
   id: string;
@@ -25,12 +26,24 @@ interface DailyLog {
   materials_delivered: string;
   visitors: string;
   notes: string;
+  superintendent?: string | null;
   created_at: string;
 }
 
 interface Project { id: string; name: string; }
 
 const columnHelper = createColumnHelper<DailyLog>();
+
+const fmtDay = (d?: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '—';
+/** Workdays (Mon-Fri) strictly between two ISO dates — 0 across a plain weekend. */
+function missedWorkdays(fromIso: string, toIso: string) {
+  let n = 0;
+  for (let d = new Date(fromIso + 'T12:00:00').getTime() + 86400000; d < new Date(toIso + 'T12:00:00').getTime(); d += 86400000) {
+    const wd = new Date(d).getDay();
+    if (wd !== 0 && wd !== 6) n++;
+  }
+  return n;
+}
 
 export default function DailyLogsPage() {
   const router = useRouter();
@@ -40,6 +53,11 @@ export default function DailyLogsPage() {
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
+  // Snapshot of the selected project (fetched the moment one is chosen in the
+  // modal) — last log, open items — so the form walks in knowing the job.
+  const [ctx, setCtx] = useState<any>(null);
+  const [autoCrew, setAutoCrew] = useState(false);
+  const prevLogFor = (pid: string) => logs.filter(l => l.project_id === pid).sort((a, b) => (b.log_date || '').localeCompare(a.log_date || ''))[0];
 
   const [form, setForm] = useState({
     projectId: '',
@@ -115,6 +133,7 @@ export default function DailyLogsPage() {
       if (!res.ok) throw new Error('Failed to create daily log');
       setShowCreate(false);
       setForm({ projectId: '', logDate: new Date().toISOString().slice(0, 10), weather: '', temperatureHigh: '', temperatureLow: '', crewCount: '', workPerformed: '', delays: '', safetyNotes: '', materialsDelivered: '', visitors: '', notes: '', superintendent: '', precipitation: '', windConditions: '', phaseOfWork: '', equipment: '' });
+      setCtx(null); setAutoCrew(false);
       await fetchLogs();
     } catch (e: any) {
       console.error(e); setError(humanError(e, 'Something went wrong. Please try again.'));
@@ -187,6 +206,26 @@ export default function DailyLogsPage() {
         </button>
       </div>
 
+      {/* Cross-project field intelligence — no dead space above the table */}
+      {!loading && logs.length > 0 && (() => {
+        const monthIso = new Date().toISOString().slice(0, 7);
+        const thisMonth = logs.filter(l => (l.log_date || '').startsWith(monthIso)).length;
+        const avgCrew = logs.length ? Math.round(logs.reduce((s, l) => s + (Number(l.crew_count) || 0), 0) / logs.length) : 0;
+        const delayDays = logs.filter(l => (l.delays || '').trim()).length;
+        const projectsCovered = new Set(logs.map(l => l.project_id)).size;
+        const latest = logs.reduce((m, l) => (l.log_date || '') > m ? (l.log_date || '') : m, '');
+        return (
+          <StatStrip items={[
+            { label: 'Latest Log', value: latest ? fmtDay(latest) : '—', sub: 'across all projects' },
+            { label: 'Total Logs', value: String(logs.length), sub: 'all field reports' },
+            { label: 'This Month', value: String(thisMonth), sub: monthIso },
+            { label: 'Avg Crew / Day', value: String(avgCrew), sub: 'workers on site' },
+            { label: 'Days w/ Delays', value: String(delayDays), accent: delayDays > 0 ? colors.red : undefined, sub: delayDays > 0 ? 'flagged delays' : 'none flagged' },
+            { label: 'Projects', value: String(projectsCovered), sub: 'with field reports' },
+          ]} />
+        );
+      })()}
+
       {error && (
         <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: radius.md, color: colors.red, fontSize: font.size.md, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Warning size={16} /> {error}
@@ -211,21 +250,53 @@ export default function DailyLogsPage() {
               <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 22 }}>×</button>
             </div>
             <form onSubmit={handleCreate} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {form.projectId && ctx ? (() => {
+                const lastLog = ctx.recent?.lastDailyLogDate as string | null;
+                const gap = lastLog ? missedWorkdays(lastLog, new Date().toISOString().slice(0, 10)) : 0;
+                const prev = prevLogFor(form.projectId);
+                return (
+                  <div style={{ background: gap > 0 ? 'rgba(239,68,68,.07)' : 'rgba(255,255,255,0.03)', border: `1px solid ${gap > 0 ? 'rgba(239,68,68,.3)' : colors.border}`, borderRadius: radius.md, padding: '12px 14px' }}>
+                    <div style={{ fontSize: font.size.md, fontWeight: font.weight.semibold, color: gap > 0 ? colors.red : colors.text }}>
+                      {lastLog
+                        ? gap > 0
+                          ? `Gap in the record — last log ${fmtDay(lastLog)}, ${gap} workday${gap === 1 ? '' : 's'} unlogged.`
+                          : `Last log: ${fmtDay(lastLog)} — record is current.`
+                        : 'First daily log on this project — it starts the field record.'}
+                    </div>
+                    <div style={{ marginTop: 6 }}>
+                      <InsightRow label="Project" value={`${Number(ctx.project?.percentComplete) || 0}% complete`} />
+                      <InsightRow label="Open items" value={`${ctx.counts?.openRfis ?? 0} RFIs · ${ctx.counts?.openSubmittals ?? 0} submittals · ${ctx.counts?.openPunch ?? 0} punch`} />
+                      {prev ? <InsightRow label="Prev log" value={`${prev.crew_count || 0} crew${prev.weather ? ` · ${prev.weather}` : ''}${prev.superintendent ? ` · ${prev.superintendent}` : ''}`} /> : null}
+                    </div>
+                  </div>
+                );
+              })() : null}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={labelStyle}>Project *</label>
-                  <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })} required style={inputStyle}>
+                  <select value={form.projectId} onChange={(e) => {
+                    const pid = e.target.value;
+                    // The moment a project is chosen the form walks in knowing it:
+                    // snapshot fetch + crew carried from that job's latest log.
+                    const prev = prevLogFor(pid);
+                    setForm(f => ({ ...f, projectId: pid, crewCount: prev?.crew_count ? String(prev.crew_count) : f.crewCount }));
+                    setAutoCrew(!!(prev?.crew_count));
+                    setCtx(null);
+                    if (pid) fetch(`/api/project-context?projectId=${pid}`).then(r => r.json()).then(c => { if (!c.error) setCtx(c); }).catch(() => {});
+                  }} required style={inputStyle}>
                     <option value="">Select project...</option>
                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Date</label>
+                  <label style={labelStyle}>Date<AutoChip /></label>
                   <input type="date" value={form.logDate} onChange={(e) => setForm({ ...form, logDate: e.target.value })} style={inputStyle} />
+                  <div style={{ fontSize: font.size.sm, color: colors.textDim, marginTop: 4 }}>Defaulted to today — backfill any missed day.</div>
                 </div>
                 <div>
                   <label style={labelStyle}>Superintendent</label>
                   <input value={form.superintendent} onChange={(e) => setForm({ ...form, superintendent: e.target.value })} style={inputStyle} placeholder="Who ran the site" />
+                  {(() => { const prev = prevLogFor(form.projectId); return prev?.superintendent ? <div style={{ fontSize: font.size.sm, color: colors.textDim, marginTop: 4 }}>Last log: {prev.superintendent}.</div> : null; })()}
                 </div>
                 <div>
                   <label style={labelStyle}>Phase of Work</label>
@@ -233,20 +304,15 @@ export default function DailyLogsPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Weather</label>
-                  <select value={form.weather} onChange={(e) => setForm({ ...form, weather: e.target.value })} style={inputStyle}>
-                    <option value="">Select...</option>
-                    <option value="Clear">Clear</option>
-                    <option value="Partly Cloudy">Partly Cloudy</option>
-                    <option value="Cloudy">Cloudy</option>
-                    <option value="Rain">Rain</option>
-                    <option value="Storm">Storm</option>
-                    <option value="Snow">Snow</option>
-                    <option value="Wind">Wind</option>
-                  </select>
+                  <input value={form.weather} list="sgWeatherOptsAll" onChange={(e) => setForm({ ...form, weather: e.target.value })} style={inputStyle} placeholder="Clear, 10 mph W, dusty..." />
+                  <datalist id="sgWeatherOptsAll">
+                    {['Clear', 'Partly Cloudy', 'Cloudy', 'Rain', 'Storm', 'Snow', 'Wind'].map(w => <option key={w} value={w} />)}
+                  </datalist>
                 </div>
                 <div>
-                  <label style={labelStyle}>Crew Count</label>
+                  <label style={labelStyle}>Crew Count{autoCrew && form.crewCount ? <AutoChip /> : null}</label>
                   <input type="number" value={form.crewCount} onChange={(e) => setForm({ ...form, crewCount: e.target.value })} style={inputStyle} placeholder="0" />
+                  {autoCrew && form.crewCount ? <div style={{ fontSize: font.size.sm, color: colors.textDim, marginTop: 4 }}>Carried from the last log on this project — adjust for today.</div> : null}
                 </div>
                 <div>
                   <label style={labelStyle}>Temp High (°F)</label>

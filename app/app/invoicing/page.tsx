@@ -10,7 +10,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, CurrencyDollar, PaperPlaneTilt, Eye, Trash, Warning } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
-import { PremiumSurface, ModuleHero, SectionCard, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 interface Invoice {
   id: string;
@@ -66,6 +66,53 @@ export default function InvoicingPage() {
     notes: '',
   });
   const [creating, setCreating] = useState(false);
+
+  // Project intelligence — once a project is picked, the form walks in knowing it.
+  const [ctx, setCtx] = useState<any>(null);
+  const [auto, setAuto] = useState<{ num?: boolean; due?: boolean }>({});
+  useEffect(() => {
+    if (!form.project_id) { setCtx(null); setAuto({}); return; }
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/project-context?projectId=${form.project_id}`);
+        const c = await res.json();
+        if (!alive || c.error) return;
+        setCtx(c);
+        const n = Number(c.defaults?.nextInvoiceNumber) || 1;
+        const due = new Date(Date.now() + 30 * 86400000);
+        const dueIso = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
+        setForm(f => {
+          const seedNum = !f.invoice_number;
+          const seedDue = !f.due_date;
+          setAuto(a => ({ num: a.num || seedNum, due: a.due || seedDue }));
+          return {
+            ...f,
+            invoice_number: f.invoice_number || `INV-${String(n).padStart(3, '0')}`,
+            due_date: f.due_date || dueIso,
+          };
+        });
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [form.project_id]);
+
+  const money = ctx?.money;
+  const cOriginal = Number(money?.originalContract) || 0;
+  const cCoTotal = Number(money?.approvedCoTotal) || 0;
+  const cRevised = Number(money?.revisedContract) || (cOriginal + cCoTotal);
+  const cBilled = Number(money?.billedToDate) || 0;
+  const cPaid = Number(money?.paidToDate) || 0;
+  const ctxVendors = (ctx?.vendors || []) as string[];
+  const ctxCodes = (ctx?.costCodes || []) as { division: string; costCode: string; description: string }[];
+  const fmtUsd = (n: number) => '$' + ((Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const liveTotal = (parseFloat(form.amount) || 0) + (parseFloat(form.tax) || 0);
+
+  const pageBilled = invoices.reduce((s, i) => s + (Number(i.total ?? i.amount) || 0), 0);
+  const pagePaid = invoices.filter(i => (i.status || '').toLowerCase() === 'paid').reduce((s, i) => s + (Number(i.total ?? i.amount) || 0), 0);
+  const pageOutstanding = invoices.filter(i => { const st = (i.status || '').toLowerCase(); return st !== 'paid' && st !== 'draft'; }).reduce((s, i) => s + (Number(i.total ?? i.amount) || 0), 0);
+  const pageOverdue = invoices.filter(i => i.due_date && new Date(i.due_date) < new Date() && (i.status || '').toLowerCase() !== 'paid').length;
+  const pageDrafts = invoices.filter(i => (i.status || 'draft').toLowerCase() === 'draft').length;
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -215,6 +262,10 @@ export default function InvoicingPage() {
     fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted, marginBottom: 6, display: 'block',
   };
 
+  const hintStyle: React.CSSProperties = {
+    fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45,
+  };
+
   return (
     <>
     <PremiumSurface maxWidth={1600}>
@@ -230,6 +281,16 @@ export default function InvoicingPage() {
           </button>
         }
       />
+
+      {!loading && invoices.length > 0 && (
+        <StatStrip items={[
+          { label: 'Total Billed', value: fmtUsd(pageBilled), sub: `across ${invoices.length} invoice${invoices.length === 1 ? '' : 's'}` },
+          { label: 'Collected', value: fmtUsd(pagePaid), accent: '#3dd68c', sub: 'marked paid' },
+          { label: 'Outstanding', value: fmtUsd(pageOutstanding), accent: pageOutstanding > 0 ? '#F59E0B' : undefined, sub: 'sent, awaiting payment' },
+          { label: 'Overdue', value: String(pageOverdue), accent: pageOverdue > 0 ? colors.red : undefined, sub: pageOverdue > 0 ? 'past due date' : 'nothing past due' },
+          { label: 'Drafts', value: String(pageDrafts), sub: 'not yet sent' },
+        ]} />
+      )}
 
       {error && (
         <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,.1)', border: `1px solid rgba(239,68,68,.3)`, borderRadius: radius.md, color: colors.red, fontSize: font.size.md, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -252,12 +313,22 @@ export default function InvoicingPage() {
       {/* ── Create Modal ─────────────────────────────────────────────── */}
       {showCreate && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.72)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}>
-          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 600, maxHeight: '80vh', overflow: 'auto', boxShadow: 'var(--shadow-lg)' }}>
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 960, maxHeight: '80vh', overflow: 'auto', boxShadow: 'var(--shadow-lg)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: colors.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: font.size.xl, fontWeight: font.weight.black, color: colors.text }}>New Invoice</h2>
               <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 22 }}>×</button>
             </div>
-            <form onSubmit={handleCreate} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px' }}>
+            <form onSubmit={handleCreate} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+              {ctx && (
+                <StatStrip items={[
+                  { label: 'Original Contract', value: fmtUsd(cOriginal) },
+                  { label: 'Approved COs', value: (cCoTotal >= 0 ? '+' : '') + fmtUsd(cCoTotal), accent: cCoTotal > 0 ? '#3dd68c' : undefined },
+                  { label: 'Revised', value: fmtUsd(cRevised) },
+                  { label: 'Billed to Date', value: fmtUsd(cBilled) },
+                  { label: 'Outstanding', value: fmtUsd(Math.max(0, cBilled - cPaid)), accent: '#F59E0B' },
+                ]} />
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={labelStyle}>Project *</label>
@@ -265,18 +336,25 @@ export default function InvoicingPage() {
                     <option value="">Select project...</option>
                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
+                  <div style={hintStyle}>{ctx ? 'Snapshot loaded — fields below pre-fill from it.' : 'Pick one to pre-fill the rest.'}</div>
                 </div>
                 <div>
                   <label style={labelStyle}>Vendor Name *</label>
-                  <input value={form.vendor_name} onChange={(e) => setForm({ ...form, vendor_name: e.target.value })} required style={inputStyle} placeholder="Vendor name" />
+                  <input value={form.vendor_name} onChange={(e) => setForm({ ...form, vendor_name: e.target.value })} required style={inputStyle} placeholder="Vendor name" list="sagGlobalVendors" />
+                  <datalist id="sagGlobalVendors">
+                    {ctxVendors.map(v => <option key={v} value={v} />)}
+                  </datalist>
+                  <div style={hintStyle}>{ctxVendors.length > 0 ? `${ctxVendors.length} known vendor${ctxVendors.length === 1 ? '' : 's'} on this project — start typing.` : 'Vendors suggest once a project is picked.'}</div>
                 </div>
                 <div>
-                  <label style={labelStyle}>Invoice #</label>
+                  <label style={labelStyle}>Invoice #{auto.num && <AutoChip />}</label>
                   <input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} style={inputStyle} placeholder="INV-001" />
+                  <div style={hintStyle}>{auto.num ? 'Next in sequence on this project.' : 'Auto-suggested when you pick a project.'}</div>
                 </div>
                 <div>
                   <label style={labelStyle}>Vendor Email</label>
                   <input type="email" value={form.vendor_email} onChange={(e) => setForm({ ...form, vendor_email: e.target.value })} style={inputStyle} placeholder="vendor@email.com" />
+                  <div style={hintStyle}>Needed to send the invoice by email.</div>
                 </div>
                 <div>
                   <label style={labelStyle}>Amount</label>
@@ -287,8 +365,21 @@ export default function InvoicingPage() {
                   <input type="number" step="0.01" value={form.tax} onChange={(e) => setForm({ ...form, tax: e.target.value })} style={inputStyle} placeholder="0.00" />
                 </div>
                 <div>
-                  <label style={labelStyle}>Due Date</label>
+                  <label style={labelStyle}>Invoice Total</label>
+                  <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', fontWeight: 800, color: colors.gold, background: 'rgba(245,158,11,0.07)', borderColor: 'rgba(245,158,11,0.35)' }}>
+                    {'$' + liveTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div style={hintStyle}>Amount + tax — computed live.</div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Issue Date<AutoChip /></label>
+                  <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', color: colors.textMuted }}>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  <div style={hintStyle}>Recorded automatically when the invoice is created.</div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Due Date{auto.due && <AutoChip />}</label>
                   <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} style={inputStyle} />
+                  <div style={hintStyle}>{auto.due ? 'Net 30 from today — adjust freely.' : 'Overdue flags itself from this date.'}</div>
                 </div>
                 <div>
                   <label style={labelStyle}>Status</label>
@@ -305,7 +396,15 @@ export default function InvoicingPage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Cost Code</label>
-                  <input value={form.cost_code} onChange={(e) => setForm({ ...form, cost_code: e.target.value })} style={inputStyle} placeholder="03-100" />
+                  {ctxCodes.length > 0 ? (
+                    <select value={form.cost_code} onChange={(e) => setForm({ ...form, cost_code: e.target.value })} style={inputStyle}>
+                      <option value="">No cost code</option>
+                      {ctxCodes.map(c => <option key={c.costCode} value={c.costCode}>{c.costCode} — {c.description}</option>)}
+                    </select>
+                  ) : (
+                    <input value={form.cost_code} onChange={(e) => setForm({ ...form, cost_code: e.target.value })} style={inputStyle} placeholder="03-100" />
+                  )}
+                  <div style={hintStyle}>{ctxCodes.length > 0 ? `${ctxCodes.length} codes from the project budget.` : 'Budget codes load from the project.'}</div>
                 </div>
               </div>
               <div>
@@ -323,6 +422,29 @@ export default function InvoicingPage() {
                 </button>
               </div>
             </form>
+            <div style={{ borderLeft: `1px solid ${colors.border}`, padding: 20, display: 'flex', flexDirection: 'column', gap: 22 }}>
+              {ctx ? (
+                <div>
+                  <div style={{ fontSize: 10.5, fontWeight: 900, color: colors.textDim, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 10 }}>{ctx.project?.name || 'Project'}</div>
+                  <InsightRow label="Owner" value={ctx.defaults?.ownerName || '—'} />
+                  <InsightRow label="Invoices on project" value={String(Number(ctx.counts?.invoices) || 0)} />
+                  <InsightRow label="Pay applications" value={String(Number(money?.payAppCount) || 0)} />
+                  <InsightRow label="Known vendors" value={String(ctxVendors.length)} />
+                  <InsightRow label="Budget cost codes" value={String(ctxCodes.length)} />
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.55 }}>
+                  Pick a project and Saguaro pre-fills the invoice number, known vendors, and budget cost codes from what it already tracks.
+                </div>
+              )}
+              <FlowSteps title="After you create" steps={[
+                { title: 'Draft is saved', desc: 'Review and edit anything before it goes out.' },
+                { title: 'Send to owner', desc: 'One click emails it straight from the table.' },
+                { title: 'Payment is tracked', desc: 'Overdue flags itself from the due date.' },
+                { title: 'Ledger updates', desc: 'Billed and paid totals roll into the project money snapshot.' },
+              ]} />
+            </div>
+            </div>
           </div>
         </div>
       )}

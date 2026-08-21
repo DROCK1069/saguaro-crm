@@ -22,6 +22,7 @@ import {
   SquaresFour,
   MagnifyingGlass,
 } from '@phosphor-icons/react';
+import { CSI_DIVISIONS as CANONICAL_CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
 const GOLD = '#F59E0B';
 const DARK = '#0a0a0a';
@@ -32,31 +33,11 @@ const TEXT = '#FFFFFF';
 // Premium translucent surface gradient (matches the cinematic kit's SectionCard/StatCard).
 const SURFACE = 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))';
 
+// Division code -> display name, derived from THE canonical CSI taxonomy
+// (plus Div 25, which the canonical map doesn't carry yet).
 const CSI_DIVISIONS: Record<string, string> = {
-  '01': 'General Requirements',
-  '02': 'Existing Conditions',
-  '03': 'Concrete',
-  '04': 'Masonry',
-  '05': 'Metals',
-  '06': 'Wood, Plastics, Composites',
-  '07': 'Thermal & Moisture Protection',
-  '08': 'Openings',
-  '09': 'Finishes',
-  '10': 'Specialties',
-  '11': 'Equipment',
-  '12': 'Furnishings',
-  '13': 'Special Construction',
-  '14': 'Conveying Equipment',
-  '21': 'Fire Suppression',
-  '22': 'Plumbing',
-  '23': 'HVAC',
+  ...Object.fromEntries(Object.entries(CANONICAL_CSI_DIVISIONS).map(([code, d]) => [code, d.name])),
   '25': 'Integrated Automation',
-  '26': 'Electrical',
-  '27': 'Communications',
-  '28': 'Electronic Safety & Security',
-  '31': 'Earthwork',
-  '32': 'Exterior Improvements',
-  '33': 'Utilities',
 };
 
 const UNITS = ['EA', 'LF', 'SF', 'SY', 'CY', 'TON', 'GAL', 'HR'] as const;

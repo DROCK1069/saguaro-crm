@@ -15,6 +15,7 @@ import {
   PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty,
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
+import { SHEET_DISCIPLINES } from '@/lib/construction-intelligence';
 
 const GOLD = '#F59E0B';
 const DARK = '#0a0a0a';
@@ -92,6 +93,13 @@ const disciplineColors: Record<string, string> = {
   Electrical: '#e5c07b',
   Plumbing: '#56b6c2',
   Civil: '#98c379',
+  Sitework: '#8a9a5b',
+  Demolition: '#b0743c',
+  'Fire Protection': '#d1494e',
+  'Low Voltage / Technology': '#9b7ede',
+  Landscape: '#5faa72',
+  Interiors: '#c678dd',
+  Specialties: '#7f8ea3',
   General: DIM,
 };
 
@@ -491,7 +499,7 @@ function EstimatePage() {
                   onChange={e => setNewSheetDiscipline(e.target.value)}
                   style={fieldStyle}
                 >
-                  {Object.keys(disciplineColors).map(d => <option key={d} value={d}>{d}</option>)}
+                  {(SHEET_DISCIPLINES.includes(newSheetDiscipline) ? SHEET_DISCIPLINES : [newSheetDiscipline, ...SHEET_DISCIPLINES]).map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={addSheet} style={{ ...smallGoldBtn, flex: 1 }} className="pmBtn">Save</button>

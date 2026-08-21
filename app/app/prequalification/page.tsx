@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
-import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
+import { SUB_TRADES as TRADES } from '@/lib/construction-intelligence';
 import { Clipboard, NotePencil, Envelope, CheckCircle, XCircle, CaretUp, CaretDown, X, ShieldCheck, Plus, WarningCircle, ChartBar, Clock } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
@@ -34,7 +34,7 @@ interface Invite { id: string; email: string; sub_name: string; template_id: str
 
 /* ─── Constants ─── */
 const CATEGORIES = ['Insurance', 'Bonding', 'Safety', 'References', 'Certifications'] as const;
-// TRADES imported from @/lib/contractor-trades
+// TRADES = canonical SUB_TRADES taxonomy from @/lib/construction-intelligence
 const DEFAULT_DOCS = ['Certificate of Insurance (COI)', 'Performance Bond Letter', 'Safety Record / OSHA Logs', 'References (3+)', 'W-9 Form', 'Business License', 'EMR Letter', 'OSHA 300 Log'];
 const CATEGORY_COLORS: Record<string, string> = { Insurance: BLUE, Bonding: PURPLE, Safety: GREEN, References: GOLD, Certifications: AMBER };
 const STATUS_COLORS: Record<string, string> = { pending: AMBER, under_review: BLUE, approved: GREEN, rejected: RED };
@@ -512,7 +512,7 @@ export default function PrequalificationPage() {
                 </select>
                 <select value={tradeFilter} onChange={e => setTradeFilter(e.target.value)} style={{ ...selectS, width: 160 }}>
                   <option value="all">All Trades</option>
-                  {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {Array.from(new Set([...TRADES, ...submissions.map(s => s.sub_trade).filter(Boolean)])).sort((a, b) => a.localeCompare(b)).map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
                 <input placeholder="Min Score %" type="number" value={scoreMin} onChange={e => setScoreMin(e.target.value)} style={{ ...inputS, width: 120 }} />
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>

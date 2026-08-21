@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { CSI_DIVISIONS as CSI_TAXONOMY } from '@/lib/construction-intelligence';
 
 const GOLD = '#F59E0B';
 const DARK = '#1c1c1e';
@@ -40,23 +41,10 @@ interface WizardProps {
 
 // ─── CSI Divisions ───────────────────────────────────────────────────────────
 
-const CSI_DIVISIONS = [
-  { value: 'Division 01 — General Requirements', label: 'Division 01 — General Requirements' },
-  { value: 'Division 02 — Existing Conditions', label: 'Division 02 — Existing Conditions' },
-  { value: 'Division 03 — Concrete', label: 'Division 03 — Concrete' },
-  { value: 'Division 04 — Masonry', label: 'Division 04 — Masonry' },
-  { value: 'Division 05 — Metals', label: 'Division 05 — Metals' },
-  { value: 'Division 06 — Wood, Plastics & Composites', label: 'Division 06 — Wood, Plastics & Composites' },
-  { value: 'Division 07 — Thermal & Moisture Protection', label: 'Division 07 — Thermal & Moisture Protection' },
-  { value: 'Division 08 — Openings', label: 'Division 08 — Openings' },
-  { value: 'Division 09 — Finishes', label: 'Division 09 — Finishes' },
-  { value: 'Division 10 — Specialties', label: 'Division 10 — Specialties' },
-  { value: 'Division 11 — Equipment', label: 'Division 11 — Equipment' },
-  { value: 'Division 12 — Furnishings', label: 'Division 12 — Furnishings' },
-  { value: 'Division 14 — Conveying Equipment', label: 'Division 14 — Conveying Equipment' },
-  { value: 'Division 22 — Plumbing', label: 'Division 22 — Plumbing' },
-  { value: 'Division 26 — Electrical', label: 'Division 26 — Electrical' },
-];
+const CSI_DIVISIONS = Object.entries(CSI_TAXONOMY).map(([code, d]) => ({
+  value: `Division ${code} — ${d.name}`,
+  label: `Division ${code} — ${d.name}`,
+}));
 
 // ─── Helper Components ───────────────────────────────────────────────────────
 

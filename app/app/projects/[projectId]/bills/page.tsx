@@ -3,8 +3,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
-import { Receipt, Plus, FilePlus, CurrencyDollar } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { Receipt, Plus, FilePlus, CurrencyDollar, Wallet } from '@phosphor-icons/react';
+import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -21,8 +22,7 @@ interface Bill {
   project_id: string;
 }
 
-const EMPTY_FORM = { invoice_num: '', vendor: '', description: '', amount: 0, due_date: '', category: '03 - Concrete' };
-const CATEGORIES = ['03 - Concrete','04 - Masonry','05 - Metals','06 - Wood & Plastics','07 - Thermal & Moisture','08 - Openings','09 - Finishes','21 - Fire Suppression','22 - Plumbing','23 - HVAC','26 - Electrical','31 - Earthwork','32 - Exterior Improvements'];
+const EMPTY_FORM = { invoice_num: '', vendor: '', description: '', amount: 0, tax: 0, due_date: '', category: '03 - Concrete', cost_code: '' };
 
 function statusBadge(status: string) {
   const map: Record<string, { bg: string; color: string }> = {
@@ -57,6 +57,9 @@ export default function BillsPage() {
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // SmartCreate: the project-context snapshot — vendors, cost codes, budget rollups.
+  const [ctx, setCtx] = useState<any>(null);
+  const [auto, setAuto] = useState<{ due?: boolean }>({});
 
   const fetchBills = useCallback(async () => {
     setLoading(true);
@@ -73,6 +76,17 @@ export default function BillsPage() {
 
   useEffect(() => { fetchBills(); }, [fetchBills]);
 
+  // The form walks in knowing the project: budget lines, known vendors, cost codes.
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
+
   async function handleSave() {
     if (!form.vendor || !form.invoice_num || !form.amount) {
       setErrorMsg('Vendor, invoice number, and amount are required.');
@@ -80,6 +94,10 @@ export default function BillsPage() {
     }
     setSaving(true);
     setErrorMsg('');
+    // MONEY: coerce before math — form/DB numerics can round-trip as strings.
+    const billSubtotal = Number(form.amount) || 0;
+    const billTax = Number(form.tax) || 0;
+    const billTotal = billSubtotal + billTax;
     try {
       const res = await fetch('/api/bills/create', {
         method: 'POST',
@@ -90,8 +108,10 @@ export default function BillsPage() {
           bill_number: form.invoice_num,
           description: form.description,
           category: form.category,
-          amount: form.amount,
-          total: form.amount,
+          cost_code: form.cost_code || null,
+          amount: billTotal,
+          tax: billTax,
+          total: billTotal,
           due_date: form.due_date || null,
           status: 'Pending',
         }),
@@ -201,6 +221,54 @@ export default function BillsPage() {
   const paidCount = bills.filter(b => b.status === 'Paid').length;
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#1c1c1e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
+  const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
+
+  // ── SmartCreate intelligence (all Number-coerced: DB numerics round-trip as strings) ──
+  const budget = ctx?.budget;
+  const bOriginal = Number(budget?.original) || 0;
+  const bCommitted = Number(budget?.committed) || 0;
+  const bActual = Number(budget?.actual) || 0;
+  const bRemaining = bOriginal - bActual;
+  const vendors: string[] = (ctx?.vendors || []).filter(Boolean);
+  const budgetLines: any[] = budget?.lines || [];
+  const costCodeOptions: any[] = (ctx?.costCodes || []).filter((c: any) => c.costCode);
+  const subtotalNum = Number(form.amount) || 0;
+  const taxNum = Number(form.tax) || 0;
+  const grandTotal = subtotalNum + taxNum;
+  // Same line-matching the server rollup uses: exact cost code, else its division.
+  const selLine = form.cost_code
+    ? (budgetLines.find((l: any) => String(l.costCode) === String(form.cost_code))
+      || budgetLines.find((l: any) => String(l.division) === String(form.cost_code).slice(0, 2)))
+    : null;
+  const lineBudget = Number(selLine?.original) || 0;
+  const lineActual = Number(selLine?.actual) || 0;
+  const lineRemaining = lineBudget - lineActual - grandTotal;
+
+  function plus30() {
+    const d = new Date(Date.now() + 30 * 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function openForm(open: boolean) {
+    setErrorMsg('');
+    setShowForm(open);
+    if (open) {
+      setForm(f => f.due_date ? f : { ...f, due_date: plus30() });
+      setAuto(a => ({ ...a, due: true }));
+    }
+  }
+
+  function pickCostCode(code: string) {
+    const line = costCodeOptions.find((c: any) => String(c.costCode) === code);
+    const div = String(line?.division ?? code).slice(0, 2);
+    const divName = CSI_DIVISIONS[div]?.name;
+    setForm(p => ({ ...p, cost_code: code, category: code && divName ? `${div} - ${divName}` : p.category }));
+  }
+
+  function pickDivision(div: string) {
+    const divName = CSI_DIVISIONS[div]?.name;
+    setForm(p => ({ ...p, cost_code: div, category: div && divName ? `${div} - ${divName}` : p.category }));
+  }
 
   return (
     <PremiumSurface maxWidth={1600}>
@@ -211,29 +279,92 @@ export default function BillsPage() {
         title="Bills"
         subtitle="Vendor bills and supplier invoices"
         actions={
-          <button onClick={() => { setShowForm(p => !p); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
+          <button onClick={() => openForm(!showForm)} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> New Bill
           </button>
         }
       />
 
+      {/* What the system already knows: the budget every bill posts against */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Budget', value: fmt(bOriginal), sub: `${Number(budget?.lineCount) || budgetLines.length} cost-coded lines` },
+          { label: 'Committed', value: fmt(bCommitted), sub: 'POs + subcontracts' },
+          { label: 'Actual to Date', value: fmt(bActual), sub: 'bills + invoices posted' },
+          { label: 'Remaining', value: fmt(bRemaining), accent: bRemaining < 0 ? RED : GREEN, sub: 'original less actual' },
+          { label: 'Known Vendors', value: String(vendors.length), sub: 'autocomplete in the form' },
+        ]} />
+      )}
+
       {successMsg && <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(61,214,140,.15)', border: '1px solid rgba(61,214,140,.4)', borderRadius: 7, color: GREEN, fontSize: 13 }}>{successMsg}</div>}
       {errorMsg && <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', borderRadius: 7, color: RED, fontSize: 13 }}>{errorMsg}</div>}
 
       {showForm && (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 16, alignItems: 'start' }}>
           <SectionCard title="New Bill" icon={<FilePlus size={17} weight="duotone" color={GOLD} />}>
+            <datalist id="sg-bill-vendors">{vendors.map((v, i) => <option key={v + '-' + i} value={v} />)}</datalist>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-              <div><label style={label}>Invoice # *</label><input type="text" value={form.invoice_num} onChange={e => setForm(p => ({ ...p, invoice_num: e.target.value }))} style={inp} /></div>
-              <div><label style={label}>Vendor *</label><input type="text" value={form.vendor} onChange={e => setForm(p => ({ ...p, vendor: e.target.value }))} style={inp} /></div>
-              <div><label style={label}>Amount ($) *</label><input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} /></div>
-              <div><label style={label}>Due Date</label><SaguaroDatePicker value={form.due_date} onChange={v => setForm(p => ({ ...p, due_date: v }))} style={inp} /></div>
-              <div><label style={label}>CSI Category</label>
-                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} style={inp}>
-                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
+              <div>
+                <label style={label}>Invoice # *</label>
+                <input type="text" value={form.invoice_num} onChange={e => setForm(p => ({ ...p, invoice_num: e.target.value }))} style={inp} />
+                <div style={hint}>{"The vendor's invoice number, exactly as printed."}</div>
               </div>
-              <div style={{ gridColumn: 'span 3' }}><label style={label}>Description</label><input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={inp} /></div>
+              <div>
+                <label style={label}>Vendor *</label>
+                <input type="text" list="sg-bill-vendors" value={form.vendor} onChange={e => setForm(p => ({ ...p, vendor: e.target.value }))} style={inp} />
+                <div style={hint}>{vendors.length > 0 ? `${vendors.length} known vendor${vendors.length === 1 ? '' : 's'} on this project — start typing.` : 'New vendors are remembered for next time.'}</div>
+              </div>
+              <div>
+                <label style={label}>Cost Code</label>
+                {costCodeOptions.length > 0 ? (
+                  <select value={form.cost_code} onChange={e => pickCostCode(e.target.value)} style={inp}>
+                    <option value="">— Select cost code —</option>
+                    {costCodeOptions.map((c: any) => (
+                      <option key={c.costCode} value={c.costCode}>{c.costCode + ' — ' + (c.description || CSI_DIVISIONS[String(c.division)]?.name || '')}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <select value={form.cost_code} onChange={e => pickDivision(e.target.value)} style={inp}>
+                    <option value="">— CSI division —</option>
+                    {Object.entries(CSI_DIVISIONS).map(([dv, d]) => (
+                      <option key={dv} value={dv}>{dv + ' — ' + d.name}</option>
+                    ))}
+                  </select>
+                )}
+                <div style={hint}>{costCodeOptions.length > 0 ? "From this project's budget — the total posts to that line's actual." : 'No cost-coded budget yet — file under a CSI division.'}</div>
+              </div>
+              <div>
+                <label style={label}>Amount ($) *</label>
+                <input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} />
+                <div style={hint}>Pre-tax amount from the invoice.</div>
+              </div>
+              <div>
+                <label style={label}>Tax ($)</label>
+                <input type="number" value={form.tax} onChange={e => setForm(p => ({ ...p, tax: Number(e.target.value) }))} style={inp} />
+                <div style={hint}>Sales tax as billed — leave 0 if exempt.</div>
+              </div>
+              <div>
+                <label style={label}>Due Date{auto.due && <AutoChip />}</label>
+                <SaguaroDatePicker value={form.due_date} onChange={v => setForm(p => ({ ...p, due_date: v }))} style={inp} />
+                <div style={hint}>{"Net 30 from today — adjust to the vendor's terms."}</div>
+              </div>
+              <div style={{ gridColumn: 'span 3' }}>
+                <label style={label}>Description</label>
+                <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={inp} />
+              </div>
+              {selLine && (
+                <div style={{ gridColumn: 'span 3', display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', borderRadius: 10, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.3)', fontSize: 12.5, color: DIM, lineHeight: 1.55 }}>
+                  <Wallet size={16} weight="duotone" color={GOLD} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>
+                    Posts <b style={{ color: TEXT }}>{fmt(grandTotal)}</b> actual against <b style={{ color: GOLD }}>{selLine.costCode || selLine.division}</b>{selLine.description ? ` (${selLine.description})` : ''} — budget <b style={{ color: TEXT }}>{fmt(lineBudget)}</b>, actual to date <b style={{ color: TEXT }}>{fmt(lineActual)}</b>, remaining <b style={{ color: lineRemaining < 0 ? RED : GREEN }}>{fmt(lineRemaining)}</b> after this bill.
+                  </span>
+                </div>
+              )}
+              <div style={{ gridColumn: 'span 3', display: 'flex', justifyContent: 'flex-end', gap: 24, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 10 }}>
+                <span style={{ fontSize: 12, color: DIM }}>Subtotal <b style={{ color: TEXT }}>{fmt(subtotalNum)}</b></span>
+                <span style={{ fontSize: 12, color: DIM }}>Tax <b style={{ color: TEXT }}>{fmt(taxNum)}</b></span>
+                <span style={{ fontSize: 12, color: DIM }}>Bill Total <b style={{ color: GOLD, fontSize: 14 }}>{fmt(grandTotal)}</b></span>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button onClick={handleSave} disabled={saving} style={{ ...goldButtonStyle, opacity: saving ? 0.7 : 1 }} className="pmBtn">
@@ -242,6 +373,26 @@ export default function BillsPage() {
               <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={ghostButtonStyle} className="pmBtn">Cancel</button>
             </div>
           </SectionCard>
+
+          {/* Context rail — what the system does with this bill */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {selLine && (
+              <SectionCard title={`Cost Code ${selLine.costCode || selLine.division}`} icon={<Wallet size={17} weight="duotone" color={GOLD} />}>
+                <InsightRow label="Line budget" value={fmt(lineBudget)} />
+                <InsightRow label="Actual to date" value={fmt(lineActual)} />
+                <InsightRow label="This bill" value={fmt(grandTotal)} accent={GOLD} />
+                <InsightRow label="Remaining after" value={fmt(lineRemaining)} accent={lineRemaining < 0 ? RED : GREEN} strong />
+              </SectionCard>
+            )}
+            <SectionCard title="After You Save" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />}>
+              <FlowSteps title="" steps={[
+                { title: 'Bill lands as Pending', desc: 'Queued in payables with overdue tracking off the due date — no follow-up spreadsheet.' },
+                { title: 'Budget actual rolls up server-side', desc: form.cost_code ? `${fmt(grandTotal)} posts to ${form.cost_code} actual the moment you save.` : 'Pick a cost code and the total posts to that budget line automatically.' },
+                { title: 'Approve to clear for payment', desc: 'Approval moves the bill into the payment queue and pending-payables totals.' },
+                { title: 'Mark Paid closes the loop', desc: 'Paid bills drop out of pending totals; the project cost ledger stays current.' },
+              ]} />
+            </SectionCard>
+          </div>
         </div>
       )}
 
@@ -254,7 +405,7 @@ export default function BillsPage() {
               icon={<Receipt size={30} weight="duotone" color={GOLD} />}
               title="No bills yet"
               description="Add your first vendor bill to start tracking supplier invoices for this project."
-              action={<button onClick={() => { setShowForm(true); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> New Bill</button>}
+              action={<button onClick={() => openForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> New Bill</button>}
             />
           </div>
         ) : (

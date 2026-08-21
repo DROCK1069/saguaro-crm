@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
       schedule_impact_days: scheduleImpactDays != null ? scheduleImpact : null,
       schedule_impact: scheduleImpact,
       submitted_by: user.id,
+      // Optional link back to the awarded bid package (SmartCreate sends camelCase).
+      related_bid_package_id: body.relatedBidPackageId ?? body.related_bid_package_id ?? null,
     } as unknown as Database['public']['Tables']['change_orders']['Insert']).select().single();
 
     if (error) throw error;

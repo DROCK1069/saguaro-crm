@@ -12,6 +12,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const body = await req.json();
     const db = createServerClient();
 
+    // ── COMPLIANCE GATE: no award to a sub with no W-9 or lapsed insurance.
+    //    Soft gate — body.overrideCompliance = true proceeds (and is returned in
+    //    the result); query failures fail OPEN so schema drift can't block awards. ──
+    if (!body.overrideCompliance) {
+      try {
+        const { data: subRow } = await db.from('bid_submissions').select('sub_id').eq('id', body.submissionId).eq('tenant_id', user.tenantId).single();
+        const subId = (subRow as { sub_id?: string | null } | null)?.sub_id;
+        if (subId) {
+          const issues: string[] = [];
+          const { data: subRec } = await db.from('subcontractors').select('w9_on_file').eq('id', subId).maybeSingle();
+          if (subRec && (subRec as { w9_on_file?: boolean | null }).w9_on_file !== true) issues.push('W-9 not on file');
+          const { data: certs } = await db.from('insurance_certificates').select('expiry_date, status').eq('sub_id', subId);
+          if (certs && certs.length > 0) {
+            const valid = (certs as { expiry_date: string | null; status: string | null }[]).some(
+              (c) => c.status !== 'expired' && (!c.expiry_date || new Date(c.expiry_date).getTime() > Date.now()));
+            if (!valid) issues.push('Insurance certificate expired');
+          }
+          if (issues.length > 0) {
+            return NextResponse.json({
+              error: `Compliance hold — ${issues.join(', ')}. Award anyway with override, or request the documents first.`,
+              complianceBlock: true,
+              issues,
+            }, { status: 409 });
+          }
+        }
+      } catch (e) { console.error('award compliance gate skipped:', e); }
+    }
+
     // Award the winning submission. Tenant-scope the write — db is the service-role
     // client (RLS bypassed), so matching by submissionId alone would let one tenant
     // award another tenant's bid submission (cross-tenant IDOR).

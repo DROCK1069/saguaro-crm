@@ -4,8 +4,9 @@ import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents } from '@/lib/calc';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
-import { FileText, CurrencyDollar, Plus, FilePlus, FileArrowUp, Eye, FileDashed } from '@phosphor-icons/react';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { FileText, CurrencyDollar, Plus, FilePlus, FileArrowUp, Eye, FileDashed, UsersThree, Signature } from '@phosphor-icons/react';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -24,7 +25,10 @@ interface Contract {
   project_id: string;
 }
 
-const EMPTY_FORM = { sub_name: '', trade: '', amount: 0, scope: '', start_date: '', end_date: '', retainage_pct: 10 };
+const fmt = (n: number) => '$' + ((Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+const EMPTY_FORM = { sub_name: '', trade: '', amount: 0, scope: '', start_date: '', end_date: '', retainage_pct: 10, party_email: '' };
 
 // The `contracts` table stores party_name / scope_of_work / executed_date /
 // amount — NOT the sub_name / scope / execution_date this UI was reading, so
@@ -69,6 +73,69 @@ export default function ContractsPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
+  // SmartCreate: the form walks in knowing the roster, the awards, and the
+  // project defaults — /api/project-context in one round trip.
+  const [ctx, setCtx] = useState<any>(null);
+  const [party, setParty] = useState('');
+  const [auto, setAuto] = useState<{ name?: boolean; trade?: boolean; amount?: boolean; ret?: boolean; scope?: boolean; dates?: boolean }>({});
+
+  const freshForm = (c: any) => ({
+    ...EMPTY_FORM,
+    retainage_pct: Number(c?.defaults?.retainagePct) || EMPTY_FORM.retainage_pct,
+    start_date: isoToday(),
+    end_date: c?.project?.endDate ? String(c.project.endDate).slice(0, 10) : '',
+  });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) {
+          setCtx(c);
+          setForm(p => ({
+            ...p,
+            retainage_pct: Number(c.defaults?.retainagePct) || p.retainage_pct,
+            start_date: p.start_date || isoToday(),
+            end_date: p.end_date || (c.project?.endDate ? String(c.project.endDate).slice(0, 10) : ''),
+          }));
+          setAuto(a => ({ ...a, ret: true, dates: true }));
+        }
+      } catch {}
+    })();
+  }, [projectId]);
+
+  // Party picker: a roster sub or an awarded bid package pre-fills the form.
+  function pickParty(val: string) {
+    setParty(val);
+    if (!val || !ctx) { setAuto(a => ({ ...a, name: false, trade: false, amount: false, scope: false })); return; }
+    if (val.startsWith('sub:')) {
+      const s = (ctx.subs || []).find((x: any) => String(x.membershipId) === val.slice(4));
+      if (!s) return;
+      const award = (ctx.bidPackages || []).find((b: any) => b.awardedTo && s.companyName && String(b.awardedTo).toLowerCase() === String(s.companyName).toLowerCase());
+      const amount = Number(s.contractAmount) || Number(award?.awardedAmount) || 0;
+      setForm(p => ({ ...p, sub_name: s.companyName || '', trade: s.trade || p.trade, amount: amount || p.amount, party_email: s.email || '' }));
+      setAuto(a => ({ ...a, name: true, trade: !!s.trade, amount: amount > 0, scope: false }));
+    } else if (val.startsWith('pkg:')) {
+      const b = (ctx.bidPackages || []).find((x: any) => String(x.id) === val.slice(4));
+      if (!b) return;
+      const rosterMatch = (ctx.subs || []).find((x: any) => x.companyName && b.awardedTo && String(x.companyName).toLowerCase() === String(b.awardedTo).toLowerCase());
+      const seededScope = `Full scope of the "${b.name}" bid package${b.csiDivision ? ` (CSI Division ${b.csiDivision})` : ''}, per the awarded proposal.`;
+      const willSeedScope = !form.scope;
+      setForm(p => ({ ...p, sub_name: b.awardedTo || '', trade: b.trade || p.trade, amount: Number(b.awardedAmount) || p.amount, scope: p.scope || seededScope, party_email: rosterMatch?.email || '' }));
+      setAuto(a => ({ ...a, name: true, trade: !!b.trade, amount: Number(b.awardedAmount) > 0, scope: willSeedScope }));
+    }
+  }
+
+  // Derived intelligence for the strip and the context rail.
+  const money = ctx?.money;
+  const roster = ((ctx?.subs || []) as any[]);
+  const awardedPkgs = ((ctx?.bidPackages || []) as any[]).filter(b => b.awardedTo);
+  const contractedNames = new Set(contracts.map(c => (c.sub_name || '').toLowerCase()).filter(Boolean));
+  const unpapered = awardedPkgs.filter(b => !contractedNames.has(String(b.awardedTo).toLowerCase()));
+  const selSub = party.startsWith('sub:') ? roster.find((x: any) => String(x.membershipId) === party.slice(4)) : null;
+  const selPkg = party.startsWith('pkg:') ? awardedPkgs.find((x: any) => String(x.id) === party.slice(4)) : null;
+
   const fetchContracts = useCallback(async () => {
     setLoading(true);
     try {
@@ -109,6 +176,7 @@ export default function ContractsPage() {
           start_date: form.start_date || null,
           end_date: form.end_date || null,
           retainage_pct: form.retainage_pct,
+          party_email: form.party_email || null,
           status: 'Draft',
         }),
       });
@@ -116,7 +184,9 @@ export default function ContractsPage() {
       if (!res.ok || !json.contract) throw new Error(json.error || 'Failed to save contract');
       setContracts(prev => [normalizeContract(json.contract), ...prev]);
       setShowForm(false);
-      setForm(EMPTY_FORM);
+      setForm(freshForm(ctx));
+      setParty('');
+      setAuto(a => ({ ret: a.ret, dates: a.dates }));
       setSuccessMsg('Contract created successfully.');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
@@ -150,6 +220,7 @@ export default function ContractsPage() {
   const total = toDollars(sumCents(contracts.map(c => toCents(c.amount || 0))));
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#1c1c1e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
+  const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
   // Compact ghost action buttons for in-row actions (View PDF / Upload Signed).
   const rowBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 11px', background: 'rgba(255,255,255,0.05)', border: '1px solid ' + BORDER, borderRadius: 8, color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: 700, cursor: 'pointer' };
 
@@ -169,20 +240,88 @@ export default function ContractsPage() {
         }
       />
 
+      {/* What the system already knows — money, roster, awards */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Prime Contract', value: fmt(money?.revisedContract || 0), sub: (money?.approvedCoCount || 0) > 0 ? `${fmt(money?.originalContract || 0)} + ${money.approvedCoCount} approved CO${money.approvedCoCount === 1 ? '' : 's'}` : 'original + approved COs' },
+          { label: 'Sub Commitments', value: fmt(total), sub: `${contracts.length} contract${contracts.length === 1 ? '' : 's'} on the ledger` },
+          { label: 'Subs on Roster', value: String(roster.length), sub: 'available as contract parties' },
+          { label: 'Awarded Packages', value: String(awardedPkgs.length), sub: `${fmt(awardedPkgs.reduce((s, b) => s + (Number(b.awardedAmount) || 0), 0))} awarded` },
+          { label: 'Ready to Paper', value: String(unpapered.length), accent: unpapered.length > 0 ? '#FBBF24' : GREEN, sub: unpapered.length > 0 ? 'awards without a contract' : 'every award is contracted' },
+          { label: 'Default Retainage', value: `${Number(ctx.defaults?.retainagePct) || 10}%`, sub: 'from project contract terms' },
+        ]} />
+      )}
+
       {successMsg && <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(61,214,140,.15)', border: '1px solid rgba(61,214,140,.4)', borderRadius: 10, color: GREEN, fontSize: 13 }}>{successMsg}</div>}
       {errorMsg && <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', borderRadius: 10, color: RED, fontSize: 13 }}>{errorMsg}</div>}
 
       {showForm && (
-        <div style={{ marginBottom: 24 }}>
-          <SectionCard title="New Contract" icon={<FilePlus size={17} weight="duotone" color={GOLD} />}>
+        <div style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 330px', gap: 18, alignItems: 'start' }}>
+          <SectionCard title="New Contract" subtitle="Pick the party — the system fills in what it already knows" icon={<FilePlus size={17} weight="duotone" color={GOLD} />}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-              <div><label style={label}>Subcontractor Name *</label><input type="text" value={form.sub_name} onChange={e => setForm(p => ({ ...p, sub_name: e.target.value }))} style={inp} /></div>
-              <div><label style={label}>Trade *</label><input type="text" value={form.trade} onChange={e => setForm(p => ({ ...p, trade: e.target.value }))} style={inp} /></div>
-              <div><label style={label}>Contract Amount ($) *</label><input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} /></div>
-              <div><label style={label}>Start Date</label><SaguaroDatePicker value={form.start_date} onChange={v => setForm(p => ({ ...p, start_date: v }))} style={inp} /></div>
-              <div><label style={label}>End Date</label><SaguaroDatePicker value={form.end_date} onChange={v => setForm(p => ({ ...p, end_date: v }))} style={inp} /></div>
-              <div><label style={label}>Retainage %</label><input type="number" value={form.retainage_pct} onChange={e => setForm(p => ({ ...p, retainage_pct: Number(e.target.value) }))} style={inp} /></div>
-              <div style={{ gridColumn: 'span 3' }}><label style={label}>Scope of Work</label><textarea value={form.scope} onChange={e => setForm(p => ({ ...p, scope: e.target.value }))} rows={3} style={{ ...inp, resize: 'vertical' }} /></div>
+              <div style={{ gridColumn: 'span 3' }}>
+                <label style={label}>Contract Party</label>
+                <select value={party} onChange={e => pickParty(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  <option value="">Type a new party manually…</option>
+                  {roster.length > 0 && (
+                    <optgroup label={`Subs on this project (${roster.length})`}>
+                      {roster.map((s: any) => (
+                        <option key={`sub-${s.membershipId}`} value={`sub:${s.membershipId}`}>
+                          {s.companyName || 'Unnamed sub'}{s.trade ? ` — ${s.trade}` : ''}{Number(s.contractAmount) > 0 ? ` — ${fmt(Number(s.contractAmount))}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {awardedPkgs.length > 0 && (
+                    <optgroup label={`Awarded bid packages (${awardedPkgs.length})`}>
+                      {awardedPkgs.map((b: any) => (
+                        <option key={`pkg-${b.id}`} value={`pkg:${b.id}`}>
+                          {b.name} — {b.awardedTo}{Number(b.awardedAmount) > 0 ? ` — ${fmt(Number(b.awardedAmount))}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <div style={hint}>Picking a roster sub or an awarded package auto-fills the party, trade, amount, and scope — everything stays editable.</div>
+              </div>
+              <div>
+                <label style={label}>Subcontractor Name *{auto.name && <AutoChip/>}</label>
+                <input type="text" value={form.sub_name} onChange={e => setForm(p => ({ ...p, sub_name: e.target.value }))} style={inp} />
+                {auto.name && <div style={hint}>{selPkg ? `Awarded "${selPkg.name}".` : 'From the project sub roster.'}</div>}
+              </div>
+              <div>
+                <label style={label}>Trade *{auto.trade && <AutoChip/>}</label>
+                <select value={form.trade} onChange={e => setForm(p => ({ ...p, trade: e.target.value }))} style={{ ...inp, cursor: 'pointer' }}>
+                  <option value="">Select trade…</option>
+                  {form.trade && !SUB_TRADES.includes(form.trade) && <option value={form.trade}>{form.trade}</option>}
+                  {SUB_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={label}>Contract Amount ($) *{auto.amount && <AutoChip/>}</label>
+                <input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: Number(e.target.value) }))} style={inp} />
+                {auto.amount && <div style={hint}>{selPkg ? 'The awarded bid amount.' : 'Their committed amount on the roster.'}</div>}
+              </div>
+              <div>
+                <label style={label}>Start Date{auto.dates && form.start_date ? <AutoChip/> : null}</label>
+                <SaguaroDatePicker value={form.start_date} onChange={v => setForm(p => ({ ...p, start_date: v }))} style={inp} />
+                {auto.dates && form.start_date ? <div style={hint}>Defaulted to today.</div> : null}
+              </div>
+              <div>
+                <label style={label}>End Date{auto.dates && form.end_date ? <AutoChip/> : null}</label>
+                <SaguaroDatePicker value={form.end_date} onChange={v => setForm(p => ({ ...p, end_date: v }))} style={inp} />
+                {auto.dates && form.end_date ? <div style={hint}>Defaulted to project completion.</div> : null}
+              </div>
+              <div>
+                <label style={label}>Retainage %{auto.ret && <AutoChip/>}</label>
+                <input type="number" value={form.retainage_pct} onChange={e => setForm(p => ({ ...p, retainage_pct: Number(e.target.value) }))} style={inp} />
+                {auto.ret && <div style={hint}>Project default — carried into pay apps and lien waivers.</div>}
+              </div>
+              <div style={{ gridColumn: 'span 3' }}>
+                <label style={label}>Scope of Work{auto.scope && <AutoChip/>}</label>
+                <textarea value={form.scope} onChange={e => setForm(p => ({ ...p, scope: e.target.value }))} rows={3} style={{ ...inp, resize: 'vertical' }} />
+                {auto.scope && <div style={hint}>Seeded from the awarded bid package — edit to match the executed scope.</div>}
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button onClick={handleSave} disabled={saving} style={{ ...goldButtonStyle, opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' : 'pointer' }} className="pmBtn">
@@ -191,11 +330,60 @@ export default function ContractsPage() {
               <button onClick={() => { setShowForm(false); setErrorMsg(''); }} style={ghostButtonStyle} className="pmBtn">Cancel</button>
             </div>
           </SectionCard>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <SectionCard title={selSub ? 'Party Snapshot' : selPkg ? 'Award Snapshot' : 'Ready to Paper'} icon={<UsersThree size={17} weight="duotone" color={GOLD} />}>
+              {selSub ? (
+                <>
+                  <InsightRow label="Company" value={selSub.companyName || '—'} strong/>
+                  <InsightRow label="Trade" value={selSub.trade || '—'}/>
+                  <InsightRow label="Roster commitment" value={fmt(Number(selSub.contractAmount) || 0)} accent={GOLD}/>
+                  <InsightRow label="Email" value={selSub.email || 'not on file'}/>
+                  <InsightRow label="Roster status" value={String(selSub.status || '—')}/>
+                </>
+              ) : selPkg ? (
+                <>
+                  <InsightRow label="Package" value={selPkg.name} strong/>
+                  <InsightRow label="Awarded to" value={selPkg.awardedTo || '—'}/>
+                  <InsightRow label="Awarded amount" value={fmt(Number(selPkg.awardedAmount) || 0)} accent={GOLD} strong/>
+                  {Number(selPkg.budgetEstimate) > 0 && <InsightRow label="Budget estimate" value={fmt(Number(selPkg.budgetEstimate) || 0)}/>}
+                  {Number(selPkg.budgetEstimate) > 0 && (
+                    <InsightRow
+                      label="Vs. estimate"
+                      value={`${Number(selPkg.awardedAmount) - Number(selPkg.budgetEstimate) > 0 ? '+' : ''}${fmt(Number(selPkg.awardedAmount) - Number(selPkg.budgetEstimate))}`}
+                      accent={Number(selPkg.awardedAmount) - Number(selPkg.budgetEstimate) > 0 ? '#FBBF24' : GREEN}
+                    />
+                  )}
+                  {selPkg.csiDivision && <InsightRow label="CSI division" value={String(selPkg.csiDivision)}/>}
+                </>
+              ) : ctx ? (
+                <>
+                  <InsightRow label="Subs on roster" value={String(roster.length)}/>
+                  <InsightRow label="Awarded packages" value={String(awardedPkgs.length)}/>
+                  <InsightRow label="Awards w/o contract" value={String(unpapered.length)} accent={unpapered.length > 0 ? '#FBBF24' : GREEN} strong/>
+                  {unpapered.slice(0, 3).map((b: any) => (
+                    <div key={b.id} style={{ fontSize: 11.5, color: DIM, padding: '5px 0', borderTop: '1px solid rgba(255,255,255,0.06)', lineHeight: 1.5 }}>
+                      {b.name} — <span style={{ color: TEXT, fontWeight: 700 }}>{b.awardedTo}</span> ({fmt(Number(b.awardedAmount) || 0)})
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div style={{ fontSize: 12.5, color: DIM, lineHeight: 1.6 }}>Pick a roster sub or an awarded bid package above and the contract fills itself in.</div>
+              )}
+            </SectionCard>
+            <SectionCard title="After You Save" icon={<Signature size={17} weight="duotone" color={GOLD} />}>
+              <FlowSteps title="" steps={[
+                { title: 'Draft on the ledger', desc: 'The contract lands here as a Draft, counted in sub commitments.' },
+                { title: 'Send for signature', desc: 'Send the package out — status moves to Sent while you wait on ink.' },
+                { title: 'Executed', desc: 'Upload the signed copy; the linked bid package flips to contracted and committed costs update.' },
+              ]}/>
+            </SectionCard>
+          </div>
         </div>
       )}
 
-      {/* KPI stats */}
-      {!loading && (
+      {/* KPI stats (fallback when the project snapshot is unavailable) */}
+      {!loading && !ctx && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
           <StatCard
             icon={<FileText size={19} weight="duotone" color={GOLD} />}

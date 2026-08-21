@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
-import { Handshake, Trash, Users, CurrencyDollar, HandCoins, Heartbeat, Plus } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { Handshake, Trash, Users, CurrencyDollar, HandCoins, Heartbeat, Plus, ShieldCheck, ShieldWarning, AddressBook } from '@phosphor-icons/react';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -12,8 +13,35 @@ interface Sub {
   id: string; name: string; trade: string; contact_name: string; contact_email: string;
   contact_phone: string; license_number: string; insurance_expiry: string;
   status: string; contract_amount: number; paid_amount: number; health_score: number;
-  created_at: string;
+  created_at: string; w9_on_file?: boolean; w9_status?: string;
 }
+
+// The tenant `subcontractors` table stores company_name / email / phone —
+// normalize onto the field names this page renders so rows never come back blank.
+function normalizeSub(r: any): Sub {
+  return {
+    ...r,
+    name: r.name ?? r.company_name ?? '',
+    contact_email: r.contact_email ?? r.email ?? '',
+    contact_phone: r.contact_phone ?? r.phone ?? '',
+    contract_amount: Number(r.contract_amount) || 0,
+    paid_amount: Number(r.paid_amount) || 0,
+    health_score: Number(r.health_score) || 0,
+  };
+}
+
+// Compliance snapshot from fields /api/subs/list already returns (select *).
+function w9Ok(s: Sub) { return s.w9_on_file === true || s.w9_status === 'submitted'; }
+function coiState(s: Sub): { label: string; color: string; ok: boolean } {
+  if (!s.insurance_expiry) return { label: 'COI not on file', color: '#EF4444', ok: false };
+  const exp = new Date(String(s.insurance_expiry).slice(0, 10) + 'T00:00:00');
+  const days = Math.floor((exp.getTime() - Date.now()) / 86400000);
+  const d = exp.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (days < 0) return { label: `COI expired ${d}`, color: '#EF4444', ok: false };
+  if (days <= 30) return { label: `COI expires in ${days}d`, color: '#FBBF24', ok: true };
+  return { label: `COI valid through ${d}`, color: '#22C55E', ok: true };
+}
+function hasComplianceIssue(s: Sub) { return !w9Ok(s) || !coiState(s).ok; }
 
 function scoreBadge(score: number) {
   const color = score >= 80 ? '#22C55E' : score >= 60 ? '#F59E0B' : '#EF4444';
@@ -39,6 +67,21 @@ export default function SubsPage() {
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [form, setForm] = useState({ name:'', trade:'', contact_name:'', contact_email:'', contact_phone:'', license_number:'', contract_amount:'' });
 
+  // SmartCreate: walk in knowing the roster, awards, and compliance standing.
+  const [ctx, setCtx] = useState<any>(null);
+  const [pickId, setPickId] = useState('');
+  const [auto, setAuto] = useState<{name?:boolean;trade?:boolean;contact?:boolean;license?:boolean;amount?:boolean}>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/project-context?projectId=${projectId}`);
+        const c = await r.json();
+        if (!c.error) setCtx(c);
+      } catch {}
+    })();
+  }, [projectId]);
+
   useEffect(() => { if(toast) { const t=setTimeout(()=>setToast(null),4000); return ()=>clearTimeout(t); } return undefined; }, [toast]);
 
   const load = useCallback(async () => {
@@ -47,7 +90,7 @@ export default function SubsPage() {
       const r = await fetch(`/api/subs/list?projectId=${projectId}`);
       if (!r.ok) throw new Error('Failed to load');
       const d = await r.json();
-      setSubs(d.data || d.subs || []);
+      setSubs(((d.data || d.subs || []) as any[]).map(normalizeSub));
     } catch { setToast({msg:'Failed to load subcontractors',type:'error'}); }
     finally { setLoading(false); }
   }, [projectId]);
@@ -59,11 +102,14 @@ export default function SubsPage() {
     try {
       const r = await fetch('/api/subs/create', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ ...form, projectId, contract_amount: parseFloat(form.contract_amount)||0, status:'active' }),
+        // Alias keys (email/phone/licenseNumber) mirror the columns
+        // /api/subs/create actually persists; the original field names stay intact.
+        body: JSON.stringify({ ...form, projectId, contract_amount: parseFloat(form.contract_amount)||0, status:'active', email: form.contact_email || undefined, phone: form.contact_phone || undefined, licenseNumber: form.license_number || undefined }),
       });
       if (!r.ok) { const b = await r.json(); throw new Error(b.error||'Failed'); }
       setShowForm(false);
       setForm({ name:'', trade:'', contact_name:'', contact_email:'', contact_phone:'', license_number:'', contract_amount:'' });
+      setPickId(''); setAuto({});
       setToast({msg:'Subcontractor added',type:'success'});
       load();
     } catch (err: unknown) { console.error(err); setToast({msg:humanError(err,'Something went wrong. Please try again.'),type:'error'}); }
@@ -86,6 +132,42 @@ export default function SubsPage() {
       if (!r.ok) throw new Error('update failed');
     } catch { setToast({msg:'Could not update status. Please try again.',type:'error'}); load(); }
   };
+
+  // Pick from the tenant directory — prefill everything the system knows.
+  function pickFromDirectory(id: string) {
+    setPickId(id);
+    if (!id) {
+      setForm({ name:'', trade:'', contact_name:'', contact_email:'', contact_phone:'', license_number:'', contract_amount:'' });
+      setAuto({});
+      return;
+    }
+    const s = subs.find(x => x.id === id);
+    if (!s) return;
+    const rosterRow = ((ctx?.subs || []) as any[]).find(x => x.id === id);
+    const award = ((ctx?.bidPackages || []) as any[]).find(b => b.awardedTo && s.name && String(b.awardedTo).toLowerCase() === s.name.toLowerCase());
+    const amount = Number(rosterRow?.contractAmount) || Number(award?.awardedAmount) || Number(s.contract_amount) || 0;
+    setForm({
+      name: s.name, trade: s.trade || '', contact_name: s.contact_name || '',
+      contact_email: s.contact_email || '', contact_phone: s.contact_phone || '',
+      license_number: s.license_number || '', contract_amount: amount > 0 ? String(amount) : '',
+    });
+    setAuto({ name: true, trade: !!s.trade, contact: !!(s.contact_name || s.contact_email || s.contact_phone), license: !!s.license_number, amount: amount > 0 });
+  }
+
+  const picked = pickId ? subs.find(x => x.id === pickId) : undefined;
+  const pickedAward = picked ? ((ctx?.bidPackages || []) as any[]).find(b => b.awardedTo && picked.name && String(b.awardedTo).toLowerCase() === picked.name.toLowerCase()) : undefined;
+
+  // Project roster intelligence (from /api/project-context).
+  const roster = ((ctx?.subs || []) as any[]);
+  const rosterIds = new Set(roster.map(r => r.id));
+  const rosterTotal = roster.reduce((s, r) => s + (Number(r.contractAmount) || 0), 0);
+  const complianceScope = rosterIds.size > 0 ? subs.filter(s => rosterIds.has(s.id)) : subs;
+  const complianceIssues = complianceScope.filter(hasComplianceIssue).length;
+  const awardedPkgs = ((ctx?.bidPackages || []) as any[]).filter(b => b.awardedTo);
+
+  const inpS: React.CSSProperties = {width:'100%',padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:6,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box'};
+  const lblS: React.CSSProperties = {display:'block',fontSize:11,color:DIM,marginBottom:4,fontWeight:600};
+  const hintS: React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
 
   const totalContract = subs.reduce((s,sub) => s + (sub.contract_amount||0), 0);
   const totalPaid = subs.reduce((s,sub) => s + (sub.paid_amount||0), 0);
@@ -110,35 +192,81 @@ export default function SubsPage() {
         }
       />
 
-      {/* KPIs */}
+      {/* Roster intelligence — what the system already knows about this job */}
+      {ctx && (
+        <StatStrip items={[
+          { label: 'Subs on Job', value: String(roster.length), sub: 'on the project roster' },
+          { label: 'Sub Commitments', value: fmt(rosterTotal), sub: 'combined sub contracts' },
+          { label: 'Compliance Issues', value: String(complianceIssues), accent: complianceIssues > 0 ? '#EF4444' : '#22C55E', sub: complianceIssues > 0 ? 'missing W-9 or lapsed COI' : rosterIds.size > 0 ? 'roster is clean' : 'directory is clean' },
+          { label: 'Directory', value: String(subs.length), sub: 'companies tenant-wide' },
+          { label: 'Awarded Packages', value: String(awardedPkgs.length), sub: `${fmt(awardedPkgs.reduce((s, b) => s + (Number(b.awardedAmount) || 0), 0))} awarded` },
+        ]} />
+      )}
+
+      {/* KPIs (fallback when the context snapshot is unavailable) */}
+      {!ctx && (
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:16,marginBottom:28}}>
         <StatCard icon={<Users size={19} weight="duotone" color={GOLD} />} label="Total Subs" value={String(subs.length)} accent={GOLD} delay={0.02} />
         <StatCard icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />} label="Total Contract Value" value={fmt(totalContract)} accent={GOLD} delay={0.06} />
         <StatCard icon={<HandCoins size={19} weight="duotone" color="#22C55E" />} label="Total Paid" value={fmt(totalPaid)} accent="#22C55E" delay={0.10} />
         <StatCard icon={<Heartbeat size={19} weight="duotone" color={avgScoreColor || GOLD} />} label="Avg Health Score" value={String(avgScore)} accent={avgScoreColor} delay={0.14} />
       </div>
+      )}
 
-      {/* Create Form */}
+      {/* Create Form — SmartCreate: pick from the directory, the system fills the rest */}
       {showForm && (
-        <div style={{marginBottom:20}}>
-          <SectionCard title="New Subcontractor" icon={<Handshake size={17} weight="duotone" color={GOLD} />}>
+        <div style={{marginBottom:20,display:'grid',gridTemplateColumns:'minmax(0,1fr) 320px',gap:18,alignItems:'start'}}>
+          <SectionCard title="Add Subcontractor" subtitle="Pick from your directory — or enter a new company" icon={<Handshake size={17} weight="duotone" color={GOLD} />}>
             <form onSubmit={handleCreate}>
+              <div style={{marginBottom:14}}>
+                <label style={lblS}>Company</label>
+                <select value={pickId} onChange={e=>pickFromDirectory(e.target.value)} style={{...inpS,cursor:'pointer'}}>
+                  <option value="">New company — type the details below</option>
+                  {subs.length>0 && (
+                    <optgroup label={`Tenant directory (${subs.length})`}>
+                      {subs.map(s=>(
+                        <option key={s.id} value={s.id}>{s.name||'Unnamed'}{s.trade?` — ${s.trade}`:''}{rosterIds.has(s.id)?' (on this job)':''}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <div style={hintS}>Picking a directory company pre-fills contacts, license, and compliance — and pulls their award amount when a bid package names them.</div>
+              </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12}}>
-                {[
-                  {k:'name',l:'Company Name',ph:'ABC Electric LLC',req:true},
-                  {k:'trade',l:'Trade',ph:'Electrical'},
-                  {k:'contact_name',l:'Contact Name',ph:'John Smith'},
-                  {k:'contact_email',l:'Email',ph:'john@abc.com',type:'email'},
-                  {k:'contact_phone',l:'Phone',ph:'(602) 555-1234',type:'tel'},
-                  {k:'license_number',l:'License #',ph:'ROC-123456'},
-                  {k:'contract_amount',l:'Contract Amount',ph:'150000',type:'number'},
-                ].map(f=>(
-                  <div key={f.k}>
-                    <label style={{display:'block',fontSize:11,color:DIM,marginBottom:4,fontWeight:600}}>{f.l}{f.req&&<span style={{color:'#EF4444'}}> *</span>}</label>
-                    <input required={f.req} type={f.type||'text'} placeholder={f.ph} value={(form as Record<string,string>)[f.k]} onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))}
-                      style={{width:'100%',padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:6,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box'}} />
-                  </div>
-                ))}
+                <div>
+                  <label style={lblS}>Company Name<span style={{color:'#EF4444'}}> *</span>{auto.name&&<AutoChip/>}</label>
+                  <input required type="text" placeholder="ABC Electric LLC" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} style={inpS} />
+                </div>
+                <div>
+                  <label style={lblS}>Trade{auto.trade&&<AutoChip/>}</label>
+                  <select value={form.trade} onChange={e=>setForm(p=>({...p,trade:e.target.value}))} style={{...inpS,cursor:'pointer'}}>
+                    <option value="">Select trade…</option>
+                    {form.trade && !SUB_TRADES.includes(form.trade) && <option value={form.trade}>{form.trade}</option>}
+                    {SUB_TRADES.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lblS}>Contract Amount{auto.amount&&<AutoChip/>}</label>
+                  <input type="number" placeholder="150000" value={form.contract_amount} onChange={e=>setForm(p=>({...p,contract_amount:e.target.value}))} style={inpS} />
+                  {auto.amount && <div style={hintS}>{pickedAward?`From their award on "${pickedAward.name}".`:'Their committed amount on this project.'}</div>}
+                </div>
+                <div>
+                  <label style={lblS}>Contact Name{auto.contact&&<AutoChip/>}</label>
+                  <input type="text" placeholder="John Smith" value={form.contact_name} onChange={e=>setForm(p=>({...p,contact_name:e.target.value}))} style={inpS} />
+                </div>
+                <div>
+                  <label style={lblS}>Email{auto.contact&&<AutoChip/>}</label>
+                  <input type="email" placeholder="john@abc.com" value={form.contact_email} onChange={e=>setForm(p=>({...p,contact_email:e.target.value}))} style={inpS} />
+                  <div style={hintS}>Contracts over $600 auto-send a W-9 request here.</div>
+                </div>
+                <div>
+                  <label style={lblS}>Phone{auto.contact&&<AutoChip/>}</label>
+                  <input type="tel" placeholder="(602) 555-1234" value={form.contact_phone} onChange={e=>setForm(p=>({...p,contact_phone:e.target.value}))} style={inpS} />
+                </div>
+                <div>
+                  <label style={lblS}>License #{auto.license&&<AutoChip/>}</label>
+                  <input type="text" placeholder="ROC-123456" value={form.license_number} onChange={e=>setForm(p=>({...p,license_number:e.target.value}))} style={inpS} />
+                </div>
               </div>
               <div style={{marginTop:16,display:'flex',gap:10}}>
                 <button type="submit" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Subcontractor</button>
@@ -146,6 +274,35 @@ export default function SubsPage() {
               </div>
             </form>
           </SectionCard>
+
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <SectionCard title="Compliance Snapshot" icon={picked ? (hasComplianceIssue(picked) ? <ShieldWarning size={17} weight="duotone" color="#EF4444" /> : <ShieldCheck size={17} weight="duotone" color="#22C55E" />) : <ShieldCheck size={17} weight="duotone" color={GOLD} />}>
+              {picked ? (
+                <>
+                  <InsightRow label="W-9" value={w9Ok(picked)?'On file':'Missing'} accent={w9Ok(picked)?'#22C55E':'#EF4444'} strong/>
+                  <InsightRow label="Insurance" value={coiState(picked).label} accent={coiState(picked).color}/>
+                  <InsightRow label="License" value={picked.license_number||'Not on file'} accent={picked.license_number?undefined:'#FBBF24'}/>
+                  <InsightRow label="Directory status" value={picked.status||'active'}/>
+                  {rosterIds.has(picked.id) && <InsightRow label="This project" value="Already on roster" accent="#FBBF24"/>}
+                  {pickedAward && <InsightRow label="Award" value={`${fmt(Number(pickedAward.awardedAmount)||0)} — ${pickedAward.name}`} accent={GOLD} strong/>}
+                </>
+              ) : (
+                <>
+                  <InsightRow label="W-9 on file" value={`${complianceScope.filter(w9Ok).length} / ${complianceScope.length}`}/>
+                  <InsightRow label="COI current" value={`${complianceScope.filter(s=>coiState(s).ok).length} / ${complianceScope.length}`}/>
+                  <div style={{...hintS,marginTop:8}}>Pick a directory company above to see its full W-9, COI, and license standing before it joins the job.</div>
+                </>
+              )}
+            </SectionCard>
+            <SectionCard title="After You Add" icon={<AddressBook size={17} weight="duotone" color={GOLD} />}>
+              <FlowSteps title="" steps={[
+                {title:'Saved to your directory',desc:'The company lands in the tenant directory, ready for bid invites and contracts.'},
+                {title:'W-9 request auto-sends',desc:'Over $600 with an email on file, a W-9 e-request goes out automatically.'},
+                {title:'Preliminary notice reminder',desc:'AZ, CA, and TX projects get a 20-day prelim notice task on compliance.'},
+                {title:'Compliance tracking begins',desc:'COI expiry and W-9 status feed the compliance column and health scores.'},
+              ]}/>
+            </SectionCard>
+          </div>
         </div>
       )}
 
@@ -175,7 +332,7 @@ export default function SubsPage() {
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
               <thead>
                 <tr style={{background:'#1c1c1e'}}>
-                  {['Company','Trade','Contact','Phone','License','Contract','Paid','Score','Status',''].map(h=>(
+                  {['Company','Trade','Contact','Phone','License','W-9 / COI','Contract','Paid','Score','Status',''].map(h=>(
                     <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
                   ))}
                 </tr>
@@ -191,7 +348,11 @@ export default function SubsPage() {
                     <td style={{padding:'12px 14px',color:DIM}}>{sub.contact_name||'—'}</td>
                     <td style={{padding:'12px 14px',color:DIM}}>{sub.contact_phone||'—'}</td>
                     <td style={{padding:'12px 14px',color:DIM,fontFamily:'monospace',fontSize:11}}>{sub.license_number||'—'}</td>
-                    <td style={{padding:'12px 14px',color:TEXT,fontWeight:600}}>{fmt(sub.contract_amount)}</td>
+                    <td style={{padding:'12px 14px',whiteSpace:'nowrap'}}>
+                      <span title={w9Ok(sub)?'W-9 on file':'W-9 missing'} style={{fontSize:10,fontWeight:800,padding:'2px 7px',borderRadius:4,marginRight:4,background:w9Ok(sub)?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)',color:w9Ok(sub)?'#22C55E':'#EF4444'}}>W-9</span>
+                      <span title={coiState(sub).label} style={{fontSize:10,fontWeight:800,padding:'2px 7px',borderRadius:4,background:`${coiState(sub).color}1f`,color:coiState(sub).color}}>COI</span>
+                    </td>
+                    <td style={{padding:'12px 14px',color:TEXT,fontWeight:600}}>{fmt(sub.contract_amount || Number(roster.find(r=>r.id===sub.id)?.contractAmount || 0))}</td>
                     <td style={{padding:'12px 14px',color:'#22C55E',fontWeight:600}}>{fmt(sub.paid_amount)}</td>
                     <td style={{padding:'12px 14px'}}>{scoreBadge(sub.health_score||0)}</td>
                     <td style={{padding:'12px 14px'}}>
