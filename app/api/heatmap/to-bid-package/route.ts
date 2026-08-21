@@ -58,9 +58,14 @@ export async function POST(req: NextRequest) {
     lineItems.push({ description: `${c.name} — structured cabling`, quantity: c.feet, unit: 'ft', unitPrice: c.unit, totalAmount: c.cost, csiCode: '27 05 00' });
   }
 
-  // ── labor ──
-  const laborTotal = allDevices.length * LABOR_PER_DROP;
-  lineItems.push({ description: 'Install labor — terminate, test & certify (per device/drop)', quantity: allDevices.length, unit: 'ea', unitPrice: LABOR_PER_DROP, totalAmount: laborTotal, csiCode: '27 05 00' });
+  // ── labor, split the way subs actually price it: pulls vs device install ──
+  const pulls = bom.cat6Runs || 0;
+  const PULL_RATE = 45; // $/run — pull, dress & label a home-run to the MDF
+  const pullTotal = pulls * PULL_RATE;
+  if (pulls) lineItems.push({ description: 'Cable pulls — home-run to MDF, dressed & labeled (per run)', quantity: pulls, unit: 'ea', unitPrice: PULL_RATE, totalAmount: pullTotal, csiCode: '27 05 00' });
+  const installTotal = allDevices.length * LABOR_PER_DROP;
+  lineItems.push({ description: 'Device install, program & commission (per device)', quantity: allDevices.length, unit: 'ea', unitPrice: LABOR_PER_DROP, totalAmount: installTotal, csiCode: '27 05 00' });
+  const laborTotal = pullTotal + installTotal;
 
   // ── counts + scope narrative ──
   const counts: Record<string, number> = {};
@@ -77,8 +82,8 @@ export async function POST(req: NextRequest) {
     tenant_id: user.tenantId,
     created_by: user.id,
     project_id: projectId,
-    name: body.name || 'Low-Voltage / Structured Cabling',
-    trade: 'Low Voltage / Structured Cabling',
+    name: body.name || 'Low Voltage & Networking',
+    trade: 'Low Voltage & Networking',
     description: `Generated from the Coverage Heatmap design (${allDevices.length} devices, ${cableFeet.toLocaleString()} ft cable).`,
     scope_of_work: scope,
     scope_summary: countLine,

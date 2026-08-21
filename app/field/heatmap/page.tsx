@@ -17,7 +17,7 @@ import { DEVICE_REGISTRY, WALL_MATERIALS, deviceDef, doriDistanceFt, SYSTEM_COLO
 import { isoLines, interferenceMask } from '@/lib/heatmap/overlays';
 import { TEMPLATES, type TemplateSpec } from '@/lib/heatmap/templates';
 import { computeCoverage, apRssiAt, apUsableRadiusFt, inspectAt } from '@/lib/heatmap/engine';
-import { autoPlaceAPs, deriveFootprint, gapsWorthFixing, planChannels, recompute } from '@/lib/heatmap/smart';
+import { autoPlaceAPs, deriveFootprint, disciplineAiDevices, gapsWorthFixing, planChannels, recompute } from '@/lib/heatmap/smart';
 import { summarizeBuilding } from '@/lib/heatmap/multifloor';
 import { UNIFI_APS, UNIFI_CAMERAS } from '@/lib/heatmap/unifi';
 import { computeBom } from '@/lib/heatmap/bom';
@@ -983,10 +983,15 @@ export default function HeatmapDesigner() {
           }
         } catch { /* scan best-effort */ }
       }
-      let design = { ...project, activeType: 'wifi_ap' as DeviceTypeId, devices: [...project.devices, ...scanned] };
+      let design = { ...project, activeType: 'wifi_ap' as DeviceTypeId, devices: project.devices };
       if (scanWalls.length) design = { ...design, walls: [...project.walls, ...scanWalls] };
       if (newBoundary) design = { ...design, boundary: newBoundary };
       if (!design.scale && detectedFullPxPerFt) design = { ...design, scale: { pxPerFt: detectedFullPxPerFt } };
+      // AI-SCAN DISCIPLINE — the AI reads the drawing; the ENGINE places RF.
+      // Its AP suggestions are ignored (autoPlaceAPs owns Wi-Fi), its devices must
+      // sit inside the building, and per-type counts are capped by floor area.
+      const disc = disciplineAiDevices(design, scanned);
+      design = { ...design, devices: [...project.devices, ...disc.kept] };
       if (!design.scale) {
         snapshot(); setProject(design); setBusy(''); setTool('scale');
         setAiNotes([scanned.length ? `Placed ${scanned.length} device(s) from your plan, but couldn't read a scale — set it with the Scale tool, then Auto-design.` : `Couldn't auto-read this plan — set the scale (Scale tool), then Auto-design.`]);
@@ -1014,7 +1019,12 @@ export default function HeatmapDesigner() {
       const others = design.devices.filter((d) => d.typeId !== 'wifi_ap' && d.typeId !== 'camera').length;
       const pct = Number.isFinite(cov.stats.pctCovered) ? Math.round(cov.stats.pctCovered) : 0;
       const turnkey = computeBom(design.devices).turnkey;
-      setAiNotes([`Autopilot: ${aps} AP(s)${cams ? ` · ${cams} camera(s)` : ''}${others ? ` · ${others} more` : ''} → ${pct}% coverage · ${(cov.gaps ?? []).length} dead zone(s). Turnkey install $${turnkey.toLocaleString()}. Review, then create the bid.`]);
+      const discNote = [
+        disc.droppedAps ? `ignored ${disc.droppedAps} AI AP pick${disc.droppedAps === 1 ? '' : 's'} (the engine places Wi-Fi)` : '',
+        disc.droppedOutside ? `dropped ${disc.droppedOutside} outside the building` : '',
+        disc.droppedExcess ? `trimmed ${disc.droppedExcess} over-dense` : '',
+      ].filter(Boolean).join(', ');
+      setAiNotes([`Autopilot: ${aps} AP(s)${cams ? ` · ${cams} camera(s)` : ''}${others ? ` · ${others} more` : ''} → ${pct}% coverage · ${(cov.gaps ?? []).length} dead zone(s). Turnkey install $${turnkey.toLocaleString()}.${discNote ? ` (${discNote}.)` : ''} Review, then create the bid.`]);
     } catch { setBusy(''); setAiNotes(['Autopilot hit a snag — try Auto-design, or set the scale and place devices by hand.']); }
   };
   const doChannels = () => {

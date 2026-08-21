@@ -10,7 +10,8 @@
  * These tests pin both behaviors so neither regression can come back quietly.
  */
 import type { Device, HeatmapProject } from './types';
-import { autoPlaceAPs, gapsWorthFixing, recompute, MIN_GAP_FIX_FT2 } from './smart';
+import { autoPlaceAPs, disciplineAiDevices, gapsWorthFixing, recompute, AI_CAMERA_FT2, MIN_GAP_FIX_FT2 } from './smart';
+import { computeBom } from './bom';
 
 let failures = 0;
 const check = (name: string, cond: boolean, detail: string) => {
@@ -112,6 +113,69 @@ const apCount = (d: Device[]) => d.filter((x) => x.typeId === 'wifi_ap').length;
   const fixable = gapsWorthFixing(withAps, cov.gaps ?? [], apCount(placed.aps));
   const total = placed.aps.length + fixable.length;
   check('G: real 3,400 ft\u00b2 golf-sim building \u2192 exactly 1 AP (field-verified)', total === 1, `placed ${placed.aps.length} + fix ${fixable.length} = ${total} (basis ${placed.areaFt2?.toFixed(0)} ft\u00b2)`);
+}
+
+
+/* ── H: AI-SCAN DISCIPLINE — the 20 Aug 2026 autopilot incident, replayed. On a
+   2,400 ft² plan the vision model proposed 3 room-named APs + 6 cameras + 18
+   sensors, several floating in the page margins. The AI reads drawings; the
+   ENGINE places RF: AI APs ignored, outside devices dropped, counts capped. ── */
+{
+  const k = 10;
+  // walls inset 5 ft so the "page margins" exist (footprint = [50..550]x[50..350] px)
+  const inset = [
+    { id: 'h1', a: { x: 5 * k, y: 5 * k }, b: { x: 55 * k, y: 5 * k }, material: 'drywall' as const },
+    { id: 'h2', a: { x: 55 * k, y: 5 * k }, b: { x: 55 * k, y: 35 * k }, material: 'drywall' as const },
+    { id: 'h3', a: { x: 55 * k, y: 35 * k }, b: { x: 5 * k, y: 35 * k }, material: 'drywall' as const },
+    { id: 'h4', a: { x: 5 * k, y: 35 * k }, b: { x: 5 * k, y: 5 * k }, material: 'drywall' as const },
+  ];
+  const p = proj(60, 40, k, inset);
+  const dev = (id: string, typeId: Device['typeId'], x: number, y: number): Device =>
+    ({ id, typeId, pos: { x: x * k, y: y * k }, label: id });
+  const scanned: Device[] = [
+    dev('AP-Office', 'wifi_ap', 15, 15), dev('AP-Warehouse', 'wifi_ap', 40, 15), dev('AP-Storage', 'wifi_ap', 30, 28),
+    // 6 cameras — 2 in the page margins
+    dev('c1', 'camera', 10, 10), dev('c2', 'camera', 50, 10), dev('c3', 'camera', 30, 20),
+    dev('c4', 'camera', 20, 30), dev('c5', 'camera', 58, 2), dev('c6', 'camera', 2, 38),
+    // 18 sensors — 5 outside
+    ...Array.from({ length: 13 }, (_, i) => dev(`s${i}`, 'smoke_detector_spot', 8 + (i % 5) * 9, 8 + Math.floor(i / 5) * 8)),
+    ...Array.from({ length: 5 }, (_, i) => dev(`o${i}`, 'smoke_detector_spot', 58, 4 + i * 2)),
+  ];
+  const disc = disciplineAiDevices(p, scanned);
+  const camCap = Math.max(2, Math.ceil(2400 / AI_CAMERA_FT2));
+  const camsKept = disc.kept.filter((d) => d.typeId === 'camera').length;
+  const withKept = { ...p, devices: disc.kept };
+  const placed = autoPlaceAPs(withKept, { targetPct: 0.92, ...RADIO });
+  check('H1: AI AP picks are ignored (engine owns Wi-Fi)', disc.droppedAps === 3, `dropped ${disc.droppedAps} AI APs`);
+  check('H2: margin-floaters dropped', disc.droppedOutside >= 5, `dropped ${disc.droppedOutside} outside the footprint`);
+  check(`H3: cameras capped at ${camCap} for 2,400 ft²`, camsKept <= camCap, `kept ${camsKept}`);
+  check('H4: sensors trimmed to area density', disc.kept.filter((d) => d.typeId === 'smoke_detector_spot').length <= Math.ceil(2400 / 700) + 1, `kept ${disc.kept.filter((d) => d.typeId === 'smoke_detector_spot').length}`);
+  check('H5: engine then places exactly 1 AP on 2,400 ft²', placed.aps.length === 1, `placed ${placed.aps.length}`);
+}
+
+
+/* ── I: A BIDDABLE LOW-VOLT SCHEDULE — the bid package must carry what a sub
+   actually prices: terminations, patch panel, router+controller, ISP handoff,
+   and full door hardware (mag lock, push-to-exit, controller, power). ── */
+{
+  const devs: Device[] = [
+    { id: 'a1', typeId: 'wifi_ap', pos: { x: 100, y: 100 }, label: 'UniFi U6 Pro' },
+    { id: 'k1', typeId: 'camera', pos: { x: 200, y: 100 }, label: 'UniFi G6 Turret' },
+    { id: 'k2', typeId: 'camera', pos: { x: 300, y: 100 }, label: 'UniFi G6 Dome' },
+    { id: 'r1', typeId: 'access_reader', pos: { x: 400, y: 100 }, label: 'Reader' },
+  ];
+  const bom = computeBom(devs);
+  const items = bom.rows.map((r) => r.item.toLowerCase()).join(' | ');
+  const has = (re: RegExp, name: string) => check(`I: schedule has ${name}`, re.test(items), items.slice(0, 160));
+  has(/rj45 terminations/, 'RJ45 ends');
+  has(/patch panel/, 'patch panel');
+  has(/router \+ unifi network controller/, 'router + controller');
+  has(/isp handoff/, 'modem/fiber allowance');
+  has(/mag lock/, 'mag lock');
+  has(/request-to-exit push button/, 'push-button entry');
+  has(/door controller/, 'door controller');
+  has(/poe switch/, 'PoE switch');
+  has(/recorder/, 'NVR');
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nPASS — AP-count discipline holds through the real engine');

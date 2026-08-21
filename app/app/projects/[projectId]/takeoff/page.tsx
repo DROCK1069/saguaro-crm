@@ -463,20 +463,24 @@ export default function TakeoffPage() {
     if (!result) return;
     setGenerating('bid-packages');
     try {
-      const divisions = [...new Set(result.items.map(i => i.csiCode?.slice(0, 2)))].filter(Boolean);
+      // Divisions 27 (Communications) + 28 (Electronic Safety) are ONE trade on a
+      // jobsite — the low-volt sub pulls the cable AND hangs the cameras. Bidding
+      // them as two "Division NN" packages doubles the paperwork and confuses subs.
+      const canon = (c?: string) => { const d = c?.slice(0, 2); return d === '28' ? '27' : d; };
+      const divisions = [...new Set(result.items.map(i => canon(i.csiCode)))].filter((d): d is string => !!d);
       let created = 0;
 
       for (const div of divisions) {
-        const divItems = result.items.filter(i => i.csiCode?.startsWith(div));
+        const divItems = result.items.filter(i => canon(i.csiCode) === div);
         const divTotal = divItems.reduce((sum, i) => sum + i.totalCost, 0);
-        const divName  = CSI_DIVISION_NAMES[div] || `Division ${div}`;
+        const divName  = div === '27' ? 'Low Voltage & Networking' : (CSI_DIVISION_NAMES[div] || `Division ${div}`);
 
         const res = await fetch('/api/bid-packages/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             projectId,
-            name:         `Division ${div} — ${divName}`,
+            name:         div === '27' ? 'Low Voltage & Networking' : `Division ${div} — ${divName}`,
             trade:        divName,
             csiCodes:     [...new Set(divItems.map(i => i.csiCode))],
             scopeSummary: divItems.map(i => `${i.description}: ${fmtN(i.quantity)} ${i.unit}`).join('\n'),

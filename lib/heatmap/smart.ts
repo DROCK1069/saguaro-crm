@@ -298,6 +298,60 @@ export function gapsWorthFixing(p: HeatmapProject, gaps: GapRegion[], existingAp
 }
 
 /** Flood-fill dead-zone regions from a computed RF coverage result. */
+/* ── AI-scan discipline ──
+   The vision model is good at READING drawings (walls, rooms, doorways) and bad at
+   RF engineering. Field truth (20 Aug 2026): on a 2,400 ft² plan the AI proposed
+   3 room-named APs + 6 cameras + 18 sensors, several floating in the page margins.
+   Rules: the AI NEVER places APs (autoPlaceAPs owns count + position — area-anchored,
+   wall-aware); every kept device must sit inside the footprint (2 ft wall grace);
+   per-type counts are capped by floor area so a small plan can't get a mall's
+   device schedule. Used by BOTH autopilots — one engine, one discipline. */
+export const AI_CAMERA_FT2 = 800;   // ~1 interior camera per 800 ft² is already dense
+export const AI_SENSOR_FT2 = 700;   // per sensor TYPE (smoke, motion, …)
+export function disciplineAiDevices(p: HeatmapProject, scanned: Device[]): {
+  kept: Device[]; droppedAps: number; droppedOutside: number; droppedExcess: number;
+} {
+  const { poly, areaFt2 } = deriveFootprint(p);
+  const marginPx = (p.scale?.pxPerFt ?? 0) * 2; // 2 ft grace: wall-mounted gear sits ON the line
+  const nearPoly = (pt: Pt) => pointInPolygon(pt, poly) || poly.some((v, i) => {
+    const w = poly[(i + 1) % poly.length];
+    const vx = w.x - v.x, vy = w.y - v.y, len2 = vx * vx + vy * vy || 1;
+    const t = Math.max(0, Math.min(1, ((pt.x - v.x) * vx + (pt.y - v.y) * vy) / len2));
+    const dx = pt.x - (v.x + t * vx), dy = pt.y - (v.y + t * vy);
+    return dx * dx + dy * dy <= marginPx * marginPx;
+  });
+  const droppedAps = scanned.filter((d) => d.typeId === 'wifi_ap').length;
+  const rest = scanned.filter((d) => d.typeId !== 'wifi_ap');
+  const inside = poly.length >= 3 ? rest.filter((d) => nearPoly(d.pos)) : rest;
+  const droppedOutside = rest.length - inside.length;
+  const capFor = (t: Device['typeId']) => t === 'camera'
+    ? Math.max(2, Math.ceil(areaFt2 / AI_CAMERA_FT2))
+    : Math.max(1, Math.ceil(areaFt2 / AI_SENSOR_FT2));
+  const byType = new Map<Device['typeId'], Device[]>();
+  inside.forEach((d) => { const a = byType.get(d.typeId) ?? []; a.push(d); byType.set(d.typeId, a); });
+  let droppedExcess = 0;
+  const kept: Device[] = [];
+  for (const [t, list] of byType) {
+    const cap = areaFt2 > 0 ? capFor(t) : list.length;
+    if (list.length <= cap) { kept.push(...list); continue; }
+    // keep the most SPREAD-OUT subset (greedy max-min) — never a random slice
+    const chosen: Device[] = [list[0]];
+    while (chosen.length < cap) {
+      let best: Device | null = null, bestD = -1;
+      for (const d of list) {
+        if (chosen.includes(d)) continue;
+        const dm = Math.min(...chosen.map((c) => dist(c.pos, d.pos)));
+        if (dm > bestD) { bestD = dm; best = d; }
+      }
+      if (!best) break;
+      chosen.push(best);
+    }
+    droppedExcess += list.length - chosen.length;
+    kept.push(...chosen);
+  }
+  return { kept, droppedAps, droppedOutside, droppedExcess };
+}
+
 export function detectGaps(
   res: CoverageResult, p: HeatmapProject,
 ): { count: number; totalAreaFt2: number; regions: GapRegion[] } {

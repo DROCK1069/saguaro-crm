@@ -86,6 +86,36 @@ export function computeBom(devices: Device[], opts: TurnkeyOpts = {}): BomResult
   }
   if (recNvr) infra.push({ item: `${recNvr.model} (recorder)`, typeId: 'infra', qty: 1, unit: recNvr.priceUsd, ext: recNvr.priceUsd });
   if (cat6) infra.push({ item: 'Cat6 STP home-run (per device)', typeId: 'infra', qty: cat6, unit: 0, ext: 0 });
+  /* ── The REST of a real low-volt schedule (field truth, 20 Aug 2026: a bid
+     package without terminations, pulls, head-end, or door hardware is not
+     biddable — "it needs cat cable, ends, pulls, modem, fiber, router, switches,
+     controller, access control, mag locks, push-button entry"). ── */
+  if (cat6) {
+    infra.push({ item: 'RJ45 terminations — keystone at device + panel punch-down (both ends, tested)', typeId: 'infra', qty: cat6 * 2, unit: 6, ext: cat6 * 2 * 6 });
+    const panels = Math.ceil(cat6 / 24);
+    infra.push({ item: '24-port Cat6 patch panel', typeId: 'infra', qty: panels, unit: 59, ext: panels * 59 });
+    infra.push({ item: 'Patch cords, faceplates & surface boxes', typeId: 'infra', qty: cat6, unit: 9, ext: cat6 * 9 });
+  }
+  if (poe > 0 || cat6 > 0) {
+    const gw = devices.length > 15
+      ? { model: 'UniFi Dream Machine Pro (UDM-Pro)', price: 379 }
+      : { model: 'UniFi Dream Router 7 (UDR7)', price: 279 };
+    infra.push({ item: `${gw.model} — router + UniFi Network controller`, typeId: 'infra', qty: 1, unit: gw.price, ext: gw.price });
+    infra.push({ item: 'Wall-mount rack, PDU & cable management', typeId: 'infra', qty: 1, unit: 249, ext: 249 });
+    infra.push({ item: 'ISP handoff — modem/ONT + fiber uplink allowance', typeId: 'infra', qty: 1, unit: 350, ext: 350 });
+  }
+  const doorsReaders = devices.filter((d) => d.typeId === 'access_reader').length;
+  const doorsLocks = devices.filter((d) => d.typeId === 'door_lock').length;
+  const doors = Math.max(doorsReaders, doorsLocks);
+  if (doors > 0) {
+    const magsNeeded = Math.max(0, doors - doorsLocks);
+    if (magsNeeded) infra.push({ item: 'Mag lock 1,200 lb w/ mounting hardware', typeId: 'infra', qty: magsNeeded, unit: 189, ext: magsNeeded * 189 });
+    infra.push({ item: 'Request-to-exit push button', typeId: 'infra', qty: doors, unit: 45, ext: doors * 45 });
+    infra.push({ item: 'Door position switch', typeId: 'infra', qty: doors, unit: 15, ext: doors * 15 });
+    const hubs = Math.ceil(doors / 4);
+    infra.push({ item: 'Access hub / door controller (4-door)', typeId: 'infra', qty: hubs, unit: 199, ext: hubs * 199 });
+    infra.push({ item: 'Access power supply w/ battery backup', typeId: 'infra', qty: hubs, unit: 159, ext: hubs * 159 });
+  }
 
   const allRows = [...rows, ...infra];
   const deviceTotal = rows.reduce((s, r) => s + r.ext, 0);
