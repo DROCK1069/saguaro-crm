@@ -61,7 +61,7 @@ const MENU: { group: string; items: { href: string; label: string; iconKey: stri
     { href: '/field/submittals', label: 'Submittals',  iconKey: 'submittals' },
     { href: '/field/docs',       label: 'Documents',   iconKey: 'documents' },
     { href: '/field/inspect',    label: 'Inspections', iconKey: 'inspections' },
-    { href: '/field/heatmap',    label: 'Coverage Heatmap', iconKey: 'dashboard' },
+    { href: '/field/heatmap',    label: 'Signal Studio', iconKey: 'dashboard' },
   ] },
   { group: 'Coordination', items: [
     { href: '/field/schedule',      label: 'Schedule',      iconKey: 'schedule' },

@@ -6,7 +6,7 @@ export interface Vlan { id: number; name: string; subnet: string }
 export const VLANS = {
   mgmt: { id: 10, name: 'Management', subnet: '10.0.10' },
   wifi: { id: 20, name: 'Wireless', subnet: '10.0.20' },
-  guest: { id: 21, name: 'Guest (isolated)', subnet: '10.0.21' },
+  guest: { id: 25, name: 'Guest', subnet: '10.0.25' },
   camera: { id: 30, name: 'Cameras', subnet: '10.0.30' },
   security: { id: 40, name: 'Security / Life-Safety', subnet: '10.0.40' },
   iot: { id: 50, name: 'IoT / BAS', subnet: '10.0.50' },
@@ -14,16 +14,18 @@ export const VLANS = {
 } as const;
 export type VlanKey = keyof typeof VLANS;
 
-/** Resolve a VLAN by its key (e.g. from an SSID's vlanKey). */
-export function vlanFor(key: string): Vlan | null {
-  return (VLANS as Record<string, Vlan>)[key] ?? null;
+/** Resolve a VLAN by its map key (SSIDs store a key, not the object). */
+export function vlanForKey(key: string): Vlan | null {
+  return (VLANS as Record<string, Vlan>)[key] || null;
 }
+/** Same lookup under the web app's historical name — one engine, both callers. */
+export const vlanFor = vlanForKey;
 
-/** Sensible default Wi-Fi networks for a new design (Corp/Guest/IoT). Real design config. */
+/** Sensible default Wi-Fi networks for a new design (real, editable config). */
 export const DEFAULT_SSIDS: Ssid[] = [
-  { name: 'Corp', vlanKey: 'wifi', band: 'all', security: 'wpa3' },
-  { name: 'Guest', vlanKey: 'guest', band: 'all', security: 'wpa2' },
-  { name: 'IoT', vlanKey: 'iot', band: '2.4', security: 'wpa2' },
+  { name: 'Corp',  vlanKey: 'wifi',  band: 'all', security: 'wpa3' },
+  { name: 'Guest', vlanKey: 'guest', band: '5',   security: 'wpa2' },
+  { name: 'IoT',   vlanKey: 'iot',   band: '2.4', security: 'wpa2' },
 ];
 
 const VLAN_FOR: Record<DeviceTypeId, VlanKey> = {

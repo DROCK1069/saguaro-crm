@@ -17,6 +17,17 @@ export type ModelType = 'rf' | 'radius' | 'fov' | 'spl' | 'camera';
 /** Antenna radiation pattern (see lib/heatmap/antenna.ts). Omit → isotropic (legacy). */
 export type AntennaPattern = 'omni' | 'patch' | 'directional' | 'sector';
 
+/** A Wi-Fi network (SSID) in the DESIGN. Real design config — broadcast by every AP. */
+export type SsidBand = '2.4' | '5' | '6' | 'all';
+export type SsidSecurity = 'wpa2' | 'wpa3' | 'wpa2/3' | 'open';
+export interface Ssid {
+  name: string;
+  vlanKey: string;                         // key into the VLANS map (e.g. 'wifi', 'guest', 'iot')
+  band: SsidBand;
+  security: SsidSecurity;
+  hidden?: boolean;                        // SSID broadcast suppressed
+}
+
 export type DeviceTypeId =
   | 'wifi_ap' | 'camera'
   | 'motion_pir_ceiling' | 'motion_pir_wall'
@@ -60,24 +71,13 @@ export interface Device {
   gang?: number;            // electrical_outlet receptacle count (2 / 4 / 6)
   ports?: number;           // data_jack / voice_jack port count (1 / 2 / 4)
   gender?: 'M' | 'F';       // cable_term connector: Plug (M) / Jack (F)
-  // ── inspector metadata (optional, non-breaking) — recorded on the DESIGN, not live telemetry ──
-  serial?: string;          // asset / serial number
-  mac?: string;             // hardware MAC address — installer fills in at commissioning (never fabricated)
-  firmware?: string;        // firmware / OS version
-  notes?: string;           // free-form install notes
+  // ── inspector identity/placement fields (optional, non-breaking) ──
+  serial?: string;          // asset serial number (design record)
+  firmware?: string;        // firmware / model rev noted at design time
+  notes?: string;           // free-text install notes
   mountHeightFt?: number;   // mounting height above finished floor (ft)
-  ipOverride?: string;      // manual IP override (else derived from the network schedule)
-}
-
-/** A Wi-Fi network (SSID) in the design. Real design config — not live telemetry. */
-export type SsidBand = '2.4' | '5' | '6' | 'all';
-export type SsidSecurity = 'wpa2' | 'wpa3' | 'wpa2/3' | 'open';
-export interface Ssid {
-  name: string;
-  vlanKey: string;          // key into the VLANS map (lib/heatmap/network)
-  band: SsidBand;
-  security: SsidSecurity;
-  hidden?: boolean;
+  ipOverride?: string;      // override the schedule-assigned IP
+  mac?: string;             // hardware MAC — installer fills in at commissioning
 }
 
 /** A real measured signal reading from a site survey / walk test (image-px coords). */
@@ -106,7 +106,7 @@ export interface HeatmapProject {
   boundary?: Pt[];
   /** Template-drawn rooms (native SVG templates render these directly; web draws to raster). */
   rooms?: { x: number; y: number; w: number; h: number; label?: string }[];
-  /** Wi-Fi networks (SSIDs) broadcast in this design. Undefined = fall back to DEFAULT_SSIDS. */
+  /** Wi-Fi networks (SSIDs) in this design — broadcast by the placed APs. */
   ssids?: Ssid[];
   /** which device type's coverage the heatmap currently visualizes */
   activeType: DeviceTypeId;

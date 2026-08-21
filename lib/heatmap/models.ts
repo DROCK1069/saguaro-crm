@@ -12,7 +12,7 @@ export const FT_PER_M = 3.28084;
    Every device typeId maps to one of these systems (see DEVICE_REGISTRY.color)
    so map glyphs, legends, layer chips/rows and the BOM all read consistently. */
 export const SYSTEM_COLORS = {
-  wifi:    '#D4A017', // Wi-Fi / access points — brand gold (primary system; black+gold mandate, no blue)
+  wifi:    '#F59E0B', // Wi-Fi / access points — brand gold (single GOLD token, matches UI GOLD)
   camera:  '#E5484D', // Cameras — red
   access:  '#16C060', // Access control — green
   sensor:  '#EAB308', // Sensors (motion / smoke / PIR) — yellow
@@ -32,12 +32,42 @@ export const PATH_LOSS_EXP: Record<Env, number> = { open: 2.2, office: 3.0, dens
 export const RF_TX_DEFAULT_DBM = 15;
 export const RF_GAIN_DEFAULT_DBI = 3;
 
-// RSSI coverage zones (strong → weak). color/threshold per validated spec.
+/* ── Continuous RSSI color ramp — SINGLE SOURCE for heat pixels AND the legend ──
+   Ekahau/UniFi convention: dBm → STRONG red (hot, right at the AP) … amber …
+   green … WEAK blue at range. The engine also fades ALPHA as signal weakens
+   (audit #2) so dead areas read as faint rather than a dark wash. RSSI_ZONES
+   below are sampled from THIS ramp so the key always matches the map. */
+type RGB = [number, number, number];
+type Stop = [number, RGB];
+function ramp(stops: Stop[], v: number): RGB {
+  if (v <= stops[0][0]) return stops[0][1];
+  if (v >= stops[stops.length - 1][0]) return stops[stops.length - 1][1];
+  for (let i = 1; i < stops.length; i++) {
+    if (v <= stops[i][0]) {
+      const [v0, c0] = stops[i - 1], [v1, c1] = stops[i];
+      const t = (v - v0) / (v1 - v0 || 1);
+      return [Math.round(c0[0] + (c1[0] - c0[0]) * t), Math.round(c0[1] + (c1[1] - c0[1]) * t), Math.round(c0[2] + (c1[2] - c0[2]) * t)];
+    }
+  }
+  return stops[stops.length - 1][1];
+}
+// Industry (Ekahau/UniFi) direction: strongest signal is RED (hot) at the AP,
+// cooling through amber/green to BLUE at the weak edge. The engine's alpha fade —
+// not a dark color — represents "weak/dead", so the plan stays legible.
+const RSSI_RAMP: Stop[] = [
+  [-90, [46, 128, 190]], [-82, [56, 168, 120]], [-75, [120, 191, 74]], [-70, [200, 214, 50]],
+  [-66, [244, 199, 40]], [-60, [247, 160, 36]], [-54, [242, 112, 42]], [-48, [232, 74, 45]], [-44, [199, 38, 41]],
+];
+export const rssiRgb = (dbm: number): RGB => ramp(RSSI_RAMP, dbm);
+const rgbHex = ([r, g, b]: RGB): string => '#' + [r, g, b].map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')).join('');
+
+// RSSI coverage zones (strong → weak). Swatch colors sampled from RSSI_RAMP (audit #5)
+// so the legend/zone key reads identically to the heat pixels on the map.
 export const RSSI_ZONES: { label: string; minDbm: number; color: string }[] = [
-  { label: 'Excellent', minDbm: -67, color: '#1cb052' },
-  { label: 'Good', minDbm: -70, color: '#7ac943' },
-  { label: 'Fair', minDbm: -80, color: '#f8c22a' },
-  { label: 'Poor', minDbm: -90, color: '#ef4444' },
+  { label: 'Excellent', minDbm: -67, color: rgbHex(rssiRgb(-55)) },
+  { label: 'Good', minDbm: -70, color: rgbHex(rssiRgb(-68)) },
+  { label: 'Fair', minDbm: -80, color: rgbHex(rssiRgb(-74)) },
+  { label: 'Poor', minDbm: -90, color: rgbHex(rssiRgb(-86)) },
   { label: 'No signal', minDbm: -200, color: '#2a3340' },
 ];
 
@@ -209,26 +239,8 @@ export const CHANNELS_5 = [36, 40, 44, 48, 149, 153, 157, 161];
 export const deviceDef = (id: DeviceTypeId): DeviceDef => DEVICE_REGISTRY[id];
 
 /* ── Continuous color ramps (smooth Ekahau-style heatmaps) ─────────────── */
-type RGB = [number, number, number];
-type Stop = [number, RGB];
-function ramp(stops: Stop[], v: number): RGB {
-  if (v <= stops[0][0]) return stops[0][1];
-  if (v >= stops[stops.length - 1][0]) return stops[stops.length - 1][1];
-  for (let i = 1; i < stops.length; i++) {
-    if (v <= stops[i][0]) {
-      const [v0, c0] = stops[i - 1], [v1, c1] = stops[i];
-      const t = (v - v0) / (v1 - v0 || 1);
-      return [Math.round(c0[0] + (c1[0] - c0[0]) * t), Math.round(c0[1] + (c1[1] - c0[1]) * t), Math.round(c0[2] + (c1[2] - c0[2]) * t)];
-    }
-  }
-  return stops[stops.length - 1][1];
-}
-// RSSI dBm → vivid green(strong) … clean amber … punchy red(weak) … dark slate(dead)
-const RSSI_RAMP: Stop[] = [
-  [-95, [34, 42, 54]], [-88, [224, 44, 44]], [-82, [244, 92, 46]], [-76, [250, 148, 40]],
-  [-71, [248, 198, 42]], [-67, [166, 214, 66]], [-58, [56, 200, 96]], [-45, [22, 176, 82]],
-];
-export const rssiRgb = (dbm: number): RGB => ramp(RSSI_RAMP, dbm);
+// RGB/Stop, ramp(), the RSSI ramp and rssiRgb now live ABOVE RSSI_ZONES so the
+// zone swatches are sampled from the SAME ramp as the heat pixels (audit #5).
 // Camera px/m → detect(orange) … identify(green) — brighter/cleaner
 const CAM_RAMP: Stop[] = [[25, [248, 120, 28]], [62, [248, 196, 40]], [125, [150, 214, 62]], [250, [40, 200, 100]]];
 export const cameraRgb = (pxm: number): RGB => ramp(CAM_RAMP, pxm);

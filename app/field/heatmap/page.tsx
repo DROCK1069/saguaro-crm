@@ -1,6 +1,6 @@
 'use client';
 /**
- * Saguaro Control Systems — Coverage Heatmap Designer.
+ * Saguaro Control Systems — Signal Studio (coverage heatmap & cabling designer).
  * Upload a blueprint, calibrate scale, trace walls, place UniFi/other devices,
  * and get a wall-aware coverage heatmap (WiFi RSSI, camera DORI, motion/smoke/speaker),
  * with smart auto-placement, channel planning, gap detection, metrics and export.
@@ -17,7 +17,7 @@ import { DEVICE_REGISTRY, WALL_MATERIALS, deviceDef, doriDistanceFt, SYSTEM_COLO
 import { isoLines, interferenceMask } from '@/lib/heatmap/overlays';
 import { TEMPLATES, type TemplateSpec } from '@/lib/heatmap/templates';
 import { computeCoverage, apRssiAt, apUsableRadiusFt, inspectAt } from '@/lib/heatmap/engine';
-import { autoPlaceAPs, planChannels, recompute } from '@/lib/heatmap/smart';
+import { autoPlaceAPs, gapsWorthFixing, planChannels, recompute } from '@/lib/heatmap/smart';
 import { summarizeBuilding } from '@/lib/heatmap/multifloor';
 import { UNIFI_APS, UNIFI_CAMERAS } from '@/lib/heatmap/unifi';
 import { computeBom } from '@/lib/heatmap/bom';
@@ -38,6 +38,13 @@ const GOLD = '#F59E0B', DARK = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255
 const TEXT = '#fff', DIM = '#CBD5E1', MUTED = 'rgba(255,255,255,0.5)';
 
 type Tool = 'select' | 'scale' | 'wall' | 'place';
+/* ── FIELD MODE — the guided jobsite flow, IDENTICAL to the mobile app.
+   One current step, one obvious next action, zero panel spelunking. ── */
+type FieldStep = 'plan' | 'scale' | 'walls' | 'devices' | 'heatmap' | 'bid';
+const FIELD_STEPS: { key: FieldStep; label: string }[] = [
+  { key: 'plan', label: 'Plan' }, { key: 'scale', label: 'Scale' }, { key: 'walls', label: 'Walls' },
+  { key: 'devices', label: 'Devices' }, { key: 'heatmap', label: 'Heatmap' }, { key: 'bid', label: 'Bid' },
+];
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 const PLACEABLE: DeviceTypeId[] = ['wifi_ap', 'camera', 'motion_pir_ceiling', 'motion_pir_wall', 'smoke_detector_spot', 'heat_detector_spot', 'paging_speaker', 'access_reader', 'ble_beacon', 'iot_gateway', 'smart_switch', 'smart_plug', 'thermostat', 'door_lock', 'ev_charger', 'projector', 'display', 'electrical_outlet', 'data_jack', 'voice_jack', 'combo_plate', 'cable_term'];
@@ -269,6 +276,18 @@ export default function HeatmapDesigner() {
     });
   }, []);
   const [tool, setTool] = useState<Tool>('select');
+  // Field mode is the DEFAULT — pros flip to Details for the full toolbox. Persisted.
+  const [fieldMode, setFieldMode] = useState(true);
+  const [fieldStepPin, setFieldStepPin] = useState<FieldStep | null>(null);
+  const [scaleDoor, setScaleDoor] = useState(false); // next 2 clicks = door jamb→jamb = 3 ft
+  useEffect(() => { try { const v = localStorage.getItem('hm_field_mode'); if (v != null) setFieldMode(v === '1'); } catch { /* private mode */ } }, []);
+  const flipFieldMode = (on: boolean) => {
+    setFieldMode(on);
+    // door-scale is a Field-mode gesture — leaking it into Details would make the
+    // classic Scale tool silently commit 3 ft with no prompt (the mobile port hit this)
+    setScaleDoor(false); setPendingScale([]);
+    try { localStorage.setItem('hm_field_mode', on ? '1' : '0'); } catch { /* private mode */ }
+  };
   const [placeType, setPlaceType] = useState<DeviceTypeId>('wifi_ap');
   const [apModel, setApModel] = useState(UNIFI_APS[6]?.model || '');
   const [camModel, setCamModel] = useState(UNIFI_CAMERAS[0]?.model || '');
@@ -379,6 +398,7 @@ export default function HeatmapDesigner() {
   const startProject = (dataUrl: string, w: number, h: number, name: string) => {
     setProject({ id: uid(), name, planDataUrl: dataUrl, imgW: w, imgH: h, scale: null, env: 'office', walls: [], devices: [], activeType: 'wifi_ap', rssiTargetDbm: -67, heatmapOpacity: 0.55 });
     setPast([]); setFuture([]); setCoverage(null); setSelId(null); setTool('scale');
+    setFieldStepPin(null); setScaleDoor(false); setPendingScale([]); setPendingWall([]); // fresh plan = fresh flow — stale pins/gestures corrupted the new floor's scale
     setSavedId(null); setSaveProj(''); setSaveName(name); // new design — don't overwrite a prior save
   };
   // Render a specific PDF page to a PNG data-url and start the project on it.
@@ -483,6 +503,7 @@ export default function HeatmapDesigner() {
       setPast([]); setFuture([]); setCoverage(null); setSelId(null); setPdfDoc(null);
       setSavedId(null); setSaveProj(''); setSaveName(name);
       setTool(scale ? 'select' : 'scale');
+      setFieldStepPin(null); setScaleDoor(false); setPendingScale([]); setPendingWall([]);
       const notes: string[] = [`✓ Imported ${walls.length} wall${walls.length === 1 ? '' : 's'} · scale ${scale ? 'detected' : 'manual'}.`];
       if (scale) notes.push(`Scale ≈ ${scale.pxPerFt.toFixed(1)} px/ft (${det!.source || 'from PDF'}) — coverage is dimensioned. Place devices to compute coverage.`);
       else notes.push('Scale not found — tap two points on a known dimension with the Scale tool to calibrate before placing devices.');
@@ -528,6 +549,7 @@ export default function HeatmapDesigner() {
     });
     const proj: HeatmapProject = { id: uid(), name: spec.name, planDataUrl: cv.toDataURL('image/png'), imgW: W, imgH: H, scale: { pxPerFt: k }, env: spec.env, walls, devices, activeType: spec.activeType || 'wifi_ap', rssiTargetDbm: -67, heatmapOpacity: 0.55 };
     setProject(proj); setPast([]); setFuture([]); setSelId(null); setSavedId(null); setTool('select');
+    setFieldStepPin(null); setScaleDoor(false); setPendingScale([]); setPendingWall([]);
     try { setCoverage(computeCoverage(proj)); } catch { setCoverage(null); }
     setTimeout(fitView, 60);
   };
@@ -572,10 +594,25 @@ export default function HeatmapDesigner() {
       const pts = [...pendingScale, pt];
       if (pts.length === 2) {
         const px = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-        const ans = window.prompt('Real-world length of this line, in FEET:', '20');
-        const ft = ans ? parseFloat(ans) : NaN;
-        if (ft > 0) { snapshot(); patch({ scale: { pxPerFt: px / ft } }); setTool('wall'); }
-        setPendingScale([]);
+        if (scaleDoor) {
+          // Door-tap scale — jamb to jamb across any door = 3 ft. No typing on a jobsite.
+          if (px > 2) {
+            snapshot(); patch({ scale: { pxPerFt: px / 3 } });
+            // land EXACTLY like mobile: place tool armed, Devices step pinned, visible note
+            setTool('place'); setPlaceType('wifi_ap'); setScaleDoor(false); setFieldStepPin('devices');
+            setAiNotes(['Scale set from the door — place devices, then the heatmap computes live.']);
+          }
+          setPendingScale([]);
+        } else {
+          const ans = window.prompt('Real-world length of this line, in FEET:', '20');
+          const ft = ans ? parseFloat(ans) : NaN;
+          if (ft > 0) {
+            snapshot(); patch({ scale: { pxPerFt: px / ft } });
+            if (fieldMode) { setTool('place'); setPlaceType('wifi_ap'); setFieldStepPin('devices'); }
+            else setTool('wall');
+          }
+          setPendingScale([]);
+        }
       } else setPendingScale(pts);
       return;
     }
@@ -768,13 +805,52 @@ export default function HeatmapDesigner() {
       setBusy('');
     }, 20);
   };
-  // One-click dead-zone fix: drop an AP at the centroid of every detected coverage gap,
+  // ── Dead zones WORTH FIXING: ≥150 ft² (a room, not a closet) and capped so the fix
+  //    pass can never push the floor past the same 1 AP / 1,500 ft² ceiling the placer
+  //    enforces. The raw dead-zone COUNT stays on the metrics — honest reporting — but
+  //    every "fix" path places from THIS list. (Same rule as mobile — one engine.) ──
+  const fixableGaps = useMemo(
+    () => (project && coverage ? gapsWorthFixing(project, coverage.gaps ?? [], project.devices.filter((d) => d.typeId === 'wifi_ap').length) : []),
+    [project, coverage],
+  );
+  // Current field step: derived from what the design actually has, unless the user
+  // pinned one on the rail. Completing a step clears the pin so the flow advances.
+  // IDENTICAL derivation to mobile (coverage-heatmap.tsx): walls are OPTIONAL (reachable
+  // by pinning, never a gate) and the rail lands on Bid once coverage exists.
+  const fieldStepAuto: FieldStep = !project ? 'plan' : !project.scale ? 'scale' : project.devices.length === 0 ? 'devices' : !coverage ? 'heatmap' : 'bid';
+  const fieldStep: FieldStep = fieldStepPin ?? fieldStepAuto;
+  const fieldDone: Record<FieldStep, boolean> = {
+    plan: !!project,
+    scale: !!project?.scale,
+    walls: (project?.walls.length ?? 0) > 0,
+    devices: (project?.devices.length ?? 0) > 0,
+    heatmap: (project?.devices.length ?? 0) > 0 && !!coverage,
+    bid: false,
+  };
+  /* Rail navigation = mobile's openStep: pin EXPLICITLY (the bar never advances by
+     side effect mid-work), arm the step's tool, and disarm any half-done gesture —
+     an armed door-scale surviving a step change silently rewrote the plan scale. */
+  const openStep = (k: FieldStep) => {
+    finishWall(); // commit (or clear) any traced-but-unfinished wall run first
+    setScaleDoor(false); setPendingScale([]);
+    if (k === 'scale') setTool('scale');
+    else if (k === 'walls') setTool('wall');
+    else if (k === 'devices') setTool('place');
+    else setTool('select');
+    setFieldStepPin(k);
+  };
+  // One-click dead-zone fix: drop an AP at the centroid of each dead zone WORTH an AP,
   // stamped with the selected AP's real radio, then let the debounced recompute re-grade.
   const doFixDeadZones = () => {
     if (!project) return;
     if (!project.scale) { setAiNotes(['Set the scale first — closing a dead zone needs real distances. Use the Scale tool or run AI scan.']); return; }
-    const gaps = coverage?.gaps ?? [];
-    if (!gaps.length) { setAiNotes([`No dead zones to close — coverage is already clean at ${project.rssiTargetDbm} dBm.`]); return; }
+    const gaps = fixableGaps;
+    if (!gaps.length) {
+      setAiNotes([(coverage?.gaps?.length ?? 0) > 0
+        ? 'The remaining dead pockets are too small to justify hardware — drag an existing AP a few feet toward the worst one instead of adding more.'
+        : `No dead zones to close — coverage is already clean at ${project.rssiTargetDbm} dBm.`]);
+      return;
+    }
     const radio = apCat ? toDeviceRadio(apCat, autoBand) : null;
     const apLabel = apCat ? apCat.model : apModel.replace('UniFi ', '');
     setBusy(`Closing ${gaps.length} dead zone${gaps.length === 1 ? '' : 's'}…`);
@@ -788,8 +864,12 @@ export default function HeatmapDesigner() {
         }
         return makeDevice('wifi_ap', g.centroid, apModel);
       });
-      setProject((p) => (p ? { ...p, activeType: 'wifi_ap', devices: [...p.devices, ...newAps] } : p));
-      setAiNotes([`Placed ${newAps.length} × ${apLabel} — one at the center of each dead zone. Coverage is recomputing… Undo reverts.`]);
+      // recompute INLINE (like autoDesign and mobile) — relying on the debounced pass left
+      // `coverage` stale, so a quick second click re-placed APs on the same centroids
+      const design = { ...project, activeType: 'wifi_ap' as DeviceTypeId, devices: [...project.devices, ...newAps] };
+      setProject(design);
+      try { setCoverage(recompute(covProject(design), 10, { measured: design.measured, calRmseDb: calResult?.rmseAfter })); } catch { /* debounced pass covers */ }
+      setAiNotes([`Placed ${newAps.length} × ${apLabel} — one at the center of each dead zone worth fixing. Undo reverts.`]);
       setBusy('');
     }, 20);
   };
@@ -810,7 +890,9 @@ export default function HeatmapDesigner() {
           : { targetPct: autoTarget, band: autoBand, apModel }).aps;
         let design = { ...project, activeType: 'wifi_ap' as DeviceTypeId, devices: [...project.devices, ...placed] };
         let cov = recompute(covProject(design), 10, opts);
-        const gaps = (cov.gaps ?? []).filter((g) => g.area > 150);
+        // Gap-fix pass, CAPPED: room-sized holes only, never past the 1 AP/1,500 ft²
+        // density ceiling the placer enforces (the unbounded pass was the AP flood).
+        const gaps = gapsWorthFixing(design, cov.gaps ?? [], design.devices.filter((d) => d.typeId === 'wifi_ap').length);
         if (gaps.length) {
           const fix = gaps.map((g) => {
             if (radio) { const d = makeDevice('wifi_ap', g.centroid); d.band = radio.band; d.txPowerDbm = radio.txPowerDbm; d.antennaGainDbi = radio.antennaGainDbi; d.label = apLabel; return d; }
@@ -879,7 +961,8 @@ export default function HeatmapDesigner() {
       const placed = autoPlaceAPs(design, radio ? { targetPct: autoTarget, band: radio.band, txPowerDbm: radio.txPowerDbm, antennaGainDbi: radio.antennaGainDbi, label: apLabel } : { targetPct: autoTarget, band: autoBand, apModel }).aps;
       design = { ...design, devices: [...design.devices, ...placed] };
       let cov = recompute(covProject(design), 10, opts);
-      const gaps = (cov.gaps ?? []).filter((g) => g.area > 150);
+      // Same capped gap-fix rule as Auto-design — density ceiling holds on autopilot too.
+      const gaps = gapsWorthFixing(design, cov.gaps ?? [], design.devices.filter((d) => d.typeId === 'wifi_ap').length);
       if (gaps.length) {
         const fix = gaps.map((g) => { if (radio) { const d = makeDevice('wifi_ap', g.centroid); d.band = radio.band; d.txPowerDbm = radio.txPowerDbm; d.antennaGainDbi = radio.antennaGainDbi; d.label = apLabel; return d; } return makeDevice('wifi_ap', g.centroid, apModel); });
         design = { ...design, devices: [...design.devices, ...fix] };
@@ -1048,7 +1131,8 @@ export default function HeatmapDesigner() {
     // ── RSSI iso-contours (marching squares) ──
     if (showContours && coverage && project.activeType === 'wifi_ap') {
       const sx = cv.width / coverage.cols, sy = cv.height / coverage.rows;
-      const levels = [{ dbm: -55, c: '#22c55e' }, { dbm: -65, c: '#a3e635' }, { dbm: -72, c: '#facc15' }, { dbm: -80, c: '#fb923c' }];
+      // contour colors SAMPLED from the shared ramp — they can never invert against the heat again
+      const levels = [-55, -65, -72, -80].map((dbm) => ({ dbm, c: `rgb(${rssiRgb(dbm).join(',')})` }));
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       for (const lv of levels) {
         const segs = isoLines(coverage, lv.dbm, sx, sy);
@@ -1406,7 +1490,7 @@ export default function HeatmapDesigner() {
       ${cableHtml}
       <div class="sect">${netHtml}</div>
       <p class="note">${calibrationNote(calResult)} Camera ranges per EN 62676-4 DORI. Prices are estimates; confirm current pricing, PoE budget, licensing and retention before ordering.</p>
-      <div class="foot">Generated by Saguaro Control Systems · Coverage Heatmap Designer · ${engineStamp(project)}</div>
+      <div class="foot">Generated by Saguaro Control Systems · Signal Studio · ${engineStamp(project)}</div>
     </div></body></html>`);
     w.document.close(); setTimeout(() => { try { w.print(); } catch { /* */ } }, 500);
   };
@@ -1472,7 +1556,9 @@ export default function HeatmapDesigner() {
         }
         setSavedId(id);
         setSaveProj(d.design.project_id || ''); setSaveName(d.design.name || data.name || '');
-        setPast([]); setFuture([]); dirtyRef.current = false; setCoverage(null); setSelId(null); setModal('none'); setTimeout(fitView, 60);
+        setPast([]); setFuture([]); dirtyRef.current = false; setCoverage(null); setSelId(null); setModal('none');
+        setFieldStepPin(null); setScaleDoor(false); setPendingScale([]); setPendingWall([]);
+        setTimeout(fitView, 60);
       } else setSaveMsg(d.error || 'Could not load');
     } catch (e) { console.error(e); setSaveMsg(humanError(e, "Couldn't complete that. Please try again.")); }
   };
@@ -1482,6 +1568,7 @@ export default function HeatmapDesigner() {
     if (id === activeFloorRef.current) return;
     setActiveFloor(id);
     setPast([]); setFuture([]); setCoverage(null); setSelId(null); setPdfDoc(null); setTool('select');
+    setFieldStepPin(null); setScaleDoor(false); setPendingScale([]); setPendingWall([]);
     setTimeout(fitView, 60);
   };
   const addFloor = () => {
@@ -1489,6 +1576,7 @@ export default function HeatmapDesigner() {
     setFloors((fs) => [...fs, { id, name: `Floor ${fs.length + 1}`, proj: null }]);
     setActiveFloor(id);
     setPast([]); setFuture([]); setCoverage(null); setSelId(null); setPdfDoc(null); setTool('scale');
+    setFieldStepPin(null); setScaleDoor(false); setPendingScale([]); setPendingWall([]);
   };
   const renameFloor = (id: string) => {
     const cur = floors.find((f) => f.id === id);
@@ -1598,7 +1686,7 @@ export default function HeatmapDesigner() {
   return (
     <div data-hm data-mode={project ? 'editor' : 'empty'} style={project ? { display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' } : { minHeight: '100vh' }}>
       <FieldPageHeader
-        title="Coverage Heatmap Designer"
+        title="Signal Studio"
         subtitle={project ? `${project.name}${project.scale ? ' · calibrated' : ' · not calibrated'}` : 'Upload a blueprint to begin'}
         icon={scopedFieldIcon('drawings', 'ph')}
         actions={project ? <>
@@ -1653,7 +1741,7 @@ export default function HeatmapDesigner() {
           <div onDragOver={onDragOverFiles} onDragLeave={onDragLeaveFiles} onDrop={onDropFiles}
             style={{ display: 'flex', gap: 26, alignItems: 'center', flexWrap: 'wrap', background: dragOver ? 'rgba(245,158,11,0.06)' : RAISED, border: `1px solid ${dragOver ? GOLD : BORDER}`, borderRadius: 20, padding: 26, transition: 'border-color .15s, background .15s' }}>
             <div style={{ flex: '1 1 300px', minWidth: 280 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.6, color: GOLD, textTransform: 'uppercase', marginBottom: 12 }}>Coverage Heatmap &amp; Cabling Designer</div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.6, color: GOLD, textTransform: 'uppercase', marginBottom: 12 }}>Signal Studio — Wi-Fi, camera &amp; cabling design</div>
               <h2 style={{ fontSize: 'clamp(22px,3vw,34px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 12px', color: '#fff', letterSpacing: -0.5 }}>Design the whole low-voltage system.</h2>
               <p style={{ color: DIM, fontSize: 14.5, lineHeight: 1.55, margin: '0 0 16px', maxWidth: 470 }}>Drop a blueprint and lay out Wi-Fi, cameras, access control, cabling and sensors — with auto-placed devices, dead-zone detection, a bill of materials, and a client-ready report, in minutes.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px 18px', margin: '0 0 20px', maxWidth: 490 }}>
@@ -1707,7 +1795,76 @@ export default function HeatmapDesigner() {
         </div>
       ) : (
         <div className="hm-layout">
-          {/* toolbar */}
+          {/* FIELD MODE — the guided rail: same six steps as the mobile app */}
+          {fieldMode && (
+            <div className="hm-rail">
+              {FIELD_STEPS.map((st, i) => (
+                <button key={st.key} type="button" className="hm-step" data-on={fieldStep === st.key} data-done={fieldDone[st.key]}
+                  onClick={() => openStep(st.key)}>
+                  <span className="hm-step-num">{fieldDone[st.key] && fieldStep !== st.key ? '✓' : i + 1}</span>{st.label}
+                </button>
+              ))}
+              <div style={{ flex: 1 }} />
+              <button className="hm-tool" title="Undo" onClick={undo} disabled={!past.length}><ArrowCounterClockwise size={15} weight="regular" style={{ verticalAlign: 'middle' }} /></button>
+              <button className="hm-tool" title="Fit plan to screen" onClick={fitView}>Fit</button>
+              <button className="hm-tool" onClick={() => flipFieldMode(false)} title="Full toolbox: every tool, layer and panel">Details</button>
+            </div>
+          )}
+          {fieldMode && (
+            <div className="hm-fieldbar">
+              {fieldStep === 'plan' && <>
+                <span className="hm-fieldmsg">Plan loaded ✓ — next, set the scale so every distance is real.</span>
+                <button className="hm-big" onClick={() => openStep('scale')}>Set the scale →</button>
+              </>}
+              {fieldStep === 'scale' && (project.scale ? <>
+                <span className="hm-fieldmsg">Scale set ✓ — distances on this plan are real now.</span>
+                <button className="hm-big" onClick={() => openStep('devices')}>Place devices →</button>
+                <button className="hm-big" data-alt="true" onClick={() => openStep('walls')}>Trace walls</button>
+                <button className="hm-big" data-alt="true" onClick={() => { finishWall(); setTool('scale'); setScaleDoor(true); setPendingScale([]); }}>Redo scale</button>
+              </> : <>
+                <button className="hm-big" onClick={autopilot}>✨ AI: read plan & design everything</button>
+                <button className="hm-big" data-alt="true" data-on={scaleDoor && tool === 'scale'} onClick={() => { finishWall(); setTool('scale'); setScaleDoor(true); setPendingScale([]); }}>🚪 Tap both sides of a door (3 ft)</button>
+                <button className="hm-big" data-alt="true" data-on={!scaleDoor && tool === 'scale'} onClick={() => { finishWall(); setTool('scale'); setScaleDoor(false); setPendingScale([]); }}>Known distance…</button>
+                <span className="hm-fieldmsg">Fastest: let AI read the plan. Or tap a door — every door is 3 ft.</span>
+              </>)}
+              {fieldStep === 'walls' && <>
+                <button className="hm-big" data-on={tool === 'wall'} onClick={() => setTool('wall')}>✏️ Trace walls</button>
+                <select className="hm-sel" value={wallMat} onChange={(e) => setWallMat(e.target.value as WallMaterialId)} title="Wall material — sets how much signal it blocks">
+                  {Object.entries(WALL_MATERIALS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+                <button className="hm-big" data-alt="true" onClick={() => openStep('devices')}>{project.walls.length ? `Done — ${project.walls.length} wall${project.walls.length === 1 ? '' : 's'} →` : `Open floor — skip →`}</button>
+                <span className="hm-fieldmsg">Click corner → corner along each wall · Enter finishes a run.</span>
+              </>}
+              {fieldStep === 'devices' && <>
+                <button className="hm-big" onClick={() => { finishWall(); autoDesign(); }}>✨ Auto-design coverage</button>
+                <button className="hm-big" data-alt="true" data-on={tool === 'place' && placeType === 'wifi_ap'} onClick={() => { finishWall(); setTool('place'); setPlaceType('wifi_ap'); }}>Place APs by hand</button>
+                <select className="hm-sel" value={placeType} title="Everything you can place — pick one, then click the plan"
+                  onChange={(e) => { finishWall(); setTool('place'); setPlaceType(e.target.value as DeviceTypeId); }}>
+                  {PLACEABLE.map((t) => <option key={t} value={t}>{DEVICE_REGISTRY[t].label}</option>)}
+                </select>
+                {placeType === 'electrical_outlet' && <select className="hm-sel" value={gangSel} onChange={(e) => setGangSel(+e.target.value)}><option value={2}>Duplex (2)</option><option value={4}>Quad (4)</option><option value={6}>6-gang (6)</option></select>}
+                {(placeType === 'data_jack' || placeType === 'voice_jack') && <select className="hm-sel" value={portsSel} onChange={(e) => setPortsSel(+e.target.value)}><option value={1}>1 port</option><option value={2}>2 ports</option><option value={4}>4 ports</option></select>}
+                {placeType === 'cable_term' && <select className="hm-sel" value={genderSel} onChange={(e) => setGenderSel(e.target.value as 'M' | 'F')}><option value="F">Jack — female (RJ45 keystone)</option><option value="M">Plug — male</option></select>}
+                {project.devices.length > 0 && <button className="hm-big" data-alt="true" onClick={() => openStep('heatmap')}>{project.devices.length} placed → Heatmap</button>}
+              </>}
+              {fieldStep === 'heatmap' && <>
+                <span className="hm-fieldstat" style={{ color: stats && stats.pctCovered > 90 ? '#30D158' : stats && stats.pctCovered > 75 ? GOLD : '#FF453A' }}>{stats ? `${stats.pctCovered.toFixed(0)}%` : '—'} <small>coverage</small></span>
+                <span className="hm-fieldstat">{stats ? stats.deadZones : '—'} <small>dead zone{stats?.deadZones === 1 ? '' : 's'}</small></span>
+                {fixableGaps.length > 0 && <button className="hm-big" onClick={doFixDeadZones}>Fix {fixableGaps.length} dead zone{fixableGaps.length === 1 ? '' : 's'}</button>}
+                {fixableGaps.length === 0 && (coverage?.gaps?.length ?? 0) > 0 && <span className="hm-fieldmsg">Remaining pockets are too small for more hardware — drag an AP a few feet toward the worst one.</span>}
+                <button className="hm-big" data-alt="true" onClick={doChannels}>Plan channels</button>
+                <button className="hm-big" onClick={() => openStep('bid')}>Looks good → Bid</button>
+              </>}
+              {fieldStep === 'bid' && <>
+                <span className="hm-fieldstat" style={{ color: GOLD }}>{bom ? `$${bom.turnkey.toLocaleString()}` : '—'} <small>turnkey install</small></span>
+                <button className="hm-big" onClick={sendToBidJacket}>→ Bid Jacket</button>
+                <button className="hm-big" data-alt="true" onClick={exportReport}>Client report</button>
+                <button className="hm-big" data-alt="true" onClick={openSaveModal}>Save design</button>
+              </>}
+            </div>
+          )}
+          {/* DETAILS MODE — the classic full toolbox, untouched */}
+          {!fieldMode && (
           <div className="hm-toolbar">
             {(['select', 'scale', 'wall', 'place'] as Tool[]).map((t) => (
               <button key={t} className="hm-tool" data-on={tool === t} onClick={() => { setTool(t); if (t !== 'wall') finishWall(); }}>
@@ -1745,7 +1902,18 @@ export default function HeatmapDesigner() {
             {tool === 'scale' && <span className="hm-hint">Click two points a known distance apart</span>}
             {tool === 'wall' && <span className="hm-hint">Click to trace · Enter/Esc to finish</span>}
             {busy && <span className="hm-hint" style={{ color: GOLD }}>{busy}</span>}
+            <div style={{ flex: 1 }} />
+            <button className="hm-tool" onClick={() => flipFieldMode(true)} title="The guided jobsite flow — same as the mobile app">⚡ Field mode</button>
           </div>
+          )}
+          {fieldMode && busy && <div className="hm-fieldbusy">{busy}</div>}
+          {/* guard/result messages were invisible in Field mode — buttons looked dead */}
+          {fieldMode && !busy && aiNotes.length > 0 && (
+            <div className="hm-fieldnote">
+              <div style={{ flex: 1 }}>{aiNotes.map((n, i) => <div key={i}>{n}</div>)}</div>
+              <button type="button" className="hm-fieldnote-x" onClick={() => setAiNotes([])} title="Dismiss">×</button>
+            </div>
+          )}
 
           {/* multi-sheet PDF picker */}
           {pdfDoc && pdfDoc.pages > 1 && (
@@ -1778,16 +1946,30 @@ export default function HeatmapDesigner() {
                 </div>
               )}
               {dragOver && <div className="hm-drop">Drop plan to replace</div>}
-              {/* how-to-edit hint bar — full-control gestures at a glance */}
+              {/* how-to-edit hint bar — in Field mode it tells you the ONE next move */}
               <div style={{ position: 'absolute', left: 10, bottom: 10, display: 'flex', gap: 6, flexWrap: 'wrap', pointerEvents: 'none', zIndex: 5 }}>
-                {['Click a device to select', 'Drag to move', 'Delete key (or the trash in the list) removes', 'Place tool adds'].map((h) => (
-                  <span key={h} style={{ background: 'rgba(13,17,23,0.82)', border: `1px solid ${BORDER}`, color: DIM, fontSize: 10.5, fontWeight: 600, padding: '3px 8px', borderRadius: 999, backdropFilter: 'blur(4px)' }}>{h}</span>
+                {(fieldMode
+                  ? tool === 'scale'
+                    ? [scaleDoor ? (pendingScale.length ? 'Now tap the OTHER side of the same door' : 'Tap ONE side of any door opening') : (pendingScale.length ? 'Click the second point' : 'Click two points a known distance apart')]
+                    : tool === 'wall' ? ['Click corner → corner along the wall · Enter finishes'] : tool === 'place' ? ['Click the plan to drop a device · drag to move it'] : ['Click a device to select · drag to move']
+                  : ['Click a device to select', 'Drag to move', 'Delete key (or the trash in the list) removes', 'Place tool adds']
+                ).map((h) => (
+                  <span key={h} style={{ background: 'rgba(13,17,23,0.82)', border: `1px solid ${BORDER}`, color: DIM, fontSize: fieldMode ? 12 : 10.5, fontWeight: fieldMode ? 700 : 600, padding: fieldMode ? '6px 12px' : '3px 8px', borderRadius: 999, backdropFilter: 'blur(4px)' }}>{h}</span>
                 ))}
               </div>
+              {/* Field mode: compact selected-device card — no panel needed to rename-level ops */}
+              {fieldMode && sel && (
+                <div className="hm-selcard">
+                  <i style={{ background: DEVICE_REGISTRY[sel.typeId].color, width: 10, height: 10, borderRadius: '50%', display: 'inline-block' }} />
+                  <b style={{ fontSize: 13 }}>{sel.label}</b>
+                  <button className="hm-tool" style={{ color: '#FF453A' }} onClick={() => { snapshot(); patch({ devices: project.devices.filter((x) => x.id !== sel.id) }); setSelId(null); }}>Remove</button>
+                  <button className="hm-tool" onClick={() => flipFieldMode(false)} title="Full inspector in Details mode">Edit…</button>
+                </div>
+              )}
             </div>
 
-            {/* right panel */}
-            <div className="hm-panel">
+            {/* right panel — Details mode only (the field bar carries what matters) */}
+            {!fieldMode && <div className="hm-panel">
               {/* ── always-visible metric strip + segmented group control ── */}
               <div className="hm-panel-top">
                 <div className="hm-strip">
@@ -2008,7 +2190,8 @@ export default function HeatmapDesigner() {
                   </label>
                   <button className="hm-smart" style={{ marginBottom: 0, marginTop: 4 }} onClick={doAutoPlace}><Sparkle size={14} weight="fill" style={{ verticalAlign: 'middle', marginRight: 6 }} />Auto-place {apCat ? apCat.model : apModel.replace('UniFi ', '')} → {Math.round(autoTarget * 100)}%</button>
                 </div>
-                {(coverage?.gaps?.length ?? 0) > 0 && <button className="hm-smart" style={{ borderColor: 'rgba(34,211,165,0.55)', color: '#22D3A5' }} onClick={doFixDeadZones}><Sparkle size={14} weight="fill" style={{ verticalAlign: 'middle', marginRight: 6 }} />Fix {coverage!.gaps.length} dead zone{coverage!.gaps.length === 1 ? '' : 's'} → place {coverage!.gaps.length} AP{coverage!.gaps.length === 1 ? '' : 's'}</button>}
+                {fixableGaps.length > 0 && <button className="hm-smart" style={{ borderColor: 'rgba(34,211,165,0.55)', color: '#22D3A5' }} onClick={doFixDeadZones}><Sparkle size={14} weight="fill" style={{ verticalAlign: 'middle', marginRight: 6 }} />Fix {fixableGaps.length} dead zone{fixableGaps.length === 1 ? '' : 's'} → place {fixableGaps.length} AP{fixableGaps.length === 1 ? '' : 's'}</button>}
+                {fixableGaps.length === 0 && (coverage?.gaps?.length ?? 0) > 0 && <div style={{ fontSize: 11.5, color: DIM, background: DARK, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 10px', lineHeight: 1.5 }}>Remaining dead pockets are too small to justify more hardware — drag an existing AP a few feet toward the worst one.</div>}
                 <button className="hm-smart" onClick={doChannels}><Sparkle size={14} weight="fill" style={{ verticalAlign: 'middle', marginRight: 6 }} />Plan WiFi channels (1/6/11)</button>
                 <button className="hm-smart" onClick={compute}><ArrowsClockwise size={14} weight="regular" style={{ verticalAlign: 'middle', marginRight: 6 }} />Recompute heatmap</button>
                 {aiNotes.length > 0 && <div style={{ marginTop: 6, fontSize: 11.5, color: DIM, background: DARK, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '8px 10px', lineHeight: 1.55 }}>{aiNotes.map((n, i) => <div key={i}>{n}</div>)}</div>}
@@ -2173,7 +2356,7 @@ export default function HeatmapDesigner() {
                   ))}
                 </div>
               </PanelSection>}
-            </div>
+            </div>}
           </div>
         </div>
       )}
@@ -2293,8 +2476,30 @@ export default function HeatmapDesigner() {
         .hm-bom { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
         .hm-bom-row { display: flex; justify-content: space-between; gap: 8px; color: #CBD5E1; }
         .hm-bom-row span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* ── Field mode (guided jobsite flow — identical to the mobile app) ── */
+        .hm-rail { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-top: 1px solid ${BORDER}; border-bottom: 1px solid ${BORDER}; background: ${RAISED}; flex-wrap: wrap; }
+        .hm-step { display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border-radius: 999px; border: 1px solid ${BORDER}; background: ${DARK}; color: ${DIM}; font-size: 12.5px; font-weight: 800; cursor: pointer; transition: border-color .12s, background .12s, color .12s; }
+        .hm-step:hover { background: rgba(255,255,255,0.06); }
+        .hm-step[data-on="true"] { background: rgba(245,158,11,0.16); color: ${GOLD}; border-color: rgba(245,158,11,0.45); }
+        .hm-step[data-done="true"] .hm-step-num { background: rgba(48,209,88,0.2); color: #30D158; }
+        .hm-step-num { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+        .hm-fieldbar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid ${BORDER}; background: ${DARK}; flex-wrap: wrap; }
+        .hm-big { display: inline-flex; align-items: center; gap: 8px; background: ${GOLD}; color: #0a0a0a; font-weight: 800; font-size: 14.5px; padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; transition: transform .1s, background .12s; }
+        .hm-big:hover { transform: translateY(-1px); }
+        .hm-big[data-alt="true"] { background: rgba(255,255,255,0.07); color: ${TEXT}; border: 1px solid ${BORDER}; }
+        .hm-big[data-on="true"] { outline: 2px solid ${GOLD}; outline-offset: 1px; }
+        .hm-fieldmsg { font-size: 12.5px; color: ${DIM}; font-weight: 600; line-height: 1.45; }
+        .hm-fieldstat { font-size: 20px; font-weight: 900; color: ${TEXT}; font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; gap: 5px; }
+        .hm-fieldstat small { font-size: 11px; font-weight: 700; color: ${MUTED}; }
+        .hm-fieldbusy { padding: 8px 16px; color: ${GOLD}; font-size: 12.5px; font-weight: 700; background: ${DARK}; border-bottom: 1px solid ${BORDER}; }
+        .hm-fieldnote { display: flex; align-items: flex-start; gap: 10px; padding: 9px 16px; color: #FCD34D; font-size: 12.5px; font-weight: 600; line-height: 1.5; background: rgba(245,158,11,0.08); border-bottom: 1px solid rgba(245,158,11,0.3); }
+        .hm-fieldnote-x { background: none; border: none; color: ${MUTED}; font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1; padding: 0 2px; }
+        .hm-selcard { position: absolute; right: 12px; bottom: 12px; z-index: 7; background: rgba(13,17,23,0.92); border: 1px solid ${BORDER}; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(6px); }
         @media (max-width: 820px) {
           .hm-body { flex-direction: column; } .hm-panel { width: 100%; border-left: none; border-top: 1px solid ${BORDER}; overflow: visible; } .hm-layout { height: auto; }
+          /* the canvas-wrap's children are all absolutely positioned — without this it
+             collapses to 0px tall at exactly the jobsite-phone widths Field mode targets */
+          .hm-canvas-wrap { min-height: 55dvh; }
           /* narrow: let the page scroll normally instead of a fixed full-height app */
           [data-hm][data-mode="editor"] { height: auto !important; overflow: visible !important; }
           :global(.fld-main:has([data-hm][data-mode="editor"])) { overflow-y: auto !important; }

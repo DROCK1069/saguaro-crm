@@ -29,7 +29,11 @@
     "db:push": "supabase db push",
     "db:pull": "supabase db pull",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --project-id jddfvugsaosvgllbkzch > lib/database.types.ts"
+    "db:types": "supabase gen types typescript --project-id jddfvugsaosvgllbkzch > lib/database.types.ts",
+    "engine:check": "node scripts/sync-heatmap-engine.mjs --check",
+    "engine:sync": "node scripts/sync-heatmap-engine.mjs --sync",
+    "engine:test": "npx -y tsx lib/heatmap/sanity.test.ts",
+    "prebuild": "node scripts/sync-heatmap-engine.mjs --check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",

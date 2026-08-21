@@ -5,7 +5,7 @@
  */
 import type { Pt } from './geometry';
 import { dist, crossings, angleDeg, angleDiff, pointInPolygon } from './geometry';
-import type { Band, CoverageCell, CoverageResult, Device, HeatmapProject, MeasuredPoint } from './types';
+import type { Band, CoverageCell, CoverageResult, Device, Env, HeatmapProject, MeasuredPoint, WallMaterialId } from './types';
 import {
   FT_PER_M, REF_LOSS_1M, PATH_LOSS_EXP, RSSI_ZONES, wallDb, DEVICE_REGISTRY,
   DORI_ZONES, doriDistanceFt, SPL_BANDS, RF_MEASURED_1M, RF_USABLE_FLOOR,
@@ -76,10 +76,28 @@ const RF_QUALITY_HIGH = -50;
 function pxToFt(px: number, pxPerFt: number) { return px / pxPerFt; }
 function distFt(a: Pt, b: Pt, pxPerFt: number) { return pxToFt(dist(a, b), pxPerFt); }
 
-/** sum of wall attenuation (dB) along a→b for the given band */
-function wallLossDb(a: Pt, b: Pt, walls: HeatmapProject['walls'], band: Band): number {
+/** Light partitions whose attenuation is largely ALREADY captured by the environment
+ *  path-loss exponent (office/dense). Charging their full nominal dB on top of the
+ *  exponent double-counts — it manufactures a false dead zone behind every drywall and
+ *  drives auto-place to flood the plan with APs. We charge only their INCREMENTAL loss. */
+const LIGHT_WALLS = new Set<WallMaterialId>(['drywall', 'cubicle', 'glass', 'wood_door']);
+/** Env-based weight for light-partition loss (the denser the modeled environment, the
+ *  more partition loss the exponent already includes, so the less we add explicitly). */
+function lightWallFactor(env: Env): number {
+  return env === 'open' ? 0.7 : env === 'dense' ? 0.25 : 0.4; // office = 0.4
+}
+/** Sum of wall attenuation (dB) along a→b for the given band. Heavy/structural walls
+ *  (concrete, CMU, brick, metal, low-E glass) carry full weight; light partitions are
+ *  discounted per the environment (they're already in the path-loss exponent). This is
+ *  the SINGLE wall model shared by the live heatmap AND auto-placement, so what the
+ *  optimizer trusts is exactly what the map paints. */
+function wallLossDb(a: Pt, b: Pt, walls: HeatmapProject['walls'], band: Band, env: Env): number {
+  const lf = lightWallFactor(env);
   let db = 0;
-  for (const w of crossings(a, b, walls)) db += wallDb(w.material, band);
+  for (const w of crossings(a, b, walls)) {
+    const base = wallDb(w.material, band);
+    db += LIGHT_WALLS.has(w.material) ? base * lf : base;
+  }
   return db;
 }
 /** binary: is a→b blocked by any wall (for camera/PIR line-of-sight) */
@@ -100,12 +118,12 @@ function rfRssi(cell: Pt, dev: Device, p: HeatmapProject): number {
     const n = PATH_LOSS_EXP[p.env];
     const pl = REF_LOSS_1M[band] + 10 * n * log10(dM);
     const tx = (dev.txPowerDbm ?? 15) + (dev.antennaGainDbi ?? 3) + antOff;
-    return tx - pl - wallLossDb(cell, dev.pos, p.walls, band);
+    return tx - pl - wallLossDb(cell, dev.pos, p.walls, band, p.env);
   }
   // BLE / IoT: measured-power log-distance model
   const measured = RF_MEASURED_1M[dev.typeId] ?? -55;
   const n = dev.typeId === 'ble_beacon' ? 2.5 : 3;
-  return measured + antOff - 10 * n * log10(dM) - wallLossDb(cell, dev.pos, p.walls, '2.4');
+  return measured + antOff - 10 * n * log10(dM) - wallLossDb(cell, dev.pos, p.walls, '2.4', p.env);
 }
 
 /**
@@ -166,7 +184,7 @@ export function apRssiAt(
   const antOff = antenna && antenna.pattern && antenna.pattern !== 'omni'
     ? relativeGainDb(antenna.pattern, angleDeg(apPos, cell), 0, antenna.azimuthDeg ?? 0, antenna.downtiltDeg ?? 0, antenna.beamwidthDeg)
     : 0;
-  return txGain + antOff - pl - wallLossDb(cell, apPos, p.walls, band);
+  return txGain + antOff - pl - wallLossDb(cell, apPos, p.walls, band, p.env);
 }
 
 /** Straight free-space distance (ft) at which a lone AP hits `target` dBm (for cell sizing). */
@@ -310,8 +328,12 @@ export function computeCoverage(p: HeatmapProject, cellPx = 10, opts: CoverageOp
             : (signal >= (RF_USABLE_FLOOR[p.activeType] ?? -90));
           // Roaming: a client here can also reach a 2nd AP ≥ the roam floor (seamless roaming).
           const roamReady = isWifi && Number.isFinite(rf.secondaryDbm) && rf.secondaryDbm >= roamFloorDbm;
+          // Paint STRENGTH, not a dark blanket (audit #2): alpha peaks (~0.62) at/above
+          // target and fades toward 0 across the ~20 dB below it, so weak-but-reachable
+          // cells reveal the floor plan instead of washing it dark.
+          const strengthAlpha = 0.62 * clamp01((signal - (target - 20)) / 20);
           out = {
-            covered: isCov, value: signal, color: z.color, rgba: rssiRgb(signal), opacity: 0.62,
+            covered: isCov, value: signal, color: z.color, rgba: rssiRgb(signal), opacity: strengthAlpha,
             sinrDb: rf.sinrDb, snrDb: rf.snrDb, serverId: rf.serverId,
             ...(isWifi ? { secondaryDbm: Number.isFinite(rf.secondaryDbm) ? rf.secondaryDbm : undefined, roamReady } : {}),
           };
