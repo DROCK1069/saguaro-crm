@@ -42,6 +42,20 @@ const CATEGORY_BY_BUILDING_TYPE: Record<string,string> = {
   'Civil / Infrastructure':'industrial','Other':'commercial',
 };
 
+// ── Procore-style SECTOR differentiation: one prominent choice that filters
+//    building types, derives the category, and pre-sets compliance flags
+//    (Government/Education/Infrastructure -> prevailing wage + public agency).
+const SECTORS: { key:string; label:string; cats:string[]; extraBts?:string[]; flags?:{pw:string; pub:string} }[] = [
+  { key:'residential',   label:'Residential',    cats:['residential','multifamily','addition','remodel'] },
+  { key:'commercial',    label:'Commercial',     cats:['commercial','remodel','mixed_use'] },
+  { key:'industrial',    label:'Industrial',     cats:['industrial'] },
+  { key:'government',    label:'Government',     cats:['government'], flags:{pw:'Yes — Davis-Bacon', pub:'Yes — Public Agency'} },
+  { key:'healthcare',    label:'Healthcare',     cats:['healthcare'] },
+  { key:'education',     label:'Education',      cats:['education'], flags:{pw:'Yes — State Law', pub:'Yes — Public Agency'} },
+  { key:'infrastructure',label:'Infrastructure', cats:['industrial'], extraBts:['Civil / Infrastructure','Parking Structure','Other'], flags:{pw:'Yes — Davis-Bacon', pub:'Yes — Public Agency'} },
+  { key:'mixed',         label:'Mixed-Use',      cats:['mixed_use','commercial','multifamily'] },
+];
+
 const FIELD = ({label,auto,hint,children}:{label:string,auto?:boolean,hint?:React.ReactNode,children:React.ReactNode}) => (
   <div style={{marginBottom:16}}>
     <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>{label}{auto && <AutoChip/>}</label>
@@ -59,6 +73,27 @@ export default function NewProjectPage() {
   const [projectNumber, setProjectNumber] = useState('');
   const [buildingType, setBuildingType] = useState('');
   const [type, setType] = useState('residential');
+  const [sector, setSector] = useState('');
+
+  // Sector drives the whole identity block: filtered building types, derived
+  // category, and compliance defaults (still fully editable).
+  const sectorDef = SECTORS.find(s=>s.key===sector) || null;
+  const sectorBts = sectorDef
+    ? BUILDING_TYPES.filter(bt => sectorDef.cats.includes(CATEGORY_BY_BUILDING_TYPE[bt] || '') || (sectorDef.extraBts||[]).includes(bt))
+    : BUILDING_TYPES;
+  function pickSector(key:string){
+    const def = SECTORS.find(s=>s.key===key);
+    setSector(key);
+    if(!def) return;
+    setType(prev => def.cats.includes(prev) ? prev : def.cats[0]);
+    setAuto(a=>({...a,cat:true}));
+    if(def.flags){ setPrevailingWage(def.flags.pw); setPublicProject(def.flags.pub); }
+    else { setPrevailingWage('No'); setPublicProject('No — Private'); }
+    setBuildingType(prev => {
+      const stillValid = def.cats.includes(CATEGORY_BY_BUILDING_TYPE[prev] || '') || (def.extraBts||[]).includes(prev);
+      return stillValid ? prev : '';
+    });
+  }
   const [description, setDescription] = useState('');
   // Location
   const [address, setAddress] = useState('');
@@ -234,14 +269,28 @@ export default function NewProjectPage() {
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
               <div>
                 <SectionCard title="Identity" icon={<Buildings size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
+                  <FIELD label="Sector" hint={sectorDef?.flags ? 'Public-sector work — prevailing wage and public-agency compliance pre-set below.' : 'Filters building types, derives the category, and pre-sets compliance for public work.'}>
+                    <div style={{display:'flex',flexWrap:'wrap' as const,gap:5,background:'rgba(255,255,255,0.04)',borderRadius:10,padding:4,border:'1px solid rgba(255,255,255,0.08)'}}>
+                      {SECTORS.map(s=>{
+                        const active = sector===s.key;
+                        return (
+                          <button type="button" key={s.key} onClick={()=>pickSector(s.key)} className="pmBtn"
+                            style={{padding:'6px 12px',borderRadius:7,border:'none',cursor:'pointer',fontWeight:800,fontSize:11.5,whiteSpace:'nowrap' as const,
+                              background:active?`linear-gradient(135deg,${GOLD},#FBBF24)`:'transparent',color:active?'#1A1206':DIM,transition:'all .15s'}}>
+                            {s.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </FIELD>
                   <FIELD label="Project Name"><input value={name} onChange={e=>setName(e.target.value)} required placeholder="e.g. Riverdale Medical Pavilion" style={INPUT_STYLE}/></FIELD>
                   <FIELD label="Project Number" auto={auto.num} hint={pf?.total>0 ? `Continues your ${year} sequence — prints on G702s, subcontracts and transmittals.` : 'Year-based sequence — prints on G702s, subcontracts and transmittals.'}>
                     <input value={projectNumber} onChange={e=>{setProjectNumber(e.target.value);setAuto(a=>({...a,num:false}));}} placeholder={`${year}-001`} style={INPUT_STYLE}/>
                   </FIELD>
-                  <FIELD label="Building Type" hint="Feeds takeoff assemblies, budget templates and bid intelligence.">
+                  <FIELD label="Building Type" hint={sectorDef ? `Showing ${sectorBts.length} ${sectorDef.label} building types — feeds takeoff assemblies, budget templates and bid intelligence.` : 'Feeds takeoff assemblies, budget templates and bid intelligence.'}>
                     <select value={buildingType} onChange={e=>onBuildingTypeChange(e.target.value)} style={SELECT_STYLE}>
                       <option value="">Select building type…</option>
-                      {BUILDING_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                      {sectorBts.map(t=><option key={t} value={t}>{t}</option>)}
                     </select>
                   </FIELD>
                   <FIELD label="Category" auto={auto.cat} hint="Derived from building type — drives reporting and bid history matching.">
