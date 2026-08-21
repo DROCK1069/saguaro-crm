@@ -1783,7 +1783,7 @@ export default function HeatmapDesigner() {
             style={{ display: 'flex', gap: 26, alignItems: 'center', flexWrap: 'wrap', background: dragOver ? 'rgba(245,158,11,0.06)' : RAISED, border: `1px solid ${dragOver ? GOLD : BORDER}`, borderRadius: 20, padding: 26, transition: 'border-color .15s, background .15s' }}>
             <div style={{ flex: '1 1 300px', minWidth: 280 }}>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.6, color: GOLD, textTransform: 'uppercase', marginBottom: 12 }}>Signal Studio — Wi-Fi, camera &amp; cabling design</div>
-              <h2 style={{ fontSize: 'clamp(22px,3vw,34px)', fontWeight: 900, lineHeight: 1.08, margin: '0 0 12px', color: '#fff', letterSpacing: -0.5 }}>Design the whole low-voltage system.</h2>
+              <h2 style={{ fontSize: 'clamp(24px,3.2vw,38px)', fontWeight: 900, lineHeight: 1.06, margin: '0 0 14px', color: '#fff', letterSpacing: -1 }}>Design the whole low-voltage system.</h2>
               <p style={{ color: DIM, fontSize: 14.5, lineHeight: 1.55, margin: '0 0 16px', maxWidth: 470 }}>Drop a blueprint and lay out Wi-Fi, cameras, access control, cabling and sensors — with auto-placed devices, dead-zone detection, a bill of materials, and a client-ready report, in minutes.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px 18px', margin: '0 0 20px', maxWidth: 490 }}>
                 {[
@@ -1804,7 +1804,7 @@ export default function HeatmapDesigner() {
                   <UploadSimple size={15} weight="bold" /> {busy || (dragOver ? 'Drop to load' : 'Upload blueprint')}
                   <input type="file" accept="image/*,application/pdf,.pdf" style={{ display: 'none' }} onChange={(e) => e.target.files?.[0] && smartUpload(e.target.files[0])} />
                 </label>
-                <button className="hm-cta" style={{ background: 'rgba(255,255,255,0.07)', color: TEXT, border: `1px solid ${BORDER}`, display: 'inline-flex', alignItems: 'center', gap: 7 }} onClick={() => { const o = TEMPLATES.find((t) => t.id === 'office') || TEMPLATES[0]; if (o) buildTemplate(o); }}>
+                <button className="hm-cta" style={{ background: 'rgba(255,255,255,0.07)', color: TEXT, border: `1px solid ${BORDER}`, boxShadow: '0 2px 10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)', display: 'inline-flex', alignItems: 'center', gap: 7 }} onClick={() => { const o = TEMPLATES.find((t) => t.id === 'office') || TEMPLATES[0]; if (o) buildTemplate(o); }}>
                   <Sparkle size={15} weight="fill" /> See a live example
                 </button>
               </div>
@@ -1818,7 +1818,7 @@ export default function HeatmapDesigner() {
             </div>
           </div>
           <div style={{ marginTop: 22, textAlign: 'left' }}>
-            <div style={{ fontSize: 11, color: MUTED, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 10, textAlign: 'center' }}>Or start from a template — instant coverage map</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1.6, marginBottom: 12, textAlign: 'center' }}>Or start from a template — instant coverage map</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
               {TEMPLATES.map((t) => (
                 <button key={t.id} className="hm-tmpl" onClick={() => buildTemplate(t)}>
@@ -1969,7 +1969,7 @@ export default function HeatmapDesigner() {
             <div className="hm-canvas-wrap" ref={hostRef} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
               onDragOver={onDragOverFiles} onDragLeave={onDragLeaveFiles} onDrop={onDropFiles}
               style={{ cursor: tool === 'select' ? 'grab' : 'crosshair' }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, width: project.imgW, height: project.imgH, transformOrigin: '0 0', transform: `translate(${view.ox}px,${view.oy}px) scale(${view.scale})` }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, width: project.imgW, height: project.imgH, transformOrigin: '0 0', transform: `translate(${view.ox}px,${view.oy}px) scale(${view.scale})`, borderRadius: 10, overflow: 'hidden', boxShadow: '0 30px 90px rgba(0,0,0,0.6), 0 4px 18px rgba(0,0,0,0.45)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={project.planDataUrl} alt="plan" width={project.imgW} height={project.imgH} style={{ display: 'block', userSelect: 'none' }} draggable={false} />
                 <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />
@@ -1992,7 +1992,7 @@ export default function HeatmapDesigner() {
                     : tool === 'wall' ? ['Click corner → corner along the wall · Enter finishes'] : tool === 'place' ? ['Click the plan to drop a device · drag to move it'] : ['Click a device to select · drag to move']
                   : ['Click a device to select', 'Drag to move', 'Delete key (or the trash in the list) removes', 'Place tool adds']
                 ).map((h) => (
-                  <span key={h} style={{ background: 'rgba(13,17,23,0.82)', border: `1px solid ${BORDER}`, color: DIM, fontSize: fieldMode ? 12 : 10.5, fontWeight: fieldMode ? 700 : 600, padding: fieldMode ? '6px 12px' : '3px 8px', borderRadius: 999, backdropFilter: 'blur(4px)' }}>{h}</span>
+                  <span key={h} style={{ background: 'rgba(15,17,22,0.72)', border: '1px solid rgba(255,255,255,0.12)', color: DIM, fontSize: fieldMode ? 12 : 10.5, fontWeight: fieldMode ? 700 : 600, padding: fieldMode ? '6px 12px' : '3px 8px', borderRadius: 999, backdropFilter: 'blur(8px)', boxShadow: '0 8px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)' }}>{h}</span>
                 ))}
               </div>
               {/* Field mode: compact selected-device card — no panel needed to rename-level ops */}
@@ -2456,10 +2456,14 @@ export default function HeatmapDesigner() {
 
       <style dangerouslySetInnerHTML={{ __html: `
         [data-hm] { color: ${TEXT}; }
+        [data-hm] :is(button, select, input, textarea, a.hm-btn):focus-visible, [data-hm] .hm-cta:has(input:focus-visible) { outline: 2px solid ${GOLD}; outline-offset: 2px; }
         .hm-pad { padding: 0 16px; }
-        .hm-cta { display: inline-block; background: ${GOLD}; color: #0a0a0a; font-weight: 700; font-size: 14px; padding: 11px 22px; border-radius: 10px; cursor: pointer; }
-        .hm-tmpl { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; padding: 14px; border: 1px solid ${BORDER}; border-radius: 12px; background: ${RAISED}; cursor: pointer; transition: border-color .15s, transform .1s; }
-        .hm-tmpl:hover { border-color: ${GOLD}; transform: translateY(-2px); }
+        .hm-cta { display: inline-block; background: linear-gradient(180deg, #FFC14D, #F59E0B 60%, #E08A00); color: #241500; font-weight: 800; font-size: 14px; padding: 11px 22px; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 16px rgba(245,158,11,0.3), inset 0 1px 0 rgba(255,255,255,0.35); transition: transform .12s, box-shadow .12s, filter .12s; }
+        .hm-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(245,158,11,0.4), inset 0 1px 0 rgba(255,255,255,0.35); filter: brightness(1.04); }
+        .hm-cta:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(245,158,11,0.25), inset 0 1px 3px rgba(0,0,0,0.2); }
+        .hm-tmpl { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; padding: 14px; border: 1px solid ${BORDER}; border-radius: 12px; background: ${RAISED}; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s, background .15s; }
+        .hm-tmpl:hover { border-color: ${GOLD}; transform: translateY(-2px); background: #17181b; box-shadow: 0 10px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(245,158,11,0.12); }
+        .hm-tmpl:active { transform: translateY(0); box-shadow: 0 3px 10px rgba(0,0,0,0.4); }
         .hm-tmpl-ic { width: 26px; height: 26px; margin-bottom: 6px; }
         .hm-tmpl-ic svg { width: 100%; height: 100%; }
         .hm-layout { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -2467,25 +2471,31 @@ export default function HeatmapDesigner() {
            The map + panel manage their own space; only the active panel tab scrolls if its content overflows. */
         .fld-main:has([data-hm][data-mode="editor"]) { overflow: hidden !important; padding-bottom: 0 !important; }
         .fld-content:has([data-hm][data-mode="editor"]) { height: 100%; min-height: 0; }
-        .hm-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px solid ${BORDER}; border-bottom: 1px solid ${BORDER}; background: ${RAISED}; flex-wrap: wrap; }
-        .hm-tool { background: rgba(255,255,255,0.05); border: 1px solid ${BORDER}; color: ${DIM}; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .hm-tool[data-on="true"] { background: rgba(245,158,11,0.15); border-color: ${GOLD}; color: ${GOLD}; }
+        .hm-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px solid ${BORDER}; border-bottom: 1px solid rgba(0,0,0,0.55); background: linear-gradient(180deg, #17181b, #101114); flex-wrap: wrap; position: relative; z-index: 3; box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05); }
+        .hm-tool { background: rgba(255,255,255,0.05); border: 1px solid ${BORDER}; color: ${DIM}; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .12s, border-color .12s, color .12s; }
+        .hm-tool:hover:not(:disabled):not([data-on="true"]) { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); color: ${TEXT}; }
+        .hm-tool:active:not(:disabled) { transform: translateY(1px); }
+        .hm-tool[data-on="true"] { background: rgba(245,158,11,0.16); border-color: ${GOLD}; color: ${GOLD}; }
         .hm-sep { width: 1px; height: 22px; background: ${BORDER}; }
         .hm-seg { display: inline-flex; border: 1px solid ${BORDER}; border-radius: 8px; overflow: hidden; }
-        .hm-seg-btn { background: ${DARK}; color: ${DIM}; border: none; border-right: 1px solid ${BORDER}; padding: 6px 11px; font-size: 12px; font-weight: 700; cursor: pointer; font-variant-numeric: tabular-nums; }
+        .hm-seg-btn { background: ${DARK}; color: ${DIM}; border: none; border-right: 1px solid ${BORDER}; padding: 6px 11px; font-size: 12px; font-weight: 700; cursor: pointer; font-variant-numeric: tabular-nums; transition: background .12s, color .12s; }
         .hm-seg-btn:last-child { border-right: none; }
-        .hm-seg-btn:hover { background: rgba(255,255,255,0.06); }
-        .hm-seg-btn[data-on="true"] { background: rgba(245,158,11,0.18); color: ${GOLD}; }
-        .hm-sel { background: ${DARK}; border: 1px solid ${BORDER}; color: ${TEXT}; border-radius: 7px; padding: 5px 8px; font-size: 12px; }
+        .hm-seg-btn:hover { background: rgba(255,255,255,0.06); color: ${TEXT}; }
+        .hm-seg-btn[data-on="true"] { background: rgba(245,158,11,0.16); color: ${GOLD}; }
+        .hm-sel { background-color: #131418; background-image: linear-gradient(180deg, #1a1b1f, #101114); border: 1px solid rgba(255,255,255,0.13); color: ${TEXT}; border-radius: 7px; padding: 5px 8px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); }
+        select.hm-sel, select.hm-sel-full { -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M1 1l4 4 4-4" fill="none" stroke="%23F59E0B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'), linear-gradient(180deg, #1a1b1f, #101114); background-repeat: no-repeat; background-position: right 9px center, 0 0; background-size: 10px 6px, 100% 100%; padding-right: 26px; cursor: pointer; }
+        .hm-sel:focus, .hm-sel-full:focus { outline: none; border-color: rgba(245,158,11,0.55); box-shadow: 0 0 0 3px rgba(245,158,11,0.15), inset 0 1px 0 rgba(255,255,255,0.05); }
         .hm-chk { display: flex; align-items: center; gap: 5px; font-size: 12px; color: ${DIM}; }
         .hm-hint { font-size: 11px; color: ${MUTED}; }
-        .hm-btn { background: ${GOLD}; color: #0a0a0a; border: none; border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .hm-btn { background: linear-gradient(180deg, #FFC14D, #F59E0B 60%, #E08A00); color: #241500; border: none; border-radius: 7px; padding: 6px 12px; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.28); transition: filter .12s; }
+        .hm-btn:hover { filter: brightness(1.07); }
         .hm-body { flex: 1; display: flex; min-height: 0; }
-        .hm-canvas-wrap { flex: 1; overflow: hidden; position: relative; background: #060a10; }
+        .hm-canvas-wrap { flex: 1; overflow: hidden; position: relative; background: radial-gradient(ellipse 120% 90% at 50% 30%, #0b1017 0%, #05080d 100%); }
+        .hm-canvas-wrap::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px); background-size: 26px 26px; box-shadow: inset 0 0 90px rgba(0,0,0,0.55), inset 0 14px 30px rgba(0,0,0,0.45); pointer-events: none; }
         .hm-tool:disabled { opacity: 0.35; cursor: default; }
-        .hm-panel { width: 344px; border-left: 1px solid ${BORDER}; background: ${RAISED}; overflow-y: auto; padding-bottom: 48px; flex-shrink: 0; }
+        .hm-panel { width: 344px; border-left: 1px solid rgba(0,0,0,0.55); background: linear-gradient(180deg, #16171a, #121316); overflow-y: auto; padding-bottom: 48px; flex-shrink: 0; position: relative; z-index: 2; box-shadow: -18px 0 40px rgba(0,0,0,0.45), inset 1px 0 0 rgba(255,255,255,0.05); }
         .hm-chiprow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 9px 16px; border-bottom: 1px solid ${BORDER}; background: ${DARK}; }
-        .hm-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid ${BORDER}; background: ${RAISED}; color: ${DIM}; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: border-color .12s, background .12s, color .12s; }
+        .hm-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid ${BORDER}; background: ${RAISED}; color: ${DIM}; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: border-color .12s, background .12s, color .12s, opacity .12s; }
         .hm-chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; transition: opacity .12s; }
         .hm-chip:hover { background: rgba(255,255,255,0.05); }
         .hm-chip[data-on="true"] { color: ${TEXT}; border-color: color-mix(in srgb, var(--chip) 60%, transparent); background: color-mix(in srgb, var(--chip) 12%, ${RAISED}); }
@@ -2500,8 +2510,10 @@ export default function HeatmapDesigner() {
         .hm-legend span { display: flex; align-items: center; gap: 5px; font-size: 11px; color: ${DIM}; }
         .hm-legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
         .hm-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .hm-smart { width: 100%; text-align: left; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); color: ${GOLD}; border-radius: 8px; padding: 9px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; margin-bottom: 7px; }
-        .hm-smart:hover { background: rgba(245,158,11,0.16); }
+        .hm-smart { width: 100%; text-align: left; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); color: ${GOLD}; border-radius: 8px; padding: 9px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; margin-bottom: 7px; transition: background .12s, border-color .12s, box-shadow .12s; }
+        .hm-smart:hover:not(:disabled) { background: rgba(245,158,11,0.16); border-color: rgba(245,158,11,0.45); box-shadow: 0 2px 12px rgba(245,158,11,0.12); }
+        .hm-smart:active:not(:disabled) { background: rgba(245,158,11,0.22); }
+        .hm-smart:disabled { cursor: default; }
         .hm-sel-full { width: 100%; margin-top: 3px; background: ${DARK}; color: ${TEXT}; border: 1px solid ${BORDER}; border-radius: 6px; padding: 5px 6px; font-size: 11.5px; cursor: pointer; }
         .hm-sheet { background: ${DARK}; color: ${DIM}; border: 1px solid ${BORDER}; border-radius: 6px; padding: 4px 9px; font-size: 11px; cursor: pointer; font-variant-numeric: tabular-nums; }
         .hm-sheet[data-on="true"] { background: rgba(245,158,11,0.16); color: ${GOLD}; border-color: rgba(245,158,11,0.4); font-weight: 700; }
@@ -2515,24 +2527,27 @@ export default function HeatmapDesigner() {
         .hm-bom-row { display: flex; justify-content: space-between; gap: 8px; color: #CBD5E1; }
         .hm-bom-row span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         /* ── Field mode (guided jobsite flow — identical to the mobile app) ── */
-        .hm-rail { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-top: 1px solid ${BORDER}; border-bottom: 1px solid ${BORDER}; background: ${RAISED}; flex-wrap: wrap; }
-        .hm-step { display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border-radius: 999px; border: 1px solid ${BORDER}; background: ${DARK}; color: ${DIM}; font-size: 12.5px; font-weight: 800; cursor: pointer; transition: border-color .12s, background .12s, color .12s; }
+        .hm-rail { display: flex; align-items: center; gap: 7px; padding: 11px 16px; border-top: 1px solid ${BORDER}; border-bottom: 1px solid rgba(0,0,0,0.55); background: linear-gradient(180deg, #17181b, #101114); flex-wrap: wrap; position: relative; z-index: 4; box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05); }
+        .hm-step { display: inline-flex; align-items: center; gap: 8px; padding: 8px 15px 8px 9px; border-radius: 999px; border: 1px solid ${BORDER}; background: rgba(255,255,255,0.03); color: ${DIM}; font-size: 11px; font-weight: 700; letter-spacing: .9px; text-transform: uppercase; cursor: pointer; transition: border-color .15s, background .15s, color .15s, box-shadow .15s; }
         .hm-step:hover { background: rgba(255,255,255,0.06); }
-        .hm-step[data-on="true"] { background: rgba(245,158,11,0.16); color: ${GOLD}; border-color: rgba(245,158,11,0.45); }
-        .hm-step[data-done="true"] .hm-step-num { background: rgba(48,209,88,0.2); color: #30D158; }
-        .hm-step-num { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); font-size: 10.5px; font-variant-numeric: tabular-nums; }
-        .hm-fieldbar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid ${BORDER}; background: ${DARK}; flex-wrap: wrap; }
-        .hm-big { display: inline-flex; align-items: center; gap: 8px; background: ${GOLD}; color: #0a0a0a; font-weight: 800; font-size: 14.5px; padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; transition: transform .1s, background .12s; }
-        .hm-big:hover { transform: translateY(-1px); }
-        .hm-big[data-alt="true"] { background: rgba(255,255,255,0.07); color: ${TEXT}; border: 1px solid ${BORDER}; }
+        .hm-step[data-on="true"] { background: linear-gradient(180deg, rgba(245,158,11,0.22), rgba(245,158,11,0.10)); color: #FFD98A; border-color: rgba(245,158,11,0.55); box-shadow: 0 0 0 3px rgba(245,158,11,0.10), 0 4px 14px rgba(245,158,11,0.12); }
+        .hm-step[data-done="true"] .hm-step-num { background: rgba(48,209,88,0.22); color: #30D158; box-shadow: inset 0 0 0 1px rgba(48,209,88,0.35); }
+        .hm-step-num { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.09); font-size: 10.5px; font-variant-numeric: tabular-nums; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); transition: background .25s, color .25s, box-shadow .25s; }
+        .hm-fieldbar { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-bottom: 1px solid rgba(0,0,0,0.6); background: linear-gradient(180deg, #0d0e11, #0a0b0d); flex-wrap: wrap; position: relative; z-index: 3; box-shadow: 0 10px 26px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04); }
+        .hm-big { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(180deg, #FFC14D, #F59E0B 60%, #E08A00); color: #241500; font-weight: 800; font-size: 14.5px; padding: 12px 21px; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(245,158,11,0.28), inset 0 1px 0 rgba(255,255,255,0.35); transition: transform .12s, box-shadow .12s, filter .12s; }
+        .hm-big:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(245,158,11,0.36), inset 0 1px 0 rgba(255,255,255,0.35); filter: brightness(1.04); }
+        .hm-big:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(245,158,11,0.25), inset 0 1px 3px rgba(0,0,0,0.2); }
+        .hm-big[data-alt="true"] { background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.05)); color: ${TEXT}; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 2px 10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07); }
         .hm-big[data-on="true"] { outline: 2px solid ${GOLD}; outline-offset: 1px; }
-        .hm-fieldmsg { font-size: 12.5px; color: ${DIM}; font-weight: 600; line-height: 1.45; }
-        .hm-fieldstat { font-size: 20px; font-weight: 900; color: ${TEXT}; font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; gap: 5px; }
-        .hm-fieldstat small { font-size: 11px; font-weight: 700; color: ${MUTED}; }
-        .hm-fieldbusy { padding: 8px 16px; color: ${GOLD}; font-size: 12.5px; font-weight: 700; background: ${DARK}; border-bottom: 1px solid ${BORDER}; }
-        .hm-fieldnote { display: flex; align-items: flex-start; gap: 10px; padding: 9px 16px; color: #FCD34D; font-size: 12.5px; font-weight: 600; line-height: 1.5; background: rgba(245,158,11,0.08); border-bottom: 1px solid rgba(245,158,11,0.3); }
+        .hm-fieldmsg { font-size: 13.5px; color: #E2E8F0; font-weight: 600; line-height: 1.5; max-width: 560px; }
+        .hm-fieldstat { font-size: 27px; font-weight: 900; letter-spacing: -0.5px; color: ${TEXT}; font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; gap: 8px; padding: 8px 16px; border-radius: 12px; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), inset 0 0 0 1px rgba(255,255,255,0.07); }
+        .hm-fieldstat small { font-size: 10px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase; color: rgba(255,255,255,0.62); }
+        .hm-fieldbusy { display: flex; align-items: center; gap: 9px; padding: 8px 16px; color: #FCD34D; font-size: 12.5px; font-weight: 700; background: linear-gradient(90deg, rgba(245,158,11,0.12), rgba(245,158,11,0.03) 55%, ${DARK}); border-bottom: 1px solid rgba(245,158,11,0.22); }
+        .hm-fieldbusy::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: ${GOLD}; box-shadow: 0 0 10px rgba(245,158,11,0.9); animation: hm-pulse 1.1s ease-in-out infinite; flex-shrink: 0; }
+        @keyframes hm-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+        .hm-fieldnote { display: flex; align-items: flex-start; gap: 10px; padding: 9px 16px 9px 14px; color: #FCD34D; font-size: 12.5px; font-weight: 600; line-height: 1.5; background: linear-gradient(180deg, rgba(245,158,11,0.11), rgba(245,158,11,0.05)); border-bottom: 1px solid rgba(245,158,11,0.25); box-shadow: inset 3px 0 0 ${GOLD}; }
         .hm-fieldnote-x { background: none; border: none; color: ${MUTED}; font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1; padding: 0 2px; }
-        .hm-selcard { position: absolute; right: 12px; bottom: 12px; z-index: 7; background: rgba(13,17,23,0.92); border: 1px solid ${BORDER}; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; backdrop-filter: blur(6px); }
+        .hm-selcard { position: absolute; right: 14px; bottom: 14px; z-index: 7; background: rgba(13,17,23,0.88); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 11px 14px; display: flex; align-items: center; gap: 11px; backdrop-filter: blur(10px); box-shadow: 0 14px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
         @media (max-width: 820px) {
           .hm-body { flex-direction: column; } .hm-panel { width: 100%; border-left: none; border-top: 1px solid ${BORDER}; overflow: visible; } .hm-layout { height: auto; }
           /* the canvas-wrap's children are all absolutely positioned — without this it
