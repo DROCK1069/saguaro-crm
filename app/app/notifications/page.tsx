@@ -169,7 +169,7 @@ export default function NotificationsPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {(['all', 'unread'] as const).map(f => (
           <button key={f} onClick={() => setReadFilter(f)}
-            style={{ padding: '6px 16px', borderRadius: 6, border: `1px solid ${readFilter === f ? GOLD : BORDER}`, background: readFilter === f ? 'rgba(245, 158, 11,.12)' : 'transparent', color: readFilter === f ? GOLD : DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
+            style={{ padding: '6px 16px', borderRadius: 'var(--radius-sm)', border: `1px solid ${readFilter === f ? 'var(--brand-primary-25)' : 'var(--border-default)'}`, background: readFilter === f ? 'var(--brand-primary-12)' : 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', color: readFilter === f ? GOLD : DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
             {f === 'all' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
           </button>
         ))}
@@ -179,7 +179,7 @@ export default function NotificationsPage() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
         {TYPE_GROUPS.filter(g => g === 'All' || typeCounts[g] > 0).map(g => (
           <button key={g} onClick={() => setTypeFilter(g)}
-            style={{ padding: '4px 12px', borderRadius: 20, border: `1px solid ${typeFilter === g ? GOLD : BORDER}`, background: typeFilter === g ? 'rgba(245, 158, 11,.12)' : 'transparent', color: typeFilter === g ? GOLD : DIM, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            style={{ padding: '4px 12px', borderRadius: 'var(--radius-pill)', border: `1px solid ${typeFilter === g ? 'var(--brand-primary-25)' : 'var(--border-default)'}`, background: typeFilter === g ? 'var(--brand-primary-12)' : 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', color: typeFilter === g ? GOLD : DIM, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
             {g}{typeCounts[g] > 0 && g !== 'All' ? ` (${typeCounts[g]})` : ''}
           </button>
         ))}

@@ -121,22 +121,22 @@ select:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245, 158, 11,0.
 select option { background-color: #141416; color: #FFFFFF; font-size: 14px; padding: 8px 12px; }
 select option:checked, select option:hover { background-color: #1c1c1e; color: #F59E0B; }
 
-/* ── react-datepicker Apple light theme ── */
+/* ── react-datepicker dark theme (Saguaro) ── */
 .saguaro-calendar {
-  background: rgba(20,20,22,0.98) !important;
+  background: #141416 !important;
   backdrop-filter: blur(40px) !important;
   -webkit-backdrop-filter: blur(40px) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  border-radius: 14px !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-lg) !important;
   font-family: inherit !important;
   font-size: 13px !important;
   color: #FFFFFF !important;
-  box-shadow: 0 16px 44px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.04) !important;
 }
 .saguaro-calendar .react-datepicker__header {
   background: #1c1c1e !important;
-  border-bottom: 1px solid rgba(0,0,0,0.06) !important;
-  border-radius: 14px 14px 0 0 !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
 }
 .saguaro-calendar .react-datepicker__current-month,
 .saguaro-calendar .react-datepicker__day-name {
@@ -149,28 +149,29 @@ select option:checked, select option:hover { background-color: #1c1c1e; color: #
   transition: all 0.15s ease !important;
 }
 .saguaro-calendar .react-datepicker__day:hover {
-  background: rgba(0,0,0,0.05) !important;
-  color: #F59E0B !important;
+  background: rgba(255,255,255,0.08) !important;
+  color: var(--brand-primary) !important;
 }
 .saguaro-calendar .react-datepicker__day--selected,
 .saguaro-calendar .react-datepicker__day--keyboard-selected {
-  background: #F59E0B !important;
-  color: #FFFFFF !important;
+  background: linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover)) !important;
+  color: #241500 !important;
   font-weight: 700 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35) !important;
 }
 .saguaro-calendar .react-datepicker__day--today {
-  border: 1px solid #F59E0B !important;
-  background: transparent !important;
-  color: #F59E0B !important;
+  border: 1px solid var(--brand-primary-35) !important;
+  background: var(--brand-primary-12) !important;
+  color: var(--brand-primary) !important;
 }
 .saguaro-calendar .react-datepicker__day--outside-month {
-  color: #5B677A !important;
+  color: var(--text-tertiary) !important;
 }
 .saguaro-calendar .react-datepicker__navigation-icon::before {
-  border-color: #8094B0 !important;
+  border-color: var(--text-tertiary) !important;
 }
 .saguaro-calendar .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
-  border-color: #F59E0B !important;
+  border-color: var(--brand-primary) !important;
 }
 .react-datepicker-wrapper {
   width: 100%;

@@ -277,7 +277,9 @@ export default function DocumentsPage() {
   }
 
   const projectSelectStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`, borderRadius: 10,
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
+    border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
     color: TEXT, fontSize: 13, fontWeight: 600, padding: '9px 12px', cursor: 'pointer',
   };
 

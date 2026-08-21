@@ -683,7 +683,7 @@ function MeetingsPage() {
             {selectMode ? 'Cancel' : 'Select'}
           </button>
         )}
-        <button onClick={openCreate} style={{ ...btnStyle(GOLD), flex: 1, justifyContent: 'center', color: '#000' }}>
+        <button onClick={openCreate} style={{ ...btnStyle(GOLD), flex: 1, justifyContent: 'center', background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#241500', fontWeight: 800, boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
           + New Meeting
         </button>
       </div>

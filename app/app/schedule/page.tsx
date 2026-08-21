@@ -318,7 +318,7 @@ export default function SchedulePage() {
           <h1 style={{ margin: 0, fontSize: font.size['3xl'], fontWeight: font.weight.black, color: colors.text }}>Schedule</h1>
           <p style={{ margin: '4px 0 0', fontSize: font.size.md, color: colors.textMuted }}>Manage tasks, track progress, and map dependencies across the build.</p>
         </div>
-        <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: colors.gold, border: 'none', borderRadius: radius.lg, color: colors.dark, fontSize: font.size.md, fontWeight: font.weight.black, cursor: 'pointer' }}>
+        <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: radius.lg, color: '#241500', fontSize: font.size.md, fontWeight: font.weight.black, cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
           <Plus size={16} weight="bold" /> New Task
         </button>
       </div>

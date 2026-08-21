@@ -334,12 +334,12 @@ export default function PayAppsPage() {
                           {copiedId===pa.id&&<span style={{fontSize:10,color:'#3dd68c',fontWeight:600}}>Copied!</span>}
                           <button onClick={()=>openPayMenu(pa.id)} style={{background:'none',border:'none',color:DIM,cursor:'pointer',fontSize:10,padding:'2px 4px',lineHeight:1,opacity:0.6}} onMouseEnter={e=>(e.currentTarget.style.opacity='1')} onMouseLeave={e=>(e.currentTarget.style.opacity='0.6')}><span style={{display:'inline-flex',verticalAlign:'middle'}}><CaretDown size={12} color={DIM} /></span></button>
                           {menuId===pa.id&&(
-                            <div style={{position:'absolute',top:36,right:14,background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,padding:4,zIndex:100,minWidth:150,boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>
+                            <div style={{position:'absolute',top:36,right:14,background:RAISED,border:`1px solid ${BORDER}`,borderRadius:'var(--radius-md)',padding:6,zIndex:100,minWidth:150,boxShadow:'var(--shadow-lg)'}}>
                               {[
                                 {label:'Edit Amount',icon:<PencilSimple size={14} color={TEXT} />,action:()=>{setMenuId(null);setEditId(pa.id);setEditVal(String(pa.current_payment_due||0));}},
                                 {label:'Copy Amount',icon:<Copy size={14} color={TEXT} />,action:()=>handleCopyPay(pa.id,pa.current_payment_due||0)},
                               ].map(item=>(
-                                <div key={item.label} onClick={item.action} style={{padding:'7px 12px',fontSize:12,color:TEXT,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background=DARK)} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                                <div key={item.label} onClick={item.action} style={{padding:'7px 12px',fontSize:12,color:TEXT,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.06)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
                                   <span style={{fontSize:14}}>{item.icon}</span>{item.label}
                                 </div>
                               ))}

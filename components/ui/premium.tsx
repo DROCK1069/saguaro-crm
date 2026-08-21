@@ -48,7 +48,7 @@ export const PREMIUM_FX = `
 .pmHover:hover{transform:translateY(-4px);border-color:${A45}}
 .pmHover:hover .pmChip{box-shadow:0 0 22px ${A30}}
 .pmBtn{transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
-.pmBtn:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.pmBtn:hover{transform:translateY(-1px);filter:brightness(1.04)}
 .pmShine{background-size:200% 100%;animation:pmShimmer 3.6s linear infinite}
 .pmSkeleton{animation:pmSkeleton 1.4s ease-in-out infinite}
 /* Beat the global h1 !important size cap (globals.css) with higher specificity */
@@ -372,15 +372,15 @@ export function PremiumEmpty({
 export const goldButtonStyle: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   padding: '11px 20px', borderRadius: 12, border: 'none', cursor: 'pointer',
-  background: `linear-gradient(135deg, ${GOLD}, ${GOLD_HI})`, color: '#1A1206',
+  background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD} 60%, var(--brand-primary-hover))`, color: '#241500',
   fontWeight: 800, fontSize: 13.5, letterSpacing: '0.01em', textDecoration: 'none',
-  boxShadow: '0 10px 26px -10px rgba(245,158,11,0.6)',
+  boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
 };
 
 export const ghostButtonStyle: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   padding: '11px 18px', borderRadius: 12, cursor: 'pointer',
-  background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.82)',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', color: 'rgba(255,255,255,0.82)',
   border: `1px solid ${BORDER}`, fontWeight: 700, fontSize: 13.5, textDecoration: 'none',
 };
 

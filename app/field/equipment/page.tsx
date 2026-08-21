@@ -263,13 +263,13 @@ function EquipmentPage() {
                 autoComplete="off"
               />
               {showSuggestions && filteredSuggestions.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 10, zIndex: 20, overflow: 'hidden', marginTop: 2 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-surface-2)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 20, overflow: 'hidden', marginTop: 4 }}>
                   {filteredSuggestions.map(s => (
                     <button
                       key={s}
                       type="button"
                       onMouseDown={() => { setEquipName(s); setShowSuggestions(false); }}
-                      style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 14px', color: TEXT, fontSize: 14, textAlign: 'left', cursor: 'pointer', borderBottom: `1px solid ${BORDER}` }}
+                      style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 14px', color: TEXT, fontSize: 14, textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)' }}
                     >
                       {s}
                     </button>

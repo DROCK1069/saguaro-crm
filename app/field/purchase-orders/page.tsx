@@ -317,7 +317,7 @@ function PurchaseOrdersInner() {
     padding: '10px 18px', border: 'none', borderRadius: 8, fontSize: 14,
     fontWeight: 600, cursor: 'pointer', transition: 'opacity .15s',
   };
-  const btnGold: React.CSSProperties = { ...btnBase, background: GOLD, color: '#000' };
+  const btnGold: React.CSSProperties = { ...btnBase, background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#241500', fontWeight: 800, boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' };
   const btnOutline: React.CSSProperties = {
     ...btnBase, background: 'transparent', border: `1px solid ${BORDER}`, color: TEXT,
   };

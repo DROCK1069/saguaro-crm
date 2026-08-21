@@ -51,7 +51,7 @@ export default function SearchFilter({
           placeholder={placeholder}
           style={{
             width: '100%', padding: '9px 12px 9px 36px',
-            background: 'rgba(0,0,0,.04)', border: `1px solid ${BORDER}`,
+            background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`,
             borderRadius: 10, color: TEXT, fontSize: 13, outline: 'none',
             boxSizing: 'border-box',
           }}
@@ -72,8 +72,8 @@ export default function SearchFilter({
               style={{
                 padding: '4px 12px', borderRadius: 16, fontSize: 11, fontWeight: 600,
                 whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
-                background: activeFilter === f.value ? 'rgba(245, 158, 11,.2)' : 'rgba(0,0,0,.04)',
-                border: `1px solid ${activeFilter === f.value ? GOLD : 'rgba(0,0,0,.08)'}`,
+                background: activeFilter === f.value ? 'rgba(245, 158, 11,.2)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${activeFilter === f.value ? GOLD : 'rgba(255,255,255,0.08)'}`,
                 color: activeFilter === f.value ? GOLD : DIM,
               }}>
               {f.label}
@@ -84,7 +84,7 @@ export default function SearchFilter({
               value={activeSort}
               onChange={e => onSort?.(e.target.value)}
               style={{
-                marginLeft: 'auto', padding: '4px 8px', background: 'rgba(0,0,0,.04)',
+                marginLeft: 'auto', padding: '4px 8px', background: 'rgba(255,255,255,0.05)',
                 border: `1px solid ${BORDER}`, borderRadius: 8, color: DIM, fontSize: 11,
                 cursor: 'pointer',
               }}

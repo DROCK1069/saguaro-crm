@@ -2,10 +2,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-const GOLD   = '#F59E0B';
+const GOLD   = 'var(--brand-primary)';
 const DARK   = '#0a0a0a';
 const RAISED = '#141416';
-const BORDER = 'rgba(255,255,255,0.12)';
+const BORDER = 'var(--border-default)';
 const DIM    = '#CBD5E1';
 const TEXT   = '#FFFFFF';
 
@@ -194,7 +194,7 @@ export default function CommandPalette({ onScoreBid }: Props) {
       style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.72)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
       onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}>
       <div
-        style={{ width: '100%', maxWidth: 620, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, boxShadow: '0 32px 80px rgba(0,0,0,.8)', overflow: 'hidden', margin: '0 16px' }}
+        style={{ width: '100%', maxWidth: 620, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg), 0 32px 80px rgba(0,0,0,.55)', overflow: 'hidden', margin: '0 16px' }}
         onKeyDown={onKeyDown}>
 
         {/* Search Input */}
@@ -225,7 +225,7 @@ export default function CommandPalette({ onScoreBid }: Props) {
             // Grouped sections when no query
             sections.map(section => (
               <div key={section.key}>
-                <div style={{ padding: '8px 18px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: DIM }}>{section.label}</div>
+                <div style={{ padding: '8px 18px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-tertiary)' }}>{section.label}</div>
                 {section.items.map(({ item, idx }) => (
                   <ItemRow key={item.id} item={item} idx={idx} isFocused={idx === focused} onMouseEnter={() => setFocused(idx)} onClick={() => select(item)} />
                 ))}
@@ -267,7 +267,7 @@ function ItemRow({
         display: 'flex', alignItems: 'center', gap: 14, padding: '11px 18px',
         cursor: 'pointer',
         borderLeft: isFocused ? `3px solid ${GOLD}` : '3px solid transparent',
-        background: isFocused ? 'rgba(245, 158, 11,.07)' : 'transparent',
+        background: isFocused ? 'rgba(255,255,255,0.06)' : 'transparent',
         transition: 'background .1s, border-left-color .1s',
       }}>
       <span style={{ fontSize: 19, flexShrink: 0 }}>{item.icon}</span>
@@ -278,8 +278,8 @@ function ItemRow({
       {item.shortcut && (
         <kbd style={{
           flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
-          background: isFocused ? 'rgba(245, 158, 11,.2)' : 'rgba(255,255,255,0.08)',
-          border: `1px solid ${isFocused ? 'rgba(245, 158, 11,.4)' : 'rgba(255,255,255,0.12)'}`,
+          background: isFocused ? 'var(--brand-primary-18)' : 'rgba(255,255,255,0.08)',
+          border: `1px solid ${isFocused ? 'var(--brand-primary-35)' : 'var(--border-default)'}`,
           color: isFocused ? GOLD : DIM, letterSpacing: 0.5,
         }}>
           {item.shortcut}

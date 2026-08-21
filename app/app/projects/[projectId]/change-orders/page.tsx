@@ -458,12 +458,12 @@ export default function ChangeOrdersPage() {
                             {coCopiedId===co.id&&<span style={{fontSize:10,color:'#3dd68c',fontWeight:600}}>Copied!</span>}
                             <button onClick={()=>openCoMenu(co.id)} style={{background:'none',border:'none',color:DIM,cursor:'pointer',fontSize:10,padding:'2px 4px',lineHeight:1,opacity:0.6}} onMouseEnter={e=>(e.currentTarget.style.opacity='1')} onMouseLeave={e=>(e.currentTarget.style.opacity='0.6')}><CaretDown size={10} color={DIM} weight="regular" /></button>
                             {coMenuId===co.id&&(
-                              <div style={{position:'absolute',top:36,right:14,background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,padding:4,zIndex:100,minWidth:150,boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>
+                              <div style={{position:'absolute',top:36,right:14,background:RAISED,border:`1px solid ${BORDER}`,borderRadius:'var(--radius-md)',padding:6,zIndex:100,minWidth:150,boxShadow:'var(--shadow-lg)'}}>
                                 {[
                                   {label:'Edit Amount',icon:<PencilSimple size={14} color={TEXT} weight="regular" />,action:()=>{setCoMenuId(null);setCoEditId(co.id);setCoEditVal(String(co.cost_impact||0));}},
                                   {label:'Copy Amount',icon:<Copy size={14} color={TEXT} weight="regular" />,action:()=>handleCopyCO(co.id,co.cost_impact||0)},
                                 ].map(item=>(
-                                  <div key={item.label} onClick={item.action} style={{padding:'7px 12px',fontSize:12,color:TEXT,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background=DARK)} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                                  <div key={item.label} onClick={item.action} style={{padding:'7px 12px',fontSize:12,color:TEXT,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.06)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
                                     <span style={{fontSize:14,display:'inline-flex',alignItems:'center'}}>{item.icon}</span>{item.label}
                                   </div>
                                 ))}

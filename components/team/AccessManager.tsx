@@ -235,11 +235,11 @@ function Modal({ open, onClose, title, width, children }: {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} onClick={onClose} />
-      <div style={{ position: 'relative', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
-        width: width ?? 520, maxHeight: '85vh', overflowY: 'auto', padding: 28, zIndex: 1 }}>
+      <div style={{ position: 'relative', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-lg, 12px)',
+        width: width ?? 520, maxHeight: '85vh', overflowY: 'auto', padding: 28, zIndex: 1, boxShadow: 'var(--shadow-lg)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <h3 style={{ color: GOLD, margin: 0, fontSize: 18 }}>{title}</h3>
-          <button onClick={onClose} style={{ ...btn('transparent', DIM), fontSize: 20, padding: 4 }}>X</button>
+          <button onClick={onClose} style={{ ...btn('transparent', DIM), fontSize: 20, padding: '2px 8px', lineHeight: 1 }}>×</button>
         </div>
         {children}
       </div>
@@ -631,7 +631,7 @@ export function AccessManager() {
             Manage access levels across {CATEGORIES.length} categories -- {roles.length} roles configured
           </p>
         </div>
-        <button onClick={openCreateRole} style={btn(GOLD, BG)}>+ New Role</button>
+        <button onClick={openCreateRole} style={{ ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)' }}>+ New Role</button>
       </div>
 
       {/* tab bar */}
@@ -852,8 +852,8 @@ export function AccessManager() {
               {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
             <div style={{ flex: 1 }} />
-            <button onClick={() => setShowInvite(true)} style={btn(RAISED, GOLD)}>+ Invite User</button>
-            <button onClick={() => setShowAssign(true)} style={btn(GOLD, BG)}>+ Assign Role</button>
+            <button onClick={() => setShowInvite(true)} style={{ ...btn('transparent', GOLD), background: 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))', border: `1px solid ${BORDER}` }}>+ Invite User</button>
+            <button onClick={() => setShowAssign(true)} style={{ ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)' }}>+ Assign Role</button>
           </div>
 
           {/* ── Pending sent invites (expiry countdown + cancel / resend) ── */}
@@ -1165,7 +1165,7 @@ export function AccessManager() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={() => setShowRoleModal(false)} style={btn(RAISED, DIM)}>Cancel</button>
           <button onClick={saveRole} disabled={!formName.trim()} style={{
-            ...btn(GOLD, BG), opacity: formName.trim() ? 1 : 0.5,
+            ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)', opacity: formName.trim() ? 1 : 0.5,
           }}>{editRoleId ? 'Save Changes' : 'Create Role'}</button>
         </div>
       </Modal>
@@ -1200,7 +1200,7 @@ export function AccessManager() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={() => setShowAssign(false)} style={btn(RAISED, DIM)}>Cancel</button>
           <button onClick={assignRole} disabled={!assignUserId || !assignRoleId} style={{
-            ...btn(GOLD, BG), opacity: assignUserId && assignRoleId ? 1 : 0.5,
+            ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)', opacity: assignUserId && assignRoleId ? 1 : 0.5,
           }}>Assign</button>
         </div>
       </Modal>
@@ -1228,7 +1228,7 @@ export function AccessManager() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={() => setShowInvite(false)} style={btn(RAISED, DIM)}>Cancel</button>
           <button onClick={sendInvite} disabled={!inviteEmail.trim()} style={{
-            ...btn(GOLD, BG), opacity: inviteEmail.trim() ? 1 : 0.5,
+            ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)', opacity: inviteEmail.trim() ? 1 : 0.5,
           }}>Send Invite</button>
         </div>
       </Modal>
@@ -1240,7 +1240,7 @@ export function AccessManager() {
           background: RAISED, border: `1px solid ${toast.kind === 'err' ? RED : GREEN}`,
           borderLeft: `4px solid ${toast.kind === 'err' ? RED : GREEN}`, borderRadius: 8,
           padding: '12px 18px', color: TEXT, fontSize: 13, fontWeight: 600,
-          boxShadow: '0 8px 28px rgba(0,0,0,0.45)', maxWidth: 340,
+          boxShadow: 'var(--shadow-lg, 0 8px 28px rgba(0,0,0,0.45))', maxWidth: 340,
         }}>
           {toast.msg}
         </div>

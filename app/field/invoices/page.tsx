@@ -474,7 +474,7 @@ function InvoicesPage() {
         }}
         actions={
           <>
-            <button onClick={() => setView('create')} style={{ ...btnBase, background: GOLD, color: '#000' }}>
+            <button onClick={() => setView('create')} style={{ ...btnBase, background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#241500', fontWeight: 800, boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
               + New Invoice
             </button>
             <button onClick={() => setView('aging')} style={{ ...btnBase, background: BLUE, color: '#fff' }}>

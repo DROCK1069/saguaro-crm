@@ -249,7 +249,7 @@ function FolderTreeItem({
           border: isSelected ? `1px solid rgba(245, 158, 11,0.3)` : '1px solid transparent',
           transition: 'background 0.15s',
         }}
-        onMouseEnter={(e) => { if (!isSelected) (e.currentTarget.style.background = 'rgba(139,170,200,0.06)'); }}
+        onMouseEnter={(e) => { if (!isSelected) (e.currentTarget.style.background = 'rgba(255,255,255,0.06)'); }}
         onMouseLeave={(e) => { if (!isSelected) (e.currentTarget.style.background = 'transparent'); }}
       >
         {folder.children.length > 0 ? (
@@ -303,7 +303,7 @@ function VersionHistoryPanel({
   }
 
   return (
-    <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+    <div style={{ background: RAISED, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: 16, marginBottom: 12, boxShadow: 'var(--shadow-lg)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>Version History</h3>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -396,7 +396,7 @@ function DocInfoPanel({
   });
 
   return (
-    <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+    <div style={{ background: RAISED, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: 16, marginBottom: 12, boxShadow: 'var(--shadow-lg)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>Document Info</h3>
         <button onClick={onClose} style={{ ...iconBtn, padding: 4 }}>
@@ -1305,7 +1305,7 @@ function DocsPage() {
       {/* Advanced search panel */}
       {showSearchPanel && (
         <div style={{
-          marginBottom: 12, padding: 14, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
+          marginBottom: 12, padding: 14, background: RAISED, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Filters</span>
@@ -1416,11 +1416,12 @@ function DocsPage() {
         {/* Folder tree sidebar */}
         {showFolderTree && (
           <div style={{
-            width: 220, minWidth: 220, background: RAISED, border: `1px solid ${BORDER}`,
-            borderRadius: 12, padding: '10px 6px', alignSelf: 'flex-start',
+            width: 220, minWidth: 220, background: RAISED, border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)', padding: '10px 6px', alignSelf: 'flex-start',
+            boxShadow: 'var(--shadow-md)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: TEXT }}>Folders</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 0.8 }}>Folders</span>
               <button
                 onClick={() => setShowNewFolderInput(true)}
                 style={{ background: 'none', border: 'none', color: GOLD, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
@@ -1440,7 +1441,7 @@ function DocsPage() {
                 background: !selectedFolder ? 'rgba(245, 158, 11,0.12)' : 'transparent',
                 border: !selectedFolder ? '1px solid rgba(245, 158, 11,0.3)' : '1px solid transparent',
               }}
-              onMouseEnter={(e) => { if (selectedFolder) (e.currentTarget.style.background = 'rgba(139,170,200,0.06)'); }}
+              onMouseEnter={(e) => { if (selectedFolder) (e.currentTarget.style.background = 'rgba(255,255,255,0.06)'); }}
               onMouseLeave={(e) => { if (selectedFolder) (e.currentTarget.style.background = 'transparent'); }}
             >
               <span style={{ width: 14 }} />

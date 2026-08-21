@@ -397,14 +397,14 @@ export default function FormsPage() {
               onClick={() => setView('builder')}
               style={{
                 padding: '10px 18px',
-                borderRadius: 10,
+                borderRadius: 'var(--radius-md)',
                 border: 'none',
-                background: `linear-gradient(135deg, ${GOLD}, ${GOLD}cc)`,
-                color: BASE,
-                fontWeight: 700,
+                background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',
+                color: '#241500',
+                fontWeight: 800,
                 fontSize: 14,
                 cursor: 'pointer',
-                boxShadow: `0 4px 16px ${GOLD}33`,
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 14px var(--brand-primary-35)',
               }}
             >
               + Create Template
@@ -608,9 +608,9 @@ export default function FormsPage() {
             onClick={addField}
             style={{
               padding: '10px 0',
-              borderRadius: 8,
-              border: `1px solid ${GOLD}44`,
-              background: `${GOLD}15`,
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-default)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
               color: GOLD,
               fontWeight: 700,
               fontSize: 13,
@@ -627,14 +627,14 @@ export default function FormsPage() {
           style={{
             width: '100%',
             padding: '14px 0',
-            borderRadius: 12,
+            borderRadius: 'var(--radius-lg)',
             border: 'none',
-            background: `linear-gradient(135deg, ${GOLD}, ${GOLD}cc)`,
-            color: BASE,
+            background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',
+            color: '#241500',
             fontWeight: 800,
             fontSize: 15,
             cursor: 'pointer',
-            boxShadow: `0 4px 20px ${GOLD}33`,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 8px 22px var(--brand-primary-35)',
           }}
         >
           Save Template

@@ -76,9 +76,9 @@ export function StatCard({ icon, label, value, sub, trend, accent, onClick, href
         <div
           style={{
             color: 'var(--sg-text-2)',
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 700,
-            letterSpacing: '0.04em',
+            letterSpacing: '0.08em',
             textTransform: 'uppercase',
             minWidth: 0,
           }}

@@ -137,16 +137,17 @@ const card: React.CSSProperties = {
   boxShadow: '0 10px 30px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
 };
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 12px', borderRadius: 6, border: `1px solid ${BORDER}`,
+  width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)',
   background: BG, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box',
 };
 const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
 const overlayStyle: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(3,7,18,.72)', display: 'flex',
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex',
   alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16,
 };
 const modalStyle: React.CSSProperties = {
-  background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12,
+  background: RAISED, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)',
+  boxShadow: 'var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.05)',
   padding: 28, width: 640, maxWidth: '100%', maxHeight: '88vh', overflowY: 'auto', color: TEXT,
 };
 const badgeStyle = (color: string): React.CSSProperties => ({
@@ -412,9 +413,13 @@ export default function ApprovalWorkflowsPage() {
 
   const tabButton = (t: Tab, label: string, Icon: React.ElementType, count?: number) => (
     <button key={t} onClick={() => setTab(t)} style={{
-      ...btnBase(t === tab ? GOLD : BORDER, t === tab ? '#000' : DIM, t !== tab),
-      background: t === tab ? GOLD : 'transparent', color: t === tab ? '#000' : DIM,
-      border: `1px solid ${t === tab ? GOLD : BORDER}`, position: 'relative',
+      ...btnBase(t === tab ? GOLD : BORDER, t === tab ? '#241500' : DIM, t !== tab),
+      background: t === tab
+        ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+      color: t === tab ? '#241500' : DIM,
+      border: `1px solid ${t === tab ? 'transparent' : 'var(--border-default)'}`, position: 'relative',
+      boxShadow: t === tab ? '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none',
     }}>
       <Icon size={15} weight={t === tab ? 'fill' : 'bold'} />{label}
       {count !== undefined && count > 0 && (
@@ -463,10 +468,10 @@ export default function ApprovalWorkflowsPage() {
   return (
     <>
       <style>{`
-        .aw-row:hover { background: ${BORDER}25 !important; }
+        .aw-row:hover { background: rgba(255,255,255,0.05) !important; }
       `}</style>
       {toast && (
-        <div style={{ position: 'fixed', top: 20, right: 20, background: GOLD, color: '#1C1C1E', padding: '10px 22px', borderRadius: 8, fontWeight: 700, fontSize: 13, zIndex: 9999, boxShadow: '0 4px 24px rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ position: 'fixed', top: 20, right: 20, background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#241500', padding: '10px 22px', borderRadius: 'var(--radius-md)', fontWeight: 700, fontSize: 13, zIndex: 9999, boxShadow: 'var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <CheckCircle size={16} weight="fill" />{toast}
         </div>
       )}
@@ -786,7 +791,7 @@ export default function ApprovalWorkflowsPage() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <span style={{ fontSize: 13, color: DIM }}>Define the approval chain in order.</span>
-                  <button style={btnBase(BLUE, '#fff')} onClick={addStep}><Plus size={14} weight="bold" />Add Step</button>
+                  <button className="btn-gold" style={{ padding: '7px 14px', fontSize: 12.5, cursor: 'pointer' }} onClick={addStep}><Plus size={14} weight="bold" />Add Step</button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {wfSteps.map(step => (

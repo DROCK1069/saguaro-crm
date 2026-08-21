@@ -908,7 +908,7 @@ function PermitsPageInner() {
 
         {/* ─── Action Buttons ─── */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <button onClick={() => setView('create')} style={{ ...btnStyle(GOLD), flex: 1, color: '#000' }}>
+          <button onClick={() => setView('create')} style={{ ...btnStyle(GOLD), flex: 1, background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#241500', fontWeight: 800, boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
             + New Permit
           </button>
           <button onClick={handleExportList} style={{ ...btnStyle(BORDER) }}>

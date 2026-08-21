@@ -3,7 +3,7 @@ import React from 'react';
 import DatePicker from 'react-datepicker';
 
 const DARK = '#1c1c1e';
-const BORDER = 'rgba(255,255,255,0.12)';
+const BORDER = 'var(--border-default)';
 const TEXT = '#FFFFFF';
 
 const DEFAULT_INPUT_STYLE: React.CSSProperties = {
@@ -11,7 +11,7 @@ const DEFAULT_INPUT_STYLE: React.CSSProperties = {
   padding: '10px 12px',
   background: DARK,
   border: `1px solid ${BORDER}`,
-  borderRadius: 8,
+  borderRadius: 'var(--radius-sm)',
   color: TEXT,
   fontSize: 13,
   outline: 'none',

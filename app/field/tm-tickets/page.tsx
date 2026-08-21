@@ -634,8 +634,9 @@ function TMTicketsPage() {
               </button>
             )}
             <button onClick={() => { resetForm(); setView('create'); }} style={{
-              background: GOLD, border: 'none', borderRadius: 10, padding: '10px 16px',
-              color: '#000', fontSize: 14, fontWeight: 800, cursor: 'pointer', flexShrink: 0,
+              background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 10, padding: '10px 16px',
+              color: '#241500', fontSize: 14, fontWeight: 800, cursor: 'pointer', flexShrink: 0,
+              boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
             }}>
               + New T&M
             </button>

@@ -77,7 +77,7 @@ export function GradientButton({
     whiteSpace: 'nowrap',
     userSelect: 'none',
     transition: 'transform .16s ease, box-shadow .16s ease, filter .16s ease, border-color .16s ease, background .16s ease',
-    transform: hover && !isDisabled ? 'translateY(-2px)' : 'none',
+    transform: hover && !isDisabled ? 'translateY(-1px)' : 'none',
     opacity: isDisabled ? 0.55 : 1,
     ...style,
   };
@@ -85,19 +85,21 @@ export function GradientButton({
   const variantStyle: React.CSSProperties =
     variant === 'primary'
       ? {
-          color: '#0a0a0a',
+          color: '#241500',
           border: '1px solid transparent',
-          background: `linear-gradient(135deg, ${GOLD_HI}, ${GOLD})`,
+          background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD} 60%, var(--brand-primary-hover))`,
           boxShadow: hover && !isDisabled
-            ? `0 14px 34px -10px color-mix(in srgb, var(--brand-primary) 60%, transparent)`
-            : `0 8px 22px -12px color-mix(in srgb, var(--brand-primary) 45%, transparent)`,
-          filter: hover && !isDisabled ? 'brightness(1.05)' : 'none',
+            ? `0 8px 22px var(--brand-primary-35), inset 0 1px 0 rgba(255,255,255,0.35)`
+            : `0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)`,
+          filter: hover && !isDisabled ? 'brightness(1.04)' : 'none',
         }
       : variant === 'ghost'
       ? {
           color: 'var(--sg-text)',
           border: `1px solid ${hover && !isDisabled ? 'color-mix(in srgb, var(--brand-primary) 55%, transparent)' : 'var(--sg-border-strong)'}`,
-          background: hover && !isDisabled ? 'color-mix(in srgb, var(--brand-primary) 10%, transparent)' : 'transparent',
+          background: hover && !isDisabled
+            ? 'linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04))'
+            : 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
         }
       : {
           color: GOLD,

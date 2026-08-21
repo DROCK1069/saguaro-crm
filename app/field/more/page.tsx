@@ -201,7 +201,7 @@ function MorePage(){
             ))}
           </div>
           <p style={sLbl}>Desktop</p>
-          <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,overflow:'hidden'}}>
+          <div style={{background:RAISED,border:'1px solid var(--border-default)',borderRadius:'var(--radius-lg)',overflow:'hidden',boxShadow:'var(--shadow-md)'}}>
             {DESKTOP.map((l,i)=>(
               <a key={l.href} href={l.href} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:i<DESKTOP.length-1?`1px solid ${BORDER}`:'none',color:TEXT,textDecoration:'none',fontSize:15}}>
                 <span style={{color:DIM,display:'flex',alignItems:'center'}}>{ICONS[l.icon]}</span><span style={{fontWeight:600}}>{l.label}</span><span style={{marginLeft:'auto',color:DIM}}>›</span>
@@ -279,6 +279,6 @@ function Sub({saving,label,online,color,dark}:{saving:boolean;label:string;onlin
 
 const inp:React.CSSProperties={width:'100%',background:'#1c1c1e',border:'1px solid rgba(255,255,255,0.12)',borderRadius:10,padding:'11px 14px',color:'#FFFFFF',fontSize:15,outline:'none'};
 const bkBtn:React.CSSProperties={background:'none',border:'none',color:DIM,fontSize:14,cursor:'pointer',padding:'0 0 12px',display:'block'};
-const sLbl:React.CSSProperties={margin:'0 0 8px',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:0.8};
+const sLbl:React.CSSProperties={margin:'0 0 8px',fontSize:10.5,fontWeight:700,color:'var(--text-tertiary)',textTransform:'uppercase',letterSpacing:0.8};
 
 function hr(hex:string):string{const r=parseInt((hex||'#888').slice(1,3),16),g=parseInt((hex||'#888').slice(3,5),16),b=parseInt((hex||'#888').slice(5,7),16);return `${r},${g},${b}`;}

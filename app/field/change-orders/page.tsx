@@ -1051,8 +1051,9 @@ function ChangeOrdersPage() {
           icon={scopedFieldIcon('changeOrders', 'ph')}
           actions={
             <button onClick={() => isPCOTab ? setView('pco_create') : setView('create')} style={{
-              background: isPCOTab ? PURPLE : GOLD, border: 'none', borderRadius: 10, padding: '10px 16px',
-              color: '#000', fontSize: 14, fontWeight: 800, cursor: 'pointer', flexShrink: 0,
+              background: isPCOTab ? PURPLE : 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 10, padding: '10px 16px',
+              color: isPCOTab ? '#000' : '#241500', fontSize: 14, fontWeight: 800, cursor: 'pointer', flexShrink: 0,
+              boxShadow: isPCOTab ? 'none' : '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
             }}>
               {isPCOTab ? '+ New PCO' : '+ New CO'}
             </button>

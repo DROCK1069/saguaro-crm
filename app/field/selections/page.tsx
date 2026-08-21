@@ -662,7 +662,7 @@ function SelectionsInner() {
           icon={scopedFieldIcon('punchList', 'ph')}
           actions={<>
             <button onClick={() => setView('summary')} style={{ ...btnSecondary, padding: '8px 12px', fontSize: 12 }}>Summary</button>
-            <button onClick={() => setView('new')} style={{ padding: '8px 16px', background: GOLD, border: 'none', borderRadius: 10, color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>+ New</button>
+            <button onClick={() => setView('new')} style={{ padding: '8px 16px', background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 10, color: '#241500', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>+ New</button>
           </>}
         />
         {/* Quick Stats */}

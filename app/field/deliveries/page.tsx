@@ -260,7 +260,7 @@ function DeliveriesPage() {
         subtitle={<>{deliveries.length} total &middot; {pendingCount} pending</>}
         onBack={() => { if (view === 'add') { setView('list'); } else { router.back(); } }}
         actions={view === 'list' ? (
-          <button onClick={() => setView('add')} style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '10px 16px', color: '#000', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
+          <button onClick={() => setView('add')} style={{ background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 10, padding: '10px 16px', color: '#241500', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
             + Add
           </button>
         ) : undefined}

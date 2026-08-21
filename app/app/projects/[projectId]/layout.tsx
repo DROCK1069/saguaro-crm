@@ -174,7 +174,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       {NAV_SECTIONS.map(section => (
         <div key={section.label} style={{ padding: '8px 0' }}>
           {!isCollapsed && (
-            <div style={{ padding: '4px 12px 2px', fontSize: 9, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: '#CBD5E1' }}>
+            <div style={{ padding: '6px 12px 3px', fontSize: 10, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>
               {section.label}
             </div>
           )}
@@ -192,14 +192,17 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
                   gap: 8,
                   padding: isCollapsed ? '8px 16px' : '7px 12px',
                   color: active ? GOLD : DIM,
-                  background: active ? 'rgba(245, 158, 11,.08)' : 'transparent',
+                  background: active ? 'linear-gradient(180deg, var(--brand-primary-18), var(--brand-primary-12))' : 'transparent',
                   borderLeft: `2px solid ${active ? GOLD : 'transparent'}`,
+                  boxShadow: active ? 'inset 0 0 0 1px var(--brand-primary-25)' : 'none',
                   fontSize: 12.5,
                   fontWeight: active ? 700 : 500,
                   textDecoration: 'none',
-                  transition: 'all .1s',
+                  transition: 'background .12s ease, color .12s ease',
                   position: 'relative',
                 }}
+                onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#FFFFFF'; } }}
+                onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = DIM; } }}
               >
                 <span style={{ display: 'inline-flex', flexShrink: 0 }}><Icon size={16} weight="regular" /></span>
                 {!isCollapsed && <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
@@ -216,8 +219,10 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
 
       {/* Back to projects */}
       <div style={{ padding: '8px 12px', borderTop: `1px solid ${BORDER}`, marginTop: 8 }}>
-        <Link href="/app/projects" style={{ display: 'flex', alignItems: 'center', gap: 8, color: DIM, fontSize: 12, textDecoration: 'none' }}>
-          <span style={{ display: 'inline-flex' }}><ArrowLeft size={14} weight="regular" color={DIM} /></span>{!isCollapsed && <span>All Projects</span>}
+        <Link href="/app/projects" style={{ display: 'flex', alignItems: 'center', gap: 8, color: DIM, fontSize: 12, fontWeight: 600, textDecoration: 'none', padding: '6px 8px', margin: '-6px -8px', borderRadius: 8, transition: 'background .12s ease, color .12s ease' }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#FFFFFF'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = DIM; }}>
+          <span style={{ display: 'inline-flex' }}><ArrowLeft size={14} weight="regular" /></span>{!isCollapsed && <span>All Projects</span>}
         </Link>
       </div>
     </>
