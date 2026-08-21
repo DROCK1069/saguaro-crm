@@ -62,7 +62,7 @@ async function main() {
     related_bid_package_id: (pkgFix as any).id,
   } as never).select().single();
   if (coErr) console.error('CO INSERT:', coErr);
-  const { onChangeOrderApproved, onPayAppApproved } = await import('./lib/triggers');
+  const { onChangeOrderApproved, onPayAppApproved } = await import('../lib/triggers');
   await onChangeOrderApproved((co as any).id);
   const { data: projAfter } = await db.from('projects').select('contract_amount').eq('id', projectId).single();
   check('A1: CO bumps project contract sum', Number((projAfter as any).contract_amount) === 105000, `now ${(projAfter as any).contract_amount}`);
