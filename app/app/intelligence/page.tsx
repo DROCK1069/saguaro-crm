@@ -327,7 +327,7 @@ export default function IntelligencePage() {
               gap: 16,
             }}>
               {selected.map((m) => (
-                <div key={m.id} style={{
+                <div key={m.id} className="lift" style={{
                   background: NEST, borderRadius: 14, border: `1px solid ${NEST_BORDER}`,
                   padding: '18px', overflow: 'hidden',
                 }}>

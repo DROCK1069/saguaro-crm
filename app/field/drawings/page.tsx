@@ -1236,7 +1236,7 @@ function DrawingsPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {drawings.map(drawing => (
-            <button key={drawing.id} onClick={() => openDrawing(drawing)} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button key={drawing.id} onClick={() => openDrawing(drawing)} className="lift" style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
               {drawing.thumbnail_url ? (
                 <img src={drawing.thumbnail_url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0, background: '#1c1c1e' }} />
               ) : (

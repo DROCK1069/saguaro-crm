@@ -467,7 +467,7 @@ function TimesheetsInner() {
     color: TEXT, padding: '10px 14px', fontSize: 14, width: '100%', boxSizing: 'border-box',
     outline: 'none',
   };
-  const labelStyle: React.CSSProperties = { color: DIM, fontSize: 12, fontWeight: 600, marginBottom: 4, display: 'block' };
+  const labelStyle: React.CSSProperties = { color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 5, display: 'block' };
   const cardStyle: React.CSSProperties = {
     background: RAISED, borderRadius: 14, border: `1px solid ${BORDER}`,
     padding: 16, marginBottom: 12,
@@ -489,7 +489,7 @@ function TimesheetsInner() {
 
       {/* ── Header ── */}
       <div style={{
-        background: `linear-gradient(135deg, ${RAISED} 0%, #142740 100%)`,
+        background: `linear-gradient(135deg, ${RAISED} 0%, #1c1c1e 100%)`,
         padding: '20px 16px 16px', borderBottom: `1px solid ${BORDER}`,
       }}>
         <FieldPageHeader
@@ -499,7 +499,7 @@ function TimesheetsInner() {
             <button onClick={handlePrint} style={{ ...btnStyle('transparent'), border: `1px solid ${BORDER}`, color: DIM, padding: '8px 12px' }}>
               PDF
             </button>
-            <button onClick={() => { resetForm(); setView('create'); }} style={btnStyle(GOLD)}>
+            <button onClick={() => { resetForm(); setView('create'); }} className="btn-gold" style={{ fontSize: 14 }}>
               + New Entry
             </button>
           </>}
@@ -539,8 +539,8 @@ function TimesheetsInner() {
               borderRadius: 12, padding: '12px 8px', textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 10, color: DIM, fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: s.color, letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -643,8 +643,8 @@ function TimesheetsInner() {
         <div style={{ padding: '0 16px 100px' }}>
           {filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>No timesheet entries</div>
-              <div style={{ fontSize: 14 }}>Create one to get started</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 4 }}>No timesheet entries</div>
+              <div style={{ fontSize: 13 }}>Log hours with New Entry to get started</div>
             </div>
           )}
 
@@ -1128,7 +1128,7 @@ function TimesheetsInner() {
               </div>
 
               {/* Submit */}
-              <button onClick={handleCreate} style={{ ...btnStyle(GOLD), width: '100%', padding: '14px 0', fontSize: 16 }}>
+              <button onClick={handleCreate} className="btn-gold" style={{ width: '100%', justifyContent: 'center', padding: '14px 0', fontSize: 16 }}>
                 Create Entry
               </button>
             </div>

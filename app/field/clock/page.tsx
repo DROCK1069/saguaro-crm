@@ -373,7 +373,7 @@ function ClockPage() {
                   disabled={saving}
                   style={{ width: '100%', background: saving ? '#1c1c1e' : RED, border: 'none', borderRadius: 14, padding: '18px', color: '#fff', fontSize: 18, fontWeight: 900, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5 }}
                 >
-                  {saving ? 'Processing...' : 'Clock Out'}
+                  {saving ? 'Clocking Out...' : 'Clock Out'}
                 </button>
               </>
             ) : (
@@ -581,5 +581,5 @@ export default function FieldClockPage() {
   return <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}><ClockPage /></Suspense>;
 }
 
-const lbl: React.CSSProperties = { fontSize: 12, color: DIM, fontWeight: 600 };
+const lbl: React.CSSProperties = { fontSize: 10.5, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' };
 const inp: React.CSSProperties = { width: '100%', background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };

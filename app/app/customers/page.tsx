@@ -168,12 +168,13 @@ export default function CustomersPage() {
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
           {(['overview', 'discovery', 'recommendations', 'designs', 'materials', 'conversations'] as const).map(tab => (
-            <button key={tab} onClick={() => setDetailTab(tab)} style={{
+            <button key={tab} onClick={() => setDetailTab(tab)} className="pmBtn" style={{
               padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
               border: `1px solid ${detailTab === tab ? GOLD : BORDER}`,
               background: detailTab === tab ? `${GOLD}18` : 'transparent',
               color: detailTab === tab ? GOLD : DIM,
               cursor: 'pointer', textTransform: 'capitalize', whiteSpace: 'nowrap',
+              transition: 'background .15s ease, color .15s ease, border-color .15s ease',
             }}>{tab}</button>
           ))}
         </div>
@@ -360,7 +361,7 @@ export default function CustomersPage() {
                 compact
                 icon={<Package size={30} weight="duotone" color={GOLD} />}
                 title="No materials selected"
-                description="No materials selected."
+                description="Product and material picks from the design studio will appear here."
               />
             )}
           </SectionCard>
@@ -531,8 +532,8 @@ export default function CustomersPage() {
                   <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                     {['Name', 'Email', 'State', 'Status', 'Score', 'Source', 'Created'].map(h => (
                       <th key={h} style={{
-                        padding: '12px 14px', textAlign: 'left', fontSize: 12,
-                        color: DIM, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
+                        padding: '12px 14px', textAlign: 'left', fontSize: 10.5,
+                        color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
                       }}>{h}</th>
                     ))}
                   </tr>

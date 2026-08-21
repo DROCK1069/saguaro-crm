@@ -509,7 +509,8 @@ function SubmittalsPage() {
           <button
             onClick={handleCreateSubmittal}
             disabled={createSubmitting}
-            style={{ ...actionBtn, background: GOLD, width: '100%', marginTop: 4, opacity: createSubmitting ? 0.6 : 1 }}
+            className="btn-gold"
+            style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', fontSize: 14, cursor: 'pointer', marginTop: 4, opacity: createSubmitting ? 0.6 : 1 }}
           >
             {createSubmitting ? 'Creating...' : 'Create Submittal'}
           </button>
@@ -517,7 +518,7 @@ function SubmittalsPage() {
 
         {!online && (
           <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', borderRadius: 10, color: AMBER, fontSize: 12, textAlign: 'center' }}>
-            Offline mode -- submittal will be queued and synced when connected
+            Offline — this submittal will queue and send automatically when you reconnect
           </div>
         )}
       </div>
@@ -606,7 +607,7 @@ function SubmittalsPage() {
           <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 700, color: TEXT }}>Response Tracking</h3>
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#1c1c1e', borderRadius: 10, border: `1px solid ${BORDER}` }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: daysInReview > 14 ? RED : daysInReview > 7 ? AMBER : TEXT }}>{daysInReview}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: daysInReview > 14 ? RED : daysInReview > 7 ? AMBER : TEXT }}>{daysInReview}</div>
               <div style={{ fontSize: 11, color: DIM, marginTop: 2 }}>Days in Review</div>
             </div>
             <div style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: '#1c1c1e', borderRadius: 10, border: `1px solid ${overdue ? 'rgba(239,68,68,.35)' : BORDER}` }}>
@@ -770,7 +771,7 @@ function SubmittalsPage() {
 
         {!online && (
           <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.3)', borderRadius: 10, color: AMBER, fontSize: 12, textAlign: 'center' }}>
-            Offline mode -- reviews will be queued and synced when connected
+            Offline — reviews will queue and send automatically when you reconnect
           </div>
         )}
       </div>
@@ -787,11 +788,8 @@ function SubmittalsPage() {
         actions={
           <button
             onClick={() => setShowCreateForm(true)}
-            style={{
-              background: GOLD, border: 'none', borderRadius: 10, padding: '8px 14px',
-              color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6, marginTop: 2,
-            }}
+            className="btn-gold"
+            style={{ padding: '8px 14px', fontSize: 13, cursor: 'pointer', marginTop: 2 }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={16} height={16}><line x1={12} y1={5} x2={12} y2={19}/><line x1={5} y1={12} x2={19} y2={12}/></svg>
             New
@@ -853,6 +851,7 @@ function SubmittalsPage() {
               <button
                 key={s.id}
                 onClick={() => setSelected(s)}
+                className="lift"
                 style={{ background: RAISED, border: `1px solid ${overdue ? 'rgba(239,68,68,.35)' : BORDER}`, borderRadius: 14, padding: 14, textAlign: 'left', cursor: 'pointer', width: '100%', display: 'block' }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>

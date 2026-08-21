@@ -379,10 +379,10 @@ export default function BillingPage() {
                       disabled={isCurrent || upgrading === plan.id}
                       style={{
                         width: '100%', padding: '11px 0', borderRadius: 8, border: isCurrent ? `1px solid rgba(34,197,94,0.3)` : plan.popular ? 'none' : `1px solid ${BORDER}`,
-                        background: isCurrent ? 'rgba(34,197,94,0.08)' : plan.popular ? `linear-gradient(135deg, ${GOLD}, #D97706)` : 'rgba(255,255,255,0.06)',
-                        color: isCurrent ? GREEN : plan.popular ? '#000' : TEXT,
+                        background: isCurrent ? 'rgba(34,197,94,0.08)' : plan.popular ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : 'rgba(255,255,255,0.06)',
+                        color: isCurrent ? GREEN : plan.popular ? '#241500' : TEXT,
                         fontWeight: 800, fontSize: 13, cursor: isCurrent ? 'default' : 'pointer', marginBottom: 20,
-                        boxShadow: plan.popular && !isCurrent ? `0 4px 16px rgba(245,158,11,0.3)` : 'none',
+                        boxShadow: plan.popular && !isCurrent ? '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none',
                       }}
                     >
                       {isCurrent ? 'Current Plan' : upgrading === plan.id ? 'Loading...' : plan.id === 'enterprise' ? 'Contact Sales' : isUpgrade ? 'Upgrade Now' : 'Select Plan'}
@@ -458,7 +458,7 @@ export default function BillingPage() {
       {/* Cancel Confirmation Modal */}
       {showCancel && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: '#141416', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%' }}>
+          <div style={{ background: '#141416', border: `1px solid ${BORDER}`, borderRadius: 16, padding: '36px 32px', maxWidth: 440, width: '100%', boxShadow: 'var(--shadow-lg)' }}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12, color: TEXT }}>Cancel your subscription?</div>
             <div style={{ fontSize: 14, color: DIM, lineHeight: 1.65, marginBottom: 28 }}>
               You'll retain access until the end of your current billing period. Your data will be preserved for 30 days after that. You can reactivate anytime.

@@ -205,7 +205,7 @@ function PunchItemModal({
             </div>
             <h3 style={{ margin: '0 0 6px', color: TEXT, fontSize: 18 }}>{createdCount} Punch Item{createdCount !== 1 ? 's' : ''} Created</h3>
             <p style={{ margin: '0 0 16px', color: DIM, fontSize: 13 }}>
-              {online ? 'Items added to the punch list.' : 'Queued offline -- will sync when reconnected.'}
+              {online ? 'Items added to the punch list.' : 'Queued offline — will sync when reconnected.'}
             </p>
             {err && <p style={{ color: RED, fontSize: 12, marginBottom: 12 }}>{err}</p>}
             <a
@@ -242,7 +242,7 @@ function PunchItemModal({
               <button type="button" onClick={() => onClose()} disabled={creating} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, cursor: 'pointer' }}>
                 Skip
               </button>
-              <button type="button" onClick={handleCreate} disabled={creating} style={{ flex: 1, background: creating ? '#1c1c1e' : GOLD, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 700, cursor: creating ? 'wait' : 'pointer' }}>
+              <button type="button" onClick={handleCreate} disabled={creating} style={{ flex: 1, background: creating ? '#1c1c1e' : 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: creating ? 'none' : '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)', border: 'none', borderRadius: 10, padding: '12px', color: creating ? DIM : '#241500', fontSize: 14, fontWeight: 700, cursor: creating ? 'wait' : 'pointer' }}>
                 {creating ? 'Creating...' : 'Create Items'}
               </button>
             </div>
@@ -260,7 +260,7 @@ function TemplatePicker({ onSelect }: { onSelect: (template: { name: string; ins
 
   if (!expanded) {
     return (
-      <div style={{ ...card, background: 'linear-gradient(135deg, #141416 0%, #112840 100%)', borderColor: `rgba(245, 158, 11,.25)`, cursor: 'pointer' }} onClick={() => setExpanded(true)}>
+      <div className="lift" style={{ ...card, background: 'linear-gradient(135deg, rgba(245,158,11,0.05) 0%, rgba(245,158,11,0.12) 100%), #141416', borderColor: `rgba(245, 158, 11,.25)`, cursor: 'pointer' }} onClick={() => setExpanded(true)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245, 158, 11,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>

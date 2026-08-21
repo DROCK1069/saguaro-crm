@@ -827,7 +827,7 @@ function PunchListPage() {
             </button>
             <button
               onClick={() => setView('new')}
-              style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '10px 16px', color: '#000', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}
+              style={{ background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 10, padding: '10px 16px', color: '#241500', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}
             >
               + Add Item
             </button>
@@ -925,6 +925,7 @@ function PunchListPage() {
                   </button>
                 )}
                 <div
+                  className="lift"
                   onClick={() => { if (selectMode) { toggleSelectItem(item.id); } else { setSelected(item); setView('detail'); } }}
                   style={{ flex: 1, background: RAISED, border: `1px solid ${item.priority === 'Critical' ? 'rgba(239,68,68,.3)' : BORDER}`, borderRadius: 12, padding: '14px', cursor: 'pointer' }}
                 >
@@ -1044,7 +1045,7 @@ function PunchListPage() {
             <button type="button" onClick={() => { setView('list'); resetForm(); }} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#1c1c1e' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
+            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? '#1c1c1e' : 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#241500', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer', boxShadow: saving ? 'none' : '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
               {saving ? 'Saving...' : '+ Add to Punch List'}
             </button>
           </div>
@@ -1150,7 +1151,7 @@ function OfflineBanner() {
 }
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px 14px 6px', marginBottom: 12 };
-const secLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 };
+const secLbl: React.CSSProperties = { margin: '0 0 10px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 0.8 };
 const inp: React.CSSProperties = { width: '100%', background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '8px', marginLeft: -8, display: 'flex', alignItems: 'center', marginBottom: 4 };
 

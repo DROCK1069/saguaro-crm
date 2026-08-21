@@ -24,8 +24,8 @@ const fmtDate = (s: string | null) => {
 
 function Tile({ label, value, color, sub }: { label: string; value: string | number; color?: string; sub?: string }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', minWidth: 120, flex: '1 1 130px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.4, textTransform: 'uppercase', color: C.dim }}>{label}</div>
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', minWidth: 120, flex: '1 1 130px', boxShadow: 'var(--shadow-sm)' }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>{label}</div>
       <div style={{ fontSize: 28, fontWeight: 900, color: color || C.text, lineHeight: 1.1, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       {sub && <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{sub}</div>}
     </div>
@@ -162,9 +162,9 @@ export default function CommandCenterPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
           {filtered.map(({ p, h }) => (
             <Link key={p.id} href={`/app/projects/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${STATUS_COLOR[h.status]}`, borderRadius: 14, padding: '15px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'box-shadow .15s, transform .15s', height: '100%' }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; e.currentTarget.style.transform = 'none'; }}>
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${STATUS_COLOR[h.status]}`, borderRadius: 14, padding: '15px 16px', boxShadow: 'var(--shadow-sm)', transition: 'box-shadow .15s, transform .15s', height: '100%' }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'none'; }}>
                 {/* header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{ minWidth: 0 }}>
@@ -224,7 +224,7 @@ export default function CommandCenterPage() {
 function Metric({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase', color: '#CBD5E1' }}>{label}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>{label}</div>
       <div style={{ fontSize: 14, fontWeight: 800, color: color || '#FFFFFF', marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
   );

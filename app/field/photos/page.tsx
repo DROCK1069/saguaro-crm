@@ -259,9 +259,11 @@ function PhotosInner() {
   };
 
   const labelStyle: React.CSSProperties = {
-    fontSize: 13,
-    fontWeight: 600,
-    color: DIM,
+    fontSize: 10.5,
+    fontWeight: 700,
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
     marginBottom: 4,
     display: 'block',
   };
@@ -305,9 +307,9 @@ function PhotosInner() {
         {!capturedPreview ? (
           <button onClick={handleTakePhoto} style={{
             width: '100%', padding: '18px 0', borderRadius: 14, border: 'none',
-            background: GOLD, color: '#1C1C1E', fontSize: 17, fontWeight: 700,
+            background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#241500', fontSize: 17, fontWeight: 800,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            boxShadow: '0 4px 20px rgba(245, 158, 11,0.3)',
+            boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
@@ -364,8 +366,9 @@ function PhotosInner() {
               disabled={uploading}
               style={{
                 width: '100%', padding: '14px 0', borderRadius: 12, border: 'none',
-                background: uploading ? BORDER : GOLD,
-                color: uploading ? DIM : DARK,
+                background: uploading ? BORDER : 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',
+                color: uploading ? DIM : '#241500',
+                boxShadow: uploading ? 'none' : '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
                 fontSize: 16, fontWeight: 700, cursor: uploading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
               }}
@@ -394,7 +397,8 @@ function PhotosInner() {
             <div key={group.date} style={{ marginBottom: 20 }}>
               {/* Date header */}
               <div style={{
-                fontSize: 13, fontWeight: 700, color: DIM, marginBottom: 8,
+                fontSize: 10.5, fontWeight: 700, color: 'var(--text-tertiary)', marginBottom: 8,
+                textTransform: 'uppercase', letterSpacing: 0.8,
                 padding: '4px 0', borderBottom: `1px solid ${BORDER}`,
               }}>
                 {group.label}
@@ -407,6 +411,7 @@ function PhotosInner() {
                 {group.photos.map(photo => (
                   <div
                     key={photo.id}
+                    className="lift"
                     onClick={() => setViewingPhoto(photo)}
                     style={{
                       position: 'relative', cursor: 'pointer', borderRadius: 10, overflow: 'hidden',
@@ -451,7 +456,7 @@ function PhotosInner() {
           {/* Close button */}
           <button onClick={() => setViewingPhoto(null)} style={{
             position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(0,0,0,0.15)', color: '#fff', border: 'none', fontSize: 18,
+            background: 'rgba(255,255,255,0.12)', color: '#fff', border: 'none', fontSize: 18,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10,
           }}>X</button>
 

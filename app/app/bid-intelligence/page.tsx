@@ -101,9 +101,9 @@ export default function IntelligencePage() {
             <span style={{width:5,height:5,borderRadius:'50%',background:GOLD,display:'inline-block'}}/>AI Learning Engine
           </div>
           <h1 style={{fontSize:26,fontWeight:600,color:TEXT,margin:'0 0 8px',letterSpacing:-0.3}}>Bid Intelligence</h1>
-          <div style={{fontSize:14,color:DIM,lineHeight:1.5}}>Saguaro learns from every bid you win or lose. No competitor has this.</div>
+          <div style={{fontSize:14,color:DIM,lineHeight:1.5}}>Saguaro learns from every bid you win or lose — and sharpens your next number with it.</div>
         </div>
-        <button onClick={()=>setScoring(!scoring)} style={{padding:'10px 18px',background:GOLD,border:'none',borderRadius:8,color:'#0a0a0a',fontSize:13,fontWeight:600,cursor:'pointer'}}>
+        <button onClick={()=>setScoring(!scoring)} className="btn-gold" style={{fontSize:13,cursor:'pointer'}}>
           Score New Opportunity
         </button>
       </div>
@@ -124,7 +124,7 @@ export default function IntelligencePage() {
         <div style={{marginBottom:14}}><label style={{display:'block',fontSize:11,fontWeight:500,color:MUTED,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Description</label>
           <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} placeholder="Describe the project scope..." style={{width:'100%',padding:'9px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none',resize:'vertical'}}/></div>
         <div style={{display:'flex',gap:10}}>
-          <button onClick={scoreOpportunity} disabled={loading} style={{padding:'10px 20px',background:GOLD,border:'none',borderRadius:8,color:'#0a0a0a',fontSize:13,fontWeight:600,cursor:'pointer'}}>{loading?'Scoring...':'Score with AI'}</button>
+          <button onClick={scoreOpportunity} disabled={loading} className="btn-gold" style={{fontSize:13,cursor:'pointer'}}>{loading?'Scoring…':'Score with AI'}</button>
           <button onClick={()=>setScoring(false)} style={{padding:'10px 20px',background:'transparent',border:`1px solid ${BORDER}`,borderRadius:8,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
         </div>
         {result&&('error' in result)&&<div style={{marginTop:20,background:'rgba(192,48,48,.08)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:10,padding:'14px 16px',fontSize:13,color:DIM}}>{result['error'] as string}</div>}
@@ -170,8 +170,8 @@ export default function IntelligencePage() {
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:0,marginBottom:24,borderTop:`1px solid ${HAIRLINE}`,borderBottom:`1px solid ${HAIRLINE}`}}>
             {[{l:'Overall Win Rate',v:`${headlineWinRate}%`},{l:'Avg Winning Margin',v:`${(avgMargin||0).toFixed(1)}%`},{l:'Bids Analyzed',v:String(bidsAnalyzed)}].map((k,i)=>(
               <div key={k.l} style={{padding:'16px 12px',borderLeft:i>0?`1px solid ${HAIRLINE}`:'none'}}>
-                <div style={{fontSize:10,color:MUTED,fontWeight:500,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>{k.l}</div>
-                <div style={{fontSize:24,fontWeight:600,color:TEXT}}>{k.v}</div>
+                <div style={{fontSize:10.5,color:'var(--text-tertiary)',fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',marginBottom:6}}>{k.l}</div>
+                <div style={{fontSize:26,fontWeight:700,color:TEXT,letterSpacing:-0.4,fontVariantNumeric:'tabular-nums' as const}}>{k.v}</div>
               </div>
             ))}
           </div>
@@ -216,7 +216,7 @@ export default function IntelligencePage() {
           <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch',maxWidth:'100%'}}>
           <table style={{width:'100%',minWidth:640,borderCollapse:'collapse' as const,fontSize:12}}>
             <thead><tr style={{borderBottom:`1px solid ${BORDER}`}}>
-              {['Project','Type','Bid','Margin','Result'].map(h=><th key={h} style={{padding:'12px 14px',textAlign:'left' as const,fontSize:11,fontWeight:600,textTransform:'uppercase' as const,letterSpacing:.5,color:MUTED}}>{h}</th>)}
+              {['Project','Type','Bid','Margin','Result'].map(h=><th key={h} style={{padding:'12px 14px',textAlign:'left' as const,fontSize:10.5,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',color:'var(--text-tertiary)'}}>{h}</th>)}
             </tr></thead>
             <tbody>{bids.map((o,i)=>{
               const oc = String(o.outcome||'').toLowerCase();

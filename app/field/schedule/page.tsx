@@ -991,8 +991,9 @@ function SchedulePage() {
             onClick={handleSavePct}
             disabled={saving}
             style={{
-              width: '100%', background: saving ? '#1c1c1e' : GOLD, border: 'none', borderRadius: 14,
-              padding: '18px', color: saving ? DIM : '#000', fontSize: 17, fontWeight: 800,
+              width: '100%', background: saving ? '#1c1c1e' : 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 14,
+              padding: '18px', color: saving ? DIM : '#241500', fontSize: 17, fontWeight: 800,
+              boxShadow: saving ? 'none' : '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
               cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5,
             }}
           >
@@ -1216,6 +1217,7 @@ function SchedulePage() {
                   <button
                     key={task.id}
                     onClick={() => openTaskDetail(task)}
+                    className="lift"
                     style={{
                       background: RAISED,
                       border: `1px solid ${late ? 'rgba(239,68,68,.35)' : active ? 'rgba(245, 158, 11,.25)' : BORDER}`,

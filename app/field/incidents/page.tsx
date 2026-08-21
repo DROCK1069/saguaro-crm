@@ -520,7 +520,7 @@ function IncidentsPage() {
                 </div>
 
                 {/* View All */}
-                <button onClick={() => setView('list')} style={{ ...btnStyle(GOLD), width: '100%', justifyContent: 'center', marginTop: 8 }}>
+                <button onClick={() => setView('list')} className="btn-gold" style={{ width: '100%', justifyContent: 'center', marginTop: 8, fontSize: 14 }}>
                   View All Incidents ({incidents.length})
                 </button>
               </>
@@ -614,8 +614,8 @@ function IncidentsPage() {
                     <div style={{ fontSize: 12, marginTop: 4 }}>Tap "+ Report" to log a new incident</div>
                   </div>
                 ) : filtered.map(inc => (
-                  <div key={inc.id} onClick={() => { setSelectedId(inc.id); setView('detail'); }}
-                    style={{ ...cardStyle, cursor: 'pointer', transition: 'border-color .2s' }}>
+                  <div key={inc.id} onClick={() => { setSelectedId(inc.id); setView('detail'); }} className="lift"
+                    style={{ ...cardStyle, cursor: 'pointer' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 22, display: 'inline-flex' }}>{renderTypeIcon(inc.incident_type, 22, TYPE_COLORS[inc.incident_type] || DIM)}</span>
@@ -733,8 +733,8 @@ function IncidentsPage() {
                     )}
 
                     <button onClick={() => setStep(2)} disabled={!form.title.trim() || !form.description.trim()}
-                      style={{ ...btnStyle(GOLD), width: '100%', justifyContent: 'center', marginTop: 16, opacity: (!form.title.trim() || !form.description.trim()) ? 0.5 : 1 }}>
-                      Next: Injury Details<ArrowRight size={16} weight="bold" color="#fff" />
+                      className="btn-gold" style={{ width: '100%', justifyContent: 'center', marginTop: 16, fontSize: 14, opacity: (!form.title.trim() || !form.description.trim()) ? 0.5 : 1 }}>
+                      Next: Injury Details<ArrowRight size={16} weight="bold" />
                     </button>
                   </div>
                 )}
@@ -814,7 +814,7 @@ function IncidentsPage() {
 
                     <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                       <button onClick={() => setStep(1)} style={{ ...btnStyle(BORDER), flex: 1, justifyContent: 'center' }}><ArrowLeft size={16} weight="bold" color="#fff" />Back</button>
-                      <button onClick={() => setStep(3)} style={{ ...btnStyle(GOLD), flex: 1, justifyContent: 'center' }}>Next: Investigation<ArrowRight size={16} weight="bold" color="#fff" /></button>
+                      <button onClick={() => setStep(3)} className="btn-gold" style={{ flex: 1, justifyContent: 'center', fontSize: 14 }}>Next: Investigation<ArrowRight size={16} weight="bold" /></button>
                     </div>
                   </div>
                 )}

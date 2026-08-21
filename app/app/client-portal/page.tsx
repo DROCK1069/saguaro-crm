@@ -62,12 +62,12 @@ function defaultPerms(): Record<string, boolean> {
 
 /* ── shared inline styles ─────────────────────────────── */
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 20 };
-const btnGold: React.CSSProperties = { padding: '9px 20px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`, color: '#1C1C1E', borderRadius: 8, fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' };
+const btnGold: React.CSSProperties = { padding: '9px 20px', background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#241500', borderRadius: 8, fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' };
 const btnOutline: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, cursor: 'pointer' };
 const btnDanger: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${RED}`, borderRadius: 8, color: RED, fontSize: 13, cursor: 'pointer' };
 const inputS: React.CSSProperties = { padding: '9px 14px', background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' as const };
 const badge = (c: string, bg: string): React.CSSProperties => ({ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, color: c, background: bg, display: 'inline-block' });
-const thS: React.CSSProperties = { padding: '10px 14px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '.6px', textAlign: 'left' as const, borderBottom: `1px solid ${BORDER}` };
+const thS: React.CSSProperties = { padding: '10px 14px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '.06em', textAlign: 'left' as const, borderBottom: `1px solid ${BORDER}` };
 const tdS: React.CSSProperties = { padding: '12px 14px', fontSize: 13, color: TEXT, borderBottom: `1px solid ${BORDER}22` };
 
 /* ── modal ────────────────────────────────────────────── */
@@ -75,7 +75,7 @@ function Modal({ open, onClose, title, children, width = 540 }: { open: boolean;
   if (!open) return null;
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
-      <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 28, width, maxWidth: '94vw', maxHeight: '85vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 28, width, maxWidth: '94vw', maxHeight: '85vh', overflowY: 'auto', position: 'relative', boxShadow: 'var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: TEXT }}>{title}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: DIM, fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>x</button>
@@ -102,8 +102,8 @@ function Toggle({ on, onToggle, label }: { on: boolean; onToggle: () => void; la
 function Stat({ label, value, color = GOLD }: { label: string; value: string | number; color?: string }) {
   return (
     <div style={{ ...card, flex: 1, minWidth: 150 }}>
-      <div style={{ fontSize: 11, color: DIM, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '.5px' }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 800, color }}>{value}</div>
+      <div style={{ fontSize: 10.5, color: 'var(--text-tertiary)', marginBottom: 6, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.06em' }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
   );
 }
@@ -476,7 +476,7 @@ export default function ClientPortalPage() {
             {filteredUsers.map(u => (
               <tr key={u.id}
                 style={{ transition: 'background .15s' }}
-                onMouseEnter={e => (e.currentTarget.style.background = BG)}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <td style={tdS}>
                   <div style={{ fontWeight: 600 }}>{u.name}</div>
@@ -714,10 +714,10 @@ export default function ClientPortalPage() {
                 onClick={() => setSelectedThread(t.user.id)}
                 style={{
                   padding: '12px 16px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}22`,
-                  background: selectedThread === t.user.id ? BG : 'transparent',
+                  background: selectedThread === t.user.id ? 'rgba(255,255,255,0.06)' : 'transparent',
                   transition: 'background .15s',
                 }}
-                onMouseEnter={e => { if (selectedThread !== t.user.id) e.currentTarget.style.background = BG; }}
+                onMouseEnter={e => { if (selectedThread !== t.user.id) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
                 onMouseLeave={e => { if (selectedThread !== t.user.id) e.currentTarget.style.background = 'transparent'; }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: TEXT }}>{t.user.name}</span>

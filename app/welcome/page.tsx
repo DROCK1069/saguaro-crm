@@ -52,7 +52,7 @@ export default function WelcomePage() {
             Saguaro is a <strong style={{ color: TEXT }}>web-based platform</strong> — there is nothing to download or install on your computer. Just bookmark this address and log in from any device, any time.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link href="/app" style={{ padding: '10px 22px', background: GOLD, borderRadius: 8, color: DARK, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+            <Link href="/app" className="btn-gold" style={{ padding: '10px 22px', fontSize: 14, textDecoration: 'none' }}>
               Go to My Dashboard →
             </Link>
             <Link href="/get-the-app" style={{ padding: '10px 20px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 8, color: DIM, fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>

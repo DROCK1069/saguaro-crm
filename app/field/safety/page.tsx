@@ -919,6 +919,7 @@ function SafetyPage() {
               return (
                 <button
                   key={incident.id}
+                  className="lift"
                   onClick={() => selectMode ? toggleSelectId(incident.id) : openDetail(incident)}
                   style={{
                     background: isChecked ? 'rgba(239,68,68,.06)' : RAISED,
@@ -1311,7 +1312,7 @@ function SafetyPage() {
             <button type="button" onClick={() => setView('detail')} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px', color: DIM, fontSize: 15, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? 'rgba(255,255,255,0.12)' : GOLD, border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#000', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
+            <button type="submit" disabled={saving} style={{ flex: 2, background: saving ? 'rgba(255,255,255,0.12)' : 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: saving ? 'none' : '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)', border: 'none', borderRadius: 12, padding: '16px', color: saving ? DIM : '#241500', fontSize: 15, fontWeight: 800, cursor: saving ? 'wait' : 'pointer' }}>
               {saving ? 'Saving...' : 'Add Corrective Action'}
             </button>
           </div>

@@ -66,7 +66,7 @@ export default function PeopleAccessHub() {
         eyebrowIcon={<UsersThree size={13} weight="fill" color={GOLD} />}
         title="People &"
         accent="Access"
-        subtitle="Two people surfaces in one home — your crew & HR records, and the full role-based access platform."
+        subtitle="Crew & HR records and role-based access control — manage your workforce and permissions in one place."
       />
 
       {/* ── unified segmented switch ── */}

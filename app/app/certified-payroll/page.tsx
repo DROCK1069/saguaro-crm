@@ -61,7 +61,7 @@ export default function CertifiedPayrollPage() {
         eyebrowIcon={<ShieldCheck size={13} weight="fill" color={GOLD} />}
         title="Certified"
         accent="Payroll"
-        subtitle="WH-347 compliant, Davis-Bacon payroll is managed per project. Select a project to open its certified payroll."
+        subtitle="WH-347 certified payroll for Davis-Bacon work, tracked per project. Select a project to open its payroll records."
       />
 
       {/* Projects list */}
@@ -115,6 +115,7 @@ export default function CertifiedPayrollPage() {
               <Link
                 key={p.id}
                 href={`/app/projects/${p.id}/payroll`}
+                className="lift"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none',
                   padding: '16px 20px',

@@ -460,11 +460,11 @@ export default function PricingPage() {
 
                   <a href={plan.cta_href} style={{
                     display: 'block', textAlign: 'center', padding: '12px 0',
-                    background: plan.popular ? C.gold : 'transparent',
+                    background: plan.popular ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : 'transparent',
                     border: plan.popular ? '1px solid transparent' : `1px solid ${C.hairline}`,
-                    borderRadius: 8, color: plan.popular ? '#0B0B0F' : C.text,
-                    fontWeight: 600, fontSize: 14, textDecoration: 'none', marginBottom: 28, letterSpacing: 0.2,
-                    boxShadow: 'none',
+                    borderRadius: 8, color: plan.popular ? '#241500' : C.text,
+                    fontWeight: plan.popular ? 700 : 600, fontSize: 14, textDecoration: 'none', marginBottom: 28, letterSpacing: 0.2,
+                    boxShadow: plan.popular ? '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none',
                   }}>
                     {plan.cta}
                   </a>
@@ -742,8 +742,8 @@ export default function PricingPage() {
               30-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
-              <Link href="/signup" style={{ display: 'inline-block', padding: '12px 28px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
-                Start Free Trial — No CC Required
+              <Link href="/signup" className="btn-gold" style={{ padding: '12px 28px', fontSize: 15, textDecoration: 'none' }}>
+                Start Free Trial — No Credit Card Required
               </Link>
               <Link href="/switch-from-procore" style={{ display: 'inline-block', padding: '12px 28px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 8, color: C.dim, fontWeight: 500, fontSize: 15, textDecoration: 'none' }}>
                 Free Migration Guide

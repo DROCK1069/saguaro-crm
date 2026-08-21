@@ -19,7 +19,7 @@ const glass: React.CSSProperties = {
   WebkitBackdropFilter: 'blur(20px)',
   border: '1px solid rgba(255,255,255,0.12)',
   borderRadius: 16,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.05)',
+  boxShadow: 'var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.06)',
 };
 
 /* ── icons (inline SVG) ── */
@@ -259,11 +259,7 @@ export default function LandingPage() {
             {/* Right side CTAs */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Link href="/login" style={{ color: '#CBD5E1', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</Link>
-              <Link href="/signup" style={{
-                background: GOLD,
-                color: '#0a0a0a', fontSize: 13, fontWeight: 600,
-                padding: '8px 18px', borderRadius: 8, textDecoration: 'none',
-              }}>Start free</Link>
+              <Link href="/signup" className="btn-gold" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>Start free</Link>
 
               {/* Mobile hamburger */}
               <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
@@ -284,7 +280,7 @@ export default function LandingPage() {
           <h1 style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', margin: '0 0 20px', color: TEXT }}>The smarter CRM built<br />for general contractors</h1>
           <p style={{ color: DIM, fontSize: 15, fontWeight: 400, lineHeight: 1.7, margin: '0 0 32px', maxWidth: 452 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, alignItems: 'center' }}>
-            <Link href="/signup" style={{ background: GOLD, color: '#0a0a0a', textDecoration: 'none', fontWeight: 600, fontSize: 13.5, padding: '10px 22px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}>Start free trial <span style={{ fontSize: 15 }}>&rarr;</span></Link>
+            <Link href="/signup" className="btn-gold" style={{ textDecoration: 'none', fontSize: 13.5, padding: '10px 22px' }}>Start free trial <span style={{ fontSize: 15 }}>&rarr;</span></Link>
             <Link href="/#demo" style={{ color: DIM, textDecoration: 'none', fontWeight: 500, fontSize: 13.5, padding: '10px 18px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <svg viewBox="0 0 20 20" width={13} height={13} fill="currentColor"><polygon points="5,3 19,10 5,17" /></svg> Watch demo
             </Link>
@@ -313,7 +309,7 @@ export default function LandingPage() {
             {/* table header */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1, marginBottom: 2 }}>
               {['Item', 'Qty', 'Unit', 'Cost'].map(h => (
-                <div key={h} style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, padding: '6px 8px', background: 'rgba(0,0,0,0.03)' }}>{h}</div>
+                <div key={h} style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, padding: '6px 8px', background: 'rgba(255,255,255,0.04)' }}>{h}</div>
               ))}
             </div>
             {/* table rows */}
@@ -326,7 +322,7 @@ export default function LandingPage() {
             ].map((row, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 1, marginBottom: 1 }}>
                 {row.map((cell, j) => (
-                  <div key={j} style={{ fontSize: 12, color: j === 3 ? GOLD : j === 0 ? TEXT : DIM, padding: '7px 8px', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent', fontWeight: j === 3 ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>{cell}</div>
+                  <div key={j} style={{ fontSize: 12, color: j === 3 ? GOLD : j === 0 ? TEXT : DIM, padding: '7px 8px', background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent', fontWeight: j === 3 ? 600 : 400, fontVariantNumeric: 'tabular-nums' }}>{cell}</div>
                 ))}
               </div>
             ))}
@@ -386,7 +382,7 @@ export default function LandingPage() {
       <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
         <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Why GCs Switch from Procore</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
-        <div style={{ ...glass, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,0,0,0.06)' }}>
+        <div style={{ ...glass, overflow: 'hidden', boxShadow: 'var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
           {/* header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
@@ -396,7 +392,7 @@ export default function LandingPage() {
           </div>
           {/* rows */}
           {COMPARISON_ROWS.map((r, i) => (
-            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none', background: i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
+            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
               <div style={{ padding: '11px 20px', fontSize: 13, color: TEXT }}>{r.feature}</div>
               <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {r.feature === 'Starting Price' ? <PriceLabel v={r.saguaro} /> : <StatusCell v={r.saguaro} />}

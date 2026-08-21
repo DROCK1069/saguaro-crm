@@ -396,7 +396,7 @@ export default function LeadsPage() {
             ...btnS('transparent', DIM), border: `1px solid ${BORDER}`,
           }}>Export CSV</button>
           <button onClick={() => { setEditLead(emptyLead()); setShowModal(true); }}
-            style={btnS(`linear-gradient(135deg,${GOLD},#FBBF24)`)}>
+            className="btn-gold" style={{ fontSize: 13 }}>
             + New Lead
           </button>
         </div>
@@ -409,18 +409,18 @@ export default function LeadsPage() {
       }}>
         {[
           { label: 'Total Pipeline', value: fmt(metrics.totalVal), color: GOLD, sub: `${metrics.total} leads` },
-          { label: 'Active Pipeline', value: fmt(metrics.activeVal), color: BLUE, sub: 'excl. Won/Lost' },
-          { label: 'Won Revenue', value: fmt(metrics.wonVal), color: GREEN, sub: `${metrics.byStage['Won']?.count || 0} deals` },
-          { label: 'Win Rate', value: `${metrics.winRate}%`, color: metrics.winRate >= 50 ? GREEN : metrics.winRate >= 25 ? AMBER : RED, sub: 'won / (won+lost)' },
+          { label: 'Active Pipeline', value: fmt(metrics.activeVal), color: BLUE, sub: 'open stages only' },
+          { label: 'Won Revenue', value: fmt(metrics.wonVal), color: GREEN, sub: `${metrics.byStage['Won']?.count || 0} deals closed` },
+          { label: 'Win Rate', value: `${metrics.winRate}%`, color: metrics.winRate >= 50 ? GREEN : metrics.winRate >= 25 ? AMBER : RED, sub: 'of decided bids' },
           { label: 'Avg Deal Size', value: fmt(metrics.avgDeal), color: PURPLE, sub: 'won deals' },
         ].map(m => (
-          <div key={m.label} style={{
+          <div key={m.label} className="lift" style={{
             background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10,
             padding: '14px 18px',
           }}>
-            <div style={{ fontSize: 11, color: DIM, fontWeight: 600, marginBottom: 4 }}>{m.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: m.color }}>{m.value}</div>
-            <div style={{ fontSize: 11, color: DIM, marginTop: 2 }}>{m.sub}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>{m.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: m.color, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{m.value}</div>
+            <div style={{ fontSize: 11, color: DIM, marginTop: 3 }}>{m.sub}</div>
           </div>
         ))}
       </div>
@@ -502,7 +502,7 @@ export default function LeadsPage() {
             Start building your pipeline by adding your first lead.
           </div>
           <button onClick={() => { setEditLead(emptyLead()); setShowModal(true); }}
-            style={btnS(`linear-gradient(135deg,${GOLD},#FBBF24)`)}>
+            className="btn-gold" style={{ fontSize: 13 }}>
             + Add First Lead
           </button>
         </div>
@@ -552,7 +552,7 @@ export default function LeadsPage() {
                   )}
 
                   {stageLeads.map(lead => (
-                    <div key={lead.id} style={{
+                    <div key={lead.id} className="lift" style={{
                       ...cardS, borderLeft: `3px solid ${STAGE_COLORS[stage]}`,
                       position: 'relative',
                     }}>
@@ -616,7 +616,7 @@ export default function LeadsPage() {
                             position: 'absolute', top: 28, left: 0, background: RAISED,
                             border: `1px solid ${BORDER}`, borderRadius: 8, padding: 4,
                             zIndex: 100, minWidth: 140,
-                            boxShadow: '0 8px 24px rgba(0,0,0,.4)',
+                            boxShadow: 'var(--shadow-lg)',
                           }}>
                             {STAGES.filter(s => s !== lead.stage).map(s => (
                               <div key={s}

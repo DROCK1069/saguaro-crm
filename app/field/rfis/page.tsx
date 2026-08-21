@@ -693,7 +693,7 @@ function RFIsPage() {
               onClick={() => setDrawerOpen(false)}
               style={{
                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                background: '#0a0a0a', backdropFilter: 'blur(2px)',
+                background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(2px)',
               }}
             />
             {/* Drawer panel */}
@@ -935,6 +935,7 @@ function RFIsPage() {
                 <button
                   key={rfi.id}
                   onClick={() => selectMode ? toggleSelectId(rfi.id) : openDetail(rfi)}
+                  className="lift"
                   style={{
                     background: isChecked ? 'rgba(139,92,246,.08)' : RAISED,
                     border: `1px solid ${isChecked ? PURPLE : isOverdue ? 'rgba(239,68,68,.35)' : BORDER}`,
