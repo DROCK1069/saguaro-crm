@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
+import { recordLearning } from '@/lib/learning';
 
 export async function POST(req: NextRequest) {
   const g = await requirePermission(req, 'Projects', 'Edit');
@@ -19,13 +20,34 @@ export async function POST(req: NextRequest) {
     // Roll crew_count up from the manpower lines when present, else trust the scalar.
     const crewFromManpower = manpower ? manpower.reduce((s: number, m: any) => s + (Number(m.count ?? m.headcount ?? m.workers ?? 0) || 0), 0) : null;
 
+    // AUTO WEATHER — a GC never types a temperature. If the client sent no
+    // weather, stamp today's NWS forecast server-side via the shared
+    // /api/weather brain (same source both surfaces use). Best-effort: any
+    // failure just leaves the fields as the client sent them.
+    let autoWx: any = null;
+    if (!body.weather && !body.temperatureHigh && body.projectId) {
+      try {
+        const origin = req.nextUrl.origin;
+        const wr = await fetch(`${origin}/api/weather?projectId=${body.projectId}`, {
+          headers: { cookie: req.headers.get('cookie') || '', authorization: req.headers.get('authorization') || '' },
+          signal: AbortSignal.timeout(8000),
+        });
+        const wd = await wr.json();
+        if (wd?.available) {
+          autoWx = wd;
+          recordLearning(db, { tenantId, kind: 'weather_autofill', projectId: body.projectId, userId: user.id, meta: { conditions: wd.conditions } });
+        }
+      } catch { /* stay manual for the day */ }
+    }
+
     const { data: log, error } = await db.from('daily_logs').insert({
       tenant_id: tenantId,
       project_id: body.projectId,
       log_date: body.logDate || new Date().toISOString().split('T')[0],
-      weather: body.weather || null,
-      high_temp: body.temperatureHigh || null,
-      low_temp: body.temperatureLow || null,
+      weather: body.weather || autoWx?.conditions || null,
+      high_temp: body.temperatureHigh || autoWx?.highTemp || null,
+      low_temp: body.temperatureLow || autoWx?.lowTemp || null,
+      ...(autoWx ? { weather_source: 'nws', weather_api_data: autoWx.raw ?? null } : {}),
       crew_count: crewFromManpower ?? body.crewCount ?? 0,
       work_performed: body.workPerformed || '',
       delays: body.delays || '',
@@ -37,8 +59,8 @@ export async function POST(req: NextRequest) {
       // web-created log carries the same fields the native app expects, and the
       // web read below can round-trip a mobile-created log without dropping data.
       superintendent: body.superintendent || null,
-      precipitation: body.precipitation || null,
-      wind_conditions: body.windConditions ?? body.wind_conditions ?? null,
+      precipitation: body.precipitation || autoWx?.precipitation || null,
+      wind_conditions: body.windConditions ?? body.wind_conditions ?? autoWx?.wind ?? null,
       phase_of_work: body.phaseOfWork ?? body.phase_of_work ?? null,
       equipment: body.equipment || null,
       // Structured columns (jsonb / text[]) — persisted when the client sends them.

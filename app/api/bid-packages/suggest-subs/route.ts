@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { recordLearning } from '@/lib/learning';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -19,7 +20,9 @@ export async function GET(req: NextRequest) {
     // subcontractors are tenant-scoped (linked to projects via project_subcontractors),
     // so there's no projects.project_id filter; allTenantSubs is the full candidate
     // pool for the trade (the old projectSubs query was a broken, redundant subset).
-    const [{ data: performance }, { data: allTenantSubs }] = await Promise.all([
+    // USAGE HISTORY is the primary ranking signal ("the top 2 subs YOU use for
+    // this trade"), from real memberships + awarded contracts — not generic scores.
+    const [{ data: performance }, { data: allTenantSubs }, { data: memberships }, { data: awarded }] = await Promise.all([
       db.from('sub_performance')
         .select('*')
         .eq('tenant_id', tenantId)
@@ -32,7 +35,28 @@ export async function GET(req: NextRequest) {
         .neq('status', 'inactive')
         .ilike('trade', `%${trade}%`)
         .limit(50),
+      db.from('project_subcontractors')
+        .select('subcontractor_id, contract_amount, created_at')
+        .eq('tenant_id', tenantId),
+      db.from('bid_submissions')
+        .select('sub_id, awarded_at, amount')
+        .eq('tenant_id', tenantId)
+        .eq('is_awarded', true),
     ]);
+
+    // Usage rollup per sub: projects together, dollars awarded, most recent work.
+    const usage = new Map<string, { projects: number; dollars: number; last: string }>();
+    const bump = (id: any, dollars: number, when: any) => {
+      if (!id) return;
+      const u = usage.get(id) || { projects: 0, dollars: 0, last: '' };
+      u.projects += 1;
+      u.dollars += Number(dollars) || 0;
+      const w = String(when || '');
+      if (w > u.last) u.last = w;
+      usage.set(id, u);
+    };
+    for (const m of (memberships || [])) bump((m as any).subcontractor_id, (m as any).contract_amount, (m as any).created_at);
+    for (const a of (awarded || [])) bump((a as any).sub_id, (a as any).amount, (a as any).awarded_at);
 
     // Fetch insurance certs for compliance scoring
     const subIds = (allTenantSubs || []).map((s: any) => s.id);
@@ -76,12 +100,17 @@ export async function GET(req: NextRequest) {
       const complianceScore = (w9Ok ? 25 : 0) + (hasGL ? 20 : 0) + (hasWC ? 20 : 0) - (expiringCerts.length > 0 ? 5 : 0);
       const winRate = perf?.win_rate || 0;
 
-      // Composite recommendation score (0-100)
-      const recScore = Math.round(complianceScore * 0.4 + Math.min(winRate, 100) * 0.4 + ((perf?.invite_count || 0) > 0 ? 20 : 0));
+      // USAGE-FIRST ranking: the subs this GC actually works with outrank
+      // everything; compliance + win rate break ties among the unused pool.
+      const u = usage.get(s.id) || { projects: 0, dollars: 0, last: '' };
+      const usageScore = Math.min(60, u.projects * 15) + Math.min(20, Math.log10(1 + u.dollars) * 3);
+      const recScore = Math.round(usageScore + complianceScore * 0.2 + Math.min(winRate, 100) * 0.2);
 
       const reasons: string[] = [];
-      if (perf?.invite_count > 0) reasons.push(`Invited ${perf.invite_count}x before`);
-      if (winRate > 0) reasons.push(`${winRate}% win rate`);
+      if (u.projects > 0) reasons.push(`${u.projects} project${u.projects === 1 ? '' : 's'} together`);
+      if (u.dollars > 0) reasons.push(`$${Math.round(u.dollars).toLocaleString()} awarded`);
+      if (u.projects === 0 && perf?.invite_count > 0) reasons.push(`Invited ${perf.invite_count}x before`);
+      if (u.projects === 0 && winRate > 0) reasons.push(`${winRate}% win rate`);
       if (complianceScore >= 55) reasons.push('Good compliance standing');
 
       return {
@@ -91,6 +120,9 @@ export async function GET(req: NextRequest) {
         phone: s.phone,
         trade: s.trade,
         winRate,
+        projectsTogether: u.projects,
+        dollarsAwarded: Math.round(u.dollars),
+        lastWorked: u.last ? u.last.slice(0, 10) : '',
         lastProject: perf?.last_project || '',
         lastProjectDate: perf?.last_project_date || '',
         inviteCount: perf?.invite_count || 0,
@@ -103,7 +135,12 @@ export async function GET(req: NextRequest) {
       };
     }).sort((a, b) => b.recScore - a.recScore).slice(0, 20);
 
-    return NextResponse.json({ subs: results });
+    // Top picks = your go-to subs for this trade (worked together before);
+    // the rest are the choose-from-others pool.
+    const topPicks = results.filter((r) => r.projectsTogether > 0).slice(0, 2);
+    if (topPicks.length > 0) recordLearning(db, { tenantId, kind: 'sub_suggested', projectId: projectId || null, userId: user.id, meta: { trade, top: topPicks.map((t) => t.name) } });
+    const topIds = new Set(topPicks.map((t) => t.id));
+    return NextResponse.json({ subs: results, topPicks, others: results.filter((r) => !topIds.has(r.id)) });
   } catch {
     return NextResponse.json({ subs: [], error: "Internal server error" });
   }

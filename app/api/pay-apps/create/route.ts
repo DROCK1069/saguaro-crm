@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/permissions';
 import type { Database } from '@/lib/database.types';
 import { onPayAppCreated } from '@/lib/triggers';
+import { recordLearning } from '@/lib/learning';
 import { toCents, toDollars, percentOf, subCents, computePayApp } from '@/lib/calc';
 
 /** GET ?projectId= — seed data for a NEW pay app: next number, the prior app's
@@ -132,6 +133,7 @@ export async function POST(req: NextRequest) {
         .order('line_number', { ascending: true });
       if (priorSov && priorSov.length > 0) {
         rolledForward = true;
+        recordLearning(db, { tenantId: user.tenantId, kind: 'sov_rollforward', projectId, userId: user.id, meta: { lines: priorSov.length } });
         rawLines = (priorSov as any[]).map((r) => ({
           description: r.description,
           scheduled_value: r.scheduled_value,

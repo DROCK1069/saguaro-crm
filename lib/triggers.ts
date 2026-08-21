@@ -467,6 +467,8 @@ export async function onBidAwarded(bidSubmissionId: string): Promise<void> {
           subName: w.sub_name, subId: w.sub_id || null, subEmail: winnerEmail,
         });
         if (built.ran) {
+          const { recordLearning } = await import('./learning');
+          recordLearning(db, { tenantId: project.tenant_id, kind: 'auto_build', projectId: project.id, dollarsSurfaced: 0, meta: { tasks: built.tasks, budgetLines: built.budgetLines, packages: built.packages, qc: built.qcCheckpoints, contacts: built.contacts } });
           await createNotification(
             project.tenant_id, null, 'project_autobuild',
             `Project auto-built on first award`,
