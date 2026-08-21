@@ -252,6 +252,13 @@ export default function CatalogPage() {
 
   return (
     <PremiumSurface maxWidth={1600}>
+      <style>{`
+        .catAdd:active{transform:translateY(1px)!important;filter:brightness(.94)!important;box-shadow:0 1px 4px rgba(245,158,11,0.18),inset 0 1px 0 rgba(255,255,255,0.22)!important}
+        .catPill:active{transform:translateY(1px)!important;filter:brightness(.94)!important}
+        .catStep:hover{transform:none!important;filter:none!important;background:rgba(245,158,11,0.20)!important}
+        .catStep:active{background:rgba(245,158,11,0.28)!important}
+        @media (prefers-reduced-motion: reduce){.catAdd:active,.catPill:active{transform:none!important}}
+      `}</style>
       <ModuleHero
         eyebrow="Pre-Construction"
         eyebrowIcon={<Storefront size={13} weight="fill" color={GOLD} />}
@@ -299,12 +306,13 @@ export default function CatalogPage() {
               <button
                 key={v}
                 onClick={() => setVertical(v)}
-                className="pmBtn"
+                className="pmBtn catPill"
                 style={{
                   padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
                   fontWeight: 800, fontSize: 12, whiteSpace: 'nowrap',
-                  background: active ? `linear-gradient(135deg,${GOLD},#FBBF24)` : 'transparent',
+                  background: active ? `linear-gradient(180deg,#FBBF24,${GOLD} 60%,#D97706)` : 'transparent',
                   color: active ? '#1A1206' : DIM, transition: 'all .15s',
+                  boxShadow: active ? '0 2px 10px rgba(245,158,11,0.28), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none',
                 }}
               >
                 {v === 'all' ? 'All Verticals' : titleCase(v)}
@@ -372,7 +380,7 @@ export default function CatalogPage() {
                     <React.Fragment key={it.id}>
                       {showCat && it.category && (
                         <tr>
-                          <td colSpan={4 + vendorCols.length} style={{ padding: '10px 12px 5px', fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' as const, letterSpacing: 0.9, borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+                          <td colSpan={4 + vendorCols.length} style={{ padding: '10px 12px 5px', fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' as const, letterSpacing: 1.5, borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
                             {titleCase(it.category)}
                           </td>
                         </tr>
@@ -387,25 +395,26 @@ export default function CatalogPage() {
                             <button
                               onClick={() => setQty(it.id, 1)}
                               disabled={it.prices.length === 0}
-                              className="pmBtn"
+                              className="pmBtn catAdd"
                               style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 13px',
-                                background: it.prices.length ? `linear-gradient(135deg,${GOLD},#FBBF24)` : 'rgba(255,255,255,0.06)',
+                                background: it.prices.length ? `linear-gradient(180deg,#FBBF24,${GOLD} 60%,#D97706)` : 'rgba(255,255,255,0.06)',
                                 border: 'none', borderRadius: 8, color: it.prices.length ? '#1A1206' : 'rgba(255,255,255,0.3)',
                                 fontSize: 11.5, fontWeight: 900, cursor: it.prices.length ? 'pointer' : 'not-allowed',
+                                boxShadow: it.prices.length ? '0 2px 8px rgba(245,158,11,0.22), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none',
                               }}
                             >
                               <Plus size={12} weight="bold" /> Add
                             </button>
                           ) : (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 0, border: `1px solid rgba(245,158,11,0.5)`, borderRadius: 8, overflow: 'hidden' }}>
-                              <button onClick={() => setQty(it.id, qty - 1)} className="pmBtn" style={{ padding: '5px 9px', background: 'rgba(245,158,11,0.12)', border: 'none', color: AMBER, cursor: 'pointer' }}><Minus size={11} weight="bold" /></button>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 0, border: `1px solid rgba(245,158,11,0.35)`, borderRadius: 8, overflow: 'hidden', background: 'linear-gradient(180deg, rgba(245,158,11,0.10), rgba(245,158,11,0.04))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 0 12px rgba(245,158,11,0.10)' }}>
+                              <button onClick={() => setQty(it.id, qty - 1)} className="pmBtn catStep" style={{ padding: '5px 9px', background: 'rgba(245,158,11,0.12)', border: 'none', boxShadow: 'inset -1px 0 0 rgba(245,158,11,0.25)', color: AMBER, cursor: 'pointer' }}><Minus size={11} weight="bold" /></button>
                               <input
                                 value={qty}
                                 onChange={(e) => setQty(it.id, Math.max(0, parseInt(e.target.value) || 0))}
-                                style={{ width: 42, textAlign: 'center', background: 'transparent', border: 'none', color: AMBER, fontWeight: 800, fontSize: 12.5, outline: 'none' }}
+                                style={{ width: 42, textAlign: 'center', background: 'transparent', border: 'none', color: AMBER, fontWeight: 800, fontSize: 12.5, outline: 'none', fontVariantNumeric: 'tabular-nums' }}
                               />
-                              <button onClick={() => setQty(it.id, qty + 1)} className="pmBtn" style={{ padding: '5px 9px', background: 'rgba(245,158,11,0.12)', border: 'none', color: AMBER, cursor: 'pointer' }}><Plus size={11} weight="bold" /></button>
+                              <button onClick={() => setQty(it.id, qty + 1)} className="pmBtn catStep" style={{ padding: '5px 9px', background: 'rgba(245,158,11,0.12)', border: 'none', boxShadow: 'inset 1px 0 0 rgba(245,158,11,0.25)', color: AMBER, cursor: 'pointer' }}><Plus size={11} weight="bold" /></button>
                             </div>
                           )}
                         </td>
@@ -421,7 +430,7 @@ export default function CatalogPage() {
                         <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' as const }}>
                           {best ? (
                             <div>
-                              <span style={{ fontWeight: 800, color: GOLD, fontSize: 13.5 }}>{fmtMoney(best.price)}</span>
+                              <span style={{ fontWeight: 800, color: GOLD, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(best.price)}</span>
                               <span style={{ fontSize: 10.5, color: DIM, marginLeft: 6 }}>{best.vendor}</span>
                               <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <StockBadge status={best.stockStatus} />
@@ -444,10 +453,11 @@ export default function CatalogPage() {
                             <td key={v} style={{ padding: '6px 8px', textAlign: 'right' as const, verticalAlign: 'top' }}>
                               <div style={{
                                 display: 'inline-block', textAlign: 'right', padding: '4px 8px', borderRadius: 8,
-                                background: isBest ? 'rgba(245,158,11,0.12)' : 'transparent',
+                                background: isBest ? 'linear-gradient(160deg, rgba(245,158,11,0.16), rgba(245,158,11,0.06))' : 'transparent',
                                 border: isBest ? '1px solid rgba(245,158,11,0.45)' : '1px solid transparent',
+                                boxShadow: isBest ? '0 0 14px rgba(245,158,11,0.14), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
                               }}>
-                                <div style={{ fontWeight: isBest ? 800 : 600, color: isBest ? '#FBBF24' : TEXT, fontSize: 12.5, whiteSpace: 'nowrap' as const }}>
+                                <div style={{ fontWeight: isBest ? 800 : 600, color: isBest ? '#FBBF24' : TEXT, fontSize: 12.5, whiteSpace: 'nowrap' as const, fontVariantNumeric: 'tabular-nums' }}>
                                   {fmtMoney(o.price)}
                                   {isBest && <span style={{ marginLeft: 5, fontSize: 8.5, fontWeight: 900, letterSpacing: 0.06, color: '#FBBF24' }}>BEST</span>}
                                 </div>
@@ -475,14 +485,17 @@ export default function CatalogPage() {
       {cartCount > 0 && (
         <div style={{
           position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 5000,
-          background: 'rgba(12,12,13,0.97)', borderTop: `1px solid rgba(245,158,11,0.4)`,
-          boxShadow: '0 -8px 32px rgba(245,158,11,0.12)', padding: '14px 24px',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 46%), rgba(12,12,13,0.97)',
+          borderTop: `1px solid rgba(245,158,11,0.4)`,
+          boxShadow: '0 -8px 32px rgba(245,158,11,0.12), inset 0 1px 0 rgba(255,255,255,0.06)',
+          padding: '14px 24px',
           display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+          animation: 'pmRise .2s cubic-bezier(.2,.7,.3,1)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <ShoppingCartSimple size={20} weight="fill" color={GOLD} />
             <div>
-              <div style={{ fontWeight: 800, color: TEXT, fontSize: 13.5 }}>{cartCount} item{cartCount === 1 ? '' : 's'} · {fmtMoney(cartTotal)}</div>
+              <div style={{ fontWeight: 800, color: TEXT, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{cartCount} item{cartCount === 1 ? '' : 's'} · {fmtMoney(cartTotal)}</div>
               <div style={{ fontSize: 11, color: DIM }}>Best offer per item · POs grouped by vendor · commits to the CSI budget</div>
             </div>
           </div>

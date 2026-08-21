@@ -556,9 +556,13 @@ input:-webkit-autofill:focus {
   box-shadow: 0 0 0 1000px #141416 inset, 0 0 0 3px var(--brand-primary-12) !important;
 }
 
-/* Scrollbars: the old thumb was black-alpha on a black track — invisible. */
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); }
+/* Scrollbars: thin white-alpha pill thumb; track disappears into the page. */
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Text selection: brand-tinted, readable everywhere. */
+::selection { background: var(--brand-primary-25); color: #FFFFFF; }
 
 /* Tables: micro-cap headers + hairline rows wherever plain <table> is used. */
 :where(table) th {
@@ -568,9 +572,9 @@ input:-webkit-autofill:focus {
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
-:where(table) td { border-bottom: 1px solid var(--border-subtle); }
+:where(table) td { border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; }
 :where(table) tbody tr { transition: background .12s ease; }
-:where(table) tbody tr:hover { background: rgba(255,255,255,0.025); }
+:where(table) tbody tr:hover { background: rgba(255,255,255,0.03); }
 
 /* Cards/links micro-interaction: anything opting in via .lift gets the standard hover. */
 .lift { transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease; }

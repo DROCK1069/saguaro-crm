@@ -45,17 +45,21 @@ export const PREMIUM_FX = `
 @keyframes pmRing{0%{transform:scale(.85);opacity:.7}70%{opacity:0}100%{transform:scale(1.7);opacity:0}}
 @keyframes pmSkeleton{0%,100%{opacity:1}50%{opacity:.4}}
 .pmHover{transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s ease,border-color .2s ease,background .2s ease}
-.pmHover:hover{transform:translateY(-4px);border-color:${A45}}
-.pmHover:hover .pmChip{box-shadow:0 0 22px ${A30}}
+/* !important on hover: outranks pmRise's held fill value (transform:none) and the inline resting shadow so the lift/elevation actually renders. Hover-only transforms are transient — the rest state stays transform:none, so no permanent stacking context. */
+.pmHover:hover{transform:translateY(-4px)!important;border-color:${A45};box-shadow:0 22px 44px -26px ${A30},inset 0 1px 0 rgba(255,255,255,0.08)!important}
+.pmHover:hover .pmChip{box-shadow:0 0 0 3px ${A12},0 0 22px ${A30}!important}
 .pmBtn{transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
-.pmBtn:hover{transform:translateY(-1px);filter:brightness(1.04)}
+.pmBtn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.pmBtn:active{transform:scale(.98)}/* transient press; rest state stays transform:none */
+.pmTile{transition:transform .18s ease}
+.pmTile:hover{transform:translateY(-1px)}
 .pmShine{background-size:200% 100%;animation:pmShimmer 3.6s linear infinite}
 .pmSkeleton{animation:pmSkeleton 1.4s ease-in-out infinite}
 /* Beat the global h1 !important size cap (globals.css) with higher specificity */
 h1.pmH1{font-size:clamp(28px,4.4vw,46px)!important;font-weight:900!important;line-height:1.04!important;letter-spacing:-0.03em!important;margin:0!important}
 @media (prefers-reduced-motion: reduce){
   .pmRoot,.pmRoot *{animation:none!important;transition:none!important}
-  .pmHover:hover,.pmBtn:hover{transform:none!important}
+  .pmHover:hover,.pmBtn:hover,.pmBtn:active,.pmTile:hover{transform:none!important}
 }
 `;
 
@@ -186,13 +190,13 @@ export function ModuleHero({
           )}
         </h1>
         {subtitle && (
-          <p style={{ animation: 'pmRise .6s ease .1s both', color: MUTED, fontSize: 15, margin: '12px 0 0', maxWidth: 620, lineHeight: 1.55, marginInline: centered ? 'auto' : undefined }}>
+          <p style={{ animation: 'pmRise .6s ease .1s both', color: 'rgba(255,255,255,0.66)', fontSize: 15, margin: '12px 0 0', maxWidth: 620, lineHeight: 1.6, marginInline: centered ? 'auto' : undefined }}>
             {subtitle}
           </p>
         )}
       </div>
       {actions && (
-        <div style={{ animation: 'pmRise .6s ease .12s both', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', justifyContent: centered ? 'center' : 'flex-start' }}>
+        <div style={{ animation: 'pmRise .6s ease .12s both', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', justifyContent: centered ? 'center' : 'flex-end', paddingBottom: centered ? 0 : 4 }}>
           {actions}
         </div>
       )}
@@ -209,7 +213,8 @@ export function IconChip({ children, size = 40 }: { children: React.ReactNode; s
         flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         width: size, height: size, borderRadius: Math.round(size * 0.28),
         background: 'linear-gradient(150deg, rgba(245,158,11,0.18), rgba(245,158,11,0.05))',
-        border: `1px solid ${A30}`, transition: 'box-shadow .2s ease',
+        border: `1px solid ${A30}`, boxShadow: `0 0 0 3px ${A08}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+        transition: 'box-shadow .2s ease',
       }}
     >
       {children}
@@ -249,7 +254,7 @@ export function StatCard({
         position: 'relative', overflow: 'hidden',
         background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16,
         padding: '18px 20px',
-        boxShadow: '0 10px 30px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+        boxShadow: `0 14px 34px -24px ${A30}, inset 0 1px 0 rgba(255,255,255,0.06)`,
         cursor: interactive ? 'pointer' : 'default',
         animation: `pmRise .5s ease ${delay.toFixed(2)}s both`,
         height: '100%',
@@ -299,8 +304,8 @@ export function SectionCard({
     <div
       style={{
         position: 'relative', overflow: 'hidden',
-        background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 18,
-        boxShadow: '0 20px 50px -30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)',
+        background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16,
+        boxShadow: `0 24px 48px -32px ${A22}, inset 0 1px 0 rgba(255,255,255,0.06)`,
         ...style,
       }}
     >
@@ -353,7 +358,7 @@ export function PremiumEmpty({
           borderRadius: '50%', alignItems: 'center', justifyContent: 'center', marginBottom: 18,
           background: `radial-gradient(circle, ${halo}, rgba(245,158,11,0.02))`,
           border: `1px solid ${ring}`,
-          boxShadow: `0 0 44px -10px ${glow}`,
+          boxShadow: `0 0 0 6px ${tone === 'error' ? 'rgba(239,68,68,0.07)' : A08}, 0 0 44px -10px ${glow}`,
         }}
       >
         <span aria-hidden style={{ position: 'absolute', inset: -1, borderRadius: '50%', border: `1px solid ${ring}`, animation: 'pmRing 3s ease-out infinite' }} />
@@ -401,9 +406,10 @@ export function AutoChip({ label = 'AUTO' }: { label?: string }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', marginLeft: 8, padding: '1.5px 7px',
-      borderRadius: 999, background: A18, border: `1px solid ${A45}`,
+      borderRadius: 999, background: `linear-gradient(180deg, ${A22}, ${A08})`, border: `1px solid ${A45}`,
       color: GOLD_HI, fontSize: 8.5, fontWeight: 900, letterSpacing: '0.09em',
       verticalAlign: 'middle', lineHeight: 1.6,
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
     }}>{label}</span>
   );
 }
@@ -420,11 +426,11 @@ export function StatStrip({ items }: {
       marginBottom: 20,
     }}>
       {items.map((it, i) => (
-        <div key={i} style={{ background: '#101011', padding: '13px 16px', minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 800, color: FAINT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5, whiteSpace: 'nowrap' }}>
+        <div key={i} className="pmTile" style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)), #101011', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', padding: '13px 16px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 800, color: FAINT, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 5, whiteSpace: 'nowrap' }}>
             {it.icon}{it.label}
           </div>
-          <div style={{ fontSize: 17, fontWeight: 800, color: it.accent || WHITE, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.value}</div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: it.accent || WHITE, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums', textShadow: it.accent ? '0 0 20px currentColor' : undefined, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.value}</div>
           {it.sub && <div style={{ fontSize: 11, color: MUTED, marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.sub}</div>}
         </div>
       ))}
@@ -443,14 +449,15 @@ export function FlowSteps({ title = 'What happens next', steps }: {
     <div>
       <div style={{ fontSize: 10.5, fontWeight: 900, color: FAINT, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 14 }}>{title}</div>
       <div style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', left: 10, top: 8, bottom: 14, width: 1, background: `linear-gradient(180deg, ${A45}, ${BORDER})` }} />
+        <div style={{ position: 'absolute', left: 10, top: 8, bottom: 14, width: 1, background: `linear-gradient(180deg, ${A45}, ${A18} 55%, transparent)` }} />
         {steps.map((s, i) => (
           <div key={i} style={{ display: 'flex', gap: 12, marginBottom: i === steps.length - 1 ? 0 : 16, position: 'relative' }}>
             <div style={{
               width: 21, height: 21, borderRadius: 999, flexShrink: 0, zIndex: 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: s.done ? `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})` : '#101011',
+              background: s.done ? `linear-gradient(180deg, ${GOLD_HI}, ${GOLD} 62%, var(--brand-primary-hover))` : '#101011',
               border: s.done ? 'none' : `1px solid ${A45}`,
+              boxShadow: s.done ? `inset 0 1px 0 rgba(255,255,255,0.35), 0 0 14px -2px ${A45}` : `0 0 0 3px ${A08}`,
               color: s.done ? '#241500' : GOLD_HI, fontSize: 10, fontWeight: 900,
             }}>{s.done ? '✓' : i + 1}</div>
             <div style={{ minWidth: 0, paddingTop: 1 }}>

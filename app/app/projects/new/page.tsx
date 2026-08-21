@@ -9,7 +9,7 @@ import { Plus, Buildings, MapPin, CalendarBlank, UsersThree, Sparkle, CurrencyDo
 const GOLD='#F59E0B',DARK='#1c1c1e',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const INPUT_STYLE = {width:'100%',padding:'10px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none'};
 const SELECT_STYLE = {...INPUT_STYLE,cursor:'pointer'};
-const HINT:React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45};
+const HINT:React.CSSProperties = {fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:6,lineHeight:1.45};
 const fmt = (n:number) => '$'+(Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
 const fmtDate = (d?:string|null) => d ? new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -240,6 +240,10 @@ export default function NewProjectPage() {
 
   return (
     <PremiumSurface maxWidth={1400}>
+      <style>{`
+        .npSeg:active{transform:translateY(1px)!important;filter:brightness(.94)!important}
+        @media (prefers-reduced-motion: reduce){.npSeg:active{transform:none!important}}
+      `}</style>
       <ModuleHero
         eyebrow="New Project"
         eyebrowIcon={<Plus size={13} weight="fill" color={GOLD} />}
@@ -263,20 +267,21 @@ export default function NewProjectPage() {
       {error&&<div style={{background:'rgba(192,48,48,.1)',border:'1px solid rgba(192,48,48,.3)',borderRadius:10,padding:'12px 16px',marginBottom:20,fontSize:13,color:'#ff7070'}}>{error}</div>}
 
       <form onSubmit={create}>
-        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:22,alignItems:'start'}}>
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:16,alignItems:'start'}}>
           {/* Form columns */}
           <div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               <div>
-                <SectionCard title="Identity" icon={<Buildings size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
+                <SectionCard title="Identity" icon={<Buildings size={17} weight="duotone" color={GOLD} />} style={{marginBottom:16}}>
                   <FIELD label="Sector" hint={sectorDef?.flags ? 'Public-sector work — prevailing wage and public-agency compliance pre-set below.' : 'Filters building types, derives the category, and pre-sets compliance for public work.'}>
                     <div style={{display:'flex',flexWrap:'wrap' as const,gap:5,background:'rgba(255,255,255,0.04)',borderRadius:10,padding:4,border:'1px solid rgba(255,255,255,0.08)'}}>
                       {SECTORS.map(s=>{
                         const active = sector===s.key;
                         return (
-                          <button type="button" key={s.key} onClick={()=>pickSector(s.key)} className="pmBtn"
+                          <button type="button" key={s.key} onClick={()=>pickSector(s.key)} className="pmBtn npSeg"
                             style={{padding:'6px 12px',borderRadius:7,border:'none',cursor:'pointer',fontWeight:800,fontSize:11.5,whiteSpace:'nowrap' as const,
-                              background:active?`linear-gradient(135deg,${GOLD},#FBBF24)`:'transparent',color:active?'#1A1206':DIM,transition:'all .15s'}}>
+                              background:active?`linear-gradient(180deg,#FBBF24,${GOLD} 60%,#D97706)`:'transparent',color:active?'#1A1206':DIM,transition:'all .15s',
+                              boxShadow:active?'0 2px 10px rgba(245,158,11,0.28), inset 0 1px 0 rgba(255,255,255,0.35)':'none'}}>
                             {s.label}
                           </button>
                         );
@@ -301,7 +306,7 @@ export default function NewProjectPage() {
                   <FIELD label="Description"><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="Brief project description..." style={{...INPUT_STYLE,resize:'vertical' as const}}/></FIELD>
                 </SectionCard>
 
-                <SectionCard title="Location" icon={<MapPin size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
+                <SectionCard title="Location" icon={<MapPin size={17} weight="duotone" color={GOLD} />} style={{marginBottom:16}}>
                   <FIELD label="Project Address"><input value={address} onChange={e=>setAddress(e.target.value)} required placeholder="123 Main St, Phoenix, AZ 85001" style={INPUT_STYLE}/></FIELD>
                   <FIELD label="State Jurisdiction" auto={auto.state} hint="Sets statutory lien-waiver forms, preliminary notice deadlines and wage rules.">
                     <input value={stateJurisdiction} onChange={e=>{setStateJurisdiction(e.target.value.toUpperCase());setAuto(a=>({...a,state:false}));}} maxLength={2} placeholder="AZ" style={{...INPUT_STYLE,width:90,textTransform:'uppercase' as const}}/>
@@ -323,11 +328,11 @@ export default function NewProjectPage() {
               </div>
 
               <div>
-                <SectionCard title="Contract & Money" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />} style={{marginBottom:20}}>
+                <SectionCard title="Contract & Money" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />} style={{marginBottom:16}}>
                   <FIELD label="Contract Value" hint={budgetNum>0 ? <>Reads as <b style={{color:TEXT}}>{fmt(budgetNum)}</b> — seeds the budget and prints as G702 line 1.</> : 'Seeds the budget and prints as G702 line 1 — refine after buyout.'}>
                     <input value={budget} onChange={e=>setBudget(e.target.value)} placeholder="$1,250,000" style={INPUT_STYLE}/>
                   </FIELD>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
                     <FIELD label="Contract Type">
                       <select value={contractType} onChange={e=>setContractType(e.target.value)} style={SELECT_STYLE}>
                         {['Lump Sum GMP','Cost Plus Fixed Fee','Cost Plus Percentage','Unit Price','Design-Build'].map(t=><option key={t}>{t}</option>)}
@@ -340,7 +345,7 @@ export default function NewProjectPage() {
                   <div style={{fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,margin:'2px 0 10px',display:'flex',alignItems:'center',gap:6}}>
                     <CalendarBlank size={14} weight="duotone" color={GOLD}/> Contract Milestones
                   </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
                     <FIELD label="Award Date"><SaguaroDatePicker value={awardDate} onChange={setAwardDate} style={INPUT_STYLE}/></FIELD>
                     <FIELD label="Notice to Proceed"><SaguaroDatePicker value={ntpDate} onChange={setNtpDate} style={INPUT_STYLE}/></FIELD>
                     <FIELD label="Start Date" auto={auto.start} hint="Defaulted to today — adjust freely.">
@@ -368,7 +373,7 @@ export default function NewProjectPage() {
               </div>
             </div>
 
-            <div style={{display:'flex',gap:12,alignItems:'center',marginTop:20,flexWrap:'wrap' as const}}>
+            <div style={{display:'flex',gap:12,alignItems:'center',marginTop:16,flexWrap:'wrap' as const}}>
               <button type="submit" disabled={submitDisabled} className="pmBtn" style={{...goldButtonStyle,padding:'13px 32px',fontSize:15,cursor:submitDisabled?'not-allowed':'pointer',opacity:submitDisabled?0.6:1}}>
                 {saving?'Creating…':'Create Project'}
               </button>
@@ -376,14 +381,14 @@ export default function NewProjectPage() {
                 Cancel
               </button>
               {submitDisabled && !saving && (
-                <span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>Name and address are required — everything else is pre-seeded or optional.</span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.45)'}}>Name and address are required — everything else is pre-seeded or optional.</span>
               )}
             </div>
           </div>
 
           {/* Context rail — what gets created + what the system pre-filled */}
           <div style={{position:'sticky' as const,top:80,display:'flex',flexDirection:'column',gap:16}}>
-            <SectionCard title="What Gets Created" icon={<Stack size={17} weight="duotone" color={GOLD} />}>
+            <SectionCard title="What Gets Created" icon={<Stack size={17} weight="duotone" color={GOLD} />} bodyStyle={{padding:'6px 20px 20px'}}>
               <FlowSteps title="" steps={[
                 {title:'Project workspace', desc:'Overview, directory, documents, daily logs and photo feed — live the moment you hit Create.'},
                 {title:'Budget & bid packages', desc:'CSI-coded budget lines and trade bid packages — sub awards commit dollars automatically.'},
