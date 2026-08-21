@@ -50,7 +50,7 @@ const btnS = (bg: string, c: string = '#000'): React.CSSProperties => ({
 });
 const cardS: React.CSSProperties = {
   background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 14,
-  marginBottom: 10, cursor: 'pointer', transition: 'border-color .15s',
+  marginBottom: 10, cursor: 'pointer',
 };
 const chipS = (bg: string, c: string): React.CSSProperties => ({
   display: 'inline-block', padding: '2px 10px', borderRadius: 99, fontSize: 11,

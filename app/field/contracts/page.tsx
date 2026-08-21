@@ -104,7 +104,7 @@ const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BOR
 const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none' as const, WebkitAppearance: 'none' as const };
 const labelStyle: React.CSSProperties = { display: 'block', color: DIM, fontSize: 12, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 };
-const btnPrimary: React.CSSProperties = { background: GOLD, color: '#000', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 700, fontSize: 15, cursor: 'pointer', width: '100%' };
+const btnPrimary: React.CSSProperties = { background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#000', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 800, fontSize: 15, cursor: 'pointer', width: '100%', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' };
 const btnSecondary: React.CSSProperties = { background: 'transparent', color: GOLD, border: `1px solid ${GOLD}`, borderRadius: 10, padding: '10px 20px', fontWeight: 600, fontSize: 14, cursor: 'pointer' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: 0, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 };
 const badge = (bg: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${bg}22`, color: bg });
@@ -463,7 +463,7 @@ function ContractsPage() {
           actions={<>
             {!online && <span style={{ ...badge(RED), fontSize: 10 }}>Offline</span>}
             <button onClick={() => { resetForm(); setView('create'); }} style={{
-              background: GOLD, color: '#000', border: 'none', borderRadius: 20,
+              background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#000', border: 'none', borderRadius: 20, boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
               width: 40, height: 40, fontSize: 24, fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>+</button>
@@ -488,7 +488,7 @@ function ContractsPage() {
             filtered.map(c => {
               const pct = c.revised_amount > 0 ? c.invoiced_amount / c.revised_amount : 0;
               return (
-                <div key={c.id} onClick={() => { setSelected(c); setView('detail'); }} style={{ ...card, cursor: 'pointer' }}>
+                <div key={c.id} className="lift" onClick={() => { setSelected(c); setView('detail'); }} style={{ ...card, cursor: 'pointer' }}>
                   <div style={rowFlex}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>

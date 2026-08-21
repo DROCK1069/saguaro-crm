@@ -249,7 +249,7 @@ function CloseoutInner() {
   const input: React.CSSProperties = { width: '100%', padding: '10px 12px', background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14, boxSizing: 'border-box' };
   const btnGold: React.CSSProperties = { padding: '10px 20px', background: GOLD, color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' };
   const btnOutline: React.CSSProperties = { padding: '8px 16px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, cursor: 'pointer' };
-  const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block', fontWeight: 600 };
+  const label: React.CSSProperties = { fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 4, display: 'block', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' };
 
   /* ── print ─────────────────────────────────────────────────────── */
   function exportPDF() { window.print(); }
@@ -494,7 +494,7 @@ function CloseoutInner() {
           <textarea style={{ ...input, minHeight: 60, resize: 'vertical' }} value={form.notes} onChange={(e) => set('notes', e.target.value)} />
 
           <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-            <button style={btnGold} onClick={createItem}>Create Item</button>
+            <button className="btn-gold" onClick={createItem}>Create Item</button>
             <button style={btnOutline} onClick={() => { setForm(empty); setView('list'); }}>Cancel</button>
           </div>
         </div>
@@ -608,7 +608,7 @@ function CloseoutInner() {
     return (
       <div
         key={it.id}
-        style={{ ...card, cursor: 'pointer', borderLeft: `4px solid ${isOverdue ? RED : STATUS_COLORS[it.status] || DIM}`, display: 'flex', gap: 12, alignItems: 'flex-start' }}
+        className="lift" style={{ ...card, cursor: 'pointer', borderLeft: `4px solid ${isOverdue ? RED : STATUS_COLORS[it.status] || DIM}`, display: 'flex', gap: 12, alignItems: 'flex-start' }}
         onClick={() => { setSelected(it); setView('detail'); }}
       >
         {/* bulk checkbox */}
@@ -718,7 +718,7 @@ function CloseoutInner() {
   }
 
   /* ── MAIN RENDER ───────────────────────────────────────────────── */
-  if (!projectId) return <div style={page}><div style={{ padding: 40, textAlign: 'center', color: RED }}>Missing projectId parameter</div></div>;
+  if (!projectId) return <div style={page}><div style={{ padding: 40, textAlign: 'center', color: RED }}>No project selected — open a project to track closeout</div></div>;
 
   return (
     <div style={page}>

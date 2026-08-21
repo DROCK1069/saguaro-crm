@@ -103,10 +103,10 @@ const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BOR
 const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: 0, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 };
 const badge = (bg: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${bg}22`, color: bg });
-const tabStyle = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? GOLD : 'transparent', color: active ? '#000' : DIM, fontWeight: 700, border: `1px solid ${active ? GOLD : BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 13, transition: 'all .2s' });
+const tabStyle = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : 'transparent', color: active ? '#000' : DIM, fontWeight: 700, border: `1px solid ${active ? 'transparent' : BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 13, transition: 'all .2s', boxShadow: active ? '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none' });
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none' as const, width: 'auto', minWidth: 140, display: 'inline-block' };
 const summaryCard = (borderColor: string): React.CSSProperties => ({ ...card, borderLeft: `3px solid ${borderColor}`, padding: '14px 16px' });
-const thStyle: React.CSSProperties = { textAlign: 'left', padding: '10px 12px', fontSize: 12, fontWeight: 700, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' };
+const thStyle: React.CSSProperties = { textAlign: 'left', padding: '10px 12px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' };
 const tdStyle: React.CSSProperties = { padding: '10px 12px', fontSize: 13, color: TEXT, borderBottom: `1px solid rgba(255,255,255,0.06)` };
 
 /* ── Main Component ────────────────────────────────────── */
@@ -590,7 +590,7 @@ function BudgetPage() {
 
       {/* Toast */}
       {fieldToast && (
-        <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 20px', color: GREEN, fontSize: 13, fontWeight: 600, zIndex: 800, boxShadow: '0 8px 24px rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 20px', color: GREEN, fontSize: 13, fontWeight: 600, zIndex: 800, boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ display: 'inline-flex' }}><CheckCircle size={16} weight="fill" color={GREEN} /></span>{fieldToast}
         </div>
       )}

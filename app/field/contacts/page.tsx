@@ -132,7 +132,7 @@ function ContactsPage() {
 function ContactCard({ member: m }: { member: TeamMember }) {
   const color = roleColor(m.role);
   return (
-    <div style={{ background: RAISED, border: `1px solid ${m.is_primary ? `rgba(${hexRgb(GOLD)},.3)` : BORDER}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+    <div className="lift" style={{ background: RAISED, border: `1px solid ${m.is_primary ? `rgba(${hexRgb(GOLD)},.3)` : BORDER}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
       {/* Avatar */}
       <div style={{ width: 48, height: 48, borderRadius: 14, background: `rgba(${hexRgb(color)}, .15)`, border: `1px solid rgba(${hexRgb(color)}, .3)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color, flexShrink: 0 }}>
         {initials(m.name)}
@@ -187,7 +187,7 @@ export default function FieldContactsPage() {
 }
 
 const inp: React.CSSProperties = { width: '100%', background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };
-const secLbl: React.CSSProperties = { margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: 0.8 };
+const secLbl: React.CSSProperties = { margin: '0 0 8px', fontSize: 10.5, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em' };
 
 function hexRgb(hex: string): string {
   const r = parseInt((hex || '#888').slice(1, 3), 16);

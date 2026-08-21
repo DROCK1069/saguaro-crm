@@ -107,7 +107,7 @@ export default function AutopilotPage() {
   const filterTabs = (
     <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
       {(['all','critical','high','medium'] as const).map(f=>(
-        <button key={f} onClick={()=>setFilter(f)} className="pmBtn" style={{padding:'6px 16px',borderRadius:8,border:`1px solid ${filter===f?'rgba(245,158,11,0.45)':BORDER}`,background:filter===f?'rgba(245,158,11,.12)':'rgba(255,255,255,0.03)',color:filter===f?'#FBBF24':DIM,fontSize:13,fontWeight:700,cursor:'pointer',textTransform:'capitalize' as const}}>
+        <button key={f} onClick={()=>setFilter(f)} className="pmBtn" style={{padding:'6px 16px',borderRadius:8,border:`1px solid ${filter===f?'var(--brand-primary-35)':BORDER}`,background:filter===f?'var(--brand-primary-12)':'rgba(255,255,255,0.03)',color:filter===f?'var(--brand-primary-strong)':DIM,fontSize:13,fontWeight:700,cursor:'pointer',textTransform:'capitalize' as const}}>
           {f==='all'?`All (${allAlerts.filter(a=>alertStates[a.id]!=='dismissed').length})`:f}
         </button>
       ))}
@@ -190,7 +190,6 @@ export default function AutopilotPage() {
                     <div style={{fontSize:13,color:'rgba(255,255,255,0.62)',lineHeight:1.6,marginBottom:12}}>{alert.summary}</div>
                     <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
                       <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{alert.rule_code.replace(/_/g,' ')}</span>
-                      <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{alert.entity_type}</span>
                       <span style={{fontSize:11,padding:'2px 8px',borderRadius:5,background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.55)'}}>{alert.entity_type}</span>
                     </div>
                   </div>

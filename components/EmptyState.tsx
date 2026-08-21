@@ -122,8 +122,6 @@ export function EmptyState({
             padding: `10px ${space.xl}px`,
             cursor: 'pointer',
           }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.08)')}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'none')}
         >
           <Plus size={16} weight="bold" color="currentColor" />
           {actionLabel}

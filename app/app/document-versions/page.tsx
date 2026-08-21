@@ -372,7 +372,7 @@ export default function DocumentVersionsPage() {
 
   // ─── Styles ─────────────────────────────────────────────────────
   const sBtn = (bg: string, small?: boolean): React.CSSProperties => ({
-    background: bg, color: '#fff', border: 'none', borderRadius: 6,
+    background: bg, color: bg === C.GOLD ? C.BG : '#fff', border: 'none', borderRadius: 6,
     padding: small ? '5px 10px' : '8px 16px', cursor: 'pointer',
     fontSize: small ? 12 : 13, fontWeight: 600, whiteSpace: 'nowrap',
     display: 'inline-flex', alignItems: 'center', gap: 6, opacity: busy ? 0.85 : 1,
@@ -384,7 +384,7 @@ export default function DocumentVersionsPage() {
   const sSelect: React.CSSProperties = { ...sInput, cursor: 'pointer' };
   const sCard: React.CSSProperties = { background: C.RAISED, border: `1px solid ${C.BORDER}`, borderRadius: 10, padding: 16, marginBottom: 8 };
   const sOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(2,6,15,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 };
-  const sModal: React.CSSProperties = { background: C.RAISED, border: `1px solid ${C.BORDER}`, borderRadius: 12, padding: 24, width: 660, maxWidth: '100%', maxHeight: '85vh', overflowY: 'auto', position: 'relative' };
+  const sModal: React.CSSProperties = { background: C.RAISED, border: `1px solid ${C.BORDER}`, borderRadius: 12, padding: 24, width: 660, maxWidth: '100%', maxHeight: '85vh', overflowY: 'auto', position: 'relative', boxShadow: 'var(--shadow-lg)' };
   const sBadge = (color: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: `${color}22`, color, border: `1px solid ${color}44` });
   const sLabel: React.CSSProperties = { fontSize: 12, color: C.DIM, display: 'block', marginBottom: 4 };
 

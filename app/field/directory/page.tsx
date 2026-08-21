@@ -91,12 +91,12 @@ function isExpiringSoon(d: string | undefined): boolean {
 
 const card: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 16, marginBottom: 12 };
 const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' };
-const btnPrimary: React.CSSProperties = { padding: '10px 22px', background: GOLD, color: '#000', fontWeight: 700, border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14 };
+const btnPrimary: React.CSSProperties = { padding: '10px 22px', background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', color: '#000', fontWeight: 800, border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, boxShadow: '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' };
 const btnSecondary: React.CSSProperties = { padding: '10px 22px', background: 'transparent', color: DIM, fontWeight: 600, border: `1px solid ${BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 14 };
 const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: 0, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 };
 const badge = (bg: string): React.CSSProperties => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${bg}22`, color: bg });
 const quickBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', border: `1px solid ${BORDER}`, background: '#1c1c1e', cursor: 'pointer', textDecoration: 'none' };
-const tabStyle = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? GOLD : 'transparent', color: active ? '#000' : DIM, fontWeight: 700, border: `1px solid ${active ? GOLD : BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 13, transition: 'all .2s' });
+const tabStyle = (active: boolean): React.CSSProperties => ({ padding: '8px 18px', background: active ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : 'transparent', color: active ? '#000' : DIM, fontWeight: 700, border: `1px solid ${active ? 'transparent' : BORDER}`, borderRadius: 10, cursor: 'pointer', fontSize: 13, transition: 'all .2s', boxShadow: active ? '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : 'none' });
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none' as const };
 const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: DIM, marginBottom: 4, display: 'block' };
 

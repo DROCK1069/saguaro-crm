@@ -50,11 +50,11 @@ const inputS: React.CSSProperties = { padding: '9px 13px', background: BG, borde
 const btnS = (bg: string, c: string = '#000'): React.CSSProperties => ({ padding: '8px 18px', background: bg, color: c, border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' });
 const cardS: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 16, marginBottom: 10 };
 const chipS = (bg: string, c: string): React.CSSProperties => ({ display: 'inline-block', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: bg + '22', color: c });
-const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
-const modalBox: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 28, width: '90%', maxWidth: 700, maxHeight: '85vh', overflowY: 'auto', color: TEXT };
+const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
+const modalBox: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-lg)', padding: 28, width: '90%', maxWidth: 700, maxHeight: '85vh', overflowY: 'auto', color: TEXT, boxShadow: 'var(--shadow-lg)' };
 const selectS: React.CSSProperties = { ...inputS, appearance: 'auto' as any };
-const labelS: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block', fontWeight: 600 };
-const tableHeaderS: React.CSSProperties = { padding: '10px 14px', fontSize: 12, fontWeight: 700, color: DIM, textAlign: 'left', borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' };
+const labelS: React.CSSProperties = { fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 6, display: 'block', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' };
+const tableHeaderS: React.CSSProperties = { padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'left', borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' };
 const tableCellS: React.CSSProperties = { padding: '10px 14px', fontSize: 13, color: TEXT, borderBottom: `1px solid ${BORDER}15`, whiteSpace: 'nowrap' };
 
 /* ─── Small Components ─── */
@@ -546,7 +546,7 @@ export default function PrequalificationPage() {
                         const docsOk = s.documents.filter(d => d.uploaded).length;
                         const docsTotal = s.documents.length;
                         return (
-                          <tr key={s.id} style={{ cursor: 'pointer', transition: 'background .1s' }} onClick={() => setShowDetail(s.id)} onMouseEnter={e => (e.currentTarget.style.background = BG)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                          <tr key={s.id} style={{ cursor: 'pointer', transition: 'background .1s' }} onClick={() => setShowDetail(s.id)} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                             <td style={tableCellS}>
                               <div style={{ fontWeight: 600 }}>{s.sub_name}</div>
                               <div style={{ fontSize: 11, color: DIM }}>{s.sub_email}</div>
@@ -602,7 +602,7 @@ export default function PrequalificationPage() {
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
                   {templates.map(t => (
-                    <div key={t.id} style={{ ...cardS, cursor: 'pointer' }} onClick={() => { setEditTemplate(t); setShowTemplateBuilder(true); }}>
+                    <div key={t.id} className="lift" style={{ ...cardS, cursor: 'pointer' }} onClick={() => { setEditTemplate(t); setShowTemplateBuilder(true); }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                         <div>
                           <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{t.name}</div>
@@ -970,7 +970,7 @@ function QuestionEditor({ initial, onSave, onClose }: { initial: Question | null
   };
 
   return (
-    <div style={{ ...modalOverlay, background: '#0a0a0a' }} onClick={onClose}>
+    <div style={modalOverlay} onClick={onClose}>
       <div style={{ ...modalBox, maxWidth: 500 }} onClick={e => e.stopPropagation()}>
         <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: GOLD }}>{initial ? 'Edit Question' : 'Add Question'}</h3>
         {err && <div style={{ background: RED + '22', color: RED, padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 10 }}>{err}</div>}

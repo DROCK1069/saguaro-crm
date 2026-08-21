@@ -209,7 +209,9 @@ const miniBtn: React.CSSProperties = {
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: '#0a0a0a',
+  background: 'rgba(0,0,0,0.6)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -225,7 +227,7 @@ const modalStyle: React.CSSProperties = {
   width: '90vw',
   maxHeight: '85vh',
   overflowY: 'auto' as const,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+  boxShadow: 'var(--shadow-lg)',
 };
 
 /* ─── Setting Group Component ───────────────────────────────────────── */

@@ -374,7 +374,7 @@ function CoordinationPage() {
         icon={scopedFieldIcon('meetings', 'ph')}
         actions={<>
           <button onClick={handleExportPDF} style={headerBtn} title="Export PDF"><Printer size={16} weight="regular" color={TEXT} style={{ verticalAlign: 'middle' }} /></button>
-          <button onClick={() => { setForm(emptyForm); setFormPhotos([]); setPhotoPreview([]); setView('create'); }} style={{ ...headerBtn, background: GOLD, color: '#1C1C1E' }}>+ New</button>
+          <button onClick={() => { setForm(emptyForm); setFormPhotos([]); setPhotoPreview([]); setView('create'); }} className="btn-gold" style={{ padding: '6px 14px', fontSize: 13 }}>+ New</button>
         </>}
       />
 
@@ -444,7 +444,7 @@ function CoordinationPage() {
         {filtered.length === 0 && <div style={{ textAlign: 'center', color: DIM, padding: 40 }}>No coordination issues found.</div>}
         {filtered.map(issue => (
           <div key={issue.id} onClick={() => { setSelected(issue); setView('detail'); }}
-            style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14, marginBottom: 10, cursor: 'pointer' }}>
+            className="lift" style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14, marginBottom: 10, cursor: 'pointer' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
                 <span style={{ fontSize: 18 }}>{typeIcon(issue.issue_type, 18)}</span>
@@ -784,7 +784,7 @@ function CoordinationPage() {
 
         {/* Submit */}
         <button onClick={handleCreate} disabled={saving}
-          style={{ width: '100%', marginTop: 20, marginBottom: 40, padding: 14, background: GOLD, color: '#1C1C1E', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+          className="btn-gold" style={{ width: '100%', justifyContent: 'center', marginTop: 20, marginBottom: 40, padding: 14, fontSize: 16, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
           {saving ? 'Saving...' : 'Create Issue'}
         </button>
       </div>
@@ -822,7 +822,7 @@ const backBtn: React.CSSProperties = {
   display: 'flex', alignItems: 'center', marginBottom: 4, fontSize: 14,
 };
 const lbl: React.CSSProperties = {
-  display: 'block', fontSize: 12, color: DIM, marginBottom: 4, fontWeight: 600,
+  display: 'block', fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 4, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
 };
 const inp: React.CSSProperties = {
   width: '100%', background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 10,

@@ -123,7 +123,7 @@ export default function CompliancePage(){
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
             <thead><tr style={{background:'#1c1c1e'}}>
               {['Subcontractor','Trade','Score','W-9','Insurance','Lien Waivers','Status',''].map(h=>(
-                <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,textTransform:'uppercase',color:DIM,borderBottom:`1px solid ${BORDER}`,whiteSpace:'nowrap'}}>{h}</th>
+                <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:10.5,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--text-tertiary)',borderBottom:`1px solid ${BORDER}`,whiteSpace:'nowrap'}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>{filtered.map(sub=>(

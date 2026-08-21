@@ -557,7 +557,7 @@ function DeleteModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#0a0a0a',
+        background: 'rgba(0,0,0,0.6)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -566,7 +566,7 @@ function DeleteModal({
       onClick={onCancel}
     >
       <div
-        style={{ ...cardStyle(), maxWidth: 440, width: '90%' }}
+        style={{ ...cardStyle(), maxWidth: 440, width: '90%', boxShadow: 'var(--shadow-lg)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ color: RED, margin: '0 0 12px', fontSize: 16 }}>
@@ -606,7 +606,7 @@ function ModuleSummaryModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#0a0a0a',
+        background: 'rgba(0,0,0,0.6)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1059,11 +1059,11 @@ export default function CustomFieldsPage() {
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: GOLD }}>
-              Custom Field Definitions
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: TEXT }}>
+              Custom Fields
             </h1>
             <p style={{ margin: '4px 0 0', color: DIM, fontSize: 13 }}>
-              Define and manage custom fields for each module across your projects
+              Add your own fields to any module — they appear on every matching record.
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -1081,7 +1081,8 @@ export default function CustomFieldsPage() {
               Export JSON
             </button>
             <button
-              style={btn(GOLD, BG)}
+              className="btn-gold"
+              style={{ fontSize: 13, padding: '8px 16px' }}
               onClick={() => {
                 resetForm();
                 setShowForm(true);

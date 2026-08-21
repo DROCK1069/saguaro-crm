@@ -115,7 +115,6 @@ export default function CertifiedPayrollPage() {
               <Link
                 key={p.id}
                 href={`/app/projects/${p.id}/payroll`}
-                className="lift"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none',
                   padding: '16px 20px',

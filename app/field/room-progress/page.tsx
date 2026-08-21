@@ -45,7 +45,7 @@ icon={scopedFieldIcon('inspections', 'ph')}
 actions={
 <>
 <button onClick={async()=>{setRefreshing(true);await fetchRooms();setRefreshing(false);}} style={{...glass,padding:'7px 12px',cursor:'pointer',color:DIM,fontSize:14,border:'none'}}>{refreshing?'...':String.fromCharCode(8635)}</button>
-<button onClick={()=>setShowAdd(!showAdd)} style={{...glass,padding:'7px 14px',cursor:'pointer',color:GOLD,fontSize:12,fontWeight:700,border:'1px solid '+GOLD}}>+ Add Room</button>
+<button onClick={()=>setShowAdd(!showAdd)} className="btn-gold" style={{padding:'7px 14px',fontSize:12,cursor:'pointer'}}>+ Add Room</button>
 </>
 }
 />
@@ -62,7 +62,7 @@ actions={
 ):(<div style={{display:'flex',flexDirection:'column',gap:8}}>{filtered.map(room=>{
 const edit=edits[room.id]||{percent_complete:room.percent_complete,status:room.status,notes:room.notes||'',trade:room.trade||''};
 const dirty=room.percent_complete!==edit.percent_complete||room.status!==edit.status||(room.notes||'')!==edit.notes;
-return(<div key={room.id} style={{...glass,padding:14,borderLeft:'3px solid '+heatColor(edit.percent_complete)}}>
+return(<div key={room.id} className="lift" style={{...glass,padding:14,borderLeft:'3px solid '+heatColor(edit.percent_complete)}}>
 <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
 <div><p style={{margin:0,fontSize:14,fontWeight:700,color:TEXT}}>{room.room_name}</p>
 <p style={{margin:'2px 0 0',fontSize:11,color:DIM}}>{room.floor_id?'Floor '+room.floor_id:'No floor'}{edit.trade?' · '+edit.trade:''}{room.drawing_id?<> · <Ruler size={12} weight="regular" style={{verticalAlign:'middle'}}/></>:''}</p></div>

@@ -335,7 +335,7 @@ function CrewSiteMap({
               border: `1px solid ${ACTIVITY_CONFIG[selStatus].color}`,
               borderRadius: 12,
               padding: '10px 12px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--shadow-lg)',
               pointerEvents: 'none',
               zIndex: 3,
             }}

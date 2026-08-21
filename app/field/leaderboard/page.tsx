@@ -331,7 +331,7 @@ export default function LeaderboardPage() {
 
       {/* My Badges Section */}
       <div style={{ marginTop: 28 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 12 }}>My Badges</h2>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>My Badges</h2>
 
         {loadingBadges && (
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>

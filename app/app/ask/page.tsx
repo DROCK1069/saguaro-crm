@@ -62,7 +62,7 @@ export default function AskDocsPage() {
         <div style={{ flex: 1, marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {turns.length === 0 && !busy && (
             <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 18 }}>
-              <div style={{ fontSize: 13, color: DIM, fontWeight: 700, marginBottom: 10 }}>TRY ASKING</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>Try asking</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{EXAMPLES.map((ex) => <button key={ex} onClick={() => ask(ex)} style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', background: DARK, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px 12px', color: TEXT, cursor: 'pointer', fontSize: 14 }}><Question size={16} color={GOLD} />{ex}</button>)}</div>
             </div>
           )}
@@ -91,7 +91,7 @@ export default function AskDocsPage() {
         <div style={{ position: 'sticky', bottom: 0, background: DARK, paddingTop: 12, marginTop: 8 }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !busy && ask()} placeholder="Ask anything about this project…" style={inp} />
-            <button onClick={() => ask()} disabled={busy || !q.trim()} style={{ background: GOLD, color: DARK, border: 'none', borderRadius: 10, padding: '0 16px', cursor: busy ? 'default' : 'pointer', opacity: busy || !q.trim() ? 0.6 : 1, display: 'flex', alignItems: 'center' }}><PaperPlaneRight size={20} weight="fill" /></button>
+            <button onClick={() => ask()} disabled={busy || !q.trim()} className="btn-gold" style={{ padding: '0 16px', cursor: busy ? 'default' : 'pointer', opacity: busy || !q.trim() ? 0.6 : 1 }}><PaperPlaneRight size={20} weight="fill" /></button>
           </div>
           <div style={{ color: DIM, fontSize: 11, marginTop: 6, textAlign: 'center' }}>Grounded in your records only — Sage cites its sources and won’t invent answers.</div>
         </div>

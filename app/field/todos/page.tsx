@@ -115,8 +115,8 @@ async function offlineFetch(url: string, method: string, body?: object) {
 /* ─── Confirm Dialog ─── */
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
-      <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24, maxWidth: 340, width: '90%' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+      <div style={{ background: RAISED, border: '1px solid var(--border-strong)', borderRadius: 16, padding: 24, maxWidth: 340, width: '90%', boxShadow: 'var(--shadow-lg)' }}>
         <p style={{ margin: '0 0 20px', fontSize: 15, color: TEXT, lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onCancel} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, color: DIM, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
@@ -380,7 +380,7 @@ function TodoForm({ initial, onSave, onCancel }: { initial?: TodoItem | null; on
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
         <button onClick={onCancel} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 14, color: DIM, fontSize: 14, cursor: 'pointer' }}>Cancel</button>
-        <button onClick={submit} style={{ flex: 1, background: GOLD, border: 'none', borderRadius: 10, padding: 14, color: '#000', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>{initial ? 'Save Changes' : 'Create Item'}</button>
+        <button onClick={submit} className="btn-gold" style={{ flex: 1, justifyContent: 'center', padding: 14, fontSize: 14, cursor: 'pointer' }}>{initial ? 'Save Changes' : 'Create Item'}</button>
       </div>
     </div>
   );
@@ -620,7 +620,8 @@ function TodosPageInner() {
           </button>
           <button
             onClick={() => { setShowForm(true); setEditItem(null); }}
-            style={{ background: GOLD, border: 'none', borderRadius: 10, padding: '10px 18px', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+            className="btn-gold"
+            style={{ fontSize: 13, cursor: 'pointer' }}
           >
             + New
           </button>

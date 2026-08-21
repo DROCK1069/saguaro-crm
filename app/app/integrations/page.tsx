@@ -311,10 +311,8 @@ export default function IntegrationsPage() {
           />
           <Link
             href="/app/integrations/api-docs"
-            style={{
-              padding: '9px 22px', background: `linear-gradient(135deg,${GOLD},#FBBF24)`,
-              color: '#1C1C1E', borderRadius: 8, fontWeight: 800, fontSize: 13, textDecoration: 'none',
-            }}
+            className="btn-gold"
+            style={{ padding: '9px 22px', fontSize: 13, textDecoration: 'none' }}
           >
             API Docs
           </Link>
@@ -372,8 +370,7 @@ export default function IntegrationsPage() {
                 backdropFilter: 'blur(16px)',
                 transition: 'all 0.25s',
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = intg.connected ? 'rgba(34,197,94,0.5)' : GOLD; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = intg.connected ? 'rgba(34,197,94,0.3)' : BORDER; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
+              className="lift"
             >
               {/* Header Row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
@@ -470,10 +467,9 @@ export default function IntegrationsPage() {
                   <button
                     onClick={() => handleConnect(intg)}
                     disabled={connectingKey === intg.key}
+                    className="btn-gold"
                     style={{
-                      flex: 1, padding: '9px 0', borderRadius: 8, cursor: 'pointer',
-                      background: `linear-gradient(135deg,${GOLD},#FBBF24)`, border: 'none',
-                      color: '#1C1C1E', fontSize: 13, fontWeight: 700,
+                      flex: 1, justifyContent: 'center', padding: '9px 0', fontSize: 13,
                       opacity: connectingKey === intg.key ? 0.6 : 1,
                     }}
                   >

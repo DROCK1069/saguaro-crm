@@ -563,11 +563,10 @@ function SpecsPageInner() {
           <button
             onClick={handleCreate}
             disabled={creating || !newSectionNumber.trim() || !newTitle.trim()}
+            className="btn-gold"
             style={{
-              width: '100%', padding: '14px 0', borderRadius: 10, fontSize: 16, fontWeight: 700,
-              background: (!newSectionNumber.trim() || !newTitle.trim()) ? `${GOLD}44` : GOLD,
-              color: '#FFFFFF', border: 'none', cursor: creating ? 'wait' : 'pointer',
-              opacity: creating ? 0.6 : 1,
+              width: '100%', justifyContent: 'center', padding: '14px 0', fontSize: 16,
+              cursor: creating ? 'wait' : 'pointer',
             }}
           >
             {creating ? 'Saving...' : online ? 'Create Spec Section' : 'Queue Offline'}
@@ -611,7 +610,8 @@ function SpecsPageInner() {
             </button>
             <button
               onClick={() => setShowCreateForm(true)}
-              style={{ background: GOLD, border: 'none', borderRadius: 8, padding: '6px 14px', color: '#FFFFFF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+              className="btn-gold"
+              style={{ padding: '6px 14px', fontSize: 14, cursor: 'pointer' }}
             >
               + New
             </button>
@@ -739,7 +739,8 @@ function SpecsPageInner() {
           <p style={{ color: DIM, fontSize: 15, marginBottom: 16 }}>No specification sections yet.</p>
           <button
             onClick={() => setShowCreateForm(true)}
-            style={{ background: GOLD, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+            className="btn-gold"
+            style={{ padding: '10px 24px', fontSize: 15, cursor: 'pointer' }}
           >
             Create First Section
           </button>

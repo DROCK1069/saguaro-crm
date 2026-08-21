@@ -272,7 +272,7 @@ export default function PortalsPage() {
       {showInvite && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={e => { if (e.target === e.currentTarget) { setShowInvite(false); setInviteSuccess(null); } }}>
-          <div style={{ width: '100%', maxWidth: 480, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, boxShadow: '0 24px 80px rgba(0,0,0,0.7)', overflow: 'hidden' }}>
+          <div style={{ width: '100%', maxWidth: 480, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden' }}>
 
             {/* Modal header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: `1px solid ${BORDER}` }}>
@@ -358,8 +358,8 @@ export default function PortalsPage() {
                     </div>
                   )}
 
-                  <button type="submit" disabled={inviteLoading}
-                    style={{ width: '100%', padding: '12px', background: inviteLoading ? 'rgba(245, 158, 11,0.4)' : `linear-gradient(135deg,${GOLD},#C8960F)`, border: 'none', borderRadius: 8, color: '#000', fontSize: 14, fontWeight: 800, cursor: inviteLoading ? 'not-allowed' : 'pointer' }}>
+                  <button type="submit" disabled={inviteLoading} className="btn-gold"
+                    style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 14, cursor: inviteLoading ? 'not-allowed' : 'pointer' }}>
                     {inviteLoading ? 'Creating Access…' : <>Generate Portal Link <ArrowRight size={16} weight="regular" color="#000" style={{ display: 'inline-flex', verticalAlign: 'middle' }} /></>}
                   </button>
                 </form>
@@ -424,7 +424,7 @@ function SuccessCard({ url, name, type, emailSent, onAnother, onClose }: { url: 
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, marginBottom: 16, textAlign: 'left' }}>
           <svg viewBox="0 0 24 24" fill="none" stroke={AMBER} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} style={{ flexShrink: 0 }}><circle cx={12} cy={12} r={10}/><line x1={12} y1={8} x2={12} y2={12}/><line x1={12} y1={16} x2={12.01} y2={16}/></svg>
-          <span style={{ fontSize: 12, color: AMBER, fontWeight: 600 }}>Email not sent — add RESEND_API_KEY to Vercel env vars to enable auto-emails</span>
+          <span style={{ fontSize: 12, color: AMBER, fontWeight: 600 }}>Email not sent automatically — copy the portal link below and share it directly</span>
         </div>
       )}
 
@@ -448,7 +448,7 @@ function SuccessCard({ url, name, type, emailSent, onAnother, onClose }: { url: 
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={onAnother} style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: 'rgba(0,0,0,0.05)', border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={onAnother} style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 7, color: DIM, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           <Plus size={13} weight="regular" color={DIM} /> Invite Another
         </button>
         <button onClick={onClose} style={{ flex: 1, padding: '10px', background: `rgba(245, 158, 11,0.1)`, border: `1px solid rgba(245, 158, 11,0.25)`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>

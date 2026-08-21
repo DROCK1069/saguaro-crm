@@ -732,9 +732,9 @@ function ObservationsPage() {
             </span>
           )}
           {view === 'list' && (
-            <button onClick={() => { resetForm(); setView('create'); }} style={{
-              ...btnBase, background: GOLD, color: '#000',
-            }}><Plus size={14} weight="bold" style={{ verticalAlign: 'middle' }} /> New</button>
+            <button onClick={() => { resetForm(); setView('create'); }} className="btn-gold" style={{
+              fontSize: 14, cursor: 'pointer',
+            }}><Plus size={14} weight="bold" /> New</button>
           )}
         </>
       }
@@ -983,9 +983,9 @@ function ObservationsPage() {
           const tc = typeColor(obs.type);
           return (
             <div key={obs.id} onClick={() => { setSelected(obs); setView('detail'); }}
+              className="lift"
               style={{
                 ...cardStyle, borderLeft: `4px solid ${tc}`, cursor: 'pointer',
-                transition: 'border-color 0.15s',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
