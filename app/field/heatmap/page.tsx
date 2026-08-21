@@ -450,7 +450,7 @@ export default function HeatmapDesigner() {
   /* ── vector CAD PDF import: EXACT walls + scale from /api/heatmap/parse-vector ──
      No AI guessing — the route reads real vector geometry. Scanned/raster PDFs come
      back ok:false, and we tell the user to use the AI scan instead. */
-  const importVectorPdf = async (file: File) => {
+  const importVectorPdf = async (file: File): Promise<boolean> => {
     const name = file.name.replace(/\.[^.]+$/, '');
     setBusy('Reading vector PDF…'); setAiNotes([]);
     try {
@@ -468,8 +468,7 @@ export default function HeatmapDesigner() {
       const data = await res.json();
       if (!data || !data.ok) {
         console.error('vector import failed', res.status, data?.error);
-        setAiNotes(["Vector import couldn't run. If this is a scanned or raster PDF, use “AI scan” instead — it reads image plans."]);
-        setBusy(''); return;
+        setBusy(''); return false; // scanned/raster PDF — smartUpload falls back to the image path
       }
       const K = 2; // pixels per PDF point (coordinate mapping — see route contract)
       const imgW = Math.round((data.pageWidthPt || 0) * K);
@@ -488,8 +487,7 @@ export default function HeatmapDesigner() {
         .map((s) => ({ id: uid(), a: { x: s.x1 * K, y: s.y1 * K }, b: { x: s.x2 * K, y: s.y2 * K }, material: 'drywall' as WallMaterialId }))
         .filter((w) => (minLenPx ? dist(w.a, w.b) >= minLenPx : true));
       if (!imgW || !imgH || !walls.length) {
-        setAiNotes([`Vector import found no usable wall geometry in ${file.name}. If this is a scanned or raster PDF, use “AI scan” instead.`]);
-        setBusy(''); return;
+        setBusy(''); return false; // no usable geometry — smartUpload falls back to the image path
       }
       // blank template backdrop — no raster plan; walls render on a clean canvas (matches export's empty-plan fill)
       const bg = document.createElement('canvas'); bg.width = imgW; bg.height = imgH;
@@ -509,16 +507,29 @@ export default function HeatmapDesigner() {
       else notes.push('Scale not found — tap two points on a known dimension with the Scale tool to calibrate before placing devices.');
       setAiNotes(notes);
     } catch (e) {
-      console.error(e); setAiNotes(['Vector import failed. Please try again, or use “AI scan” for scanned or raster plans.']);
+      console.error(e); setBusy(''); return false;
     }
     setBusy('');
+    return true;
+  };
+  /* ONE upload door — no format quiz. Vector CAD PDFs import exact walls + scale;
+     scanned PDFs and photos fall back to the raster path automatically. */
+  const smartUpload = async (file: File) => {
+    const ext = (file.name.toLowerCase().split('.').pop() || '');
+    if (file.type === 'application/pdf' || ext === 'pdf') {
+      if (await importVectorPdf(file)) return;
+      setAiNotes([]);
+      await onUpload(file);
+      return;
+    }
+    await onUpload(file);
   };
 
   // drag-and-drop a plan file anywhere onto the upload box / canvas
   const onDropFiles = (e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
     const f = e.dataTransfer?.files?.[0];
-    if (f) onUpload(f);
+    if (f) smartUpload(f);
   };
   const onDragOverFiles = (e: React.DragEvent) => { e.preventDefault(); if (!dragOver) setDragOver(true); };
   const onDragLeaveFiles = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); };
@@ -714,6 +725,22 @@ export default function HeatmapDesigner() {
     const t = setTimeout(fitView, 60);
     return () => { clearTimeout(t); hm.style.height = ''; };
   }, [!!project]); // eslint-disable-line
+  /* AUTO-FIT — the plan always fits the window. Window resize, phone rotation,
+     sidebar collapse, a chrome row appearing: any size change re-fits the plan.
+     Manual zoom/pan still works between changes; a layout change brings it back. */
+  useEffect(() => {
+    const host = hostRef.current; if (!host || !project) return;
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const refit = () => { if (t) clearTimeout(t); t = setTimeout(fitView, 120); };
+    // BOTH signals: ResizeObserver catches container changes (sidebar, chrome rows),
+    // window resize catches viewport changes even when frames aren't compositing.
+    // Refitting only moves the canvas TRANSFORM — no container sizes change, so this
+    // can't re-enter itself (the scrollbar-toggle loop the height effect once hit).
+    const ro = new ResizeObserver(refit);
+    ro.observe(host);
+    window.addEventListener('resize', refit);
+    return () => { ro.disconnect(); window.removeEventListener('resize', refit); if (t) clearTimeout(t); };
+  }, [project?.id, fitView]); // eslint-disable-line
   useEffect(() => {
     const host = hostRef.current; if (!host) return;
     const wh = (e: WheelEvent) => { e.preventDefault(); zoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY); };
@@ -1690,16 +1717,19 @@ export default function HeatmapDesigner() {
         subtitle={project ? `${project.name}${project.scale ? ' · calibrated' : ' · not calibrated'}` : 'Upload a blueprint to begin'}
         icon={scopedFieldIcon('drawings', 'ph')}
         actions={project ? <>
+          {/* Field mode: TWO buttons. Everything else lives in Details or the Bid step. */}
           <button className="hm-btn" style={{ background: 'rgba(255,255,255,0.06)', color: TEXT }} onClick={openListModal}>Open</button>
           <button className="hm-btn" style={{ background: savedId ? 'rgba(48,209,88,0.15)' : 'rgba(255,255,255,0.06)', color: savedId ? '#30D158' : TEXT }} onClick={openSaveModal}>{savedId ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>Saved <CheckCircle size={13} weight="fill" /></span> : 'Save'}</button>
-          <button className="hm-btn" style={{ background: 'rgba(255,255,255,0.06)', color: TEXT }} onClick={openShare}>Share</button>
-          <button className="hm-btn" style={{ background: 'rgba(255,255,255,0.06)', color: TEXT }} onClick={exportPng}>PNG</button>
-          <button className="hm-btn" onClick={exportReport}>Report</button>
-          <button className="hm-btn" style={{ background: 'rgba(48,209,88,0.14)', color: '#30D158' }} onClick={sendToBidJacket}>→ Bid Jacket</button>
+          {!fieldMode && <>
+            <button className="hm-btn" style={{ background: 'rgba(255,255,255,0.06)', color: TEXT }} onClick={openShare}>Share</button>
+            <button className="hm-btn" style={{ background: 'rgba(255,255,255,0.06)', color: TEXT }} onClick={exportPng}>PNG</button>
+            <button className="hm-btn" onClick={exportReport}>Report</button>
+            <button className="hm-btn" style={{ background: 'rgba(48,209,88,0.14)', color: '#30D158' }} onClick={sendToBidJacket}>→ Bid Jacket</button>
+          </>}
         </> : undefined}
       />
 
-      {(project || floors.length > 1) && (
+      {(fieldMode ? floors.length > 1 : (project || floors.length > 1)) && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '10px 16px', borderBottom: `1px solid ${BORDER}`, background: RAISED }}>
           <span style={{ fontSize: 11, color: MUTED, textTransform: 'uppercase', letterSpacing: 1, marginRight: 2 }}>Building floors</span>
           {floors.map((f) => (
@@ -1718,7 +1748,7 @@ export default function HeatmapDesigner() {
       )}
 
       {/* ── system layer-chip row (the 6 approved systems) — click a chip to show / hide that system ── */}
-      {project && (
+      {project && !fieldMode && (
         <div className="hm-chiprow">
           <span style={{ fontSize: 10.5, color: MUTED, textTransform: 'uppercase', letterSpacing: 1, marginRight: 2 }}>Systems</span>
           {SYSTEM_CHIPS.map((c) => {
@@ -1759,19 +1789,15 @@ export default function HeatmapDesigner() {
                 ))}
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                <button className="hm-cta" style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }} onClick={() => { const o = TEMPLATES.find((t) => t.id === 'office') || TEMPLATES[0]; if (o) buildTemplate(o); }}>
+                <label className="hm-cta" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}>
+                  <UploadSimple size={15} weight="bold" /> {busy || (dragOver ? 'Drop to load' : 'Upload blueprint')}
+                  <input type="file" accept="image/*,application/pdf,.pdf" style={{ display: 'none' }} onChange={(e) => e.target.files?.[0] && smartUpload(e.target.files[0])} />
+                </label>
+                <button className="hm-cta" style={{ background: 'rgba(255,255,255,0.07)', color: TEXT, border: `1px solid ${BORDER}`, display: 'inline-flex', alignItems: 'center', gap: 7 }} onClick={() => { const o = TEMPLATES.find((t) => t.id === 'office') || TEMPLATES[0]; if (o) buildTemplate(o); }}>
                   <Sparkle size={15} weight="fill" /> See a live example
                 </button>
-                <label className="hm-cta" style={{ background: 'rgba(255,255,255,0.07)', color: TEXT, border: `1px solid ${BORDER}` }}>
-                  {busy || (dragOver ? 'Drop to load' : 'Upload blueprint')}
-                  <input type="file" accept="image/*,application/pdf,.pdf" style={{ display: 'none' }} onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
-                </label>
-                <label className="hm-cta" style={{ background: 'rgba(212,160,23,0.10)', color: '#F5B838', border: '1px solid rgba(212,160,23,0.35)', display: 'inline-flex', alignItems: 'center', gap: 7 }} title="Extract exact walls + drawing scale from a vector CAD PDF — no AI guessing">
-                  <LineSegments size={15} weight="regular" /> Import vector PDF (exact walls + scale)
-                  <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} onChange={(e) => e.target.files?.[0] && importVectorPdf(e.target.files[0])} />
-                </label>
               </div>
-              <div style={{ fontSize: 11.5, color: MUTED, marginTop: 12 }}>Drag &amp; drop a PDF, PNG or JPG anywhere here · or tap a template below.</div>
+              <div style={{ fontSize: 11.5, color: MUTED, marginTop: 12 }}>Drag &amp; drop a PDF, PNG or JPG anywhere · CAD PDFs import exact walls &amp; scale automatically · or tap a template below.</div>
               {aiNotes.length > 0 && <div style={{ marginTop: 14, fontSize: 12, color: '#FCA5A5', background: 'rgba(255,69,58,0.08)', border: '1px solid rgba(255,69,58,0.25)', borderRadius: 8, padding: '9px 11px', lineHeight: 1.5 }}>{aiNotes.map((n, i) => <div key={i}>{n}</div>)}</div>}
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2427,8 +2453,8 @@ export default function HeatmapDesigner() {
         .hm-layout { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         /* EDITOR MODE: the tool fills the field content viewport exactly — no page scroll, no floaty double-scroll.
            The map + panel manage their own space; only the active panel tab scrolls if its content overflows. */
-        :global(.fld-main:has([data-hm][data-mode="editor"])) { overflow: hidden !important; padding-bottom: 0 !important; }
-        :global(.fld-content:has([data-hm][data-mode="editor"])) { height: 100%; min-height: 0; }
+        .fld-main:has([data-hm][data-mode="editor"]) { overflow: hidden !important; padding-bottom: 0 !important; }
+        .fld-content:has([data-hm][data-mode="editor"]) { height: 100%; min-height: 0; }
         .hm-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px solid ${BORDER}; border-bottom: 1px solid ${BORDER}; background: ${RAISED}; flex-wrap: wrap; }
         .hm-tool { background: rgba(255,255,255,0.05); border: 1px solid ${BORDER}; color: ${DIM}; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
         .hm-tool[data-on="true"] { background: rgba(245,158,11,0.15); border-color: ${GOLD}; color: ${GOLD}; }
@@ -2502,7 +2528,7 @@ export default function HeatmapDesigner() {
           .hm-canvas-wrap { min-height: 55dvh; }
           /* narrow: let the page scroll normally instead of a fixed full-height app */
           [data-hm][data-mode="editor"] { height: auto !important; overflow: visible !important; }
-          :global(.fld-main:has([data-hm][data-mode="editor"])) { overflow-y: auto !important; }
+          .fld-main:has([data-hm][data-mode="editor"]) { overflow-y: auto !important; }
         }
       ` }} />
     </div>
