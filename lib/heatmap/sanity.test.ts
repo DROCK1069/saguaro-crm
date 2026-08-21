@@ -91,5 +91,28 @@ const apCount = (d: Device[]) => d.filter((x) => x.typeId === 'wifi_ap').length;
   check('F: one horizontal wall → design still covers the floor', r.aps.length >= 1 && (r.areaFt2 ?? 0) >= 7000, `placed ${r.aps.length}, area basis ${r.areaFt2?.toFixed(0)} ft²`);
 }
 
+
+/* ── G: THE FIELD-TRUTH CASE — Chad's golf-sim building (39.3 x 87 ft, 4 bays,
+   drywall partitions, concrete shell). ONE AP covers it in real life; the model
+   must agree at true scale. (At 2x-wrong scale the same pixels read as ~13,700
+   ft\u00b2 and the engine wanted 4 APs — that is a SCALE error, which the UI now
+   catches by echoing the computed ft\u00b2 the moment scale is set.) ── */
+{
+  const k = 10;
+  const gw = (id: string, x1: number, y1: number, x2: number, y2: number, material: HeatmapProject['walls'][number]['material'] = 'drywall') =>
+    ({ id, a: { x: x1 * k, y: y1 * k }, b: { x: x2 * k, y: y2 * k }, material });
+  const golf = proj(39.3, 87, k, [
+    gw('g1', 0, 0, 39.3, 0, 'concrete'), gw('g2', 39.3, 0, 39.3, 87, 'concrete'),
+    gw('g3', 39.3, 87, 0, 87, 'concrete'), gw('g4', 0, 87, 0, 0, 'concrete'),
+    gw('g5', 0, 29, 39.3, 29), gw('g6', 0, 58, 39.3, 58), gw('g7', 16, 0, 16, 29), gw('g8', 0, 72, 39.3, 72),
+  ]);
+  const placed = autoPlaceAPs(golf, { targetPct: 0.92, ...RADIO });
+  const withAps = { ...golf, devices: placed.aps };
+  const cov = recompute(withAps, cellOf(golf));
+  const fixable = gapsWorthFixing(withAps, cov.gaps ?? [], apCount(placed.aps));
+  const total = placed.aps.length + fixable.length;
+  check('G: real 3,400 ft\u00b2 golf-sim building \u2192 exactly 1 AP (field-verified)', total === 1, `placed ${placed.aps.length} + fix ${fixable.length} = ${total} (basis ${placed.areaFt2?.toFixed(0)} ft\u00b2)`);
+}
+
 console.log(failures ? `\n${failures} FAILED` : '\nPASS — AP-count discipline holds through the real engine');
 process.exit(failures ? 1 : 0);

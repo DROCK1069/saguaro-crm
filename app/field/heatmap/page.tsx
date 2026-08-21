@@ -17,7 +17,7 @@ import { DEVICE_REGISTRY, WALL_MATERIALS, deviceDef, doriDistanceFt, SYSTEM_COLO
 import { isoLines, interferenceMask } from '@/lib/heatmap/overlays';
 import { TEMPLATES, type TemplateSpec } from '@/lib/heatmap/templates';
 import { computeCoverage, apRssiAt, apUsableRadiusFt, inspectAt } from '@/lib/heatmap/engine';
-import { autoPlaceAPs, gapsWorthFixing, planChannels, recompute } from '@/lib/heatmap/smart';
+import { autoPlaceAPs, deriveFootprint, gapsWorthFixing, planChannels, recompute } from '@/lib/heatmap/smart';
 import { summarizeBuilding } from '@/lib/heatmap/multifloor';
 import { UNIFI_APS, UNIFI_CAMERAS } from '@/lib/heatmap/unifi';
 import { computeBom } from '@/lib/heatmap/bom';
@@ -279,7 +279,8 @@ export default function HeatmapDesigner() {
   // Field mode is the DEFAULT — pros flip to Details for the full toolbox. Persisted.
   const [fieldMode, setFieldMode] = useState(true);
   const [fieldStepPin, setFieldStepPin] = useState<FieldStep | null>(null);
-  const [scaleDoor, setScaleDoor] = useState(false); // next 2 clicks = door jamb→jamb = 3 ft
+  const [scaleDoor, setScaleDoor] = useState(false); // next 2 clicks = door jamb→jamb
+  const [scaleDoorFt, setScaleDoorFt] = useState(3); // 3 = single door, 6 = double — tapping a double door as "3 ft" is the classic 2x scale error (a 3,400 ft² building reads as 13,700 → 4 APs instead of 1)
   useEffect(() => { try { const v = localStorage.getItem('hm_field_mode'); if (v != null) setFieldMode(v === '1'); } catch { /* private mode */ } }, []);
   const flipFieldMode = (on: boolean) => {
     setFieldMode(on);
@@ -503,7 +504,7 @@ export default function HeatmapDesigner() {
       setTool(scale ? 'select' : 'scale');
       setFieldStepPin(null); setScaleDoor(false); setPendingScale([]); setPendingWall([]);
       const notes: string[] = [`✓ Imported ${walls.length} wall${walls.length === 1 ? '' : 's'} · scale ${scale ? 'detected' : 'manual'}.`];
-      if (scale) notes.push(`Scale ≈ ${scale.pxPerFt.toFixed(1)} px/ft (${det!.source || 'from PDF'}) — coverage is dimensioned. Place devices to compute coverage.`);
+      if (scale) { const a = deriveFootprint(proj).areaFt2; notes.push(`Scale ≈ ${scale.pxPerFt.toFixed(1)} px/ft (${det!.source || 'from PDF'})${a > 0 ? ` — this floor reads as ~${Math.round(a).toLocaleString()} ft²` : ''}. Place devices to compute coverage.`); }
       else notes.push('Scale not found — tap two points on a known dimension with the Scale tool to calibrate before placing devices.');
       setAiNotes(notes);
     } catch (e) {
@@ -605,20 +606,30 @@ export default function HeatmapDesigner() {
       const pts = [...pendingScale, pt];
       if (pts.length === 2) {
         const px = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        // Echo the building's computed size on EVERY scale commit — the one guard
+        // that catches a wrong scale instantly (a 2x door error reads a 3,400 ft²
+        // building back as ~13,700 ft² and quadruples the AP count).
+        const sqftNote = (pxPerFt: number) => {
+          const a = deriveFootprint({ ...project, scale: { pxPerFt } }).areaFt2;
+          return a > 0 ? ` This floor reads as ~${Math.round(a).toLocaleString()} ft² — wrong? Redo the scale.` : '';
+        };
         if (scaleDoor) {
-          // Door-tap scale — jamb to jamb across any door = 3 ft. No typing on a jobsite.
+          // Door-tap scale — jamb to jamb across the doorway. No typing on a jobsite.
           if (px > 2) {
-            snapshot(); patch({ scale: { pxPerFt: px / 3 } });
+            const pxPerFt = px / scaleDoorFt;
+            snapshot(); patch({ scale: { pxPerFt } });
             // land EXACTLY like mobile: place tool armed, Devices step pinned, visible note
             setTool('place'); setPlaceType('wifi_ap'); setScaleDoor(false); setFieldStepPin('devices');
-            setAiNotes(['Scale set from the door — place devices, then the heatmap computes live.']);
+            setAiNotes([`Scale set from the ${scaleDoorFt === 6 ? 'double ' : ''}door.${sqftNote(pxPerFt)}`]);
           }
           setPendingScale([]);
         } else {
           const ans = window.prompt('Real-world length of this line, in FEET:', '20');
           const ft = ans ? parseFloat(ans) : NaN;
           if (ft > 0) {
-            snapshot(); patch({ scale: { pxPerFt: px / ft } });
+            const pxPerFt = px / ft;
+            snapshot(); patch({ scale: { pxPerFt } });
+            setAiNotes([`Scale set.${sqftNote(pxPerFt)}`]);
             if (fieldMode) { setTool('place'); setPlaceType('wifi_ap'); setFieldStepPin('devices'); }
             else setTool('wall');
           }
@@ -1849,9 +1860,10 @@ export default function HeatmapDesigner() {
                 <button className="hm-big" data-alt="true" onClick={() => { finishWall(); setTool('scale'); setScaleDoor(true); setPendingScale([]); }}>Redo scale</button>
               </> : <>
                 <button className="hm-big" onClick={autopilot}>✨ AI: read plan & design everything</button>
-                <button className="hm-big" data-alt="true" data-on={scaleDoor && tool === 'scale'} onClick={() => { finishWall(); setTool('scale'); setScaleDoor(true); setPendingScale([]); }}>🚪 Tap both sides of a door (3 ft)</button>
+                <button className="hm-big" data-alt="true" data-on={scaleDoor && scaleDoorFt === 3 && tool === 'scale'} onClick={() => { finishWall(); setScaleDoorFt(3); setTool('scale'); setScaleDoor(true); setPendingScale([]); }}>🚪 Single door (3 ft)</button>
+                <button className="hm-big" data-alt="true" data-on={scaleDoor && scaleDoorFt === 6 && tool === 'scale'} onClick={() => { finishWall(); setScaleDoorFt(6); setTool('scale'); setScaleDoor(true); setPendingScale([]); }}>Double door (6 ft)</button>
                 <button className="hm-big" data-alt="true" data-on={!scaleDoor && tool === 'scale'} onClick={() => { finishWall(); setTool('scale'); setScaleDoor(false); setPendingScale([]); }}>Known distance…</button>
-                <span className="hm-fieldmsg">Fastest: let AI read the plan. Or tap a door — every door is 3 ft.</span>
+                <span className="hm-fieldmsg">Fastest: let AI read the plan. Or tap a doorway — pick single or double first.</span>
               </>)}
               {fieldStep === 'walls' && <>
                 <button className="hm-big" data-on={tool === 'wall'} onClick={() => setTool('wall')}>✏️ Trace walls</button>
@@ -1976,7 +1988,7 @@ export default function HeatmapDesigner() {
               <div style={{ position: 'absolute', left: 10, bottom: 10, display: 'flex', gap: 6, flexWrap: 'wrap', pointerEvents: 'none', zIndex: 5 }}>
                 {(fieldMode
                   ? tool === 'scale'
-                    ? [scaleDoor ? (pendingScale.length ? 'Now tap the OTHER side of the same door' : 'Tap ONE side of any door opening') : (pendingScale.length ? 'Click the second point' : 'Click two points a known distance apart')]
+                    ? [scaleDoor ? (pendingScale.length ? 'Now tap the OTHER side of the same door' : `Tap ONE side of a ${scaleDoorFt === 6 ? 'double' : 'single'} door opening`) : (pendingScale.length ? 'Click the second point' : 'Click two points a known distance apart')]
                     : tool === 'wall' ? ['Click corner → corner along the wall · Enter finishes'] : tool === 'place' ? ['Click the plan to drop a device · drag to move it'] : ['Click a device to select · drag to move']
                   : ['Click a device to select', 'Drag to move', 'Delete key (or the trash in the list) removes', 'Place tool adds']
                 ).map((h) => (
