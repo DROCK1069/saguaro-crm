@@ -21,9 +21,26 @@ import {
   Truck,
   Plus,
   Minus,
+  Camera,
+  UploadSimple,
+  LinkSimple,
+  Lightning,
+  Drop,
+  Fan,
+  Wall,
+  PaintRoller,
+  Cube,
+  HouseLine,
+  Door,
+  Snowflake,
+  SquaresFour,
+  PlugsConnected,
+  Tree,
   ShoppingCartSimple,
   CheckCircle,
   X,
+  Info,
+  ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
@@ -49,6 +66,7 @@ interface Offer {
   stockStatus: string | null;
   qtyInStock: number | null;
   leadTimeDays: number | null;
+  source: string | null;
   asOf: string | null;
   bestPrice: boolean;
 }
@@ -60,6 +78,8 @@ interface CatalogItem {
   description: string | null;
   unit: string | null;
   skuHint: string | null;
+  /** Real product image when one has been attached — null renders the honest monogram chip. */
+  imageUrl: string | null;
   prices: Offer[];
 }
 interface CatalogData {
@@ -67,6 +87,8 @@ interface CatalogData {
   verticals: string[];
   vendors: { id: string; name: string; kind: string | null; isNational: boolean }[];
   asOfMax: string | null;
+  /** True when the caller holds Projects/Full — server-computed, drives the Add-photo affordance. */
+  canManageImages?: boolean;
 }
 
 type SortMode = 'name' | 'price' | 'category';
@@ -74,6 +96,25 @@ type SortMode = 'name' | 'price' | 'category';
 const INP: React.CSSProperties = { padding: '9px 12px 9px 34px', background: DARK, border: `1px solid ${BORDER}`, borderRadius: 9, color: TEXT, fontSize: 13, outline: 'none', width: 260, boxSizing: 'border-box' };
 const SEL: React.CSSProperties = { padding: '8px 10px', background: DARK, border: `1px solid ${BORDER}`, borderRadius: 9, color: TEXT, fontSize: 12.5, outline: 'none', cursor: 'pointer' };
 const TH: React.CSSProperties = { padding: '9px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap', background: DARK };
+
+/** Small chip marking a price as REFERENCE data — never mistakable for a live quote. */
+function RefChip() {
+  return (
+    <span style={{ marginLeft: 5, padding: '1px 5px', borderRadius: 5, background: 'rgba(245,158,11,0.14)', border: '1px solid rgba(245,158,11,0.35)', color: AMBER, fontSize: 8.5, fontWeight: 900, letterSpacing: 0.5, verticalAlign: 'middle', whiteSpace: 'nowrap' as const }}>REF</span>
+  );
+}
+
+/** Hover/tap provenance popover body for one offer — capture date + source. */
+function ProvPop({ offer }: { offer: Offer }) {
+  return (
+    <span className="catProvPop" role="tooltip">
+      <span style={{ display: 'block', fontSize: 10, fontWeight: 900, letterSpacing: 0.6, color: AMBER, textTransform: 'uppercase' as const, marginBottom: 3 }}>Reference price</span>
+      <span style={{ display: 'block', fontSize: 11, color: DIM, lineHeight: 1.45 }}>
+        Captured {fmtDate(offer.asOf)}{offer.source ? ` · ${offer.source}` : ''} — verify with the vendor before ordering.
+      </span>
+    </span>
+  );
+}
 
 function StockBadge({ status }: { status: string | null }) {
   const s = String(status || '').toLowerCase();
@@ -84,6 +125,62 @@ function StockBadge({ status }: { status: string | null }) {
     ['—', 'rgba(255,255,255,0.35)', 'transparent'];
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', padding: '1px 7px', borderRadius: 999, background: bg, color, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.04, whiteSpace: 'nowrap' }}>{label}</span>
+  );
+}
+
+/* ── Product image pipeline — real images only. The fallback is an honest,
+ *    machined monogram (vertical-accent chip + category icon), never a fake
+ *    photo and never a guessed hotlink. ── */
+
+/** Vertical accent + icon for the monogram chip. Keys mirror the catalog's
+ *  seeded verticals; unknown verticals fall back to gold + Package. */
+const VERTICAL_VISUAL: Record<string, { icon: React.ElementType; hue: string }> = {
+  'Low Voltage & Networking': { icon: PlugsConnected, hue: '#38BDF8' },
+  Electrical: { icon: Lightning, hue: '#FBBF24' },
+  Plumbing: { icon: Drop, hue: '#60A5FA' },
+  HVAC: { icon: Fan, hue: '#34D399' },
+  'Flooring & Carpet': { icon: SquaresFour, hue: '#F472B6' },
+  Drywall: { icon: Wall, hue: '#A78BFA' },
+  Paint: { icon: PaintRoller, hue: '#FB7185' },
+  'Framing & Lumber': { icon: Tree, hue: '#A3E635' },
+  Concrete: { icon: Cube, hue: '#94A3B8' },
+  Roofing: { icon: HouseLine, hue: '#F97316' },
+  'Doors & Windows': { icon: Door, hue: '#2DD4BF' },
+  Insulation: { icon: Snowflake, hue: '#7DD3FC' },
+};
+
+/** 40px image slot: the real product image when one exists (click opens the
+ *  lightbox), else the vertical-accent monogram chip. */
+function ItemVisual({ item, onOpen }: { item: CatalogItem; onOpen: (item: CatalogItem) => void }) {
+  const vis = VERTICAL_VISUAL[item.vertical];
+  const hue = vis?.hue || GOLD;
+  const MonoIcon = vis?.icon || Package;
+  if (item.imageUrl) {
+    return (
+      <button
+        onClick={() => onOpen(item)}
+        className="pmBtn"
+        title="View product image"
+        style={{ width: 40, height: 40, padding: 0, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', cursor: 'zoom-in', background: DARK, flex: 'none', display: 'block' }}
+      >
+        <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </button>
+    );
+  }
+  return (
+    <div
+      title={`${titleCase(item.vertical)} — no product image yet`}
+      style={{
+        width: 40, height: 40, borderRadius: 10, position: 'relative', overflow: 'hidden', flex: 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: `linear-gradient(150deg, ${hue}24, rgba(255,255,255,0.03) 70%)`,
+        border: `1px solid ${hue}3D`,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+      }}
+    >
+      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg, ${hue}, ${hue}55)` }} />
+      <MonoIcon size={17} weight="duotone" color={hue} />
+    </div>
   );
 }
 
@@ -102,7 +199,14 @@ export default function CatalogPage() {
   const [projectId, setProjectId] = useState('');
   const [placing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState<{ pos: number; total: number } | null>(null);
+  // ── Image pipeline state ──
+  const [lightbox, setLightbox] = useState<CatalogItem | null>(null);
+  const [imgMenu, setImgMenu] = useState<string | null>(null); // item id with the Add-photo popover open
+  const [imgBusy, setImgBusy] = useState<string | null>(null); // item id with a save in flight
+  const [imgErr, setImgErr] = useState('');
+  const [imgUrlDraft, setImgUrlDraft] = useState('');
   const [placeErr, setPlaceErr] = useState('');
+  const [pricingInfo, setPricingInfo] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -192,6 +296,57 @@ export default function CatalogPage() {
     });
   };
 
+  /** Patch one item's image locally after the server confirms the new URL. */
+  const applyImage = (itemId: string, imageUrl: string | null) => {
+    setData((d) => (d ? { ...d, items: d.items.map((it) => (it.id === itemId ? { ...it, imageUrl } : it)) } : d));
+  };
+
+  /** Upload a real product photo (images only, ≤5MB) via /api/catalog/image. */
+  async function uploadImage(itemId: string, file: File) {
+    setImgErr('');
+    if (!file.type.startsWith('image/')) { setImgErr('Only image files can be attached.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setImgErr('Images must be 5MB or smaller.'); return; }
+    setImgBusy(itemId);
+    try {
+      const fd = new FormData();
+      fd.append('itemId', itemId);
+      fd.append('file', file);
+      const r = await fetch('/api/catalog/image', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (!r.ok || d.error) throw new Error(d.error || 'Upload failed');
+      applyImage(itemId, d.imageUrl || null);
+      setImgMenu(null);
+    } catch (e: any) {
+      setImgErr(e?.message || 'Could not upload the image. Please try again.');
+    } finally {
+      setImgBusy(null);
+    }
+  }
+
+  /** Attach a manufacturer image URL — honest sourcing: the admin pastes a real
+   *  vendor/manufacturer URL; nothing is ever guessed or generated. */
+  async function attachImageUrl(itemId: string) {
+    const url = imgUrlDraft.trim();
+    if (!url) return;
+    setImgErr('');
+    setImgBusy(itemId);
+    try {
+      const r = await fetch('/api/catalog/image', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, imageUrl: url }),
+      });
+      const d = await r.json();
+      if (!r.ok || d.error) throw new Error(d.error || 'Could not save the image URL');
+      applyImage(itemId, d.imageUrl || null);
+      setImgMenu(null);
+      setImgUrlDraft('');
+    } catch (e: any) {
+      setImgErr(e?.message || 'Could not save the image URL. Please try again.');
+    } finally {
+      setImgBusy(null);
+    }
+  }
+
   /** Issue vendor-grouped POs from the cart — each at the item's best offer. */
   async function placeOrders() {
     if (!projectId || cartLines.length === 0) return;
@@ -227,7 +382,7 @@ export default function CatalogPage() {
             project_id: projectId, vendor_name: vendor, status: 'draft',
             description: `Materials Catalog order — ${rows.length} item${rows.length === 1 ? '' : 's'} at best reference pricing`,
             line_items, subtotal, total: subtotal, cost_code,
-            notes: `Created from the Materials Catalog (reference pricing as of ${fmtDate(data?.asOfMax)}).`,
+            notes: `Created from the Materials Catalog. Prices are reference pricing captured ${fmtDate(data?.asOfMax)} — confirm with vendor before issuing.`,
           }),
         });
         const d = await r.json();
@@ -254,6 +409,9 @@ export default function CatalogPage() {
         .catStep:hover{transform:none!important;filter:none!important;background:rgba(245,158,11,0.20)!important}
         .catStep:active{background:rgba(245,158,11,0.28)!important}
         @media (prefers-reduced-motion: reduce){.catAdd:active,.catPill:active{transform:none!important}}
+        .catProv{position:relative;display:inline-block;outline:none}
+        .catProv .catProvPop{display:none;position:absolute;right:0;bottom:calc(100% + 6px);z-index:60;width:232px;padding:9px 11px;border-radius:9px;background:#141416;border:1px solid rgba(245,158,11,0.35);box-shadow:0 8px 24px rgba(245,158,11,0.10),inset 0 1px 0 rgba(255,255,255,0.06);text-align:left;white-space:normal;cursor:default}
+        .catProv:hover .catProvPop,.catProv:focus-within .catProvPop{display:block}
       `}</style>
       <ModuleHero
         eyebrow="Pre-Construction"
@@ -273,6 +431,32 @@ export default function CatalogPage() {
               <option value="price">Sort: Best Price</option>
               <option value="category">Sort: Category</option>
             </select>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setPricingInfo((v) => !v)}
+                className="pmBtn"
+                style={{ ...ghostButtonStyle, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', fontSize: 12 }}
+                aria-expanded={pricingInfo}
+              >
+                <Info size={13} weight="bold" /> How pricing works
+              </button>
+              {pricingInfo && (
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 80, width: 304, background: '#141416', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 12, padding: '14px 16px', boxShadow: '0 12px 32px rgba(245,158,11,0.10), inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left' }}>
+                  <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: 0.8, color: AMBER, textTransform: 'uppercase' as const, marginBottom: 8 }}>How pricing works</div>
+                  {[
+                    ['1. Reference snapshot', 'Every price is seeded reference data stamped with its capture date — never a live quote.'],
+                    ['2. Verify', 'The Verify link on any row runs a live web search for that SKU and vendor, so you check today\'s price yourself.'],
+                    ['3. PO draft', 'Ordering creates draft POs grouped by vendor, with the reference-pricing note written onto each PO.'],
+                    ['4. Your vendor confirms', 'Final pricing is confirmed by your vendor before the PO is issued. Vendor API feeds connect here when accounts are linked.'],
+                  ].map(([h, b]) => (
+                    <div key={h} style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 800, color: TEXT }}>{h}</div>
+                      <div style={{ fontSize: 11, color: DIM, lineHeight: 1.45 }}>{b}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         }
       />
@@ -416,18 +600,69 @@ export default function CatalogPage() {
                           )}
                         </td>
                         <td style={{ padding: '9px 12px', minWidth: 220 }}>
-                          <div style={{ fontWeight: 700, color: TEXT, fontSize: 12.5, lineHeight: 1.3 }}>{it.name}</div>
-                          {(it.description || it.skuHint) && (
-                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2, lineHeight: 1.4 }}>
-                              {it.description}{it.description && it.skuHint ? ' · ' : ''}{it.skuHint ? `SKU ${it.skuHint}` : ''}
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                            <ItemVisual item={it} onOpen={setLightbox} />
+                            <div style={{ minWidth: 0, position: 'relative' }}>
+                              <div style={{ fontWeight: 700, color: TEXT, fontSize: 12.5, lineHeight: 1.3 }}>{it.name}</div>
+                              {(it.description || it.skuHint) && (
+                                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2, lineHeight: 1.4 }}>
+                                  {it.description}{it.description && it.skuHint ? ' · ' : ''}{it.skuHint ? `SKU ${it.skuHint}` : ''}
+                                </div>
+                              )}
+                              {data?.canManageImages && (
+                                <button
+                                  onClick={() => { setImgMenu(imgMenu === it.id ? null : it.id); setImgErr(''); setImgUrlDraft(''); }}
+                                  className="pmBtn"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 6, color: DIM, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.03, cursor: 'pointer' }}
+                                >
+                                  <Camera size={10} /> {imgBusy === it.id ? 'Saving…' : it.imageUrl ? 'Replace photo' : 'Add photo'}
+                                </button>
+                              )}
+                              {imgMenu === it.id && (
+                                <div style={{ position: 'absolute', zIndex: 80, top: '100%', left: 0, marginTop: 6, width: 252, padding: 11, borderRadius: 10, background: '#141416', border: '1px solid rgba(245,158,11,0.30)', boxShadow: '0 10px 28px rgba(245,158,11,0.10), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+                                  <div style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: 0.8, color: AMBER, textTransform: 'uppercase' as const, marginBottom: 7 }}>Real product photo</div>
+                                  <label className="pmBtn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 11px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, color: AMBER, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                                    <UploadSimple size={12} weight="bold" /> Upload image
+                                    <input
+                                      type="file"
+                                      accept="image/png,image/jpeg,image/webp,image/gif"
+                                      style={{ display: 'none' }}
+                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(it.id, f); e.target.value = ''; }}
+                                    />
+                                  </label>
+                                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                                    <input
+                                      value={imgUrlDraft}
+                                      onChange={(e) => setImgUrlDraft(e.target.value)}
+                                      placeholder="…or paste manufacturer image URL"
+                                      style={{ flex: 1, minWidth: 0, padding: '6px 8px', background: DARK, border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontSize: 11, outline: 'none' }}
+                                    />
+                                    <button
+                                      onClick={() => attachImageUrl(it.id)}
+                                      disabled={!imgUrlDraft.trim() || imgBusy === it.id}
+                                      className="pmBtn"
+                                      title="Save image URL"
+                                      style={{ padding: '6px 9px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, cursor: imgUrlDraft.trim() && imgBusy !== it.id ? 'pointer' : 'not-allowed' }}
+                                    >
+                                      <LinkSimple size={12} weight="bold" />
+                                    </button>
+                                  </div>
+                                  <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.4)', marginTop: 7, lineHeight: 1.45 }}>Images only, 5MB max. Paste a real vendor or manufacturer URL — never a guess.</div>
+                                  {imgErr && <div style={{ fontSize: 10.5, color: RED, marginTop: 6 }}>{imgErr}</div>}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </td>
                         <td style={{ padding: '9px 12px', color: DIM, whiteSpace: 'nowrap' as const }}>{it.unit || '—'}</td>
                         <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' as const }}>
                           {best ? (
                             <div>
-                              <span style={{ fontWeight: 800, color: GOLD, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(best.price)}</span>
+                              <span className="catProv" tabIndex={0}>
+                                <span style={{ fontWeight: 800, color: GOLD, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(best.price)}</span>
+                                <RefChip />
+                                <ProvPop offer={best} />
+                              </span>
                               <span style={{ fontSize: 10.5, color: DIM, marginLeft: 6 }}>{best.vendor}</span>
                               <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <StockBadge status={best.stockStatus} />
@@ -436,6 +671,16 @@ export default function CatalogPage() {
                                     <Truck size={10} color="rgba(255,255,255,0.45)" />{best.leadTimeDays}d lead
                                   </span>
                                 )}
+                                <a
+                                  href={`https://www.google.com/search?q=${encodeURIComponent(`${it.skuHint || it.name} ${best.vendor}`)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="pmBtn"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9.5, fontWeight: 800, color: DIM, textDecoration: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '2px 7px', whiteSpace: 'nowrap' as const }}
+                                  title="Search the live price for this SKU and vendor on the web"
+                                >
+                                  <ArrowSquareOut size={10} weight="bold" /> Verify
+                                </a>
                               </div>
                             </div>
                           ) : (
@@ -448,6 +693,8 @@ export default function CatalogPage() {
                           const isBest = !!o.bestPrice;
                           return (
                             <td key={v} style={{ padding: '6px 8px', textAlign: 'right' as const, verticalAlign: 'top' }}>
+                              <span className="catProv" tabIndex={0}>
+                              <ProvPop offer={o} />
                               <div style={{
                                 display: 'inline-block', textAlign: 'right', padding: '4px 8px', borderRadius: 8,
                                 background: isBest ? 'linear-gradient(160deg, rgba(245,158,11,0.16), rgba(245,158,11,0.06))' : 'transparent',
@@ -465,6 +712,7 @@ export default function CatalogPage() {
                                   )}
                                 </div>
                               </div>
+                              </span>
                             </td>
                           );
                         })}
@@ -493,7 +741,7 @@ export default function CatalogPage() {
             <ShoppingCartSimple size={20} weight="fill" color={GOLD} />
             <div>
               <div style={{ fontWeight: 800, color: TEXT, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{cartCount} item{cartCount === 1 ? '' : 's'} · {fmtMoney(cartTotal)}</div>
-              <div style={{ fontSize: 11, color: DIM }}>Best offer per item · POs grouped by vendor · commits to the CSI budget</div>
+              <div style={{ fontSize: 11, color: DIM }}>Best reference offer per item · POs grouped by vendor · your vendor confirms pricing before issue</div>
             </div>
           </div>
           <div style={{ flex: 1 }} />
@@ -513,6 +761,27 @@ export default function CatalogPage() {
             <X size={14} weight="bold" />
           </button>
           {placeErr && <div style={{ width: '100%', color: RED, fontSize: 12 }}>{placeErr}</div>}
+        </div>
+      )}
+      {/* ── Lightbox — real product images only, never a placeholder blowup ── */}
+      {lightbox && lightbox.imageUrl && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 6000, background: 'rgba(2,4,8,0.72)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28, cursor: 'zoom-out' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: 'min(760px, 92vw)', background: '#141416', border: '1px solid rgba(245,158,11,0.30)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 24px 64px rgba(245,158,11,0.10), inset 0 1px 0 rgba(255,255,255,0.06)', cursor: 'default' }}>
+            <img src={lightbox.imageUrl} alt={lightbox.name} style={{ display: 'block', maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', margin: '0 auto', background: DARK }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderTop: `1px solid ${BORDER}` }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 800, color: TEXT, fontSize: 13 }}>{lightbox.name}</div>
+                <div style={{ fontSize: 10.5, color: DIM, marginTop: 1 }}>{titleCase(lightbox.vertical)}{lightbox.skuHint ? ` · SKU ${lightbox.skuHint}` : ''}</div>
+              </div>
+              <div style={{ flex: 1 }} />
+              <button onClick={() => setLightbox(null)} className="pmBtn" style={{ ...ghostButtonStyle, padding: '7px 10px' }} title="Close">
+                <X size={13} weight="bold" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </PremiumSurface>
