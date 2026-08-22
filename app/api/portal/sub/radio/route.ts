@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
 import { signUrl } from '@/lib/storage-signing';
+import { translateRadioMessage } from '@/lib/translate';
 
 const BUCKET = 'project-files';
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -103,6 +104,8 @@ export async function POST(req: NextRequest) {
       sender_portal_sub_id: a.session.sub_id, sender_name: sender, kind: 'text', body: text,
     } as never).select().single();
     if (error) throw error;
+    // Translation brain: fire-and-forget (env-gated inside; never blocks the send).
+    void translateRadioMessage(a.db, (msg as any)?.id, text);
     return NextResponse.json({ message: msg }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

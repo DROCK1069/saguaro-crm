@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/permissions';
 import { signUrl } from '@/lib/storage-signing';
 import { createNotification } from '@/lib/notifications';
+import { translateRadioMessage } from '@/lib/translate';
 
 /**
  * Saguaro Radio — channel traffic.
@@ -59,6 +60,9 @@ export async function POST(req: NextRequest) {
       sender_user_id: g.user.id, sender_name: g.user.email || 'Team member', kind, body: text,
     } as never).select().single();
     if (error) throw error;
+
+    // Translation brain: fire-and-forget (env-gated inside; never blocks the send).
+    void translateRadioMessage(db, (msg as any)?.id, text);
 
     if (kind === 'alert') {
       const { data: members } = await db.from('radio_members').select('user_id').eq('channel_id', channelId).not('user_id', 'is', null);

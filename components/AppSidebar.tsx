@@ -49,6 +49,7 @@ import {
   SealCheck,
   Clock,
   WifiHigh,
+  Broadcast,
 } from '@phosphor-icons/react';
 import { colors, font, radius, shadow, sidebar as sidebarTokens, z } from '../lib/design-tokens';
 import { useWhiteLabel } from './WhiteLabelProvider';
@@ -121,6 +122,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Daily Logs',  href: '/app/daily-logs', icon: ClipboardText },
       { label: 'Schedule',    href: '/app/schedule',   icon: CalendarBlank },
       { label: 'Field App',   href: '/field',          icon: DeviceMobile },
+      { label: 'Radio',       href: '/app/radio',      icon: Broadcast },
     ],
   },
   {

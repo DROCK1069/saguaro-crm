@@ -10,7 +10,7 @@ const GREEN='#22c55e',RED='#ef4444',AMBER='#f59e0b',BLUE='#F59E0B',PURPLE='#8b5c
 const fmt=(n:number)=>'$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
 const fmtDate=(d:string)=>d?new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'--';
 
-type Tab='dashboard'|'punch'|'daily'|'schedule'|'rfis'|'payapps'|'bids'|'documents'|'drawings'|'compliance'|'scorecard'|'messages'|'history';
+type Tab='dashboard'|'punch'|'daily'|'schedule'|'rfis'|'radio'|'payapps'|'bids'|'documents'|'drawings'|'compliance'|'scorecard'|'messages'|'history';
 
 /* ── Shared styles ── */
 const card=(extra?:React.CSSProperties):React.CSSProperties=>({background:RAISED,backgroundImage:'linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))',border:`1px solid ${BORDER}`,borderRadius:12,padding:20,boxShadow:'0 4px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)',...extra});
@@ -100,6 +100,18 @@ export default function SubPortal(){
   const [clockOutTime,setClockOutTime]=useState('');
   const [gpsCoords,setGpsCoords]=useState<{lat:number;lng:number}|null>(null);
 
+  /* ── Radio ── */
+  const [radioChannel,setRadioChannel]=useState<any>(null);
+  const [radioMsgs,setRadioMsgs]=useState<any[]>([]);
+  const [radioLoaded,setRadioLoaded]=useState(false);
+  const [radioLang,setRadioLang]=useState<'en'|'es'>('en');
+  const [radioText,setRadioText]=useState('');
+  const [radioSending,setRadioSending]=useState(false);
+  const [radioRecording,setRadioRecording]=useState(false);
+  const radioRecRef=useRef<MediaRecorder|null>(null);
+  const radioFeedRef=useRef<HTMLDivElement>(null);
+  const radioVoiceSupported=typeof window!=='undefined'&&typeof MediaRecorder!=='undefined'&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+
   const showToast=useCallback((msg:string)=>{setToast(msg);setTimeout(()=>setToast(''),3500)},[]);
 
   const headers:Record<string,string>={'Content-Type':'application/json','x-portal-token':token||''};
@@ -154,6 +166,28 @@ export default function SubPortal(){
       .catch(e=>{ console.error(e); setError(humanError(e, 'Failed to load the portal. Please try again.')); })
       .finally(()=>setLoading(false));
   },[token]);
+
+  /* ── Radio: fetch on tab open, poll every 5s while the tab is active ── */
+  useEffect(()=>{
+    if(tab!=='radio'||!token)return;
+    let stop=false;
+    const load=()=>fetch(`/api/portal/sub/radio?token=${token}`,{headers})
+      .then(r=>r.json())
+      .then(d=>{
+        if(stop||d.error)return;
+        setRadioChannel(d.channel||null);
+        setRadioMsgs(prev=>{
+          const seen=new Map(prev.map((p:any)=>[p.id,p]));
+          return(d.messages||[]).map((m:any)=>{const k:any=seen.get(m.id);return k&&k.audio_url?{...m,audio_url:k.audio_url}:m;});
+        });
+        setRadioLoaded(true);
+      })
+      .catch(()=>{});
+    load();
+    const iv=setInterval(load,5000);
+    return()=>{stop=true;clearInterval(iv)};
+  },[tab,token]);
+  useEffect(()=>{const el=radioFeedRef.current;if(el)el.scrollTop=el.scrollHeight;},[radioMsgs.length]);
 
   /* ── API helpers ── */
   const apiPost=async(endpoint:string,body:any)=>{
@@ -266,6 +300,57 @@ export default function SubPortal(){
     setMsgSending(false);
   };
 
+  const sendRadioText=async()=>{
+    if(!radioText.trim()||!radioChannel)return;
+    setRadioSending(true);
+    try{
+      const result=await apiPost('radio',{body:radioText.trim()});
+      if(result.message){
+        setRadioMsgs(prev=>[...prev,result.message]);
+        setRadioText('');
+      } else showToast(result.error||'Failed to send message');
+    }catch{showToast('Network error');}
+    setRadioSending(false);
+  };
+
+  const startRadioRec=async()=>{
+    if(radioRecording||!radioChannel||!radioVoiceSupported)return;
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+      const rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+      const chunks:Blob[]=[];
+      const started=Date.now();
+      rec.ondataavailable=e=>{if(e.data&&e.data.size>0)chunks.push(e.data)};
+      rec.onstop=async()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        radioRecRef.current=null;
+        const secs=Math.max(1,Math.round((Date.now()-started)/1000));
+        const type=rec.mimeType||mime||'audio/webm';
+        const ext=/mp4|aac/i.test(type)?'m4a':/ogg/i.test(type)?'ogg':/mpeg/i.test(type)?'mp3':'webm';
+        const blob=new Blob(chunks,{type});
+        if(blob.size<200)return;
+        const form=new FormData();
+        form.append('file',new File([blob],`clip.${ext}`,{type}));
+        form.append('durationSecs',String(secs));
+        try{
+          const result=await apiUpload('radio',form);
+          if(result.message)setRadioMsgs(prev=>[...prev,result.message]);
+          else showToast(result.error||'Voice message failed');
+        }catch{showToast('Network error');}
+      };
+      radioRecRef.current=rec;
+      rec.start();
+      setRadioRecording(true);
+    }catch{showToast('Microphone unavailable -- check permissions');}
+  };
+
+  const stopRadioRec=()=>{
+    setRadioRecording(false);
+    const rec=radioRecRef.current;
+    if(rec&&rec.state!=='inactive')rec.stop();
+  };
+
   /* ── Computed ── */
   const companyName=sub?.company_name||'Subcontractor';
   const overallScore=scorecard?.averages?.overall||0;
@@ -338,6 +423,7 @@ export default function SubPortal(){
     {key:'daily',label:'Daily Logs',icon:'\u270D',section:'Work'},
     {key:'schedule',label:'Schedule',icon:'\u2630',section:'Work'},
     {key:'rfis',label:'RFIs',icon:'\u2753',section:'Work'},
+    {key:'radio',label:'Radio',icon:'\u224B',section:'Work'},
     {key:'payapps',label:'Invoices',icon:'\u0024',section:'Money'},
     {key:'bids',label:'Bid Invites',icon:'\u2709',section:'Money'},
     {key:'documents',label:'Documents',icon:'\u2750',section:'Files'},
@@ -876,6 +962,91 @@ export default function SubPortal(){
   };
 
   /* ================================================================ */
+  /*  RADIO TAB                                                        */
+  /* ================================================================ */
+  const renderRadio=()=>{
+    if(!radioLoaded)return(
+      <div style={{...card(),textAlign:'center',padding:40}}>
+        <div style={{color:DIM,fontSize:13}}>Tuning in to the project channel...</div>
+      </div>
+    );
+    if(!radioChannel)return(
+      <div style={{...card(),textAlign:'center',padding:40}}>
+        <div style={{fontSize:34,marginBottom:10,color:DIM}}>{'≋'}</div>
+        <div style={{fontSize:16,fontWeight:800,color:TEXT}}>Radio Not Enabled Yet</div>
+        <div style={{fontSize:13,color:DIM,marginTop:8,lineHeight:1.6,maxWidth:420,marginLeft:'auto',marginRight:'auto'}}>Your general contractor has not opened a radio channel for this project yet. Once they do, live voice and text traffic will appear here.</div>
+      </div>
+    );
+    return(
+      <div style={{display:'grid',gap:20}}>
+        <div style={card()}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14,flexWrap:'wrap'}}>
+            <div style={{width:10,height:10,borderRadius:'50%',background:GREEN,boxShadow:`0 0 8px ${GREEN}`,flexShrink:0}}/>
+            <div style={{flex:1,minWidth:160,fontSize:17,fontWeight:700,color:TEXT}}>{radioChannel.name||'Radio'}</div>
+            <div style={{display:'flex',border:`1px solid ${BORDER}`,borderRadius:8,overflow:'hidden'}}>
+              {(['en','es'] as const).map(l=>(
+                <button key={l} onClick={()=>setRadioLang(l)} style={{padding:'6px 14px',border:'none',cursor:'pointer',fontSize:11,fontWeight:800,letterSpacing:.6,background:radioLang===l?GOLD:'transparent',color:radioLang===l?'#241500':DIM}}>{l.toUpperCase()}</button>
+              ))}
+            </div>
+          </div>
+          <div ref={radioFeedRef} style={{maxHeight:480,overflowY:'auto',padding:'4px 0',marginBottom:14}}>
+            {radioMsgs.length===0&&<div style={{color:DIM,fontSize:13,textAlign:'center',padding:40}}>No radio traffic yet. Say something below.</div>}
+            {radioMsgs.map((m:any)=>{
+              const mine=!!m.sender_portal_sub_id&&m.sender_portal_sub_id===session?.sub_id;
+              const t=m.translations||{};
+              const shown=t[radioLang]||m.body||m.transcript||'';
+              if(m.kind==='panic'||m.kind==='alert'){
+                const c=m.kind==='panic'?RED:AMBER;
+                return(
+                  <div key={m.id} style={{padding:'10px 14px',background:c+'11',border:`1px solid ${c}55`,borderRadius:8,marginBottom:10}}>
+                    <div style={{fontSize:11,fontWeight:800,color:c,textTransform:'uppercase',letterSpacing:.6,marginBottom:4}}>{'⚠'} {m.kind==='panic'?'Panic':'Alert'} &middot; {m.sender_name||'Unknown'}</div>
+                    {shown&&<div style={{fontSize:13,color:TEXT,lineHeight:1.5}}>{shown}</div>}
+                    <div style={{fontSize:10,color:DIM,marginTop:4}}>{new Date(m.created_at).toLocaleTimeString()}</div>
+                  </div>
+                );
+              }
+              return(
+                <div key={m.id} style={{display:'flex',justifyContent:mine?'flex-end':'flex-start',marginBottom:10}}>
+                  <div style={{maxWidth:'80%',padding:'10px 14px',borderRadius:12,background:mine?BLUE+'22':RAISED,border:`1px solid ${mine?BLUE+'44':BORDER}`,borderBottomRightRadius:mine?2:12,borderBottomLeftRadius:mine?12:2}}>
+                    <div style={{fontSize:11,fontWeight:700,color:mine?GOLD:DIM,marginBottom:4}}>{mine?'You':(m.sender_name||'Unknown')}</div>
+                    {m.kind==='voice'?(
+                      <div>
+                        {m.audio_url?<audio controls preload="none" src={m.audio_url} style={{width:230,maxWidth:'100%',height:36,display:'block'}}/>:<div style={{fontSize:12,color:DIM}}>Voice message</div>}
+                        <div style={{fontSize:10,color:DIM,marginTop:4}}>{m.audio_duration_secs?`${m.audio_duration_secs}s voice`:'voice'}</div>
+                        {(t[radioLang]||m.transcript)&&<div style={{fontSize:12,color:DIM,marginTop:6,fontStyle:'italic',lineHeight:1.5}}>&ldquo;{t[radioLang]||m.transcript}&rdquo;</div>}
+                      </div>
+                    ):m.kind==='image'?(
+                      <div>
+                        {m.image_url&&<a href={m.image_url} target="_blank" rel="noreferrer"><img src={m.image_url} alt="radio attachment" style={{maxWidth:220,borderRadius:8,display:'block'}}/></a>}
+                        {shown&&<div style={{fontSize:13,color:TEXT,marginTop:6,lineHeight:1.5}}>{shown}</div>}
+                      </div>
+                    ):(
+                      <div style={{fontSize:13,color:TEXT,lineHeight:1.5}}>{shown}</div>
+                    )}
+                    <div style={{fontSize:10,color:DIM,marginTop:4,textAlign:mine?'right':'left'}}>{new Date(m.created_at).toLocaleTimeString()}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{display:'flex',gap:10}}>
+            <input value={radioText} onChange={e=>setRadioText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendRadioText();}}} placeholder="Message the channel..." style={{...inputS,flex:1}}/>
+            <button onClick={sendRadioText} disabled={radioSending} style={btnS(BLUE)}>{radioSending?'...':'Send'}</button>
+          </div>
+          {radioVoiceSupported&&(
+            <button
+              onMouseDown={startRadioRec} onMouseUp={stopRadioRec} onMouseLeave={stopRadioRec}
+              onTouchStart={e=>{e.preventDefault();startRadioRec();}} onTouchEnd={e=>{e.preventDefault();stopRadioRec();}} onContextMenu={e=>e.preventDefault()}
+              style={{...btnS(radioRecording?RED:GOLD),width:'100%',marginTop:12,userSelect:'none',touchAction:'none'}}>
+              {radioRecording?'● Recording -- release to send':'≋ Hold to Talk'}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /* ================================================================ */
   /*  RENDER ACTIVE TAB                                                */
   /* ================================================================ */
   /* ── DOCUMENTS: multi-type uploads by category, expiry-tracked, media grid ── */
@@ -1078,6 +1249,7 @@ export default function SubPortal(){
       case'punch':return renderPunch();
       case'history':return renderHistory();
       case'bids':return renderBids();
+      case'radio':return renderRadio();
     }
   };
 
