@@ -412,6 +412,8 @@ export default function CatalogPage() {
         .catProv{position:relative;display:inline-block;outline:none}
         .catProv .catProvPop{display:none;position:absolute;right:0;bottom:calc(100% + 6px);z-index:60;width:232px;padding:9px 11px;border-radius:9px;background:#141416;border:1px solid rgba(245,158,11,0.35);box-shadow:0 8px 24px rgba(245,158,11,0.10),inset 0 1px 0 rgba(255,255,255,0.06);text-align:left;white-space:normal;cursor:default}
         .catProv:hover .catProvPop,.catProv:focus-within .catProvPop{display:block}
+        .catImgBtn{opacity:0;transition:opacity .15s ease}
+        tr:hover .catImgBtn,.catImgBtn:focus-visible{opacity:1}
       `}</style>
       <ModuleHero
         eyebrow="Pre-Construction"
@@ -612,10 +614,12 @@ export default function CatalogPage() {
                               {data?.canManageImages && (
                                 <button
                                   onClick={() => { setImgMenu(imgMenu === it.id ? null : it.id); setImgErr(''); setImgUrlDraft(''); }}
-                                  className="pmBtn"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 6, color: DIM, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.03, cursor: 'pointer' }}
+                                  className="pmBtn catImgBtn"
+                                  title={imgBusy === it.id ? 'Saving photo…' : it.imageUrl ? 'Replace product photo' : 'Add product photo'}
+                                  aria-label={it.imageUrl ? 'Replace product photo' : 'Add product photo'}
+                                  style={{ display: 'inline-flex', alignItems: 'center', marginTop: 4, padding: '3px 6px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 6, color: DIM, cursor: 'pointer' }}
                                 >
-                                  <Camera size={10} /> {imgBusy === it.id ? 'Saving…' : it.imageUrl ? 'Replace photo' : 'Add photo'}
+                                  <Camera size={11} />
                                 </button>
                               )}
                               {imgMenu === it.id && (

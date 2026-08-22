@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GoldButton, PremiumFX } from '@/components/ui/premium';
 import { PhoneFrame, LaptopFrame } from '@/components/marketing/DeviceFrame';
+import MarketingNav from '@/components/MarketingNav';
 
 // TestFlight public invite — owner-controlled. This is the live open-beta link
 // already published across the site (see components/GetAppBadge.tsx); update
@@ -600,15 +601,9 @@ export default function GetTheAppPage() {
         <PremiumFX />
 
         {/* ── NAV ── */}
-        <nav className="nav">
-          <Link href="/" className="nav-logo">
-            <img src="/logo-full.jpg" alt="Saguaro" height={40} style={{ }} />
-          </Link>
-          <div className="nav-spacer" />
-          <Link href="/product" className="nav-login">Product</Link>
-          <Link href="/login" className="nav-login">Log In</Link>
-          <Link href="/signup" className="nav-cta">Start Free Trial</Link>
-        </nav>
+        {/* One professional nav across every marketing page (fixed, 58px). */}
+        <MarketingNav />
+        <div style={{ height: 58 }} />
 
         {/* ── HERO ── */}
         <section className="hero">

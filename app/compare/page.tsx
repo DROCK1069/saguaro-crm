@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { COMPETITORS } from '@/lib/competitors';
 import { IntegrationStrip } from '@/components/Integrations';
+import MarketingNav from '@/components/MarketingNav';
 
 export const metadata: Metadata = {
   title: 'Saguaro vs Every Construction Software — Full Comparisons',
@@ -30,50 +31,9 @@ export default function ComparePage() {
     <div style={{ minHeight: '100vh', background: DARK, color: TEXT, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
 
       {/* NAV */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: 64, background: 'rgba(13,17,23,0.9)',
-        borderBottom: `1px solid ${BORDER}`,
-        backdropFilter: 'blur(16px)',
-        display: 'flex', alignItems: 'center',
-        padding: '0 32px', gap: 32,
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-          <Image
-            src="/logo-full.jpg"
-            alt="Saguaro"
-            width={132}
-            height={44}
-            style={{ height: 44, width: 'auto', objectFit: 'contain' }}
-          />
-        </Link>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          {[
-            { label: 'Features', href: '/#features' },
-            { label: 'Pricing', href: '/pricing' },
-            { label: 'Field App', href: '/field-app' },
-            { label: 'Compare', href: '/compare' },
-          ].map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              style={{ color: DIM, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <Link
-            href="/signup"
-            style={{
-              background: GOLD, color: DARK, fontSize: 13, fontWeight: 600,
-              padding: '8px 18px', borderRadius: 8, textDecoration: 'none',
-            }}
-          >
-            Free Trial
-          </Link>
-        </div>
-      </nav>
+      {/* One professional nav across every marketing page (fixed, 58px). */}
+      <MarketingNav />
+      <div style={{ height: 58 }} />
 
       {/* HERO */}
       <div style={{ paddingTop: 64 }}>

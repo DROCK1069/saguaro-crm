@@ -295,6 +295,9 @@ export default function TakeoffPage() {
     setPhase('idle');
     setPendingFile(null);
     setSelectedProjectId('');
+    // Close the open result — leaving it mounted made this button look dead:
+    // the state reset happened entirely offscreen behind the detail view.
+    setSelectedTakeoff(null);
     // "New Analysis" from deep in a result must visibly land ON the upload card,
     // not silently reset state a full viewport above the fold.
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });

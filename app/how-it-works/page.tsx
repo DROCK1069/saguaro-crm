@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import MarketingNav from '@/components/MarketingNav';
 
 const C = {
   dark: '#0B0B0F',
@@ -125,31 +126,9 @@ export default function HowItWorksPage() {
     <div style={{ minHeight: '100vh', background: C.dark, color: C.text, fontFamily: C.font }}>
 
       {/* Nav */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: 'rgba(13,17,23,0.9)',
-        borderBottom: `1px solid ${C.hairline}`,
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
-      }}>
-        <style>{`@media (max-width: 768px){ .hiw-mnav-links{ display:none !important } }`}</style>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-        </Link>
-        <div className="hiw-mnav-links" style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-          {NAV_LINKS.map(link => (
-            <a key={link.label} href={link.href} style={{ padding: '6px 12px', borderRadius: 6, color: C.dim, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
-              onMouseEnter={e => (e.currentTarget.style.color = C.text)}
-              onMouseLeave={e => (e.currentTarget.style.color = C.dim)}>
-              {link.label}
-            </a>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link href="/login" style={{ padding: '8px 16px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 8, color: C.dim, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</Link>
-          <Link href="/signup" style={{ padding: '8px 18px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Free Trial</Link>
-        </div>
-      </nav>
+      {/* One professional nav across every marketing page (fixed, 58px). */}
+      <MarketingNav />
+      <div style={{ height: 58 }} />
 
       <div style={{ paddingTop: 64 }}>
 

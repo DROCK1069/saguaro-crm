@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 import Link from 'next/link';
+import MarketingNav from '@/components/MarketingNav';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#22c55e';
 const HAIR='rgba(255,255,255,0.08)',CARD='rgba(255,255,255,0.02)';
@@ -114,15 +115,9 @@ export default function SignupPage(){
     <div style={{minHeight:'100vh',background:DARK,fontFamily:"system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
       {/* Nav */}
-      <nav style={{padding:'0 32px',height:60,display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${BORDER}`,position:'sticky',top:0,background:'rgba(20,20,22,0.95)',backdropFilter:'blur(12px)',zIndex:50}}>
-        <Link href="/" style={{textDecoration:'none',display:'flex',alignItems:'center',gap:10}}>
-          <img src="/logo-full.jpg" alt="Saguaro" style={{height:34,width:'auto',borderRadius:4}}/>
-          <span style={{fontWeight:900,fontSize:14,letterSpacing:1,background:'linear-gradient(90deg, var(--brand-primary), var(--brand-primary-strong))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>SAGUARO</span>
-        </Link>
-        <Link href="/login" style={{fontSize:13,color:DIM,textDecoration:'none',fontWeight:600}}>
-          Already have an account? <span style={{color:GOLD}}>Log in →</span>
-        </Link>
-      </nav>
+      {/* One professional nav across every marketing page (fixed, 58px). */}
+      <MarketingNav />
+      <div style={{ height: 58 }} />
 
       <div className="pg-stack-1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',minHeight:'calc(100vh - 60px)',maxWidth:1100,margin:'0 auto',padding:'0 24px',gap:64,alignItems:'start'}}>
 

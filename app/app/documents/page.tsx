@@ -10,6 +10,7 @@ import {
   goldButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
+import { PdfIcon } from '@/components/ui/FileTypeIcon';
 
 const GOLD = '#F59E0B';
 const BORDER = 'rgba(255,255,255,0.12)';
@@ -451,8 +452,8 @@ export default function DocumentsPage() {
                       <td style={{ padding: '12px 16px', color: '#9CA3AF' }}>{fmtDay(doc.created_at) ?? '—'}</td>
                       <td style={{ padding: '12px 16px' }}><Badge label={(doc.status || 'generated').toUpperCase()} color="#34D27B" bg="rgba(52,210,123,0.12)" /></td>
                       <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <button onClick={() => openLibDoc(doc)} disabled={busyKey === `lib-${doc.id}`} className="pmBtn pmGold" style={{ padding: '6px 14px', borderRadius: 9, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
-                          {busyKey === `lib-${doc.id}` ? 'Opening…' : 'PDF'}
+                        <button onClick={() => openLibDoc(doc)} disabled={busyKey === `lib-${doc.id}`} className="pmBtn" title="Open the PDF" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#E4E4E7' }}>
+                          <PdfIcon size={16} /> {busyKey === `lib-${doc.id}` ? 'Opening…' : 'Open'}
                         </button>
                       </td>
                     </tr>

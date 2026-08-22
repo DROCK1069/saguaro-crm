@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { IntegrationStrip } from '@/components/Integrations';
+import MarketingNav from '@/components/MarketingNav';
 
 const C = {
   dark: '#0a0a0a',
@@ -192,28 +193,9 @@ export default function FeaturesPage() {
       <style>{`@media (max-width: 768px){ .features-mnav-links{ display:none !important } }`}</style>
 
       {/* Nav */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        height: 64, background: 'rgba(13,17,23,0.9)',
-        borderBottom: `1px solid ${C.border}`,
-        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        display: 'flex', alignItems: 'center', padding: '0 32px', gap: 0,
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 40 }}>
-          <img src="/logo-full.jpg" alt="Saguaro Control Systems" style={{ height: 36, width: 'auto', mixBlendMode: 'screen', objectFit: 'contain' }} />
-        </Link>
-        <div className="features-mnav-links" style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-          {NAV_LINKS.map(link => (
-            <Link key={link.label} href={link.href} style={{ padding: '6px 12px', borderRadius: 6, color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 400, textDecoration: 'none' }}>
-              {link.label}
-            </Link>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link href="/login" style={{ padding: '7px 18px', background: 'transparent', border: `1px solid rgba(255,255,255,0.12)`, borderRadius: 8, color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 400, textDecoration: 'none' }}>Log In</Link>
-          <Link href="/signup" style={{ padding: '7px 18px', background: C.gold, borderRadius: 8, color: '#0a0a0a', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>Free Trial</Link>
-        </div>
-      </nav>
+      {/* One professional nav across every marketing page (fixed, 58px). */}
+      <MarketingNav />
+      <div style={{ height: 58 }} />
 
       <div style={{ paddingTop: 64 }}>
 
