@@ -57,6 +57,10 @@ export const MODULE_ACCENTS: Record<string, ModuleAccent> = Object.fromEntries([
   A('subs',       'Subcontractors',   '#9BB07F'),
   A('team',       'Team',             '#7FA3C7'),
   A('compliance', 'Compliance',       '#8FB3A9'),
+  // Cross-project + workforce
+  A('work',       'My Work',          '#5FB8C4'), // turquoise — the personal cross-project hub
+  A('crews',      'Crews',            '#FB923C'), // workforce orange (mobile tools family)
+  A('tm',         'T&M Tickets',      '#84BF8E'), // ledger green — money-adjacent, never gold
 ].map((a) => [a.key, a]));
 
 const FALLBACK = A('default', 'Module', '#CBD5E1');

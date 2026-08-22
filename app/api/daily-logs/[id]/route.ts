@@ -35,6 +35,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       // Mobile-app text columns — kept in the allowlist so an edit from either
       // surface can update the union without silently dropping them.
       'superintendent','precipitation','wind_conditions','phase_of_work','equipment',
+      // Structured columns (jsonb / arrays) — create persists these, so edit
+      // must too or the auto-filled sections vanish on the first PUT.
+      'manpower_by_trade','equipment_on_site','equipment_hours',
+      'materials_received','subcontractors_on_site',
     ];
     const fields: Record<string, any> = {};
     for (const k of allowed) {

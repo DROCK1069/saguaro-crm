@@ -1,12 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
-import { UsersThree, UserPlus, HardHat, EnvelopeSimple, Phone, IdentificationBadge, ClockCounterClockwise } from '@phosphor-icons/react';
+import { UsersThree, UserPlus, HardHat, EnvelopeSimple, Phone, IdentificationBadge, ClockCounterClockwise, Briefcase, X } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',BLUE='#1a5fa8';
 const fmt = (n:number) => '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -20,7 +22,7 @@ export default function TeamPage(){
   const { showToast } = useToast();
   const [sendingPortal, setSendingPortal] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
-  const [members, setMembers] = useState<{name:string,role:string,email:string,access:string,last:string}[]>([]);
+  const [members, setMembers] = useState<{name:string,role:string,email:string,access:string,last:string,userId:string|null}[]>([]);
   const [subs, setSubs] = useState<{name:string,role:string,email:string,access:string,last:string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -51,6 +53,9 @@ export default function TeamPage(){
           email: t.email || '',
           access: t.role || 'Member',
           last: 'Active',
+          // Work assignments key off the auth user id — null until the invite
+          // is accepted, which is exactly when assigning becomes possible.
+          userId: t.user_id || null,
         })));
         setSubs((d.subs ?? []).map((s: any) => ({ name: s.name, role: 'Subcontractor', email: s.primary_email || s.email || '', access: 'Sub Portal', last: 'Active' })));
       } catch {
@@ -108,6 +113,69 @@ export default function TeamPage(){
       }
     } catch { showToast('Network error. Please try again.', 'error'); }
     finally { setSendingPortal(null); }
+  }
+
+  // ── Work assignments — who owns this project day-to-day ────────────────────
+  // Active assignments drive each member's My Work hub. SWR keeps the chips
+  // live; assign/end are optimistic with rollback so the roster never waits.
+  const WORK = moduleAccent('work');
+  const ASSIGN_ROLES = [
+    { value: 'project_manager', label: 'Project Manager' },
+    { value: 'superintendent',  label: 'Superintendent' },
+    { value: 'foreman',         label: 'Foreman' },
+    { value: 'coordinator',     label: 'Coordinator' },
+    { value: 'viewer',          label: 'Viewer' },
+  ];
+  const assignRoleLabel = (v: string) => ASSIGN_ROLES.find(r => r.value === v)?.label || String(v || '').replace(/_/g, ' ');
+  const waFetcher = (u: string) => fetch(u).then(r => { if (!r.ok) throw new Error(`Request failed (${r.status})`); return r.json(); });
+  const { data: waData, mutate: mutateWa } = useSWR(projectId ? `/api/work-assignments?projectId=${projectId}` : null, waFetcher, { refreshInterval: 60_000 });
+  const assignments: any[] = (Array.isArray(waData?.assignments) ? waData.assignments : []).filter((a: any) => (a?.status || 'active') === 'active');
+  const assignmentsFor = (userId: string | null) => (userId ? assignments.filter(a => a?.assignee_user_id === userId) : []);
+  const [assignBusy, setAssignBusy] = useState(false);
+  const [composerUser, setComposerUser] = useState('');
+  const [composerRole, setComposerRole] = useState('project_manager');
+
+  async function assignWork(assigneeUserId: string, role: string, assigneeName?: string) {
+    if (!assigneeUserId || assignBusy) return;
+    if (assignments.some(a => a?.assignee_user_id === assigneeUserId && a?.role === role)) {
+      showToast(`${assigneeName || 'That member'} already holds the ${assignRoleLabel(role)} assignment here.`, 'error');
+      return;
+    }
+    const prev = waData;
+    setAssignBusy(true);
+    // Optimistic: the chip lands immediately; a failed POST rolls it back.
+    mutateWa({ ...(prev || {}), assignments: [...assignments, { id: `optimistic-${Date.now()}`, assignee_user_id: assigneeUserId, assignee_name: assigneeName || '', role, status: 'active' }] }, false);
+    try {
+      const res = await fetch('/api/work-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId, assigneeUserId, role }),
+      });
+      if (!res.ok) throw new Error();
+      showToast(`${assigneeName || 'Member'} assigned as ${assignRoleLabel(role)}.`, 'success');
+      mutateWa();
+    } catch {
+      mutateWa(prev, false);
+      showToast('Assignment failed — nothing was saved.', 'error');
+    } finally { setAssignBusy(false); }
+  }
+
+  async function endAssignment(a: any) {
+    const prev = waData;
+    mutateWa({ ...(prev || {}), assignments: assignments.filter(x => x?.id !== a?.id) }, false);
+    try {
+      const res = await fetch('/api/work-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ end: true, assignmentId: a?.id }),
+      });
+      if (!res.ok) throw new Error();
+      showToast(`Ended the ${assignRoleLabel(a?.role)} assignment.`, 'success');
+      mutateWa();
+    } catch {
+      mutateWa(prev, false);
+      showToast('Could not end the assignment.', 'error');
+    }
   }
 
   const inputStyle = {width:'100%',padding:'8px 12px',background:'#1c1c1e',border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box' as const};
@@ -278,16 +346,84 @@ export default function TeamPage(){
           <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch' as const}}>
             <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
               <thead><tr>
-                {['Name','Role','Email','Access Level','Last Active'].map(h=><th key={h} style={{padding:'8px 12px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
+                {['Name','Role','Email','Access Level','Work Assignments','Last Active'].map(h=><th key={h} style={{padding:'8px 12px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
               </tr></thead>
-              <tbody>{filteredMembers.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
+              <tbody>{filteredMembers.map(m=><tr key={m.userId||m.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
                 <td style={{padding:'11px 12px'}}><div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:'50%',background:`linear-gradient(135deg,${GOLD},#B85C2A)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#1C1C1E'}}>{m.name[0]}</div><span style={{color:TEXT,fontWeight:600}}>{m.name}</span></div></td>
                 <td style={{padding:'11px 12px',color:DIM}}>{m.role}</td>
                 <td style={{padding:'11px 12px',color:DIM}}>{m.email}</td>
                 <td style={{padding:'11px 12px'}}><Badge label={m.access} color={m.access==='Admin'?GOLD:m.access==='Manager'?'#4a9de8':'#CBD5E1'} bg={m.access==='Admin'?'rgba(245, 158, 11,.12)':m.access==='Manager'?'rgba(26,95,168,.12)':'rgba(148,163,184,.08)'}/></td>
+                <td style={{padding:'11px 12px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' as const}}>
+                    {assignmentsFor(m.userId).map(a=>(
+                      <span key={a.id} style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 6px 3px 9px',borderRadius:999,background:WORK.soft,border:`1px solid ${WORK.ring}`,color:WORK.hex,fontSize:10.5,fontWeight:800,letterSpacing:.3,whiteSpace:'nowrap' as const}}>
+                        {assignRoleLabel(a.role)}
+                        <button onClick={()=>endAssignment(a)} title="End this assignment" aria-label={`End ${assignRoleLabel(a.role)} assignment`} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:14,height:14,padding:0,borderRadius:999,background:WORK.soft,border:'none',color:WORK.hex,cursor:'pointer'}}><X size={9} weight="bold"/></button>
+                      </span>
+                    ))}
+                    {m.userId ? (
+                      <select value="" disabled={assignBusy} onChange={e=>{const r=e.target.value; if(r) assignWork(m.userId!, r, m.name);}} title="Assign work on this project" aria-label={`Assign work to ${m.name}`} style={{padding:'3px 6px',background:'rgba(255,255,255,0.04)',border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:11,cursor:'pointer',outline:'none'}}>
+                        <option value="">+ Assign…</option>
+                        {ASSIGN_ROLES.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+                      </select>
+                    ) : (
+                      <span title="They can be assigned work once they accept their invite" style={{fontSize:10.5,color:'rgba(255,255,255,0.35)',fontStyle:'italic' as const,whiteSpace:'nowrap' as const}}>Invite pending</span>
+                    )}
+                  </div>
+                </td>
                 <td style={{padding:'11px 12px',color:'#3dd68c',fontSize:12}}>{m.last}</td>
               </tr>)}</tbody>
             </table>
+          </div>
+        )}
+      </SectionCard>
+      )}
+
+      {(showGroup === 'all' || showGroup === 'team') && (
+      <SectionCard
+        title="Work Assignments"
+        subtitle="Who owns this project day-to-day — assigned members see it on their My Work hub"
+        icon={<Briefcase size={17} weight="duotone" color={WORK.hex} />}
+        accent={WORK.hex}
+      >
+        {assignments.length > 0 && (
+          <div style={{display:'flex',gap:8,flexWrap:'wrap' as const,marginBottom:16}}>
+            {assignments.map(a=>(
+              <span key={a.id} style={{display:'inline-flex',alignItems:'center',gap:7,padding:'5px 8px 5px 12px',borderRadius:999,background:WORK.soft,border:`1px solid ${WORK.ring}`,color:WORK.hex,fontSize:12,fontWeight:700}}>
+                {a.assignee_name || members.find(m=>m.userId===a.assignee_user_id)?.name || 'Member'}
+                <span style={{fontSize:9.5,fontWeight:800,textTransform:'uppercase' as const,letterSpacing:.5,opacity:.8}}>{assignRoleLabel(a.role)}</span>
+                <button onClick={()=>endAssignment(a)} title="End this assignment" aria-label={`End ${assignRoleLabel(a.role)} assignment`} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:16,height:16,padding:0,borderRadius:999,background:WORK.soft,border:'none',color:WORK.hex,cursor:'pointer'}}><X size={10} weight="bold"/></button>
+              </span>
+            ))}
+          </div>
+        )}
+        {members.some(m=>m.userId) ? (
+          <div style={{display:'flex',gap:12,alignItems:'flex-end',flexWrap:'wrap' as const}}>
+            <div style={{flex:'1 1 220px',minWidth:200}}>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Team member</label>
+              <select value={composerUser} onChange={e=>setComposerUser(e.target.value)} style={{...inputStyle,cursor:'pointer'}}>
+                <option value="">Choose a member…</option>
+                {members.filter(m=>m.userId).map(m=><option key={m.userId!} value={m.userId!}>{m.name}</option>)}
+              </select>
+              <div style={hintStyle}>Only accepted invites appear — pending members show on the roster as Invite pending.</div>
+            </div>
+            <div style={{flex:'0 1 210px',minWidth:180}}>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:5}}>Assignment role</label>
+              <select value={composerRole} onChange={e=>setComposerRole(e.target.value)} style={{...inputStyle,cursor:'pointer'}}>
+                {ASSIGN_ROLES.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <div style={hintStyle}>Their scope on this project — it labels the chip on their hub.</div>
+            </div>
+            <button
+              onClick={()=>{const m=members.find(x=>x.userId===composerUser); assignWork(composerUser, composerRole, m?.name); setComposerUser('');}}
+              disabled={!composerUser||assignBusy}
+              style={{...goldButtonStyle,opacity:!composerUser||assignBusy?.55:1,cursor:!composerUser||assignBusy?'default':'pointer',marginBottom:22}}
+              className="pmBtn"
+            ><Briefcase size={15} weight="bold" /> Assign work</button>
+          </div>
+        ) : (
+          <div style={{fontSize:12.5,color:'rgba(255,255,255,0.45)',lineHeight:1.55}}>
+            Invite team members above — once someone accepts their invite they can be assigned work here, and it lands on their My Work hub immediately.
           </div>
         )}
       </SectionCard>

@@ -5,10 +5,11 @@ import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
-import { Clipboard, ClipboardText, Thermometer, HardHat, CalendarBlank, WarningCircle, Plus, X } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { Clipboard, ClipboardText, Thermometer, HardHat, CalendarBlank, WarningCircle, Plus, X, Sparkle, CopySimple, CloudSun, UsersThree } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',BLUE='#F59E0B';
@@ -30,6 +31,9 @@ const EMPTY: Record<string,any> = {
   log_date: new Date().toISOString().split('T')[0],
   weather:'', high_temp:'', low_temp:'', crew_count:'', superintendent:'',
   work_performed:'', delays:'', safety_notes:'', materials_delivered:'', visitors:'', notes:'',
+  phase_of_work:'', equipment:'',
+  // Structured field-log sections — arrays round-trip through create AND edit.
+  manpower_by_trade:[] as any[], subcontractors_on_site:[] as string[], equipment_on_site:[] as string[],
 };
 
 const inp: React.CSSProperties = {
@@ -62,6 +66,109 @@ function Section({label,value,warn}:{label:string;value?:string;warn?:boolean}){
   );
 }
 
+/** Removable-chip list with an inline add input — subs & equipment on site. */
+function ChipEditor({items,onChange,placeholder}:{items:string[];onChange:(v:string[])=>void;placeholder:string}){
+  const [draft,setDraft]=useState('');
+  const add=()=>{const v=draft.trim(); if(!v) return; if(!items.includes(v)) onChange([...items,v]); setDraft('');};
+  return (
+    <div>
+      {items.length>0&&(
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:8}}>
+          {items.map(it=>(
+            <span key={it} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 11px',
+              background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.13)',borderRadius:999,
+              fontSize:12.5,color:TEXT,fontWeight:600}}>
+              {it}
+              <span onClick={()=>onChange(items.filter(x=>x!==it))}
+                style={{cursor:'pointer',display:'inline-flex',alignItems:'center'}}>
+                <X size={11} weight="bold" color={DIM}/>
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+      <div style={{display:'flex',gap:8}}>
+        <input value={draft} onChange={e=>setDraft(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();add();}}}
+          style={{...inp,flex:1}} placeholder={placeholder}/>
+        <button onClick={add} disabled={!draft.trim()}
+          style={{padding:'0 14px',background:draft.trim()?'rgba(245,158,11,.14)':'rgba(255,255,255,0.05)',
+            border:`1px solid ${draft.trim()?'rgba(245,158,11,.4)':'rgba(255,255,255,0.12)'}`,borderRadius:7,
+            color:draft.trim()?'#FBBF24':'rgba(255,255,255,0.35)',fontSize:12.5,fontWeight:700,
+            cursor:draft.trim()?'pointer':'default'}}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Manpower-by-trade grid: one row per trade with a headcount input, plus an
+ * inline add row. The saved crew count rolls up from these lines on create. */
+function ManpowerEditor({rows,onChange}:{rows:any[];onChange:(v:any[])=>void}){
+  const [trade,setTrade]=useState('');
+  const [count,setCount]=useState('');
+  const total = rows.reduce((s:number,r:any)=>s+(Number(r.count)||0),0);
+  const add=()=>{
+    const t=trade.trim(); if(!t) return;
+    if(!rows.some((r:any)=>r.trade===t)) onChange([...rows,{trade:t,count:Number(count)||0}]);
+    setTrade(''); setCount('');
+  };
+  return (
+    <div>
+      {rows.length>0&&(
+        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:8}}>
+          {rows.map((r:any,i:number)=>(
+            <div key={`${r.trade}-${i}`} style={{display:'flex',alignItems:'center',gap:8,
+              background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.1)',
+              borderRadius:8,padding:'7px 10px'}}>
+              <HardHat size={14} weight="fill" color={DIM} style={{flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0,fontSize:13,fontWeight:600,color:TEXT,
+                overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {r.trade}
+                {Array.isArray(r.crews)&&r.crews.length>0&&(
+                  <span style={{fontSize:11.5,fontWeight:500,color:DIM,marginLeft:8}}>
+                    {r.crews.join(', ')}
+                  </span>
+                )}
+              </div>
+              <input type="number" value={r.count} min={0}
+                onChange={e=>onChange(rows.map((x:any,xi:number)=>xi===i?{...x,count:e.target.value===''?'':Number(e.target.value)}:x))}
+                style={{...inp,width:70,padding:'6px 8px',textAlign:'center'}}/>
+              <span onClick={()=>onChange(rows.filter((_:any,xi:number)=>xi!==i))}
+                style={{cursor:'pointer',display:'inline-flex',padding:4}}>
+                <X size={12} weight="bold" color={DIM}/>
+              </span>
+            </div>
+          ))}
+          <div style={{fontSize:11.5,color:DIM,textAlign:'right',fontWeight:700}}>
+            Total on site: <span style={{color:TEXT}}>{total}</span>
+          </div>
+        </div>
+      )}
+      <div style={{display:'flex',gap:8}}>
+        <input value={trade} list="sgManpowerTrades" onChange={e=>setTrade(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();add();}}}
+          style={{...inp,flex:1}} placeholder="Add a trade…"/>
+        <datalist id="sgManpowerTrades">
+          {SUB_TRADES.map(t=><option key={t} value={t}/>)}
+        </datalist>
+        <input type="number" value={count} min={0}
+          onChange={e=>setCount(e.target.value)}
+          onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();add();}}}
+          style={{...inp,width:70,textAlign:'center'}} placeholder="0"/>
+        <button onClick={add} disabled={!trade.trim()}
+          style={{padding:'0 14px',background:trade.trim()?'rgba(245,158,11,.14)':'rgba(255,255,255,0.05)',
+            border:`1px solid ${trade.trim()?'rgba(245,158,11,.4)':'rgba(255,255,255,0.12)'}`,borderRadius:7,
+            color:trade.trim()?'#FBBF24':'rgba(255,255,255,0.35)',fontSize:12.5,fontWeight:700,
+            cursor:trade.trim()?'pointer':'default'}}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DailyLogsPage(){
   const {projectId} = useParams() as {projectId:string};
   const [logs,setLogs]       = useState<any[]>([]);
@@ -78,7 +185,8 @@ export default function DailyLogsPage(){
   // Project snapshot (/api/project-context) — the page walks in knowing the job:
   // last log date, open items, schedule — so create prefills itself.
   const { ctx } = useProjectContext(projectId);
-  const [auto,setAuto]       = useState<{date?:boolean;crew?:boolean}>({});
+  const [auto,setAuto]       = useState<{date?:boolean;crew?:boolean;manpower?:boolean;subs?:boolean;carry?:boolean}>({});
+  const [prefilling,setPrefilling] = useState(false);
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -112,8 +220,8 @@ export default function DailyLogsPage(){
   useEffect(()=>{load();},[load]);
 
   function openCreate(){
-    // Walk in knowing the job: today's date, crew carried from the last log.
-    // The GC only types what changed since the previous report.
+    // Blank manual log — kept as the fallback path; the primary entry is
+    // openAutoFill below. Today's date + crew carried from the last log.
     const prev = logs[0]; // list arrives sorted date-desc
     setForm({
       ...EMPTY,
@@ -123,6 +231,75 @@ export default function DailyLogsPage(){
     setAuto({date:true, crew:!!(prev?.crew_count)});
     setMode('create'); setSelected(null);
   }
+
+  // AUTO-FIRST: one tap → the prefill route assembles the draft server-side
+  // (headcount from BOTH clock systems, manpower from active crews, subs from
+  // the project team, carry-forward off the last log, deliveries) and the
+  // composer opens pre-filled. The GC only types what the system can't know.
+  async function openAutoFill(){
+    setPrefilling(true);
+    try{
+      const h = await getAuthHeaders();
+      const today = new Date().toISOString().split('T')[0];
+      const r = await fetch(`/api/projects/${projectId}/daily-logs/prefill?date=${today}`,{headers:h});
+      if(!r.ok) throw new Error('Prefill failed');
+      const p = await r.json();
+      const cf = p.carryForward||{};
+      const manpower = Array.isArray(p.manpowerByTrade)
+        ? p.manpowerByTrade.map((m:any)=>({trade:m.trade,count:Number(m.count)||0,crews:m.crews}))
+        : [];
+      setForm({
+        ...EMPTY,
+        log_date: today,
+        crew_count: p.crewCount ? String(p.crewCount) : (logs[0]?.crew_count ? String(logs[0].crew_count) : ''),
+        superintendent: cf.superintendent||'',
+        phase_of_work: cf.phase_of_work||'',
+        equipment: cf.equipment||'',
+        manpower_by_trade: manpower,
+        subcontractors_on_site: Array.isArray(p.subcontractorsOnSite)?p.subcontractorsOnSite:[],
+        materials_delivered: Array.isArray(p.deliveriesToday)&&p.deliveriesToday.length>0
+          ? p.deliveriesToday.map((d:any)=>[d.item_name,d.vendor?`(${d.vendor})`:'',d.quantity?`x ${d.quantity}`:''].filter(Boolean).join(' ')).join('\n')
+          : '',
+      });
+      setAuto({
+        date:true,
+        crew:Number(p.crewCount)>0,
+        manpower:manpower.length>0,
+        subs:Array.isArray(p.subcontractorsOnSite)&&p.subcontractorsOnSite.length>0,
+        carry:!!(cf.superintendent||cf.phase_of_work||cf.equipment),
+      });
+      setMode('create'); setSelected(null);
+    }catch(e:any){
+      console.error(e);
+      showToast(humanError(e,'Auto-fill failed — opening a blank log.'),'error');
+      openCreate();
+    }finally{setPrefilling(false);}
+  }
+
+  // Copy yesterday: carries the structural fields off the latest log — the
+  // day-specific narrative (work / delays / safety) intentionally starts blank.
+  function copyYesterday(){
+    const prev = logs[0];
+    if(!prev) return;
+    setForm({
+      ...EMPTY,
+      log_date: new Date().toISOString().split('T')[0],
+      crew_count: prev.crew_count ? String(prev.crew_count) : '',
+      superintendent: prev.superintendent||'',
+      phase_of_work: prev.phase_of_work||'',
+      equipment: prev.equipment||'',
+      manpower_by_trade: Array.isArray(prev.manpower_by_trade)?prev.manpower_by_trade:[],
+      subcontractors_on_site: Array.isArray(prev.subcontractors_on_site)?prev.subcontractors_on_site:[],
+      equipment_on_site: Array.isArray(prev.equipment_on_site)?prev.equipment_on_site:[],
+    });
+    setAuto({
+      date:true, crew:!!prev.crew_count, carry:true,
+      manpower:Array.isArray(prev.manpower_by_trade)&&prev.manpower_by_trade.length>0,
+      subs:Array.isArray(prev.subcontractors_on_site)&&prev.subcontractors_on_site.length>0,
+    });
+    setMode('create'); setSelected(null);
+  }
+
   function openEdit(log:any){
     setForm({
       log_date:log.log_date||'',weather:log.weather||'',
@@ -131,6 +308,10 @@ export default function DailyLogsPage(){
       crew_count:log.crew_count??'',work_performed:log.work_performed||'',
       delays:log.delays||'',safety_notes:log.safety_notes||'',
       materials_delivered:log.materials_delivered||'',visitors:log.visitors||'',notes:log.notes||'',
+      phase_of_work:log.phase_of_work||'',equipment:log.equipment||'',
+      manpower_by_trade:Array.isArray(log.manpower_by_trade)?log.manpower_by_trade:[],
+      subcontractors_on_site:Array.isArray(log.subcontractors_on_site)?log.subcontractors_on_site:[],
+      equipment_on_site:Array.isArray(log.equipment_on_site)?log.equipment_on_site:[],
     });
     setSelected(log); setMode('edit');
   }
@@ -145,11 +326,20 @@ export default function DailyLogsPage(){
     setSaving(true);
     try{
       const h = await getAuthHeaders();
+      // Structured sections — empty arrays go up as null: the create route
+      // rolls crew_count up from manpower lines whenever an array is present,
+      // so an empty [] would zero the typed headcount.
+      const manpower = (form.manpower_by_trade||[])
+        .map((m:any)=>({...m,count:Number(m.count)||0}))
+        .filter((m:any)=>m.trade);
       const payload: Record<string,any> = {
         ...form,
         crew_count:Number(form.crew_count)||0,
         high_temp:form.high_temp!==''?Number(form.high_temp):null,
         low_temp:form.low_temp!==''?Number(form.low_temp):null,
+        manpower_by_trade: manpower.length>0 ? manpower : null,
+        subcontractors_on_site: (form.subcontractors_on_site||[]).length>0 ? form.subcontractors_on_site : null,
+        equipment_on_site: (form.equipment_on_site||[]).length>0 ? form.equipment_on_site : null,
       };
       if(mode==='create'){
         const tempId = `temp-${Date.now()}`;
@@ -247,11 +437,23 @@ export default function DailyLogsPage(){
             eyebrowIcon={<ClipboardText size={13} weight="fill" color={moduleAccent('daily').hex}/>}
             title="Daily"
             accent="Logs"
-            subtitle="Field reports — weather, crew, work performed, delays & safety"
+            subtitle="Field reports that fill themselves — headcount from the clocks, manpower from your crews, weather from NWS"
             actions={
-              <button onClick={openCreate} style={goldButtonStyle} className="pmBtn">
-                <Plus size={15} weight="bold"/> New Daily Log
-              </button>
+              <>
+                <button onClick={openAutoFill} disabled={prefilling}
+                  style={{...goldButtonStyle,padding:'13px 24px',fontSize:14.5,opacity:prefilling?.7:1}}
+                  className="pmBtn">
+                  <Sparkle size={17} weight="fill"/> {prefilling?'Assembling draft…':'Auto-fill Today'}
+                </button>
+                {logs.length>0&&(
+                  <button onClick={copyYesterday} style={ghostButtonStyle} className="pmBtn">
+                    <CopySimple size={14} weight="bold"/> Copy Yesterday
+                  </button>
+                )}
+                <button onClick={openCreate} style={ghostButtonStyle} className="pmBtn">
+                  <Plus size={14} weight="bold"/> Blank Log
+                </button>
+              </>
             }
           />
 
@@ -468,11 +670,26 @@ export default function DailyLogsPage(){
                     style={inp} placeholder="Who ran the site today"/>
                 </Field>
 
+                {/* NOBODY TYPES WEATHER — the create route stamps NWS server-side
+                    whenever the fields are left blank. Say so, visibly. */}
+                {mode==='create'&&(
+                  <div style={{display:'flex',gap:10,alignItems:'flex-start',
+                    background:'rgba(245,158,11,.07)',border:'1px solid rgba(245,158,11,.25)',
+                    borderRadius:9,padding:'11px 13px'}}>
+                    <CloudSun size={18} weight="fill" color={GOLD} style={{flexShrink:0,marginTop:1}}/>
+                    <div style={{fontSize:12.5,color:TEXT,lineHeight:1.55}}>
+                      <b>Weather stamps itself.</b> Leave the weather fields blank — conditions,
+                      temps, wind and precipitation auto-stamp from the National Weather Service
+                      when you save.
+                    </div>
+                  </div>
+                )}
+
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
                   <Field label="Weather">
                     <input value={form.weather} list="sgWeatherOpts"
                       onChange={e=>setForm(f=>({...f,weather:e.target.value}))}
-                      style={inp} placeholder="Clear, 10 mph W, dusty..."/>
+                      style={inp} placeholder={mode==='create'?'Auto (NWS)':'Clear, 10 mph W, dusty...'}/>
                     <datalist id="sgWeatherOpts">
                       {WEATHER_OPTS.map(w=><option key={w} value={w}/>)}
                     </datalist>
@@ -480,21 +697,58 @@ export default function DailyLogsPage(){
                   <Field label="High °F">
                     <input type="number" value={form.high_temp}
                       onChange={e=>setForm(f=>({...f,high_temp:e.target.value}))}
-                      style={inp} placeholder="95"/>
+                      style={inp} placeholder={mode==='create'?'Auto':'95'}/>
                   </Field>
                   <Field label="Low °F">
                     <input type="number" value={form.low_temp}
                       onChange={e=>setForm(f=>({...f,low_temp:e.target.value}))}
-                      style={inp} placeholder="72"/>
+                      style={inp} placeholder={mode==='create'?'Auto':'72'}/>
                   </Field>
                 </div>
 
                 <Field label={<>Crew Count{mode==='create'&&auto.crew&&<AutoChip/>}</>}
-                  hint={mode==='create'&&auto.crew?`Carried from your last log (${fmtDay(logs[0]?.log_date)}) — adjust for today.`:undefined}>
+                  hint={mode==='create'&&auto.crew
+                    ?'Counted from clock-ins (web + mobile) or carried from your last log — adjust for today.'
+                    :undefined}>
                   <input type="number" value={form.crew_count}
                     onChange={e=>setForm(f=>({...f,crew_count:e.target.value}))}
                     style={inp} placeholder="0" min={0}/>
                 </Field>
+
+                <Field
+                  label={<><UsersThree size={13} weight="fill" color={moduleAccent('daily').hex} style={{verticalAlign:'-2px',marginRight:5}}/>Manpower by Trade{mode==='create'&&auto.manpower&&<AutoChip/>}</>}
+                  hint={auto.manpower
+                    ?'Pulled from your active crews and rosters. When lines are present, their total becomes the saved crew count.'
+                    :'Break the headcount down by trade. When lines are present, their total becomes the saved crew count.'}>
+                  <ManpowerEditor rows={form.manpower_by_trade||[]}
+                    onChange={v=>setForm(f=>({...f,manpower_by_trade:v}))}/>
+                </Field>
+
+                <Field label={<>Subcontractors On Site{mode==='create'&&auto.subs&&<AutoChip/>}</>}
+                  hint={auto.subs?'Companies from the project team — remove any that were not on site today.':undefined}>
+                  <ChipEditor items={form.subcontractors_on_site||[]}
+                    onChange={v=>setForm(f=>({...f,subcontractors_on_site:v}))}
+                    placeholder="Add a subcontractor…"/>
+                </Field>
+
+                <Field label="Equipment On Site">
+                  <ChipEditor items={form.equipment_on_site||[]}
+                    onChange={v=>setForm(f=>({...f,equipment_on_site:v}))}
+                    placeholder="Add equipment (excavator, crane, lifts…)"/>
+                </Field>
+
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  <Field label={<>Phase of Work{mode==='create'&&auto.carry&&!!form.phase_of_work&&<AutoChip label="CARRIED"/>}</>}>
+                    <input value={form.phase_of_work}
+                      onChange={e=>setForm(f=>({...f,phase_of_work:e.target.value}))}
+                      style={inp} placeholder="Foundations, framing, MEP rough-in…"/>
+                  </Field>
+                  <Field label={<>Equipment Notes{mode==='create'&&auto.carry&&!!form.equipment&&<AutoChip label="CARRIED"/>}</>}>
+                    <input value={form.equipment}
+                      onChange={e=>setForm(f=>({...f,equipment:e.target.value}))}
+                      style={inp} placeholder="Hours, downtime, rentals…"/>
+                  </Field>
+                </div>
 
                 <Field label="Work Performed">
                   <textarea value={form.work_performed}
@@ -570,10 +824,59 @@ export default function DailyLogsPage(){
                     {selected.superintendent&&<span>Super: {selected.superintendent}</span>}
                   </div>
                 </div>
+                {Array.isArray(selected.manpower_by_trade)&&selected.manpower_by_trade.length>0&&(
+                  <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>
+                      Manpower by Trade
+                    </div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                      {selected.manpower_by_trade.map((m:any,i:number)=>(
+                        <span key={i} style={{display:'inline-flex',alignItems:'center',gap:7,padding:'5px 11px',
+                          background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.13)',
+                          borderRadius:999,fontSize:12.5,color:DIM,fontWeight:600}}>
+                          {m.trade}
+                          <span style={{fontWeight:800,color:TEXT}}>{Number(m.count)||0}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {Array.isArray(selected.subcontractors_on_site)&&selected.subcontractors_on_site.length>0&&(
+                  <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>
+                      Subcontractors On Site
+                    </div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                      {selected.subcontractors_on_site.map((s:string,i:number)=>(
+                        <span key={i} style={{padding:'5px 11px',background:'rgba(255,255,255,0.06)',
+                          border:'1px solid rgba(255,255,255,0.13)',borderRadius:999,fontSize:12.5,color:TEXT,fontWeight:600}}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {Array.isArray(selected.equipment_on_site)&&selected.equipment_on_site.length>0&&(
+                  <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5,marginBottom:8}}>
+                      Equipment On Site
+                    </div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                      {selected.equipment_on_site.map((s:string,i:number)=>(
+                        <span key={i} style={{padding:'5px 11px',background:'rgba(255,255,255,0.06)',
+                          border:'1px solid rgba(255,255,255,0.13)',borderRadius:999,fontSize:12.5,color:TEXT,fontWeight:600}}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <Section label="Work Performed" value={selected.work_performed}/>
                 <Section label="Delays / Issues" value={selected.delays} warn={!!selected.delays?.trim()}/>
                 <Section label="Safety Notes" value={selected.safety_notes}/>
                 <Section label="Materials Delivered" value={selected.materials_delivered}/>
+                {selected.phase_of_work&&<Section label="Phase of Work" value={selected.phase_of_work}/>}
+                {selected.equipment&&<Section label="Equipment Notes" value={selected.equipment}/>}
                 {selected.visitors&&<Section label="Visitors / Inspections" value={selected.visitors}/>}
                 {selected.notes&&<Section label="General Notes" value={selected.notes}/>}
               </div>

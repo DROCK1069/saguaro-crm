@@ -55,12 +55,14 @@ const NAV_SECTIONS = [
     label: 'FIELD',
     items: [
       { label: 'Daily Logs',      href: '/daily-logs',        icon: ClipboardText, badge: null },
+      { label: 'T&M Tickets',     href: '/tm-tickets',        icon: Money, badge: null },
       { label: 'Photos',          href: '/photos',            icon: Camera, badge: null },
       { label: 'Inspections',     href: '/inspections',       icon: MagnifyingGlass, badge: null },
       { label: 'Safety',          href: '/safety',            icon: HardHat, badge: null },
       { label: 'Punch List',      href: '/punch-list',        icon: CheckCircle, badge: null },
       { label: 'To-Dos',          href: '/todos',             icon: CheckSquare,  badge: null },
       { label: 'Timesheets',      href: '/timesheets',        icon: Timer,  badge: null },
+      { label: 'Crews',           href: '/crews',             icon: Users,  badge: null },
     ],
   },
   {

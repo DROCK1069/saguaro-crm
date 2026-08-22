@@ -50,6 +50,7 @@ import {
   Clock,
   WifiHigh,
   Broadcast,
+  Briefcase,
 } from '@phosphor-icons/react';
 import { colors, font, radius, shadow, sidebar as sidebarTokens, z } from '../lib/design-tokens';
 import { useWhiteLabel } from './WhiteLabelProvider';
@@ -76,6 +77,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Overview',
     items: [
       { label: 'Dashboard',    href: '/app',              icon: GridFour },
+      { label: 'My Work',      href: '/app/my-work',      icon: Briefcase, accentKey: 'work' },
       { label: 'Projects',     href: '/app/projects',     icon: FolderSimple },
       { label: 'People & Access', href: '/app/people',    icon: Users, accentKey: 'team' },
       { label: 'Time Clock',   href: '/app/time',         icon: Clock, accentKey: 'time' },
