@@ -7,11 +7,13 @@ import { transcribeRadioVoice } from '@/lib/transcribe';
 const BUCKET = 'project-files';
 const MAX_BYTES = 25 * 1024 * 1024;
 const ALLOWED = /\.(m4a|mp4|aac|mp3|wav|webm|ogg|caf)$/i;
+const IMAGE_ALLOWED = /\.(png|jpe?g|webp|heic|pdf)$/i;
 
 /**
  * Saguaro Radio — SUB PORTAL access (approved scope: subs join project
  * channels). Token-authenticated; scoped to the sub's project's sub-enabled
- * channels only. GET lists traffic (signed audio); POST sends text or voice.
+ * channels only. GET lists traffic (signed audio/images); POST sends text,
+ * voice, or a photo/PDF attachment.
  */
 async function auth(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token') || req.headers.get('x-portal-token');
@@ -92,13 +94,26 @@ export async function POST(req: NextRequest) {
       const file = form.get('file') as File | null;
       const durationSecs = Number(form.get('durationSecs')) || null;
       if (!file) return NextResponse.json({ error: 'file required' }, { status: 400 });
-      if (file.size > MAX_BYTES) return NextResponse.json({ error: 'Audio too large' }, { status: 413 });
+      if (file.size > MAX_BYTES) return NextResponse.json({ error: 'File too large' }, { status: 413 });
       const safeName = String(file.name || 'clip.m4a').replace(/[^\w.\-]+/g, '_');
-      if (!ALLOWED.test(safeName)) return NextResponse.json({ error: 'Unsupported audio type' }, { status: 415 });
+      const isAttachment = IMAGE_ALLOWED.test(safeName);
+      if (!isAttachment && !ALLOWED.test(safeName)) return NextResponse.json({ error: 'Unsupported file type' }, { status: 415 });
       const path = `${a.session.tenant_id}/radio/${ch.id}/${Date.now()}_sub_${safeName}`;
       const buffer = Buffer.from(await file.arrayBuffer());
-      const { error: upErr } = await a.db.storage.from(BUCKET).upload(path, buffer, { contentType: file.type || 'audio/mp4', upsert: false });
+      const fallbackType = isAttachment ? 'application/octet-stream' : 'audio/mp4';
+      const { error: upErr } = await a.db.storage.from(BUCKET).upload(path, buffer, { contentType: file.type || fallbackType, upsert: false });
       if (upErr) throw upErr;
+      if (isAttachment) {
+        // Photo/PDF attachment: same storage path as voice, but a kind 'image'
+        // row with image_path so the feed signs and renders it inline.
+        const { data: msg, error } = await a.db.from('radio_messages').insert({
+          tenant_id: a.session.tenant_id, channel_id: ch.id, project_id: ch.project_id,
+          sender_portal_sub_id: a.session.sub_id, sender_name: sender,
+          kind: 'image', image_path: path,
+        } as never).select().single();
+        if (error) throw error;
+        return NextResponse.json({ message: msg }, { status: 201 });
+      }
       const { data: msg, error } = await a.db.from('radio_messages').insert({
         tenant_id: a.session.tenant_id, channel_id: ch.id, project_id: ch.project_id,
         sender_portal_sub_id: a.session.sub_id, sender_name: sender,

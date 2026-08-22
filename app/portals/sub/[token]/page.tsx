@@ -120,6 +120,7 @@ export default function SubPortal(){
   const [radioText,setRadioText]=useState('');
   const [radioSending,setRadioSending]=useState(false);
   const [radioRecording,setRadioRecording]=useState(false);
+  const [radioAttaching,setRadioAttaching]=useState(false);
   const radioRecRef=useRef<MediaRecorder|null>(null);
   const radioFeedRef=useRef<HTMLDivElement>(null);
   const radioIdsRef=useRef<Set<string>>(new Set());
@@ -348,6 +349,25 @@ export default function SubPortal(){
       } else showToast(result.error||'Failed to send message');
     }catch{showToast('Network error');}
     setRadioSending(false);
+  };
+
+  /* Photo/PDF attachment: same multipart endpoint as voice — the server routes
+     image/pdf extensions to a kind 'image' message instead of a voice clip. */
+  const sendRadioAttachment=async(file:File|null)=>{
+    if(!file||!radioChannel||radioAttaching)return;
+    if(!/\.(png|jpe?g|webp|heic|pdf)$/i.test(file.name||'')){showToast('Images or PDF only');return;}
+    if(file.size>25*1024*1024){showToast('File too large -- 25 MB max');return;}
+    setRadioAttaching(true);
+    try{
+      const form=new FormData();
+      form.append('file',file);
+      const result=await apiUpload('radio',form);
+      if(result.message){
+        if(result.message.id)radioIdsRef.current.add(result.message.id);
+        setRadioMsgs(prev=>[...prev,result.message]);
+      }else showToast(result.error||'Attachment failed');
+    }catch{showToast('Network error');}
+    setRadioAttaching(false);
   };
 
   const startRadioRec=async()=>{
@@ -1082,6 +1102,11 @@ export default function SubPortal(){
             })}
           </div>
           <div style={{display:'flex',gap:10}}>
+            <label title="Attach a photo or PDF" aria-label="Attach a photo or PDF" style={{...btnS(BORDER),padding:'11px 14px',display:'inline-flex',alignItems:'center',justifyContent:'center',opacity:radioAttaching?0.6:1,cursor:radioAttaching?'wait':'pointer',flexShrink:0}}>
+              <span style={{fontSize:15,lineHeight:'1'}}>{radioAttaching?'…':'\u{1F4CE}'}</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/heic,application/pdf,.png,.jpg,.jpeg,.webp,.heic,.pdf" style={{display:'none'}} disabled={radioAttaching}
+                onChange={e=>{sendRadioAttachment(e.target.files?.[0]||null);e.currentTarget.value='';}}/>
+            </label>
             <input value={radioText} onChange={e=>setRadioText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendRadioText();}}} placeholder="Message the channel..." style={{...inputS,flex:1}}/>
             <button onClick={sendRadioText} disabled={radioSending} style={btnS(BLUE)}>{radioSending?'...':'Send'}</button>
           </div>
