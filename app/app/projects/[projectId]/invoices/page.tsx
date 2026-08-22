@@ -4,7 +4,7 @@ import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { SkeletonRow } from '@/components/ui/Skeleton';
 import { Receipt, CurrencyDollar, CheckCircle, WarningCircle, PencilSimple, Percent, Copy, Trash, Plus, CaretDown, ClockCounterClockwise, Calculator } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
@@ -19,6 +19,9 @@ interface Invoice {
   vendor_email?: string;
   description: string;
   amount: number;
+  tax?: number | null;
+  total?: number | null;
+  pdf_url?: string | null;
   due_date: string;
   status: string;
   notes: string;
@@ -26,13 +29,28 @@ interface Invoice {
   created_at?: string;
 }
 
-const STATUS_MAP: Record<string, { bg: string; color: string }> = {
-  Draft: { bg: 'rgba(143,163,192,.2)', color: DIM },
-  Sent: { bg: 'rgba(245,158,11,.2)', color: '#FBBF24' },
-  Pending: { bg: 'rgba(245,158,11,.2)', color: '#f59e0b' },
-  Paid: { bg: 'rgba(61,214,140,.2)', color: GREEN },
-  Overdue: { bg: 'rgba(239,68,68,.2)', color: RED },
+// Lowercase-keyed — the server stores lowercase statuses; rows written before
+// the normalization ('Sent', 'Draft') resolve to the same keys via statusKey().
+const STATUS_MAP: Record<string, { bg: string; color: string; label: string }> = {
+  draft: { bg: 'rgba(143,163,192,.2)', color: DIM, label: 'Draft' },
+  sent: { bg: 'rgba(245,158,11,.2)', color: '#FBBF24', label: 'Sent' },
+  pending: { bg: 'rgba(245,158,11,.2)', color: '#f59e0b', label: 'Pending' },
+  approved: { bg: 'rgba(61,214,140,.2)', color: GREEN, label: 'Approved' },
+  paid: { bg: 'rgba(61,214,140,.2)', color: GREEN, label: 'Paid' },
+  overdue: { bg: 'rgba(239,68,68,.2)', color: RED, label: 'Overdue' },
 };
+
+/** Lowercase-normalized status — kills the 'Sent' vs 'sent' split-brain. */
+const statusKey = (s?: string | null) => (s || 'draft').toLowerCase();
+
+/** Canonical invoice figure: stored total when non-zero, else amount + tax.
+ *  TEXT-typed money columns -> Number() always; a stale 0 total defers to
+ *  amount so real money never rolls up as $0. */
+function effectiveTotal(i: { amount?: number | null; tax?: number | null; total?: number | null }): number {
+  const t = Number(i.total);
+  if (t > 0) return t;
+  return (Number(i.amount) || 0) + (Number(i.tax) || 0);
+}
 
 const EMPTY_FORM = { invoice_number: '', vendor_name: '', vendor_email: '', description: '', amount: 0, tax: 0, cost_code: '', due_date: '', notes: '' };
 
@@ -112,16 +130,21 @@ export default function InvoicesPage() {
     setErrorMsg('');
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const totalBilled = toDollars(sumCents(invoices.map(i => toCents(i.amount || 0))));
-  const totalPaid = toDollars(sumCents(invoices.filter(i => i.status === 'Paid').map(i => toCents(i.amount || 0))));
-  const totalOutstanding = toDollars(sumCents(invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').map(i => toCents(i.amount || 0))));
+  // Local today (YYYY-MM-DD) — toISOString() is UTC, which rolls to tomorrow
+  // in the Arizona evening and flags invoices overdue a day early.
+  const nowD = new Date();
+  const today = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}-${String(nowD.getDate()).padStart(2, '0')}`;
+  // Overdue = due before today (local), and not paid / not a draft.
+  const isOverdue = (i: Invoice) => !!i.due_date && i.due_date.slice(0, 10) < today && statusKey(i.status) !== 'paid' && statusKey(i.status) !== 'draft';
+  const totalBilled = toDollars(sumCents(invoices.map(i => toCents(effectiveTotal(i)))));
+  const totalPaid = toDollars(sumCents(invoices.filter(i => statusKey(i.status) === 'paid').map(i => toCents(effectiveTotal(i)))));
+  const totalOutstanding = toDollars(sumCents(invoices.filter(i => { const st = statusKey(i.status); return st !== 'paid' && st !== 'draft'; }).map(i => toCents(effectiveTotal(i)))));
 
   // Toolbar-driven view of the list. Status matches the effective (overdue-aware) status.
   const q = search.trim().toLowerCase();
   const filteredInvoices = invoices
     .filter(inv => {
-      const effStatus = inv.due_date < today && inv.status !== 'Paid' ? 'Overdue' : inv.status;
+      const effStatus = isOverdue(inv) ? 'overdue' : statusKey(inv.status);
       if (statusFilter !== 'all' && effStatus !== statusFilter) return false;
       if (!q) return true;
       return [inv.invoice_number, inv.vendor_name, inv.description, inv.notes].some(v => String(v || '').toLowerCase().includes(q));
@@ -144,12 +167,13 @@ export default function InvoicesPage() {
         vendor_email: form.vendor_email || null,
         description: form.description,
         cost_code: form.cost_code || null,
+        // Server is canonical for money — it computes total = amount + tax
+        // itself and stores lowercase statuses.
         amount: Number(form.amount) || 0,
         tax: Number(form.tax) || 0,
-        total: (Number(form.amount) || 0) + (Number(form.tax) || 0),
         due_date: form.due_date || null,
         notes: form.notes,
-        status: 'Draft',
+        status: 'draft',
       }) });
       if (!res.ok) throw new Error('save failed');
       const json = await res.json();
@@ -171,7 +195,7 @@ export default function InvoicesPage() {
       const res = await fetch(`/api/invoices/${id}/send`, { method: 'POST' });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) { setErrorMsg(json.error || 'Could not send the invoice.'); setTimeout(() => setErrorMsg(''), 5000); return; }
-      setInvoices(prev => prev.map(i => i.id === id ? { ...i, status: 'Sent' } : i));
+      setInvoices(prev => prev.map(i => i.id === id ? { ...i, status: 'sent' } : i));
       setSuccessMsg('Invoice emailed to the client.');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch {
@@ -180,17 +204,39 @@ export default function InvoicesPage() {
     }
   }
 
-  const fmt = (n: number) => '$' + ((n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+  const fmt = (n: number) => '$' + ((Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
+  /** POST /api/invoices/[id]/pdf -> { pdfUrl }, then open the document. Rows
+   *  that already carry pdf_url open the real .pdf directly. */
+  async function handlePdf(inv: Invoice) {
+    if (inv.pdf_url) { window.open(inv.pdf_url, '_blank', 'noopener'); return; }
+    setPdfBusy(inv.id);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}/pdf`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.pdfUrl) throw new Error('pdf failed');
+      window.open(data.pdfUrl, '_blank', 'noopener');
+      fetchInvoices();
+    } catch {
+      setErrorMsg('Could not generate the PDF. Please try again.'); setTimeout(() => setErrorMsg(''), 4000);
+    } finally {
+      setPdfBusy(null);
+    }
+  }
 
   function openInvMenu(id: string) { setMenuId(id); setEditId(null); setAdjustId(null); setDeleteId(null); }
 
   async function handleEditInv(id: string) {
     const amount = parseFloat(editVal);
     if (isNaN(amount) || amount < 0) return;
-    setInvoices(prev => prev.map(i => i.id === id ? { ...i, amount } : i));
+    const tax = Number(invoices.find(i => i.id === id)?.tax) || 0;
+    // Send {amount, tax} and let the server recompute total = amount + tax;
+    // the optimistic total mirrors that so effectiveTotal never shows stale money.
+    setInvoices(prev => prev.map(i => i.id === id ? { ...i, amount, total: amount + tax } : i));
     setEditId(null);
     try {
-      const res = await fetch(`/api/invoices/${id}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount }) });
+      const res = await fetch(`/api/invoices/${id}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, tax }) });
       if (!res.ok) throw new Error('update failed');
       setSuccessMsg('Amount updated.'); setTimeout(() => setSuccessMsg(''), 3000);
     } catch {
@@ -203,10 +249,11 @@ export default function InvoicesPage() {
     const inv = invoices.find(i => i.id === id);
     if (!inv) return;
     const newAmt = toDollars(scaleCents(toCents(inv.amount), 1 + pct / 100));
-    setInvoices(prev => prev.map(i => i.id === id ? { ...i, amount: newAmt } : i));
+    const tax = Number(inv.tax) || 0;
+    setInvoices(prev => prev.map(i => i.id === id ? { ...i, amount: newAmt, total: newAmt + tax } : i));
     setAdjustId(null);
     try {
-      const res = await fetch(`/api/invoices/${id}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: newAmt }) });
+      const res = await fetch(`/api/invoices/${id}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: newAmt, tax }) });
       if (!res.ok) throw new Error('update failed');
       setSuccessMsg(`Adjusted ${pct > 0 ? '+' : ''}${pct}%`); setTimeout(() => setSuccessMsg(''), 3000);
     } catch {
@@ -244,7 +291,8 @@ export default function InvoicesPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="Project Billing"
-        eyebrowIcon={<Receipt size={13} weight="fill" color={moduleAccent('invoices').hex} />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('invoices').vivid ?? moduleAccent('invoices').hex}><Receipt size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('invoices').hex}
         title="Client"
         accent="Invoices"
         subtitle="Owner billing and payment tracking."
@@ -409,7 +457,8 @@ export default function InvoicesPage() {
         onSearch={setSearch}
         searchPlaceholder="Search invoices..."
         filters={[{ key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter, allLabel: 'All Statuses', options: [
-          'Draft', 'Sent', 'Pending', 'Paid', 'Overdue',
+          { value: 'draft', label: 'Draft' }, { value: 'sent', label: 'Sent' }, { value: 'pending', label: 'Pending' },
+          { value: 'approved', label: 'Approved' }, { value: 'paid', label: 'Paid' }, { value: 'overdue', label: 'Overdue' },
         ] }]}
         sort={sortBy}
         onSort={setSortBy}
@@ -465,16 +514,16 @@ export default function InvoicesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {['Invoice #','Bill To','Amount','Issued','Due','Status','Notes','Actions'].map(h => (
+                {['Invoice #','Bill To','Total','Issued','Due','Status','Notes','Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: DIM, borderBottom: '1px solid ' + BORDER, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filteredInvoices.map(inv => {
-                const overdue = inv.due_date < today && inv.status !== 'Paid';
-                const effectiveStatus = overdue ? 'Overdue' : inv.status;
-                const sc = STATUS_MAP[effectiveStatus] || { bg: 'rgba(143,163,192,.2)', color: DIM };
+                const overdue = isOverdue(inv);
+                const effKey = overdue ? 'overdue' : statusKey(inv.status);
+                const sc = STATUS_MAP[effKey] || { bg: 'rgba(143,163,192,.2)', color: DIM, label: statusKey(inv.status) };
                 return (
                   <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: overdue ? 'rgba(239,68,68,.05)' : 'transparent' }}>
                     <td style={{ padding: '10px 14px', color: GOLD, fontWeight: 700 }}>{inv.invoice_number}</td>
@@ -501,7 +550,7 @@ export default function InvoicesPage() {
                         </div>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ color: TEXT, fontWeight: 700 }}>{fmt(inv.amount)}</span>
+                          <span style={{ color: GOLD, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(effectiveTotal(inv))}</span>
                           {copiedId === inv.id && <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>Copied!</span>}
                           <button onClick={() => openInvMenu(inv.id)} style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', padding: '2px 4px', lineHeight: 1, opacity: 0.6, display: 'inline-flex', alignItems: 'center' }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}><CaretDown size={11} weight="bold" /></button>
                           {menuId === inv.id && (
@@ -509,7 +558,7 @@ export default function InvoicesPage() {
                               {[
                                 { label: 'Edit Amount', icon: <PencilSimple size={15} weight="bold" color={DIM} />, action: () => { setMenuId(null); setEditId(inv.id); setEditVal(String(inv.amount)); } },
                                 { label: 'Adjust %', icon: <Percent size={15} weight="bold" color={DIM} />, action: () => { setMenuId(null); setAdjustId(inv.id); } },
-                                { label: 'Copy Amount', icon: <Copy size={15} weight="bold" color={DIM} />, action: () => handleCopyInv(inv.id, inv.amount) },
+                                { label: 'Copy Total', icon: <Copy size={15} weight="bold" color={DIM} />, action: () => handleCopyInv(inv.id, effectiveTotal(inv)) },
                               ].map(item => (
                                 <div key={item.label} onClick={item.action} style={{ padding: '7px 12px', fontSize: 12, color: TEXT, cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 9 }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                   {item.icon}{item.label}
@@ -525,14 +574,17 @@ export default function InvoicesPage() {
                       )}
                     </td>
                     <td style={{ padding: '10px 14px', color: DIM, whiteSpace: 'nowrap' }}>{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '—'}</td>
-                    <td style={{ padding: '10px 14px', color: overdue ? RED : DIM, whiteSpace: 'nowrap' }}>{inv.due_date || '—'}</td>
-                    <td style={{ padding: '10px 14px' }}><span style={{ padding: '3px 10px', borderRadius: 20, background: sc.bg, color: sc.color, fontSize: 11, fontWeight: 700 }}>{effectiveStatus}</span></td>
+                    <td style={{ padding: '10px 14px', color: overdue ? RED : DIM, whiteSpace: 'nowrap' }}>{inv.due_date ? inv.due_date.slice(0, 10) : '—'}</td>
+                    <td style={{ padding: '10px 14px' }}><span style={{ padding: '3px 10px', borderRadius: 20, background: sc.bg, color: sc.color, fontSize: 11, fontWeight: 700 }}>{sc.label}</span></td>
                     <td style={{ padding: '10px 14px', color: DIM, fontSize: 12 }}>{inv.notes}</td>
                     <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                      {inv.status === 'Draft' && (
-                        <button onClick={() => handleSend(inv.id)} style={{ padding: '4px 12px', background: 'rgba(245,158,11,.2)', border: '1px solid rgba(245,158,11,.4)', borderRadius: 5, color: '#FBBF24', fontSize: 12, cursor: 'pointer' }}>Send to Owner</button>
-                      )}
-                      {inv.status === 'Paid' && <span style={{ color: GREEN, fontSize: 12 }}>Paid</span>}
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <button onClick={() => handlePdf(inv)} disabled={pdfBusy === inv.id} title={inv.pdf_url ? 'Open PDF' : 'Generate PDF'} style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid ' + BORDER, borderRadius: 5, color: inv.pdf_url ? '#FBBF24' : DIM, fontSize: 12, cursor: 'pointer', opacity: pdfBusy === inv.id ? 0.5 : 1 }}>{pdfBusy === inv.id ? '...' : 'PDF'}</button>
+                        {statusKey(inv.status) === 'draft' && (
+                          <button onClick={() => handleSend(inv.id)} style={{ padding: '4px 12px', background: 'rgba(245,158,11,.2)', border: '1px solid rgba(245,158,11,.4)', borderRadius: 5, color: '#FBBF24', fontSize: 12, cursor: 'pointer' }}>Send to Owner</button>
+                        )}
+                        {statusKey(inv.status) === 'paid' && <span style={{ color: GREEN, fontSize: 12 }}>Paid</span>}
+                      </div>
                     </td>
                   </tr>
                 );

@@ -45,7 +45,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       amountDue,
       dueDate: invoice.due_date,
       description: invoice.description,
-      viewUrl: `${appUrl}/app/invoicing/${params.id}`,
+      // Public tokenized page — vendors must never hit the login wall.
+      viewUrl: `${appUrl}/portals/invoice/${(invoice as any).public_token || params.id}`,
     });
 
     if (!result.sent) {
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Email is out the door — now it's genuinely "Sent".
     const { error: updErr } = await db
       .from('invoices')
-      .update({ status: 'Sent', updated_at: new Date().toISOString() })
+      .update({ status: 'sent', updated_at: new Date().toISOString() })
       .eq('id', params.id)
       .eq('tenant_id', user.tenantId);
     if (updErr) throw updErr;

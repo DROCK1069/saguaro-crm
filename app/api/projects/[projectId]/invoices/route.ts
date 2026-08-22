@@ -27,9 +27,12 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const supabase = createServerClient();
     const body = await req.json();
     const { data, error } = await supabase.from('invoices').insert({
-      tenant_id: user.tenantId, project_id: params.projectId,
+      tenant_id: user.tenantId, project_id: params.projectId, created_by: user.id,
       invoice_number: body.invoice_number || null, vendor_name: body.vendor_name,
-      amount: body.amount || 0, status: body.status || 'draft',
+      amount: body.amount ?? 0, tax: body.tax ?? 0,
+      // Server-canonical: total always amount + tax, never left to DEFAULT 0.
+      total: (Number(body.amount) || 0) + (Number(body.tax) || 0),
+      status: String(body.status || 'draft').toLowerCase(),
       due_date: body.due_date || null, description: body.description || null,
       pdf_url: body.file_url || null,
     }).select().single();

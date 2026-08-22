@@ -17,12 +17,12 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, PaperPlaneTilt, Trash, PencilSimple, Warning, Check,
   X as XIcon, Receipt, CurrencyDollar, Percent, Coins, CalendarBlank,
-  FileText, Buildings, CreditCard, Note,
+  FileText, Buildings, CreditCard, Note, FilePdf, ArrowSquareOut, ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { colors, font, radius } from '@/lib/design-tokens';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 import {
-  PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty,
+  PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, Pill,
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 
@@ -58,6 +58,7 @@ const STATUS_COLORS: Record<string, string> = {
   draft: colors.textDim,
   pending: colors.orange,
   sent: colors.blue,
+  approved: colors.green,
   paid: colors.green,
   overdue: colors.red,
 };
@@ -72,10 +73,43 @@ function money(v: number | null | undefined): string {
   return `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+/** Canonical invoice figure: the stored total when it's a real non-zero
+ *  number, else amount + tax. NUMERIC arrives as TEXT (Number() always) and
+ *  total is often a stale 0 — a $67,800 invoice must never render as $0. */
+function effectiveTotal(i: { amount?: number | null; tax?: number | null; total?: number | null }): number | null {
+  const t = Number(i.total);
+  if (t > 0) return t;
+  if (i.amount == null && i.total == null) return null;
+  return (Number(i.amount) || 0) + (Number(i.tax) || 0);
+}
+
+/** Timestamps (created/updated/paid) — real instants, parse as-is. */
 function dateStr(v: string | null | undefined): string {
   if (!v) return '—';
   const d = new Date(v);
   return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
+/** DATE-ONLY fields (due dates): 'YYYY-MM-DD' -> LOCAL midnight. Feeding the
+ *  raw string to new Date() means UTC midnight — the previous evening in
+ *  Arizona — so the date renders (and goes overdue) a day early. */
+function dateOnlyStr(v: string | null | undefined): string {
+  if (!v) return '—';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  if (!m) return dateStr(v);
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString();
+}
+
+/** Overdue = due before today (local), status not paid and not a draft. */
+function isOverdue(i: { due_date?: string | null; status?: string | null }): boolean {
+  if (!i.due_date) return false;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(i.due_date);
+  if (!m) return false;
+  const due = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const st = (i.status || 'draft').toLowerCase();
+  return due < today && st !== 'paid' && st !== 'draft';
 }
 
 export default function InvoiceDetailPage() {
@@ -89,7 +123,7 @@ export default function InvoiceDetailPage() {
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
 
-  const [busy, setBusy] = useState<'' | 'send' | 'delete' | 'save'>('');
+  const [busy, setBusy] = useState<'' | 'send' | 'delete' | 'save' | 'pdf'>('');
   const [toast, setToast] = useState<{ msg: string; color: string } | null>(null);
 
   // Edit modal
@@ -169,11 +203,12 @@ export default function InvoiceDetailPage() {
           description: form.description || null,
           category: form.category || null,
           cost_code: form.cost_code || null,
+          // Server is canonical for money — it recomputes total = amount + tax
+          // on every write; the client never sends a total.
           amount: amountNum,
           tax: taxNum,
-          total: amountNum != null ? amountNum + (taxNum ?? 0) : null,
           due_date: form.due_date || null,
-          status: form.status || null,
+          status: (form.status || 'draft').toLowerCase(),
           notes: form.notes || null,
         }),
       });
@@ -203,6 +238,26 @@ export default function InvoiceDetailPage() {
       await loadInvoice();
     } catch (e: any) {
       console.error(e); showToast(humanError(e, 'Send failed. Please try again.'), colors.red);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  /** Generate (or regenerate) the invoice PDF server-side, then open it.
+   *  POST /api/invoices/[id]/pdf -> { pdfUrl }; the Document card below picks
+   *  up the stored pdf_url on reload. */
+  async function handlePdf(regenerate = false) {
+    if (!regenerate && invoice?.pdf_url) { window.open(invoice.pdf_url, '_blank', 'noopener'); return; }
+    setBusy('pdf');
+    try {
+      const res = await fetch(`/api/invoices/${id}/pdf`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.pdfUrl) throw new Error(data?.error || 'PDF generation failed');
+      window.open(data.pdfUrl, '_blank', 'noopener');
+      showToast(regenerate ? 'PDF regenerated' : 'PDF generated');
+      await loadInvoice();
+    } catch (e: any) {
+      console.error(e); showToast(humanError(e, 'PDF failed. Please try again.'), colors.red);
     } finally {
       setBusy('');
     }
@@ -278,10 +333,9 @@ export default function InvoiceDetailPage() {
 
   const inv = invoice as Invoice;
   const sc = statusColor(inv.status);
-  const statusLabel = (inv.status ?? 'draft');
-  const computedTotal = inv.total != null
-    ? inv.total
-    : (inv.amount != null ? inv.amount + (inv.tax ?? 0) : null);
+  const statusLabel = (inv.status ?? 'draft').toLowerCase();
+  const computedTotal = effectiveTotal(inv);
+  const overdue = isOverdue(inv);
 
   return (
     <>
@@ -312,12 +366,15 @@ export default function InvoiceDetailPage() {
         eyebrow="INVOICE"
         eyebrowIcon={<Receipt size={13} weight="fill" color={GOLD} />}
         aux={
-          <span style={{
-            padding: '3px 12px', borderRadius: 999, fontSize: font.size.xs, fontWeight: font.weight.bold,
-            textTransform: 'uppercase', letterSpacing: 0.5, background: `${sc}20`, color: sc,
-          }}>
-            {statusLabel}
-          </span>
+          <>
+            <span style={{
+              padding: '3px 12px', borderRadius: 999, fontSize: font.size.xs, fontWeight: font.weight.bold,
+              textTransform: 'uppercase', letterSpacing: 0.5, background: `${sc}20`, color: sc,
+            }}>
+              {statusLabel}
+            </span>
+            {overdue && <Pill tone="red" caps>Overdue</Pill>}
+          </>
         }
         title={inv.invoice_number || 'Invoice'}
         subtitle={
@@ -330,6 +387,14 @@ export default function InvoiceDetailPage() {
           <>
             <button onClick={openEdit} style={ghostButtonStyle} className="pmBtn">
               <PencilSimple size={14} /> Edit
+            </button>
+            <button
+              onClick={() => handlePdf()}
+              disabled={busy === 'pdf'}
+              style={{ ...ghostButtonStyle, opacity: busy === 'pdf' ? 0.6 : 1, cursor: busy === 'pdf' ? 'not-allowed' : 'pointer' }}
+              className="pmBtn"
+            >
+              <FilePdf size={14} /> {busy === 'pdf' ? 'Generating...' : 'PDF'}
             </button>
             <button
               onClick={handleSend}
@@ -356,7 +421,7 @@ export default function InvoiceDetailPage() {
         <StatCard icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />} label="Amount" value={money(inv.amount)} sub="Pre-tax" delay={0.02} />
         <StatCard icon={<Percent size={19} weight="duotone" color={GOLD} />} label="Tax" value={money(inv.tax)} delay={0.06} />
         <StatCard icon={<Coins size={19} weight="duotone" color={GOLD} />} label="Total" value={money(computedTotal)} accent={GOLD} sub="Amount + tax" delay={0.10} />
-        <StatCard icon={<CalendarBlank size={19} weight="duotone" color={GOLD} />} label="Due Date" value={dateStr(inv.due_date)} delay={0.14} />
+        <StatCard icon={<CalendarBlank size={19} weight="duotone" color={overdue ? colors.red : GOLD} />} label="Due Date" value={dateOnlyStr(inv.due_date)} accent={overdue ? colors.red : undefined} sub={overdue ? 'Past due' : undefined} delay={0.14} />
       </div>
 
       {/* Line item / details */}
@@ -375,17 +440,53 @@ export default function InvoiceDetailPage() {
                 <td style={{ padding: '12px 16px', color: colors.text }}>{inv.description || '—'}</td>
                 <td style={{ padding: '12px 16px', color: colors.textMuted }}>{inv.category || '—'}</td>
                 <td style={{ padding: '12px 16px', color: colors.textMuted, fontFamily: font.mono }}>{inv.cost_code || '—'}</td>
-                <td style={{ padding: '12px 16px', color: colors.text }}>{money(inv.amount)}</td>
-                <td style={{ padding: '12px 16px', color: colors.text }}>{money(inv.tax)}</td>
-                <td style={{ padding: '12px 16px', color: colors.text, fontWeight: font.weight.semibold }}>{money(computedTotal)}</td>
+                <td style={{ padding: '12px 16px', color: colors.text, fontVariantNumeric: 'tabular-nums' }}>{money(inv.amount)}</td>
+                <td style={{ padding: '12px 16px', color: colors.text, fontVariantNumeric: 'tabular-nums' }}>{money(inv.tax)}</td>
+                <td style={{ padding: '12px 16px', color: colors.gold, fontWeight: font.weight.semibold, fontVariantNumeric: 'tabular-nums' }}>{money(computedTotal)}</td>
               </tr>
               <tr style={{ background: 'rgba(245, 158, 11,.05)' }}>
                 <td colSpan={5} style={{ padding: '12px 16px', color: colors.textMuted, fontWeight: font.weight.bold, textTransform: 'uppercase', fontSize: font.size.xs, letterSpacing: 0.5, textAlign: 'right' }}>Total Due</td>
-                <td style={{ padding: '12px 16px', color: colors.gold, fontWeight: font.weight.black, fontSize: font.size.xl }}>{money(computedTotal)}</td>
+                <td style={{ padding: '12px 16px', color: colors.gold, fontWeight: font.weight.black, fontSize: font.size.xl, fontVariantNumeric: 'tabular-nums' }}>{money(computedTotal)}</td>
               </tr>
             </tbody>
           </table>
         </div>
+      </SectionCard>
+
+      {/* Document — the generated PDF, or the machinery to make one */}
+      <SectionCard title="Document" icon={<FilePdf size={17} weight="duotone" color={GOLD} />} style={{ marginBottom: 20 }}>
+        {inv.pdf_url ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 260px', minWidth: 0 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 11, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)' }}>
+                <FilePdf size={20} weight="duotone" color={GOLD} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: font.size.md, fontWeight: font.weight.bold, color: colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {(inv.invoice_number || 'Invoice')}.pdf
+                </div>
+                <div style={{ fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 }}>Generated invoice document</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <a href={inv.pdf_url} target="_blank" rel="noopener noreferrer" style={{ ...goldButtonStyle, padding: '9px 16px', fontSize: 13 }} className="pmBtn">
+                <ArrowSquareOut size={14} /> Open PDF
+              </a>
+              <button onClick={() => handlePdf(true)} disabled={busy === 'pdf'} style={{ ...ghostButtonStyle, padding: '9px 16px', fontSize: 13, opacity: busy === 'pdf' ? 0.6 : 1, cursor: busy === 'pdf' ? 'not-allowed' : 'pointer' }} className="pmBtn">
+                <ArrowsClockwise size={14} /> {busy === 'pdf' ? 'Regenerating...' : 'Regenerate'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 260px', fontSize: font.size.md, color: colors.textMuted, lineHeight: 1.6 }}>
+              No PDF yet — generate one to get a document you can open, attach, or send.
+            </div>
+            <button onClick={() => handlePdf()} disabled={busy === 'pdf'} style={{ ...goldButtonStyle, padding: '9px 16px', fontSize: 13, opacity: busy === 'pdf' ? 0.6 : 1, cursor: busy === 'pdf' ? 'not-allowed' : 'pointer' }} className="pmBtn">
+              <FilePdf size={14} /> {busy === 'pdf' ? 'Generating...' : 'Generate PDF'}
+            </button>
+          </div>
+        )}
       </SectionCard>
 
       {/* Vendor & meta */}
@@ -469,6 +570,7 @@ export default function InvoiceDetailPage() {
                     <option value="draft">Draft</option>
                     <option value="pending">Pending</option>
                     <option value="sent">Sent</option>
+                    <option value="approved">Approved</option>
                     <option value="paid">Paid</option>
                     <option value="overdue">Overdue</option>
                   </select>

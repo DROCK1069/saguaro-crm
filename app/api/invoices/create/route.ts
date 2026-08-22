@@ -28,11 +28,14 @@ export async function POST(req: NextRequest) {
         description: body.description || null,
         category: body.category || null,
         cost_code: body.cost_code || null,
-        amount: body.amount || null,
-        tax: body.tax || null,
-        total: body.total || null,
+        // Server-canonical money: total is ALWAYS amount + tax — a client
+        // total can be stale or zero (the $0.00-beside-$67,800 bug class).
+        // ?? keeps legitimate zeros; statuses store lowercase.
+        amount: body.amount ?? null,
+        tax: body.tax ?? 0,
+        total: (Number(body.amount) || 0) + (Number(body.tax) || 0),
         due_date: body.due_date || null,
-        status: body.status || null,
+        status: String(body.status || 'draft').toLowerCase(),
         notes: body.notes || null,
       })
       .select()

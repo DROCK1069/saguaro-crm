@@ -81,8 +81,6 @@ export default function PayAppsPage() {
   const [downloading,setDownloading] = useState<string|null>(null);
   const [toast,setToast] = useState<{msg:string;type:'success'|'error'}|null>(null);
   const [menuId, setMenuId] = useState<string|null>(null);
-  const [editId, setEditId] = useState<string|null>(null);
-  const [editVal, setEditVal] = useState('');
   const [copiedId, setCopiedId] = useState<string|null>(null);
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
@@ -200,22 +198,7 @@ export default function PayAppsPage() {
     }
   }
 
-  function openPayMenu(id: string) { setMenuId(id); setEditId(null); setDeleteId(null); }
-
-  async function handleEditPayAmt(id: string) {
-    const amount = parseFloat(editVal);
-    if (isNaN(amount) || amount < 0) return;
-    setPayApps(prev => prev.map(p => p.id === id ? { ...p, current_payment_due: amount } : p));
-    setEditId(null);
-    try {
-      const r = await fetch(`/api/pay-apps/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ current_payment_due: amount }) });
-      if (!r.ok) throw new Error('update failed');
-      setToast({ msg: 'Amount updated', type: 'success' });
-    } catch {
-      setToast({ msg: 'Could not update the pay app. Please try again.', type: 'error' });
-      load();
-    }
-  }
+  function openPayMenu(id: string) { setMenuId(id); setDeleteId(null); }
 
   function handleCopyPay(id: string, amount: number) {
     navigator.clipboard.writeText(fmt(amount)).catch(() => {});
@@ -237,7 +220,15 @@ export default function PayAppsPage() {
   }
 
   const totalCertified = payApps.filter(p=>p.status==='approved'||p.status==='certified'||p.status==='paid').reduce((s:number,p:any)=>s+(Number(p.current_payment_due)||0),0);
-  const retainageHeld  = payApps.reduce((s:number,p:any)=>s+(Number(p.total_retainage ?? p.retainage_amount)||0),0);
+  // Each app's total_retainage is CUMULATIVE (retainage on completed-to-date), so
+  // summing across apps re-counts every prior period. Retainage held to date is
+  // the LATEST application's figure alone.
+  const latestApp = payApps.reduce((best:any,p:any)=>{
+    const n = Number(p.app_number ?? p.application_number)||0;
+    const b = best ? (Number(best.app_number ?? best.application_number)||0) : -1;
+    return n>b ? p : best;
+  }, null as any);
+  const retainageHeld  = Number(latestApp?.total_retainage ?? latestApp?.retainage_amount)||0;
 
   // Contract intelligence (from /api/project-context) + waiver coverage rollup
   const money    = ctx?.money;
@@ -284,7 +275,7 @@ export default function PayAppsPage() {
           {label:'Approved COs', value:(coTotal>=0?'+':'')+fmt(coTotal), accent:coTotal>0?'#3dd68c':undefined, sub:`${Number(money?.approvedCoCount)||0} approved${Number(money?.pendingCoCount)?` · ${money.pendingCoCount} pending`:''}`},
           {label:'Revised Contract', value:fmt(revised), sub:'contract sum to date'},
           {label:'Billed to Date', value:fmt(ctxBilled), sub:`${Number(money?.billedPct)||0}% of revised`},
-          {label:'Retainage Held', value:fmt(retainageHeld), sub:`at ${Number(money?.retainagePct)||10}% per contract`},
+          {label:'Retainage Held', value:fmt(retainageHeld), sub:`held to date · ${Number(money?.retainagePct)||10}% per contract`},
           {label:'Paid to Date', value:fmt(ctxPaid), accent:ctxPaid>0?'#3dd68c':undefined, sub:outstandingCertified>0?`${fmt(outstandingCertified)} certified, unpaid`:'all certified money collected'},
         ]}/>
       )}
@@ -441,12 +432,6 @@ export default function PayAppsPage() {
                           <button onClick={()=>handleDeletePayApp(pa.id)} style={{padding:'3px 8px',background:'rgba(192,48,48,.15)',border:'1px solid rgba(192,48,48,.3)',borderRadius:5,color:RED,fontSize:11,fontWeight:700,cursor:'pointer'}}>Yes</button>
                           <button onClick={()=>setDeleteId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
                         </div>
-                      ) : editId===pa.id ? (
-                        <div style={{display:'flex',alignItems:'center',gap:4}}>
-                          <input value={editVal} onChange={e=>setEditVal(e.target.value)} type="number" autoFocus onKeyDown={e=>{if(e.key==='Enter')handleEditPayAmt(pa.id);if(e.key==='Escape')setEditId(null);}} style={{width:100,padding:'4px 8px',background:DARK,border:`1px solid ${GOLD}`,borderRadius:5,color:TEXT,fontSize:12,outline:'none',textAlign:'right' as const}}/>
-                          <button onClick={()=>handleEditPayAmt(pa.id)} style={{padding:'3px 8px',background:`linear-gradient(135deg,${GOLD},#FBBF24)`,border:'none',borderRadius:5,color:'#1C1C1E',fontSize:11,fontWeight:700,cursor:'pointer'}}>Save</button>
-                          <button onClick={()=>setEditId(null)} style={{padding:'3px 8px',background:RAISED,border:`1px solid ${BORDER}`,borderRadius:5,color:DIM,fontSize:11,cursor:'pointer'}}>Cancel</button>
-                        </div>
                       ) : (
                         <div style={{display:'flex',alignItems:'center',gap:4}}>
                           <span style={{color:TEXT,fontWeight:700}}>{fmt(pa.current_payment_due||0)}</span>
@@ -455,10 +440,13 @@ export default function PayAppsPage() {
                           {menuId===pa.id&&(
                             <div style={{position:'absolute',top:36,right:14,background:RAISED,border:`1px solid ${BORDER}`,borderRadius:'var(--radius-md)',padding:6,zIndex:100,minWidth:150,boxShadow:'var(--shadow-lg)'}}>
                               {[
-                                {label:'Edit Amount',icon:<PencilSimple size={14} color={TEXT} />,action:()=>{setMenuId(null);setEditId(pa.id);setEditVal(String(pa.current_payment_due||0));}},
-                                {label:'Copy Amount',icon:<Copy size={14} color={TEXT} />,action:()=>handleCopyPay(pa.id,pa.current_payment_due||0)},
+                                // No inline amount edit: PATCHing current_payment_due raw would
+                                // bypass the exact-cents engine and desync retainage/earned/G702.
+                                // The pay app composer recomputes every figure server-side.
+                                {label:'Edit in Pay App',icon:<PencilSimple size={14} color={TEXT} />,title:'Payment due is computed from the period’s work by the exact-cents engine — edit the work in the pay app so retainage and every G702 field stay in sync.',action:()=>{setMenuId(null);router.push(`/app/projects/${projectId}/pay-apps/${pa.id}`);}},
+                                {label:'Copy Amount',icon:<Copy size={14} color={TEXT} />,title:'Copy the formatted payment due',action:()=>handleCopyPay(pa.id,pa.current_payment_due||0)},
                               ].map(item=>(
-                                <div key={item.label} onClick={item.action} style={{padding:'7px 12px',fontSize:12,color:TEXT,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.06)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                                <div key={item.label} title={item.title} onClick={item.action} style={{padding:'7px 12px',fontSize:12,color:TEXT,cursor:'pointer',borderRadius:6,display:'flex',alignItems:'center',gap:8}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.06)')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
                                   <span style={{fontSize:14}}>{item.icon}</span>{item.label}
                                 </div>
                               ))}

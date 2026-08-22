@@ -55,7 +55,7 @@ export async function runAutopilotScan(db: any, tenantId: string, projectId?: st
   if (overrun.length) results.push(`${overrun.length} budget line(s) at risk`);
 
   // 6. Overdue invoices (past due, unpaid)
-  const { data: overdueInvoices } = await scope(db.from('invoices').select('id, invoice_number, total, due_date, project_id').eq('tenant_id', tenantId).in('status', ['sent', 'overdue', 'pending']).lt('due_date', today).limit(20));
+  const { data: overdueInvoices } = await scope(db.from('invoices').select('id, invoice_number, total, due_date, project_id').eq('tenant_id', tenantId).in('status', ['sent', 'overdue', 'pending', 'approved', 'Sent', 'Pending']).lt('due_date', today).limit(20));
   for (const inv of overdueInvoices || []) alerts.push({ tenant_id: tenantId, project_id: inv.project_id, severity: 'high', alert_type: 'Overdue Invoice', title: 'Overdue Invoice', body: `Invoice ${inv.invoice_number || inv.id}${inv.total ? ` ($${Number(inv.total).toLocaleString()})` : ''} is past due ${inv.due_date}`, status: 'open' });
   if (overdueInvoices?.length) results.push(`${overdueInvoices.length} overdue invoice(s)`);
 

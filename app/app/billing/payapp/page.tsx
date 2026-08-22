@@ -30,6 +30,7 @@ export default function PayAppPage() {
   const [lines, setLines] = useState<(SovLine & { _prev: string; _this: string; _stored: string; _sv: string })[]>([]);
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const { projects: liveProjects } = useProjects();
   useEffect(() => { const ps = liveProjects; setProjects(ps); if (ps[0]) setProjectId((prev) => prev || ps[0].id); }, [liveProjects]);
@@ -55,43 +56,77 @@ export default function PayAppPage() {
 
   // Persist to the money-of-record. The server route (/api/pay-apps/create) re-runs the
   // AIA G702/G703 calc from these raw SOV lines + terms and is the source of truth — we
-  // send inputs (dollars), never our preview totals — then jump into the project pay-app
-  // detail page for submit → approve → certify.
+  // send inputs (dollars), never our preview totals. Returns the saved pay app row.
+  const createPayApp = async () => {
+    const payload = {
+      projectId,
+      status: 'draft',
+      periodTo: period || null,
+      contractSum: parseFloat(contract) || 0,
+      changeOrdersTotal: parseFloat(cos) || 0,
+      retainagePercent: parseFloat(ret) || 0,
+      prevPayments: parseFloat(prevCerts) || 0, // G702 line 7 — less previous certificates
+      lineItems: lines.map((l) => ({
+        description: l.description,
+        scheduledValue: parseFloat(l._sv) || 0,
+        workFromPrev: parseFloat(l._prev) || 0,
+        workThisPeriod: parseFloat(l._this) || 0,
+        materialsStored: parseFloat(l._stored) || 0,
+      })),
+    };
+    const res = await fetch('/api/pay-apps/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.error) { console.error('pay app save failed', res.status, json.error); throw new Error(json.error || 'Save failed'); }
+    const pa = json.payApp;
+    if (!pa?.id) throw new Error('the saved pay application could not be read back');
+    return pa;
+  };
+
+  // Save, then jump into the project pay-app detail page for submit → approve → certify.
   const save = async () => {
     if (!projectId) { setMsg('Pick a project first'); return; }
     if (!lines.length) { setMsg('Add at least one SOV line'); return; }
     setSaving(true); setMsg('Saving pay application…');
     try {
-      const payload = {
-        projectId,
-        status: 'draft',
-        periodTo: period || null,
-        contractSum: parseFloat(contract) || 0,
-        changeOrdersTotal: parseFloat(cos) || 0,
-        retainagePercent: parseFloat(ret) || 0,
-        prevPayments: parseFloat(prevCerts) || 0, // G702 line 7 — less previous certificates
-        lineItems: lines.map((l) => ({
-          description: l.description,
-          scheduledValue: parseFloat(l._sv) || 0,
-          workFromPrev: parseFloat(l._prev) || 0,
-          workThisPeriod: parseFloat(l._this) || 0,
-          materialsStored: parseFloat(l._stored) || 0,
-        })),
-      };
-      const res = await fetch('/api/pay-apps/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json.error) { console.error('pay app save failed', res.status, json.error); throw new Error(json.error || 'Save failed'); }
-      const pa = json.payApp;
-      if (!pa?.id) throw new Error('the saved pay application could not be read back');
+      const pa = await createPayApp();
       router.push(`/app/projects/${pa.project_id || projectId}/pay-apps/${pa.id}`);
     } catch (e) {
       console.error(e);
       setMsg(humanError(e, "Couldn't save the pay application. Please try again."));
       setSaving(false);
+    }
+  };
+
+  // The REAL document: save through the server engine, then run the pdf-engine
+  // route so the button produces the stored, numbered G702/G703 the Documents
+  // library and the detail page serve — not a window.print approximation.
+  const generatePdfs = async () => {
+    if (!projectId) { setMsg('Pick a project first'); return; }
+    if (!lines.length) { setMsg('Add at least one SOV line'); return; }
+    setGenerating(true); setMsg('Saving pay application…');
+    try {
+      const pa = await createPayApp();
+      setMsg('Generating AIA G702/G703 PDFs…');
+      const res = await fetch('/api/documents/pay-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+        body: JSON.stringify({ payAppId: pa.id, projectId: pa.project_id || projectId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.error || !json.g702Url) throw new Error(json.error || 'PDF generation failed');
+      window.open(json.g702Url, '_blank');
+      if (json.g703Url) window.open(json.g703Url, '_blank');
+      setMsg(`✓ Application #${pa.app_number} G702/G703 generated — stored on the pay application`);
+      router.push(`/app/projects/${pa.project_id || projectId}/pay-apps/${pa.id}`);
+    } catch (e) {
+      console.error(e);
+      setMsg(humanError(e, "Couldn't generate the G702/G703 PDFs. Please try again."));
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -219,10 +254,11 @@ export default function PayAppPage() {
       </SectionCard>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button onClick={save} disabled={saving || !lines.length || !projectId} style={{ ...goldButtonStyle, padding: '12px 24px', fontSize: 15, cursor: saving ? 'default' : 'pointer', opacity: (saving || !lines.length || !projectId) ? 0.5 : 1 }} className="pmBtn"><FloppyDisk size={16} weight="bold" /> {saving ? 'Saving…' : 'Save Pay Application'}</button>
-        <button onClick={printForm} disabled={!lines.length} style={{ ...ghostButtonStyle, padding: '12px 24px', fontSize: 15, opacity: lines.length ? 1 : 0.5 }} className="pmBtn"><DownloadSimple size={16} weight="bold" /> Generate AIA G702 / G703 (print &amp; sign)</button>
+        <button onClick={save} disabled={saving || generating || !lines.length || !projectId} style={{ ...goldButtonStyle, padding: '12px 24px', fontSize: 15, cursor: saving ? 'default' : 'pointer', opacity: (saving || generating || !lines.length || !projectId) ? 0.5 : 1 }} className="pmBtn"><FloppyDisk size={16} weight="bold" /> {saving ? 'Saving…' : 'Save Pay Application'}</button>
+        <button onClick={generatePdfs} disabled={saving || generating || !lines.length || !projectId} style={{ ...ghostButtonStyle, padding: '12px 24px', fontSize: 15, opacity: (saving || generating || !lines.length || !projectId) ? 0.5 : 1 }} className="pmBtn"><DownloadSimple size={16} weight="bold" /> {generating ? 'Generating…' : 'Generate AIA G702 / G703 (PDF)'}</button>
+        <button onClick={printForm} disabled={!lines.length} title="Unsaved on-screen preview for review only — the PDF button produces the stored, numbered document." style={{ ...ghostButtonStyle, padding: '10px 18px', fontSize: 13, opacity: lines.length ? 0.85 : 0.5 }} className="pmBtn">Print preview</button>
       </div>
-      <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>Save records the pay application against the project (numbers computed server-side by the shared finance engine) and opens it for submit, approve &amp; certify.</p>
+      <p style={{ color: DIM, fontSize: 12, marginTop: 12 }}>Save records the pay application against the project (numbers computed server-side by the shared finance engine) and opens it for submit, approve &amp; certify. Generate saves it, then produces the stored, numbered G702/G703 PDFs through the pdf engine; Print preview is an unsaved approximation for review only.</p>
     </PremiumSurface>
   );
 }

@@ -18,8 +18,13 @@ const TEXT = '#FFFFFF';
 const GREEN = '#3dd68c';
 const RED = '#ef4444';
 
-const fmt = (n: number | null | undefined) =>
+const fmt = (n: number | string | null | undefined) =>
   '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// DB date (date-only or ISO) → "Mar 4, 2026". Date-only strings get a noon time
+// so the local-timezone shift can never roll them back a day.
+const fmtDay = (d: string | null | undefined) =>
+  d ? new Date(String(d).includes('T') ? d : `${d}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
 
 function Badge({ label, color = '#CBD5E1', bg = 'rgba(148,163,184,.12)' }: { label: string; color?: string; bg?: string }) {
   return (
@@ -287,7 +292,7 @@ export default function DocumentsPage() {
   const q = query.trim().toLowerCase();
   const rowMatch = (...vals: (string | number | null | undefined)[]) =>
     !q || vals.some(v => String(v ?? '').toLowerCase().includes(q));
-  const visPayApps = payApps.filter(pa => rowMatch(pa.appNo ?? pa.app_no, pa.period, pa.amount, pa.status));
+  const visPayApps = payApps.filter(pa => rowMatch(pa.app_number ?? pa.application_number, fmtDay(pa.period_from), fmtDay(pa.period_to), pa.current_payment_due ?? pa.net_payment_due, pa.status));
   const visLienWaivers = lienWaivers.filter(lw => rowMatch(lw.subName ?? lw.sub_name, lw.type, lw.amount, lw.throughDate ?? lw.through_date, lw.status));
   const visPayroll = payroll.filter(pr => rowMatch(pr.weekEnding ?? pr.week_ending, pr.employees, pr.totalGross ?? pr.total_gross, pr.status));
   const visCloseout = closeoutItems.filter(i => rowMatch(i.title, i.item_type, i.trade, i.responsible_party, i.status));
@@ -408,9 +413,12 @@ export default function DocumentsPage() {
                     const sc = statusConfig[pa.status] || statusConfig.draft;
                     return (
                       <tr key={pa.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
-                        <td style={{ padding: '12px 16px', color: GOLD, fontWeight: 700 }}>#{(pa.appNo ?? pa.app_no ?? '').toString().padStart(3, '0')}</td>
-                        <td style={{ padding: '12px 16px', color: DIM }}>{pa.period}</td>
-                        <td style={{ padding: '12px 16px', color: TEXT, fontWeight: 600 }}>{fmt(pa.amount)}</td>
+                        {/* Real pay_applications columns (the list route returns raw rows):
+                            app_number, period_from/period_to, current_payment_due — the old
+                            appNo/period/amount keys never existed, so every row read #000 / $0.00. */}
+                        <td style={{ padding: '12px 16px', color: GOLD, fontWeight: 700 }}>#{String(pa.app_number ?? pa.application_number ?? '').padStart(3, '0')}</td>
+                        <td style={{ padding: '12px 16px', color: DIM }}>{[fmtDay(pa.period_from), fmtDay(pa.period_to)].filter(Boolean).join(' – ') || '—'}</td>
+                        <td style={{ padding: '12px 16px', color: GOLD, fontWeight: 700 }}>{fmt(pa.current_payment_due ?? pa.net_payment_due)}</td>
                         <td style={{ padding: '12px 16px' }}><Badge label={pa.status} color={sc.color} bg={sc.bg} /></td>
                         <td style={{ padding: '12px 16px' }}>
                           <button

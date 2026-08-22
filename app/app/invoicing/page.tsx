@@ -9,10 +9,11 @@ import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Plus, CurrencyDollar, PaperPlaneTilt, Eye, Trash, Warning } from '@phosphor-icons/react';
+import { Plus, CurrencyDollar, PaperPlaneTilt, Trash, Warning, Receipt, FilePdf } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
-import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, IconChip, Pill, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 
 interface Invoice {
   id: string;
@@ -28,6 +29,7 @@ interface Invoice {
   total: number | null;
   due_date: string | null;
   status: string | null;
+  pdf_url: string | null;
   notes: string | null;
   created_at: string;
 }
@@ -40,9 +42,47 @@ const STATUS_COLORS: Record<string, string> = {
   draft: colors.textDim,
   pending: colors.orange,
   sent: colors.blue,
+  approved: colors.green,
   paid: colors.green,
   overdue: colors.red,
 };
+
+const INV_ACCENT = moduleAccent('invoices');
+
+/** Canonical money figure for an invoice: the stored total when it's a real
+ *  (non-zero) number, else amount + tax. NUMERIC columns arrive as TEXT so
+ *  Number() always — and a stale 0 total defers to amount, so a $67,800
+ *  invoice never rolls up as $0. */
+function effectiveTotal(i: { amount?: number | null; tax?: number | null; total?: number | null }): number {
+  const t = Number(i.total);
+  if (t > 0) return t;
+  return (Number(i.amount) || 0) + (Number(i.tax) || 0);
+}
+
+/** Lowercase-normalized status — rows carry mixed casing ('Sent', 'Draft'). */
+function statusKey(s?: string | null): string {
+  return (s || 'draft').toLowerCase();
+}
+
+/** Parse a date-only 'YYYY-MM-DD' (or an ISO string carrying one) at LOCAL
+ *  midnight — new Date('YYYY-MM-DD') is UTC midnight, which lands the previous
+ *  evening in Arizona and both renders dates and flags overdue a day early. */
+function parseDateOnly(v: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  if (!m) { const d = new Date(v); return isNaN(d.getTime()) ? null : d; }
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+/** Overdue = due before today (local), and not paid / not a draft. */
+function isOverdue(i: { due_date?: string | null; status?: string | null }): boolean {
+  if (!i.due_date) return false;
+  const due = parseDateOnly(i.due_date);
+  if (!due) return false;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const st = statusKey(i.status);
+  return due < today && st !== 'paid' && st !== 'draft';
+}
 
 export default function InvoicingPage() {
   const router = useRouter();
@@ -103,11 +143,11 @@ export default function InvoicingPage() {
   const fmtUsd = (n: number) => '$' + ((Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
   const liveTotal = (parseFloat(form.amount) || 0) + (parseFloat(form.tax) || 0);
 
-  const pageBilled = invoices.reduce((s, i) => s + (Number(i.total ?? i.amount) || 0), 0);
-  const pagePaid = invoices.filter(i => (i.status || '').toLowerCase() === 'paid').reduce((s, i) => s + (Number(i.total ?? i.amount) || 0), 0);
-  const pageOutstanding = invoices.filter(i => { const st = (i.status || '').toLowerCase(); return st !== 'paid' && st !== 'draft'; }).reduce((s, i) => s + (Number(i.total ?? i.amount) || 0), 0);
-  const pageOverdue = invoices.filter(i => i.due_date && new Date(i.due_date) < new Date() && (i.status || '').toLowerCase() !== 'paid').length;
-  const pageDrafts = invoices.filter(i => (i.status || 'draft').toLowerCase() === 'draft').length;
+  const pageBilled = invoices.reduce((s, i) => s + effectiveTotal(i), 0);
+  const pagePaid = invoices.filter(i => statusKey(i.status) === 'paid').reduce((s, i) => s + effectiveTotal(i), 0);
+  const pageOutstanding = invoices.filter(i => { const st = statusKey(i.status); return st !== 'paid' && st !== 'draft'; }).reduce((s, i) => s + effectiveTotal(i), 0);
+  const pageOverdue = invoices.filter(isOverdue).length;
+  const pageDrafts = invoices.filter(i => statusKey(i.status) === 'draft').length;
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -147,11 +187,13 @@ export default function InvoicingPage() {
           description: form.description || null,
           category: form.category || null,
           cost_code: form.cost_code || null,
-          amount: form.amount ? parseFloat(form.amount) : null,
-          tax: form.tax ? parseFloat(form.tax) : null,
-          total: form.amount ? parseFloat(form.amount) + (form.tax ? parseFloat(form.tax) : 0) : null,
+          // Server is canonical for money: it computes total = amount + tax
+          // itself (a client-sent total can be stale or zero) and stores
+          // lowercase statuses.
+          amount: form.amount !== '' ? parseFloat(form.amount) : null,
+          tax: form.tax !== '' ? parseFloat(form.tax) : null,
           due_date: form.due_date || null,
-          status: form.status || null,
+          status: statusKey(form.status),
           notes: form.notes || null,
         }),
       });
@@ -182,6 +224,26 @@ export default function InvoicingPage() {
     } catch {}
   }
 
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
+  /** POST /api/invoices/[id]/pdf -> { pdfUrl }. Once a row carries pdf_url,
+   *  the button opens the real .pdf directly. */
+  async function handlePdf(inv: Invoice) {
+    if (inv.pdf_url) { window.open(inv.pdf_url, '_blank', 'noopener'); return; }
+    setPdfBusy(inv.id);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}/pdf`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.pdfUrl) throw new Error(data?.error || 'PDF generation failed');
+      window.open(data.pdfUrl, '_blank', 'noopener');
+      await fetchInvoices();
+    } catch (e: any) {
+      console.error(e);
+      setError(humanError(e, "Couldn't generate the PDF. Please try again."));
+    } finally {
+      setPdfBusy(null);
+    }
+  }
+
   const columns = useMemo(() => [
     columnHelper.accessor('invoice_number', {
       header: 'Invoice #',
@@ -205,8 +267,8 @@ export default function InvoicingPage() {
     columnHelper.accessor('total', {
       header: 'Total',
       cell: (info) => {
-        const v = info.getValue();
-        return v != null ? <span style={{ fontWeight: font.weight.bold, color: colors.gold }}>${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span> : '—';
+        const v = effectiveTotal(info.row.original);
+        return <span style={{ fontWeight: font.weight.bold, color: colors.gold, fontVariantNumeric: 'tabular-nums' }}>${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>;
       },
     }),
     columnHelper.accessor('due_date', {
@@ -214,23 +276,28 @@ export default function InvoicingPage() {
       cell: (info) => {
         const v = info.getValue();
         if (!v) return '—';
-        const d = new Date(v);
-        const overdue = d < new Date() && info.row.original.status !== 'paid';
+        const d = parseDateOnly(v);
+        if (!d) return '—';
+        const overdue = isOverdue(info.row.original);
         return <span style={{ color: overdue ? colors.red : colors.text }}>{d.toLocaleDateString()}</span>;
       },
     }),
     columnHelper.accessor('status', {
       header: 'Status',
       cell: (info) => {
-        const s = info.getValue() ?? 'draft';
+        const s = statusKey(info.getValue());
+        const overdue = isOverdue(info.row.original);
         return (
-          <span style={{
-            padding: '3px 10px', borderRadius: 999, fontSize: font.size.xs, fontWeight: font.weight.bold,
-            textTransform: 'uppercase', letterSpacing: 0.5,
-            background: `${STATUS_COLORS[s] ?? colors.textDim}20`,
-            color: STATUS_COLORS[s] ?? colors.textDim,
-          }}>
-            {s}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              padding: '3px 10px', borderRadius: 999, fontSize: font.size.xs, fontWeight: font.weight.bold,
+              textTransform: 'uppercase', letterSpacing: 0.5,
+              background: `${STATUS_COLORS[s] ?? colors.textDim}20`,
+              color: STATUS_COLORS[s] ?? colors.textDim,
+            }}>
+              {s}
+            </span>
+            {overdue && <Pill tone="red" caps>Overdue</Pill>}
           </span>
         );
       },
@@ -238,14 +305,25 @@ export default function InvoicingPage() {
     columnHelper.display({
       id: 'actions',
       header: '',
-      cell: (info) => (
-        <div style={{ display: 'flex', gap: 4 }} onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => handleSend(info.row.original.id)} title="Send" style={actionBtnStyle}><PaperPlaneTilt size={14} /></button>
-          <button onClick={() => handleDelete(info.row.original.id)} title="Delete" style={{ ...actionBtnStyle, color: colors.red }}><Trash size={14} /></button>
-        </div>
-      ),
+      cell: (info) => {
+        const inv = info.row.original;
+        return (
+          <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => handlePdf(inv)}
+              title={inv.pdf_url ? 'Open PDF' : 'Generate PDF'}
+              disabled={pdfBusy === inv.id}
+              style={{ ...rowActionStyle, color: inv.pdf_url ? colors.gold : colors.textMuted, opacity: pdfBusy === inv.id ? 0.5 : 1 }}
+            >
+              <FilePdf size={13} weight={inv.pdf_url ? 'fill' : 'regular'} /> {pdfBusy === inv.id ? '...' : 'PDF'}
+            </button>
+            <button onClick={() => handleSend(inv.id)} title="Send" style={rowActionStyle}><PaperPlaneTilt size={13} /> Send</button>
+            <button onClick={() => handleDelete(inv.id)} title="Delete" style={{ ...rowActionStyle, color: colors.red, border: '1px solid rgba(239,68,68,0.35)' }}><Trash size={13} /></button>
+          </div>
+        );
+      },
     }),
-  ], []);
+  ], [pdfBusy]);
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', background: colors.raised,
@@ -267,11 +345,12 @@ export default function InvoicingPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="Finance"
-        eyebrowIcon={<CurrencyDollar size={13} weight="fill" color="#F59E0B" />}
+        eyebrowIcon={<IconChip size={24} vivid={INV_ACCENT.vivid ?? INV_ACCENT.hex}><Receipt size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={INV_ACCENT.hex}
         title="Invoicing"
         subtitle="Manage invoices, track payments, and send to vendors."
         actions={
-          <button onClick={() => setShowCreate(true)} style={goldButtonStyle} className="pmBtn">
+          <button onClick={() => setShowCreate(v => !v)} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> New Invoice
           </button>
         }
@@ -282,7 +361,7 @@ export default function InvoicingPage() {
           { label: 'Total Billed', value: fmtUsd(pageBilled), sub: `across ${invoices.length} invoice${invoices.length === 1 ? '' : 's'}` },
           { label: 'Collected', value: fmtUsd(pagePaid), accent: '#3dd68c', sub: 'marked paid' },
           { label: 'Outstanding', value: fmtUsd(pageOutstanding), accent: pageOutstanding > 0 ? '#F59E0B' : undefined, sub: 'sent, awaiting payment' },
-          { label: 'Overdue', value: String(pageOverdue), accent: pageOverdue > 0 ? colors.red : undefined, sub: pageOverdue > 0 ? 'past due date' : 'nothing past due' },
+          { label: 'Overdue', value: String(pageOverdue), accent: pageOverdue > 0 ? colors.red : undefined, sub: pageOverdue > 0 ? 'past due, excludes drafts' : 'nothing past due' },
           { label: 'Drafts', value: String(pageDrafts), sub: 'not yet sent' },
         ]} />
       )}
@@ -293,28 +372,16 @@ export default function InvoicingPage() {
         </div>
       )}
 
-      <SectionCard title="All Invoices" icon={<CurrencyDollar size={17} weight="duotone" color="#F59E0B" />}>
-        <DataTable
-          data={invoices}
-          columns={columns}
-          loading={loading}
-          searchPlaceholder="Search invoices..."
-          emptyMessage="No invoices yet. Create your first invoice to get started."
-          onRowClick={(row) => router.push(`/app/invoicing/${row.id}`)}
-        />
-      </SectionCard>
-    </PremiumSurface>
-
-      {/* ── Create Modal ─────────────────────────────────────────────── */}
+      {/* ── Inline Composer — SmartCreate anatomy, right above the ledger ── */}
       {showCreate && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.72)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}>
-          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 960, maxHeight: '80vh', overflow: 'auto', boxShadow: 'var(--shadow-lg)' }}>
-            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: colors.surface, zIndex: 1 }}>
-              <h2 style={{ margin: 0, fontSize: font.size.xl, fontWeight: font.weight.black, color: colors.text }}>New Invoice</h2>
-              <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 22 }}>×</button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px' }}>
-            <form onSubmit={handleCreate} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 18, alignItems: 'start', marginBottom: 24 }}>
+          <SectionCard
+            title="New Invoice"
+            icon={<Plus size={17} weight="bold" color="#F59E0B" />}
+            subtitle="The server computes the total — amount + tax, every time."
+            action={<button type="button" onClick={() => setShowCreate(false)} style={{ ...ghostButtonStyle, padding: '7px 14px', fontSize: 12.5 }} className="pmBtn">Close</button>}
+          >
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
               {ctx && (
                 <StatStrip items={[
                   { label: 'Original Contract', value: fmtUsd(cOriginal) },
@@ -382,6 +449,7 @@ export default function InvoicingPage() {
                     <option value="draft">Draft</option>
                     <option value="pending">Pending</option>
                     <option value="sent">Sent</option>
+                    <option value="approved">Approved</option>
                     <option value="paid">Paid</option>
                   </select>
                 </div>
@@ -417,38 +485,53 @@ export default function InvoicingPage() {
                 </button>
               </div>
             </form>
-            <div style={{ borderLeft: `1px solid ${colors.border}`, padding: 20, display: 'flex', flexDirection: 'column', gap: 22 }}>
-              {ctx ? (
-                <div>
-                  <div style={{ fontSize: 10.5, fontWeight: 900, color: colors.textDim, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 10 }}>{ctx.project?.name || 'Project'}</div>
-                  <InsightRow label="Owner" value={ctx.defaults?.ownerName || '—'} />
-                  <InsightRow label="Invoices on project" value={String(Number(ctx.counts?.invoices) || 0)} />
-                  <InsightRow label="Pay applications" value={String(Number(money?.payAppCount) || 0)} />
-                  <InsightRow label="Known vendors" value={String(ctxVendors.length)} />
-                  <InsightRow label="Budget cost codes" value={String(ctxCodes.length)} />
-                </div>
-              ) : (
-                <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.55 }}>
-                  Pick a project and Saguaro pre-fills the invoice number, known vendors, and budget cost codes from what it already tracks.
-                </div>
-              )}
-              <FlowSteps title="After you create" steps={[
-                { title: 'Draft is saved', desc: 'Review and edit anything before it goes out.' },
-                { title: 'Send to owner', desc: 'One click emails it straight from the table.' },
-                { title: 'Payment is tracked', desc: 'Overdue flags itself from the due date.' },
-                { title: 'Ledger updates', desc: 'Billed and paid totals roll into the project money snapshot.' },
-              ]} />
-            </div>
-            </div>
-          </div>
+          </SectionCard>
+          <SectionCard title="Project Intelligence" icon={<CurrencyDollar size={17} weight="duotone" color="#F59E0B" />}>
+            {ctx ? (
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 900, color: colors.textDim, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 10 }}>{ctx.project?.name || 'Project'}</div>
+                <InsightRow label="Owner" value={ctx.defaults?.ownerName || '—'} />
+                <InsightRow label="Invoices on project" value={String(Number(ctx.counts?.invoices) || 0)} />
+                <InsightRow label="Pay applications" value={String(Number(money?.payAppCount) || 0)} />
+                <InsightRow label="Known vendors" value={String(ctxVendors.length)} />
+                <InsightRow label="Budget cost codes" value={String(ctxCodes.length)} />
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.55 }}>
+                Pick a project and Saguaro pre-fills the invoice number, known vendors, and budget cost codes from what it already tracks.
+              </div>
+            )}
+            <div style={{ height: 18 }} />
+            <FlowSteps title="After you create" steps={[
+              { title: 'Draft is saved', desc: 'Review and edit anything before it goes out.' },
+              { title: 'Generate the PDF', desc: 'One click builds the document — the row keeps the real .pdf link.' },
+              { title: 'Send to owner', desc: 'One click emails it straight from the table.' },
+              { title: 'Payment is tracked', desc: 'Overdue flags itself from the due date — drafts never count.' },
+            ]} />
+          </SectionCard>
         </div>
       )}
+
+      {/* All invoices — DataTable rides its own machined .pmTable plate */}
+      <DataTable
+        data={invoices}
+        columns={columns}
+        loading={loading}
+        searchPlaceholder="Search invoices..."
+        emptyMessage="No invoices yet. Create your first invoice to get started."
+        onRowClick={(row) => router.push(`/app/invoicing/${row.id}`)}
+      />
+    </PremiumSurface>
     </>
   );
 }
 
-const actionBtnStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: 28, height: 28, background: 'none', border: 'none',
-  color: colors.textMuted, cursor: 'pointer', borderRadius: 4,
+/** Uniform machined row action — mini frosted-glass part, one geometry for
+ *  PDF / Send / Delete so the action column reads as a single toolkit. */
+const rowActionStyle: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+  padding: '5px 10px', background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+  border: `1px solid ${colors.border}`, borderRadius: 8,
+  color: colors.textMuted, cursor: 'pointer', fontSize: 11.5, fontWeight: 700,
+  lineHeight: 1.2, whiteSpace: 'nowrap',
 };

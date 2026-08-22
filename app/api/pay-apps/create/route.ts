@@ -144,6 +144,16 @@ export async function POST(req: NextRequest) {
         }));
       }
     }
+    // ── G702 line 1 must be the ORIGINAL contract sum. projects.contract_amount
+    //    is CO-INCLUSIVE (the CO cascade bumps it), so pairing it with a derived
+    //    change_orders_total would double-count every approved CO. ──
+    const originalContractSum = p?.original_contract_amount != null
+      ? Number(p.original_contract_amount) || 0
+      : Math.max(0, (Number(body.contractSum) || Number(p?.contract_amount) || 0) - changeOrdersTotal);
+    // G702 line 3 (CONTRACT SUM TO DATE) = line 1 + line 2 (approved COs) —
+    // never the SOV scheduled total, which tracks billing lines, not the contract.
+    const contractPlusCos = originalContractSum + changeOrdersTotal;
+
     let sovRows: any[] = [];
     let m: {
       contractSumToDate: number; thisPeriod: number; totalCompletedStored: number;
@@ -161,7 +171,9 @@ export async function POST(req: NextRequest) {
       }));
       const r = computePayApp({ lines, retainagePercent, previousPaymentsLessRetainage: toCents(prevPaymentsDollars) });
       m = {
-        contractSumToDate: toDollars(r.scheduledTotal),
+        // Contract + approved COs; the SOV scheduled total is only an honest
+        // fallback when the project carries no contract amount at all.
+        contractSumToDate: contractPlusCos > 0 ? contractPlusCos : toDollars(r.scheduledTotal),
         thisPeriod: toDollars(r.completedAndStoredTotal),
         totalCompletedStored: toDollars(r.completedAndStoredTotal),
         percentComplete: r.percentComplete,
@@ -190,7 +202,8 @@ export async function POST(req: NextRequest) {
       const earnedCents = subCents(totalCompletedCents, retCents);
       const dueCents = subCents(earnedCents, toCents(prevPaymentsDollars)); // less previous certificates
       m = {
-        contractSumToDate: Number(body.contractSumToDate) || p?.contract_amount || 0,
+        // Client value wins when sent; otherwise contract + approved COs (see above).
+        contractSumToDate: Number(body.contractSumToDate) || contractPlusCos || Number(p?.contract_amount) || 0,
         thisPeriod: toDollars(thisPeriodCents),
         totalCompletedStored: toDollars(totalCompletedCents),
         percentComplete: Number(body.percentComplete) || 0,
@@ -207,12 +220,9 @@ export async function POST(req: NextRequest) {
       period_from: periodFrom,
       period_to: periodTo,
       status: body.status || 'draft',
-      // G702 line 1 must be the ORIGINAL contract sum. projects.contract_amount
-      // is CO-INCLUSIVE (the CO cascade bumps it), so pairing it with a derived
-      // change_orders_total double-counts every approved CO on the printed G702.
-      contract_sum: p?.original_contract_amount != null
-        ? Number(p.original_contract_amount) || 0
-        : Math.max(0, (Number(body.contractSum) || Number(p?.contract_amount) || 0) - changeOrdersTotal),
+      // G702 line 1 — ORIGINAL contract sum (derived once above, so line 3 =
+      // line 1 + line 2 cross-foots with the stored contract_sum_to_date).
+      contract_sum: originalContractSum,
       change_orders_total: changeOrdersTotal,
       contract_sum_to_date: m.contractSumToDate,
       prev_completed: prevCompletedDollars,
