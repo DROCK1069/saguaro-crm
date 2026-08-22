@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import ErrorBoundary from '../../../../../components/ErrorBoundary';
 import { Brain, ArrowRight } from '@phosphor-icons/react';
@@ -38,17 +39,7 @@ function IntelligenceChat() {
 
   // Live project snapshot - one /api/project-context fetch so the chat opens
   // already showing the money and open-item picture the AI reasons over.
-  const [ctx, setCtx] = useState<any>(null);
-  useEffect(() => {
-    if (!projectId) return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   // Smart questions - generated from the live snapshot so the highest-value
   // prompts surface first, each naming the real number it is about. Purely

@@ -1,11 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Clipboard, ClipboardText, Thermometer, HardHat, CalendarBlank, WarningCircle, Plus, X } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',BLUE='#F59E0B';
@@ -74,7 +76,7 @@ export default function DailyLogsPage(){
   const [monthFilter,setMonthFilter] = useState('');
   // Project snapshot (/api/project-context) — the page walks in knowing the job:
   // last log date, open items, schedule — so create prefills itself.
-  const [ctx,setCtx]         = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto,setAuto]       = useState<{date?:boolean;crew?:boolean}>({});
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
@@ -94,17 +96,19 @@ export default function DailyLogsPage(){
     finally{setLoading(false);}
   },[projectId]);
 
-  useEffect(()=>{load();},[load]);
-
-  useEffect(()=>{
-    (async()=>{
-      try{
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if(!c.error) setCtx(c);
-      }catch{/* strip and prefill hints simply stay hidden */}
-    })();
+  // Background revalidate — reconciles server truth after an optimistic write
+  // without flipping the list back into its loading state.
+  const revalidate = useCallback(async()=>{
+    try{
+      const h = await getAuthHeaders();
+      const r = await fetch(`/api/daily-logs/list?projectId=${projectId}`,{headers:h});
+      if(!r.ok) return;
+      const d = await r.json();
+      setLogs(d.logs||[]);
+    }catch{/* background refresh — keep the optimistic rows */}
   },[projectId]);
+
+  useEffect(()=>{load();},[load]);
 
   function openCreate(){
     // Walk in knowing the job: today's date, crew carried from the last log.
@@ -133,6 +137,10 @@ export default function DailyLogsPage(){
   function closePanel(){ setSelected(null); setMode(null); }
 
   async function save(){
+    // Optimistic save (house pattern: budget saveEdit) — the log lands in the
+    // list and the panel closes instantly; the network settles in the background.
+    const snapshot = {...form};
+    const prevMode = mode, prevSelected = selected;
     setSaving(true);
     try{
       const h = await getAuthHeaders();
@@ -143,6 +151,11 @@ export default function DailyLogsPage(){
         low_temp:form.low_temp!==''?Number(form.low_temp):null,
       };
       if(mode==='create'){
+        const tempId = `temp-${Date.now()}`;
+        setLogs(prev=>[{id:tempId,...payload,project_id:projectId},...prev]
+          .sort((a:any,b:any)=>(b.log_date||'').localeCompare(a.log_date||'')));
+        closePanel();
+        showToast('Daily log created');
         const r = await fetch('/api/daily-logs/create',{
           method:'POST',
           headers:{...h,'Content-Type':'application/json'},
@@ -153,32 +166,46 @@ export default function DailyLogsPage(){
             temperatureHigh:payload.high_temp,temperatureLow:payload.low_temp,
           }),
         });
-        if(!r.ok) throw new Error(await r.text());
-        showToast('Daily log created');
+        if(!r.ok){ setLogs(prev=>prev.filter((l:any)=>l.id!==tempId)); throw new Error(await r.text()); }
+        const d = await r.json();
+        if(d.log) setLogs(prev=>prev.map((l:any)=>l.id===tempId?d.log:l));
+        revalidate();
       } else if(mode==='edit'&&selected){
-        const r = await fetch(`/api/daily-logs/${selected.id}`,{
+        const prevLog = selected;
+        setLogs(prev=>prev.map((l:any)=>l.id===prevLog.id?{...l,...payload}:l));
+        closePanel();
+        showToast('Log updated');
+        const r = await fetch(`/api/daily-logs/${prevLog.id}`,{
           method:'PUT',
           headers:{...h,'Content-Type':'application/json'},
           body:JSON.stringify(payload),
         });
-        if(!r.ok) throw new Error(await r.text());
-        showToast('Log updated');
+        if(!r.ok){ setLogs(prev=>prev.map((l:any)=>l.id===prevLog.id?prevLog:l)); throw new Error(await r.text()); }
+        revalidate();
       }
-      await load(); closePanel();
-    }catch(e:any){ console.error(e); showToast(humanError(e,'Save failed. Please try again.'),'error'); }
+    }catch(e:any){
+      console.error(e); showToast(humanError(e,'Save failed. Please try again.'),'error');
+      // Rollback already applied — reopen the panel with the input intact.
+      setForm(snapshot); setMode(prevMode); setSelected(prevSelected);
+    }
     finally{setSaving(false);}
   }
 
   async function deleteLog(log:any){
     if(!confirm(`Delete log for ${log.log_date}?`)) return;
+    // Optimistic remove — the log leaves and the panel closes instantly;
+    // rollback restores the exact list on failure.
+    const prevLogs = logs;
+    setLogs(prev=>prev.filter((l:any)=>l.id!==log.id));
+    showToast('Log deleted');
+    closePanel();
     setDeleting(true);
     try{
       const h = await getAuthHeaders();
       const dr = await fetch(`/api/daily-logs/${log.id}`,{method:'DELETE',headers:h});
       if (!dr.ok) throw new Error('Delete failed');
-      showToast('Log deleted');
-      closePanel(); await load();
-    }catch{showToast('Delete failed','error');}
+      revalidate();
+    }catch{setLogs(prevLogs);showToast('Delete failed','error');}
     finally{setDeleting(false);}
   }
 
@@ -265,18 +292,19 @@ export default function DailyLogsPage(){
             action={<span style={{fontSize:12,fontWeight:700,color:DIM,whiteSpace:'nowrap'}}>{filtered.length} of {logs.length}</span>}
             flush
           >
-            {/* Filters */}
-            <div style={{display:'flex',gap:10,padding:'14px 16px',flexWrap:'wrap'}}>
-              <input value={search} onChange={e=>setSearch(e.target.value)}
-                placeholder="Search logs…"
-                style={{flex:1,minWidth:200,padding:'8px 12px',background:RAISED,
-                  border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none'}}/>
-              <select value={monthFilter} onChange={e=>setMonthFilter(e.target.value)}
-                style={{padding:'8px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-                  borderRadius:7,color:monthFilter?TEXT:DIM,fontSize:13,outline:'none'}}>
-                <option value="">All months</option>
-                {months.map(m=><option key={m} value={m}>{m}</option>)}
-              </select>
+            {/* Toolbar */}
+            <div style={{padding:'14px 16px'}}>
+              <ListToolbar
+                module="daily-logs"
+                search={search}
+                onSearch={setSearch}
+                searchPlaceholder="Search logs by work, notes, or date…"
+                filters={[
+                  {key:'month',label:'Month',value:monthFilter,onChange:setMonthFilter,
+                    allValue:'',allLabel:'All months',options:months},
+                ]}
+                count={{shown:filtered.length,total:logs.length}}
+              />
             </div>
 
             {loading&&<div style={{padding:40,textAlign:'center',color:DIM}}>Loading logs…</div>}

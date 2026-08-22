@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { accentForProject } from '@/lib/project-identity';
+import { useProject } from '@/lib/hooks/useProjects';
 import {
   SquaresFour, Ruler, Calculator, FileText, CalendarBlank, Package, Palette,
   Clipboard, NotePencil, Wallet, ArrowsClockwise, Money, Receipt, Signature,
@@ -117,30 +118,19 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
   const base = `/app/projects/${projectId}`;
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [projectName, setProjectName] = useState('');
-  const [projectNumber, setProjectNumber] = useState('');
-  const [pctComplete, setPctComplete] = useState(0);
+  // W-2: the sidebar header reads the same '/api/projects/{id}' SWR cache
+  // entry as the overview page — opening a project costs ONE aggregate request.
+  const { project } = useProject(projectId || null);
+  const proj = project as any;
+  const projectName = proj?.name || '';
+  const projectNumber = proj?.project_number || '';
+  const pctDenom = Number(proj?.contractSumToDate) || Number(proj?.contract_amount) || 1;
+  const pctComplete = parseFloat((((Number(proj?.totalBilledToDate) || 0) / pctDenom) * 100).toFixed(1));
 
   // Close mobile module menu on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!projectId) return;
-    fetch(`/api/projects/${projectId}`)
-      .then(r => r.json())
-      .then(d => {
-        if (d.project) {
-          setProjectName(d.project.name || '');
-          setProjectNumber(d.project.project_number || '');
-          const billed = d.project.totalBilledToDate || 0;
-          const contract = d.project.contractSumToDate || d.project.contract_amount || 1;
-          setPctComplete(parseFloat(((billed / contract) * 100).toFixed(1)));
-        }
-      })
-      .catch(() => {});
-  }, [projectId]);
 
   const isActive = (href: string) => {
     const full = base + href;

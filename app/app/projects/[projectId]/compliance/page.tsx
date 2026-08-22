@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { Badge, Btn, Table, T } from '@/components/ui/shell';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
@@ -54,16 +55,11 @@ export default function CompliancePage() {
   // Live compliance intelligence — /api/compliance scores every sub from the
   // real tables (insurance_certificates, w9_requests, lien_waivers) and
   // /api/project-context supplies the roster. Merged into the matrix by name.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [scored, setScored] = useState<any[]>([]);
   const [scoredSummary, setScoredSummary] = useState<any>(null);
   useEffect(() => {
     (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
       try {
         const r = await fetch(`/api/compliance?projectId=${projectId}`);
         const d = await r.json();

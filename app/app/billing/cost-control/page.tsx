@@ -10,6 +10,7 @@
  * (same numbers as iOS). Snapshots are saved/loaded via /api/cost-control/reports.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { CheckCircle, FloppyDisk, ClockCounterClockwise, ArrowClockwise, ArrowUUpLeft, X, Sparkle, ChartLineUp, Wallet, Handshake, Receipt, TrendUp, Scales, Table, Plus } from '@phosphor-icons/react';
 import { costControl, usd, type CostLine } from '@/lib/finance';
@@ -47,7 +48,8 @@ export default function CostControlPage() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
-  useEffect(() => { fetch('/api/projects/list').then((r) => r.json()).then((x) => { const ps = x.projects || x.data || []; setProjects(ps); if (ps[0]) setProjectId(ps[0].id); }).catch(() => {}); }, []);
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { const ps = liveProjects; setProjects(ps); if (ps[0]) setProjectId((prev) => prev || ps[0].id); }, [liveProjects]);
   useEffect(() => { if (projectId) fetch('/api/takeoff?limit=30').then((r) => r.json()).then((x) => setTakeoffs((x.takeoffs || x.data || []).filter((t: any) => !t.project_id || t.project_id === projectId))).catch(() => setTakeoffs([])); }, [projectId]);
 
   const loadLive = useCallback(async (pid: string) => {

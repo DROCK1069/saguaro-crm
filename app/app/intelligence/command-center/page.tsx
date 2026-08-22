@@ -1,11 +1,13 @@
 'use client';
+import { useRouter } from 'next/navigation';
 /**
  * Saguaro — Multi-Project Command Center
  * Aggregated view of all projects with health scores, budgets, open items.
  * Sort & filter, click-through to project overview.
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useProjects } from '@/lib/hooks/useProjects';
+import Link from 'next/link';
 import { Broadcast, Buildings, ClipboardText, Gauge, Funnel } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty } from '@/components/ui/premium';
 
@@ -162,39 +164,24 @@ function FilterPill({ active, label, onClick, color }: { active: boolean; label:
 /* ─── Main Component ────────────────────────────────────────────── */
 export default function CommandCenterPage() {
   const router = useRouter();
-  const [projects, setProjects] = useState<ProjectCard[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortKey>('last_activity');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
-  const tenantId = typeof window !== 'undefined' ? localStorage.getItem('saguaro_tenant_id') || '' : '';
-
-  const fetchProjects = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/projects/list?tenantId=${tenantId}`);
-      if (res.ok) {
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : data.projects || [];
-        setProjects(list.map((p: any) => ({
-          id: p.id,
-          name: p.name || p.project_name || 'Untitled',
-          type: p.type || p.project_type || 'General',
-          status: p.status || 'active',
-          percent_complete: Number(p.percent_complete ?? p.percentComplete ?? 0) || 0,
-          budget_original: p.budget_original ?? p.original_budget ?? p.contract_amount ?? 0,
-          budget_actual: p.budget_actual ?? p.actual_cost ?? p.costs_to_date ?? 0,
-          open_rfis: p.open_rfis ?? p.rfi_count ?? 0,
-          open_punch: p.open_punch ?? p.punch_count ?? 0,
-          open_cos: p.open_cos ?? p.co_count ?? 0,
-          last_activity: p.last_activity ?? p.updated_at ?? p.last_updated ?? '',
-        })));
-      }
-    } catch { /* ignore */ } finally { setLoading(false); }
-  }, [tenantId]);
-
-  useEffect(() => { fetchProjects(); }, [fetchProjects]);
+  const { projects: liveProjects, loading } = useProjects();
+  const projects = useMemo<ProjectCard[]>(() => (liveProjects as any[]).map((p: any) => ({
+    id: p.id,
+    name: p.name || p.project_name || 'Untitled',
+    type: p.type || p.project_type || 'General',
+    status: p.status || 'active',
+    percent_complete: Number(p.percent_complete ?? p.percentComplete ?? 0) || 0,
+    budget_original: p.budget_original ?? p.original_budget ?? p.contract_amount ?? 0,
+    budget_actual: p.budget_actual ?? p.actual_cost ?? p.costs_to_date ?? 0,
+    open_rfis: p.open_rfis ?? p.rfi_count ?? 0,
+    open_punch: p.open_punch ?? p.punch_count ?? 0,
+    open_cos: p.open_cos ?? p.co_count ?? 0,
+    last_activity: p.last_activity ?? p.updated_at ?? p.last_updated ?? '',
+  })), [liveProjects]);
 
   // Unique types for filter
   const projectTypes = useMemo(() => {
@@ -359,15 +346,17 @@ export default function CommandCenterPage() {
               const typeColor = getTypeColor(project.type);
 
               return (
-                <button
+                <Link
                   key={project.id}
-                  onClick={() => router.push(`/app/projects/${project.id}`)}
+                  href={`/app/projects/${project.id}`}
                   className="pmHover"
                   style={{
                     ...glassCard({ cursor: 'pointer', textAlign: 'left' }),
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 12,
+                    textDecoration: 'none',
+                    color: 'inherit',
                   }}
                 >
                 {/* Top row: name + badges */}
@@ -423,7 +412,7 @@ export default function CommandCenterPage() {
                   </div>
                   <span style={{ fontSize: 11, color: DIM }}>{formatDate(project.last_activity)}</span>
                 </div>
-              </button>
+              </Link>
             );
           })}
           </div>

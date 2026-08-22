@@ -74,49 +74,80 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setMobileSidebarOpen(false);
   }, [pathname]);
 
-  // Single init effect: refresh session, fetch user info + projects in parallel
+  // Single init effect (W-9): refresh + me + projects all fire concurrently —
+  // refresh only gates the 401 redirect, and a sessionStorage cache paints the
+  // shell identity instantly on repeat hard loads.
   useEffect(() => {
     let cancelled = false;
 
+    // Paint cached identity/projects immediately (revalidated below; the cache
+    // is wiped by handleLogout's sessionStorage.clear()).
+    try {
+      const cached = sessionStorage.getItem('sag_shell_cache');
+      if (cached) {
+        const c = JSON.parse(cached);
+        if (c.initials) setUserInitials(c.initials);
+        if (c.userId) setSageUserId(c.userId);
+        if (Array.isArray(c.projects)) setSageProjects(c.projects);
+      }
+    } catch { /* cache is best-effort */ }
+
     async function init() {
-      try {
-        const refreshRes = await fetch('/api/auth/refresh');
-        if (refreshRes.status === 401) {
-          window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
-          return;
-        }
-      } catch {}
+      const fetchJson = (url: string) => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+
+      // Fire all three concurrently; refresh only gates the 401 redirect.
+      const refreshP = fetch('/api/auth/refresh').catch(() => null);
+      let [me, proj] = await Promise.all([
+        fetchJson('/api/auth/me'),
+        fetchJson('/api/projects?limit=15&fields=id,name'),
+      ]);
+
+      const refreshRes = await refreshP;
+      if (refreshRes && refreshRes.status === 401) {
+        window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
 
       // Hydrate the browser Supabase client from the freshly-refreshed server cookies so pages
       // that query Supabase directly from the browser (time clock, fleet, daily log, …) are authenticated.
       ensureBrowserSession();
 
-      const [meRes, projRes] = await Promise.allSettled([
-        fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
-        fetch('/api/projects?limit=15&fields=id,name').then(r => r.ok ? r.json() : null),
-      ]);
+      // If the concurrent calls raced an expired session, retry once post-refresh.
+      if (!me) me = await fetchJson('/api/auth/me');
+      if (!proj) proj = await fetchJson('/api/projects?limit=15&fields=id,name');
 
       if (cancelled) return;
 
-      const me = meRes.status === 'fulfilled' ? meRes.value : null;
+      let initials = '';
       if (me) {
         if (me.id) setSageUserId(me.id);
         if (me.name) {
           const parts = me.name.trim().split(/\s+/);
-          const initials = parts.length >= 2
+          initials = parts.length >= 2
             ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
             : me.name.slice(0, 2).toUpperCase();
           setUserInitials(initials);
         } else if (me.email) {
-          setUserInitials(me.email[0].toUpperCase());
+          initials = me.email[0].toUpperCase();
+          setUserInitials(initials);
         }
       }
 
-      const proj = projRes.status === 'fulfilled' ? projRes.value : null;
+      let projList: Array<{ id: string; name: string }> | null = null;
       if (proj) {
-        if (Array.isArray(proj.projects)) setSageProjects(proj.projects);
-        else if (Array.isArray(proj)) setSageProjects(proj);
+        if (Array.isArray(proj.projects)) projList = proj.projects;
+        else if (Array.isArray(proj)) projList = proj;
       }
+      if (projList) setSageProjects(projList);
+
+      // Cache identity + project names for an instant paint on the next load.
+      try {
+        sessionStorage.setItem('sag_shell_cache', JSON.stringify({
+          initials: initials || undefined,
+          userId: me && me.id ? me.id : undefined,
+          projects: projList ? projList.map(p => ({ id: p.id, name: p.name })) : undefined,
+        }));
+      } catch { /* best-effort */ }
     }
 
     init();

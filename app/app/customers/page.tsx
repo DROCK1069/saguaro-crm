@@ -1,9 +1,11 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { SkeletonRow } from '../../../components/ui/Skeleton';
 import { UsersThree, WarningCircle, Buildings, CurrencyDollar, Target, CalendarBlank, Robot, Clipboard, CheckCircle, XCircle, Hourglass, House, Cactus, ArrowLeft, Gauge, MapPin, Lightning, Package, DownloadSimple } from '@phosphor-icons/react';
 import { useToast } from '@/components/Toast';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 /* ─── Palette ─── */
 const BG = '#0a0a0a', CARD = '#141416', GOLD = '#F59E0B', GREEN = '#34C759';
@@ -39,7 +41,8 @@ const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { mon
 export default function CustomersPage() {
   const { showToast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
+  const { projects: liveProjects, revalidate: revalidateProjects } = useProjects();
+  const projects = liveProjects as any[];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [assigning, setAssigning] = useState(false);
@@ -66,20 +69,12 @@ export default function CustomersPage() {
     }
   }, []);
 
-  // Live project rollup — project counts + lifetime contract value per customer.
-  const loadProjects = useCallback(async () => {
-    try {
-      const res = await fetch('/api/projects/list');
-      if (!res.ok) return;
-      const data = await res.json();
-      setProjects(Array.isArray(data?.projects) ? data.projects : []);
-    } catch { /* rollup is additive — the page still renders without it */ }
-  }, []);
+  // Live project rollup — project counts + lifetime contract value per
+  // customer — reads the shared projects cache above.
 
   useEffect(() => {
     load();
-    loadProjects();
-  }, [load, loadProjects]);
+  }, [load]);
 
   const filtered = useMemo(() => {
     let list = customers;
@@ -173,13 +168,13 @@ export default function CustomersPage() {
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       showToast(`Project created for ${c.name}`, 'success');
       await load();
-      loadProjects();
+      revalidateProjects();
     } catch {
       showToast('Could not create project. Please try again.', 'error');
     } finally {
       setAssigning(false);
     }
-  }, [assigning, load, loadProjects, showToast]);
+  }, [assigning, load, revalidateProjects, showToast]);
 
   /* ─── Detail View ─── */
   if (selected) {
@@ -527,51 +522,20 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Status pills */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
-        <button onClick={() => setFilterStatus('all')} style={{
-          padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 700,
-          border: `1px solid ${filterStatus === 'all' ? GOLD : BORDER}`,
-          background: filterStatus === 'all' ? `${GOLD}18` : 'transparent',
-          color: filterStatus === 'all' ? GOLD : DIM, cursor: 'pointer',
-        }}>All ({statusCounts.all})</button>
-        {STATUSES.map(s => (
-          <button key={s} onClick={() => setFilterStatus(s)} style={{
-            padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 700,
-            border: `1px solid ${filterStatus === s ? STATUS_COLORS[s] : BORDER}`,
-            background: filterStatus === s ? `${STATUS_COLORS[s]}18` : 'transparent',
-            color: filterStatus === s ? STATUS_COLORS[s] : DIM, cursor: 'pointer',
-            textTransform: 'capitalize',
-          }}>{s} ({statusCounts[s] || 0})</button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <input
-          type="text" placeholder="Search by name or email..." value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            flex: 1, minWidth: 200, padding: '10px 16px', background: `${CARD}CC`,
-            border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT,
-            fontSize: 14, outline: 'none',
-          }}
-        />
-        <select value={filterSource} onChange={e => setFilterSource(e.target.value)} style={{
-          padding: '10px 14px', background: CARD, border: `1px solid ${BORDER}`,
-          borderRadius: 10, color: TEXT, fontSize: 13, outline: 'none',
-        }}>
-          <option value="all">All Sources</option>
-          {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={filterState} onChange={e => setFilterState(e.target.value)} style={{
-          padding: '10px 14px', background: CARD, border: `1px solid ${BORDER}`,
-          borderRadius: 10, color: TEXT, fontSize: 13, outline: 'none',
-        }}>
-          <option value="all">All States</option>
-          {STATES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
+      {/* List toolbar — search + status/source/state filters (replaces pills + selects) */}
+      <ListToolbar
+        module="customers"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search by name or email..."
+        filters={[
+          { key: 'status', label: 'Status', value: filterStatus, onChange: setFilterStatus, allLabel: `All (${statusCounts.all})`, options: STATUSES.map(s => ({ value: s, label: `${s.charAt(0).toUpperCase() + s.slice(1)} (${statusCounts[s] || 0})` })) },
+          { key: 'source', label: 'Source', value: filterSource, onChange: setFilterSource, allLabel: 'All Sources', options: [...SOURCES] },
+          { key: 'state', label: 'State', value: filterState, onChange: setFilterState, allLabel: 'All States', options: [...STATES_LIST] },
+        ]}
+        count={{ shown: filtered.length, total: customers.length }}
+        style={{ marginBottom: 20 }}
+      />
 
       {/* Table */}
       {error ? (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useProjects } from '@/lib/hooks/useProjects';
 
 const GOLD = '#F59E0B';
 const DARK = '#141416';
@@ -67,24 +68,17 @@ export default function ProjectSwitcher({ open, onClose }: ProjectSwitcherProps)
   const listRef = useRef<HTMLDivElement>(null);
 
   const [query, setQuery] = useState('');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Fetch projects on open
+  // W-13: the modal reads the shared useProjects() SWR cache — a warm open
+  // renders the list instantly instead of refetching on every open.
+  const { projects, loading } = useProjects();
+
+  // Reset search state on open — the list itself is already cached.
   useEffect(() => {
     if (!open) return;
     setQuery('');
     setSelectedIndex(0);
-    setLoading(true);
-    fetch('/api/projects/list')
-      .then((res) => res.json())
-      .then((data) => {
-        const list: Project[] = Array.isArray(data) ? data : data.projects ?? [];
-        setProjects(list);
-      })
-      .catch(() => setProjects([]))
-      .finally(() => setLoading(false));
   }, [open]);
 
   // Auto-focus

@@ -1,10 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { SkeletonRow } from '@/components/ui/Skeleton';
 import { Receipt, CurrencyDollar, CheckCircle, WarningCircle, PencilSimple, Percent, Copy, Trash, Plus, CaretDown, ClockCounterClockwise, Calculator } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -48,6 +51,10 @@ export default function InvoicesPage() {
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // ListToolbar state — filters + sort persist per module via sag_flt_invoices.
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -65,17 +72,8 @@ export default function InvoicesPage() {
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   // Project intelligence — one snapshot; the create flow walks in already knowing the money.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto, setAuto] = useState<{ num?: boolean; billto?: boolean; email?: boolean; due?: boolean; desc?: boolean; amt?: boolean }>({});
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
 
   const money = ctx?.money;
   const original = Number(money?.originalContract) || 0;
@@ -117,6 +115,21 @@ export default function InvoicesPage() {
   const totalBilled = toDollars(sumCents(invoices.map(i => toCents(i.amount || 0))));
   const totalPaid = toDollars(sumCents(invoices.filter(i => i.status === 'Paid').map(i => toCents(i.amount || 0))));
   const totalOutstanding = toDollars(sumCents(invoices.filter(i => i.status !== 'Paid' && i.status !== 'Draft').map(i => toCents(i.amount || 0))));
+
+  // Toolbar-driven view of the list. Status matches the effective (overdue-aware) status.
+  const q = search.trim().toLowerCase();
+  const filteredInvoices = invoices
+    .filter(inv => {
+      const effStatus = inv.due_date < today && inv.status !== 'Paid' ? 'Overdue' : inv.status;
+      if (statusFilter !== 'all' && effStatus !== statusFilter) return false;
+      if (!q) return true;
+      return [inv.invoice_number, inv.vendor_name, inv.description, inv.notes].some(v => String(v || '').toLowerCase().includes(q));
+    })
+    .sort((a, b) => {
+      if (sortBy === 'amount') return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+      if (sortBy === 'due') return String(a.due_date || '9999').localeCompare(String(b.due_date || '9999'));
+      return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+    });
 
   async function handleSave() {
     if (!form.invoice_number || !form.vendor_name || !form.amount) { setErrorMsg('Invoice number, bill-to, and amount are required.'); return; }
@@ -389,8 +402,27 @@ export default function InvoicesPage() {
         </div>
       )}
 
+      <ListToolbar
+        module="invoices"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search invoices..."
+        filters={[{ key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter, allLabel: 'All Statuses', options: [
+          'Draft', 'Sent', 'Pending', 'Paid', 'Overdue',
+        ] }]}
+        sort={sortBy}
+        onSort={setSortBy}
+        sortOptions={[
+          { value: 'newest', label: 'Newest first' },
+          { value: 'due', label: 'Due date' },
+          { value: 'amount', label: 'Amount (high first)' },
+        ]}
+        count={{ shown: filteredInvoices.length, total: invoices.length }}
+        style={{ marginBottom: 16 }}
+      />
+
       <SectionCard title="All Invoices" icon={<Receipt size={17} weight="duotone" color={GOLD} />} flush>
-        {loading ? <div style={{ textAlign: 'center', padding: 40, color: DIM }}>Loading...</div> : invoices.length === 0 ? (
+        {loading ? <div><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /></div> : invoices.length === 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: ctx ? 'minmax(0, 1fr) 360px' : '1fr', alignItems: 'stretch' }}>
             <PremiumEmpty
               icon={<Receipt size={30} weight="duotone" color={GOLD} />}
@@ -438,7 +470,7 @@ export default function InvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {invoices.map(inv => {
+              {filteredInvoices.map(inv => {
                 const overdue = inv.due_date < today && inv.status !== 'Paid';
                 const effectiveStatus = overdue ? 'Overdue' : inv.status;
                 const sc = STATUS_MAP[effectiveStatus] || { bg: 'rgba(143,163,192,.2)', color: DIM };

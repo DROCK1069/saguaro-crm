@@ -1,12 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
 import { WarningCircle, CalendarBlank, X, Plus, TrendUp, CheckCircle, Clock, ListChecks } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
@@ -182,7 +183,7 @@ export default function SchedulePage(){
   const [filterStatus,setFilterStatus]=useState('all');
   const [filterPhase,setFilterPhase]=useState('all');
   // SmartCreate: the add flow walks in knowing the project — /api/project-context snapshot.
-  const [ctx,setCtx]=useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [duration,setDuration]=useState('');
   const [auto,setAuto]=useState<{start?:boolean;end?:boolean}>({});
 
@@ -203,17 +204,29 @@ export default function SchedulePage(){
     finally{setLoading(false);}
   },[projectId]);
 
+  // Background revalidate — reconciles server truth after an optimistic write
+  // without flipping the schedule back into its loading state.
+  const revalidate=useCallback(async()=>{
+    try{
+      const h=await getAuthHeaders();
+      const r=await fetch(`/api/schedule/list?projectId=${projectId}`,{headers:h});
+      if(!r.ok) return;
+      const d=await r.json();
+      setTasks(d.tasks||[]);
+    }catch{/* background refresh — keep the optimistic rows */}
+  },[projectId]);
+
   useEffect(()=>{load();},[load]);
 
+  // Dead-space kill (spec 4.1): an empty schedule auto-opens the create panel —
+  // the composer is the zero state. One-shot per visit so Cancel sticks.
+  const autoOpenedRef=useRef(false);
   useEffect(()=>{
-    (async()=>{
-      try{
-        const r=await fetch(`/api/project-context?projectId=${projectId}`);
-        const c=await r.json();
-        if(!c.error) setCtx(c);
-      }catch{}
-    })();
-  },[projectId]);
+    if(!loading&&!loadError&&tasks.length===0&&mode===null&&!autoOpenedRef.current){
+      autoOpenedRef.current=true;
+      openCreate();
+    }
+  },[loading,loadError,tasks.length,mode]);
 
   function openCreate(){setForm({...EMPTY});setDuration('');setAuto({});setMode('create');setSelected(null);}
   function openEdit(task:any){
@@ -264,45 +277,72 @@ export default function SchedulePage(){
 
   async function save(){
     if(!form.name.trim()){showToast('Task name is required','error');return;}
+    // Optimistic save (house pattern: budget saveEdit) — tasks patch and the
+    // panel closes instantly; the network settles in the background.
+    const snapshot={...form,pct_complete:Number(form.pct_complete)||0};
+    const prevMode=mode,prevSelected=selected;
     setSaving(true);
     try{
       const h=await getAuthHeaders();
       if(mode==='create'){
+        const tempId=`temp-${Date.now()}`;
+        setTasks(prev=>[...prev,{id:tempId,...snapshot,project_id:projectId}]);
+        closePanel();
+        showToast('Task added');
         const r=await fetch('/api/schedule/create',{
           method:'POST',
           headers:{...h,'Content-Type':'application/json'},
           body:JSON.stringify({...form,projectId}),
         });
-        if(!r.ok) throw new Error(await r.text());
-        showToast('Task added');
+        if(!r.ok){setTasks(prev=>prev.filter((t:any)=>t.id!==tempId));throw new Error(await r.text());}
+        const d=await r.json();
+        if(d.task) setTasks(prev=>prev.map((t:any)=>t.id===tempId?d.task:t));
+        revalidate();
       }else if(mode==='edit'&&selected){
-        const r=await fetch(`/api/schedule/${selected.id}`,{
+        const prevTask=selected;
+        setTasks(prev=>prev.map((t:any)=>t.id===prevTask.id?{...t,...snapshot}:t));
+        closePanel();
+        showToast('Task updated');
+        const r=await fetch(`/api/schedule/${prevTask.id}`,{
           method:'PUT',
           headers:{...h,'Content-Type':'application/json'},
           body:JSON.stringify({...form,pct_complete:Number(form.pct_complete)||0}),
         });
-        if(!r.ok) throw new Error(await r.text());
-        showToast('Task updated');
+        if(!r.ok){setTasks(prev=>prev.map((t:any)=>t.id===prevTask.id?prevTask:t));throw new Error(await r.text());}
+        revalidate();
       }
-      await load();closePanel();
-    }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
+    }catch(e:any){
+      console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');
+      // Rollback already applied — reopen the panel with the input intact.
+      setForm(snapshot);setMode(prevMode);setSelected(prevSelected);
+    }
     finally{setSaving(false);}
   }
 
   async function deleteTask(task:any){
     if(!confirm(`Delete task "${task.name}"?`)) return;
+    // Optimistic remove — the task leaves and the panel closes instantly;
+    // rollback restores the exact list on failure.
+    const prevTasks=tasks;
+    setTasks(prev=>prev.filter((t:any)=>t.id!==task.id));
+    showToast('Task deleted');closePanel();
     setDeleting(true);
     try{
       const h=await getAuthHeaders();
       const dr=await fetch(`/api/schedule/${task.id}`,{method:'DELETE',headers:h});
       if (!dr.ok) throw new Error('Delete failed');
-      showToast('Task deleted');closePanel();await load();
-    }catch{showToast('Delete failed','error');}
+      revalidate();
+    }catch{setTasks(prevTasks);showToast('Delete failed','error');}
     finally{setDeleting(false);}
   }
 
   async function updatePct(task:any,pct:number){
     const newStatus=pct===100?'completed':pct>0?'in_progress':'not_started';
+    const prevPct=task.pct_complete??0,prevStatus=task.status;
+    // Optimistic patch (house pattern: budget saveEdit) — the bar and the open
+    // panel move instantly; rollback + toast if the server disagrees.
+    setTasks(prev=>prev.map((t:any)=>t.id===task.id?{...t,pct_complete:pct,status:newStatus}:t));
+    setSelected((s:any)=>s?.id===task.id?{...s,pct_complete:pct,status:newStatus}:s);
     try{
       const h=await getAuthHeaders();
       const pr=await fetch(`/api/schedule/${task.id}`,{
@@ -311,8 +351,12 @@ export default function SchedulePage(){
         body:JSON.stringify({pct_complete:pct,status:newStatus}),
       });
       if (!pr.ok) throw new Error('Update failed');
-      await load();
-    }catch(e:any){console.error(e);showToast(humanError(e,'Something went wrong. Please try again.'),'error');}
+      revalidate();
+    }catch(e:any){
+      setTasks(prev=>prev.map((t:any)=>t.id===task.id?{...t,pct_complete:prevPct,status:prevStatus}:t));
+      setSelected((s:any)=>s?.id===task.id?{...s,pct_complete:prevPct,status:prevStatus}:s);
+      console.error(e);showToast(humanError(e,'Something went wrong. Please try again.'),'error');
+    }
   }
 
   const phases=Array.from(new Set(tasks.map((t:any)=>t.phase).filter(Boolean)));
@@ -437,15 +481,39 @@ export default function SchedulePage(){
             </SectionCard>
           )}
 
-          {/* EMPTY — genuine zero results on success only */}
+          {/* EMPTY — the create panel auto-opens; seed the first tasks from bid-package trades */}
           {!loading&&!loadError&&tasks.length===0&&(
             <SectionCard>
-              <PremiumEmpty
-                icon={<CalendarBlank size={30} weight="duotone" color={GOLD} />}
-                title="No tasks yet"
-                description="Add your first task to start building the project schedule."
-                action={<button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add First Task</button>}
-              />
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:12}}>
+                <div style={{fontSize:13.5,fontWeight:800,color:TEXT}}>
+                  <CalendarBlank size={16} weight="duotone" color={GOLD} style={{marginRight:7,verticalAlign:'text-bottom'}} />
+                  No tasks yet
+                  <span style={{fontWeight:400,color:DIM}}>{mode==='create' ? ' — name the first task in the panel; dates chain off predecessors from there.' : ' — add the first task to start the timeline.'}</span>
+                </div>
+                {mode!=='create'&&(
+                  <button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Task</button>
+                )}
+              </div>
+              {((ctx?.bidPackages||[]) as any[]).filter((b:any)=>b.trade).length>0&&(
+                <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:12}}>
+                  <span style={{fontSize:11,fontWeight:700,color:DIM,textTransform:'uppercase',letterSpacing:.5}}>Seed from bid packages:</span>
+                  {((ctx?.bidPackages||[]) as any[]).filter((b:any)=>b.trade).slice(0,5).map((b:any)=>(
+                    <button key={b.id}
+                      onClick={()=>{openCreate();setForm(f=>({...f,name:b.name||b.trade,trade:b.trade}));}}
+                      className="pmBtn"
+                      style={{padding:'5px 12px',background:'rgba(245,158,11,.08)',border:'1px solid rgba(245,158,11,.3)',
+                        borderRadius:999,color:GOLD,fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                      {b.trade}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <FlowStrip steps={[
+                {title:'Add the task',desc:'name is enough to save'},
+                {title:'Chain predecessors',desc:'start auto-sets to the day after'},
+                {title:'Gantt draws itself',desc:'today marked in gold'},
+                {title:'Progress rolls up',desc:'% complete feeds the KPIs'},
+              ]} />
             </SectionCard>
           )}
 

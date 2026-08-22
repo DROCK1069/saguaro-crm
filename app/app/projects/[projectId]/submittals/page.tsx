@@ -1,11 +1,13 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Plus, Clipboard, X, CaretRight, ClipboardText, Clock, Eye, WarningCircle, Stack } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS, SUB_TRADES } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
@@ -100,7 +102,7 @@ export default function SubmittalsPage(){
   const [filterBIC,setFilterBIC]=useState('all');
   // SmartCreate: the create panel walks in knowing the project — reviewer,
   // sub roster, log state — via the one-shot /api/project-context snapshot.
-  const [ctx,setCtx]=useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto,setAuto]=useState<{num?:boolean;due?:boolean;bic?:boolean}>({});
 
   const today=new Date().toISOString().split('T')[0];
@@ -124,15 +126,16 @@ export default function SubmittalsPage(){
 
   useEffect(()=>{load();},[load]);
 
+  // Dead-space kill (spec 4.1): an empty log auto-opens the create panel —
+  // number + review window already defaulted. One-shot per visit so Cancel
+  // stays cancelled.
+  const autoOpenedRef=useRef(false);
   useEffect(()=>{
-    (async()=>{
-      try{
-        const r=await fetch(`/api/project-context?projectId=${projectId}`);
-        const c=await r.json();
-        if(!c.error) setCtx(c);
-      }catch{}
-    })();
-  },[projectId]);
+    if(!loading&&!loadError&&submittals.length===0&&mode===null&&!autoOpenedRef.current){
+      autoOpenedRef.current=true;
+      openCreate();
+    }
+  },[loading,loadError,submittals.length,mode]);
 
   function openCreate(){
     const num=`S-${String(submittals.length+1).padStart(3,'0')}`;
@@ -313,24 +316,21 @@ export default function SubmittalsPage(){
             action={<span style={{fontSize:12,fontWeight:700,color:DIM,whiteSpace:'nowrap'}}>{filtered.length} of {total}</span>}
             flush
           >
-            {/* Filters */}
-            <div style={{display:'flex',gap:10,padding:'14px 16px',flexWrap:'wrap'}}>
-              <input value={search} onChange={e=>setSearch(e.target.value)}
-                placeholder="Search submittals..."
-                style={{flex:1,minWidth:180,padding:'8px 12px',background:RAISED,
-                  border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none'}}/>
-              <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-                style={{padding:'8px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-                  borderRadius:7,color:filterStatus!=='all'?TEXT:DIM,fontSize:13,outline:'none'}}>
-                <option value="all">All Statuses</option>
-                {STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-              </select>
-              <select value={filterBIC} onChange={e=>setFilterBIC(e.target.value)}
-                style={{padding:'8px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-                  borderRadius:7,color:filterBIC!=='all'?TEXT:DIM,fontSize:13,outline:'none'}}>
-                <option value="all">All Ball-in-Court</option>
-                {BIC_OPTIONS.map(b=><option key={b} value={b}>{b}</option>)}
-              </select>
+            {/* Toolbar */}
+            <div style={{padding:'14px 16px'}}>
+              <ListToolbar
+                module="submittals"
+                search={search}
+                onSearch={setSearch}
+                searchPlaceholder="Search by number, title, spec section, or trade..."
+                filters={[
+                  {key:'status',label:'Status',value:filterStatus,onChange:setFilterStatus,allLabel:'All Statuses',
+                    options:STATUSES.map(s=>({value:s,label:STATUS_LABELS[s]}))},
+                  {key:'bic',label:'Ball in Court',value:filterBIC,onChange:setFilterBIC,allLabel:'All Ball-in-Court',
+                    options:BIC_OPTIONS},
+                ]}
+                count={{shown:filtered.length,total:total}}
+              />
             </div>
 
             {loading&&<div style={{padding:40,textAlign:'center',color:DIM}}>Loading submittals...</div>}
@@ -342,17 +342,31 @@ export default function SubmittalsPage(){
             )}
 
             {!loading&&filtered.length===0&&(
-              <div style={{padding:'8px 8px 20px'}}>
-                <PremiumEmpty
-                  icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
-                  title={submittals.length===0?'No submittals yet':'No submittals match your filters'}
-                  description={submittals.length===0?'Track shop drawings and product data submittals for this project.':'Try adjusting your search or filters.'}
-                  action={submittals.length===0?(
+              <div style={{padding:'14px 16px 20px'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:12}}>
+                  <div style={{fontSize:13.5,fontWeight:800,color:TEXT}}>
+                    <Clipboard size={16} weight="duotone" color={GOLD} style={{marginRight:7,verticalAlign:'text-bottom'}} />
+                    {submittals.length===0?'No submittals yet':'No submittals match your filters'}
+                    <span style={{fontWeight:400,color:DIM}}>
+                      {submittals.length===0
+                        ?(mode==='create'?' — the first number and review window are already set in the panel; title it and save.':' — start the register for shop drawings and product data.')
+                        :' — try adjusting your search or filters.'}
+                    </span>
+                  </div>
+                  {submittals.length===0&&mode!=='create'&&(
                     <button onClick={openCreate} style={goldButtonStyle} className="pmBtn">
-                      <Plus size={15} weight="bold" /> Create First Submittal
+                      <Plus size={15} weight="bold" /> New Submittal
                     </button>
-                  ):undefined}
-                />
+                  )}
+                </div>
+                {submittals.length===0&&(
+                  <FlowStrip steps={[
+                    {title:'Log the submittal',desc:'numbered S-001, S-002...'},
+                    {title:'Submit for review',desc:'ball flips to the architect'},
+                    {title:'Advance in one click',desc:'right from the log'},
+                    {title:'Approved or revise',desc:'revisions keep the number'},
+                  ]} />
+                )}
               </div>
             )}
 

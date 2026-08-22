@@ -1,10 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../components/SaguaroDatePicker';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { BUILDING_TYPES } from '@/lib/contractor-trades';
 import { Plus, Buildings, MapPin, CalendarBlank, UsersThree, Sparkle, CurrencyDollar, ShieldCheck, Stack } from '@phosphor-icons/react';
+import { useProjects } from '@/lib/hooks/useProjects';
 
 const GOLD='#F59E0B',DARK='#1c1c1e',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const INPUT_STYLE = {width:'100%',padding:'10px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none'};
@@ -128,53 +129,53 @@ export default function NewProjectPage() {
   // the projects the tenant already has.
   const [pf, setPf] = useState<any>(null);
 
+  const { projects: portfolioProjects, loading: portfolioLoading, error: portfolioError } = useProjects();
+  const pfSeededRef = useRef(false);
   useEffect(()=>{
-    (async()=>{
-      const fallback = `${year}-001`;
-      try{
-        const r = await fetch('/api/projects/list');
-        const d = await r.json();
-        const list:any[] = Array.isArray(d.projects) ? d.projects : [];
-        // Next project number — continue this year's sequence (e.g. 2026-007).
-        let maxSeq = 0;
-        for(const p of list){
-          const m = String(p.project_number||'').match(/(\d{4})-(\d{1,4})\s*$/);
-          if(m && Number(m[1])===year) maxSeq = Math.max(maxSeq, Number(m[2])||0);
-        }
-        const createdThisYear = list.filter(p=>String(p.created_at||'').startsWith(String(year))).length;
-        const suggestion = `${year}-${String((maxSeq||createdThisYear)+1).padStart(3,'0')}`;
-        // Contact book + house defaults from prior projects (list is newest-first).
-        const owners:Record<string,string> = {}, archs:Record<string,string> = {};
-        const ownerCounts:Record<string,number> = {};
-        const stateCounts:Record<string,number> = {}, retCounts:Record<string,number> = {};
-        let value = 0, active = 0;
-        for(const p of list){
-          value += Number(p.contract_value ?? p.contract_amount ?? 0)||0;
-          if(String(p.status||'')==='active') active++;
-          const on = String(p.owner_name||'').trim();
-          if(on){
-            ownerCounts[on] = (ownerCounts[on]||0)+1;
-            if(!owners[on]) owners[on] = String(p.owner_email||'');
-          }
-          const an = String(p.architect_name||'').trim();
-          if(an && !archs[an]) archs[an] = String(p.architect_email||'');
-          const sj = String(p.state_jurisdiction||'').trim().toUpperCase();
-          if(sj) stateCounts[sj] = (stateCounts[sj]||0)+1;
-          const rp = Number(p.retainage_pct);
-          if(Number.isFinite(rp) && rp>0) retCounts[String(rp)] = (retCounts[String(rp)]||0)+1;
-        }
-        const top = (c:Record<string,number>) => Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0];
-        const stateMode = top(stateCounts), retMode = top(retCounts);
-        setPf({loaded:true,total:list.length,active,value,owners,archs,ownerCounts,stateMode,retMode});
-        setProjectNumber(prev=>{ if(!prev){ setAuto(a=>({...a,num:true})); return suggestion; } return prev; });
-        if(stateMode) setStateJurisdiction(prev=> prev==='AZ' ? stateMode : prev);
-        if(retMode) setRetainage(prev=> prev==='10' ? retMode : prev);
-      }catch{
-        setPf({loaded:true,total:0,active:0,value:0,owners:{},archs:{},ownerCounts:{}});
-        setProjectNumber(prev=>{ if(!prev){ setAuto(a=>({...a,num:true})); return fallback; } return prev; });
+    if (pfSeededRef.current || portfolioLoading) return;
+    pfSeededRef.current = true;
+    const fallback = `${year}-001`;
+    if (portfolioError) {
+      setPf({loaded:true,total:0,active:0,value:0,owners:{},archs:{},ownerCounts:{}});
+      setProjectNumber(prev=>{ if(!prev){ setAuto(a=>({...a,num:true})); return fallback; } return prev; });
+      return;
+    }
+    const list:any[] = portfolioProjects as any[];
+    // Next project number — continue this year's sequence (e.g. 2026-007).
+    let maxSeq = 0;
+    for(const p of list){
+      const m = String(p.project_number||'').match(/(\d{4})-(\d{1,4})\s*$/);
+      if(m && Number(m[1])===year) maxSeq = Math.max(maxSeq, Number(m[2])||0);
+    }
+    const createdThisYear = list.filter(p=>String(p.created_at||'').startsWith(String(year))).length;
+    const suggestion = `${year}-${String((maxSeq||createdThisYear)+1).padStart(3,'0')}`;
+    // Contact book + house defaults from prior projects (list is newest-first).
+    const owners:Record<string,string> = {}, archs:Record<string,string> = {};
+    const ownerCounts:Record<string,number> = {};
+    const stateCounts:Record<string,number> = {}, retCounts:Record<string,number> = {};
+    let value = 0, active = 0;
+    for(const p of list){
+      value += Number(p.contract_value ?? p.contract_amount ?? 0)||0;
+      if(String(p.status||'')==='active') active++;
+      const on = String(p.owner_name||'').trim();
+      if(on){
+        ownerCounts[on] = (ownerCounts[on]||0)+1;
+        if(!owners[on]) owners[on] = String(p.owner_email||'');
       }
-    })();
-  },[year]);
+      const an = String(p.architect_name||'').trim();
+      if(an && !archs[an]) archs[an] = String(p.architect_email||'');
+      const sj = String(p.state_jurisdiction||'').trim().toUpperCase();
+      if(sj) stateCounts[sj] = (stateCounts[sj]||0)+1;
+      const rp = Number(p.retainage_pct);
+      if(Number.isFinite(rp) && rp>0) retCounts[String(rp)] = (retCounts[String(rp)]||0)+1;
+    }
+    const top = (c:Record<string,number>) => Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0];
+    const stateMode = top(stateCounts), retMode = top(retCounts);
+    setPf({loaded:true,total:list.length,active,value,owners,archs,ownerCounts,stateMode,retMode});
+    setProjectNumber(prev=>{ if(!prev){ setAuto(a=>({...a,num:true})); return suggestion; } return prev; });
+    if(stateMode) setStateJurisdiction(prev=> prev==='AZ' ? stateMode : prev);
+    if(retMode) setRetainage(prev=> prev==='10' ? retMode : prev);
+  },[portfolioProjects, portfolioLoading, portfolioError, year]);
 
   // Picking a canonical building type derives the DB category automatically.
   function onBuildingTypeChange(v:string){

@@ -17,6 +17,7 @@
  * assigned_to / notes columns — those are intentionally absent here.)
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
@@ -113,7 +114,7 @@ export default function SchedulePage() {
     status: 'not_started', predecessorId: '',
   });
   // SmartCreate: once a project is chosen, the modal walks in knowing it.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(form.projectId || null);
   const [duration, setDuration] = useState('');
   const [auto, setAuto] = useState<{ start?: boolean; end?: boolean }>({});
 
@@ -138,17 +139,6 @@ export default function SchedulePage() {
       .then(d => { if (d) setProjects(Array.isArray(d) ? d : d.projects ?? []); })
       .catch(() => {});
   }, [fetchTasks]);
-
-  // Project intelligence for the create modal — one snapshot per chosen project.
-  useEffect(() => {
-    if (!form.projectId) { setCtx(null); return; }
-    let alive = true;
-    fetch(`/api/project-context?projectId=${form.projectId}`)
-      .then(r => r.json())
-      .then(c => { if (alive && !c.error) setCtx(c); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [form.projectId]);
 
   const projectName = useCallback(
     (id: string | null) => projects.find(p => p.id === id)?.name ?? null,

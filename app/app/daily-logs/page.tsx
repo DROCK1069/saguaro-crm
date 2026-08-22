@@ -4,6 +4,7 @@
  * Uses DataTable with sorting, filtering, pagination.
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
@@ -12,6 +13,7 @@ import { Plus, Sun, CloudRain, Thermometer, UsersThree, Warning, ClipboardText }
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
 import { StatStrip, InsightRow, AutoChip } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 interface DailyLog {
   id: string;
@@ -54,10 +56,12 @@ export default function DailyLogsPage() {
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-  // Snapshot of the selected project (fetched the moment one is chosen in the
-  // modal) — last log, open items — so the form walks in knowing the job.
-  const [ctx, setCtx] = useState<any>(null);
   const [autoCrew, setAutoCrew] = useState(false);
+  // ListToolbar state — filters + sort persist per module via sag_flt_daily-logs.
+  const [logSearch, setLogSearch] = useState('');
+  const [projectFilter, setProjectFilter] = useState('all');
+  const [delayFilter, setDelayFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   const prevLogFor = (pid: string) => logs.filter(l => l.project_id === pid).sort((a, b) => (b.log_date || '').localeCompare(a.log_date || ''))[0];
 
   const [form, setForm] = useState({
@@ -81,6 +85,11 @@ export default function DailyLogsPage() {
     phaseOfWork: '',
     equipment: '',
   });
+
+  // Snapshot of the selected project — served from the shared useProjectContext
+  // cache the moment one is chosen in the modal; last log + open items, so the
+  // form walks in knowing the job.
+  const { ctx } = useProjectContext(form.projectId || null);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -134,7 +143,7 @@ export default function DailyLogsPage() {
       if (!res.ok) throw new Error('Failed to create daily log');
       setShowCreate(false);
       setForm({ projectId: '', logDate: new Date().toISOString().slice(0, 10), weather: '', temperatureHigh: '', temperatureLow: '', crewCount: '', workPerformed: '', delays: '', safetyNotes: '', materialsDelivered: '', visitors: '', notes: '', superintendent: '', precipitation: '', windConditions: '', phaseOfWork: '', equipment: '' });
-      setCtx(null); setAutoCrew(false);
+      setAutoCrew(false);
       await fetchLogs();
     } catch (e: any) {
       console.error(e); setError(humanError(e, 'Something went wrong. Please try again.'));
@@ -192,6 +201,18 @@ export default function DailyLogsPage() {
     }),
   ], []);
 
+  const visibleLogs = useMemo(() => {
+    let list = logs;
+    if (projectFilter !== 'all') list = list.filter(l => l.project_id === projectFilter);
+    if (delayFilter === 'delays') list = list.filter(l => (l.delays || '').trim());
+    if (delayFilter === 'clear') list = list.filter(l => !(l.delays || '').trim());
+    const q = logSearch.trim().toLowerCase();
+    if (q) list = list.filter(l => [l.work_performed, l.weather, l.delays, l.superintendent, l.notes, l.visitors, l.materials_delivered].some(v => String(v || '').toLowerCase().includes(q)));
+    return [...list].sort((a, b) => sortBy === 'oldest'
+      ? (a.log_date || '').localeCompare(b.log_date || '')
+      : (b.log_date || '').localeCompare(a.log_date || ''));
+  }, [logs, logSearch, projectFilter, delayFilter, sortBy]);
+
   const inputStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', background: colors.raised, border: `1px solid ${colors.border}`, borderRadius: radius.md, color: colors.text, fontSize: font.size.md, outline: 'none' };
   const labelStyle: React.CSSProperties = { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.textMuted, marginBottom: 4, display: 'block' };
 
@@ -233,11 +254,31 @@ export default function DailyLogsPage() {
         </div>
       )}
 
+      {/* List toolbar — search, project + delay filters, and sort (spec 1.1 anatomy) */}
+      <ListToolbar
+        module="daily-logs"
+        search={logSearch}
+        onSearch={setLogSearch}
+        searchPlaceholder="Search daily logs..."
+        filters={[
+          { key: 'project', label: 'Project', value: projectFilter, onChange: setProjectFilter, allLabel: 'All Projects', options: projects.map(p => ({ value: p.id, label: p.name })) },
+          { key: 'delays', label: 'Delays', value: delayFilter, onChange: setDelayFilter, allLabel: 'All Days', options: [
+            { value: 'delays', label: 'Days with Delays' },
+            { value: 'clear', label: 'No Delays' },
+          ] },
+        ]}
+        sort={sortBy}
+        onSort={setSortBy}
+        sortOptions={[{ value: 'newest', label: 'Newest first' }, { value: 'oldest', label: 'Oldest first' }]}
+        count={{ shown: visibleLogs.length, total: logs.length }}
+        style={{ marginBottom: 16 }}
+      />
+
       <DataTable
-        data={logs}
+        data={visibleLogs}
         columns={columns}
         loading={loading}
-        searchPlaceholder="Search daily logs..."
+        searchPlaceholder="Refine within results..."
         emptyMessage="No daily logs yet. Create your first log to start tracking."
         onRowClick={(row) => router.push(`/app/daily-logs/${row.id}`)}
       />
@@ -282,8 +323,6 @@ export default function DailyLogsPage() {
                     const prev = prevLogFor(pid);
                     setForm(f => ({ ...f, projectId: pid, crewCount: prev?.crew_count ? String(prev.crew_count) : f.crewCount }));
                     setAutoCrew(!!(prev?.crew_count));
-                    setCtx(null);
-                    if (pid) fetch(`/api/project-context?projectId=${pid}`).then(r => r.json()).then(c => { if (!c.error) setCtx(c); }).catch(() => {});
                   }} required style={inputStyle}>
                     <option value="">Select project...</option>
                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

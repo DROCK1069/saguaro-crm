@@ -1,9 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { Skeleton, SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toCents, toDollars, sumCents } from '@/lib/calc';
 import { Envelope, ArrowLeft, FileText, Lock, Trophy, Star, Plus, CheckCircle, XCircle, CurrencyDollar, UsersThree, Receipt, ClipboardText } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, ghostButtonStyle, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, FlowStrip, ghostButtonStyle, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030';
 const MUTED='rgba(255,255,255,0.62)';        // section-header meta text
@@ -103,6 +104,17 @@ export default function BidPackageDetailPage() {
   const [inviting, setInviting] = useState(false);
 
   useEffect(() => { loadPackage(); }, [id]);
+
+  // Dead-space kill (spec 4.1): a package with no invites opens straight into
+  // the invite composer — no hunting for "Invite More". One-shot per visit so
+  // Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && pkg && pkg.invited_subs.length === 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setShowInviteForm(true);
+    }
+  }, [loading, pkg]);
 
   function showToast(msg: string, color: string = '#1db954') {
     setToast({ msg, color });
@@ -238,9 +250,26 @@ export default function BidPackageDetailPage() {
 
   if (loading) return (
     <PremiumSurface maxWidth={1200}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: MUTED, fontSize: 14 }}>
-        Loading bid package...
+      {/* Layout-true shell — back stays live; hero, stats and the invite list
+          paint as skeletons shaped like the real content (house pattern: rfis). */}
+      <button onClick={() => router.push(`/app/projects/${projectId}/bid-packages`)} className="pmBtn" style={{ background: 'none', border: 'none', color: MUTED, fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 14, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+        <ArrowLeft size={14} weight="bold" />
+        Bid Packages
+      </button>
+      <div style={{ marginBottom: 24 }}>
+        <Skeleton width={110} height={11} style={{ marginBottom: 12 }} />
+        <Skeleton width={300} height={32} style={{ marginBottom: 10, maxWidth: '70%' }} />
+        <Skeleton width={220} height={13} />
       </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 24 }}>
+        <SkeletonKPI /><SkeletonKPI /><SkeletonKPI /><SkeletonKPI />
+      </div>
+      <SectionCard title="Invited Subcontractors" icon={<UsersThree size={17} weight="duotone" color={GOLD} />} flush>
+        <SkeletonRow />
+        <SkeletonRow />
+        <SkeletonRow />
+        <SkeletonRow />
+      </SectionCard>
     </PremiumSurface>
   );
 
@@ -483,12 +512,26 @@ export default function BidPackageDetailPage() {
             )}
 
             {pkg.invited_subs.length === 0 ? (
-              <PremiumEmpty
-                icon={<UsersThree size={30} weight="duotone" color={GOLD} />}
-                title="No subs invited yet"
-                description='Use "Invite More" to add subcontractors to this bid package.'
-                compact
-              />
+              <div style={{ padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                    <UsersThree size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                    No subs invited yet
+                    <span style={{ fontWeight: 400, color: DIM }}>{showInviteForm ? ' — send the first invite with the form above; bidding starts the moment it lands.' : ' — invite the first subcontractor to start collecting bids.'}</span>
+                  </div>
+                  {!showInviteForm && (
+                    <button onClick={() => setShowInviteForm(true)} style={goldButtonStyle} className="pmBtn">
+                      <Plus size={15} weight="bold" /> Invite Subcontractors
+                    </button>
+                  )}
+                </div>
+                <FlowStrip steps={[
+                  { title: 'Invite subs', desc: 'email goes out with the package' },
+                  { title: 'They bid online', desc: 'through the sub portal' },
+                  { title: 'Compare and award', desc: 'right from this page' },
+                  { title: 'Award flows on', desc: 'to contracts and budget' },
+                ]} />
+              </div>
             ) : (
               <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

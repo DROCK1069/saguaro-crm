@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import Link from 'next/link';
 import {
   Badge, Btn, Table, ProgressBar, T,
@@ -12,6 +13,7 @@ import {
   Check, Folder, Wall, HardHat, ChartBar, Lightbulb,
   Sparkle, CheckCircle, UploadSimple, DownloadSimple, ListChecks,
 } from '@phosphor-icons/react';
+import { Skeleton, SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
 import { divColor, divName } from '@/lib/takeoff/divisions';
 import { humanError } from '@/lib/errors';
 
@@ -242,7 +244,9 @@ export default function TakeoffPage() {
   const loadTakeoffs = useCallback(async () => {
     setLoadingList(true);
     try {
-      const res = await fetch('/api/takeoff?limit=30');
+      // W-18: ?include=latestDetail rides the newest takeoff's materials along with the
+      // list — list + detail paint from ONE round trip instead of a dependent pair.
+      const res = await fetch('/api/takeoff?limit=30&include=latestDetail');
       const json = await res.json();
       // Guard the shape: an error envelope ({error}) must never become list state.
       const list: Takeoff[] = Array.isArray(json.data) ? json.data : [];
@@ -252,26 +256,19 @@ export default function TakeoffPage() {
       // double-fired under StrictMode). Guarded by a ref so it only auto-selects once.
       if (list.length > 0 && !autoSelectedRef.current) {
         autoSelectedRef.current = true;
-        loadDetail(list[0].id);
+        if (Array.isArray(list[0].materials)) setSelectedTakeoff(list[0]); // detail rode along — zero extra fetches
+        else loadDetail(list[0].id); // older API shape — fall back to the dependent fetch
       }
     } finally {
       setLoadingList(false);
     }
   }, [loadDetail]);
 
-  async function loadProjects() {
-    try {
-      const res = await fetch('/api/projects/list');
-      const json = await res.json();
-      setProjects(json.projects || []);
-    } catch {
-      // non-fatal
-    }
-  }
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { setProjects(liveProjects as any); }, [liveProjects]);
 
   useEffect(() => {
     loadTakeoffs();
-    loadProjects();
   }, [loadTakeoffs]);
 
   // Tear down any live analysis stream if the user navigates away mid-analysis.
@@ -669,9 +666,12 @@ export default function TakeoffPage() {
             <SectionCard title="Recent Analyses" icon={<Folder size={16} weight="duotone" color={GOLD} />} flush>
               <div style={{ maxHeight: 460, overflowY: 'auto' }}>
                 {loadingList && (
-                  <div style={{ padding: '24px 20px', textAlign: 'center', color: T.muted, fontSize: 13 }}>
-                    Loading…
-                  </div>
+                  /* Layout-true placeholder rows — same shape as the real analysis rows, no text gate */
+                  <>
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </>
                 )}
                 {!loadingList && takeoffs.length === 0 && (
                   <div style={{ padding: '24px 20px', textAlign: 'center', color: T.muted, fontSize: 13 }}>
@@ -719,13 +719,26 @@ export default function TakeoffPage() {
 
           {/* RIGHT DETAIL PANEL */}
           <div>
-            {loadingDetail && !selectedTakeoff && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400, color: T.muted, fontSize: 14 }}>
-                Loading takeoff…
+            {(loadingDetail || loadingList) && !selectedTakeoff && (
+              /* Detail shell — shaped like the real panel (ring + metric strip + rows), no text gate */
+              <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 26, boxShadow: 'var(--shadow-lg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 22 }}>
+                  <Skeleton width={96} height={96} borderRadius="50%" style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <Skeleton width="45%" height={18} style={{ marginBottom: 10 }} />
+                    <Skeleton width="65%" height={12} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 22 }}>
+                  {[0, 1, 2, 3].map(i => <SkeletonKPI key={i} />)}
+                </div>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
               </div>
             )}
 
-            {!loadingDetail && !selectedTakeoff && (
+            {!loadingDetail && !loadingList && !selectedTakeoff && (
               /* ── Cinematic empty state — sell the payoff (mirrors the Heatmap hero) ── */
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}

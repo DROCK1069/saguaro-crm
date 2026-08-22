@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { humanError } from '@/lib/errors';
 import { PremiumSurface, ModuleHero, StatStrip, PremiumEmpty } from '@/components/ui/premium';
 import { UsersThree, ChatCircleDots, Buildings, ClockCounterClockwise } from '@phosphor-icons/react';
@@ -212,18 +213,14 @@ export default function ClientPortalPage() {
     } catch { /* silent */ }
   }, []);
 
-  const fetchProjects = useCallback(async () => {
-    try {
-      const r = await fetch('/api/projects/list');
-      if (r.ok) { const d = await r.json(); setProjects(d.projects ?? []); }
-    } catch { /* silent */ }
-  }, []);
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { setProjects(liveProjects as any); }, [liveProjects]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchPortalUsers(), fetchMessages(), fetchActivity(), fetchProjects()])
+    Promise.all([fetchPortalUsers(), fetchMessages(), fetchActivity()])
       .finally(() => setLoading(false));
-  }, [fetchPortalUsers, fetchMessages, fetchActivity, fetchProjects]);
+  }, [fetchPortalUsers, fetchMessages, fetchActivity]);
 
   /* scroll to bottom on new message */
   useEffect(() => {

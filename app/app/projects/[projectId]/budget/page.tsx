@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useState, useEffect } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -59,19 +60,9 @@ export default function BudgetPage() {
 
   // SmartCreate intelligence — one /api/project-context snapshot so the add
   // flow walks in knowing the contract, bid packages, and prior coding.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [csiDiv, setCsiDiv] = useState('');
   const [autoFill, setAutoFill] = useState<{ code?: boolean; desc?: boolean; amount?: boolean }>({});
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch { /* context is enrichment only — the page still works without it */ }
-    })();
-  }, [projectId]);
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });

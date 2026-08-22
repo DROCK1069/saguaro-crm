@@ -1,11 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Clipboard, CheckCircle, XCircle, ArrowLeft, ArrowRight, PencilSimple, FloppyDisk, FileText, Plus, X, CaretUp, CaretDown, Export, SealCheck, CurrencyDollar, Files, Lock, Receipt, CalendarBlank, TrendUp, Coins, ClockCounterClockwise, IdentificationCard } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, FlowSteps, InsightRow, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { Skeleton, SkeletonKPI, SkeletonRow, SkeletonCard } from '@/components/ui/Skeleton';
 
 const GOLD='#F59E0B', DARK='#0a0a0a',
       BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF',
@@ -94,27 +96,28 @@ export default function PayAppDetailPage() {
 
   // Project intelligence — the detail walks in knowing the contract, the prior
   // application, and every lien waiver tied to this one (single reads on mount).
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [allApps, setAllApps] = useState<any[]>([]);
   const [waivers, setWaivers] = useState<any[]>([]);
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-      try {
-        const r = await fetch(`/api/pay-apps/list?projectId=${projectId}`);
-        const d = await r.json();
-        setAllApps(d.payApps || []);
-      } catch {}
-      try {
-        const r = await fetch(`/api/lien-waivers/list?projectId=${projectId}`);
-        const d = await r.json();
-        setWaivers((d.lienWaivers || []).filter((w: any) => w.pay_application_id === id));
-      } catch {}
-    })();
+    // All three enrichment reads race in parallel (Promise.all) — none gates
+    // another, and none gates the main pay-app load below.
+    Promise.all([
+      (async () => {
+        try {
+          const r = await fetch(`/api/pay-apps/list?projectId=${projectId}`);
+          const d = await r.json();
+          setAllApps(d.payApps || []);
+        } catch {}
+      })(),
+      (async () => {
+        try {
+          const r = await fetch(`/api/lien-waivers/list?projectId=${projectId}`);
+          const d = await r.json();
+          setWaivers((d.lienWaivers || []).filter((w: any) => w.pay_application_id === id));
+        } catch {}
+      })(),
+    ]);
   }, [projectId, id]);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }, [toast]);
@@ -262,10 +265,46 @@ export default function PayAppDetailPage() {
 
   if (loading) return (
     <PremiumSurface maxWidth={1600}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 320, color: DIM }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ marginBottom: 12 }}><Clipboard size={34} weight="duotone" color={GOLD} /></div>
-          <div>Loading pay application…</div>
+      {/* Layout-true shell — back link stays live; the SOV table paints its real
+          header immediately with skeleton rows underneath (house pattern: rfis). */}
+      <Link href={`/app/projects/${projectId}/pay-apps`}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.62)', fontSize: 13, textDecoration: 'none', marginBottom: 18 }}>
+        <ArrowLeft size={14} weight="bold" /> Pay Applications
+      </Link>
+      <div style={{ marginBottom: 24 }}>
+        <Skeleton width={130} height={11} style={{ marginBottom: 12 }} />
+        <Skeleton width={280} height={34} style={{ marginBottom: 10 }} />
+        <Skeleton width={420} height={13} style={{ maxWidth: '80%' }} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
+        <SkeletonKPI /><SkeletonKPI /><SkeletonKPI /><SkeletonKPI /><SkeletonKPI />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, alignItems: 'flex-start' }}>
+        <SectionCard title="Schedule of Values" subtitle="G703 Continuation Sheet" icon={<FileText size={17} weight="duotone" color={GOLD} />} flush>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  {['#', 'Description', 'Sched. Value', 'Prev ($)', 'This Period ($)', 'Stored ($)', '% Done', 'Balance', 'Retainage'].map(h => (
+                    <th key={h} style={{ padding: '9px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: DIM, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+            </table>
+          </div>
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </SectionCard>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <SkeletonCard height={190} />
+          <SkeletonCard height={150} />
+          <SkeletonCard height={120} />
         </div>
       </div>
     </PremiumSurface>

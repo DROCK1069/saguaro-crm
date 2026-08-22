@@ -1,10 +1,12 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, scaleCents } from '@/lib/calc';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { Receipt, Plus, FilePlus, CurrencyDollar, Wallet } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
@@ -58,8 +60,12 @@ export default function BillsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   // SmartCreate: the project-context snapshot — vendors, cost codes, budget rollups.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto, setAuto] = useState<{ due?: boolean }>({});
+  // ListToolbar state — filters + sort persist per module via sag_flt_bills.
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('due');
 
   const fetchBills = useCallback(async () => {
     setLoading(true);
@@ -76,16 +82,16 @@ export default function BillsPage() {
 
   useEffect(() => { fetchBills(); }, [fetchBills]);
 
-  // The form walks in knowing the project: budget lines, known vendors, cost codes.
+  // Dead-space kill (spec 4.1): an empty module opens straight into the
+  // composer — the create form IS the zero state. One-shot per visit so
+  // Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+    if (!loading && bills.length === 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      openForm(true);
+    }
+  }, [loading, bills.length]);
 
   async function handleSave() {
     if (!form.vendor || !form.invoice_num || !form.amount) {
@@ -217,6 +223,20 @@ export default function BillsPage() {
     }
   }
 
+  // Toolbar-driven view of the list. Status matches the effective (overdue-aware) status.
+  const q = search.trim().toLowerCase();
+  const filteredBills = bills
+    .filter(b => {
+      const effStatus = isOverdue(b.due_date, b.status) && b.status !== 'Paid' ? 'Overdue' : b.status;
+      if (statusFilter !== 'all' && effStatus !== statusFilter) return false;
+      if (!q) return true;
+      return [b.bill_number, b.vendor_name, b.description, b.category].some(v => String(v || '').toLowerCase().includes(q));
+    })
+    .sort((a, b2) => {
+      if (sortBy === 'amount') return (Number(b2.amount) || 0) - (Number(a.amount) || 0);
+      if (sortBy === 'vendor') return String(a.vendor_name || '').localeCompare(String(b2.vendor_name || ''));
+      return String(a.due_date || '9999').localeCompare(String(b2.due_date || '9999'));
+    });
   const pendingTotal = toDollars(sumCents(bills.filter(b => b.status === 'Pending' || b.status === 'Approved').map(b => toCents(b.amount || 0))));
   const paidCount = bills.filter(b => b.status === 'Paid').length;
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#1c1c1e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
@@ -396,17 +416,48 @@ export default function BillsPage() {
         </div>
       )}
 
+      <ListToolbar
+        module="bills"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search bills..."
+        filters={[{
+          key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter,
+          allLabel: 'All Statuses',
+          options: ['Pending', 'Approved', 'Paid', 'Overdue'],
+        }]}
+        sort={sortBy}
+        onSort={setSortBy}
+        sortOptions={[
+          { value: 'due', label: 'Due date' },
+          { value: 'amount', label: 'Amount (high first)' },
+          { value: 'vendor', label: 'Vendor A-Z' },
+        ]}
+        count={{ shown: filteredBills.length, total: bills.length }}
+        style={{ marginBottom: 16 }}
+      />
+
       <SectionCard title="All Bills" icon={<Receipt size={17} weight="duotone" color={GOLD} />} flush>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: DIM }}>Loading...</div>
         ) : bills.length === 0 ? (
-          <div style={{ padding: '6px 8px' }}>
-            <PremiumEmpty
-              icon={<Receipt size={30} weight="duotone" color={GOLD} />}
-              title="No bills yet"
-              description="Add your first vendor bill to start tracking supplier invoices for this project."
-              action={<button onClick={() => openForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> New Bill</button>}
-            />
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                <Receipt size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                No bills yet
+                <span style={{ fontWeight: 400, color: DIM }}>{showForm ? ' — log the first one in the form above; it lands here as Pending.' : ' — log the first vendor invoice to start the payables ledger.'}</span>
+              </div>
+              {!showForm && (
+                <button onClick={() => openForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> New Bill</button>
+              )}
+            </div>
+            <FlowStrip steps={[
+              { title: 'Log the bill', desc: 'vendor, amount, cost code' },
+              { title: 'Budget actual posts', desc: 'to that line automatically' },
+              { title: 'Approve', desc: 'clears it for payment' },
+              { title: 'Mark Paid', desc: 'closes the loop' },
+            ]} />
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -419,7 +470,7 @@ export default function BillsPage() {
                 </tr>
               </thead>
               <tbody>
-                {bills.map(b => {
+                {filteredBills.map(b => {
                   const overdue = isOverdue(b.due_date, b.status);
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,.06)', background: overdue ? 'rgba(239,68,68,.05)' : 'transparent' }}>

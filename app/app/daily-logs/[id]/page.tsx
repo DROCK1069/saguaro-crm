@@ -25,6 +25,7 @@ import {
   HardHat, Wrench, CloudRain, Wind,
 } from '@phosphor-icons/react';
 import { colors, font, radius, space } from '@/lib/design-tokens';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 interface DailyLog {
   id: string;
@@ -130,8 +131,8 @@ export default function DailyLogDetailPage() {
   // ── Loading / Not found / Error ──────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320, color: colors.textMuted, fontSize: font.size.lg }}>
-        Loading daily log...
+      <div style={{ padding: '24px 28px', maxWidth: 1100, margin: '0 auto' }}>
+        <ModuleSkeleton kpis={0} rows={6} />
       </div>
     );
   }

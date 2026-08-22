@@ -6,6 +6,7 @@
  * /api/sage/ask-docs which retrieves → re-ranks (lib/rag) → Claude answers.
  */
 import { useEffect, useRef, useState } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { humanError } from '@/lib/errors';
 import { Sparkle, PaperPlaneRight, FileText, CaretRight, Question } from '@phosphor-icons/react';
 import { Aurora, PremiumFX, ModuleHero, SectionCard, goldButtonStyle } from '@/components/ui/premium';
@@ -27,7 +28,8 @@ export default function AskDocsPage() {
   const [err, setErr] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetch('/api/projects/list').then((r) => r.json()).then((d) => { const ps = d.projects || d.data || []; setProjects(ps); if (ps[0]) setProjectId(ps[0].id); }).catch(() => {}); }, []);
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { const ps = liveProjects; setProjects(ps); if (ps[0]) setProjectId((prev) => prev || ps[0].id); }, [liveProjects]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [turns, busy]);
 
   const ask = async (question?: string) => {

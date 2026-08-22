@@ -6,6 +6,7 @@ import { humanError } from '@/lib/errors';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { BUILDING_TYPES } from '@/lib/contractor-trades';
 import { StatStrip, AutoChip, FlowSteps } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 /* ─── Palette ─── */
 const GOLD = '#F59E0B', BG = '#1c1c1e', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
@@ -459,45 +460,26 @@ export default function LeadsPage() {
         }))} />
       )}
 
-      {/* ─── Filters ─── */}
-      <div style={{
-        display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center',
-      }}>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search company, contact, email, tags..."
-          style={{ ...inputS, width: 280 }}
-        />
-        <select value={stageFilter} onChange={e => setStageFilter(e.target.value)}
-          style={{ ...selectS, width: 150 }}>
-          <option value="all">All Stages</option>
-          {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}
-          style={{ ...selectS, width: 160 }}>
-          <option value="all">All Sources</option>
-          {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <input
-          type="number" placeholder="Min value" value={valueMin}
-          onChange={e => setValueMin(e.target.value)}
-          style={{ ...inputS, width: 120 }}
-        />
-        <input
-          type="number" placeholder="Max value" value={valueMax}
-          onChange={e => setValueMax(e.target.value)}
-          style={{ ...inputS, width: 120 }}
-        />
-        {(search || stageFilter !== 'all' || sourceFilter !== 'all' || valueMin || valueMax) && (
-          <button onClick={() => {
-            setSearch(''); setStageFilter('all'); setSourceFilter('all');
-            setValueMin(''); setValueMax('');
-          }} style={{
-            ...btnS('transparent', DIM), border: `1px solid ${BORDER}`, fontSize: 12,
-          }}>Clear Filters</button>
-        )}
-      </div>
+      {/* ─── List toolbar — search + stage/source filters; value range rides in extra ─── */}
+      <ListToolbar
+        module="leads"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search company, contact, email, tags..."
+        filters={[
+          { key: 'stage', label: 'Stage', value: stageFilter, onChange: setStageFilter, allLabel: 'All Stages', options: [...STAGES] },
+          { key: 'source', label: 'Source', value: sourceFilter, onChange: setSourceFilter, allLabel: 'All Sources', options: [...SOURCES] },
+        ]}
+        count={{ shown: filtered.length, total: leads.length }}
+        style={{ marginBottom: 20 }}
+        extra={<div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input type="number" placeholder="Min value" value={valueMin} onChange={e => setValueMin(e.target.value)} style={{ ...inputS, width: 110 }} />
+          <input type="number" placeholder="Max value" value={valueMax} onChange={e => setValueMax(e.target.value)} style={{ ...inputS, width: 110 }} />
+          {(search || stageFilter !== 'all' || sourceFilter !== 'all' || valueMin || valueMax) && (
+            <button onClick={() => { setSearch(''); setStageFilter('all'); setSourceFilter('all'); setValueMin(''); setValueMax(''); }} style={{ ...btnS('transparent', DIM), border: `1px solid ${BORDER}`, fontSize: 12 }}>Clear Filters</button>
+          )}
+        </div>}
+      />
 
       {/* ─── Error state ─── */}
       {error && (

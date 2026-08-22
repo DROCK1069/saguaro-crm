@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { humanError } from '@/lib/errors';
 import { toCents, toDollars, extend, sumCents, scaleCents, percentOf, addCents } from '@/lib/calc';
 import { CSI_DIVISIONS as CANONICAL_CSI_DIVISIONS } from '@/lib/construction-intelligence';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
+import { SkeletonRow } from '@/components/ui/Skeleton';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
 const GOLD   = '#F59E0B';
@@ -661,13 +663,7 @@ export default function EstimateBuilderPage() {
   if (loading) {
     return (
       <div style={pageStyle}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 40, height: 40, border: `3px solid ${BORDER}`, borderTop: `3px solid ${GOLD}`, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-            <div style={{ color: DIM, fontSize: 14 }}>Loading Estimate Builder...</div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-          </div>
-        </div>
+        <ModuleSkeleton kpis={4} rows={6} />
       </div>
     );
   }
@@ -927,7 +923,7 @@ export default function EstimateBuilderPage() {
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: GOLD }}>Import from Takeoff</div>
               <div style={{ color: DIM, fontSize: 12, marginBottom: 12 }}>Select a takeoff project to pull its line items into this estimate.</div>
               {importError && <div style={{ color: RED, fontSize: 13, marginBottom: 12, padding: '8px 12px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 6 }}>{importError}</div>}
-              {takeoffListLoading && <div style={{ color: DIM, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>Loading takeoff projects...</div>}
+              {takeoffListLoading && <div><SkeletonRow /><SkeletonRow /><SkeletonRow /></div>}
               {!takeoffListLoading && takeoffList.length === 0 && !importError && (
                 <div style={{ color: DIM, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>No takeoff projects found for your account.</div>
               )}

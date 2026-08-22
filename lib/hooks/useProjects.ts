@@ -31,6 +31,9 @@ export function useProjects() {
     projects: data?.projects ?? [],
     loading: isLoading,
     error,
+    // /api/projects/list degrades to 200 + {source:'error'} on server faults —
+    // callers that must not render a false empty portfolio check this flag.
+    degraded: !!(data && (data as any).source && (data as any).source !== 'live'),
     revalidate,
   };
 }

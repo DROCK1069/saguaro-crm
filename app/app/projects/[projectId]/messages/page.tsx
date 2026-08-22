@@ -1,9 +1,11 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { ChatCircleText, ChatsCircle, PaperPlaneTilt } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 // Premium surface palette (matches components/ui/premium.tsx + the dashboard) ----
 const GOLD = '#F59E0B';
@@ -71,6 +73,8 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [myName, setMyName] = useState('');
+  // ListToolbar state — keyword search over the running record.
+  const [search, setSearch] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Remember which sender_name is "me" so my own bubbles align right. The server
@@ -95,21 +99,15 @@ export default function MessagesPage() {
   useEffect(() => { fetchMessages(); }, [fetchMessages]);
 
   // Project intelligence — one snapshot; names the thread and sizes the roster.
-  const [ctx, setCtx] = useState<any>(null);
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch { /* context is progressive enhancement */ }
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const contributors = [...new Set(messages.map(m => m.sender).filter(Boolean))];
   const todayCount = messages.filter(m => dayLabel(m.timestamp) === 'Today').length;
   const lastMsg = messages[messages.length - 1] || null;
   const subCount = (ctx?.subs || []).length;
+  // Toolbar-driven view of the thread — empty search shows the live thread untouched.
+  const q = search.trim().toLowerCase();
+  const visibleMessages = q ? messages.filter(m => m.text.toLowerCase().includes(q) || m.sender.toLowerCase().includes(q)) : messages;
 
   // Poll for new messages every 15 seconds
   useEffect(() => {
@@ -188,6 +186,17 @@ export default function MessagesPage() {
         ]} />
       )}
 
+      {/* List toolbar — search the running record */}
+      {!loading && messages.length > 0 && (
+        <ListToolbar
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search messages..."
+          count={{ shown: visibleMessages.length, total: messages.length }}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       {/* Message thread — full-height card: thread scrolls internally, send bar pinned */}
       <SectionCard
         flush
@@ -222,10 +231,10 @@ export default function MessagesPage() {
             />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {messages.map((msg, idx) => {
+              {visibleMessages.map((msg, idx) => {
                 const isMe = !!myName && msg.sender === myName;
                 const day = dayLabel(msg.timestamp);
-                const prevDay = idx > 0 ? dayLabel(messages[idx - 1].timestamp) : null;
+                const prevDay = idx > 0 ? dayLabel(visibleMessages[idx - 1].timestamp) : null;
                 return (
                   <React.Fragment key={msg.id}>
                   {day && day !== prevDay && (

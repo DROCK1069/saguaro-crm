@@ -1,5 +1,7 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
+import useSWR from 'swr';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -22,55 +24,47 @@ const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.
 const fmt = (n:number|null|undefined) => '$'+((n ?? 0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
 const fmtPct = (a:number|null|undefined,b:number|null|undefined) => (b ?? 0)>0?(((a ?? 0)/(b as number))*100).toFixed(1)+'%':'0%';
 
+// Shared-key fetcher for the project aggregate: auth headers + explicit 404
+// handling (a {notFound:true} sentinel instead of a thrown error) so the
+// error / not-found render states stay distinct.
+const overviewFetcher = async (url: string) => {
+  const auth = await getAuthHeaders();
+  const r = await fetch(url, { headers: auth });
+  if (r.status === 404) return { notFound: true };
+  if (!r.ok) {
+    let msg = '';
+    try { const body = await r.json(); msg = body?.error || body?.message || ''; } catch { /* non-JSON body */ }
+    console.error('load project overview failed', r.status, msg);
+    throw new Error(msg || 'Request failed');
+  }
+  const d = await r.json();
+  if (!d?.project) return { notFound: true };
+  return d;
+};
+
 export default function OverviewPage(){
   const { projectId } = useParams<{projectId:string}>();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [notFound, setNotFound] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanMsg, setScanMsg] = useState('');
 
-  const load = useCallback(async()=>{
-    setLoading(true); setError(''); setNotFound(false);
-    try {
-      const auth = await getAuthHeaders();
-      const r = await fetch('/api/projects/'+projectId, { headers: auth });
-      if (r.status === 404) { setNotFound(true); return; }
-      if (!r.ok) {
-        let msg = '';
-        try { const body = await r.json(); msg = body?.error || body?.message || ''; } catch { /* non-JSON body */ }
-        console.error('load project overview failed', r.status, msg);
-        throw new Error(msg || 'Request failed');
-      }
-      const d = await r.json();
-      if (!d?.project) { setNotFound(true); return; }
-      setData(d);
-    } catch (e:any) {
-      // Network failure or non-2xx — never swallow; surface a clean message.
-      console.error(e);
-      setError(humanError(e, 'Network error. Check your connection and try again.'));
-    } finally {
-      setLoading(false);
-    }
-  },[projectId]);
-
-  useEffect(()=>{ load(); },[load]);
+  // One SWR key per resource (W-2): '/api/projects/'+projectId is the same
+  // cache entry the project sidebar header reads — opening a project costs a
+  // single aggregate request, and a revisit paints instantly from cache.
+  const { data: swrData, error: loadError, isLoading, mutate: revalidate } = useSWR<any>(
+    projectId ? '/api/projects/' + projectId : null,
+    overviewFetcher,
+    { revalidateOnFocus: false, keepPreviousData: true }
+  );
+  const notFound = !!swrData?.notFound;
+  const data = notFound ? null : (swrData ?? null);
+  const loading = isLoading && !swrData;
+  const error = loadError ? humanError(loadError, 'Network error. Check your connection and try again.') : '';
+  const load = () => { revalidate(); };
 
   // Project-context snapshot — one fetch fills the money fallbacks, the
   // open-items rollup, the schedule pulse, and the recent-activity rail.
   // Enhancement-only: the page still renders fully without it.
-  const [ctx, setCtx] = useState<any>(null);
-  useEffect(()=>{
-    (async()=>{
-      try{
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if(!c.error) setCtx(c);
-      }catch{}
-    })();
-  },[projectId]);
-
+  const { ctx } = useProjectContext(projectId);
   async function runAutopilot(){
     setScanning(true); setScanMsg('');
     try {
@@ -84,8 +78,7 @@ export default function OverviewPage(){
       const json = await res.json();
       setScanMsg(json.summary || 'Autopilot scan complete.');
       // Refresh data to pick up new alerts
-      const r2 = await fetch('/api/projects/'+projectId, { headers: auth });
-      if (r2.ok) { const d2 = await r2.json(); setData(d2); }
+      await revalidate();
     } catch { setScanMsg('Scan failed. Please try again.'); }
     finally { setScanning(false); }
   }

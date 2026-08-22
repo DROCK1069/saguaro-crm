@@ -5,6 +5,7 @@
  * numbers as iOS). Seed the SOV straight from a takeoff to close the money loop.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { useRouter } from 'next/navigation';
 import { computePayApp, estimateToSov, usd, type SovLine } from '@/lib/finance';
 import { getAuthHeaders } from '@/lib/supabase-browser';
@@ -30,7 +31,8 @@ export default function PayAppPage() {
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { (async () => { const h = await getAuthHeaders(); fetch('/api/projects/list', { headers: h }).then((r) => r.json()).then((x) => { const ps = x.projects || x.data || []; setProjects(ps); if (ps[0]) setProjectId(ps[0].id); }).catch(() => {}); })(); }, []);
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { const ps = liveProjects; setProjects(ps); if (ps[0]) setProjectId((prev) => prev || ps[0].id); }, [liveProjects]);
   useEffect(() => { if (!projectId) return; (async () => { const h = await getAuthHeaders(); fetch(`/api/takeoff?limit=30`, { headers: h }).then((r) => r.json()).then((x) => setTakeoffs((x.takeoffs || x.data || []).filter((t: any) => !t.project_id || t.project_id === projectId))).catch(() => {}); })(); }, [projectId]);
 
   const seedFromTakeoff = async (tid: string) => {

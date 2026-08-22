@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useParams } from 'next/navigation';
 import { Badge, Table, T } from '@/components/ui/shell';
@@ -11,6 +12,7 @@ import {
   PremiumEmpty,
   StatStrip,
   FlowSteps,
+  FlowStrip,
   InsightRow,
   AutoChip,
   goldButtonStyle,
@@ -73,17 +75,7 @@ export default function TimesheetsPage() {
   const [weekFilter, setWeekFilter] = useState<WeekFilter>('current');
   // Project snapshot (/api/project-context): cost codes, budget actuals, open
   // items — the entry form walks in knowing the job.
-  const [ctx, setCtx] = useState<any>(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch { /* strip and code list simply fall back */ }
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -99,6 +91,17 @@ export default function TimesheetsPage() {
   }, [projectId, weekFilter]);
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
+
+  // Dead-space kill (spec 4.1): an empty log opens straight into the entry
+  // composer (today + 8h defaulted, roster type-ahead). One-shot per visit so
+  // Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && entries.length === 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setShowForm(true);
+    }
+  }, [loading, entries.length]);
 
   const currentWeekStart = getWeekStart(new Date());
   const lastWeekStart = (() => { const d = new Date(currentWeekStart); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0]; })();
@@ -306,13 +309,27 @@ export default function TimesheetsPage() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: 44, color: 'rgba(255,255,255,0.62)', fontSize: 13 }}>Loading...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '8px 8px 20px' }}>
-            <PremiumEmpty
-              icon={<Clock size={30} weight="duotone" color={GOLD} />}
-              title="No time entries yet"
-              description="Add a crew timesheet entry to start tracking labor hours for this period."
-              action={<button style={goldButtonStyle} className="pmBtn" onClick={() => setShowForm(true)}><Plus size={15} weight="bold" /> Add Entry</button>}
-            />
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#FFFFFF' }}>
+                <Clock size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                {entries.length === 0 ? 'No time entries yet' : 'No entries in this period'}
+                <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.62)' }}>
+                  {entries.length === 0
+                    ? (showForm ? ' — log the first crew entry in the form above; the roster builds as you go.' : ' — log the first crew entry to start tracking labor.')
+                    : ' — switch the week filter, or add one for this period.'}
+                </span>
+              </div>
+              {!showForm && (
+                <button style={goldButtonStyle} className="pmBtn" onClick={() => setShowForm(true)}><Plus size={15} weight="bold" /> Add Entry</button>
+              )}
+            </div>
+            <FlowStrip steps={[
+              { title: 'Log hours', desc: 'name, hours, cost code' },
+              { title: 'Pending review', desc: 'lands in this table' },
+              { title: 'Approve in one click' },
+              { title: 'Labor posts to job cost', desc: 'budget actuals update' },
+            ]} />
           </div>
         ) : (
           <Table

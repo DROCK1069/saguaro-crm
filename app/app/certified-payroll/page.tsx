@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import Link from 'next/link';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { WarningCircle, FileText, CaretRight, Buildings, ShieldCheck } from '@phosphor-icons/react';
@@ -28,9 +29,10 @@ const statusStyle = (s: string): { color: string; bg: string } => {
 };
 
 export default function CertifiedPayrollPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  // W-4: the shared projects cache — revisits paint instantly.
+  const { projects: liveProjects, loading, error: loadError, revalidate } = useProjects();
+  const projects = liveProjects as Project[];
+  const error = !!loadError;
   const [search, setSearch] = useState('');
 
   // Org-wide WH-347 rollup — /api/payroll/list without a projectId returns
@@ -48,17 +50,8 @@ export default function CertifiedPayrollPage() {
   const certifiedCount = records.filter(r => (r.status || '').toLowerCase() === 'certified').length;
   const fmt0 = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    fetch('/api/projects/list')
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then(d => setProjects((d.projects ?? d.items ?? []) as Project[]))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
+  const load = useCallback(() => { revalidate(); }, [revalidate]);
 
-  useEffect(() => { load(); }, [load]);
 
   const filtered = projects.filter(p => {
     if (!search) return true;

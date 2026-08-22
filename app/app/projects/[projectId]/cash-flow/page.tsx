@@ -1,10 +1,12 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import {
   PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow,
   goldButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 import {
   ChartLineUp, TrendUp, TrendDown, Scales, Vault, ChartBar, Wallet,
   Table as TableIcon, Buildings, WarningCircle, CaretDown, ArrowsClockwise,
@@ -75,16 +77,7 @@ function CashFlowContent() {
 
   // Live project money snapshot (/api/project-context) — so this screen never
   // renders $0 dead space when the project has real contract money.
-  const [ctx, setCtx] = useState<any>(null);
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const money = ctx?.money;
   const budget = ctx?.budget;
@@ -141,11 +134,9 @@ function CashFlowContent() {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' as const, color: DIM }}>
-        <div style={{ width: 32, height: 32, border: `3px solid ${BORDER}`, borderTopColor: GOLD, borderRadius: '50%', animation: 'cfSpin 0.8s linear infinite', margin: '0 auto 12px' }} />
-        Generating cash flow projection...
-        <style>{`@keyframes cfSpin { to { transform: rotate(360deg); } }`}</style>
-      </div>
+      <PremiumSurface maxWidth={1300}>
+        <ModuleSkeleton kpis={4} rows={6} />
+      </PremiumSurface>
     );
   }
 
@@ -523,9 +514,9 @@ function CashFlowContent() {
 export default function CashFlowPage() {
   return (
     <Suspense fallback={
-      <div style={{ padding: 40, textAlign: 'center' as const, color: DIM }}>
-        Loading cash flow data...
-      </div>
+      <PremiumSurface maxWidth={1300}>
+        <ModuleSkeleton kpis={4} rows={6} />
+      </PremiumSurface>
     }>
       <CashFlowContent />
     </Suspense>

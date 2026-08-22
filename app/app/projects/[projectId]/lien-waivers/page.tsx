@@ -1,10 +1,12 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { CheckCircle, Hourglass, Lightning, FileText, DownloadSimple, Receipt } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -93,17 +95,17 @@ export default function LienWaiversPage() {
   const [fPayAppId,setFPayAppId] = useState('');
   const [autoAmt,setAutoAmt]     = useState(false);
 
+  // ListToolbar state — filters persist per module via sag_flt_lien-waivers.
+  const [wSearch,setWSearch] = useState('');
+  const [wStatusFilter,setWStatusFilter] = useState('all');
+  const [wTypeFilter,setWTypeFilter] = useState('all');
+
   // Project intelligence — one snapshot (roster + money) plus the pay-app list,
   // so every waiver can name the application it gates.
-  const [ctx,setCtx]         = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [payApps,setPayApps] = useState<any[]>([]);
   useEffect(()=>{
     (async()=>{
-      try{
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if(!c.error) setCtx(c);
-      }catch{}
       try{
         const r = await fetch(`/api/pay-apps/list?projectId=${projectId}`);
         const d = await r.json();
@@ -175,6 +177,16 @@ export default function LienWaiversPage() {
   // Unsigned waivers with blocks_payment !== false hold mark-paid on their pay app.
   const blocking = waivers.filter(w=>(w.status==='pending'||w.status==='sent')&&w.blocks_payment!==false&&w.pay_application_id).length;
   const waiverTotal = waivers.reduce((s,w)=>s+(Number(w.amount)||0),0);
+  // Toolbar-driven view of the All Waivers table (matrix stays a full-coverage view).
+  const wq = wSearch.trim().toLowerCase();
+  const filteredWaivers = waivers.filter((w:any)=>{
+    const st = w.status==='sent' ? 'pending' : String(w.status||'pending');
+    if (wStatusFilter!=='all' && st!==wStatusFilter) return false;
+    if (wTypeFilter!=='all' && normalizeType(String(w.waiver_type||''))!==wTypeFilter) return false;
+    if (!wq) return true;
+    const claimant = w.claimant_name||(w.subcontractors as any)?.company_name||(w.subcontractors as any)?.name||'';
+    return [claimant, typeLabel(w.waiver_type), w.state].some(v=>String(v||'').toLowerCase().includes(wq));
+  });
   const subs = (ctx?.subs||[]) as any[];
   const lastApp = ctx?.money?.lastPayApp||null;
   const appNoById:Record<string,number> = {};
@@ -402,7 +414,22 @@ export default function LienWaiversPage() {
           </div>
 
           {/* List of individual waivers */}
-          {waivers.length>0 && (
+          {waivers.length>0 && (<>
+            <ListToolbar
+              module="lien-waivers"
+              search={wSearch}
+              onSearch={setWSearch}
+              searchPlaceholder="Search waivers..."
+              filters={[
+                { key: 'status', label: 'Status', value: wStatusFilter, onChange: setWStatusFilter, allLabel: 'All Statuses', options: [
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'signed', label: 'Signed' },
+                ] },
+                { key: 'type', label: 'Type', value: wTypeFilter, onChange: setWTypeFilter, allLabel: 'All Types', options: WAIVER_TYPES.map(t => ({ value: t.key, label: t.label })) },
+              ]}
+              count={{ shown: filteredWaivers.length, total: waivers.length }}
+              style={{ marginBottom: 16 }}
+            />
             <SectionCard title="All Waivers" icon={<FileText size={17} weight="duotone" color={GOLD} />} flush>
               <div style={{overflowX:'auto'}}>
                 <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
@@ -416,7 +443,7 @@ export default function LienWaiversPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {waivers.map((w:any)=>{
+                    {filteredWaivers.map((w:any)=>{
                       const wBlocks = (w.status==='pending'||w.status==='sent')&&w.blocks_payment!==false&&w.pay_application_id;
                       const appNo = w.pay_application_id?appNoById[w.pay_application_id]:undefined;
                       return (
@@ -449,7 +476,7 @@ export default function LienWaiversPage() {
                 </table>
               </div>
             </SectionCard>
-          )}
+          </>)}
         </>
       )}
     </PremiumSurface>

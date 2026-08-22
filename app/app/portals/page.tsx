@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { CheckCircle, XCircle, X, ArrowRight, Plus, House, HardHat, Copy, ShareNetwork, ListNumbers } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
@@ -86,15 +87,16 @@ export default function PortalsPage() {
   // True when the project select was prefilled (single-project tenant) — drives the AUTO chip.
   const [autoProj, setAutoProj] = useState(false);
 
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { setProjects(liveProjects as any); }, [liveProjects]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [projRes, clientRes, subRes] = await Promise.all([
-        fetch('/api/projects/list'),
+      const [clientRes, subRes] = await Promise.all([
         fetch('/api/portal/client/sessions'),
         fetch('/api/portal/sub/sessions'),
       ]);
-      if (projRes.ok) { const d = await projRes.json(); setProjects(d.projects || []); }
       if (clientRes.ok) { const d = await clientRes.json(); setClientSessions(d.sessions || []); }
       if (subRes.ok) { const d = await subRes.json(); setSubSessions(d.sessions || []); }
     } catch { /* non-fatal */ }

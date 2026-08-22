@@ -1,9 +1,11 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { ShieldCheck, Plus, X, CheckCircle, Warning, WarningCircle, Users } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
@@ -52,18 +54,14 @@ export default function InsurancePage() {
   const [fFile,setFFile]       = useState<File|null>(null);
   const [fCustomSub,setFCustomSub] = useState(false);
 
+  // ListToolbar state — filters persist per module via sag_flt_insurance.
+  const [certSearch,setCertSearch] = useState('');
+  const [certStatusFilter,setCertStatusFilter] = useState('all');
+  const [certTypeFilter,setCertTypeFilter] = useState('all');
+
   // Project intelligence — the roster from /api/project-context drives the
   // per-sub coverage rollup and the sub picker in the add form.
-  const [ctx,setCtx] = useState<any>(null);
-  useEffect(()=>{
-    (async()=>{
-      try{
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if(!c.error) setCtx(c);
-      }catch{}
-    })();
-  },[projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const load = useCallback(async()=>{
     setLoading(true); setError('');
@@ -152,6 +150,17 @@ export default function InsurancePage() {
     .sort((a,b)=>a.days-b.days);
   const expiredCerts = certs.filter(c=>daysUntilExpiry(c.expiry_date||c.expiryDate)<0);
   const totalCoverage = certs.reduce((s,c)=>s+(Number(c.coverage_amount||c.coverageAmount)||0),0);
+
+  // Toolbar-driven view of the certificate table (status derives from expiry).
+  const qIns = certSearch.trim().toLowerCase();
+  const filteredCerts = certs.filter((c:any)=>{
+    const days = daysUntilExpiry(c.expiry_date||c.expiryDate);
+    const state = days<0?'expired':days<30?'expiring':'active';
+    if(certStatusFilter!=='all'&&state!==certStatusFilter) return false;
+    if(certTypeFilter!=='all'&&String(c.policy_type||c.policyType||'')!==certTypeFilter) return false;
+    if(!qIns) return true;
+    return [c.sub_name||c.subName||c.vendor_name,c.carrier,c.policy_number||c.policyNo].some(v=>String(v||'').toLowerCase().includes(qIns));
+  });
 
   return (
     <>
@@ -367,7 +376,23 @@ export default function InsurancePage() {
         )}
 
         {/* Table */}
-        {!loading && certs.length>0 && (
+        {!loading && certs.length>0 && (<>
+          <ListToolbar
+            module="insurance"
+            search={certSearch}
+            onSearch={setCertSearch}
+            searchPlaceholder="Search certificates..."
+            filters={[
+              { key: 'status', label: 'Status', value: certStatusFilter, onChange: setCertStatusFilter, allLabel: 'All Statuses', options: [
+                { value: 'active', label: 'Active' },
+                { value: 'expiring', label: 'Expiring soon' },
+                { value: 'expired', label: 'Expired' },
+              ] },
+              { key: 'type', label: 'Policy Type', value: certTypeFilter, onChange: setCertTypeFilter, allLabel: 'All Types', options: [...POLICY_TYPES] },
+            ]}
+            count={{ shown: filteredCerts.length, total: certs.length }}
+            style={{ marginBottom: 16 }}
+          />
           <SectionCard
             title="Certificates"
             icon={<ShieldCheck size={17} weight="duotone" color={GOLD} />}
@@ -385,7 +410,7 @@ export default function InsurancePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {certs.map((c:any,idx:number)=>{
+                  {filteredCerts.map((c:any,idx:number)=>{
                     const expDate  = c.expiry_date||c.expiryDate||'';
                     const days     = daysUntilExpiry(expDate);
                     const st       = certStatus(expDate);
@@ -429,7 +454,7 @@ export default function InsurancePage() {
               </table>
             </div>
           </SectionCard>
-        )}
+        </>)}
 
       </PremiumSurface>
     </>

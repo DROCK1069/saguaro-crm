@@ -1,11 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import DragHandle, { useDragReorder } from '../../../../../components/DragHandle';
 import { Clipboard, ClipboardText, CheckCircle, FileText, CaretDown, PencilSimple, Copy, Trash, Receipt, Plus, Hourglass } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
+import { SkeletonRow } from '@/components/ui/Skeleton';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const SAGE='#45B37D',AMBER='#F0A63C';
@@ -86,28 +88,26 @@ export default function PayAppsPage() {
 
   // Project intelligence + waiver coverage — fetched once on mount. The list walks
   // in knowing the contract money and every lien waiver tied to a billing period.
-  const [ctx,setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [waiversByApp,setWaiversByApp] = useState<Record<string,{total:number;signed:number}>>({});
   useEffect(()=>{
-    (async()=>{
-      try{
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if(!c.error) setCtx(c);
-      }catch{}
-      try{
-        const r = await fetch(`/api/lien-waivers/list?projectId=${projectId}`);
-        const d = await r.json();
-        const map:Record<string,{total:number;signed:number}> = {};
-        for(const w of (d.lienWaivers||[])){
-          if(!w?.pay_application_id) continue;
-          const m = map[w.pay_application_id] || (map[w.pay_application_id]={total:0,signed:0});
-          m.total++;
-          if(w.status==='signed') m.signed++;
-        }
-        setWaiversByApp(map);
-      }catch{}
-    })();
+    // Both mount reads race in parallel — context never gates waiver coverage.
+    Promise.all([
+      (async()=>{
+        try{
+          const r = await fetch(`/api/lien-waivers/list?projectId=${projectId}`);
+          const d = await r.json();
+          const map:Record<string,{total:number;signed:number}> = {};
+          for(const w of (d.lienWaivers||[])){
+            if(!w?.pay_application_id) continue;
+            const m = map[w.pay_application_id] || (map[w.pay_application_id]={total:0,signed:0});
+            m.total++;
+            if(w.status==='signed') m.signed++;
+          }
+          setWaiversByApp(map);
+        }catch{}
+      })(),
+    ]);
   },[projectId]);
 
   const { dragHandlers, draggingIndex } = useDragReorder(payApps, (reordered) => {
@@ -322,10 +322,14 @@ export default function PayAppsPage() {
         />
       </div>
 
-      {/* Loading */}
+      {/* Loading — skeleton rows shaped like the real table (house pattern: rfis) */}
       {loading && (
-        <SectionCard>
-          <div style={{padding:32,textAlign:'center',color:'rgba(255,255,255,0.62)',fontSize:13}}>Loading pay applications…</div>
+        <SectionCard flush>
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
         </SectionCard>
       )}
 

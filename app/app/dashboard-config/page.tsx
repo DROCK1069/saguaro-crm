@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { Package, FolderOpen, X, CaretUp, CaretDown, Gear, SquaresFour, GridFour } from '@phosphor-icons/react';
 import { WIDGET_CATALOG, WidgetBody, useWidgetMetrics, type WidgetSettings } from '@/components/dashboard-widgets';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
@@ -267,30 +268,14 @@ export default function DashboardConfigPage() {
 
   /* Real tenant projects — populate the per-widget "Project Filter" dropdown
      with the user's actual projects (never fabricated placeholder names). */
-  const [projectOptions, setProjectOptions] = useState<{ id: string; name: string }[]>([]);
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const res = await fetch('/api/projects/list');
-        if (!res.ok) return;
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : data.projects || [];
-        if (!alive) return;
-        setProjectOptions(
-          list
-            .map((p: Record<string, unknown>) => ({
-              id: String(p.id ?? ''),
-              name: String(p.name ?? p.project_name ?? 'Untitled'),
-            }))
-            .filter((p: { id: string }) => p.id),
-        );
-      } catch {
-        /* non-fatal — dropdown falls back to "All Projects" only */
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
+  const { projects: liveProjects } = useProjects();
+  const projectOptions = useMemo(
+    () =>
+      (liveProjects as any[])
+        .map((p: any) => ({ id: String(p.id ?? ''), name: String(p.name ?? p.project_name ?? 'Untitled') }))
+        .filter((p) => p.id),
+    [liveProjects],
+  );
 
   /* ── Live tenant metrics powering the widget previews ── */
   const { metrics, loading: metricsLoading } = useWidgetMetrics();

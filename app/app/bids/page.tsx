@@ -1,8 +1,9 @@
 'use client';
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { WarningCircle, Brain, ChartBar, ArrowRight, Tray, CaretDown, PencilSimple, Clipboard, ChatCircle, Trash, CheckCircle, XCircle, Clock, Robot, X, Users, CalendarBlank, CurrencyDollar, Gavel, Plus, TrendUp } from '@phosphor-icons/react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
@@ -122,26 +123,16 @@ function BidsPageInner() {
   const [scoreResult, setScoreResult] = useState<{fitScore:number,winPct:number,recommendation:string}|null>(null);
   const [scoreError, setScoreError] = useState<string|null>(null);
   // Sage auto-fill: pick an existing project → derive every scoring input.
-  const [scoreProjects, setScoreProjects] = useState<{id:string,name:string}[]>([]);
+  const { projects: liveProjects } = useProjects();
+  const scoreProjects = useMemo(
+    () => (liveProjects as any[]).map((p: any) => ({ id: p.id, name: p.name || 'Untitled Project' })).filter((p) => p.id),
+    [liveProjects],
+  );
   const [pickProject, setPickProject] = useState('');
   const [autofilling, setAutofilling] = useState(false);
   // Hidden richer inputs the auto-fill supplies (used by submitScore + hints).
   const [scoreMeta, setScoreMeta] = useState<{location?:string;dueDate?:string|null;ownerName?:string;projectType?:string;valueSource?:string|null;historyHint?:string}>({});
 
-  // Load a lightweight project list the first time the Score modal opens.
-  useEffect(() => {
-    if (!showScore || scoreProjects.length) return;
-    (async () => {
-      try {
-        const r = await fetch('/api/projects/list');
-        const d = await r.json().catch(() => ({}));
-        const list = (d.projects || [])
-          .map((p: any) => ({ id: p.id, name: p.name || 'Untitled Project' }))
-          .filter((p: any) => p.id);
-        setScoreProjects(list);
-      } catch { /* picker is optional — manual entry still works */ }
-    })();
-  }, [showScore, scoreProjects.length]);
 
   async function autofillFromProject(id: string) {
     setPickProject(id);
@@ -443,7 +434,7 @@ function BidsPageInner() {
                 <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums',color:op.low_bid_amount?TEXT:DIM}}>{op.low_bid_amount ? fmt(Number(op.low_bid_amount)||0) : '—'}</td>
                 <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums'}}>{op.spread_pct!=null&&Number.isFinite(Number(op.spread_pct)) ? (<span style={{fontWeight:700,color:spreadColor(Number(op.spread_pct))}}>{Math.round(Number(op.spread_pct))}%<span style={{color:DIM,fontWeight:500,fontSize:11}}> {Number(op.spread_pct)<=10?'tight':Number(op.spread_pct)<=25?'level it':'wide'}</span></span>) : (<span style={{color:DIM,fontSize:11}}>{(Number(op.num_responded ?? op.bid_count)||0)===1?'needs 2 bids':'—'}</span>)}</td>
                 <td style={{padding:'12px 14px'}}>
-                  <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
+                  <Link href={`/app/projects/${op.project_id}/bid-packages/${op.id}`} style={{display:'inline-block',textDecoration:'none',background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></Link>
                 </td>
               </tr>
             ))}</tbody>
@@ -511,7 +502,7 @@ function BidsPageInner() {
                   <td style={{padding:'12px 14px',color:op.low_bid_amount?TEXT:DIM,fontVariantNumeric:'tabular-nums'}}>{op.low_bid_amount ? (<span style={{display:'inline-flex',alignItems:'center',gap:4}}><CurrencyDollar size={13} weight="regular" color={GREEN} />{fmt(Number(op.low_bid_amount)||0)}{op.low_bid_company?<span style={{color:DIM,fontSize:11}}> · {op.low_bid_company}</span>:null}</span>) : '—'}</td>
                   <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums'}}>{op.spread_pct!=null&&Number.isFinite(Number(op.spread_pct)) ? (<span style={{fontWeight:700,color:spreadColor(Number(op.spread_pct))}}>{Math.round(Number(op.spread_pct))}%<span style={{color:DIM,fontWeight:500,fontSize:11}}> {Number(op.spread_pct)<=10?'tight':Number(op.spread_pct)<=25?'level it':'wide'}</span></span>) : (<span style={{color:DIM,fontSize:11}}>{(Number(responded)||0)===1?'needs 2 bids':'—'}</span>)}</td>
                   <td style={{padding:'12px 14px'}}>
-                    <button onClick={()=>router.push(`/app/projects/${op.project_id}/bid-packages/${op.id}`)} style={{background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></button>
+                    <Link href={`/app/projects/${op.project_id}/bid-packages/${op.id}`} style={{display:'inline-block',textDecoration:'none',background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></Link>
                   </td>
                 </tr>
               );

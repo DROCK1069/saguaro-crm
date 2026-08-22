@@ -1,10 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/Toast';
 import { UsersThree, UserPlus, HardHat, EnvelopeSimple, Phone, IdentificationBadge, ClockCounterClockwise } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',BLUE='#1a5fa8';
 const fmt = (n:number) => '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -27,20 +29,12 @@ export default function TeamPage(){
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState('');
   const [inviteAuto, setInviteAuto] = useState<{name?:boolean;email?:boolean;role?:boolean}>({});
+  // ListToolbar state — roster search + team/subs group filter (sag_flt_team).
+  const [search, setSearch] = useState('');
+  const [showGroup, setShowGroup] = useState('all');
   // Project intelligence — the roster walks in knowing the job's people and parties.
   const [proj, setProj] = useState<any>(null);
-  const [ctx, setCtx] = useState<any>(null);
-
-  useEffect(() => {
-    if (!projectId) return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   useEffect(() => {
     if (!projectId) return;
@@ -147,6 +141,12 @@ export default function TeamPage(){
     'Project Manager': 'Manager', Superintendent: 'Member', Foreman: 'Member', Owner: 'Client', Architect: 'Guest',
   };
   const memberEmails = new Set(members.map(m=>(m.email||'').toLowerCase()).filter(Boolean));
+  // Toolbar-driven roster views — search matches name, role, email, and sub trade.
+  const qT = search.trim().toLowerCase();
+  const matchPerson = (p: { name: string; role: string; email: string }) =>
+    !qT || [p.name, p.role, p.email].some(v => String(v || '').toLowerCase().includes(qT));
+  const filteredMembers = members.filter(matchPerson);
+  const filteredSubs = subs.filter(s => matchPerson(s) || String(findCtxSub(s.name)?.trade || '').toLowerCase().includes(qT));
   function inviteFromDirectory(l:{role:string;name:string;email:string}){
     setInviteName(l.name||'');
     setInviteEmail(l.email||'');
@@ -224,6 +224,19 @@ export default function TeamPage(){
       </div>
     </div>}
 
+    <ListToolbar
+      module="team"
+      search={search}
+      onSearch={setSearch}
+      searchPlaceholder="Search the roster..."
+      filters={[{ key: 'show', label: 'Show', value: showGroup, onChange: setShowGroup, allLabel: 'Everyone', options: [
+        { value: 'team', label: 'Internal Team' },
+        { value: 'subs', label: 'Subcontractors' },
+      ] }]}
+      count={{ shown: filteredMembers.length + filteredSubs.length, total: members.length + subs.length }}
+      style={{ marginBottom: 16 }}
+    />
+
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       <SectionCard title="Project Directory" subtitle="Field leadership and parties of record — from project setup" icon={<IdentificationBadge size={17} weight="duotone" color={GOLD} />}>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:12}}>
@@ -249,6 +262,7 @@ export default function TeamPage(){
           ))}
         </div>
       </SectionCard>
+      {(showGroup === 'all' || showGroup === 'team') && (
       <SectionCard title="Internal Team" icon={<UsersThree size={17} weight="duotone" color={GOLD} />}>
         {loading ? (
           <div style={{padding:'28px 12px',textAlign:'center',color:DIM,fontSize:13}}>Loading team members…</div>
@@ -266,7 +280,7 @@ export default function TeamPage(){
               <thead><tr>
                 {['Name','Role','Email','Access Level','Last Active'].map(h=><th key={h} style={{padding:'8px 12px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
               </tr></thead>
-              <tbody>{members.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
+              <tbody>{filteredMembers.map(m=><tr key={m.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
                 <td style={{padding:'11px 12px'}}><div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:32,height:32,borderRadius:'50%',background:`linear-gradient(135deg,${GOLD},#B85C2A)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#1C1C1E'}}>{m.name[0]}</div><span style={{color:TEXT,fontWeight:600}}>{m.name}</span></div></td>
                 <td style={{padding:'11px 12px',color:DIM}}>{m.role}</td>
                 <td style={{padding:'11px 12px',color:DIM}}>{m.email}</td>
@@ -277,7 +291,9 @@ export default function TeamPage(){
           </div>
         )}
       </SectionCard>
+      )}
 
+      {(showGroup === 'all' || showGroup === 'subs') && (
       <SectionCard title="Subcontractors (Portal Access)" icon={<HardHat size={17} weight="duotone" color={GOLD} />}>
         {subs.length === 0 ? (
           <PremiumEmpty
@@ -292,7 +308,7 @@ export default function TeamPage(){
               <thead><tr>
                 {['Company','Trade','Contact Email','Contract','Portal Access','Actions'].map(h=><th key={h} style={{padding:'8px 12px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>)}
               </tr></thead>
-              <tbody>{subs.map(s=>{const cs=findCtxSub(s.name);return <tr key={s.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
+              <tbody>{filteredSubs.map(s=>{const cs=findCtxSub(s.name);return <tr key={s.name} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}}>
                 <td style={{padding:'11px 12px',color:TEXT,fontWeight:600}}>{s.name}</td>
                 <td style={{padding:'11px 12px',color:DIM,fontSize:12}}>{cs?.trade || '—'}</td>
                 <td style={{padding:'11px 12px',color:DIM}}>{s.email || cs?.email || ''}</td>
@@ -306,6 +322,7 @@ export default function TeamPage(){
           </div>
         )}
       </SectionCard>
+      )}
     </div>
   </PremiumSurface>;
 }

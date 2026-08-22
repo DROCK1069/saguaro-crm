@@ -1,10 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../../components/SaguaroDatePicker';
 import { ArrowLeft, ArrowRight, Plus, X, Receipt, CalendarBlank, Table, Calculator, ClockCounterClockwise, Info } from '@phosphor-icons/react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
@@ -53,31 +54,34 @@ export default function NewPayAppPage() {
   // the prior application, and the prior SOV — the GC types only this
   // period's work. `ctx` = /api/project-context snapshot; `appNumber` from
   // the pay-app seeder.
-  const [ctx,setCtx]                 = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [appNumber,setAppNumber]     = useState<number|null>(null);
   const [rolledForward,setRolledForward] = useState(false);
   const [auto,setAuto]               = useState<{period?:boolean;sum?:boolean;ret?:boolean}>({});
 
+  // Seed money defaults once the shared snapshot arrives. One-time (ref-guarded)
+  // so a background revalidation never stomps what the GC typed; the seeder
+  // below keeps its original priority on retainage.
+  const ctxSeededRef = useRef(false);
+  const seederSetRetRef = useRef(false);
+  useEffect(()=>{
+    if(!ctx || ctxSeededRef.current) return;
+    ctxSeededRef.current = true;
+    const original = ctx.money?.originalContract || 0;
+    if(original>0){ setContractSum(prev=>prev||String(original)); setAuto(a=>({...a,sum:true})); }
+    if(ctx.money?.retainagePct!=null && !seederSetRetRef.current){ setRetainagePct(String(ctx.money.retainagePct)); setAuto(a=>({...a,ret:true})); }
+    // Suggested billing period: the day after the last app's period end,
+    // through that month's end; first app defaults to the current month.
+    const lastTo = ctx.money?.lastPayApp?.periodTo as string|undefined;
+    const start = lastTo ? new Date(new Date(lastTo+'T00:00:00').getTime()+86400000) : new Date(new Date().getFullYear(),new Date().getMonth(),1);
+    const end   = new Date(start.getFullYear(),start.getMonth()+1,0);
+    const iso   = (d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    setPeriodFrom(prev=>{ if(!prev){ setAuto(a=>({...a,period:true})); return iso(start); } return prev; });
+    setPeriodTo(prev=>prev||iso(end));
+  },[ctx]);
+
   useEffect(()=>{
     (async()=>{
-      try{
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if(!c.error){
-          setCtx(c);
-          const original = c.money?.originalContract || 0;
-          if(original>0){ setContractSum(prev=>prev||String(original)); setAuto(a=>({...a,sum:true})); }
-          if(c.money?.retainagePct!=null){ setRetainagePct(String(c.money.retainagePct)); setAuto(a=>({...a,ret:true})); }
-          // Suggested billing period: the day after the last app's period end,
-          // through that month's end; first app defaults to the current month.
-          const lastTo = c.money?.lastPayApp?.periodTo as string|undefined;
-          const start = lastTo ? new Date(new Date(lastTo+'T00:00:00').getTime()+86400000) : new Date(new Date().getFullYear(),new Date().getMonth(),1);
-          const end   = new Date(start.getFullYear(),start.getMonth()+1,0);
-          const iso   = (d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          setPeriodFrom(prev=>{ if(!prev){ setAuto(a=>({...a,period:true})); return iso(start); } return prev; });
-          setPeriodTo(prev=>prev||iso(end));
-        }
-      }catch{}
       try{
         const r = await fetch(`/api/pay-apps/create?projectId=${projectId}`);
         const seed = await r.json();
@@ -90,7 +94,7 @@ export default function NewPayAppPage() {
           })));
           setRolledForward(true);
         }
-        if(seed.retainagePercent!=null) setRetainagePct(String(seed.retainagePercent));
+        if(seed.retainagePercent!=null){ seederSetRetRef.current = true; setRetainagePct(String(seed.retainagePercent)); }
       }catch{}
     })();
   },[projectId]);

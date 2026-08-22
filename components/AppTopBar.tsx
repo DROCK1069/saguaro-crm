@@ -4,6 +4,7 @@
  * Sits to the right of the sidebar.
  */
 import React, { useState, useEffect } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -69,20 +70,12 @@ export default function AppTopBar({
   const projIdx = segments.indexOf('projects');
   const projId = projIdx >= 0 && segments[projIdx + 1] && UUID_RE.test(segments[projIdx + 1]) ? segments[projIdx + 1] : null;
   const [projectNames, setProjectNames] = useState<Record<string, string>>({});
+  const { projects: crumbProjects } = useProjects();
   useEffect(() => {
     if (!projId || projectNames[projId]) return;
-    let alive = true;
-    fetch('/api/projects/list')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d) return;
-        const list = Array.isArray(d) ? d : (d.projects || d.data || d.rows || []);
-        const p = Array.isArray(list) ? list.find((x: any) => x?.id === projId) : null;
-        if (p) setProjectNames((prev) => ({ ...prev, [projId]: p.name || p.project_name || p.title || 'Project' }));
-      })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [projId]); // eslint-disable-line react-hooks/exhaustive-deps
+    const p = (crumbProjects as any[]).find((x: any) => x?.id === projId);
+    if (p) setProjectNames((prev) => ({ ...prev, [projId]: p.name || p.project_name || p.title || 'Project' }));
+  }, [projId, crumbProjects]); // eslint-disable-line react-hooks/exhaustive-deps
   const crumbs = segments.map((seg, i) => ({
     label:
       LABELS[seg] ||

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { Badge, Btn, Table, T } from '@/components/ui/shell';
 import {
@@ -7,6 +8,7 @@ import {
   StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import { FileText, NotePencil, Export, CheckCircle, Plus, ClockCounterClockwise } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
 interface Spec {
@@ -73,18 +75,11 @@ export default function SpecsPage() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [autoDiv, setAutoDiv] = useState(false);
   const [grouped, setGrouped] = useState(true);
+  // ListToolbar state — status joins the existing search + view toggle (sag_flt_specs).
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Project intelligence — one snapshot; the spec book walks in knowing the job.
-  const [ctx, setCtx] = useState<any>(null);
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const fetchSpecs = useCallback(async () => {
     setLoading(true);
@@ -102,7 +97,8 @@ export default function SpecsPage() {
   useEffect(() => { fetchSpecs(); }, [fetchSpecs]);
 
   const filtered = specs.filter(s =>
-    !search || s.title.toLowerCase().includes(search.toLowerCase()) || s.section.includes(search) || s.division.includes(search)
+    (statusFilter === 'all' || s.status === statusFilter) &&
+    (!search || s.title.toLowerCase().includes(search.toLowerCase()) || s.section.includes(search) || s.division.includes(search))
   );
 
   const draftCount = specs.filter(s => s.status === 'draft').length;
@@ -341,26 +337,32 @@ export default function SpecsPage() {
         </div>
       )}
 
+      {/* List toolbar — search + status filter; view toggle rides in extra */}
+      <ListToolbar
+        module="specs"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search sections..."
+        filters={[{ key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter, allLabel: 'All Statuses', options: [
+          { value: 'draft', label: 'Draft' },
+          { value: 'issued', label: 'Issued' },
+          { value: 'revised', label: 'Revised' },
+          { value: 'approved', label: 'Approved' },
+        ] }]}
+        count={{ shown: filtered.length, total: specs.length }}
+        style={{ marginBottom: 16 }}
+        extra={
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
+            <button onClick={() => setGrouped(true)} style={{ padding: '7px 13px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: grouped ? T.gold : 'transparent', color: grouped ? '#1A1206' : T.muted }}>By Division</button>
+            <button onClick={() => setGrouped(false)} style={{ padding: '7px 13px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: !grouped ? T.gold : 'transparent', color: !grouped ? '#1A1206' : T.muted }}>Flat List</button>
+          </div>
+        }
+      />
+
       {/* Table */}
       <SectionCard
         icon={<FileText size={17} weight="duotone" color={T.gold} />}
         title="Sections"
-        action={
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <input
-              type="text"
-              placeholder="Search sections..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border}`, borderRadius: 10, color: T.white, fontSize: 13, width: 220, outline: 'none' }}
-            />
-            <span style={{ fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>{filtered.length} section{filtered.length !== 1 ? 's' : ''}</span>
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
-              <button onClick={() => setGrouped(true)} style={{ padding: '7px 13px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: grouped ? T.gold : 'transparent', color: grouped ? '#1A1206' : T.muted }}>By Division</button>
-              <button onClick={() => setGrouped(false)} style={{ padding: '7px 13px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: !grouped ? T.gold : 'transparent', color: !grouped ? '#1A1206' : T.muted }}>Flat List</button>
-            </div>
-          </div>
-        }
         flush
       >
         {loading ? (

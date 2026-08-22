@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Square, XCircle, Plus, PlugsConnected, ListChecks, Gauge, Percent } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 const BASE = '#0a0a0a';
 const GOLD = '#F59E0B';
@@ -141,9 +142,7 @@ export default function CableSchedulePage() {
   if (loading) {
     return (
       <PremiumSurface maxWidth={1600}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '52vh' }}>
-          <div style={{ color: DIM }}>Loading cables...</div>
-        </div>
+        <ModuleSkeleton kpis={5} rows={5} />
       </PremiumSurface>
     );
   }

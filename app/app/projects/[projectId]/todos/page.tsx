@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useParams } from 'next/navigation';
 import { T, Badge } from '@/components/ui/shell';
@@ -17,6 +18,7 @@ import {
   ghostButtonStyle,
 } from '@/components/ui/premium';
 import { Clipboard, Circle, CheckCircle, Warning, Check, Plus, ClockCounterClockwise } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 interface TodoItem {
   id: string;
@@ -47,9 +49,7 @@ const localIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).pad
 
 interface TeamMember { id: string; name: string; email: string; role: string; }
 
-// Filter-tab pill styles derived from the kit presets -------------------------
-const tabActive: React.CSSProperties = { ...goldButtonStyle, padding: '8px 16px', fontSize: 12.5 };
-const tabIdle: React.CSSProperties = { ...ghostButtonStyle, padding: '8px 16px', fontSize: 12.5 };
+
 
 const EMPTY_FORM = { title: '', description: '', assigned_to: '', due_date: '', priority: 'medium' };
 
@@ -63,6 +63,9 @@ export default function TodosPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
   const [filter, setFilter] = useState<FilterTab>('all');
+  // ListToolbar state — search + priority join the existing status state (sag_flt_todos).
+  const [search, setSearch] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -82,16 +85,11 @@ export default function TodosPage() {
   useEffect(() => { fetchTodos(); }, [fetchTodos]);
 
   // Project intelligence — roster for the assignee select + cross-module counts.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [auto, setAuto] = useState<{ due?: boolean }>({});
   useEffect(() => {
     (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch { /* context is progressive enhancement */ }
       try {
         const r = await fetch(`/api/projects/${projectId}/team`);
         const j = await r.json();
@@ -110,10 +108,13 @@ export default function TodosPage() {
     setShowForm(true);
   }
 
+  const q = search.trim().toLowerCase();
   const filtered = todos.filter(t => {
-    if (filter === 'active') return !t.complete;
-    if (filter === 'completed') return t.complete;
-    return true;
+    if (filter === 'active' && t.complete) return false;
+    if (filter === 'completed' && !t.complete) return false;
+    if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+    if (!q) return true;
+    return [t.title, t.description, t.assigned_to].some(v => String(v || '').toLowerCase().includes(q));
   });
 
   const totalCount = todos.length;
@@ -214,13 +215,22 @@ export default function TodosPage() {
         <StatCard icon={<Warning size={19} weight="duotone" color={RED} />} label="Overdue" value={String(overdueCount)} sub="past due" accent={overdueCount > 0 ? RED : undefined} delay={0.14} />
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        {([['all', 'All'], ['active', 'Active'], ['completed', 'Completed']] as [FilterTab, string][]).map(([key, label]) => (
-          <button key={key} className="pmBtn" style={filter === key ? tabActive : tabIdle} onClick={() => setFilter(key)}>{label}</button>
-        ))}
-        <span style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,0.62)', alignSelf: 'center' }}>{filtered.length} task{filtered.length !== 1 ? 's' : ''}</span>
-      </div>
+      {/* List toolbar — search + status/priority filters (replaces the old tab pills) */}
+      <ListToolbar
+        module="todos"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search tasks..."
+        filters={[
+          { key: 'status', label: 'Status', value: filter, onChange: (v: string) => setFilter(v as FilterTab), allLabel: 'All Tasks', options: [
+            { value: 'active', label: 'Active' },
+            { value: 'completed', label: 'Completed' },
+          ] },
+          { key: 'priority', label: 'Priority', value: priorityFilter, onChange: setPriorityFilter, allLabel: 'All Priorities', options: PRIORITIES.map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) })) },
+        ]}
+        count={{ shown: filtered.length, total: todos.length }}
+        style={{ marginBottom: 20 }}
+      />
 
       {toast && (
         <div style={{ marginBottom: 16, padding: '10px 14px', background: T.greenDim, border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 8, color: T.green, fontSize: 13 }}>

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { WifiHigh, Broadcast, UsersThree, MapTrifold, Plus } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -237,7 +238,7 @@ export default function WifiManagerPage() {
   const floorApCount = aps.filter(a => a.floor === selectedFloor).length;
 
   if (loading) {
-    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}><div style={{ color: DIM }}>Loading WiFi...</div></div>;
+    return <PremiumSurface maxWidth={1600}><ModuleSkeleton kpis={4} rows={5} /></PremiumSurface>;
   }
 
   return (

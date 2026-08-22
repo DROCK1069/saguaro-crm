@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,9 +8,10 @@ import {
   CaretUp, CaretDown, CaretRight,
 } from '@phosphor-icons/react';
 import {
-  PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty,
+  PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, FlowStrip,
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -87,6 +88,16 @@ export default function FirewallRulesPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Dead-space kill (spec 4.1): an empty policy opens straight into the
+  // add-rule composer. One-shot per visit so Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && networkProjectId && rules.length === 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setShowForm(true);
+    }
+  }, [loading, networkProjectId, rules.length]);
+
   const handleSubmit = async () => {
     if (!form.name || !networkProjectId) return;
     setSaving(true);
@@ -149,9 +160,7 @@ export default function FirewallRulesPage() {
   if (loading) {
     return (
       <PremiumSurface maxWidth={1200}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', color: DIM, fontSize: 14 }}>
-          Loading firewall rules…
-        </div>
+        <ModuleSkeleton kpis={4} rows={5} />
       </PremiumSurface>
     );
   }
@@ -306,14 +315,30 @@ export default function FirewallRulesPage() {
         flush
       >
         {filteredRules.length === 0 ? (
-          <PremiumEmpty
-            icon={<ShieldCheck size={30} weight="duotone" color={GOLD} />}
-            title={rules.length === 0 ? 'No firewall rules yet' : 'No rules in this category'}
-            description={rules.length === 0
-              ? 'Add your first rule to start defining this network’s packet-filtering policy.'
-              : 'Try a different category, or add a rule to this one.'}
-            action={<button onClick={() => setShowForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Rule</button>}
-          />
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                <ShieldCheck size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                {rules.length === 0 ? 'No firewall rules yet' : 'No rules in this category'}
+                <span style={{ fontWeight: 400, color: DIM }}>
+                  {rules.length === 0
+                    ? (showForm ? ' — define the first rule in the form above; numbering spaces by 10 automatically.' : ' — add the first rule to start the packet-filtering policy.')
+                    : ' — try a different category, or add a rule to this one.'}
+                </span>
+              </div>
+              {!showForm && (
+                <button onClick={() => setShowForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Rule</button>
+              )}
+            </div>
+            {rules.length === 0 && (
+              <FlowStrip steps={[
+                { title: 'Add rules', desc: 'numbered in steps of 10' },
+                { title: 'Order matters', desc: 'reorder with the arrows' },
+                { title: 'Toggle without deleting', desc: 'disable to test' },
+                { title: 'Policy exports', desc: 'into the as-built docs' },
+              ]} />
+            )}
+          </div>
         ) : (
           filteredRules.map((rule, idx) => {
             const as = ACTION_STYLES[rule.action] || ACTION_STYLES.allow;

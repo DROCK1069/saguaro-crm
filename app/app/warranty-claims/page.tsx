@@ -1,12 +1,14 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES } from '@/lib/construction-intelligence';
 import {
   ShieldWarning, ClipboardText, FolderOpen, CheckCircle, XCircle, Timer, Warning,
-  CurrencyDollar, ShieldSlash, ChartBar, Tag, Wrench, FunnelSimple, PlusCircle, Buildings,
+  CurrencyDollar, ShieldSlash, ChartBar, Tag, Wrench, PlusCircle, Buildings,
 } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 /* ───── PALETTE ───── */
 const GOLD = '#F59E0B', BG = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)',
@@ -148,16 +150,9 @@ export default function WarrantyClaimsPage() {
   /* photo viewer */
   const [viewPhoto, setViewPhoto] = useState('');
 
-  /* fetch projects */
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch('/api/projects/list');
-        const j = await r.json();
-        setProjects(j.projects || j || []);
-      } catch { setProjects([]); }
-    })();
-  }, []);
+  /* projects — shared SWR cache */
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { setProjects(liveProjects as any); }, [liveProjects]);
 
   /* fetch claims when project changes */
   useEffect(() => {
@@ -472,50 +467,28 @@ export default function WarrantyClaimsPage() {
       {/* ═══ CLAIMS LIST TAB ═══ */}
       {selectedProject && !loading && activeTab === 'claims' && (
         <div>
-          {/* filters */}
-          <SectionCard title="Filters" icon={<FunnelSimple size={17} weight="duotone" color={GOLD} />} style={{ marginBottom: 16 }} bodyStyle={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div style={css.field}>
-              <label style={css.label}>Search</label>
-              <input style={css.input} placeholder="Title, claim #, reporter..." value={fSearch} onChange={e => setFSearch(e.target.value)} />
-            </div>
-            <div style={{ ...css.field, flex: '0 1 160px' }}>
-              <label style={css.label}>Category</label>
-              <select style={css.select} value={fCategory} onChange={e => setFCategory(e.target.value)}>
-                <option value="">All</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div style={{ ...css.field, flex: '0 1 140px' }}>
-              <label style={css.label}>Status</label>
-              <select style={css.select} value={fStatus} onChange={e => setFStatus(e.target.value)}>
-                <option value="">All</option>
-                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div style={{ ...css.field, flex: '0 1 130px' }}>
-              <label style={css.label}>Priority</label>
-              <select style={css.select} value={fPriority} onChange={e => setFPriority(e.target.value)}>
-                <option value="">All</option>
-                {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            <div style={{ ...css.field, flex: '0 1 140px' }}>
-              <label style={css.label}>From Date</label>
-              <SaguaroDatePicker style={css.input} value={fDateFrom} onChange={v => setFDateFrom(v)} />
-            </div>
-            <div style={{ ...css.field, flex: '0 1 140px' }}>
-              <label style={css.label}>To Date</label>
-              <SaguaroDatePicker style={css.input} value={fDateTo} onChange={v => setFDateTo(v)} />
-            </div>
-            <div style={{ ...css.field, flex: '0 0 auto' }}>
-              <button style={css.btnOutline(DIM)} onClick={() => { setFCategory(''); setFStatus(''); setFPriority(''); setFDateFrom(''); setFDateTo(''); setFSearch(''); }}>Clear</button>
-            </div>
-          </SectionCard>
-
-          {/* claim count */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ color: DIM, fontSize: 12 }}>{filtered.length} claim{filtered.length !== 1 ? 's' : ''}</span>
-          </div>
+          {/* List toolbar — search + category/status/priority; date range rides in extra */}
+          <ListToolbar
+            module="warranty-claims"
+            search={fSearch}
+            onSearch={setFSearch}
+            searchPlaceholder="Title, claim #, reporter..."
+            filters={[
+              { key: 'category', label: 'Category', value: fCategory, onChange: setFCategory, allValue: '', allLabel: 'All Categories', options: CATEGORIES },
+              { key: 'status', label: 'Status', value: fStatus, onChange: setFStatus, allValue: '', allLabel: 'All Statuses', options: STATUSES.map(s => ({ value: s, label: s.replace('_', ' ') })) },
+              { key: 'priority', label: 'Priority', value: fPriority, onChange: setFPriority, allValue: '', allLabel: 'All Priorities', options: PRIORITIES },
+            ]}
+            count={{ shown: filtered.length, total: claims.length }}
+            style={{ marginBottom: 16 }}
+            extra={<div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <SaguaroDatePicker style={{ ...css.input, width: 130 }} value={fDateFrom} onChange={v => setFDateFrom(v)} />
+              <span style={{ color: DIM, fontSize: 12 }}>to</span>
+              <SaguaroDatePicker style={{ ...css.input, width: 130 }} value={fDateTo} onChange={v => setFDateTo(v)} />
+              {(fDateFrom || fDateTo) && (
+                <button style={css.btnOutline(DIM)} onClick={() => { setFDateFrom(''); setFDateTo(''); }}>Clear dates</button>
+              )}
+            </div>}
+          />
 
           {filtered.length === 0 ? (
             <SectionCard>

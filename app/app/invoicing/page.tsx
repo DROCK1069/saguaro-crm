@@ -4,6 +4,7 @@
  * Uses DataTable with sorting, filtering, pagination.
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
@@ -69,34 +70,27 @@ export default function InvoicingPage() {
   const [creating, setCreating] = useState(false);
 
   // Project intelligence — once a project is picked, the form walks in knowing it.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(form.project_id || null);
   const [auto, setAuto] = useState<{ num?: boolean; due?: boolean }>({});
   useEffect(() => {
-    if (!form.project_id) { setCtx(null); setAuto({}); return; }
-    let alive = true;
-    (async () => {
-      try {
-        const res = await fetch(`/api/project-context?projectId=${form.project_id}`);
-        const c = await res.json();
-        if (!alive || c.error) return;
-        setCtx(c);
-        const n = Number(c.defaults?.nextInvoiceNumber) || 1;
-        const due = new Date(Date.now() + 30 * 86400000);
-        const dueIso = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
-        setForm(f => {
-          const seedNum = !f.invoice_number;
-          const seedDue = !f.due_date;
-          setAuto(a => ({ num: a.num || seedNum, due: a.due || seedDue }));
-          return {
-            ...f,
-            invoice_number: f.invoice_number || `INV-${String(n).padStart(3, '0')}`,
-            due_date: f.due_date || dueIso,
-          };
-        });
-      } catch {}
-    })();
-    return () => { alive = false; };
+    if (!form.project_id) setAuto({});
   }, [form.project_id]);
+  useEffect(() => {
+    if (!ctx) return;
+    const n = Number(ctx.defaults?.nextInvoiceNumber) || 1;
+    const due = new Date(Date.now() + 30 * 86400000);
+    const dueIso = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
+    setForm(f => {
+      const seedNum = !f.invoice_number;
+      const seedDue = !f.due_date;
+      setAuto(a => ({ num: a.num || seedNum, due: a.due || seedDue }));
+      return {
+        ...f,
+        invoice_number: f.invoice_number || `INV-${String(n).padStart(3, '0')}`,
+        due_date: f.due_date || dueIso,
+      };
+    });
+  }, [ctx]);
 
   const money = ctx?.money;
   const cOriginal = Number(money?.originalContract) || 0;

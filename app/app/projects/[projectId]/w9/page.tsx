@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { T, Badge, Table } from '@/components/ui/shell';
 import {
@@ -63,17 +64,8 @@ export default function W9Page() {
   // Project intelligence — roster + bid packages from one snapshot. W-9s are
   // not paperwork for its own sake: the bid-award gate refuses to award to a
   // sub with no W-9 on file, so coverage here is what unblocks buyout.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [autoFill, setAutoFill] = useState(false);
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
 
   const fetchSubs = useCallback(async () => {
     setLoading(true);

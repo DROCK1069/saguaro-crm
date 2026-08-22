@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { ProgressBar, Badge, T } from '@/components/ui/shell';
 import {
@@ -14,6 +15,7 @@ import {
   ghostButtonStyle,
 } from '@/components/ui/premium';
 import { CheckCircle, Hourglass, ChartBar, Check, Package, ListChecks } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 interface ChecklistItem {
   id: string;
@@ -46,18 +48,10 @@ export default function CloseoutPage() {
   const [toast, setToast] = useState('');
   const [exporting, setExporting] = useState(false);
   // Project intelligence — punch, billing, retainage, and roster state.
-  const [ctx, setCtx] = useState<any>(null);
-
-  useEffect(() => {
-    if (!projectId) return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
+  // ListToolbar state — checklist search + complete/incomplete filter (sag_flt_closeout).
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     (async () => {
@@ -79,6 +73,13 @@ export default function CloseoutPage() {
   const total = items.length;
   const pct = Math.round((completed / total) * 100);
   const exportDisabled = exporting || pct < 100;
+
+  // Toolbar-driven view of the checklist; progress still reads the full list.
+  const q = search.trim().toLowerCase();
+  const visibleItems = items.filter(i =>
+    (statusFilter === 'all' || i.status === statusFilter) &&
+    (!q || i.label.toLowerCase().includes(q))
+  );
 
   // Live figures from the project snapshot (DB numerics may arrive as strings).
   const fmtM = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -288,6 +289,20 @@ export default function CloseoutPage() {
         </div>
       </SectionCard>
 
+      {/* List toolbar — find a closeout item fast */}
+      <ListToolbar
+        module="closeout"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search closeout items..."
+        filters={[{ key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter, allLabel: 'All Items', options: [
+          { value: 'incomplete', label: 'Incomplete' },
+          { value: 'complete', label: 'Complete' },
+        ] }]}
+        count={{ shown: visibleItems.length, total: items.length }}
+        style={{ marginBottom: 16 }}
+      />
+
       {/* Checklist */}
       <SectionCard
         title="Closeout Checklist"
@@ -295,8 +310,10 @@ export default function CloseoutPage() {
         icon={<ListChecks size={17} weight="duotone" color="#F59E0B" />}
         flush
       >
-        {items.map((item, idx) => { const sig = ITEM_SIGNALS[item.id]; return (
-          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: idx === items.length - 1 ? 'none' : `1px solid rgba(255,255,255,0.06)` }}>
+        {visibleItems.length === 0 ? (
+          <div style={{ padding: '18px 20px', fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>No checklist items match.</div>
+        ) : visibleItems.map((item, idx) => { const sig = ITEM_SIGNALS[item.id]; return (
+          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: idx === visibleItems.length - 1 ? 'none' : `1px solid rgba(255,255,255,0.06)` }}>
             <button
               onClick={() => toggleItem(item.id)}
               style={{

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { Badge, Table, T } from '@/components/ui/shell';
 import {
@@ -9,6 +10,7 @@ import {
 } from '@/components/ui/premium';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { CurrencyDollar, PencilSimple, Export, Package, Plus, X, Wallet } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
 interface LineItem {
@@ -67,8 +69,12 @@ export default function PurchaseOrdersPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   // SmartCreate: the project-context snapshot — vendors, cost codes, budget, next PO number.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [autoDate, setAutoDate] = useState(false);
+  // ListToolbar state — filters + sort persist per module via sag_flt_purchase-orders.
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
 
   const fetchPos = useCallback(async () => {
     setLoading(true);
@@ -84,17 +90,6 @@ export default function PurchaseOrdersPage() {
   }, [projectId]);
 
   useEffect(() => { fetchPos(); }, [fetchPos]);
-
-  // The form walks in knowing the project: budget lines, known vendors, next PO number.
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
 
   const totalValue = pos.reduce((s, p) => s + (p.amount || 0), 0);
   const draftCount = pos.filter(p => p.status === 'draft').length;
@@ -237,6 +232,20 @@ export default function PurchaseOrdersPage() {
   };
   const lbl: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 };
   const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
+
+  // Toolbar-driven view of the PO log.
+  const q = search.trim().toLowerCase();
+  const filteredPos = pos
+    .filter(p => {
+      if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+      if (!q) return true;
+      return [p.po_num, p.vendor, p.description].some(v => String(v || '').toLowerCase().includes(q));
+    })
+    .sort((a, b) => {
+      if (sortBy === 'amount') return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+      if (sortBy === 'vendor') return String(a.vendor || '').localeCompare(String(b.vendor || ''));
+      return String(b.issued_date || '').localeCompare(String(a.issued_date || ''));
+    });
 
   // Compact button presets derived from the cinematic kit for inline/table actions.
   const smallGold: React.CSSProperties = { ...goldButtonStyle, padding: '7px 14px', fontSize: 12.5, borderRadius: 9 };
@@ -440,6 +449,28 @@ export default function PurchaseOrdersPage() {
       )}
 
       {/* Table */}
+      <ListToolbar
+        module="purchase-orders"
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search purchase orders..."
+        filters={[{ key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter, allLabel: 'All Statuses', options: [
+          { value: 'draft', label: 'Draft' },
+          { value: 'sent', label: 'Sent' },
+          { value: 'received', label: 'Received' },
+          { value: 'closed', label: 'Closed' },
+        ] }]}
+        sort={sortBy}
+        onSort={setSortBy}
+        sortOptions={[
+          { value: 'newest', label: 'Newest first' },
+          { value: 'amount', label: 'Amount (high first)' },
+          { value: 'vendor', label: 'Vendor A-Z' },
+        ]}
+        count={{ shown: filteredPos.length, total: pos.length }}
+        style={{ marginBottom: 16 }}
+      />
+
       <SectionCard title="All Purchase Orders" icon={<Package size={17} weight="duotone" color="#F59E0B" />} flush>
         {loading ? (
           <div style={{ padding: 48, textAlign: 'center', color: 'rgba(255,255,255,0.62)', fontSize: 13 }}>Loading purchase orders…</div>
@@ -457,7 +488,7 @@ export default function PurchaseOrdersPage() {
         ) : (
           <Table
             headers={['PO #', 'Vendor', 'Description', 'Amount', 'Status', 'Date', 'Actions']}
-            rows={pos.map(p => [
+            rows={filteredPos.map(p => [
               <span key="n" style={{ color: T.gold, fontWeight: 700 }}>{p.po_num}</span>,
               p.vendor,
               <span key="d" style={{ color: T.muted }}>{p.description}</span>,

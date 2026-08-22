@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import Link from 'next/link';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { WarningCircle, FileText, Clipboard, Shield, Hammer, Buildings, NotePencil, CheckCircle, Square, Receipt, Plus, MagnifyingGlass } from '@phosphor-icons/react';
@@ -229,16 +230,11 @@ export default function DocumentsPage() {
   useEffect(() => { loadLienWaivers(); }, [loadLienWaivers]);
   useEffect(() => { loadPayroll(); }, [loadPayroll]);
 
+  const { projects: liveProjects } = useProjects();
   useEffect(() => {
-    fetch('/api/projects/list')
-      .then(r => r.json())
-      .then(d => {
-        const list = d.projects ?? d.items ?? [];
-        setProjects(list);
-        if (list.length) setSelectedProject(list[0].id);
-      })
-      .catch(() => setProjects([]));
-  }, []);
+    setProjects(liveProjects as any[]);
+    if (liveProjects.length) setSelectedProject((prev) => prev || liveProjects[0].id);
+  }, [liveProjects]);
 
   // Load real closeout items whenever the Closeout tab is active for the selected project.
   useEffect(() => {

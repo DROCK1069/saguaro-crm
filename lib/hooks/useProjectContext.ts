@@ -24,7 +24,7 @@ export function useProjectContext(projectId: string | null | undefined) {
   );
 
   return {
-    ctx: data && !data.error ? data : null,
+    ctx: projectId && data && !data.error ? data : null,
     loading: isLoading,
     error: error || (data?.error ? new Error(String(data.error)) : null),
     revalidate,

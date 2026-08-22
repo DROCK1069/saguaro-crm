@@ -471,6 +471,41 @@ export function FlowSteps({ title = 'What happens next', steps }: {
   );
 }
 
+/** Compact horizontal "how this module flows" strip — the one-line sibling of
+ *  FlowSteps, built for dead-space kills (spec 4.1): numbered gold mini-nodes
+ *  with short labels in a single wrapping band, so an empty module still
+ *  teaches what it automates. */
+export function FlowStrip({ steps, style }: {
+  steps: { title: string; desc?: string }[];
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 14px',
+      padding: '11px 14px', borderRadius: 12,
+      background: `linear-gradient(180deg, ${A08}, rgba(255,255,255,0.02))`,
+      border: `1px solid ${BORDER}`,
+      ...style,
+    }}>
+      {steps.map((s, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span aria-hidden style={{ color: FAINT, fontSize: 12, fontWeight: 900, flexShrink: 0 }}>&rarr;</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0, flexWrap: 'wrap' }}>
+            <span style={{
+              width: 17, height: 17, borderRadius: 999, flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: A12, border: `1px solid ${A45}`, color: GOLD_HI,
+              fontSize: 9, fontWeight: 900,
+            }}>{i + 1}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap' }}>{s.title}</span>
+            {s.desc && <span style={{ fontSize: 11.5, color: MUTED }}>{s.desc}</span>}
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 /** Label/value row for context rails and snapshot cards. */
 export function InsightRow({ label, value, accent, strong }: {
   label: React.ReactNode; value: React.ReactNode; accent?: string; strong?: boolean;

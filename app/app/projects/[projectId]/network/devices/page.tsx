@@ -1,10 +1,11 @@
 'use client';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Globe, ArrowsLeftRight, Shield, WifiHigh, Printer, VideoCamera, HardDrives, Laptop, Phone, Plug, CellSignalFull, BatteryFull, Package, Plus, X, CheckCircle, WarningCircle, Clock } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, FlowStrip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -113,6 +114,16 @@ export default function DeviceInventoryPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Dead-space kill (spec 4.1): an empty inventory opens straight into the
+  // add-device composer. One-shot per visit so Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && networkProjectId && devices.length === 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setShowForm(true);
+    }
+  }, [loading, networkProjectId, devices.length]);
+
   const handleSubmit = async () => {
     if (!form.hostname || !networkProjectId) return;
     setSaving(true);
@@ -149,9 +160,7 @@ export default function DeviceInventoryPage() {
   if (loading) {
     return (
       <PremiumSurface maxWidth={1600}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', color: DIM, fontSize: 14 }}>
-          Loading devices...
-        </div>
+        <ModuleSkeleton kpis={4} rows={5} />
       </PremiumSurface>
     );
   }
@@ -370,12 +379,30 @@ export default function DeviceInventoryPage() {
       {/* Device Table */}
       <SectionCard title="All Devices" icon={<HardDrives size={17} weight="duotone" color={GOLD} />} flush>
         {filteredDevices.length === 0 ? (
-          <PremiumEmpty
-            icon={<Package size={30} weight="duotone" color={GOLD} />}
-            title="No devices found"
-            description="No devices match your filters. Add your first device to start building the network inventory."
-            action={<button onClick={() => { setShowForm(true); setSelectedDevice(null); }} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Device</button>}
-          />
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                <Package size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                {devices.length === 0 ? 'No devices yet' : 'No devices match your filters'}
+                <span style={{ fontWeight: 400, color: DIM }}>
+                  {devices.length === 0
+                    ? (showForm ? ' — add the first device in the form above; the inventory builds from there.' : ' — add the first device to start the network inventory.')
+                    : ' — clear the type/status filters or adjust the search.'}
+                </span>
+              </div>
+              {!showForm && (
+                <button onClick={() => { setShowForm(true); setSelectedDevice(null); }} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Device</button>
+              )}
+            </div>
+            {devices.length === 0 && (
+              <FlowStrip steps={[
+                { title: 'Add devices', desc: 'planned before install day' },
+                { title: 'Assign VLANs and IPs', desc: 'from the IP plan' },
+                { title: 'Flip to online', desc: 'as gear is deployed' },
+                { title: 'Reports auto-build', desc: 'IP schedule and as-builts' },
+              ]} />
+            )}
+          </div>
         ) : (
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>

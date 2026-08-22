@@ -1,12 +1,14 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 import { Palette, X, Plus, Package, Hourglass, SealCheck, Scales, ChartBar, ListChecks, WarningCircle } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -72,7 +74,7 @@ export default function SelectionsPage(){
   const [filterCat,setFilterCat]=useState('all');
   const [filterStatus,setFilterStatus]=useState('all');
   // SmartCreate: one-shot project snapshot — known vendors, owner, allowance money.
-  const [ctx,setCtx]=useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto,setAuto]=useState<{due?:boolean}>({});
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
@@ -102,15 +104,16 @@ export default function SelectionsPage(){
 
   useEffect(()=>{load();},[load]);
 
+  // Dead-space kill (spec 4.1): an empty log auto-opens the create panel so
+  // the SmartCreate composer — not a bare box — is the zero state. One-shot
+  // per visit so Cancel stays cancelled.
+  const autoOpenedRef=useRef(false);
   useEffect(()=>{
-    (async()=>{
-      try{
-        const r=await fetch(`/api/project-context?projectId=${projectId}`);
-        const c=await r.json();
-        if(!c.error) setCtx(c);
-      }catch{}
-    })();
-  },[projectId]);
+    if(!loading&&!loadError&&items.length===0&&mode===null&&!autoOpenedRef.current){
+      autoOpenedRef.current=true;
+      openCreate();
+    }
+  },[loading,loadError,items.length,mode]);
 
   function openCreate(){
     setForm({...EMPTY,due_date:isoDate(new Date(Date.now()+30*86400000))});
@@ -264,24 +267,21 @@ export default function SelectionsPage(){
 
           {/* Selections list */}
           <SectionCard title="Selections" icon={<ListChecks size={17} weight="duotone" color={GOLD}/>}>
-            {/* Filters */}
-            <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap'}}>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search selections..."
-                style={{flex:1,minWidth:180,padding:'8px 12px',background:RAISED,
-                  border:`1px solid ${BORDER}`,borderRadius:7,color:TEXT,fontSize:13,outline:'none'}}/>
-              <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
-                style={{padding:'8px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-                  borderRadius:7,color:filterCat!=='all'?TEXT:DIM,fontSize:13,outline:'none'}}>
-                <option value="all">All Categories</option>
-                {cats.map((c:any)=><option key={c} value={c}>{c}</option>)}
-              </select>
-              <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-                style={{padding:'8px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-                  borderRadius:7,color:filterStatus!=='all'?TEXT:DIM,fontSize:13,outline:'none'}}>
-                <option value="all">All Statuses</option>
-                {STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-              </select>
-            </div>
+            {/* Toolbar */}
+            <ListToolbar
+              module="selections"
+              search={search}
+              onSearch={setSearch}
+              searchPlaceholder="Search selections by item or manufacturer..."
+              filters={[
+                {key:'category',label:'Category',value:filterCat,onChange:setFilterCat,allLabel:'All Categories',
+                  options:cats as string[]},
+                {key:'status',label:'Status',value:filterStatus,onChange:setFilterStatus,allLabel:'All Statuses',
+                  options:STATUSES.map(s=>({value:s,label:STATUS_LABELS[s]}))},
+              ]}
+              count={{shown:filtered.length,total:items.length}}
+              style={{marginBottom:18}}
+            />
 
             {loading&&<div style={{padding:40,textAlign:'center',color:DIM}}>Loading selections...</div>}
 
@@ -297,12 +297,24 @@ export default function SelectionsPage(){
             )}
 
             {!loading&&!loadError&&items.length===0&&(
-              <PremiumEmpty
-                icon={<Palette size={30} weight="duotone" color={GOLD} />}
-                title="No selections yet"
-                description="Track material selections, finishes, and owner approvals."
-                action={<button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add First Selection</button>}
-              />
+              <div>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:12}}>
+                  <div style={{fontSize:13.5,fontWeight:800,color:TEXT}}>
+                    <Palette size={16} weight="duotone" color={GOLD} style={{marginRight:7,verticalAlign:'text-bottom'}} />
+                    No selections yet
+                    <span style={{fontWeight:400,color:DIM}}>{mode==='create' ? ' — log the first one in the panel; the decision date is already defaulted.' : ' — track material selections, finishes, and owner approvals.'}</span>
+                  </div>
+                  {mode!=='create'&&(
+                    <button onClick={openCreate} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Selection</button>
+                  )}
+                </div>
+                <FlowStrip steps={[
+                  {title:'Log the selection',desc:'price vs allowance tracked'},
+                  {title:'Owner approves',desc:'recorded in one click'},
+                  {title:'Order to install',desc:'status advances from the log'},
+                  {title:'Variance rolls up',desc:'feeds the budget bar live'},
+                ]} />
+              </div>
             )}
 
             {/* Grouped by category */}

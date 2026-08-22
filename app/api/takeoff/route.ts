@@ -32,6 +32,16 @@ export async function GET(req: NextRequest) {
 
     // Look up project names separately to avoid FK resolution failures
     const rows = data || [];
+    // W-18: ?include=latestDetail rides the newest takeoff's line items along with the
+    // list, so the hub paints list + detail from ONE round trip instead of a dependent
+    // pair. Kicked off here (.then fires the lazy builder) so it runs concurrently with
+    // the project-name lookup below.
+    const latestId = searchParams.get('include') === 'latestDetail' && rows.length > 0
+      ? ((rows[0] as Record<string, unknown>).id as string)
+      : null;
+    const latestMaterialsP = latestId
+      ? supabase.from('takeoff_materials').select('*').eq('takeoff_id', latestId).order('sort_order', { ascending: true }).then((r) => r)
+      : null;
     const projectIds = [...new Set(rows.map((t: Record<string, unknown>) => t.project_id).filter(Boolean))] as string[];
     let projectMap: Record<string, string> = {};
 
@@ -50,6 +60,13 @@ export async function GET(req: NextRequest) {
       ...t,
       project_name: (t.project_id && projectMap[t.project_id as string]) || null,
     }));
+
+    // Attach the newest takeoff's materials (detail shape) when requested — non-fatal on error,
+    // the hub falls back to its dependent detail fetch if the key is absent.
+    if (latestMaterialsP && takeoffs.length > 0) {
+      const { data: latestMaterials, error: latestErr } = await latestMaterialsP;
+      if (!latestErr) (takeoffs[0] as Record<string, unknown>).materials = latestMaterials || [];
+    }
 
     return ok(takeoffs);
   } catch (err) {

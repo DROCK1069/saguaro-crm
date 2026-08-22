@@ -1,12 +1,14 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents } from '@/lib/calc';
 import { SUB_TRADES } from '@/lib/construction-intelligence';
-import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { FileText, CurrencyDollar, Plus, FilePlus, FileArrowUp, Eye, FileDashed, UsersThree, Signature } from '@phosphor-icons/react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -72,10 +74,13 @@ export default function ContractsPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterTrade, setFilterTrade] = useState('all');
 
   // SmartCreate: the form walks in knowing the roster, the awards, and the
   // project defaults — /api/project-context in one round trip.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [party, setParty] = useState('');
   const [auto, setAuto] = useState<{ name?: boolean; trade?: boolean; amount?: boolean; ret?: boolean; scope?: boolean; dates?: boolean }>({});
 
@@ -86,24 +91,20 @@ export default function ContractsPage() {
     end_date: c?.project?.endDate ? String(c.project.endDate).slice(0, 10) : '',
   });
 
+  // Seed the form defaults once the shared snapshot arrives — one-time
+  // (ref-guarded) so a background revalidation never stomps what the GC typed.
+  const ctxSeededRef = useRef(false);
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) {
-          setCtx(c);
-          setForm(p => ({
-            ...p,
-            retainage_pct: Number(c.defaults?.retainagePct) || p.retainage_pct,
-            start_date: p.start_date || isoToday(),
-            end_date: p.end_date || (c.project?.endDate ? String(c.project.endDate).slice(0, 10) : ''),
-          }));
-          setAuto(a => ({ ...a, ret: true, dates: true }));
-        }
-      } catch {}
-    })();
-  }, [projectId]);
+    if (!ctx || ctxSeededRef.current) return;
+    ctxSeededRef.current = true;
+    setForm(p => ({
+      ...p,
+      retainage_pct: Number(ctx.defaults?.retainagePct) || p.retainage_pct,
+      start_date: p.start_date || isoToday(),
+      end_date: p.end_date || (ctx.project?.endDate ? String(ctx.project.endDate).slice(0, 10) : ''),
+    }));
+    setAuto(a => ({ ...a, ret: true, dates: true }));
+  }, [ctx]);
 
   // Party picker: a roster sub or an awarded bid package pre-fills the form.
   function pickParty(val: string) {
@@ -150,6 +151,17 @@ export default function ContractsPage() {
   }, [projectId]);
 
   useEffect(() => { fetchContracts(); }, [fetchContracts]);
+
+  // Dead-space kill (spec 4.1): an empty ledger opens straight into the
+  // composer — the party picker (roster subs + awarded packages) IS the seed
+  // flow. One-shot per visit so Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && contracts.length === 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setShowForm(true);
+    }
+  }, [loading, contracts.length]);
 
   async function handleSave() {
     if (!form.sub_name || !form.trade || !form.amount) {
@@ -218,6 +230,19 @@ export default function ContractsPage() {
   }
 
   const total = toDollars(sumCents(contracts.map(c => toCents(c.amount || 0))));
+  const contractTrades = Array.from(new Set(contracts.map(c => c.trade).filter(Boolean))).sort();
+  const filteredContracts = contracts.filter(c => {
+    if (search) {
+      const q = search.toLowerCase();
+      const hit = (c.sub_name || '').toLowerCase().includes(q)
+        || (c.trade || '').toLowerCase().includes(q)
+        || (c.scope || '').toLowerCase().includes(q);
+      if (!hit) return false;
+    }
+    if (filterStatus !== 'all' && (c.status || 'Draft') !== filterStatus) return false;
+    if (filterTrade !== 'all' && c.trade !== filterTrade) return false;
+    return true;
+  });
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#1c1c1e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
   const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
@@ -402,21 +427,53 @@ export default function ContractsPage() {
         </div>
       )}
 
+      {/* Toolbar */}
+      {!loading && contracts.length > 0 && (
+        <ListToolbar
+          module="contracts"
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search contracts by party, trade, or scope..."
+          filters={[
+            { key: 'status', label: 'Status', value: filterStatus, onChange: setFilterStatus, allLabel: 'All Statuses',
+              options: ['Draft', 'Sent', 'Executed', 'Complete'] },
+            { key: 'trade', label: 'Trade', value: filterTrade, onChange: setFilterTrade, allLabel: 'All Trades',
+              options: contractTrades },
+          ]}
+          count={{ shown: filteredContracts.length, total: contracts.length }}
+          style={{ marginBottom: 14 }}
+        />
+      )}
+
       {/* Contract table */}
       <SectionCard title="Contracts" subtitle="Subcontractor and vendor contracts" icon={<FileText size={17} weight="duotone" color={GOLD} />}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: DIM }}>Loading...</div>
         ) : contracts.length === 0 ? (
-          <PremiumEmpty
-            icon={<FileDashed size={30} weight="duotone" color={GOLD} />}
-            title="No contracts yet"
-            description="Create your first subcontractor or vendor contract to start tracking scope, amounts, and signed documents."
-            action={
-              <button onClick={() => { setShowForm(true); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
-                <Plus size={15} weight="bold" /> New Contract
-              </button>
-            }
-          />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                <FileDashed size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                No contracts yet
+                <span style={{ fontWeight: 400, color: DIM }}>
+                  {unpapered.length > 0
+                    ? ` — ${unpapered.length} awarded bid package${unpapered.length === 1 ? ' is' : 's are'} ready to paper: pick one in the form ${showForm ? 'above' : 'here'} and it fills itself in.`
+                    : showForm ? ' — the form above pre-fills from your roster and awarded packages.' : ' — paper the first sub or vendor commitment.'}
+                </span>
+              </div>
+              {!showForm && (
+                <button onClick={() => { setShowForm(true); setErrorMsg(''); }} style={goldButtonStyle} className="pmBtn">
+                  <Plus size={15} weight="bold" /> New Contract
+                </button>
+              )}
+            </div>
+            <FlowStrip steps={[
+              { title: 'Pick the party', desc: 'roster sub or awarded package' },
+              { title: 'Draft on the ledger', desc: 'counted in commitments' },
+              { title: 'Send for signature' },
+              { title: 'Executed', desc: 'committed costs update' },
+            ]} />
+          </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -428,7 +485,10 @@ export default function ContractsPage() {
                 </tr>
               </thead>
               <tbody>
-                {contracts.map(c => (
+                {filteredContracts.length === 0 && (
+                  <tr><td colSpan={6} style={{ padding: '26px 14px', textAlign: 'center', color: DIM, fontSize: 13 }}>No contracts match your search or filters.</td></tr>
+                )}
+                {filteredContracts.map(c => (
                   <tr key={c.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     <td style={{ padding: '10px 14px', color: TEXT, fontWeight: 600 }}>{c.sub_name}</td>
                     <td style={{ padding: '10px 14px', color: DIM }}>{c.trade}</td>

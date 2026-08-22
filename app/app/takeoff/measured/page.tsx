@@ -5,21 +5,25 @@
  * bill and rolls up LIVE — same engine + byte-identical numbers as iOS.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { explodeTakeoff, rollupTakeoff, ASSEMBLIES, type Condition, type MeasureKind, type Pt, type RateOverrides } from '@/lib/takeoff';
 import { buildEstimateReportHtml } from '@/lib/takeoff/estimate-report';
-import { buildTakeoffWorkbook, workbookToBase64 } from '@/lib/takeoff/excel-export';
 import { BUILDING_TEMPLATES, conditionsForTemplate, templateById } from '@/lib/takeoff/templates';
 import { estimateConfidence } from '@/lib/takeoff/confidence';
 import { calibrationSanity } from '@/lib/takeoff/measure';
 import { scopedFieldIcon } from '@/app/field/field-icons';
 import { Buildings, Warehouse, Storefront, ForkKnife, Tooth, HouseLine, Hammer, FileDashed, Question, Ruler, FilePdf, Receipt, CheckCircle, ArrowRight, ArrowLeft, Stack, PencilSimpleLine, FileCsv, Cube, Table, WarningCircle, MagicWand, Polygon, FileArrowUp, ClipboardText, ArrowSquareOut, XCircle, SealCheck, Sparkle, GitDiff, Note, Package, Path, Lightning, CircleNotch, TrendUp, TrendDown, Printer, X as IconX, type Icon } from '@phosphor-icons/react';
-import PlanTracer, { type TracerCondition } from './PlanTracer';
+import dynamic from 'next/dynamic';
+import type { TracerCondition } from './PlanTracer';
 import { diffTakeoffs, type RevisionDiff, type RevisionLine } from '@/lib/takeoff/revision-diff';
-import * as XLSX from 'xlsx';
 import { importCsv, rowsToImport, type ImportedItem } from '@/lib/takeoff/import-quantities';
 import { parseDxf, dxfLinearFeet, insUnitsToFeet } from '@/lib/takeoff/dxf';
 import { humanError } from '@/lib/errors';
 import { PremiumSurface, ModuleHero, SectionCard, ghostButtonStyle } from '@/components/ui/premium';
+
+// W-16: the 1,160-line PlanTracer workspace (canvas tracer) loads only when the user opens
+// the tracer — out of this route's first-paint chunk (same lazy pattern as pdfjs at PlanTracer.tsx:430).
+const PlanTracer = dynamic(() => import('./PlanTracer'), { ssr: false });
 
 const BG = '#0a0a0a', PANEL = '#161b22', LINE = 'rgba(255,255,255,0.09)', GOLD = '#F59E0B';
 const TEXT = '#e6edf3', DIM = '#8b949e', GREEN = '#34D399', RED = '#f87171';
@@ -140,7 +144,8 @@ export default function MeasuredTakeoffPage() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizStep, setWizStep] = useState(0);
   const blueprintInputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { fetch('/api/projects/list').then((r) => r.json()).then((d) => { const ps = d.projects || d.data || []; setProjects(ps); if (ps[0]) setProjectId(ps[0].id); }).catch(() => {}); }, []);
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { const ps = liveProjects; setProjects(ps); if (ps[0]) setProjectId((prev) => prev || ps[0].id); }, [liveProjects]);
   useEffect(() => { fetch('/api/takeoff/cost-rates').then((r) => r.json()).then((d) => { if (d.rates) { setRates(d.rates); setTenantRateCount(Object.keys(d.rates).length); } }).catch(() => {}); }, []);
   // first visit → auto-open the guided wizard (re-openable from the "?" button any time)
   useEffect(() => { try { if (!localStorage.getItem('saguaro_takeoff_wizard_v1')) { setWizStep(0); setWizardOpen(true); } } catch { /* SSR / privacy mode */ } }, []);
@@ -508,6 +513,8 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
       if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
         res = importCsv(await f.text(), catalog);
       } else if (ext === 'xlsx' || ext === 'xls' || ext === 'xlsm') {
+        // W-16: ~400KB parser loads on first spreadsheet import, never in the route's initial chunk
+        const XLSX = await import('xlsx');
         const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as (string | number)[][];
@@ -631,9 +638,11 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
     setTimeout(() => { try { w.print(); } catch { /* */ } }, 500);
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
     if (!conditions.length) { setMsg('Add a condition first'); return; }
     const proj = projects.find((p) => p.id === projectId);
+    // W-16: excel-export statically pulls xlsx — import on demand so the workbook builder stays out of the initial chunk
+    const { buildTakeoffWorkbook, workbookToBase64 } = await import('@/lib/takeoff/excel-export');
     const wb = buildTakeoffWorkbook({ projectName: name || proj?.name || 'Measured Takeoff', conditions, result: r });
     const b64 = workbookToBase64(wb);
     const a = document.createElement('a');

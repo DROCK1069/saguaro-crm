@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { Table, T } from '@/components/ui/shell';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, goldButtonStyle } from '@/components/ui/premium';
@@ -83,16 +84,7 @@ export default function EstimatePage() {
 
   // Project intelligence — one snapshot ties the estimate to the live contract,
   // budget, and bid-package money. Enhancement-only; the page renders without it.
-  const [ctx, setCtx] = useState<any>(null);
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   // ── Live money from the snapshot (DB numerics can round-trip as strings — always Number()||0 before math) ──
   const money = ctx?.money;

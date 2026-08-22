@@ -20,6 +20,7 @@ import {
   FileText, Buildings, CreditCard, Note,
 } from '@phosphor-icons/react';
 import { colors, font, radius } from '@/lib/design-tokens';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 import {
   PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty,
   goldButtonStyle, ghostButtonStyle,
@@ -234,9 +235,9 @@ export default function InvoiceDetailPage() {
   // ── Loading / Error / Not found ──────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320, color: colors.textMuted, fontSize: font.size.lg }}>
-        Loading invoice...
-      </div>
+      <PremiumSurface maxWidth={1100}>
+        <ModuleSkeleton kpis={4} rows={5} />
+      </PremiumSurface>
     );
   }
 

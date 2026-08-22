@@ -1,10 +1,13 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { toCents, toDollars, summarizeContract } from '@/lib/calc';
 import { Robot, X, Warning, CheckCircle, XCircle, Plus, Clipboard, CaretDown, PencilSimple, Copy, Trash, CurrencyDollar, ClockCounterClockwise } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const AMBER='#d97706';
@@ -128,6 +131,9 @@ export default function ChangeOrdersPage() {
   const [coEditId, setCoEditId] = useState<string|null>(null);
   const [coEditVal, setCoEditVal] = useState('');
   const [coCopiedId, setCoCopiedId] = useState<string|null>(null);
+  // ListToolbar state — status persists per module via sag_flt_change-orders.
+  const [coSearch,setCoSearch] = useState('');
+  const [coStatusFilter,setCoStatusFilter] = useState('all');
 
   useEffect(()=>{ const t=toast?setTimeout(()=>setToast(null),4000):null; return ()=>{ if(t) clearTimeout(t); }; },[toast]);
 
@@ -136,20 +142,11 @@ export default function ChangeOrdersPage() {
 
   // /api/project-context snapshot — the screen walks in knowing the contract
   // money, CO history, bid packages, and schedule before the GC types anything.
-  const [ctx,setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   useEffect(()=>{
-    (async()=>{
-      try{
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if(!c.error){
-          setCtx(c);
-          const original = Number(c.money?.originalContract)||0;
-          if(original>0) setContractSum(prev=>prev||original);
-        }
-      }catch{}
-    })();
-  },[projectId]);
+    const original = Number(ctx?.money?.originalContract)||0;
+    if(original>0) setContractSum(prev=>prev||original);
+  },[ctx]);
 
   // form
   const [fTitle,setFTitle]         = useState('');
@@ -180,18 +177,18 @@ export default function ChangeOrdersPage() {
     }
   }
 
+  const { projects: allProjects } = useProjects();
+  useEffect(() => {
+    const project = (allProjects as any[]).find((p: any) => p.id === projectId);
+    if (project?.contract_amount) setContractSum(Number(project.contract_amount) || 0);
+  }, [allProjects, projectId]);
+
   const load = useCallback(async()=>{
     setLoading(true); setError('');
     try{
-      const [coRes,projRes] = await Promise.all([
-        fetch(`/api/change-orders/list?projectId=${projectId}`),
-        fetch('/api/projects/list'),
-      ]);
-      const coData   = await coRes.json();
-      const projData = await projRes.json();
-      const project  = (projData.projects||[]).find((p:any)=>p.id===projectId);
+      const coRes  = await fetch(`/api/change-orders/list?projectId=${projectId}`);
+      const coData = await coRes.json();
       setCos((coData.changeOrders??[]).sort((a:any,b:any)=>(a.co_number||0)-(b.co_number||0)));
-      if(project?.contract_amount) setContractSum(Number(project.contract_amount)||0);
     }catch(e:any){
       console.error(e); setError(humanError(e, 'Failed to load change orders. Please try again.'));
     }finally{
@@ -200,6 +197,17 @@ export default function ChangeOrdersPage() {
   },[projectId]);
 
   useEffect(()=>{ load(); },[load]);
+
+  // Dead-space kill (spec 4.1): an empty log opens straight into the composer
+  // (CO number pre-assigned, contract position live). One-shot per visit so
+  // Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
+  useEffect(()=>{
+    if(!loading && cos.length===0 && !autoOpenedRef.current){
+      autoOpenedRef.current = true;
+      setShowForm(true);
+    }
+  },[loading, cos.length]);
 
   async function createCO(){
     if(!fTitle.trim()){ setError('Title is required'); return; }
@@ -309,6 +317,14 @@ export default function ChangeOrdersPage() {
   const selectedPkg    = bidPkgs.find(b=>b.id===fRelatedPkg) || null;
   const projEnd        = ctx?.project?.endDate ? String(ctx.project.endDate) : null;
   const pushedEnd      = projEnd && fSchedNum>0 ? new Date(new Date(projEnd.slice(0,10)+'T00:00:00').getTime()+fSchedNum*86400000) : null;
+
+  // Toolbar-driven view of the CO log (search matches CO number, title, reason).
+  const coQ = coSearch.trim().toLowerCase();
+  const filteredCos = cos.filter((c:any)=>{
+    if (coStatusFilter !== 'all' && String(c.status||'pending') !== coStatusFilter) return false;
+    if (!coQ) return true;
+    return [c.title, c.description, c.reason, `co-${padCo(c.co_number)}`].some(v => String(v||'').toLowerCase().includes(coQ));
+  });
 
   return (
     <>
@@ -483,24 +499,45 @@ export default function ChangeOrdersPage() {
         {/* Loading */}
         {loading && <div style={{padding:40,textAlign:'center' as const,color:DIM}}>Loading change orders…</div>}
 
-        {/* Empty */}
+        {/* Empty — the composer above IS the zero state; the strip shows the CO lifecycle */}
         {!loading && cos.length===0 && (
           <SectionCard>
-            <PremiumEmpty
-              icon={<Clipboard size={30} weight="duotone" color={GOLD} />}
-              title="No change orders yet"
-              description="Track scope changes, owner requests, and unforeseen conditions."
-              action={
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:12}}>
+              <div style={{fontSize:13.5,fontWeight:800,color:TEXT}}>
+                <Clipboard size={16} weight="duotone" color={GOLD} style={{marginRight:7,verticalAlign:'text-bottom'}} />
+                No change orders yet
+                <span style={{fontWeight:400,color:DIM}}>{showForm ? ` — CO-${padCo(nextCoNumber)} is numbered and ready in the form above.` : ' — log scope changes, owner requests, and unforeseen conditions.'}</span>
+              </div>
+              {!showForm && (
                 <button onClick={()=>setShowForm(true)} style={goldButtonStyle} className="pmBtn">
-                  <Plus size={15} weight="bold" /> Create First Change Order
+                  <Plus size={15} weight="bold" /> New Change Order
                 </button>
-              }
-            />
+              )}
+            </div>
+            <FlowStrip steps={[
+              {title:'Log the CO',desc:'numbered automatically'},
+              {title:'Pending decision',desc:'approve or reject inline'},
+              {title:'Contract sum updates',desc:'on approval, automatically'},
+              {title:'Budget line syncs',desc:'nothing re-typed'},
+            ]} />
           </SectionCard>
         )}
 
         {/* Table */}
-        {!loading && cos.length>0 && (
+        {!loading && cos.length>0 && (<>
+          <ListToolbar
+            module="change-orders"
+            search={coSearch}
+            onSearch={setCoSearch}
+            searchPlaceholder="Search change orders..."
+            filters={[{ key: 'status', label: 'Status', value: coStatusFilter, onChange: setCoStatusFilter, allLabel: 'All Statuses', options: [
+              { value: 'pending', label: 'Pending' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'rejected', label: 'Rejected' },
+            ] }]}
+            count={{ shown: filteredCos.length, total: cos.length }}
+            style={{ marginBottom: 16 }}
+          />
           <SectionCard title="Change Orders" icon={<Clipboard size={17} weight="duotone" color={GOLD} />} flush>
           <div style={{overflowX:'auto'}}>
             <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
@@ -514,7 +551,7 @@ export default function ChangeOrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {cos.map((co:any)=>{
+                {filteredCos.map((co:any)=>{
                   const st = statusStyle(co.status||'pending');
                   const cost = Number(co.cost_impact||0);
                   return (
@@ -612,7 +649,7 @@ export default function ChangeOrdersPage() {
             </table>
           </div>
           </SectionCard>
-        )}
+        </>)}
       </PremiumSurface>
     </>
   );

@@ -1,10 +1,12 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { Badge, Table, T } from '@/components/ui/shell';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { Clipboard, NotePencil, CheckCircle, CurrencyDollar, Plus, X, Warning, ClockCounterClockwise, ArrowRight } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 interface Permit {
   id: string;
@@ -76,17 +78,12 @@ export default function PermitsPage() {
   useEffect(() => { fetchPermits(); }, [fetchPermits]);
 
   // Project intelligence — one snapshot; the register walks in knowing the job.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [autoF, setAutoF] = useState<{ authority?: boolean; applied?: boolean }>({});
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  // ListToolbar state — filters persist per module via sag_flt_permits.
+  const [permitSearch, setPermitSearch] = useState('');
+  const [permitStatusFilter, setPermitStatusFilter] = useState('all');
+  const [permitTypeFilter, setPermitTypeFilter] = useState('all');
 
   // Jurisdiction guess from the project address — "123 Main St, Mesa, AZ 85201"
   // -> "Mesa". Only a prefill; the GC corrects it once and moves on.
@@ -107,6 +104,16 @@ export default function PermitsPage() {
   // DB numerics can round-trip as strings — always coerce before math.
   const totalFees = permits.reduce((s, p) => s + (Number(p.fee) || 0), 0);
   const stageCount: Record<string, number> = { applied, issued, inspections: inInspections, closed };
+
+  // Toolbar-driven view of the register. Status matches the effective (expiry-aware) status.
+  const qP = permitSearch.trim().toLowerCase();
+  const filteredPermits = permits.filter(p => {
+    const st = effStatus(p);
+    if (permitStatusFilter !== 'all' && st !== permitStatusFilter) return false;
+    if (permitTypeFilter !== 'all' && p.permit_type !== permitTypeFilter) return false;
+    if (!qP) return true;
+    return [p.permit_number, p.issuing_authority, p.permit_type].some(v => String(v || '').toLowerCase().includes(qP));
+  });
 
   async function handleSave() {
     if (!form.number || !form.authority) {
@@ -338,6 +345,25 @@ export default function PermitsPage() {
       )}
 
       {/* Table */}
+      <ListToolbar
+        module="permits"
+        search={permitSearch}
+        onSearch={setPermitSearch}
+        searchPlaceholder="Search permits..."
+        filters={[
+          { key: 'status', label: 'Status', value: permitStatusFilter, onChange: setPermitStatusFilter, allLabel: 'All Statuses', options: [
+            { value: 'applied', label: 'Applied' },
+            { value: 'issued', label: 'Issued' },
+            { value: 'inspections', label: 'Inspections' },
+            { value: 'closed', label: 'Closed' },
+            { value: 'expired', label: 'Expired' },
+          ] },
+          { key: 'type', label: 'Type', value: permitTypeFilter, onChange: setPermitTypeFilter, allLabel: 'All Types', options: [...TYPES] },
+        ]}
+        count={{ shown: filteredPermits.length, total: permits.length }}
+        style={{ marginBottom: 16 }}
+      />
+
       <SectionCard title="Permit Register" icon={<Clipboard size={17} weight="duotone" color={T.gold} />} flush>
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: T.muted }}>Loading...</div>
@@ -358,7 +384,7 @@ export default function PermitsPage() {
           <div style={{ padding: '4px 8px 8px' }}>
             <Table
               headers={['Permit #', 'Type', 'Agency', 'Status', 'Fee', 'Issue Date', 'Expiry']}
-              rows={permits.map(p => {
+              rows={filteredPermits.map(p => {
                 const status = effStatus(p);
                 const d = daysToExpiry(p);
                 const expiringRow = status !== 'closed' && status !== 'expired' && d !== null && d >= 0 && d <= 30;

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { XCircle, FileText, ShieldCheck, CurrencyDollar, Clock, Wallet, CalendarBlank, UserPlus, Table as TableIcon, SealCheck, ClockCounterClockwise } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
@@ -145,18 +146,10 @@ export default function PayrollPage() {
 
   // Project intelligence snapshot + clocked field time — the screen walks in
   // knowing the project and the hours the crew already logged.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(pid);
   const [timeEntries, setTimeEntries] = useState<any[]>([]);
 
-  useEffect(() => { loadRecords(); loadPrevailingWage(); loadCtx(); loadTimesheets(); }, [pid]);
-
-  async function loadCtx() {
-    try {
-      const r = await fetch(`/api/project-context?projectId=${pid}`);
-      const c = await r.json();
-      if (!c.error) setCtx(c);
-    } catch {}
-  }
+  useEffect(() => { loadRecords(); loadPrevailingWage(); loadTimesheets(); }, [pid]);
 
   async function loadTimesheets() {
     try {

@@ -6,10 +6,12 @@
  * Backed by the canonical project_files table via /api/files/* (signed URLs).
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { Btn, T } from '@/components/ui/shell';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, ghostButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { FileThumb, FilePreview, KIND_TINT } from '@/components/FilePreview';
 import { FileDropzone } from '@/components/FileDropzone';
 import { FileCropper } from '@/components/FileCropper';
@@ -53,16 +55,7 @@ export default function FilesPage() {
   useEffect(() => { load(); }, [load]);
 
   // Project intelligence — one snapshot; the library walks in knowing the job.
-  const [ctx, setCtx] = useState<any>(null);
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3500); };
   const folders = useMemo(() => Array.from(new Set(files.map((f) => f.folder).filter(Boolean))).sort(), [files]);
@@ -143,22 +136,21 @@ export default function FilesPage() {
           subtitle={`${filtered.length} ${filtered.length === 1 ? 'file' : 'files'}${!trash && folder !== 'all' ? ` · ${folder}` : ''}`}
           action={<Btn size="sm" variant={trash ? 'primary' : 'ghost'} onClick={() => setTrash((t) => !t)}><Trash size={14} />{trash ? 'Viewing trash' : 'Trash'}</Btn>}
         >
-          {/* controls */}
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 11px' }}>
-              <MagnifyingGlass size={15} color={T.muted} />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search files…" style={{ background: 'none', border: 'none', color: T.white, outline: 'none', fontSize: 13, width: 180 }} />
-            </div>
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              {kinds.map((k) => <Btn key={k.k} size="sm" variant={kindFilter === k.k ? 'primary' : 'ghost'} onClick={() => setKindFilter(k.k)}>{k.label}</Btn>)}
-            </div>
-            {folders.length > 0 && (
-              <select value={folder} onChange={(e) => setFolder(e.target.value)} style={{ background: T.surface2, color: T.white, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 10px', fontSize: 13 }}>
-                <option value="all">All folders</option>
-                {folders.map((fl) => <option key={fl} value={fl}>{fl}</option>)}
-              </select>
-            )}
-          </div>
+          {/* Toolbar */}
+          <ListToolbar
+            module="files"
+            search={search}
+            onSearch={setSearch}
+            searchPlaceholder="Search files…"
+            filters={[
+              { key: 'kind', label: 'Type', value: kindFilter, onChange: setKindFilter, allLabel: 'All types',
+                options: kinds.filter((k) => k.k !== 'all').map((k) => ({ value: k.k, label: k.label })) },
+              { key: 'folder', label: 'Folder', value: folder, onChange: setFolder, allLabel: 'All folders',
+                options: folders },
+            ]}
+            count={{ shown: filtered.length, total: files.length }}
+            style={{ marginBottom: 16 }}
+          />
 
           {/* grid */}
           {loading ? <div style={{ textAlign: 'center', padding: 44, color: T.muted, fontSize: 13 }}>Loading…</div>

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { Badge, Btn, Table, T } from '@/components/ui/shell';
 import {
@@ -52,17 +53,8 @@ export default function AutopilotPage() {
 
   // Project intelligence — one snapshot on mount; the page walks in already
   // knowing what Autopilot is watching (RFIs, COs, subs, invoices, schedule).
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [scanStage, setScanStage] = useState(-1); // -1 idle; 0..3 = check currently running
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch { /* non-critical */ }
-    })();
-  }, [projectId]);
 
   const fetchAlerts = useCallback(async () => {
     setLoading(true);

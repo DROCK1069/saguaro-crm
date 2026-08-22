@@ -9,6 +9,7 @@
  * connect here when accounts are linked.
  */
 import React, { useState, useEffect, useMemo } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import {
   Package,
   Storefront,
@@ -99,6 +100,7 @@ export default function CatalogPage() {
 
   // ── Order cart: item id -> qty. The visible, Procore-style add flow. ──
   const [cart, setCart] = useState<Record<string, number>>({});
+  const { projects: liveProjects } = useProjects();
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [projectId, setProjectId] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -118,16 +120,13 @@ export default function CatalogPage() {
         setLoading(false);
       }
     })();
-    (async () => {
-      try {
-        const r = await fetch('/api/projects/list');
-        const d = await r.json();
-        const list = (d.projects || []).map((p: any) => ({ id: p.id, name: p.name || 'Untitled' }));
-        setProjects(list);
-        if (list.length === 1) setProjectId(list[0].id);
-      } catch {}
-    })();
   }, []);
+
+  useEffect(() => {
+    const list = liveProjects.map((p) => ({ id: p.id, name: p.name || 'Untitled' }));
+    setProjects(list);
+    if (list.length === 1) setProjectId((prev) => prev || list[0].id);
+  }, [liveProjects]);
 
   const allItems = data?.items || [];
   const verticalsSorted = useMemo(() => [...(data?.verticals || [])].sort((a, b) => a.localeCompare(b)), [data]);

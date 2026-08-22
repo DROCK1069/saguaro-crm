@@ -14,6 +14,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Compass, CaretDown, CaretUp, Check, ArrowRight } from '@phosphor-icons/react';
 import { SectionCard, goldButtonStyle } from '@/components/ui/premium';
+import { useProjects } from '@/lib/hooks/useProjects';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 
 const GOLD = '#F59E0B';
 const GOLD_HI = '#FBBF24';
@@ -25,11 +27,19 @@ const LS_KEY = 'sag_journey_collapsed';
 interface JourneyStep { title: string; desc: string; done: boolean; href?: string }
 
 export default function GettingStartedRail({ projectId }: { projectId?: string }) {
-  const [loaded, setLoaded] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [ctx, setCtx] = useState<any>(null);
   const [collapsed, setCollapsed] = useState(false);
+
+  // Live data from the shared SWR caches (W-2/W-4): the dashboard and the
+  // projects page fill the same keys, so the rail costs zero extra requests.
+  const { projects, loading: listLoading, error: listError, degraded } = useProjects();
+  // On the dashboard (no projectId prop) the journey tracks the most recent
+  // project — the list is already created_at desc.
+  const activeId = projectId || projects[0]?.id;
+  const { ctx, loading: ctxLoading } = useProjectContext(activeId || null);
+  // Never flash a wrong journey: wait for the list (and for the snapshot when
+  // a project exists); a degraded list route never shows a false "0/8".
+  const loaded = !listLoading && !listError && !degraded && (!activeId || !!ctx || !ctxLoading);
 
   // Read the persisted collapse state after mount (SSR-safe).
   useEffect(() => {
@@ -37,34 +47,6 @@ export default function GettingStartedRail({ projectId }: { projectId?: string }
     setHydrated(true);
   }, []);
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const r = await fetch('/api/projects/list');
-        if (!r.ok) return; // unauth — render nothing
-        const d = await r.json();
-        if (d.source && d.source !== 'live') return; // list route degraded — never show a false "0/8"
-        const list = Array.isArray(d.projects) ? d.projects : [];
-        if (!alive) return;
-        setProjects(list);
-        // On the dashboard (no projectId prop) the journey tracks the most
-        // recent project — the list is already created_at desc.
-        const id = projectId || list[0]?.id;
-        if (id) {
-          try {
-            const rc = await fetch(`/api/project-context?projectId=${id}`);
-            const c = await rc.json();
-            if (alive && rc.ok && !c.error) setCtx(c);
-          } catch { /* context unavailable — steps 2-8 stay unchecked */ }
-        }
-        if (alive) setLoaded(true);
-      } catch { /* network — render nothing */ }
-    })();
-    return () => { alive = false; };
-  }, [projectId]);
-
-  const activeId = projectId || projects[0]?.id;
   const money = ctx?.money;
   const pLink = (suffix: string) => (activeId ? `/app/projects/${activeId}/${suffix}` : undefined);
 

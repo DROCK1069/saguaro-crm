@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { humanError } from '@/lib/errors';
 import {
   Folder, UploadSimple, ClockCounterClockwise, ArrowsLeftRight, Info, Users,
@@ -163,17 +164,12 @@ export default function DocumentVersionsPage() {
     }
   }, []);
 
-  const loadProjects = useCallback(async () => {
-    try {
-      const h = await getAuthHeaders();
-      const r = await fetch('/api/projects/list', { headers: h, cache: 'no-store' });
-      if (!r.ok) return;
-      const data = await r.json();
-      setProjects((data.projects || []).map((p: any) => ({ id: p.id, name: p.name })));
-    } catch { /* projects picker is optional */ }
-  }, []);
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => {
+    setProjects((liveProjects as any[]).map((p: any) => ({ id: p.id, name: p.name })));
+  }, [liveProjects]);
 
-  useEffect(() => { load(); loadProjects(); }, [load, loadProjects]);
+  useEffect(() => { load(); }, [load]);
 
   // Keep the open modal's doc in sync after a reload.
   useEffect(() => {

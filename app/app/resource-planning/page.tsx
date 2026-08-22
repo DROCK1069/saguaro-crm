@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { TRADESPERSON_ROLES as ROLES } from '@/lib/contractor-trades';
@@ -100,25 +101,20 @@ export default function ResourcePlanningPage() {
   const gridScrollRef = useRef<HTMLDivElement>(null);
 
   /* ---- Data loading ---- */
+  const { projects: liveProjects } = useProjects();
+  useEffect(() => { setProjects(liveProjects as any); }, [liveProjects]);
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [ra, rp] = await Promise.all([
-        fetch('/api/projects/all/resource-planning'),
-        fetch('/api/projects/list'),
-      ]);
+      const ra = await fetch('/api/projects/all/resource-planning');
       if (!ra.ok) { console.error('load assignments failed', ra.status); throw new Error('request failed'); }
-      if (!rp.ok) { console.error('load projects failed', rp.status); throw new Error('request failed'); }
       const da = await ra.json();
-      const dp = await rp.json();
       setAssignments(Array.isArray(da) ? da : da.data ?? []);
-      setProjects(Array.isArray(dp) ? dp : dp.data ?? []);
     } catch (err: unknown) {
       console.error(err);
       setError(humanError(err, 'Failed to load resource planning. Please try again.'));
       setAssignments([]);
-      setProjects([]);
     } finally {
       setLoading(false);
     }

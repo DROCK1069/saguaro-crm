@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
@@ -7,6 +8,7 @@ import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Plus, Ruler, X, Stack, CheckCircle, Eye, SquaresFour, UploadSimple } from '@phosphor-icons/react';
 import { SHEET_DISCIPLINES } from '@/lib/construction-intelligence';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -111,14 +113,7 @@ export default function DrawingsPage(){
   const [autoFields,setAutoFields]=useState<{num?:boolean;title?:boolean;date?:boolean}>({});
 
   // Project intelligence — one snapshot; the register walks in knowing the job.
-  const [ctx,setCtx]=useState<any>(null);
-  useEffect(()=>{(async()=>{
-    try{
-      const r=await fetch(`/api/project-context?projectId=${projectId}`);
-      const c=await r.json();
-      if(!c.error) setCtx(c);
-    }catch{}
-  })();},[projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -392,55 +387,51 @@ export default function DrawingsPage(){
           <StatCard icon={<SquaresFour size={19} weight="duotone" color="#a78bfa"/>} label="Disciplines" value={String(disciplineCount)} accent="#a78bfa" sub="represented" delay={0.14}/>
         </div>
 
-        {/* Filters + view toggle */}
-        <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap',alignItems:'center'}}>
-          <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Search drawings..."
-            style={{flex:1,minWidth:180,padding:'9px 14px',background:RAISED,
-              border:`1px solid ${PBORDER}`,borderRadius:10,color:TEXT,fontSize:13,outline:'none'}}/>
-          <select value={filterDiscipline} onChange={e=>setFilterDiscipline(e.target.value)}
-            style={{padding:'9px 14px',background:RAISED,border:`1px solid ${PBORDER}`,
-              borderRadius:10,color:filterDiscipline!=='all'?TEXT:DIM,fontSize:13,outline:'none'}}>
-            <option value="all">All Disciplines</option>
-            {DISCIPLINES.map(d=><option key={d} value={d}>{d}</option>)}
-          </select>
-          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-            style={{padding:'9px 14px',background:RAISED,border:`1px solid ${PBORDER}`,
-              borderRadius:10,color:filterStatus!=='all'?TEXT:DIM,fontSize:13,outline:'none'}}>
-            <option value="all">All Statuses</option>
-            {STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-          </select>
-          {/* Current set vs full revision history */}
-          <div style={{display:'flex',background:RAISED,border:`1px solid ${PBORDER}`,borderRadius:10,overflow:'hidden'}}>
-            <button onClick={()=>setDrawingSet('current')}
-              style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
-                background:drawingSet==='current'?GOLD:'transparent',
-                color:drawingSet==='current'?DARK:DIM}}>
-              Current Set ({current})
-            </button>
-            <button onClick={()=>setDrawingSet('all')}
-              style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
-                background:drawingSet==='all'?GOLD:'transparent',
-                color:drawingSet==='all'?DARK:DIM}}>
-              All Revisions ({total})
-            </button>
-          </div>
-          {/* View toggle */}
-          <div style={{display:'flex',background:RAISED,border:`1px solid ${PBORDER}`,borderRadius:10,overflow:'hidden'}}>
-            <button onClick={()=>setGroupByDiscipline(true)}
-              style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
-                background:groupByDiscipline?GOLD:'transparent',
-                color:groupByDiscipline?DARK:DIM}}>
-              By Discipline
-            </button>
-            <button onClick={()=>setGroupByDiscipline(false)}
-              style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
-                background:!groupByDiscipline?GOLD:'transparent',
-                color:!groupByDiscipline?DARK:DIM}}>
-              Flat List
-            </button>
-          </div>
-        </div>
+        {/* List toolbar — search + discipline/status filters; set + view toggles in extra */}
+        <ListToolbar
+          module="drawings"
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search drawings..."
+          filters={[
+            { key: 'discipline', label: 'Discipline', value: filterDiscipline, onChange: setFilterDiscipline, allLabel: 'All Disciplines', options: [...DISCIPLINES] },
+            { key: 'status', label: 'Status', value: filterStatus, onChange: setFilterStatus, allLabel: 'All Statuses', options: STATUSES.map(s => ({ value: s, label: STATUS_LABELS[s] })) },
+          ]}
+          count={{ shown: filtered.length, total: total }}
+          style={{ marginBottom: 18 }}
+          extra={<>
+            {/* Current set vs full revision history */}
+            <div style={{display:'flex',background:RAISED,border:`1px solid ${PBORDER}`,borderRadius:10,overflow:'hidden'}}>
+              <button onClick={()=>setDrawingSet('current')}
+                style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
+                  background:drawingSet==='current'?GOLD:'transparent',
+                  color:drawingSet==='current'?DARK:DIM}}>
+                Current Set ({current})
+              </button>
+              <button onClick={()=>setDrawingSet('all')}
+                style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
+                  background:drawingSet==='all'?GOLD:'transparent',
+                  color:drawingSet==='all'?DARK:DIM}}>
+                All Revisions ({total})
+              </button>
+            </div>
+            {/* View toggle */}
+            <div style={{display:'flex',background:RAISED,border:`1px solid ${PBORDER}`,borderRadius:10,overflow:'hidden'}}>
+              <button onClick={()=>setGroupByDiscipline(true)}
+                style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
+                  background:groupByDiscipline?GOLD:'transparent',
+                  color:groupByDiscipline?DARK:DIM}}>
+                By Discipline
+              </button>
+              <button onClick={()=>setGroupByDiscipline(false)}
+                style={{padding:'9px 15px',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,
+                  background:!groupByDiscipline?GOLD:'transparent',
+                  color:!groupByDiscipline?DARK:DIM}}>
+                Flat List
+              </button>
+            </div>
+          </>}
+        />
 
         {loading&&(
           <SectionCard>

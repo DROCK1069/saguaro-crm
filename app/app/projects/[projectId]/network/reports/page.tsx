@@ -1,10 +1,11 @@
 'use client';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Clipboard, Plug, Shuffle, WifiHigh, Ruler, ChartBar, FileText, Archive } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, FlowStrip, ghostButtonStyle } from '@/components/ui/premium';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -159,9 +160,7 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <PremiumSurface maxWidth={1600}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', color: DIM }}>
-          Loading reports...
-        </div>
+        <ModuleSkeleton kpis={4} rows={5} />
       </PremiumSurface>
     );
   }
@@ -274,12 +273,33 @@ export default function ReportsPage() {
       {/* Report History */}
       <SectionCard title="Report History" icon={<Archive size={17} weight="duotone" color={GOLD} />} flush>
         {history.length === 0 ? (
-          <PremiumEmpty
-            icon={<FileText size={30} weight="duotone" color={GOLD} />}
-            title="No reports generated yet"
-            description="Select a report type above to generate your first network document."
-            compact
-          />
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                <FileText size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                No reports generated yet
+                <span style={{ fontWeight: 400, color: DIM }}> — one tap builds the first document from live project data:</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['ip_schedule', 'cable_schedule', 'as_built'].map(t => {
+                  const rt = REPORT_TYPES.find(r => r.type === t);
+                  if (!rt) return null;
+                  return (
+                    <button key={t} onClick={() => generateReport(t)} disabled={generating === t} className="pmBtn"
+                      style={{ padding: '6px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 999, color: GOLD, fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: generating === t ? 0.6 : 1 }}>
+                      {generating === t ? 'Generating...' : rt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <FlowStrip steps={[
+              { title: 'Pick a document', desc: 'six report types above' },
+              { title: 'Choose the format', desc: `${selectedFormat.toUpperCase()} selected now` },
+              { title: 'Download instantly', desc: 'branded with your logo' },
+              { title: 'History archives it', desc: 'every export kept here' },
+            ]} />
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 16 }}>
             {history.map(report => (

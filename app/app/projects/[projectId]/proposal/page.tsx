@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
@@ -61,19 +62,8 @@ export default function ProposalPage() {
   // Win/Loss capture: after flipping accept/decline we open the universal outcome modal.
   const [outcomeModal, setOutcomeModal] = useState<{ proposalId: string; defaultOutcome: 'won' | 'lost'; ourAmount: number } | null>(null);
   // Project intelligence — the proposal screen walks in knowing the contract money.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto, setAuto] = useState<{ amt?: boolean }>({});
-
-  useEffect(() => {
-    if (!projectId) return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
 
   const fetchProposals = useCallback(async () => {
     setLoading(true);

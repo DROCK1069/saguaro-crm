@@ -1,10 +1,12 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { Handshake, Trash, Users, CurrencyDollar, HandCoins, Heartbeat, Plus, ShieldCheck, ShieldWarning, AddressBook } from '@phosphor-icons/react';
 import { SUB_TRADES } from '@/lib/construction-intelligence';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -65,22 +67,15 @@ export default function SubsPage() {
   const [showForm, setShowForm] = useState(false);
   const [toast, setToast] = useState<{msg:string;type:'success'|'error'}|null>(null);
   const [deleteId, setDeleteId] = useState<string|null>(null);
+  const [search, setSearch] = useState('');
+  const [filterTrade, setFilterTrade] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [form, setForm] = useState({ name:'', trade:'', contact_name:'', contact_email:'', contact_phone:'', license_number:'', contract_amount:'' });
 
   // SmartCreate: walk in knowing the roster, awards, and compliance standing.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [pickId, setPickId] = useState('');
   const [auto, setAuto] = useState<{name?:boolean;trade?:boolean;contact?:boolean;license?:boolean;amount?:boolean}>({});
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
 
   useEffect(() => { if(toast) { const t=setTimeout(()=>setToast(null),4000); return ()=>clearTimeout(t); } return undefined; }, [toast]);
 
@@ -96,6 +91,17 @@ export default function SubsPage() {
   }, [projectId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Dead-space kill (spec 4.1): an empty directory opens straight into the
+  // add composer (directory/award seeding built in). One-shot per visit so
+  // Cancel stays cancelled.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!loading && subs.length === 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setShowForm(true);
+    }
+  }, [loading, subs.length]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +179,21 @@ export default function SubsPage() {
   const totalPaid = subs.reduce((s,sub) => s + (sub.paid_amount||0), 0);
   const avgScore = subs.length > 0 ? Math.round(subs.reduce((s,sub) => s + (sub.health_score||0), 0) / subs.length) : 0;
   const avgScoreColor = avgScore >= 80 ? '#22C55E' : avgScore >= 60 ? GOLD : subs.length > 0 ? '#EF4444' : undefined;
+
+  const subTrades = Array.from(new Set(subs.map(s => s.trade).filter(Boolean))).sort();
+  const filteredSubs = subs.filter(s => {
+    if (search) {
+      const q = search.toLowerCase();
+      const hit = (s.name || '').toLowerCase().includes(q)
+        || (s.contact_name || '').toLowerCase().includes(q)
+        || (s.contact_email || '').toLowerCase().includes(q)
+        || (s.license_number || '').toLowerCase().includes(q);
+      if (!hit) return false;
+    }
+    if (filterTrade !== 'all' && s.trade !== filterTrade) return false;
+    if (filterStatus !== 'all' && (s.status || 'active') !== filterStatus) return false;
+    return true;
+  });
 
   return (
     <PremiumSurface maxWidth={1600}>
@@ -313,16 +334,44 @@ export default function SubsPage() {
         </SectionCard>
       )}
 
-      {/* Empty State */}
-      {!loading && subs.length === 0 && !showForm && (
+      {/* Empty state — the composer above IS the zero state; the strip teaches the flow */}
+      {!loading && subs.length === 0 && (
         <SectionCard>
-          <PremiumEmpty
-            icon={<Handshake size={34} weight="duotone" color={GOLD} />}
-            title="No subcontractors yet"
-            description="Add your project subcontractors to track contracts, compliance, insurance, and performance scores."
-            action={<button onClick={()=>setShowForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add First Subcontractor</button>}
-          />
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:12}}>
+            <div style={{fontSize:13.5,fontWeight:800,color:TEXT}}>
+              <Handshake size={16} weight="duotone" color={GOLD} style={{marginRight:7,verticalAlign:'text-bottom'}} />
+              No subcontractors yet
+              <span style={{fontWeight:400,color:DIM}}>{showForm ? ' — add the first company in the form above.' : ' — add the first company to start the directory.'}</span>
+            </div>
+            {!showForm && (
+              <button onClick={()=>setShowForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Subcontractor</button>
+            )}
+          </div>
+          <FlowStrip steps={[
+            { title: 'Add the company', desc: 'directory pick pre-fills it' },
+            { title: 'W-9 auto-requests', desc: 'over $600 with an email' },
+            { title: 'Compliance tracked', desc: 'COI expiry and W-9 status' },
+            { title: 'Ready for bids', desc: 'invites and contracts' },
+          ]} />
         </SectionCard>
+      )}
+
+      {/* Toolbar */}
+      {!loading && subs.length > 0 && (
+        <ListToolbar
+          module="subs"
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search subs by company, contact, or license..."
+          filters={[
+            {key:'trade',label:'Trade',value:filterTrade,onChange:setFilterTrade,allLabel:'All Trades',
+              options:subTrades},
+            {key:'status',label:'Status',value:filterStatus,onChange:setFilterStatus,allLabel:'All Statuses',
+              options:['active','prequalified','invited','suspended','inactive']},
+          ]}
+          count={{shown:filteredSubs.length,total:subs.length}}
+          style={{marginBottom:14}}
+        />
       )}
 
       {/* Table */}
@@ -338,7 +387,10 @@ export default function SubsPage() {
                 </tr>
               </thead>
               <tbody>
-                {subs.map(sub=>(
+                {filteredSubs.length === 0 && (
+                  <tr><td colSpan={11} style={{padding:'26px 14px',textAlign:'center',color:DIM,fontSize:13}}>No subcontractors match your search or filters.</td></tr>
+                )}
+                {filteredSubs.map(sub=>(
                   <tr key={sub.id} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(245, 158, 11,.04)')} onMouseLeave={e=>(e.currentTarget.style.background='')}>
                     <td style={{padding:'12px 14px'}}>
                       <div style={{color:TEXT,fontWeight:700}}>{sub.name}</div>

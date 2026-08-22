@@ -13,6 +13,7 @@ import {
   ghostButtonStyle,
   goldOutlineButtonStyle,
 } from '@/components/ui/premium';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -147,7 +148,7 @@ export default function ConfigGeneratorPage() {
   if (loading) {
     return (
       <PremiumSurface maxWidth={1600}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', color: DIM }}>Loading configs...</div>
+        <ModuleSkeleton kpis={4} rows={5} />
       </PremiumSurface>
     );
   }

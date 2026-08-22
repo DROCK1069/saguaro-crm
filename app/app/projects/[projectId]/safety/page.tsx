@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { Badge, Table, T } from '@/components/ui/shell';
 import {
   PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty,
-  StatStrip, FlowSteps, AutoChip,
+  StatStrip, FlowSteps, FlowStrip, AutoChip,
   goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
 import {
@@ -13,6 +14,7 @@ import {
   ChalkboardTeacher, UsersThree,
 } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 // Semantic accents — tuned to match the dashboard's Sonoran palette.
 const GOLD = '#F59E0B';
@@ -147,8 +149,12 @@ export default function SafetyPage() {
   const [talkSaving, setTalkSaving] = useState(false);
 
   // Project intelligence — one snapshot; forms walk in knowing the roster.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto, setAuto] = useState<{ incDate?: boolean; talkDate?: boolean; presenter?: boolean; attendees?: boolean; caDue?: boolean }>({});
+  // ListToolbar state — filters persist per module via sag_flt_safety.
+  const [incidentSearch, setIncidentSearch] = useState('');
+  const [incidentTypeFilter, setIncidentTypeFilter] = useState('all');
+  const [incidentStatusFilter, setIncidentStatusFilter] = useState('all');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -195,16 +201,6 @@ export default function SafetyPage() {
 
   useEffect(() => { fetchData(); fetchActions(); fetchTalks(); }, [fetchData, fetchActions, fetchTalks]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch { /* context is progressive enhancement */ }
-    })();
-  }, [projectId]);
-
   const totalIncidents = incidents.length;
   const openCount = incidents.filter(i => i.status === 'Open').length;
   const resolvedCount = incidents.filter(i => i.status === 'Resolved').length;
@@ -236,6 +232,15 @@ export default function SafetyPage() {
   // The pending report is OSHA-recordable when its type or severity says so —
   // shown live in the form and stamped onto the row at save.
   const formIsRecordable = isOshaRecordable(form);
+
+  // Toolbar-driven view of the incident log; stats still read the full list.
+  const qS = incidentSearch.trim().toLowerCase();
+  const filteredIncidents = incidents.filter(i => {
+    if (incidentStatusFilter !== 'all' && i.status !== incidentStatusFilter) return false;
+    if (incidentTypeFilter !== 'all' && i.type !== incidentTypeFilter) return false;
+    if (!qS) return true;
+    return [i.description, i.type, i.severity, i.corrective_action].some(v => String(v || '').toLowerCase().includes(qS));
+  });
 
   // Prefilled report flow: incident date defaults to today.
   function openIncident() {
@@ -570,6 +575,18 @@ export default function SafetyPage() {
       )}
 
       {/* Incidents Table */}
+      <ListToolbar
+        module="safety"
+        search={incidentSearch}
+        onSearch={setIncidentSearch}
+        searchPlaceholder="Search incidents..."
+        filters={[
+          { key: 'type', label: 'Type', value: incidentTypeFilter, onChange: setIncidentTypeFilter, allLabel: 'All Types', options: [...TYPES] },
+          { key: 'status', label: 'Status', value: incidentStatusFilter, onChange: setIncidentStatusFilter, allLabel: 'All Statuses', options: ['Open', 'Resolved'] },
+        ]}
+        count={{ shown: filteredIncidents.length, total: incidents.length }}
+        style={{ marginBottom: 16 }}
+      />
       <div style={{ marginBottom: 28 }}>
         <SectionCard
           title="Incident Log"
@@ -589,7 +606,7 @@ export default function SafetyPage() {
           ) : (
             <Table
               headers={['Date', 'Type', 'OSHA', 'Description', 'Severity', 'Status']}
-              rows={incidents.map(i => [
+              rows={filteredIncidents.map(i => [
                 <span key="d" style={{ color: T.muted, whiteSpace: 'nowrap' }}>{i.date}</span>,
                 i.type,
                 <span key="osha" style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.05em', color: isOshaRecordable(i) ? RED : T.muted }}>{isOshaRecordable(i) ? 'RECORDABLE' : '—'}</span>,
@@ -724,11 +741,24 @@ export default function SafetyPage() {
           {actionsLoading ? (
             <div style={{ padding: 40, textAlign: 'center', color: T.muted }}>Loading corrective actions...</div>
           ) : actions.length === 0 ? (
-            <PremiumEmpty
-              icon={<Wrench size={30} weight="duotone" color={GOLD} />}
-              title="No corrective actions"
-              description="Corrective actions created from incidents will appear here."
-            />
+            <div style={{ padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: '#FFFFFF' }}>
+                  <Wrench size={16} weight="duotone" color={GOLD} style={{ marginRight: 7, verticalAlign: 'text-bottom' }} />
+                  No corrective actions
+                  <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.62)' }}>{showCAForm ? ' — describe the first one in the form above; the due date is already a week out.' : ' — incidents auto-create them, or add one directly.'}</span>
+                </div>
+                {!showCAForm && (
+                  <button onClick={openCA} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Add Corrective Action</button>
+                )}
+              </div>
+              <FlowStrip steps={[
+                { title: 'Open the action', desc: 'from an incident or directly' },
+                { title: 'Assign an owner', desc: 'sub roster type-ahead' },
+                { title: 'Fix lands', desc: 'advance Open to In Progress' },
+                { title: 'Verify and close', desc: 'overdue flags itself' },
+              ]} />
+            </div>
           ) : (
             <Table
               headers={['Description', 'Assigned To', 'Due Date', 'Status', 'Actions']}

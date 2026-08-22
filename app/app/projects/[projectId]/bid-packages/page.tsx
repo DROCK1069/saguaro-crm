@@ -1,11 +1,14 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { humanError } from '@/lib/errors';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents, extend } from '@/lib/calc';
 import { X, Plus, ArrowLeft, ArrowRight, Package, FileText, Trophy, UsersThree, Tray, CalendarBlank, CurrencyDollar, ShieldCheck } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
@@ -429,48 +432,10 @@ export default function BidPackagesPage() {
 
   // The screen walks in knowing the project: budget, roster, award history —
   // one /api/project-context snapshot (fetched once) powers the strip + rail.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   // Per-package leveling detail (invited / responded / low bid / spread),
   // derived from the real invites + submissions tables. Number()-coerced.
   const [detail, setDetail] = useState<Record<string, { invited: number; responded: number; low: number | null; lowWho: string | null; spread: number | null }>>({});
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json() as any;
-        if (!c.error) setCtx(c);
-      } catch { /* context is additive — the list still renders without it */ }
-    })();
-  }, [projectId]);
-
-  async function enrichDetail(rows: BidPackageRow[]) {
-    const targets = rows.slice(0, 20);
-    if (targets.length === 0) return;
-    const results = await Promise.allSettled(targets.map(async pkg => {
-      const r = await fetch(`/api/bid-packages/${pkg.id}`);
-      if (!r.ok) throw new Error('detail failed');
-      const d = await r.json() as any;
-      const subs: any[] = (d.submissions || []).filter((s: any) => String(s.status || '').toLowerCase() !== 'withdrawn');
-      const amts = subs
-        .map((s: any) => ({ amt: Number(s.amount ?? s.base_amount ?? s.total_amount) || 0, who: s.company_name || s.sub_name || s.contact_name || '' }))
-        .filter(a => a.amt > 0)
-        .sort((a, b) => a.amt - b.amt);
-      const low = amts[0] || null;
-      const high = amts.length ? amts[amts.length - 1] : null;
-      return {
-        id: pkg.id,
-        invited: (d.invites || []).length,
-        responded: subs.length,
-        low: low ? low.amt : null,
-        lowWho: low ? low.who : null,
-        spread: low && high && amts.length >= 2 && low.amt > 0 ? ((high.amt - low.amt) / low.amt) * 100 : null,
-      };
-    }));
-    const next: Record<string, any> = {};
-    for (const res of results) if (res.status === 'fulfilled') next[(res.value as any).id] = res.value;
-    if (Object.keys(next).length) setDetail(prev => ({ ...prev, ...next }));
-  }
 
   useEffect(() => { loadPackages(); }, [projectId]);
 
@@ -481,7 +446,11 @@ export default function BidPackagesPage() {
       const d = await r.json() as any;
       const rows: BidPackageRow[] = d.bidPackages || [];
       setPackages(rows);
-      enrichDetail(rows);
+      // Leveling aggregates (invited / responded / low / spread) now ride on the
+      // list payload — one grouped query server-side, zero per-package fetches.
+      const next: Record<string, { invited: number; responded: number; low: number | null; lowWho: string | null; spread: number | null }> = {};
+      for (const row of rows as any[]) if (row.leveling) next[row.id] = row.leveling;
+      setDetail(next);
     } catch {
       setPackages([]);
     } finally {
@@ -576,9 +545,31 @@ export default function BidPackagesPage() {
 
       {/* Table */}
       {loading ? (
-        <SectionCard title="Bid Packages" icon={<Package size={17} weight="duotone" color={GOLD} />} flush>
-          <div style={{ textAlign: 'center', padding: 60, color: 'rgba(255,255,255,0.62)' }}>Loading bid packages...</div>
-        </SectionCard>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 22, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '16px 18px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Skeleton width={90} height={10} style={{ marginBottom: 7 }} />
+                    <Skeleton width="70%" height={15} />
+                  </div>
+                  <Skeleton width={58} height={18} borderRadius={4} />
+                </div>
+                <Skeleton width="55%" height={12} style={{ marginBottom: 12 }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
+                  {[0, 1, 2, 3].map(j => (
+                    <div key={j} style={{ background: '#101011', padding: '9px 12px' }}>
+                      <Skeleton width="80%" height={9} style={{ marginBottom: 6 }} />
+                      <Skeleton width="50%" height={14} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <SkeletonCard height={300} />
+        </div>
       ) : packages.length === 0 ? (
         <SectionCard flush>
           <PremiumEmpty
@@ -607,7 +598,8 @@ export default function BidPackagesPage() {
               const due = daysUntil(pkg.bid_due_date || (pkg as any).due_date);
               const isAwarded = pkg.status === 'awarded';
               return (
-                <div key={pkg.id} className="pmHover" style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '16px 18px', boxShadow: '0 10px 30px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)', cursor: 'pointer' }} onClick={() => router.push(`/app/projects/${projectId}/bid-packages/${pkg.id}`)}>
+                <Link key={pkg.id} href={`/app/projects/${projectId}/bid-packages/${pkg.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                <div className="pmHover" style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '16px 18px', boxShadow: '0 10px 30px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)', cursor: 'pointer' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 11, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 0.5 }}>{pkg.trade || 'General'}</div>
@@ -618,7 +610,7 @@ export default function BidPackagesPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: DIM, marginBottom: 12, flexWrap: 'wrap' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><CalendarBlank size={13} weight="regular" color={DIM} />{fmtDue(pkg.bid_due_date || (pkg as any).due_date)}</span>
                     {due != null && !isAwarded && <span style={{ fontWeight: 700, color: due < 0 ? '#ff7070' : due <= 3 ? GOLD : DIM }}>{due < 0 ? `${Math.abs(due)}d overdue` : due === 0 ? 'due today' : `${due}d left`}</span>}
-                    {pkg.jacket_pdf_url && <a href={pkg.jacket_pdf_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: GOLD, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}><FileText size={12} weight="regular" color={GOLD} />Jacket</a>}
+                    {pkg.jacket_pdf_url && <button type="button" onClick={e => { e.stopPropagation(); e.preventDefault(); window.open(pkg.jacket_pdf_url!, '_blank', 'noopener,noreferrer'); }} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', color: GOLD, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}><FileText size={12} weight="regular" color={GOLD} />Jacket</button>}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
                     <div style={{ background: '#101011', padding: '9px 12px' }}>
@@ -642,9 +634,10 @@ export default function BidPackagesPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                    <button onClick={e => { e.stopPropagation(); router.push(`/app/projects/${projectId}/bid-packages/${pkg.id}`); }} style={{ padding: '5px 14px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, color: GOLD, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>{isAwarded ? 'View Award' : responded >= 2 ? 'Level Bids' : 'Open Package'} <ArrowRight size={12} weight="bold" color={GOLD} /></button>
+                    <button onClick={e => { e.preventDefault(); e.stopPropagation(); router.push(`/app/projects/${projectId}/bid-packages/${pkg.id}`); }} style={{ padding: '5px 14px', background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, color: GOLD, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>{isAwarded ? 'View Award' : responded >= 2 ? 'Level Bids' : 'Open Package'} <ArrowRight size={12} weight="bold" color={GOLD} /></button>
                   </div>
                 </div>
+                </Link>
               );
             })}
           </div>

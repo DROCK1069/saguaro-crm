@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import { T, Badge, Btn, Table } from '@/components/ui/shell';
 import {
@@ -17,6 +18,7 @@ import {
   AutoChip,
 } from '@/components/ui/premium';
 import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 import { Question, WarningCircle, Clipboard, FolderOpen, CheckCircle, Clock, Trash, Plus, Lightning, Buildings } from '@phosphor-icons/react';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
@@ -65,6 +67,7 @@ export default function RFIsPage() {
   const [successMsg, setSuccessMsg] = useState('');
 
   // Filters
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
 
@@ -85,21 +88,16 @@ export default function RFIsPage() {
 
   // Project intelligence — the create form walks in knowing the architect,
   // the sub roster, and the RFI cadence. One /api/project-context snapshot.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto, setAuto] = useState<{ due?: boolean; assignee?: boolean }>({});
 
+  // Assignee default: the architect from the (cached) snapshot — prev-guarded,
+  // so it never stomps what the GC typed.
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) {
-          setCtx(c);
-          const architect = c.defaults?.architectName || c.project?.architectName || '';
-          if (architect) setFAssignedTo(prev => { if (!prev) { setAuto(a => ({ ...a, assignee: true })); return architect; } return prev; });
-        }
-      } catch { /* context is progressive enhancement — the form still works without it */ }
-    })();
+    const architect = ctx?.defaults?.architectName || ctx?.project?.architectName || '';
+    if (architect) setFAssignedTo(prev => { if (!prev) { setAuto(a => ({ ...a, assignee: true })); return architect; } return prev; });
+  }, [ctx]);
+  useEffect(() => {
     // Response due: +7 days is the standard contract turnaround. Always editable.
     setFDueDate(prev => { if (!prev) { setAuto(a => ({ ...a, due: true })); return isoPlusDays(7); } return prev; });
   }, [projectId]);
@@ -117,6 +115,17 @@ export default function RFIsPage() {
     } finally {
       setLoading(false);
     }
+  }, [projectId]);
+
+  // Background revalidate — reconciles server truth after an optimistic write
+  // without flipping the log back into its skeleton state.
+  const revalidate = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/rfis/list?projectId=${projectId}`);
+      if (!r.ok) return;
+      const d = await r.json();
+      setRfis(d.rfis ?? []);
+    } catch { /* background refresh — keep the optimistic rows */ }
   }, [projectId]);
 
   useEffect(() => { load(); }, [load]);
@@ -148,6 +157,14 @@ export default function RFIsPage() {
   ).sort();
 
   const filteredRfis = rfis.filter(rfi => {
+    if (search) {
+      const q = search.toLowerCase();
+      const hit = (rfi.subject || '').toLowerCase().includes(q)
+        || (rfi.question || '').toLowerCase().includes(q)
+        || (rfi.spec_section || '').toLowerCase().includes(q)
+        || String(rfi.rfi_number).includes(q.replace(/^#/, ''));
+      if (!hit) return false;
+    }
     if (statusFilter !== 'all') {
       if (statusFilter === 'overdue') { if (!rfi.is_overdue) return false; }
       else if ((rfi.status || 'open') !== statusFilter) return false;
@@ -158,6 +175,22 @@ export default function RFIsPage() {
 
   async function submitRFI() {
     if (!fSubject.trim()) { setError('Subject is required'); return; }
+    // Optimistic create (house pattern: budget saveEdit) — the row lands in the
+    // log and the form closes instantly; the network settles in the background.
+    const assignedName = (fAssignedTo === '__other' ? fAssignedOther.trim() : fAssignedTo) || '';
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: RFI = {
+      id: tempId, rfi_number: nextRfiNumber, subject: fSubject, question: fQuestion,
+      spec_section: fSpecSection, status: 'open', submitted_by: '',
+      due_date: fDueDate || null, answer: null, answered_by: null,
+      ball_in_court: assignedName || null, assigned_to_name: assignedName || null,
+      is_overdue: false, created_at: new Date().toISOString(),
+    };
+    setRfis(prev => [...prev, optimistic]);
+    setFSubject(''); setFQuestion(''); setFSpecSection(''); setFAssignedOther(''); setFUrgent(false);
+    setFDueDate(isoPlusDays(7));
+    setFAssignedTo(ctx?.defaults?.architectName || ctx?.project?.architectName || '');
+    setShowForm(false);
     setSaving(true);
     setError('');
     try {
@@ -173,12 +206,15 @@ export default function RFIsPage() {
       });
       const d = await r.json();
       if (d.error) throw new Error(d.error);
-      setFSubject(''); setFQuestion(''); setFSpecSection(''); setFAssignedOther(''); setFUrgent(false);
-      setFDueDate(isoPlusDays(7));
-      setFAssignedTo(ctx?.defaults?.architectName || ctx?.project?.architectName || '');
-      setShowForm(false);
-      await load();
+      if (d.rfi) setRfis(prev => prev.map(x => (x.id === tempId ? d.rfi : x)));
+      revalidate();
     } catch (e: unknown) {
+      // Rollback + reopen with the typed values intact — input is never lost.
+      setRfis(prev => prev.filter(x => x.id !== tempId));
+      setFSubject(fSubject); setFQuestion(fQuestion); setFSpecSection(fSpecSection); setFAssignedOther(fAssignedOther); setFUrgent(fUrgent);
+      setFDueDate(fDueDate);
+      setFAssignedTo(fAssignedTo);
+      setShowForm(true);
       setError((e as Error).message || 'Failed to create RFI');
     } finally {
       setSaving(false);
@@ -187,6 +223,15 @@ export default function RFIsPage() {
 
   async function submitAnswer(rfiId: string) {
     if (!answerText.trim()) return;
+    // Optimistic patch (house pattern: budget saveEdit) — the RFI flips to
+    // answered instantly; rollback + error banner if the server disagrees.
+    const prevRfi = rfis.find(x => x.id === rfiId);
+    setRfis(prev => prev.map(x => (x.id === rfiId ? { ...x, status: 'answered', answer: answerText, answered_by: answeredBy || null, is_overdue: false } : x)));
+    setAnsweringId(null);
+    setAnswerText('');
+    setAnsweredBy('');
+    setSuccessMsg('Answer submitted successfully.');
+    setTimeout(() => setSuccessMsg(''), 4000);
     setSubmittingAnswer(true);
     try {
       const r = await fetch(`/api/rfis/${rfiId}/answer`, {
@@ -196,13 +241,14 @@ export default function RFIsPage() {
       });
       const d = await r.json();
       if (d.error) throw new Error(d.error);
-      setAnsweringId(null);
-      setAnswerText('');
-      setAnsweredBy('');
-      setSuccessMsg('Answer submitted successfully.');
-      setTimeout(() => setSuccessMsg(''), 4000);
-      await load();
+      revalidate();
     } catch (e: unknown) {
+      // Rollback + reopen the answer form with the typed values intact.
+      if (prevRfi) setRfis(prev => prev.map(x => (x.id === rfiId ? prevRfi : x)));
+      setAnsweringId(rfiId);
+      setAnswerText(answerText);
+      setAnsweredBy(answeredBy);
+      setSuccessMsg('');
       setError((e as Error).message || 'Failed to submit answer');
     } finally {
       setSubmittingAnswer(false);
@@ -211,6 +257,19 @@ export default function RFIsPage() {
 
   async function submitAssign(rfiId: string) {
     if (!assignName.trim() && !assignDue) return;
+    // Optimistic patch (house pattern: budget saveEdit) — ball-in-court and due
+    // date move instantly; rollback + error banner if the server disagrees.
+    const prevRfi = rfis.find(x => x.id === rfiId);
+    setRfis(prev => prev.map(x => (x.id === rfiId ? {
+      ...x,
+      ...(assignName.trim() ? { assigned_to_name: assignName.trim(), ball_in_court: assignName.trim() } : {}),
+      ...(assignDue ? { due_date: assignDue } : {}),
+    } : x)));
+    setAssigningId(null);
+    setAssignName('');
+    setAssignDue('');
+    setSuccessMsg('RFI assigned. Ball is now in their court.');
+    setTimeout(() => setSuccessMsg(''), 4000);
     setSavingAssign(true);
     setError('');
     try {
@@ -228,13 +287,14 @@ export default function RFIsPage() {
       });
       const d = await r.json();
       if (d.error) throw new Error(d.error);
-      setAssigningId(null);
-      setAssignName('');
-      setAssignDue('');
-      setSuccessMsg('RFI assigned. Ball is now in their court.');
-      setTimeout(() => setSuccessMsg(''), 4000);
-      await load();
+      revalidate();
     } catch (e: unknown) {
+      // Rollback + reopen the assign form with the typed values intact.
+      if (prevRfi) setRfis(prev => prev.map(x => (x.id === rfiId ? prevRfi : x)));
+      setAssigningId(rfiId);
+      setAssignName(assignName);
+      setAssignDue(assignDue);
+      setSuccessMsg('');
       setError((e as Error).message || 'Failed to assign RFI');
     } finally {
       setSavingAssign(false);
@@ -414,33 +474,32 @@ export default function RFIsPage() {
         </div>
       )}
 
-      {/* Filters */}
+      {/* Toolbar */}
       {!loading && !error && rfis.length > 0 && (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 14 }}>
-          <div>
-            <label style={lbl}>Status</label>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...inp, width: 160, cursor: 'pointer' }}>
-              <option value="all">All statuses</option>
-              <option value="open">Open</option>
-              <option value="answered">Answered</option>
-              <option value="closed">Closed</option>
-              <option value="overdue">Overdue</option>
-            </select>
-          </div>
-          <div>
-            <label style={lbl}>Ball in Court</label>
-            <select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)} style={{ ...inp, width: 200, cursor: 'pointer' }}>
-              <option value="all">Anyone</option>
-              {assigneeOptions.map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
-          {(statusFilter !== 'all' || assigneeFilter !== 'all') && (
-            <Btn variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setAssigneeFilter('all'); }}>Clear filters</Btn>
-          )}
-          <span style={{ fontSize: 12, color: T.faint, marginLeft: 'auto', paddingBottom: 8 }}>
-            {filteredRfis.length} of {rfis.length} shown
-          </span>
-        </div>
+        <ListToolbar
+          module="rfis"
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search RFIs by number, subject, or spec section..."
+          filters={[
+            {
+              key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter,
+              allLabel: 'All statuses',
+              options: [
+                { value: 'open', label: 'Open' },
+                { value: 'answered', label: 'Answered' },
+                { value: 'closed', label: 'Closed' },
+                { value: 'overdue', label: 'Overdue' },
+              ],
+            },
+            {
+              key: 'assignee', label: 'Ball in Court', value: assigneeFilter, onChange: setAssigneeFilter,
+              allLabel: 'Anyone', options: assigneeOptions,
+            },
+          ]}
+          count={{ shown: filteredRfis.length, total: rfis.length }}
+          style={{ marginBottom: 14 }}
+        />
       )}
 
       {/* Table */}
@@ -473,7 +532,7 @@ export default function RFIsPage() {
             icon={<Question size={32} weight="duotone" color={T.gold} />}
             title="No RFIs match these filters"
             description="Try clearing the status or ball-in-court filters to see more."
-            action={<button onClick={() => { setStatusFilter('all'); setAssigneeFilter('all'); }} style={goldOutlineButtonStyle} className="pmBtn">Clear filters</button>}
+            action={<button onClick={() => { setSearch(''); setStatusFilter('all'); setAssigneeFilter('all'); }} style={goldOutlineButtonStyle} className="pmBtn">Clear filters</button>}
           />
         ) : (
           <>

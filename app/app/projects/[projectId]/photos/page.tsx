@@ -1,12 +1,14 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import PhotoEditor from '../../../../../components/PhotoEditor';
-import { Camera, X, PencilSimple, Plus, Images, CalendarBlank, FolderSimple, WarningCircle, MagnifyingGlass } from '@phosphor-icons/react';
+import { Camera, X, PencilSimple, Plus, Images, CalendarBlank, FolderSimple, WarningCircle } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -93,15 +95,8 @@ export default function PhotosPage(){
   useEffect(()=>{load();},[load]);
 
   // Project intelligence — one snapshot; the gallery walks in knowing the job.
-  const [ctx,setCtx]=useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto,setAuto]=useState<{date?:boolean;album?:boolean}>({});
-  useEffect(()=>{(async()=>{
-    try{
-      const r=await fetch(`/api/project-context?projectId=${projectId}`);
-      const c=await r.json();
-      if(!c.error)setCtx(c);
-    }catch{}
-  })();},[projectId]);
 
   function openCreate(){
     // Prefill what the system already knows: today's date, and the album in view.
@@ -288,22 +283,18 @@ export default function PhotosPage(){
             <StatCard icon={<WarningCircle size={19} weight="duotone" color={RED} />} label="Issues Tagged" value={String(issueCount)} accent={RED} sub="flagged" delay={0.14} />
           </div>
 
-          {/* Filters */}
-          <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap'}}>
-            <div style={{position:'relative',flex:1,minWidth:200}}>
-              <MagnifyingGlass size={15} weight="bold" color={DIM} style={{position:'absolute',left:14,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}} />
-              <input value={search} onChange={e=>setSearch(e.target.value)}
-                placeholder="Search by title or tag..."
-                style={{width:'100%',padding:'10px 14px 10px 38px',background:'rgba(255,255,255,0.04)',
-                  border:'1px solid rgba(255,255,255,0.10)',borderRadius:10,color:TEXT,fontSize:13,outline:'none',boxSizing:'border-box'}}/>
-            </div>
-            <select value={filterAlbum} onChange={e=>setFilterAlbum(e.target.value)}
-              style={{padding:'10px 14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.10)',
-                borderRadius:10,color:filterAlbum!=='All'?TEXT:DIM,fontSize:13,outline:'none'}}>
-              <option value="All">All Albums</option>
-              {ALBUMS.map(a=><option key={a} value={a}>{a}</option>)}
-            </select>
-            {filterAlbum==='All'&&(
+          {/* Toolbar */}
+          <ListToolbar
+            module="photos"
+            search={search}
+            onSearch={setSearch}
+            searchPlaceholder="Search by title or tag..."
+            filters={[
+              {key:'album',label:'Album',value:filterAlbum,onChange:setFilterAlbum,
+                allValue:'All',allLabel:'All Albums',options:ALBUMS},
+            ]}
+            count={{shown:filtered.length,total:photos.length}}
+            extra={filterAlbum==='All'?(
               <div style={{display:'flex',background:'rgba(255,255,255,0.04)',borderRadius:10,padding:3,border:'1px solid rgba(255,255,255,0.10)'}}>
                 {(['date','album'] as const).map(g=>(
                   <button key={g} onClick={()=>setGroupBy(g)}
@@ -313,8 +304,9 @@ export default function PhotosPage(){
                   </button>
                 ))}
               </div>
-            )}
-          </div>
+            ):undefined}
+            style={{marginBottom:18}}
+          />
 
           {/* Gallery */}
           <SectionCard

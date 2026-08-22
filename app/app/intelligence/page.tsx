@@ -1,8 +1,12 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { ChartLineUp, ChartBar, SquaresFour, Warning, Heartbeat, Selection } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle } from '@/components/ui/premium';
+import useSWR from 'swr';
+import { useProjects } from '@/lib/hooks/useProjects';
+import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 const GOLD = '#F59E0B', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF';
 // Desert-dusk semantic palette — harmonized with the dashboard (muted emerald,
@@ -64,126 +68,121 @@ interface ProjectMetrics {
   subHealthScore: number;
 }
 
+const detailFetcher = async (url: string) => {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Request failed (${r.status})`);
+  return r.json();
+};
+
+// Pure metric derivation from the project aggregate (unchanged math).
+function computeMetrics(pid: string, d: ProjectDetail): ProjectMetrics {
+  const p = d.project || {};
+  const payApps = d.payApps || [];
+  const cos = d.changeOrders || [];
+  const rfis = d.rfis || [];
+  const subs = d.subs || [];
+
+  const contractAmount = Number(p.contract_amount) || 0;
+  const approvedCOs = cos.filter((c: any) => c.status === 'approved');
+  const coTotal = approvedCOs.reduce((s: number, co: any) => s + (Number(co.amount) || 0), 0);
+
+  // Historical CO approval rate — real signal from this project's decided change
+  // orders (approved vs. approved+rejected). Not a forecast; only shown when the
+  // project actually has decided COs to base a rate on.
+  const rejectedCOs = cos.filter((c: any) => ['rejected', 'denied', 'declined'].includes(c.status));
+  const coApprovedCount = approvedCOs.length;
+  const coDecidedCount = coApprovedCount + rejectedCOs.length;
+  const coApprovalRate = coDecidedCount > 0 ? Math.round((coApprovedCount / coDecidedCount) * 100) : 0;
+  const adjustedContract = contractAmount + coTotal;
+  const totalBilled = payApps.length > 0 ? (Number(payApps[0].total_completed_stored) || 0) : 0;
+  const burnRate = adjustedContract > 0 ? (totalBilled / adjustedContract) * 100 : 0;
+
+  // Schedule performance estimate
+  const startDate = p.start_date ? new Date(p.start_date) : null;
+  const endDate = p.end_date ? new Date(p.end_date) : null;
+  const now = new Date();
+  let expectedPct = 0;
+  let schedulePct = burnRate; // Use billing as proxy for % complete
+  if (startDate && endDate && endDate > startDate) {
+    const totalDays = (endDate.getTime() - startDate.getTime()) / 86400000;
+    const elapsed = Math.max(0, (now.getTime() - startDate.getTime()) / 86400000);
+    expectedPct = Math.min(100, (elapsed / totalDays) * 100);
+  }
+
+  // Change order risk
+  const coPct = adjustedContract > 0 ? (coTotal / (contractAmount || 1)) * 100 : 0;
+  const coRisk: 'green' | 'amber' | 'red' = coPct > 20 ? 'red' : coPct > 10 ? 'amber' : 'green';
+
+  // RFIs
+  const openRfis = rfis.filter((r: any) => r.status === 'open' || r.status === 'pending').length;
+
+  // Retainage
+  const retainageHeld = payApps.reduce((s: number, pa: any) => s + (Number(pa.retainage_held) || 0), 0);
+
+  // Sub health
+  const activeSubs = subs.filter((s: any) => s.status === 'active' || s.status === 'approved').length;
+  const subHealthScore = subs.length > 0 ? Math.round((activeSubs / subs.length) * 100) : 100;
+
+  return {
+    id: pid,
+    name: p.name || 'Untitled Project',
+    status: p.status || 'active',
+    contractAmount: adjustedContract,
+    totalBilled,
+    burnRate: Math.round(burnRate * 10) / 10,
+    schedulePct: Math.round(schedulePct * 10) / 10,
+    expectedPct: Math.round(expectedPct * 10) / 10,
+    coCount: cos.length,
+    coTotal,
+    coPctOfContract: Math.round(coPct * 10) / 10,
+    coRisk,
+    coApprovedCount,
+    coDecidedCount,
+    coApprovalRate,
+    openRfis,
+    retainageHeld,
+    subCount: subs.length,
+    activeSubs,
+    subHealthScore,
+  };
+}
+
+// W-14: one SWR key per project detail — '/api/projects/{id}' is the same
+// cache entry the project sidebar + overview use, so scorecards for projects
+// you just visited render instantly and selections re-render from cache.
+function useProjectMetrics(pid: string | null): ProjectMetrics | null {
+  const { data } = useSWR<ProjectDetail>(pid ? `/api/projects/${pid}` : null, detailFetcher, {
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+  return pid && data && (data as any).project ? computeMetrics(pid, data) : null;
+}
+
 export default function IntelligencePage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { projects: liveProjects, loading } = useProjects();
+  // Archived projects never enter the comparison set.
+  const projects = useMemo(() => liveProjects.filter((p) => p.status !== 'archived'), [liveProjects]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [metricsMap, setMetricsMap] = useState<Record<string, ProjectMetrics>>({});
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [selectorOpen, setSelectorOpen] = useState(false);
 
-  // Load all projects
+  // Auto-select the first 3 projects once the (cached) list is in.
+  const autoSelectedRef = useRef(false);
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch('/api/projects/list');
-        const d = await r.json();
-        const all: Project[] = (d.projects || []).filter((p: any) => p.status !== 'archived');
-        setProjects(all);
-        // Auto-select first 3
-        const initial = all.slice(0, 3).map((p: Project) => p.id);
-        setSelectedIds(new Set(initial));
-      } catch {
-        setProjects([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    if (autoSelectedRef.current || projects.length === 0) return;
+    autoSelectedRef.current = true;
+    setSelectedIds(new Set(projects.slice(0, 3).map((p) => p.id)));
+  }, [projects]);
 
-  // Load metrics whenever selection changes
-  useEffect(() => {
-    if (selectedIds.size === 0) return;
-    loadMetrics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIds]);
-
-  async function loadMetrics() {
-    setLoadingMetrics(true);
-    const newMetrics: Record<string, ProjectMetrics> = {};
-
-    const fetches = Array.from(selectedIds).map(async (pid) => {
-      try {
-        const r = await fetch(`/api/projects/${pid}`);
-        const d: ProjectDetail = await r.json();
-        const p = d.project || {};
-        const payApps = d.payApps || [];
-        const cos = d.changeOrders || [];
-        const rfis = d.rfis || [];
-        const subs = d.subs || [];
-
-        const contractAmount = Number(p.contract_amount) || 0;
-        const approvedCOs = cos.filter((c: any) => c.status === 'approved');
-        const coTotal = approvedCOs.reduce((s: number, co: any) => s + (Number(co.amount) || 0), 0);
-
-        // Historical CO approval rate — real signal from this project's decided change
-        // orders (approved vs. approved+rejected). Not a forecast; only shown when the
-        // project actually has decided COs to base a rate on.
-        const rejectedCOs = cos.filter((c: any) => ['rejected', 'denied', 'declined'].includes(c.status));
-        const coApprovedCount = approvedCOs.length;
-        const coDecidedCount = coApprovedCount + rejectedCOs.length;
-        const coApprovalRate = coDecidedCount > 0 ? Math.round((coApprovedCount / coDecidedCount) * 100) : 0;
-        const adjustedContract = contractAmount + coTotal;
-        const totalBilled = payApps.length > 0 ? (Number(payApps[0].total_completed_stored) || 0) : 0;
-        const burnRate = adjustedContract > 0 ? (totalBilled / adjustedContract) * 100 : 0;
-
-        // Schedule performance estimate
-        const startDate = p.start_date ? new Date(p.start_date) : null;
-        const endDate = p.end_date ? new Date(p.end_date) : null;
-        const now = new Date();
-        let expectedPct = 0;
-        let schedulePct = burnRate; // Use billing as proxy for % complete
-        if (startDate && endDate && endDate > startDate) {
-          const totalDays = (endDate.getTime() - startDate.getTime()) / 86400000;
-          const elapsed = Math.max(0, (now.getTime() - startDate.getTime()) / 86400000);
-          expectedPct = Math.min(100, (elapsed / totalDays) * 100);
-        }
-
-        // Change order risk
-        const coPct = adjustedContract > 0 ? (coTotal / (contractAmount || 1)) * 100 : 0;
-        const coRisk: 'green' | 'amber' | 'red' = coPct > 20 ? 'red' : coPct > 10 ? 'amber' : 'green';
-
-        // RFIs
-        const openRfis = rfis.filter((r: any) => r.status === 'open' || r.status === 'pending').length;
-
-        // Retainage
-        const retainageHeld = payApps.reduce((s: number, pa: any) => s + (Number(pa.retainage_held) || 0), 0);
-
-        // Sub health
-        const activeSubs = subs.filter((s: any) => s.status === 'active' || s.status === 'approved').length;
-        const subHealthScore = subs.length > 0 ? Math.round((activeSubs / subs.length) * 100) : 100;
-
-        newMetrics[pid] = {
-          id: pid,
-          name: p.name || 'Untitled Project',
-          status: p.status || 'active',
-          contractAmount: adjustedContract,
-          totalBilled,
-          burnRate: Math.round(burnRate * 10) / 10,
-          schedulePct: Math.round(schedulePct * 10) / 10,
-          expectedPct: Math.round(expectedPct * 10) / 10,
-          coCount: cos.length,
-          coTotal,
-          coPctOfContract: Math.round(coPct * 10) / 10,
-          coRisk,
-          coApprovedCount,
-          coDecidedCount,
-          coApprovalRate,
-          openRfis,
-          retainageHeld,
-          subCount: subs.length,
-          activeSubs,
-          subHealthScore,
-        };
-      } catch {
-        // skip failed projects
-      }
-    });
-
-    await Promise.all(fetches);
-    setMetricsMap(newMetrics);
-    setLoadingMetrics(false);
-  }
+  // Up to 5 selections — one fixed hook call per slot keeps ONE SWR key per
+  // project, shared with the rest of the app (never a hook inside a loop).
+  const ids = useMemo(() => Array.from(selectedIds), [selectedIds]);
+  const m0 = useProjectMetrics(ids[0] ?? null);
+  const m1 = useProjectMetrics(ids[1] ?? null);
+  const m2 = useProjectMetrics(ids[2] ?? null);
+  const m3 = useProjectMetrics(ids[3] ?? null);
+  const m4 = useProjectMetrics(ids[4] ?? null);
+  const selected = [m0, m1, m2, m3, m4].filter(Boolean) as ProjectMetrics[];
+  const loadingMetrics = ids.length > 0 && selected.length < ids.length;
 
   function toggleProject(pid: string) {
     setSelectedIds(prev => {
@@ -198,7 +197,6 @@ export default function IntelligencePage() {
     });
   }
 
-  const selected = Array.from(selectedIds).map(id => metricsMap[id]).filter(Boolean);
 
   // Chart max for bar comparisons
   const maxContract = Math.max(...selected.map(m => m.contractAmount), 1);
@@ -223,11 +221,7 @@ export default function IntelligencePage() {
   if (loading) {
     return (
       <PremiumSurface maxWidth={1600}>
-        <div style={{ padding: 40, textAlign: 'center' as const, color: DIM }}>
-          <div style={{ width: 32, height: 32, border: `3px solid ${BORDER}`, borderTopColor: GOLD, borderRadius: '50%', animation: 'intSpin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          Loading projects...
-          <style>{`@keyframes intSpin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+        <ModuleSkeleton kpis={4} rows={5} />
       </PremiumSurface>
     );
   }
@@ -303,12 +297,11 @@ export default function IntelligencePage() {
       />
 
       {loadingMetrics && (
-        <div style={{
-          textAlign: 'center' as const, padding: '14px 16px', color: DIM, fontSize: 13,
-          background: NEST, borderRadius: 12, border: `1px solid ${NEST_BORDER}`, marginBottom: 20,
-        }}>
-          <span style={{ display: 'inline-block', width: 14, height: 14, border: `2px solid ${BORDER}`, borderTopColor: GOLD, borderRadius: '50%', animation: 'intSpin 0.6s linear infinite', marginRight: 8, verticalAlign: 'middle' }} />
-          Loading project metrics...
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
+          <SkeletonKPI />
+          <SkeletonKPI />
+          <SkeletonKPI />
+          <SkeletonKPI />
         </div>
       )}
 

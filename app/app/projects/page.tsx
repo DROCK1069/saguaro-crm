@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { FolderOpen, MagnifyingGlass, Plus, ArrowRight, Sparkle, WarningCircle } from '@phosphor-icons/react';
@@ -36,9 +37,10 @@ const selectStyle: React.CSSProperties = {
 };
 
 export default function ProjectsPage() {
-  const [projects,setProjects]  = useState<any[]>([]);
-  const [loading,setLoading]    = useState(true);
-  const [error,setError]        = useState('');
+  // W-4: the same SWR key the dashboard fills — revisits paint from cache
+  // instead of re-showing skeletons on every visit.
+  const { projects, loading, error: loadError } = useProjects();
+  const error = loadError ? humanError(loadError, 'Failed to load projects. Please try again.') : '';
   const [search,setSearch]      = useState('');
   const [statusFilter,setStatusFilter] = useState('all');
   const [view,setView] = useState<'cards'|'table'>('cards');
@@ -46,21 +48,6 @@ export default function ProjectsPage() {
 
   useEffect(()=>{ try{ const v=localStorage.getItem('sag_projects_view'); if(v==='table'||v==='cards') setView(v); }catch{} },[]);
   const setViewPersist = (v:'cards'|'table')=>{ setView(v); try{ localStorage.setItem('sag_projects_view',v); }catch{} };
-
-  useEffect(()=>{
-    (async()=>{
-      try{
-        const r = await fetch('/api/projects/list');
-        if(!r.ok) throw new Error(await r.text());
-        const d = await r.json();
-        setProjects(d.projects ?? []);
-      }catch(e:any){
-        console.error(e); setError(humanError(e, 'Failed to load projects. Please try again.'));
-      }finally{
-        setLoading(false);
-      }
-    })();
-  },[]);
 
   const filtered = projects.filter(p=>{
     const matchStatus = statusFilter==='all'||p.status===statusFilter;

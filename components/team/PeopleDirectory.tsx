@@ -8,7 +8,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { getSupabaseBrowser } from '@/lib/supabase-browser';
-import { UsersThree, Plus, MagnifyingGlass, PencilSimple, Trash, X, SealCheck, Warning, Star, FirstAid, Eye, ChatDots, Folder, CurrencyDollar, Phone, Envelope, MapPin, Briefcase } from '@phosphor-icons/react';
+import { UsersThree, Plus, PencilSimple, Trash, X, SealCheck, Warning, Star, FirstAid, Eye, ChatDots, Folder, CurrencyDollar, Phone, Envelope, MapPin, Briefcase } from '@phosphor-icons/react';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)';
 const DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#3dd68c', RED = '#ef4444', AMBER = '#f59e0b';
@@ -27,6 +28,8 @@ export function PeopleDirectory() {
   const [emps, setEmps] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [q, setQ] = useState('');
+  // ListToolbar state — roster search + trade filter (persists via sag_flt_people).
+  const [tradeFilter, setTradeFilter] = useState('all');
   const [selId, setSelId] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [assigns, setAssigns] = useState<any[]>([]);
@@ -54,7 +57,8 @@ export function PeopleDirectory() {
   }, [sb]);
   useEffect(() => { if (selId) loadDetail(selId); }, [selId, loadDetail]);
 
-  const filtered = useMemo(() => { const ql = q.trim().toLowerCase(); return emps.filter((e) => e.is_active !== false && (!ql || (nameOf(e) + ' ' + (e.title ?? '') + ' ' + (e.trade ?? '')).toLowerCase().includes(ql))); }, [emps, q]);
+  const trades = useMemo(() => Array.from(new Set(emps.map((e) => String(e.trade || '').trim()).filter(Boolean))).sort(), [emps]);
+  const filtered = useMemo(() => { const ql = q.trim().toLowerCase(); return emps.filter((e) => e.is_active !== false && (tradeFilter === 'all' || String(e.trade || '') === tradeFilter) && (!ql || (nameOf(e) + ' ' + (e.title ?? '') + ' ' + (e.trade ?? '')).toLowerCase().includes(ql))); }, [emps, q, tradeFilter]);
   const projName = (pid: string) => projects.find((p) => p.id === pid)?.name ?? 'Project';
   const specialties: string[] = Array.isArray(detail?.specialties) ? detail.specialties : [];
 
@@ -86,8 +90,15 @@ export function PeopleDirectory() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 340px) minmax(0, 1fr)', gap: 16, marginTop: 20, alignItems: 'start' }}>
           {/* roster */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-              <MagnifyingGlass size={16} color={DIM} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" style={{ background: 'none', border: 'none', color: TEXT, outline: 'none', flex: 1, fontSize: 14 }} />
+            <div style={{ marginBottom: 10 }}>
+              <ListToolbar
+                module="people"
+                search={q}
+                onSearch={setQ}
+                searchPlaceholder="Search the crew..."
+                filters={[{ key: 'trade', label: 'Trade', value: tradeFilter, onChange: setTradeFilter, allLabel: 'All Trades', options: trades }]}
+                count={{ shown: filtered.length, total: emps.length }}
+              />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '72vh', overflowY: 'auto' }}>
               {filtered.length === 0 ? <div style={{ color: DIM, fontSize: 13, padding: 12 }}>{emps.length ? 'No matches' : 'No employees yet — add your first.'}</div> : filtered.map((e) => (

@@ -1,9 +1,11 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { ClipboardText, CheckCircle, XCircle, CalendarCheck, Plus, Warning, ClockCounterClockwise, ArrowsClockwise } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -75,6 +77,9 @@ export default function InspectionsPage() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [search, setSearch] = useState('');
+  const [filterResult, setFilterResult] = useState('all');
+  const [filterType, setFilterType] = useState('all');
 
   const fetchInspections = useCallback(async () => {
     setLoading(true);
@@ -92,17 +97,8 @@ export default function InspectionsPage() {
   useEffect(() => { fetchInspections(); }, [fetchInspections]);
 
   // Project intelligence — one snapshot; the schedule flow walks in knowing the job.
-  const [ctx, setCtx] = useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [auto, setAuto] = useState<{ date?: boolean; type?: boolean; insp?: boolean; agency?: boolean }>({});
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch { /* context is progressive enhancement */ }
-    })();
-  }, [projectId]);
 
   const passed = inspections.filter(i => canonResult(i.result) === 'passed').length;
   const failed = inspections.filter(i => canonResult(i.result) === 'failed').length;
@@ -134,6 +130,21 @@ export default function InspectionsPage() {
   const suggestedType = INSPECTION_TYPES.find(t => !passedTypes.has(t)) || 'Final Building';
   const openPunch = Number(ctx?.counts?.openPunch) || 0;
   const pctComplete = Number(ctx?.project?.percentComplete) || 0;
+
+  // Toolbar filtering — client-side over the loaded records.
+  const filteredInspections = inspections.filter(i => {
+    if (search) {
+      const q = search.toLowerCase();
+      const hit = (i.type || '').toLowerCase().includes(q)
+        || (i.inspector || '').toLowerCase().includes(q)
+        || (i.agency || '').toLowerCase().includes(q)
+        || (i.notes || '').toLowerCase().includes(q);
+      if (!hit) return false;
+    }
+    if (filterResult !== 'all' && canonResult(i.result) !== filterResult) return false;
+    if (filterType !== 'all' && i.type !== filterType) return false;
+    return true;
+  });
 
   // Prefilled schedule flow: date today, the last inspector/agency of record,
   // and the next milestone type (or the failed type for a re-inspection).
@@ -307,6 +318,29 @@ export default function InspectionsPage() {
         </div>
       )}
 
+      {/* Toolbar */}
+      {!loading && inspections.length > 0 && (
+        <ListToolbar
+          module="inspections"
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search by type, inspector, agency, or notes..."
+          filters={[
+            {key:'result',label:'Result',value:filterResult,onChange:setFilterResult,allLabel:'All Results',
+              options:[
+                {value:'passed',label:'Passed'},
+                {value:'failed',label:'Failed'},
+                {value:'pending',label:'Pending'},
+                {value:'conditional pass',label:'Conditional Pass'},
+              ]},
+            {key:'type',label:'Type',value:filterType,onChange:setFilterType,allLabel:'All Types',
+              options:INSPECTION_TYPES},
+          ]}
+          count={{shown:filteredInspections.length,total:inspections.length}}
+          style={{marginBottom:14}}
+        />
+      )}
+
       {/* Records */}
       <SectionCard title="Inspection Records" icon={<ClipboardText size={17} weight="duotone" color={GOLD} />} flush>
         {loading ? (
@@ -348,7 +382,10 @@ export default function InspectionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {inspections.map(i => (
+                {filteredInspections.length === 0 && (
+                  <tr><td colSpan={8} style={{ padding: '26px 14px', textAlign: 'center', color: DIM, fontSize: 13 }}>No inspections match your search or filters.</td></tr>
+                )}
+                {filteredInspections.map(i => (
                   <tr key={i.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     <td style={{ padding: '10px 14px', color: TEXT, fontWeight: 600 }}>{i.type}</td>
                     <td style={{ padding: '10px 14px', color: DIM, whiteSpace: 'nowrap' }}>{i.date ? fmtDate(i.date) : '—'}</td>

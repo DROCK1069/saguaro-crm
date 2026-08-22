@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Globe, ArrowsLeftRight, Shield, WifiHigh, Printer, VideoCamera, HardDrives, Laptop, Phone, Plug, CellSignalFull, BatteryFull, Package, Robot, Devices, Shuffle, Gear, ChartBar, Plus, MagnifyingGlass, CheckCircle, Warning, Circle, WarningCircle, Info, Lightning, SquaresFour } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
 const GOLD = '#F59E0B';
 const GREEN = '#34C759';
@@ -98,18 +100,7 @@ export default function NetworkDashboard() {
   const [setupForm, setSetupForm] = useState({ site_type: 'commercial_office', total_sq_ft: 5000, floor_count: 1 });
   const [creating, setCreating] = useState(false);
   // Project snapshot — names the job in the hero and grounds the setup screen.
-  const [ctx, setCtx] = useState<any>(null);
-
-  useEffect(() => {
-    if (!projectId) return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/project-context?projectId=${projectId}`);
-        const c = await r.json();
-        if (!c.error) setCtx(c);
-      } catch {}
-    })();
-  }, [projectId]);
+  const { ctx } = useProjectContext(projectId);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -178,9 +169,7 @@ export default function NetworkDashboard() {
   if (loading) {
     return (
       <PremiumSurface maxWidth={1600}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', color: MUTED, fontSize: 14 }}>
-          Loading network module...
-        </div>
+        <ModuleSkeleton kpis={4} rows={5} />
       </PremiumSurface>
     );
   }

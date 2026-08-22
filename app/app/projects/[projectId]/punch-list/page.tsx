@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
@@ -19,6 +20,7 @@ import {
   FlowSteps,
   AutoChip,
 } from '@/components/ui/premium';
+import { ListToolbar } from '@/components/ui/ListToolbar';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -74,20 +76,10 @@ export default function PunchListPage(){
   const [filterPriority,setFilterPriority]=useState('all');
   const [filterTrade,setFilterTrade]=useState('all');
   // Project intelligence — sub roster + smart defaults for the create drawer.
-  const [ctx,setCtx]=useState<any>(null);
+  const { ctx } = useProjectContext(projectId);
   const [autoDue,setAutoDue]=useState(false);
   const [autoAssign,setAutoAssign]=useState(false);
   const [assignOther,setAssignOther]=useState(false);
-
-  useEffect(()=>{
-    (async()=>{
-      try{
-        const r=await fetch(`/api/project-context?projectId=${projectId}`);
-        const c=await r.json();
-        if(!c.error) setCtx(c);
-      }catch{/* enhancement only — the drawer still works without context */}
-    })();
-  },[projectId]);
 
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
@@ -104,6 +96,18 @@ export default function PunchListPage(){
       setItems(d.items||[]);
     }catch{setItems([]);setLoadError('Failed to load. Please try again.');}
     finally{setLoading(false);}
+  },[projectId]);
+
+  // Background revalidate — reconciles server truth after an optimistic write
+  // without flipping the list back into its loading state.
+  const revalidate=useCallback(async()=>{
+    try{
+      const h=await getAuthHeaders();
+      const r=await fetch(`/api/punch-list/list?projectId=${projectId}`,{headers:h});
+      if(!r.ok) return;
+      const d=await r.json();
+      setItems(d.items||[]);
+    }catch{/* background refresh — keep the optimistic rows */}
   },[projectId]);
 
   useEffect(()=>{load();},[load]);
@@ -129,33 +133,55 @@ export default function PunchListPage(){
 
   async function save(){
     if(!form.description.trim()){showToast('Description is required','error');return;}
+    // Optimistic save (house pattern: budget saveEdit) — the list updates and
+    // the panel closes instantly; the network settles in the background.
+    const snapshot={...form};
+    const prevMode=mode,prevSelected=selected;
     setSaving(true);
     try{
       const h=await getAuthHeaders();
       if(mode==='create'){
+        const tempId=`temp-${Date.now()}`;
+        setItems(prev=>[{id:tempId,...snapshot,project_id:projectId},...prev]);
+        closePanel();
+        showToast('Item added');
         const r=await fetch('/api/punch-list/create',{
           method:'POST',
           headers:{...h,'Content-Type':'application/json'},
           body:JSON.stringify({...form,projectId}),
         });
-        if(!r.ok) throw new Error(await r.text());
-        showToast('Item added');
+        if(!r.ok){setItems(prev=>prev.filter((i:any)=>i.id!==tempId));throw new Error(await r.text());}
+        const d=await r.json();
+        if(d.item) setItems(prev=>prev.map((i:any)=>i.id===tempId?d.item:i));
+        revalidate();
       }else if(mode==='edit'&&selected){
-        const r=await fetch(`/api/punch-list/${selected.id}`,{
+        const prevItem=selected;
+        setItems(prev=>prev.map((i:any)=>i.id===prevItem.id?{...i,...snapshot}:i));
+        closePanel();
+        showToast('Item updated');
+        const r=await fetch(`/api/punch-list/${prevItem.id}`,{
           method:'PUT',
           headers:{...h,'Content-Type':'application/json'},
           body:JSON.stringify(form),
         });
-        if(!r.ok) throw new Error(await r.text());
-        showToast('Item updated');
+        if(!r.ok){setItems(prev=>prev.map((i:any)=>i.id===prevItem.id?prevItem:i));throw new Error(await r.text());}
+        revalidate();
       }
-      await load();closePanel();
-    }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
+    }catch(e:any){
+      console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');
+      // Rollback already applied — reopen the drawer with the input intact.
+      setForm(snapshot);setMode(prevMode);setSelected(prevSelected);
+    }
     finally{setSaving(false);}
   }
 
   async function toggleComplete(item:any){
+    const prevStatus=item.status;
     const newStatus=item.status==='completed'?'open':'completed';
+    // Optimistic flip (house pattern: budget saveEdit) — the checkbox answers
+    // the tap instantly; rollback + toast if the server disagrees.
+    setItems(prev=>prev.map((i:any)=>i.id===item.id?{...i,status:newStatus}:i));
+    setSelected((s:any)=>s?.id===item.id?{...s,status:newStatus}:s);
     try{
       const h=await getAuthHeaders();
       const tr=await fetch(`/api/punch-list/${item.id}`,{
@@ -164,20 +190,28 @@ export default function PunchListPage(){
         body:JSON.stringify({status:newStatus}),
       });
       if (!tr.ok) throw new Error('Update failed');
-      await load();
-      if(selected?.id===item.id) setSelected({...selected,status:newStatus});
-    }catch(e:any){console.error(e);showToast(humanError(e,'Something went wrong. Please try again.'),'error');}
+      revalidate();
+    }catch(e:any){
+      setItems(prev=>prev.map((i:any)=>i.id===item.id?{...i,status:prevStatus}:i));
+      setSelected((s:any)=>s?.id===item.id?{...s,status:prevStatus}:s);
+      console.error(e);showToast(humanError(e,'Something went wrong. Please try again.'),'error');
+    }
   }
 
   async function deleteItem(item:any){
     if(!confirm(`Delete "${item.description}"?`)) return;
+    // Optimistic remove — the row leaves and the panel closes instantly;
+    // rollback restores the exact list on failure.
+    const prevItems=items;
+    setItems(prev=>prev.filter((i:any)=>i.id!==item.id));
+    showToast('Item deleted');closePanel();
     setDeleting(true);
     try{
       const h=await getAuthHeaders();
       const dr=await fetch(`/api/punch-list/${item.id}`,{method:'DELETE',headers:h});
       if (!dr.ok) throw new Error('Delete failed');
-      showToast('Item deleted');closePanel();await load();
-    }catch{showToast('Delete failed','error');}
+      revalidate();
+    }catch{setItems(prevItems);showToast('Delete failed','error');}
     finally{setDeleting(false);}
   }
 
@@ -250,31 +284,23 @@ export default function PunchListPage(){
           </div>
         )}
 
-        {/* Filters */}
-        <div style={{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'}}>
-          <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Search items…"
-            style={{flex:1,minWidth:180,padding:'9px 12px',background:RAISED,
-              border:`1px solid ${BORDER}`,borderRadius:9,color:TEXT,fontSize:13,outline:'none'}}/>
-          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-            style={{padding:'9px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-              borderRadius:9,color:filterStatus!=='all'?TEXT:DIM,fontSize:13,outline:'none',cursor:'pointer'}}>
-            <option value="all">All Statuses</option>
-            {STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-          </select>
-          <select value={filterPriority} onChange={e=>setFilterPriority(e.target.value)}
-            style={{padding:'9px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-              borderRadius:9,color:filterPriority!=='all'?TEXT:DIM,fontSize:13,outline:'none',cursor:'pointer'}}>
-            <option value="all">All Priorities</option>
-            {PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}
-          </select>
-          <select value={filterTrade} onChange={e=>setFilterTrade(e.target.value)}
-            style={{padding:'9px 12px',background:RAISED,border:`1px solid ${BORDER}`,
-              borderRadius:9,color:filterTrade!=='all'?TEXT:DIM,fontSize:13,outline:'none',cursor:'pointer'}}>
-            <option value="all">All Trades</option>
-            {trades.map((t:any)=><option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
+        {/* Toolbar */}
+        <ListToolbar
+          module="punch-list"
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search items by description or location…"
+          filters={[
+            {key:'status',label:'Status',value:filterStatus,onChange:setFilterStatus,allLabel:'All Statuses',
+              options:STATUSES.map(s=>({value:s,label:STATUS_LABELS[s]}))},
+            {key:'priority',label:'Priority',value:filterPriority,onChange:setFilterPriority,allLabel:'All Priorities',
+              options:PRIORITIES},
+            {key:'trade',label:'Trade',value:filterTrade,onChange:setFilterTrade,allLabel:'All Trades',
+              options:trades as string[]},
+          ]}
+          count={{shown:filtered.length,total:items.length}}
+          style={{marginBottom:16}}
+        />
 
         {/* List */}
         <SectionCard
