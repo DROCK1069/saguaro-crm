@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requirePermission } from '@/lib/permissions';
+import { requirePermission, hasPermission } from '@/lib/permissions';
 
 /** GET ?vertical=&q= — Materials Catalog price-comparison snapshot.
  *
@@ -23,18 +23,27 @@ export async function GET(req: NextRequest) {
     const vertical = req.nextUrl.searchParams.get('vertical');
     const q = (req.nextUrl.searchParams.get('q') || '').trim();
 
-    let itemsQ = db
-      .from('catalog_items')
-      .select('id, vertical, category, name, description, unit, sku_hint')
-      .order('category', { ascending: true })
-      .order('name', { ascending: true });
-    if (vertical) itemsQ = itemsQ.eq('vertical', vertical);
-    if (q) {
-      // Strip PostgREST or-filter metacharacters before interpolating.
-      const safe = q.replace(/[%_,()."\\]/g, ' ').trim();
-      if (safe) itemsQ = itemsQ.or(`name.ilike.%${safe}%,description.ilike.%${safe}%,category.ilike.%${safe}%`);
+    // image_url is a pending migration on catalog_items — select it
+    // opportunistically and fall back to the pre-image column list until the
+    // column lands, so the catalog never 500s over a missing column.
+    const buildItemsQ = (cols: string) => {
+      let iq = db
+        .from('catalog_items')
+        .select(cols)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true });
+      if (vertical) iq = iq.eq('vertical', vertical);
+      if (q) {
+        // Strip PostgREST or-filter metacharacters before interpolating.
+        const safe = q.replace(/[%_,()."\\]/g, ' ').trim();
+        if (safe) iq = iq.or(`name.ilike.%${safe}%,description.ilike.%${safe}%,category.ilike.%${safe}%`);
+      }
+      return iq;
+    };
+    let { data: items, error: itemsErr } = await buildItemsQ('id, vertical, category, name, description, unit, sku_hint, image_url');
+    if (itemsErr) {
+      ({ data: items, error: itemsErr } = await buildItemsQ('id, vertical, category, name, description, unit, sku_hint'));
     }
-    const { data: items, error: itemsErr } = await itemsQ;
     if (itemsErr) throw itemsErr;
 
     // Offers for the matched items, vendor embedded via the FK join.
@@ -98,6 +107,7 @@ export async function GET(req: NextRequest) {
         description: it.description,
         unit: it.unit,
         skuHint: it.sku_hint,
+        imageUrl: it.image_url || null,
         prices,
       };
     });
@@ -114,6 +124,9 @@ export async function GET(req: NextRequest) {
         isNational: !!v.is_national,
       })),
       asOfMax,
+      // Drives the Add-photo affordance client-side; the image route enforces
+      // the same Projects/Full gate server-side regardless.
+      canManageImages: hasPermission(g.perms, 'Projects', 'Full'),
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
