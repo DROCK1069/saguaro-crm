@@ -21,10 +21,10 @@ const C = {
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
-  { label: 'Features', href: '/features' },
+  { label: 'Product', href: '/product' },
   { label: 'Field App', href: '/get-the-app' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
-  { label: 'Switch from Procore', href: '/switch-from-procore' },
 ];
 
 const PLANS = [
@@ -40,7 +40,8 @@ const PLANS = [
     features: [
       'Unlimited users — no per-seat fees',
       'Up to 15 active projects',
-      'AI Takeoff — 150 pages/mo',
+      'Saguaro Radio — base radio included free',
+      'AI Takeoff — Takeoff Studio included',
       'Pay Applications G702/G703',
       'Lien Waivers — all 50 states',
       'Basic RFI & Change Orders',
@@ -69,7 +70,8 @@ const PLANS = [
     features: [
       'Unlimited active projects',
       'Unlimited users',
-      'Unlimited AI Takeoff pages',
+      'Saguaro Radio — base radio included free',
+      'AI Takeoff — Takeoff Studio included',
       'All AIA Documents (G702–G706, A310, A312)',
       'All 4 Lien Waiver types — all 50 states',
       'Certified Payroll WH-347 + DOL wage lookup',
@@ -116,54 +118,51 @@ const PLANS = [
   },
 ];
 
-const ADDONS = [
+const ADDONS: {
+  name: string; price: string; per?: string; service?: boolean;
+  description: string; available: string; mailSubject: string;
+}[] = [
   {
-    name: 'Priority Support',
-    price: 300,
-    per: 'mo',
-    description: 'Live chat + email with 4hr response. Dedicated support agent for your account.',
-    icon: '💬',
-    available: ['Starter'],
-  },
-  {
-    name: 'Dedicated CSM',
-    price: 299,
-    per: 'mo',
-    description: 'Named Customer Success Manager. Phone support, weekly check-ins, 1hr SLA.',
-    icon: '🎯',
-    available: ['Starter', 'Professional'],
-  },
-  {
-    name: 'Extra AI Takeoff',
-    price: 79,
-    per: 'mo',
-    description: '500 additional blueprint pages per month. Rolls over unused pages.',
-    icon: '📐',
-    available: ['Starter'],
-  },
-  {
-    name: 'White Label',
-    price: 299,
-    per: 'mo',
-    description: 'Your own brand, logo, and custom domain. Resell to your clients.',
-    icon: '🏷️',
-    available: ['Starter', 'Professional'],
+    name: 'Saguaro Radio — Live Streaming',
+    price: 'Contact us',
+    description: 'Ultra-low-latency live voice for your crews — full-duplex channels instead of store-and-forward clips. Base radio is included free on every plan.',
+    available: 'All plans',
+    mailSubject: 'Saguaro Radio Live Streaming add-on',
   },
   {
     name: 'QuickBooks Sync',
-    price: 99,
-    per: 'mo',
+    price: '$99', per: '/mo',
     description: 'Bidirectional sync of budgets, pay apps, and change orders with QuickBooks.',
-    icon: '🔄',
-    available: ['Starter', 'Professional'],
+    available: 'Starter, Professional — included in Enterprise',
+    mailSubject: 'QuickBooks Sync add-on',
   },
   {
     name: 'API Access',
-    price: 149,
-    per: 'mo',
+    price: '$149', per: '/mo',
     description: 'Full REST API + webhooks. Build custom integrations with your tech stack.',
-    icon: '⚡',
-    available: ['Starter', 'Professional'],
+    available: 'Starter, Professional — included in Enterprise',
+    mailSubject: 'API Access add-on',
+  },
+  {
+    name: 'White Label',
+    price: '$299', per: '/mo',
+    description: 'Your own brand, logo, and custom domain — on the platform and on every PDF it generates.',
+    available: 'Starter, Professional — included in Enterprise',
+    mailSubject: 'White Label add-on',
+  },
+  {
+    name: 'Priority Support',
+    price: '$300', per: '/mo', service: true,
+    description: 'Live chat + email with 4hr response. Dedicated support agent for your account.',
+    available: 'Starter — included in Professional and Enterprise',
+    mailSubject: 'Priority Support add-on',
+  },
+  {
+    name: 'Dedicated CSM',
+    price: '$299', per: '/mo', service: true,
+    description: 'Named Customer Success Manager. Phone support, weekly check-ins, 1hr SLA.',
+    available: 'Starter, Professional — included in Enterprise',
+    mailSubject: 'Dedicated CSM add-on',
   },
 ];
 
@@ -174,7 +173,6 @@ const SERVICES = [
     label: 'FREE',
     description: 'We migrate all your projects, contacts, documents, and history from Procore, Buildertrend, or any platform. Done in 1 business day.',
     highlight: true,
-    icon: '🚀',
   },
   {
     name: 'Guided Onboarding',
@@ -182,7 +180,6 @@ const SERVICES = [
     label: '$1,200',
     description: 'Hands-on 3-hour setup session with a Saguaro specialist. Configure your company, import your templates, and train your team.',
     highlight: false,
-    icon: '🎓',
   },
   {
     name: 'Custom Training',
@@ -190,7 +187,6 @@ const SERVICES = [
     label: '$299/session',
     description: '2-hour live training session for your team. Field app, takeoff, pay apps, or any workflow. Remote or on-site (travel extra).',
     highlight: false,
-    icon: '📚',
   },
   {
     name: 'Template Build-Out',
@@ -198,68 +194,47 @@ const SERVICES = [
     label: '$399',
     description: 'We build your custom bid templates, pay app headers, lien waiver forms, and company documents — ready on day one.',
     highlight: false,
-    icon: '📋',
   },
 ];
 
-const SUPPORT_TIERS = [
-  {
-    name: 'Basic',
-    price: 'Included',
-    color: C.dim,
-    features: ['Email support', '48hr response time', 'Help center access', 'Video tutorials'],
-    plans: 'All plans',
-  },
-  {
-    name: 'Priority',
-    price: '+$300/mo',
-    color: C.gold,
-    features: ['Live chat + email', '4hr response time', 'Screen share sessions', 'Dedicated support agent'],
-    plans: 'Add-on for Starter',
-  },
-  {
-    name: 'Dedicated CSM',
-    price: '+$299/mo',
-    color: C.blue,
-    features: ['Named account manager', 'Phone support', '1hr response SLA', 'Weekly check-ins', 'Quarterly business reviews'],
-    plans: 'Add-on for Starter & Pro',
-  },
-  {
-    name: 'Enterprise SLA',
-    price: 'Included',
-    color: C.green,
-    features: ['99.9% uptime SLA', 'Phone + chat + email', '1hr response', 'Dedicated CSM', 'Custom escalation path'],
-    plans: 'Enterprise only',
-  },
-];
-
-const COMPARISON_FEATURES = [
+const COMPARISON_FEATURES: { label: string; starter: boolean | string; pro: boolean | string; ent: boolean | string }[] = [
   { label: 'Active Projects', starter: '15', pro: 'Unlimited', ent: 'Unlimited' },
   { label: 'Users / Seats', starter: 'Unlimited', pro: 'Unlimited', ent: 'Unlimited' },
-  { label: 'AI Takeoff', starter: '150 pages/mo', pro: 'Unlimited', ent: 'Unlimited' },
-  { label: 'Pay Apps G702/G703', starter: true, pro: true, ent: true },
-  { label: 'All AIA Documents', starter: false, pro: true, ent: true },
+  { label: 'Saguaro Radio — base', starter: 'Free', pro: 'Free', ent: 'Free' },
+  { label: 'Saguaro Radio — Live Streaming', starter: 'Add-on', pro: 'Add-on', ent: 'Add-on' },
+  { label: 'Takeoff Studio — AI takeoff', starter: true, pro: true, ent: true },
+  { label: 'Signal Studio', starter: true, pro: true, ent: true },
+  { label: 'My Work', starter: true, pro: true, ent: true },
+  { label: 'Crews', starter: true, pro: true, ent: true },
+  { label: 'T&M Tickets', starter: true, pro: true, ent: true },
+  { label: 'Daily Logs', starter: true, pro: true, ent: true },
+  { label: 'Documents', starter: true, pro: true, ent: true },
+  { label: 'Intelligence', starter: true, pro: true, ent: true },
+  { label: 'Pay Applications G702/G703', starter: true, pro: true, ent: true },
   { label: 'Lien Waivers — all 50 states', starter: true, pro: true, ent: true },
+  { label: 'RFIs & Change Orders', starter: 'Basic', pro: 'Full', ent: 'Full' },
+  { label: 'All AIA Documents (G702–G706, A310, A312)', starter: false, pro: true, ent: true },
   { label: 'All 4 Lien Waiver types', starter: false, pro: true, ent: true },
   { label: 'Certified Payroll WH-347', starter: false, pro: true, ent: true },
   { label: 'ACORD 25 / COI Parser', starter: false, pro: true, ent: true },
   { label: 'Owner & Sub Portals', starter: false, pro: true, ent: true },
   { label: 'Autopilot RFI/CO', starter: false, pro: true, ent: true },
-  { label: 'Preliminary Notices', starter: false, pro: true, ent: true },
+  { label: 'Bid Jackets + Bid Intelligence', starter: false, pro: true, ent: true },
+  { label: 'Preliminary Notices AZ/CA/TX', starter: false, pro: true, ent: true },
   { label: 'Free Migration', starter: true, pro: true, ent: true },
-  { label: 'White Label', starter: false, pro: false, ent: true },
-  { label: 'Custom API Integrations', starter: false, pro: false, ent: true },
-  { label: 'QuickBooks Sync', starter: false, pro: false, ent: true },
+  { label: 'White Label', starter: 'Add-on', pro: 'Add-on', ent: true },
+  { label: 'API Access', starter: 'Add-on', pro: 'Add-on', ent: true },
+  { label: 'QuickBooks Sync', starter: 'Add-on', pro: 'Add-on', ent: true },
   { label: 'SAML SSO', starter: false, pro: false, ent: true },
 ];
 
 const COMPETITOR_COMPARISON = [
-  { name: 'Procore', price: '$3,750–$12,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
-  { name: 'Autodesk Build', price: '$2,500–$8,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
-  { name: 'Buildertrend', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
-  { name: 'CoConstruct', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
-  { name: 'Fieldwire', price: '$54–$104/user/mo', model: 'Per user', migration: false, flatPrice: false },
-  { name: 'Contractor Foreman', price: '$49–$299/mo', model: 'Flat (basic features)', migration: false, flatPrice: true },
+  { name: 'Competitor 1', price: '$3,750–$12,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
+  { name: 'Competitor 2', price: '$2,500–$8,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
+  { name: 'Competitor 3', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
+  { name: 'Competitor 4', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
+  { name: 'Competitor 5', price: '$54–$104/user/mo', model: 'Per user', migration: false, flatPrice: false },
+  { name: 'Competitor 6', price: '$49–$299/mo', model: 'Flat (basic features)', migration: false, flatPrice: true },
   { name: 'Saguaro Control Systems', price: '$499–$750/mo', model: 'Flat, unlimited users', migration: true, flatPrice: true, isSaguaro: true },
 ];
 
@@ -270,7 +245,7 @@ const FAQS = [
   { q: 'Can I upgrade or downgrade my plan anytime?', a: 'Yes. Upgrade immediately and get prorated credit. Downgrade at the end of your billing cycle. No penalties, no fees.' },
   { q: 'Do you support prevailing wage projects?', a: 'Yes. The WH-347 Certified Payroll generator connects to the DOL Davis-Bacon wage API and validates every worker\'s hourly rate against current prevailing wages for their trade and county.' },
   { q: 'Which states are supported for lien waivers?', a: 'All 50 states. AZ, CA, TX, NV, FL, CO, WA, OR, UT, and NM use state-specific statutory language. All other states use our attorney-reviewed generic form.' },
-  { q: 'What is annual billing and how much do I save?', a: 'Annual billing locks in your rate for 12 months and saves you ~15%: Starter drops from $499 to $449/mo ($600 saved), Professional drops from $750 to $650/mo ($1,200 saved). Billed as one upfront payment.' },
+  { q: 'What is annual billing and how much do I save?', a: 'Annual billing locks in your rate for 12 months and saves you up to 13%: Starter drops from $499 to $449/mo ($600 saved), Professional drops from $750 to $650/mo ($1,200 saved). Billed as one upfront payment.' },
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime from your billing settings. Monthly plans retain access until end of period. Annual plans are non-refundable but can be paused.' },
   { q: 'What is the White Label add-on?', a: 'Your GC firm or software company can use Saguaro under your own brand, domain, and logo. Each of your clients receives their own sandboxed account. Available as an add-on or included in Enterprise.' },
   { q: 'Do you integrate with QuickBooks?', a: 'QuickBooks sync is available as an add-on ($99/mo) or included in Enterprise. Budget line items, pay applications, and change orders sync bidirectionally with your QuickBooks company file.' },
@@ -354,13 +329,9 @@ export default function PricingPage() {
 
           {/* Competitor savings callout */}
           <div style={{ display: 'inline-flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 40 }}>
-            {[
-              { from: 'Procore', save: 'Save $3,150+/mo' },
-              { from: 'Buildertrend', save: 'Save $200–$500/mo' },
-              { from: 'Autodesk', save: 'Save $1,900+/mo' },
-            ].map(item => (
-              <div key={item.from} style={{ padding: '6px 14px', background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 999, fontSize: 12, color: C.dim, fontWeight: 500 }}>
-                vs {item.from} — {item.save}
+            {['Flat rate — never per-seat', 'Base Saguaro Radio free on every plan', 'Free migration from any platform'].map(item => (
+              <div key={item} style={{ padding: '6px 14px', background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 999, fontSize: 12, color: C.dim, fontWeight: 500 }}>
+                {item}
               </div>
             ))}
           </div>
@@ -372,47 +343,11 @@ export default function PricingPage() {
             </button>
             <button onClick={() => setAnnual(true)} style={{ padding: '8px 22px', borderRadius: 999, border: '1px solid transparent', background: annual ? 'rgba(255,255,255,0.08)' : 'transparent', color: annual ? C.text : C.dim, fontWeight: 500, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 0.15s, color 0.15s' }}>
               Annual
-              <span style={{ fontSize: 11, fontWeight: 500, color: C.dim, background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, padding: '1px 7px', borderRadius: 999 }}>Save 17%</span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: C.dim, background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, padding: '1px 7px', borderRadius: 999 }}>Save up to $1,200/yr</span>
             </button>
           </div>
           <div style={{ fontSize: 13, color: C.dim }}>
             {annual ? 'Billed annually — cancel anytime' : 'Switch to annual and save up to $1,200/yr'}
-          </div>
-        </section>
-
-        {/* How it works strip */}
-        <section style={{ padding: '0 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ background: 'transparent', border: 'none', borderRadius: 0, padding: 0 }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>How it works</div>
-              <h2 style={{ fontSize: 22, fontWeight: 600, color: C.text, margin: 0 }}>Start using Saguaro in under 5 minutes</h2>
-              <p style={{ fontSize: 14, color: C.dim, margin: '8px 0 0' }}>Saguaro is a web platform — nothing to download on your computer. Sign up, log in, and your whole team is live.</p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 0, position: 'relative' }}>
-              {[
-                { step: '1', icon: '📝', title: 'Sign Up Free', desc: 'Create your account in 30 seconds. No credit card required. 30-day free trial starts immediately.' },
-                { step: '2', icon: '🌐', title: 'Log In — It\'s Instant', desc: 'Open any browser and go to saguarocontrol.net. Your full platform is live — no download, no install.' },
-                { step: '3', icon: '⚙️', title: '5-Min Company Setup', desc: 'Enter your company name, logo, and team roles. Our onboarding wizard walks you through every step.' },
-                { step: '4', icon: '📱', title: 'Get the iOS App', desc: 'Install Saguaro Control Systems on your iPhone or iPad from TestFlight — our native iOS field app. Works offline.' },
-              ].map((s, i, arr) => (
-                <div key={i} style={{ padding: '0 28px', borderRight: i < arr.length - 1 ? `1px solid ${C.hairline}` : 'none', position: 'relative' }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.hairline}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 14 }}>
-                    {s.icon}
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Step {s.step}</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6 }}>{s.title}</div>
-                  <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>{s.desc}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 28, borderTop: `1px solid ${C.hairline}` }}>
-              <Link href="/signup" style={{ display: 'inline-block', padding: '11px 24px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
-                Start Free Trial — No Credit Card
-              </Link>
-              <div style={{ marginTop: 12, fontSize: 13, color: C.dim }}>
-                30 days free · Unlimited users · Cancel anytime · <Link href="/how-to-get-started" style={{ color: C.gold, textDecoration: 'none', fontWeight: 500 }}>See full walkthrough →</Link>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -494,6 +429,17 @@ export default function PricingPage() {
           </div>
         </section>
 
+        {/* Decision helper */}
+        <section style={{ padding: '0 24px 96px', maxWidth: 760, margin: '0 auto' }}>
+          <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, padding: '28px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>Not sure? Every plan starts with a free trial — switch anytime.</div>
+            <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, maxWidth: 560 }}>
+              30 days free, no credit card. Upgrades take effect immediately with prorated credit; downgrades apply at the end of your billing cycle.{' '}
+              <Link href="/how-to-get-started" style={{ color: C.gold, textDecoration: 'none', fontWeight: 500 }}>See how to get started →</Link>
+            </div>
+          </div>
+        </section>
+
         {/* Migration Banner */}
         <section style={{ padding: '0 24px 96px', maxWidth: 900, margin: '0 auto' }}>
           <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, padding: '40px 48px', display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap', boxShadow: 'none' }}>
@@ -533,48 +479,26 @@ export default function PricingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {ADDONS.map(addon => (
-              <div key={addon.name} style={{ background: 'transparent', borderTop: `1px solid ${C.hairline}`, borderRadius: 0, padding: '22px 4px', boxShadow: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 4 }}>{addon.name}</div>
-                    <div style={{ fontSize: 12, color: C.dim }}>{addon.description}</div>
+              <div key={addon.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px 22px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: C.text, lineHeight: 1.35 }}>
+                    {addon.name}
+                    {addon.service && (
+                      <span style={{ fontSize: 10, fontWeight: 600, color: C.dim, border: `1px solid ${C.hairline}`, borderRadius: 999, padding: '2px 8px', marginLeft: 8, letterSpacing: 1, textTransform: 'uppercase', verticalAlign: 'middle' }}>Service</span>
+                    )}
                   </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
-                    <div style={{ fontSize: 22, fontWeight: 600, color: C.text }}>${addon.price}</div>
-                    <div style={{ fontSize: 11, color: C.dim }}>/{addon.per}</div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <span style={{ fontSize: 20, fontWeight: 600, color: C.text }}>{addon.price}</span>
+                    {addon.per && <span style={{ fontSize: 12, color: C.dim }}>{addon.per}</span>}
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: C.dim, background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 6, padding: '4px 10px', display: 'inline-block' }}>
-                  Available for: {addon.available.join(', ')}
+                <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, flex: 1 }}>{addon.description}</div>
+                <div style={{ fontSize: 11, color: C.dim, background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 6, padding: '4px 10px', alignSelf: 'flex-start' }}>
+                  Available for: {addon.available}
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Support Tiers */}
-        <section style={{ padding: '0 24px 112px', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
-              Support
-            </div>
-            <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: '0 0 12px', letterSpacing: -0.3 }}>Support for every team size</h2>
-            <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto' }}>Basic support is included on all plans. Upgrade for faster response and a dedicated human.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-            {SUPPORT_TIERS.map(tier => (
-              <div key={tier.name} style={{ background: 'transparent', borderTop: `1px solid ${C.hairline}`, borderRadius: 0, padding: '24px 4px', boxShadow: 'none' }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: C.text, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>{tier.name}</div>
-                <div style={{ fontSize: 22, fontWeight: 600, color: C.text, marginBottom: 4 }}>{tier.price}</div>
-                <div style={{ fontSize: 11, color: C.dim, marginBottom: 20 }}>{tier.plans}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {tier.features.map(f => (
-                    <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <CheckIcon size={14} color={C.green} />
-                      <span style={{ fontSize: 13, color: C.dim }}>{f}</span>
-                    </div>
-                  ))}
-                </div>
+                <a className="btn-gold" href={`mailto:sales@saguarocontrol.net?subject=${encodeURIComponent(addon.mailSubject)}`} style={{ justifyContent: 'center', textDecoration: 'none', fontSize: 13, marginTop: 4 }}>
+                  Add to plan
+                </a>
               </div>
             ))}
           </div>
@@ -597,7 +521,6 @@ export default function PricingPage() {
                 borderRadius: 0, padding: '24px 4px', position: 'relative',
                 boxShadow: 'none',
               }}>
-                <div style={{ fontSize: 24, marginBottom: 12 }}>{service.icon}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                   <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>{service.name}</div>
                   <div style={{ fontSize: 18, fontWeight: 600, color: C.text, flexShrink: 0, marginLeft: 12 }}>{service.label}</div>
@@ -736,7 +659,7 @@ export default function PricingPage() {
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(22px, 3vw, 26px)', fontWeight: 600, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: -0.4 }}>
               Ready to stop paying{' '}
-              <span style={{ color: C.text }}>Procore prices?</span>
+              <span style={{ color: C.text }}>per-seat prices?</span>
             </h2>
             <p style={{ fontSize: 16, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
               30-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
@@ -769,7 +692,7 @@ export default function PricingPage() {
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
                 { label: 'Home', href: '/' }, { label: 'Features', href: '/features' },
-                { label: 'Compare', href: '/compare' }, { label: 'Switch from Procore', href: '/switch-from-procore' },
+                { label: 'Compare', href: '/compare' },
                 { label: 'Field App', href: '/get-the-app' }, { label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' },
               ].map(link => (
                 <a key={link.label} href={link.href} style={{ fontSize: 13, color: C.dim, textDecoration: 'none', fontWeight: 500 }}>{link.label}</a>

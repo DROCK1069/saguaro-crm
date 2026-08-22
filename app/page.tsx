@@ -1,9 +1,11 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Blueprint, Robot, CurrencyDollar, DeviceMobile, PaintBrush, WifiHigh, Cube, Drone, Buildings, Hammer, HouseSimple, Building, ShieldCheck, ChartLine, User, UsersThree, PenNib, Handshake, BookOpen, Calculator, Scales, Wrench, Trophy, CaretDown, List, X } from '@phosphor-icons/react';
+import { Blueprint, WifiHigh, UsersThree, PenNib, List, X, Broadcast, Briefcase, ListChecks, Notebook, Files, Receipt, MapPin, CloudSun, Thermometer, WifiSlash, Hand } from '@phosphor-icons/react';
 import { IntegrationStrip } from '../components/Integrations';
 import PromoTicker from '../components/PromoTicker';
+import MarketingFooter, { SocialRow } from '../components/MarketingFooter';
+import { moduleAccent } from '../lib/module-identity';
 
 /* ── palette ── */
 const BG = '#0a0a0a';
@@ -33,65 +35,43 @@ const PartialIcon = () => <svg viewBox="0 0 20 20" width={18} height={18} fill={
 
 /* ── nav links (legacy — replaced by dropdown menus) ── */
 
-/* ── features data ── */
-const FEATURES = [
-  {
-    icon: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z|M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z',
-    title: 'AI Blueprint Takeoff',
-    desc: 'Upload any PDF blueprint. Sage reads dimensions, calculates materials, and generates a full bid estimate.',
-    href: '/takeoff',
-  },
-  {
-    icon: 'M12 2a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z',
-    title: 'Sage AI Assistant',
-    desc: 'Ask Sage anything about your projects. Get instant answers on budgets, schedules, and compliance across every active job.',
-    href: '/signup',
-  },
-  {
-    icon: 'M12 1v22|M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-    title: 'Financial Suite',
-    desc: 'AIA G702/G703 pay apps, invoicing, lien waivers for all 50 states, and certified payroll — generated automatically.',
-    href: '/#pricing',
-  },
-  {
-    icon: 'M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z|M12 18h.01',
-    title: 'Field Mobile App',
-    desc: 'Native iPhone & iPad app for daily logs, photos, GPS clock-in, punch lists, and inspections. Works offline. Now in TestFlight beta.',
-    href: '/get-the-app',
-  },
-  {
-    icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2|M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z|M23 21v-2a4 4 0 0 0-3-3.87|M16 3.13a4 4 0 0 1 0 7.75',
-    title: 'Client & Sub Portals',
-    desc: 'Branded owner portal for approvals and sub portal for bids, W-9s, and insurance. White-label your business.',
-    href: '/signup',
-  },
-  {
-    icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z|M9 22V12h6v10',
-    title: 'Smart Building & Low Volt',
-    desc: 'IoT device management, structured cabling, and AV scheduling for technology-forward builds and smart home installs.',
-    href: '/signup',
-  },
+/* ── module data — real module names, module-identity accents ── */
+const FEATURE_MODULES = [
+  { key: 'radio', Ic: Broadcast, title: 'Saguaro Radio', desc: 'Push-to-talk for the whole crew, built into the platform — with live English/Spanish translation on every channel.', href: '/get-the-app' },
+  { key: 'signal', Ic: WifiHigh, title: 'Signal Studio', desc: 'RF design studio: model wireless coverage on the floor plan and place hardware before anyone pulls cable.', href: '/features' },
+  { key: 'takeoff', Ic: Blueprint, title: 'Takeoff Studio', desc: 'Upload the blueprint, measure quantities on the page, and walk out with a priced bid.', href: '/takeoff' },
+  { key: 'bids', Ic: Briefcase, title: 'Bid Jackets', desc: 'Every bid packaged with its scope, quantities, and pricing in one jacket.', href: '/bids' },
+  { key: 'work', Ic: ListChecks, title: 'My Work', desc: 'One queue for everything assigned to you, routed across every active project.', href: '/features' },
+  { key: 'crews', Ic: UsersThree, title: 'Crews', desc: 'Live crew map, dispatch, and who-is-where across your jobsites.', href: '/features' },
+  { key: 'tm', Ic: PenNib, title: 'T&M Tickets', desc: 'Time and materials captured in the field and signed on the glass.', href: '/features' },
+  { key: 'daily', Ic: Notebook, title: 'Daily Logs', desc: "Auto-filled from the day's clock-ins, photos, tickets, and weather.", href: '/features' },
+  { key: 'documents', Ic: Files, title: 'Documents', desc: 'Plans, submittals, and closeout files — versioned and shareable.', href: '/features' },
 ];
 
-/* ── comparison data ── */
-const COMPARISON_ROWS: { feature: string; saguaro: 'yes' | 'no' | 'partial'; procore: 'yes' | 'no' | 'partial'; buildertrend: 'yes' | 'no' | 'partial' }[] = [
-  { feature: 'AI Blueprint Takeoff', saguaro: 'yes', procore: 'no', buildertrend: 'no' },
-  { feature: 'Sage AI Assistant', saguaro: 'yes', procore: 'no', buildertrend: 'no' },
-  { feature: 'Bid Package Auto-Generation', saguaro: 'yes', procore: 'partial', buildertrend: 'no' },
-  { feature: 'Smart Building Module', saguaro: 'yes', procore: 'no', buildertrend: 'no' },
-  { feature: 'Mobile Offline', saguaro: 'yes', procore: 'partial', buildertrend: 'partial' },
-  { feature: 'Owner Portal', saguaro: 'yes', procore: 'yes', buildertrend: 'yes' },
-  { feature: 'Sub Portal', saguaro: 'yes', procore: 'partial', buildertrend: 'partial' },
-  { feature: 'Starting Price', saguaro: 'yes', procore: 'no', buildertrend: 'partial' },
+/* ── comparison data — our claims about our own product; competitors anonymized on purpose ── */
+type Mark = 'yes' | 'no' | 'partial';
+const COMPARISON_ROWS: { feature: string; saguaro: Mark; comp1: Mark; comp2: Mark; notYet?: boolean }[] = [
+  { feature: 'Built-in PTT radio with EN/ES translation', saguaro: 'yes', comp1: 'no', comp2: 'no' },
+  { feature: 'RF design studio (Signal Studio)', saguaro: 'yes', comp1: 'no', comp2: 'no' },
+  { feature: 'AI blueprint takeoff to priced bid', saguaro: 'yes', comp1: 'no', comp2: 'partial' },
+  { feature: 'Auto-fill daily logs', saguaro: 'yes', comp1: 'partial', comp2: 'partial' },
+  { feature: 'My Work cross-project routing', saguaro: 'yes', comp1: 'no', comp2: 'no' },
+  { feature: 'Live crew map', saguaro: 'yes', comp1: 'partial', comp2: 'no' },
+  { feature: 'T&M tickets with signatures', saguaro: 'yes', comp1: 'partial', comp2: 'partial' },
+  { feature: 'Sub + guest portals', saguaro: 'yes', comp1: 'yes', comp2: 'partial' },
+  { feature: 'Offline field app', saguaro: 'yes', comp1: 'partial', comp2: 'partial' },
+  { feature: 'Public marketplace / ERP suite', saguaro: 'no', comp1: 'yes', comp2: 'partial', notYet: true },
+  { feature: 'Starting price', saguaro: 'yes', comp1: 'no', comp2: 'partial' },
 ];
 
-const StatusCell = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
+const StatusCell = ({ v }: { v: Mark }) =>
   v === 'yes' ? <CheckIcon /> : v === 'partial' ? <PartialIcon /> : <XIcon />;
 
-const PriceLabel = ({ v }: { v: 'yes' | 'no' | 'partial' }) =>
-  v === 'yes' ? <span style={{ color: GREEN, fontWeight: 600, fontSize: 13 }}>$499/mo</span>
-    : v === 'partial' ? <span style={{ color: GOLD, fontWeight: 600, fontSize: 13 }}>$399/mo</span>
-    : <span style={{ color: '#EF4444', fontWeight: 600, fontSize: 13 }}>$1,000+/mo</span>;
+const PRICE_LABELS: Record<'saguaro' | 'comp1' | 'comp2', { text: string; color: string }> = {
+  saguaro: { text: '$499/mo flat', color: GREEN },
+  comp1: { text: 'Custom quote', color: '#EF4444' },
+  comp2: { text: 'Per-seat', color: GOLD },
+};
 
 /* ── pricing data ── */
 const PLANS = [
@@ -136,54 +116,18 @@ export default function LandingPage() {
       {/* ══════════ 1. TOP TICKER ══════════ */}
       <PromoTicker />
 
-      {/* ══════════ 2. NAV WITH DROPDOWNS ══════════ */}
+      {/* ══════════ 2. NAV ══════════ */}
       {(() => {
-        const [openMenu, setOpenMenu] = useState<string | null>(null);
         const [mobileOpen, setMobileOpen] = useState(false);
-        const navRef = useRef<HTMLDivElement>(null);
-
-        // Close on click outside
-        useEffect(() => {
-          const handler = (e: MouseEvent) => {
-            if (navRef.current && !navRef.current.contains(e.target as Node)) {
-              setOpenMenu(null);
-            }
-          };
-          document.addEventListener('mousedown', handler);
-          return () => document.removeEventListener('mousedown', handler);
-        }, []);
-
-        const menus = {
-          platform: {
-            label: 'Platform',
-            items: [
-              { icon: <Blueprint size={22} weight="duotone" color="#F59E0B" />, title: 'AI Blueprint Takeoff', desc: 'Plans in, measured quantities out', href: '/takeoff' },
-              { icon: <ChartLine size={22} weight="duotone" color="#F59E0B" />, title: 'Executive Intelligence', desc: 'Multi-project command center', href: '/intelligence' },
-            ],
-          },
-          solutions: {
-            label: 'Solutions',
-            items: [
-              { icon: <Buildings size={22} weight="duotone" color="#F59E0B" />, title: 'General Contractors', desc: 'Full project management suite', href: '/industry/general-contractors' },
-              { icon: <Hammer size={22} weight="duotone" color="#F59E0B" />, title: 'Specialty Subcontractors', desc: 'Subs, trades, and field crews', href: '/industry/specialty-subcontractors' },
-              { icon: <HouseSimple size={22} weight="duotone" color="#F59E0B" />, title: 'Residential Remodelers', desc: 'Homes and renovations', href: '/industry/residential-remodelers' },
-              { icon: <Building size={22} weight="duotone" color="#F59E0B" />, title: 'Commercial Contractors', desc: 'Multi-project portfolios', href: '/industry/commercial-contractors' },
-              { icon: <Wrench size={22} weight="duotone" color="#F59E0B" />, title: 'Roofing Contractors', desc: 'Roofing-specific workflows', href: '/industry/roofing-contractors' },
-            ],
-          },
-          resources: {
-            label: 'Resources',
-            items: [
-              { icon: <Calculator size={22} weight="duotone" color="#F59E0B" />, title: 'ROI Calculator', desc: 'See your savings vs Procore', href: '/roi-calculator' },
-              { icon: <Scales size={22} weight="duotone" color="#F59E0B" />, title: 'Compare to Procore', desc: 'Feature-by-feature breakdown', href: '/compare/procore' },
-              { icon: <BookOpen size={22} weight="duotone" color="#F59E0B" />, title: 'Trade Knowledge Base', desc: 'Step-by-step guides for every trade', href: '/field/trade-guide' },
-              { icon: <User size={22} weight="duotone" color="#F59E0B" />, title: 'Owner & Sub Portals', desc: 'Client and subcontractor access', href: '/portals/client' },
-            ],
-          },
-        };
-
+        const links = [
+          { label: 'Home', href: '/' },
+          { label: 'Product', href: '/product' },
+          { label: 'Field App', href: '/get-the-app' },
+          { label: 'Pricing', href: '/pricing' },
+          { label: 'Compare', href: '/#compare' },
+        ];
         return (
-          <nav ref={navRef} style={{
+          <nav style={{
             position: 'sticky', top: 0, zIndex: 100,
             background: 'rgba(20,20,22,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             borderBottom: '1px solid rgba(245, 158, 11,0.12)',
@@ -197,75 +141,31 @@ export default function LandingPage() {
 
             {/* Desktop menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
-              {Object.entries(menus).map(([key, menu]) => (
-                <div key={key} style={{ position: 'relative' }}>
-                  <button
-                    onClick={() => setOpenMenu(openMenu === key ? null : key)}
-                    onMouseEnter={() => setOpenMenu(key)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: openMenu === key ? '#F59E0B' : '#FFFFFF',
-                      fontSize: 13, fontWeight: 500, padding: '8px 14px',
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      transition: 'color 0.15s ease',
-                    }}
-                  >
-                    {menu.label}
-                    <CaretDown size={12} weight="bold" style={{ transform: openMenu === key ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
-                  </button>
-
-                  {/* Dropdown panel */}
-                  {openMenu === key && (
-                    <div
-                      onMouseLeave={() => setOpenMenu(null)}
-                      style={{
-                        position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-                        width: 420, marginTop: 8,
-                        background: 'rgba(20,20,22,0.92)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-                        border: '1px solid rgba(245, 158, 11,0.15)',
-                        borderRadius: 16, padding: '8px',
-                        boxShadow: '0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,0,0,0.04)',
-                        animation: 'navDropFadeIn 0.15s ease',
-                      }}
-                    >
-                      {menu.items.map((item, i) => (
-                        <Link key={i} href={item.href} style={{
-                          display: 'flex', alignItems: 'center', gap: 14,
-                          padding: '12px 16px', borderRadius: 10,
-                          textDecoration: 'none', transition: 'all 0.15s ease',
-                          borderLeft: '3px solid transparent',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11,0.06)'; e.currentTarget.style.borderLeftColor = '#F59E0B'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = 'transparent'; }}
-                        >
-                          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245, 158, 11,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {item.icon}
-                          </div>
-                          <div>
-                            <div style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 600 }}>{item.title}</div>
-                            <div style={{ color: '#CBD5E1', fontSize: 11, marginTop: 2 }}>{item.desc}</div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {links.map(l => (
+                <Link key={l.label} href={l.href} style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>{l.label}</Link>
               ))}
-
-              {/* Pricing link */}
-              <Link href="/#pricing" style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 500, padding: '8px 14px', textDecoration: 'none' }}>Pricing</Link>
             </div>
 
-            {/* Right side CTAs */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Right side: compact social row + CTAs */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span className="desktop-nav" style={{ display: 'flex', alignItems: 'center' }}><SocialRow size={15} gap={10} /></span>
               <Link href="/login" style={{ color: '#CBD5E1', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Log In</Link>
-              <Link href="/signup" className="btn-gold" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>Start free</Link>
+              <Link href="/signup" className="btn-gold" style={{ fontSize: 13, padding: '8px 18px', textDecoration: 'none' }}>Free Trial</Link>
 
               {/* Mobile hamburger */}
-              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn">
+              <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: 4 }} className="mobile-menu-btn" aria-label="Menu">
                 {mobileOpen ? <X size={24} /> : <List size={24} />}
               </button>
             </div>
+
+            {/* Mobile menu */}
+            {mobileOpen && (
+              <div style={{ position: 'absolute' as const, top: 56, left: 0, right: 0, background: 'rgba(20,20,22,0.98)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.12)', padding: 8 }}>
+                {links.map(l => (
+                  <Link key={l.label} href={l.href} onClick={() => setMobileOpen(false)} style={{ display: 'block', padding: '12px 16px', color: '#FFFFFF', fontSize: 15, fontWeight: 600, textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{l.label}</Link>
+                ))}
+              </div>
+            )}
           </nav>
         );
       })()}
@@ -276,14 +176,14 @@ export default function LandingPage() {
         <div style={{ position: 'absolute' as const, top: -120, right: -40, width: 460, height: 460, background: 'radial-gradient(circle, rgba(245,158,11,0.05) 0%, transparent 68%)', zIndex: 0, pointerEvents: 'none' as const }} />
         {/* left */}
         <div style={{ position: 'relative', zIndex: 1, minWidth: 0 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', color: DIM, fontSize: 10.5, fontWeight: 500, letterSpacing: 0.8, padding: '5px 12px', borderRadius: 999, marginBottom: 24, textTransform: 'uppercase' as const }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: GOLD }} />AI-Powered Construction CRM</span>
-          <h1 style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', margin: '0 0 20px', color: TEXT }}>The smarter CRM built<br />for general contractors</h1>
-          <p style={{ color: DIM, fontSize: 15, fontWeight: 400, lineHeight: 1.7, margin: '0 0 32px', maxWidth: 452 }}>AI-powered takeoffs that read your blueprints in seconds. Sage, your built-in assistant, handles bids, pay apps, and compliance so you can focus on building.</p>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', color: DIM, fontSize: 10.5, fontWeight: 500, letterSpacing: 0.8, padding: '5px 12px', borderRadius: 999, marginBottom: 24, textTransform: 'uppercase' as const }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: GOLD }} />Construction Management Platform</span>
+          <h1 style={{ fontSize: 30, fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.03em', margin: '0 0 20px', color: TEXT, maxWidth: 460 }}>Run the job. Talk to the crew. Price the work. One platform.</h1>
+          <p style={{ color: DIM, fontSize: 15, fontWeight: 400, lineHeight: 1.7, margin: '0 0 32px', maxWidth: 452 }}>The construction platform with a built-in PTT radio, RF design studio, and blueprint-to-priced-bid takeoff.</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, alignItems: 'center' }}>
             <Link href="/signup" className="btn-gold" style={{ textDecoration: 'none', fontSize: 13.5, padding: '10px 22px' }}>Start free trial <span style={{ fontSize: 15 }}>&rarr;</span></Link>
-            <Link href="/#demo" style={{ color: DIM, textDecoration: 'none', fontWeight: 500, fontSize: 13.5, padding: '10px 18px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <svg viewBox="0 0 20 20" width={13} height={13} fill="currentColor"><polygon points="5,3 19,10 5,17" /></svg> Watch demo
-            </Link>
+            <a href="#radio-demo" style={{ color: DIM, textDecoration: 'none', fontWeight: 500, fontSize: 13.5, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.14)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <Broadcast size={15} weight="duotone" color={GOLD} /> Try the radio
+            </a>
           </div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 24, fontWeight: 400 }}>Construction management &middot; Project controls &middot; National rollout specialists</div>
         </div>
@@ -335,75 +235,108 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── social proof bar ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '8px 24px 56px' }}>
-        <p style={{ textAlign: 'center' as const, fontSize: 13, color: DIM, marginBottom: 20 }}>Trusted by <span style={{ color: TEXT, fontWeight: 600 }}>200+ general contractors</span> in Arizona</p>
-        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' as const, gap: 0 }} className="stats-grid">
-          {[
-            { val: '12,400+', lbl: 'AI takeoffs run' },
-            { val: '580K+', lbl: 'Line items generated' },
-            { val: '4.2 hrs', lbl: 'Avg. time saved' },
-            { val: '8,900+', lbl: 'Blueprints analyzed' },
-          ].map((s, i) => (
-            <div key={s.lbl} style={{ display: 'flex', alignItems: 'center' }}>
-              {i > 0 && <div style={{ width: 1, height: 30, background: 'rgba(255,255,255,0.08)', margin: '0 44px' }} />}
-              <div style={{ textAlign: 'center' as const }}>
-                <div style={{ fontSize: 19, fontWeight: 600, color: TEXT, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{s.val}</div>
-                <div style={{ fontSize: 12, color: DIM, marginTop: 5, fontWeight: 400 }}>{s.lbl}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Integration logos — real vendor marks (react-icons), only for shipped integrations */}
       <IntegrationStrip />
 
-      {/* ══════════ 4. FEATURE GRID ══════════ */}
+      {/* ══════════ 4. MODULE GRID ══════════ */}
       <section id="features" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Everything You Need. Nothing You Don&apos;t.</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 40, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>One platform replaces Procore, spreadsheets, and 5 other tools.</p>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>What&apos;s inside</h2>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 40, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>Real module names, listed because they ship — from the radio to the bid.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '44px 48px', maxWidth: 1000, margin: '0 auto' }} className="feature-grid">
-          {FEATURES.map(f => (
-            <div key={f.title}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(245, 158, 11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GOLD, marginBottom: 14 }}>
-                <Icon d={f.icon} />
+          {FEATURE_MODULES.map(f => {
+            const a = moduleAccent(f.key);
+            return (
+              <div key={f.title}>
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: a.soft, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                  <f.Ic size={20} weight="duotone" color={a.hex} />
+                </div>
+                <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 7, color: TEXT }}>{f.title}</h3>
+                <p style={{ fontSize: 13, color: DIM, lineHeight: 1.6, margin: '0 0 10px' }}>{f.desc}</p>
+                <Link href={f.href} style={{ fontSize: 12.5, color: GOLD, fontWeight: 500, textDecoration: 'none' }}>Learn more &rarr;</Link>
               </div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 7, color: TEXT }}>{f.title}</h3>
-              <p style={{ fontSize: 13, color: DIM, lineHeight: 1.6, margin: '0 0 10px' }}>{f.desc}</p>
-              <Link href={f.href} style={{ fontSize: 12.5, color: GOLD, fontWeight: 500, textDecoration: 'none' }}>Learn more &rarr;</Link>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ══════════ 5. RADIO DEMO ══════════ */}
+      <section id="radio-demo" style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px 64px', scrollMarginTop: 72 }}>
+        <div style={{ ...glass, padding: '32px 28px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' as const }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Broadcast size={24} weight="duotone" color={GOLD} />
+          </div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 6px' }}>Try the radio</h2>
+            <p style={{ color: DIM, fontSize: 13.5, margin: 0, lineHeight: 1.6 }}>Saguaro Radio is push-to-talk built into the field app — a channel per project, live English/Spanish translation both ways. Grab the app and key up.</p>
+          </div>
+          <Link href="/get-the-app" className="btn-gold" style={{ textDecoration: 'none', fontSize: 13.5, padding: '10px 22px', whiteSpace: 'nowrap' as const }}>Get the field app &rarr;</Link>
         </div>
       </section>
 
 
       {/* ══════════ 6. COMPARISON TABLE ══════════ */}
-      <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
-        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Why GCs Switch from Procore</h2>
-        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature comparison — see why 200+ contractors made the switch.</p>
+      <section id="compare" style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px', scrollMarginTop: 72 }}>
+        <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>How Saguaro compares</h2>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 32 }}>Feature-for-feature — judge for yourself in the free trial.</p>
         <div style={{ ...glass, overflow: 'hidden', boxShadow: 'var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
           {/* header */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
             <div style={{ padding: '14px 20px', fontSize: 12, fontWeight: 600, color: DIM }}>Feature</div>
             <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 700, color: GOLD, textAlign: 'center' as const }}>Saguaro</div>
-            <div style={{ padding: '14px 12px', fontSize: 13, fontWeight: 700, color: DIM, textAlign: 'center' as const }}>Procore</div>
-            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, opacity: 0.6 }}>Buildertrend</div>
+            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const }}>Competitor 1</div>
+            <div style={{ padding: '14px 12px', fontSize: 12, fontWeight: 600, color: DIM, textAlign: 'center' as const, opacity: 0.6 }}>Competitor 2</div>
           </div>
           {/* rows */}
           {COMPARISON_ROWS.map((r, i) => (
-            <div key={r.feature} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
-              <div style={{ padding: '11px 20px', fontSize: 13, color: TEXT }}>{r.feature}</div>
-              <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                {r.feature === 'Starting Price' ? <PriceLabel v={r.saguaro} /> : <StatusCell v={r.saguaro} />}
+            <React.Fragment key={r.feature}>
+              {r.notYet && (
+                <div style={{ padding: '10px 20px', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' as const, color: GOLD, borderBottom: '1px solid rgba(255,255,255,0.12)', background: 'rgba(245, 158, 11,0.05)' }}>What we don&apos;t do yet</div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', borderBottom: i < COMPARISON_ROWS.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
+                <div style={{ padding: '11px 20px', fontSize: 13, color: TEXT }}>{r.feature}</div>
+                {(['saguaro', 'comp1', 'comp2'] as const).map(col => (
+                  <div key={col} style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    {r.feature === 'Starting price'
+                      ? <span style={{ color: PRICE_LABELS[col].color, fontWeight: 600, fontSize: 13 }}>{PRICE_LABELS[col].text}</span>
+                      : <StatusCell v={r[col]} />}
+                  </div>
+                ))}
               </div>
-              <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                {r.feature === 'Starting Price' ? <PriceLabel v={r.procore} /> : <StatusCell v={r.procore} />}
-              </div>
-              <div style={{ padding: '11px 12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                {r.feature === 'Starting Price' ? <PriceLabel v={r.buildertrend} /> : <StatusCell v={r.buildertrend} />}
-              </div>
-            </div>
+            </React.Fragment>
+          ))}
+        </div>
+        <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 12, marginTop: 14, lineHeight: 1.6 }}>These marks are our claims about our own product — the other columns are anonymized on purpose. Take the trial and score us yourself.</p>
+      </section>
+
+      {/* ══════════ 6b. RECEIPTS ══════════ */}
+      <section style={{ maxWidth: 900, margin: '0 auto', padding: '64px 24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 24, alignItems: 'start' }} className="receipts-grid">
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(245, 158, 11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Receipt size={28} weight="duotone" color={GOLD} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', margin: '0 0 12px' }}>It shows you its receipts</h2>
+            <p style={{ color: DIM, fontSize: 14, lineHeight: 1.7, margin: '0 0 12px', maxWidth: 640 }}>Every number Saguaro suggests carries a ledger entry: what it measured on the plan, which catalog line it matched, and what your past corrections taught it. Fix a price once and the next estimate starts from your fix. Open any figure and read exactly where it came from.</p>
+            <p style={{ color: TEXT, fontSize: 13.5, fontWeight: 600, margin: 0 }}>Every feature ships with automated live proof.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ 6c. SONORAN ══════════ */}
+      <section style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px 64px', textAlign: 'center' as const }}>
+        <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 10 }}>Born on Sonoran jobsites</h2>
+        <p style={{ color: DIM, fontSize: 14, marginBottom: 24, maxWidth: 560, marginLeft: 'auto', marginRight: 'auto' }}>Built where summers hit 115 degrees and the far corner of the site has no bars. The field app assumes gloves, glare, and no signal.</p>
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' as const, gap: 10 }}>
+          {[
+            { Ic: Hand, label: 'Glove mode' },
+            { Ic: WifiSlash, label: 'Offline-first' },
+            { Ic: MapPin, label: 'GPS clock-in' },
+            { Ic: CloudSun, label: 'Auto weather on logs' },
+            { Ic: Thermometer, label: 'Proven in 115° summers' },
+          ].map(b => (
+            <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid rgba(245, 158, 11,0.25)', background: 'rgba(245, 158, 11,0.06)', color: TEXT, fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 999 }}>
+              <b.Ic size={16} weight="duotone" color={GOLD} />{b.label}
+            </span>
           ))}
         </div>
       </section>
@@ -460,67 +393,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════ 8. TESTIMONIAL ══════════ */}
-      <section style={{ maxWidth: 680, margin: '0 auto', padding: '56px 24px', textAlign: 'center' as const }}>
-        <blockquote style={{ fontSize: 17, fontWeight: 400, color: TEXT, lineHeight: 1.55, letterSpacing: '-0.01em', margin: '0 0 20px', maxWidth: 580, marginLeft: 'auto', marginRight: 'auto' }}>&ldquo;We switched from Procore six months ago and haven&apos;t looked back. The AI takeoff alone saves our estimator 20 hours a week. At a third of the price, it was a no-brainer.&rdquo;</blockquote>
-        <p style={{ fontWeight: 600, fontSize: 13.5, margin: '0 0 2px', color: TEXT }}>Marcus Torres</p>
-        <p style={{ color: DIM, fontSize: 12.5, margin: 0 }}>VP of Operations &mdash; Sonoran Builders, Phoenix AZ</p>
-      </section>
-
       {/* ══════════ 9. CTA SECTION ══════════ */}
       <section style={{ maxWidth: 640, margin: '0 auto', padding: '88px 24px 96px', textAlign: 'center' as const }}>
         <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 12 }}>Ready to build smarter?</h2>
-        <p style={{ color: DIM, fontSize: 14, marginBottom: 28 }}>Join 200+ general contractors who switched to Saguaro and never looked back.</p>
+        <p style={{ color: DIM, fontSize: 14, marginBottom: 28 }}>Every module unlocked for 14 days. Run a real job on it and judge for yourself.</p>
         <Link href="/signup" style={{ background: GOLD, color: '#0a0a0a', textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '12px 30px', borderRadius: 8, display: 'inline-block' }}>Start your free trial</Link>
         <p style={{ color: DIM, fontSize: 12, marginTop: 14 }}>No credit card required. 14-day free trial.</p>
       </section>
 
       {/* ══════════ 10. FOOTER ══════════ */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.12)', maxWidth: 1200, margin: '0 auto', padding: '40px 24px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, marginBottom: 32 }} className="footer-grid">
-          {/* product */}
-          <div>
-            <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, color: TEXT, marginBottom: 14 }}>Product</h4>
-            {[
-              { l: 'AI Takeoff', h: '/takeoff' },
-              { l: 'Pay Applications', h: '/features' },
-              { l: 'Invoicing', h: '/features' },
-              { l: 'Lien Waivers', h: '/features' },
-              { l: 'Field App', h: '/get-the-app' },
-              { l: 'Bid Packages', h: '/features' },
-            ].map(({ l, h }) => (
-              <div key={l}><Link href={h} style={{ color: DIM, textDecoration: 'none', fontSize: 13, lineHeight: 2 }}>{l}</Link></div>
-            ))}
-          </div>
-          {/* company */}
-          <div>
-            <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, color: TEXT, marginBottom: 14 }}>Company</h4>
-            {['About', 'Careers', 'Contact', 'Partners'].map(l => (
-              <div key={l}><Link href={`/${l.toLowerCase()}`} style={{ color: DIM, textDecoration: 'none', fontSize: 13, lineHeight: 2 }}>{l}</Link></div>
-            ))}
-          </div>
-          {/* resources */}
-          <div>
-            <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, color: TEXT, marginBottom: 14 }}>Resources</h4>
-            {['Blog', 'API Docs', 'Help Center', 'Changelog'].map(l => (
-              <div key={l}><Link href={`/${l.toLowerCase().replace(' ', '-')}`} style={{ color: DIM, textDecoration: 'none', fontSize: 13, lineHeight: 2 }}>{l}</Link></div>
-            ))}
-          </div>
-          {/* legal */}
-          <div>
-            <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 1, color: TEXT, marginBottom: 14 }}>Legal</h4>
-            {[{ label: 'Privacy Policy', href: '/privacy' }, { label: 'Terms of Service', href: '/terms' }, { label: 'Security', href: '/security' }].map(l => (
-              <div key={l.label}><Link href={l.href} style={{ color: DIM, textDecoration: 'none', fontSize: 13, lineHeight: 2 }}>{l.label}</Link></div>
-            ))}
-          </div>
-        </div>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} aria-label="Saguaro Control Systems — home">
-            <img src="/logo-horizontal.png" alt="Saguaro Control Systems" height={30} style={{ height: 30, width: 'auto', display: 'block' }} />
-          </Link>
-          <span style={{ fontSize: 12, color: DIM }}>&copy; {new Date().getFullYear()} Saguaro Control Systems. All rights reserved. &middot; <span style={{ color: GOLD, fontWeight: 600 }}>Control Every Project. Deliver Every Promise.</span></span>
-        </div>
-      </footer>
+      <MarketingFooter />
 
       {/* ══════════ RESPONSIVE CSS ══════════ */}
       <style>{`
@@ -540,6 +422,7 @@ export default function LandingPage() {
           .design-grid { grid-template-columns: 1fr !important; }
           .pricing-grid { grid-template-columns: 1fr !important; }
           .footer-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .receipts-grid { grid-template-columns: 1fr !important; }
           h1 { font-size: 26px !important; }
         }
         @media (max-width: 480px) {

@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { GetAppBadge } from '@/components/GetAppBadge';
+import { GoldButton, PremiumFX } from '@/components/ui/premium';
+import { PhoneFrame, LaptopFrame } from '@/components/marketing/DeviceFrame';
+
+// TestFlight public invite — owner-controlled. This is the live open-beta link
+// already published across the site (see components/GetAppBadge.tsx); update
+// here if the invite ever rotates. Never invent a different TestFlight URL.
+const TESTFLIGHT_URL = 'https://testflight.apple.com/join/jg7jdtwx';
 
 export const metadata: Metadata = {
   title: 'Get Saguaro Control Systems — Native iOS App | Now in TestFlight Beta',
@@ -210,209 +216,17 @@ export default function GetTheAppPage() {
           color: var(--dim);
         }
 
-        /* ── DEVICE SHOWCASE ── */
+        /* ── DEVICE SHOWCASE — real dark screenshots in machined frames ── */
         .devices {
           position: relative;
           height: 520px;
         }
-
-        /* Phone */
-        .dev-phone {
-          position: absolute;
-          right: 20px; top: 0;
-          width: 168px; height: 360px;
-          background: linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 100%);
-          border-radius: 38px;
-          border: 2px solid rgba(0,0,0,0.12);
-          box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.3);
-          overflow: hidden;
-          animation: floatPhone 5s ease-in-out infinite;
-        }
-        @keyframes floatPhone { 0%,100%{transform:translateY(0) rotate(3deg)} 50%{transform:translateY(-14px) rotate(3deg)} }
-        .dev-phone::before {
-          content:'';
-          position:absolute;
-          top:11px; left:50%;
-          transform:translateX(-50%);
-          width:52px; height:6px;
-          background:#F2F2F7;
-          border-radius:10px;
-          z-index:10;
-        }
-        .dev-phone-screen {
-          position:absolute;
-          top:26px; left:6px; right:6px; bottom:6px;
-          background: #F2F2F7;
-          border-radius:32px;
-          overflow:hidden;
-          display:flex;
-          flex-direction:column;
-        }
-        .ps-bar {
-          padding: 10px 14px 6px;
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          flex-shrink:0;
-        }
-        .ps-time { font-size:9px;font-weight:700;color:rgba(28,28,30,0.9); }
-        .ps-header {
-          background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.08));
-          border-bottom: 1px solid rgba(245,158,11,0.2);
-          padding: 10px 12px;
-          flex-shrink:0;
-        }
-        .ps-label { font-size:8px;color:rgba(245,158,11,0.7);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px; }
-        .ps-big { font-size:20px;font-weight:800;color:#FCD34D;line-height:1; }
-        .ps-small { font-size:7.5px;color:rgba(110,110,115,0.7);margin-top:2px; }
-        .ps-body { padding:10px 12px;flex:1;overflow:hidden; }
-        .ps-section { font-size:8px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px; }
-        .ps-row {
-          display:flex;align-items:center;gap:8px;
-          padding:6px 8px;border-radius:8px;
-          background:rgba(0,0,0,0.04);
-          margin-bottom:5px;
-        }
-        .ps-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
-        .ps-row-text { flex:1; }
-        .ps-row-name { font-size:8px;color:rgba(28,28,30,0.75); }
-        .ps-row-sub { font-size:6.5px;color:rgba(110,110,115,0.7);margin-top:1px; }
-        .ps-badge { padding:2px 6px;border-radius:4px;font-size:6.5px;font-weight:600; }
-        .ps-badge-green { background:rgba(34,197,94,0.15);color:#22c55e; }
-        .ps-badge-amber { background:rgba(245,158,11,0.15);color:#F59E0B; }
-        .ps-nav {
-          position:absolute;bottom:0;left:0;right:0;
-          height:42px;
-          background:rgba(255,255,255,0.96);
-          border-top:1px solid rgba(0,0,0,0.06);
-          display:flex;align-items:center;justify-content:space-around;
-        }
-        .ps-nav-i { width:16px;height:16px;stroke:rgba(110,110,115,0.7);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round; }
-        .ps-nav-i.act { stroke:var(--gold); }
-
-        /* Tablet */
-        .dev-tablet {
-          position:absolute;
-          left:0; top:60px;
-          width:268px; height:370px;
-          background: linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 100%);
-          border-radius:20px;
-          border:2px solid rgba(0,0,0,0.12);
-          box-shadow: 0 32px 72px rgba(0,0,0,0.6), inset 0 1px 0 rgba(0,0,0,0.07);
-          overflow:hidden;
-          animation: floatTablet 5.5s ease-in-out infinite 0.4s;
-        }
-        @keyframes floatTablet { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-10px) rotate(-2deg)} }
-        .dev-tablet-screen {
-          position:absolute;
-          top:8px;left:14px;right:14px;bottom:8px;
-          background:#F2F2F7;
-          border-radius:14px;
-          overflow:hidden;
-        }
-        .ts-header {
-          padding:10px 12px 8px;
-          border-bottom:1px solid rgba(0,0,0,0.05);
-          display:flex;align-items:center;justify-content:space-between;
-        }
-        .ts-logo { font-size:11px;font-weight:800;color:var(--gold);letter-spacing:.06em; }
-        .ts-dots { display:flex;gap:4px; }
-        .ts-dot { width:5px;height:5px;border-radius:50%; }
-        .ts-body { padding:10px 12px; }
-        .ts-greeting { font-size:8px;color:rgba(110,110,115,0.7);margin-bottom:1px; }
-        .ts-title { font-size:11px;font-weight:700;color:#1C1C1E;margin-bottom:10px; }
-        .ts-grid { display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px; }
-        .ts-card { border-radius:8px;padding:8px 9px; }
-        .ts-card.c-gold { background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.25); }
-        .ts-card.c-green { background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2); }
-        .ts-card.c-blue { background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2); }
-        .ts-card.c-purple { background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2); }
-        .ts-card-n { font-size:14px;font-weight:800;line-height:1;margin-bottom:2px; }
-        .c-gold .ts-card-n { color:#FCD34D; }
-        .c-green .ts-card-n { color:#22c55e; }
-        .c-blue .ts-card-n { color:#FBBF24; }
-        .c-purple .ts-card-n { color:#a78bfa; }
-        .ts-card-l { font-size:7px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.06em; }
-        .ts-bars-label { font-size:7px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px; }
-        .ts-bars { display:flex;align-items:flex-end;gap:4px;height:36px; }
-        .ts-bar { flex:1;border-radius:3px 3px 0 0; }
-        .ts-row { display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-size:8px; }
-        .ts-row-name { color:rgba(28,28,30,0.6); }
-        .ts-bge { padding:2px 6px;border-radius:4px;font-size:7px;font-weight:600; }
-        .bg-gn { background:rgba(34,197,94,0.15);color:#22c55e; }
-        .bg-am { background:rgba(245,158,11,0.15);color:#F59E0B; }
-        .bg-bl { background:rgba(245,158,11,0.15);color:#FBBF24; }
-
-        /* Laptop */
-        .dev-laptop {
-          position:absolute;
-          bottom:0; left:10px; right:0;
-          height:160px;
-          animation: floatLaptop 6s ease-in-out infinite 1s;
-        }
-        @keyframes floatLaptop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        .dev-laptop-body {
-          height:112px;
-          background:linear-gradient(160deg,#FFFFFF,#FFFFFF);
-          border-radius:10px 10px 0 0;
-          border:2px solid rgba(0,0,0,0.12);
-          border-bottom:none;
-          padding:7px;
-        }
-        .dev-laptop-screen {
-          width:100%;height:100%;
-          background:#F2F2F7;
-          border-radius:5px;
-          overflow:hidden;
-          display:flex;
-        }
-        .ls-sidebar {
-          width:30%;
-          background:rgba(245,158,11,0.04);
-          border-right:1px solid rgba(0,0,0,0.05);
-          padding:6px 4px;
-        }
-        .ls-logo { font-size:7px;font-weight:800;color:var(--gold);padding:0 3px;margin-bottom:7px; }
-        .ls-item { padding:3px 5px;border-radius:4px;font-size:6px;color:rgba(110,110,115,0.7);margin-bottom:1px;display:flex;align-items:center;gap:3px; }
-        .ls-item.act { background:rgba(245,158,11,0.15);color:var(--gold); }
-        .ls-dot { width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5; }
-        .ls-main { flex:1;padding:7px 8px; }
-        .ls-top { display:flex;justify-content:space-between;align-items:center;margin-bottom:5px; }
-        .ls-title { font-size:8px;font-weight:700;color:#1C1C1E; }
-        .ls-badge { padding:2px 5px;border-radius:4px;font-size:5.5px;background:rgba(34,197,94,0.15);color:#22c55e; }
-        .ls-cards { display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:4px; }
-        .ls-card { border-radius:4px;padding:5px 6px; }
-        .ls-card.lc1 { background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.2); }
-        .ls-card.lc2 { background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.18); }
-        .ls-card.lc3 { background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.18); }
-        .ls-card.lc4 { background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.18); }
-        .ls-card-n { font-size:9px;font-weight:800;line-height:1; }
-        .lc1 .ls-card-n { color:#FCD34D; }
-        .lc2 .ls-card-n { color:#22c55e; }
-        .lc3 .ls-card-n { color:#FBBF24; }
-        .lc4 .ls-card-n { color:#a78bfa; }
-        .ls-card-l { font-size:5px;color:rgba(110,110,115,0.7);text-transform:uppercase;letter-spacing:.05em;margin-top:1px; }
-        .ls-row { display:flex;gap:4px;padding:2.5px 0;border-bottom:1px solid rgba(0,0,0,0.04); }
-        .ls-td { font-size:5.5px;color:rgba(110,110,115,0.7);flex:1; }
-        .ls-td.bold { color:rgba(28,28,30,0.7); }
-        .dev-laptop-hinge {
-          height:10px;
-          background:linear-gradient(160deg,#FFFFFF,#FFFFFF);
-          border-left:2px solid rgba(0,0,0,0.1);
-          border-right:2px solid rgba(0,0,0,0.1);
-          border-bottom:2px solid rgba(0,0,0,0.08);
-          border-radius:0 0 6px 6px;
-          width:108%; margin-left:-4%;
-        }
-        .dev-laptop-base {
-          height:7px;
-          background:#F2F2F7;
-          width:52%;
-          margin:0 auto;
-          border-radius:0 0 6px 6px;
-          border:1px solid rgba(0,0,0,0.06);
-          border-top:none;
-        }
+        .dev-slot-phone-a { position: absolute; right: 12px; top: 0; z-index: 3; animation: floatA 5s ease-in-out infinite; }
+        .dev-slot-phone-b { position: absolute; left: 0; top: 64px; z-index: 2; animation: floatB 5.5s ease-in-out infinite 0.4s; }
+        .dev-slot-laptop  { position: absolute; left: 36px; bottom: 0; z-index: 1; animation: floatC 6s ease-in-out infinite 1s; }
+        @keyframes floatA { 0%,100%{transform:translateY(0) rotate(2deg)} 50%{transform:translateY(-12px) rotate(2deg)} }
+        @keyframes floatB { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-9px) rotate(-2deg)} }
+        @keyframes floatC { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 
         /* ── NUMBERS BAR ── */
         .numbers-bar {
@@ -761,11 +575,9 @@ export default function GetTheAppPage() {
           .nav { padding: 0 16px; }
           .hero { padding: 80px 16px 60px; }
           .hero-inner { grid-template-columns: 1fr; gap: 48px; }
-          .devices { height: 340px; order: -1; }
-          .dev-phone { right: 10px; top: 0; width: 136px; height: 292px; }
-          .dev-tablet { width: 215px; height: 295px; top: 40px; }
-          .dev-laptop { height: 130px; }
-          .dev-laptop-body { height: 90px; }
+          .devices { height: 450px; order: -1; }
+          .dev-slot-phone-b { display: none; }
+          .dev-slot-laptop { left: 0; }
           .numbers-bar { padding: 32px 16px; }
           .numbers-inner { grid-template-columns: repeat(2,1fr); }
           .section-wrap { padding: 56px 16px; }
@@ -785,6 +597,7 @@ export default function GetTheAppPage() {
       `}</style>
 
       <div className="page">
+        <PremiumFX />
 
         {/* ── NAV ── */}
         <nav className="nav">
@@ -792,6 +605,7 @@ export default function GetTheAppPage() {
             <img src="/logo-full.jpg" alt="Saguaro" height={40} style={{ }} />
           </Link>
           <div className="nav-spacer" />
+          <Link href="/product" className="nav-login">Product</Link>
           <Link href="/login" className="nav-login">Log In</Link>
           <Link href="/signup" className="nav-cta">Start Free Trial</Link>
         </nav>
@@ -820,8 +634,15 @@ export default function GetTheAppPage() {
               </p>
 
               <div className="hero-ctas">
-                <GetAppBadge />
+                <GoldButton href={TESTFLIGHT_URL}>Join the iOS Beta</GoldButton>
                 <a href="#how-to-install" className="btn-ghost">How to install</a>
+              </div>
+
+              {/* Official-style TestFlight availability badge — plain text on a
+                  machined pill. No fabricated Apple artwork, ever. */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, padding: '7px 14px', marginBottom: 40 }}>
+                <span style={{ fontSize: 9, fontWeight: 500, color: 'var(--dim)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Available on</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.01em' }}>TestFlight</span>
               </div>
 
               <div className="trust-pills">
@@ -832,121 +653,23 @@ export default function GetTheAppPage() {
               </div>
             </div>
 
-            {/* Devices */}
+            {/* Devices — REAL dark app screenshots in machined frames.
+                Drop these exact files into /public/marketing/:
+                  phone-radio.png      iPhone — Saguaro Radio (push-to-talk) screen
+                  phone-today.png      iPhone — My Work / today screen
+                  laptop-dispatch.png  Web — dispatch map screen
+                Until they exist, DeviceFrame shows a dark in-frame placeholder —
+                never a mocked-up light-mode UI. */}
             <div className="devices">
-
-              {/* TABLET */}
-              <div className="dev-tablet">
-                <div className="dev-tablet-screen">
-                  <div className="ts-header">
-                    <span className="ts-logo">SAGUARO</span>
-                    <div className="ts-dots">
-                      <div className="ts-dot" style={{ background: '#f87171' }} />
-                      <div className="ts-dot" style={{ background: '#fbbf24' }} />
-                      <div className="ts-dot" style={{ background: '#22c55e' }} />
-                    </div>
-                  </div>
-                  <div className="ts-body">
-                    <div className="ts-greeting">Good morning, Jake</div>
-                    <div className="ts-title">Field Dashboard</div>
-                    <div className="ts-grid">
-                      <div className="ts-card c-gold"><div className="ts-card-n">14</div><div className="ts-card-l">Crew Clocked In</div></div>
-                      <div className="ts-card c-green"><div className="ts-card-n">100%</div><div className="ts-card-l">Logs Submitted</div></div>
-                      <div className="ts-card c-blue"><div className="ts-card-n">3</div><div className="ts-card-l">Open RFIs</div></div>
-                      <div className="ts-card c-purple"><div className="ts-card-n">7</div><div className="ts-card-l">Punch Items</div></div>
-                    </div>
-                    <div className="ts-bars-label">Daily Logs — This Week</div>
-                    <div className="ts-bars" style={{ marginBottom: '8px' }}>
-                      <div className="ts-bar" style={{ height:'60%', background:'rgba(245,158,11,0.6)', borderRadius:'3px 3px 0 0' }} />
-                      <div className="ts-bar" style={{ height:'90%', background:'rgba(245,158,11,0.7)', borderRadius:'3px 3px 0 0' }} />
-                      <div className="ts-bar" style={{ height:'75%', background:'rgba(245,158,11,0.6)', borderRadius:'3px 3px 0 0' }} />
-                      <div className="ts-bar" style={{ height:'100%', background:'rgba(34,197,94,0.7)', borderRadius:'3px 3px 0 0' }} />
-                      <div className="ts-bar" style={{ height:'85%', background:'rgba(34,197,94,0.6)', borderRadius:'3px 3px 0 0' }} />
-                    </div>
-                    <div className="ts-row"><span className="ts-row-name">Mesa Commerce — Phase 2</span><span className="ts-bge bg-gn">On Track</span></div>
-                    <div className="ts-row"><span className="ts-row-name">Chandler Industrial</span><span className="ts-bge bg-am">Log Due</span></div>
-                    <div className="ts-row"><span className="ts-row-name">Scottsdale Medical</span><span className="ts-bge bg-bl">RFI Pending</span></div>
-                  </div>
-                </div>
+              <div className="dev-slot-phone-b">
+                <PhoneFrame src="/marketing/phone-today.png" alt="My Work — today's assignments on iPhone" width={185} />
               </div>
-
-              {/* PHONE */}
-              <div className="dev-phone">
-                <div className="dev-phone-screen">
-                  <div className="ps-bar">
-                    <span className="ps-time">9:41</span>
-                    <span style={{ fontSize:'8px', color:'rgba(28,28,30,0.5)' }}>●●●</span>
-                  </div>
-                  <div className="ps-header">
-                    <div className="ps-label">GPS Clock-In</div>
-                    <div className="ps-big">Clocked In</div>
-                    <div className="ps-small">7:02 AM · Mesa Commerce Center</div>
-                  </div>
-                  <div className="ps-body">
-                    <div className="ps-section">Today&apos;s Crew</div>
-                    <div className="ps-row">
-                      <div className="ps-dot" style={{ background: '#22c55e' }} />
-                      <div className="ps-row-text">
-                        <div className="ps-row-name">Mike R.</div>
-                        <div className="ps-row-sub">In · 6:58 AM</div>
-                      </div>
-                      <span className="ps-badge ps-badge-green">GPS ✓</span>
-                    </div>
-                    <div className="ps-row">
-                      <div className="ps-dot" style={{ background: '#22c55e' }} />
-                      <div className="ps-row-text">
-                        <div className="ps-row-name">Sofia M.</div>
-                        <div className="ps-row-sub">In · 7:01 AM</div>
-                      </div>
-                      <span className="ps-badge ps-badge-green">GPS ✓</span>
-                    </div>
-                    <div className="ps-row">
-                      <div className="ps-dot" style={{ background: '#F59E0B' }} />
-                      <div className="ps-row-text">
-                        <div className="ps-row-name">Daily Log</div>
-                        <div className="ps-row-sub">3 photos · submitted</div>
-                      </div>
-                      <span className="ps-badge ps-badge-amber">Done</span>
-                    </div>
-                  </div>
-                  <div className="ps-nav">
-                    <svg className="ps-nav-i act" viewBox="0 0 16 16"><path d="M2 6l6-4 6 4v8a1 1 0 01-1 1H3a1 1 0 01-1-1V6z" /></svg>
-                    <svg className="ps-nav-i" viewBox="0 0 16 16"><circle cx="8" cy="6" r="3" /><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" /></svg>
-                    <svg className="ps-nav-i" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1" /><rect x="9" y="9" width="5" height="5" rx="1" /><rect x="2" y="9" width="5" height="5" rx="1" /><rect x="9" y="2" width="5" height="5" rx="1" /></svg>
-                    <svg className="ps-nav-i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" /><path d="M8 5v3l2 2" /></svg>
-                  </div>
-                </div>
+              <div className="dev-slot-phone-a">
+                <PhoneFrame src="/marketing/phone-radio.png" alt="Saguaro Radio — push-to-talk on iPhone" width={210} />
               </div>
-
-              {/* LAPTOP */}
-              <div className="dev-laptop">
-                <div className="dev-laptop-body">
-                  <div className="dev-laptop-screen">
-                    <div className="ls-sidebar">
-                      <div className="ls-logo">SAGUARO</div>
-                      <div className="ls-item act"><div className="ls-dot" />Dashboard</div>
-                      <div className="ls-item"><div className="ls-dot" />Field Logs</div>
-                      <div className="ls-item"><div className="ls-dot" />Punch Lists</div>
-                      <div className="ls-item"><div className="ls-dot" />RFIs</div>
-                      <div className="ls-item"><div className="ls-dot" />Sage AI</div>
-                    </div>
-                    <div className="ls-main">
-                      <div className="ls-top"><span className="ls-title">Dashboard</span><span className="ls-badge">Live</span></div>
-                      <div className="ls-cards">
-                        <div className="ls-card lc1"><div className="ls-card-n">14</div><div className="ls-card-l">On Site</div></div>
-                        <div className="ls-card lc2"><div className="ls-card-n">100%</div><div className="ls-card-l">Logs In</div></div>
-                        <div className="ls-card lc3"><div className="ls-card-n">3</div><div className="ls-card-l">RFIs</div></div>
-                        <div className="ls-card lc4"><div className="ls-card-n">7</div><div className="ls-card-l">Punch</div></div>
-                      </div>
-                      <div className="ls-row"><div className="ls-td bold">Mesa Commerce</div><div className="ls-td" style={{ color:'#22c55e' }}>On Track</div></div>
-                      <div className="ls-row"><div className="ls-td bold">Chandler Ind.</div><div className="ls-td" style={{ color:'#F59E0B' }}>Log Due</div></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="dev-laptop-hinge" />
-                <div className="dev-laptop-base" />
+              <div className="dev-slot-laptop">
+                <LaptopFrame src="/marketing/laptop-dispatch.png" alt="Dispatch map in the Saguaro web app" width={430} height={270} />
               </div>
-
             </div>
           </div>
         </section>
@@ -1070,7 +793,7 @@ export default function GetTheAppPage() {
                   <div className="platform-name">Join the beta now</div>
                 </div>
                 <p className="feat-desc" style={{ marginBottom: 20 }}>Saguaro Control Systems is in open beta on TestFlight. Tap below on your iPhone or iPad to get in — it&apos;s free while we&apos;re in beta.</p>
-                <a href="https://testflight.apple.com/join/jg7jdtwx" target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-block' }}>Join the iOS Beta →</a>
+                <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-block' }}>Join the iOS Beta →</a>
                 <div className="platform-note" style={{ marginTop: 16 }}>Public TestFlight link · No charge</div>
               </div>
 
@@ -1109,7 +832,7 @@ export default function GetTheAppPage() {
         <section className="final-cta">
           <div className="final-cta-inner">
             <h2 className="final-h2">30 Seconds Away From a Better Job Site</h2>
-            <a href="https://testflight.apple.com/join/jg7jdtwx" target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-block' }}>
+            <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-block' }}>
               Join the iOS Beta →
             </a>
             <div className="final-sub">
@@ -1132,6 +855,7 @@ export default function GetTheAppPage() {
               <span className="footer-copy">© {new Date().getFullYear()} Saguaro Control Systems. All rights reserved.</span>
             </div>
             <div className="footer-links">
+              <Link href="/product" className="footer-link">Product</Link>
               <Link href="/pricing" className="footer-link">Pricing</Link>
               <Link href="/get-the-app" className="footer-link">Field App</Link>
               <Link href="/compare/procore" className="footer-link">vs Procore</Link>
