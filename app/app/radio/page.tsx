@@ -92,6 +92,11 @@ import {
   MagnifyingGlass,
   PencilSimple,
   CaretUp,
+  DotsThree,
+  Megaphone,
+  Lock,
+  LockOpen,
+  UserPlus,
 } from '@phosphor-icons/react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 
@@ -118,8 +123,10 @@ const NEST = 'rgba(20,20,22,0.55)';
 interface RadioChannel {
   id: string;
   project_id: string | null;
+  /** Project display name — rides the list GET when the server provides it. */
+  project_name?: string | null;
   name: string;
-  kind: 'project' | 'custom';
+  kind: 'project' | 'custom' | 'direct';
   allow_subs: boolean;
   members: number;
   monitoring: boolean;
@@ -182,13 +189,38 @@ interface AssistRow {
 }
 /** Channel roster row (GET /api/radio/channels?roster=). */
 interface RosterMember {
+  /** radio_members row id — present once the server exposes it; remove needs it. */
+  id?: string | null;
   user_id: string | null;
+  portal_sub_id?: string | null;
   display_name: string | null;
   call_sign: string | null;
   presence_status: 'available' | 'busy' | 'on_route' | 'off' | null;
   role: string | null;
   last_seen_at: string | null;
 }
+/** Directory person (GET /api/radio/channels?directory=1 → {staff, subs}).
+ * Field names tolerated in both camelCase and snake_case so the console
+ * survives server drift; ids resolve through the helpers below. */
+interface DirectoryPerson {
+  userId?: string | null;
+  user_id?: string | null;
+  portalSubId?: string | null;
+  portal_sub_id?: string | null;
+  name?: string | null;
+  display_name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  company?: string | null;
+}
+const personUserId = (p: DirectoryPerson) => p.userId || p.user_id || null;
+const personSubId = (p: DirectoryPerson) => p.portalSubId || p.portal_sub_id || null;
+const personKey = (p: DirectoryPerson) => {
+  const u = personUserId(p), s = personSubId(p);
+  return u ? `u:${u}` : s ? `s:${s}` : `x:${p.email || p.name || p.display_name || 'unknown'}`;
+};
+const personName = (p: DirectoryPerson) =>
+  String(p.name || p.display_name || p.email || 'Team member').trim() || 'Team member';
 /** Live channel patch (rides the channels GET as `patches`). */
 interface ActivePatch {
   id: string;
@@ -399,6 +431,62 @@ const rowActionStyle: React.CSSProperties = {
   color: MUTED, fontSize: 10.5, fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
 };
 
+/* ── Machined toolbar kit — the ONE secondary-control geometry (32px). No
+ * mismatched pills: buttons stand alone or fuse into segmented groups with
+ * hairline dividers, tertiary actions live behind the overflow menu, and
+ * primary actions keep the gold pmBtn tier. */
+const TOOL_H = 32;
+const toolBtnStyle = (on: boolean, enabled: boolean): React.CSSProperties => ({
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+  height: TOOL_H, padding: '0 12px', borderRadius: 9, boxSizing: 'border-box',
+  background: on ? 'linear-gradient(180deg, rgba(245,158,11,0.28), rgba(245,158,11,0.12))' : FIELD_BG,
+  border: on ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
+  color: on ? GOLD_HI : MUTED, fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap',
+  cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.45,
+});
+const toolGroupStyle: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'stretch', height: TOOL_H, borderRadius: 9,
+  border: FIELD_BORDER, background: FIELD_BG, overflow: 'hidden',
+};
+const toolSegStyle = (on: boolean, enabled: boolean, divider: boolean): React.CSSProperties => ({
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+  height: '100%', padding: '0 12px', border: 'none', borderRadius: 0,
+  borderLeft: divider ? `1px solid ${BORDER}` : 'none',
+  background: on ? 'linear-gradient(180deg, rgba(245,158,11,0.28), rgba(245,158,11,0.12))' : 'transparent',
+  color: on ? GOLD_HI : MUTED, fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap',
+  cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.45,
+});
+/* Kit popover / menu / modal shells — one look everywhere. */
+const popoverStyle = (width: number): React.CSSProperties => ({
+  position: 'absolute', right: 0, top: 'calc(100% + 10px)', width, zIndex: 50,
+  background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
+  borderRadius: 14, boxShadow: '0 22px 48px rgba(12,12,16,0.65)',
+  padding: 14, textAlign: 'left',
+});
+const menuItemStyle = (enabled: boolean): React.CSSProperties => ({
+  display: 'flex', alignItems: 'center', gap: 9, width: '100%', boxSizing: 'border-box',
+  height: 34, padding: '0 10px', borderRadius: 9, background: 'transparent', border: 'none',
+  color: enabled ? WHITE : FAINT, fontSize: 12.5, fontWeight: 700, textAlign: 'left',
+  cursor: enabled ? 'pointer' : 'default', whiteSpace: 'nowrap',
+});
+const modalShellStyle: React.CSSProperties = {
+  position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(12,12,16,0.72)',
+  display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+  padding: '8vh 16px 16px', overflowY: 'auto',
+};
+const modalCardStyle = (width: number): React.CSSProperties => ({
+  width: `min(${width}px, 100%)`, borderRadius: 16, background: 'rgba(24,24,27,0.98)',
+  border: `1px solid ${AMBER_BORDER}`, boxShadow: '0 22px 48px rgba(12,12,16,0.65)', padding: 16,
+});
+const fieldStyle: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box', padding: '9px 12px',
+  background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10,
+  color: WHITE, fontSize: 12.5, outline: 'none',
+};
+const eyebrowStyle: React.CSSProperties = {
+  fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', color: FAINT,
+};
+
 /* Tone signaling — labels, colors, and distinct WebAudio beep frequencies. */
 const TONES: Record<string, { label: string; color: string; border: string; soft: string; freq: number; hold: number }> = {
   ack: { label: 'ACK', color: GREEN, border: GREEN_BORDER, soft: GREEN_SOFT, freq: 880, hold: 0.22 },
@@ -484,11 +572,24 @@ export default function RadioDispatchPage() {
     });
   };
 
-  /* ── New Channel inline form ────────────────────────────────────────── */
+  /* ── Create group — a real flow: modal w/ name + project + member picker.
+   * Create POSTs first, then adds each picked member sequentially; every
+   * failure surfaces by name in an honest toast. */
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newAllowSubs, setNewAllowSubs] = useState(false);
+  const [newProject, setNewProject] = useState('');
+  const [newQuery, setNewQuery] = useState('');
+  const [newSel, setNewSel] = useState<DirectoryPerson[]>([]);
   const [creating, setCreating] = useState(false);
+  useEffect(() => {
+    if (showNew) { setNewProject(projectId || ''); setNewQuery(''); setNewSel([]); }
+  }, [showNew, projectId]);
+  const toggleNewPerson = (p: DirectoryPerson) => {
+    setNewSel((prev) => prev.some((x) => personKey(x) === personKey(p))
+      ? prev.filter((x) => personKey(x) !== personKey(p))
+      : [...prev, p]);
+  };
   const createChannel = async () => {
     const name = newName.trim();
     if (!name || creating) return;
@@ -497,15 +598,38 @@ export default function RadioDispatchPage() {
       const r = await fetch('/api/radio/channels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, projectId: projectId || undefined, allowSubs: newAllowSubs }),
+        body: JSON.stringify({ name, projectId: newProject || undefined, allowSubs: newAllowSubs }),
       });
-      if (r.ok) {
-        const j = await r.json();
+      const j = r.ok ? await r.json().catch(() => null) : null;
+      const chId: string | null = j?.channel?.id ?? null;
+      if (!r.ok || !chId) {
+        pushToast(`Could not create "${name}" (${r.status})`, 'err');
+      } else {
+        /* Sequential member adds — each failure is reported by name. */
+        let added = 0;
+        const failed: string[] = [];
+        for (const p of newSel) {
+          const uid = personUserId(p), sid = personSubId(p);
+          const payload = uid
+            ? { channelId: chId, addUserId: uid }
+            : sid ? { channelId: chId, addPortalSubId: sid, displayName: personName(p) } : null;
+          if (!payload) { failed.push(personName(p)); continue; }
+          try {
+            const ar = await fetch('/api/radio/channels', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (ar.ok) added += 1; else failed.push(personName(p));
+          } catch { failed.push(personName(p)); }
+        }
         setNewName(''); setNewAllowSubs(false); setShowNew(false);
+        pushToast(`"${name}" is on the air${added ? ` — ${added} member${added === 1 ? '' : 's'} added` : ''}`, 'ok');
+        if (failed.length) pushToast(`Could not add ${failed.join(', ')} — retry from the roster`, 'err');
         await mutateChannels();
-        if (j?.channel?.id) setActiveId(j.channel.id);
+        setActiveId(chId);
       }
-    } catch { /* surfaced by the rail staying unchanged */ }
+    } catch { pushToast('Could not create the channel — check your connection', 'err'); }
     setCreating(false);
   };
 
@@ -1369,6 +1493,316 @@ export default function RadioDispatchPage() {
     setRevokingId(null);
   };
 
+  /* ── Toasts — honest, transient result reporting (kit-styled, no library) */
+  const [toasts, setToasts] = useState<{ id: number; text: string; tone: 'ok' | 'err' }[]>([]);
+  const toastSeqRef = useRef(1);
+  const pushToast = useCallback((text: string, tone: 'ok' | 'err') => {
+    const id = toastSeqRef.current++;
+    setToasts((prev) => [...prev.slice(-3), { id, text, tone }]);
+    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 5200);
+  }, []);
+
+  /* ── Toolbar panels — one open at a time so the header reads as one kit ─ */
+  const [patchOpen, setPatchOpen] = useState(false);
+  const [bcOpen, setBcOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const patchBcRef = useRef<HTMLDivElement | null>(null);
+  const openPanel = useCallback((which: 'share' | 'roster' | 'patch' | 'broadcast' | 'menu' | null) => {
+    setShareOpen(which === 'share');
+    if (which !== 'share') { setCreatedUrl(null); setShareError(null); }
+    setRosterOpen(which === 'roster');
+    setPatchOpen(which === 'patch');
+    setBcOpen(which === 'broadcast');
+    setMenuOpen(which === 'menu');
+  }, []);
+  useEffect(() => {
+    if (!patchOpen && !bcOpen && !menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (patchBcRef.current?.contains(e.target as Node)) return;
+      if (shareRef.current?.contains(e.target as Node)) return; // overflow menu shares this wrapper
+      setPatchOpen(false); setBcOpen(false); setMenuOpen(false);
+    };
+    window.addEventListener('pointerdown', onDown);
+    return () => window.removeEventListener('pointerdown', onDown);
+  }, [patchOpen, bcOpen, menuOpen]);
+
+  /* ── Broadcast — one message onto up to 8 channels at once ───────────── */
+  const [bcSel, setBcSel] = useState<Set<string>>(new Set());
+  const [bcText, setBcText] = useState('');
+  const [bcAlert, setBcAlert] = useState(false);
+  const [bcBusy, setBcBusy] = useState(false);
+  const [bcSent, setBcSent] = useState<string[] | null>(null);
+  const toggleBcChannel = (id: string) => {
+    setBcSent(null);
+    setBcSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < 8) next.add(id);
+      return next;
+    });
+  };
+  const sendBroadcast = async () => {
+    const ids = [...bcSel];
+    const text = bcText.trim();
+    if (ids.length < 2 || !text || bcBusy) return;
+    setBcBusy(true);
+    setBcSent(null);
+    try {
+      const r = await fetch('/api/radio/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelIds: ids, kind: bcAlert ? 'alert' : 'text', body: text }),
+      });
+      const j = await r.json().catch(() => null);
+      if (r.ok) {
+        const sentIds: string[] = Array.isArray(j?.messages)
+          ? j.messages.map((m: { channel_id?: string }) => String(m?.channel_id || '')).filter(Boolean)
+          : [];
+        const landed = sentIds.length ? sentIds : ids;
+        setBcSent(landed.map((id) => channelName(id)));
+        setBcText(''); setBcSel(new Set());
+        const skipped = ids.filter((id) => sentIds.length && !sentIds.includes(id));
+        if (skipped.length) pushToast(`Skipped ${skipped.map((id) => channelName(id)).join(', ')} — you are not a member`, 'err');
+        await mutateMessages();
+        void mutateChannels();
+      } else {
+        pushToast(`Broadcast failed (${r.status})`, 'err');
+      }
+    } catch { pushToast('Broadcast failed — check your connection', 'err'); }
+    setBcBusy(false);
+  };
+
+  /* ── Directory (GET ?directory=1 → {staff, subs}) — fetched only while a
+   * picker is on screen; tolerates a server without the branch. ─────────── */
+  const [directOpen, setDirectOpen] = useState(false);
+  const [directQuery, setDirectQuery] = useState('');
+  const [directBusy, setDirectBusy] = useState<string | null>(null);
+  const [rosterAddOpen, setRosterAddOpen] = useState(false);
+  const [rosterAddQuery, setRosterAddQuery] = useState('');
+  const [removeArm, setRemoveArm] = useState<string | null>(null);
+  const [memberBusy, setMemberBusy] = useState<string | null>(null);
+  const dirKey = showNew || directOpen || rosterAddOpen ? '/api/radio/channels?directory=1' : null;
+  const { data: dirData, error: dirError } = useSWR<{ staff?: DirectoryPerson[]; subs?: DirectoryPerson[] }>(
+    dirKey, fetcher, { revalidateOnFocus: false },
+  );
+  const dirReady = !!dirData && (Array.isArray(dirData.staff) || Array.isArray(dirData.subs));
+  const dirStaff: DirectoryPerson[] = (dirReady && dirData?.staff) || [];
+  const dirSubs: DirectoryPerson[] = (dirReady && dirData?.subs) || [];
+
+  /* Panels tied to the active channel reset when the dispatcher retunes. */
+  useEffect(() => {
+    setPatchOpen(false); setBcOpen(false); setMenuOpen(false);
+    setBcSent(null); setRosterAddOpen(false); setRosterAddQuery(''); setRemoveArm(null);
+  }, [activeId]);
+
+  /* ── Direct 1:1 — person picker → POST {directToUserId} → tune in ────── */
+  const startDirect = async (p: DirectoryPerson) => {
+    const uid = personUserId(p);
+    if (!uid || directBusy) return;
+    setDirectBusy(personKey(p));
+    try {
+      const r = await fetch('/api/radio/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ directToUserId: uid, directToName: personName(p) }),
+      });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.channel?.id) {
+        setDirectOpen(false);
+        await mutateChannels();
+        setActiveId(String(j.channel.id));
+        pushToast(`Direct channel with ${personName(p)} is open`, 'ok');
+      } else {
+        pushToast(`Could not open a direct channel (${r.status})`, 'err');
+      }
+    } catch { pushToast('Could not open a direct channel — check your connection', 'err'); }
+    setDirectBusy(null);
+  };
+
+  /* ── Roster member management (server add/remove branches) ───────────── */
+  const rosterUserIds = useMemo(
+    () => new Set(rosterMembers.map((m) => m.user_id).filter((x): x is string => !!x)),
+    [rosterMembers],
+  );
+  const rosterSubIds = useMemo(
+    () => new Set(rosterMembers.map((m) => m.portal_sub_id).filter((x): x is string => !!x)),
+    [rosterMembers],
+  );
+  const addMember = async (p: DirectoryPerson) => {
+    if (!activeId || memberBusy) return;
+    const uid = personUserId(p), sid = personSubId(p);
+    const payload = uid
+      ? { channelId: activeId, addUserId: uid }
+      : sid ? { channelId: activeId, addPortalSubId: sid, displayName: personName(p) } : null;
+    if (!payload) return;
+    setMemberBusy(personKey(p));
+    try {
+      const r = await fetch('/api/radio/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (r.ok) {
+        pushToast(`${personName(p)} added to ${active?.name || 'the channel'}`, 'ok');
+        await mutateRoster();
+        void mutateChannels();
+      } else {
+        pushToast(`Could not add ${personName(p)} (${r.status})`, 'err');
+      }
+    } catch { pushToast(`Could not add ${personName(p)} — check your connection`, 'err'); }
+    setMemberBusy(null);
+  };
+  const removeMember = async (mem: RosterMember) => {
+    if (!mem.id || memberBusy) return;
+    setMemberBusy(String(mem.id));
+    try {
+      const r = await fetch('/api/radio/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ removeMemberId: mem.id }),
+      });
+      if (r.ok) {
+        pushToast(`${senderShort(mem.display_name)} removed from ${active?.name || 'the channel'}`, 'ok');
+        await mutateRoster();
+        void mutateChannels();
+      } else {
+        const je = await r.json().catch(() => null);
+        pushToast((je && typeof je.error === 'string' && je.error) || `Could not remove ${senderShort(mem.display_name)} (${r.status})`, 'err');
+      }
+    } catch { pushToast('Could not remove the member — check your connection', 'err'); }
+    setMemberBusy(null);
+    setRemoveArm(null);
+  };
+
+  /* ── Lock / unlock — dispatcher-invite-only groups (confirm-gated) ───── */
+  const [lockConfirm, setLockConfirm] = useState<RadioChannel | null>(null);
+  const [lockBusy, setLockBusy] = useState(false);
+  const applyLock = async () => {
+    const c = lockConfirm;
+    if (!c || lockBusy) return;
+    setLockBusy(true);
+    try {
+      const r = await fetch('/api/radio/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lockChannelId: c.id, locked: !c.locked }),
+      });
+      if (r.ok) {
+        pushToast(!c.locked ? `${c.name} locked — dispatcher invite only` : `${c.name} unlocked — open to the team`, 'ok');
+        await mutateChannels();
+        setLockConfirm(null);
+      } else {
+        pushToast(`Could not ${c.locked ? 'unlock' : 'lock'} ${c.name} (${r.status})`, 'err');
+      }
+    } catch { pushToast('Lock change failed — check your connection', 'err'); }
+    setLockBusy(false);
+  };
+
+  /* ── Rail grouping — projects first, then Organization, Direct last ──── */
+  const railGroups = useMemo(() => {
+    const order: string[] = [];
+    const map = new Map<string, { key: string; label: string; rows: RadioChannel[] }>();
+    for (const c of channels) {
+      const key = c.kind === 'direct' ? '~direct' : c.project_id ? `p:${c.project_id}` : '~org';
+      const label = c.kind === 'direct' ? 'Direct' : c.project_id ? (c.project_name || 'Project') : 'Organization';
+      if (!map.has(key)) { map.set(key, { key, label, rows: [] }); order.push(key); }
+      map.get(key)!.rows.push(c);
+    }
+    const rank = (k: string) => (k === '~direct' ? 2 : k === '~org' ? 1 : 0);
+    return order
+      .map((k, i) => ({ k, i }))
+      .sort((a, b) => rank(a.k) - rank(b.k) || a.i - b.i)
+      .map(({ k }) => map.get(k)!);
+  }, [channels]);
+  const projectOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const c of channels) if (c.project_id && !seen.has(c.project_id)) seen.set(c.project_id, c.project_name || 'Project');
+    if (projectId && !seen.has(projectId)) seen.set(projectId, 'This project');
+    return [...seen.entries()].map(([id, name]) => ({ id, name }));
+  }, [channels, projectId]);
+
+  /* ── Directory list — the one member-picker renderer (check or pick) ─── */
+  const renderDirectory = (opts: {
+    query: string;
+    mode: 'check' | 'pick';
+    staffOnly?: boolean;
+    excludeUsers?: Set<string>;
+    excludeSubs?: Set<string>;
+    selectedKeys?: Set<string>;
+    busyKey?: string | null;
+    pickIcon?: React.ReactNode;
+    onRow: (p: DirectoryPerson) => void;
+  }) => {
+    if (dirKey && !dirData && !dirError) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={34} borderRadius={9} />)}
+        </div>
+      );
+    }
+    if (dirError) return <div style={{ fontSize: 11.5, color: RED }}>Could not load the directory — close and reopen to retry.</div>;
+    if (dirData && !dirReady) return <div style={{ fontSize: 11.5, color: FAINT }}>Directory unavailable — this server does not expose it yet.</div>;
+    const q = opts.query.trim().toLowerCase();
+    const hit = (p: DirectoryPerson) =>
+      !q || personName(p).toLowerCase().includes(q) || String(p.role || '').toLowerCase().includes(q) || String(p.company || '').toLowerCase().includes(q);
+    const staff = dirStaff.filter((p) => { const u = personUserId(p); return u && !opts.excludeUsers?.has(u) && hit(p); });
+    const subs = opts.staffOnly ? [] : dirSubs.filter((p) => { const s = personSubId(p); return s && !opts.excludeSubs?.has(s) && hit(p); });
+    if (!staff.length && !subs.length) {
+      return <div style={{ fontSize: 11.5, color: FAINT }}>{q ? 'No one matches that search.' : 'Nobody available to add.'}</div>;
+    }
+    const row = (p: DirectoryPerson, sub: boolean) => {
+      const key = personKey(p);
+      const on = !!opts.selectedKeys?.has(key);
+      const busy = opts.busyKey === key;
+      return (
+        <button
+          key={key}
+          onClick={() => opts.onRow(p)}
+          disabled={busy}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, width: '100%', boxSizing: 'border-box',
+            padding: '6px 8px', borderRadius: 9, marginBottom: 2, textAlign: 'left', cursor: 'pointer',
+            background: on ? AMBER_SOFT : 'transparent',
+            border: on ? `1px solid ${AMBER_BORDER}` : '1px solid transparent',
+            color: WHITE, opacity: busy ? 0.55 : 1,
+          }}
+        >
+          {opts.mode === 'check' ? (
+            <span
+              aria-hidden
+              style={{
+                flexShrink: 0, width: 15, height: 15, borderRadius: 5,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: on ? `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})` : FIELD_BG,
+                border: on ? 'none' : FIELD_BORDER, color: '#241500',
+              }}
+            >
+              {on && <Check size={10} weight="bold" />}
+            </span>
+          ) : (
+            <span aria-hidden style={{ flexShrink: 0, display: 'inline-flex', color: GOLD_HI }}>
+              {opts.pickIcon || <UserPlus size={13} weight="bold" />}
+            </span>
+          )}
+          <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {busy ? 'Working…' : personName(p)}
+          </span>
+          <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 800, letterSpacing: '0.06em', color: FAINT, whiteSpace: 'nowrap' }}>
+            {sub ? 'SUB' : String(p.role || 'STAFF').toUpperCase().slice(0, 14)}
+          </span>
+        </button>
+      );
+    };
+    return (
+      <>
+        {staff.length > 0 && <div style={{ ...eyebrowStyle, margin: '2px 0 4px' }}>STAFF</div>}
+        {staff.map((p) => row(p, false))}
+        {subs.length > 0 && <div style={{ ...eyebrowStyle, margin: '6px 0 4px' }}>SUBCONTRACTORS</div>}
+        {subs.map((p) => row(p, true))}
+      </>
+    );
+  };
+
   /* ── PANIC (hold-to-confirm, best-effort geolocation) ───────────────── */
   const PANIC_HOLD_MS = 1500;
   const [panicHold, setPanicHold] = useState(0); // 0..1
@@ -1767,13 +2201,14 @@ export default function RadioDispatchPage() {
             color: isActive ? GOLD_HI : MUTED,
           }}
         >
-          <Hash size={14} weight="bold" />
+          {c.kind === 'direct' ? <ChatCircleText size={14} weight="bold" /> : <Hash size={14} weight="bold" />}
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 800, color: isActive ? GOLD_HI : WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {c.name}
             </span>
+            {c.locked && <Lock size={11} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
             {c.priority && <Star size={11} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
             {lm?.kind === 'panic' && <Siren size={12} weight="fill" color={RED} style={{ flexShrink: 0 }} />}
           </div>
@@ -1800,6 +2235,22 @@ export default function RadioDispatchPage() {
           >
             {unread > 99 ? '99+' : unread}
           </span>
+        )}
+        {c.kind !== 'direct' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setLockConfirm(c); }}
+            title={c.locked ? 'Locked — dispatcher invite only. Click to unlock.' : 'Lock this channel — invite only, invisible to non-members'}
+            aria-label={c.locked ? `Unlock ${c.name}` : `Lock ${c.name}`}
+            style={{
+              flexShrink: 0, width: 26, height: 26, borderRadius: 8, padding: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: c.locked ? 'rgba(245,158,11,0.14)' : 'transparent',
+              border: c.locked ? '1px solid rgba(245,158,11,0.40)' : '1px solid transparent',
+              color: c.locked ? GOLD_HI : FAINT, cursor: 'pointer',
+            }}
+          >
+            {c.locked ? <Lock size={13} weight="fill" /> : <LockOpen size={13} weight="bold" />}
+          </button>
         )}
         <button
           onClick={(e) => { e.stopPropagation(); togglePriority(c); }}
@@ -2115,53 +2566,26 @@ export default function RadioDispatchPage() {
           title="Channels"
           icon={<Broadcast size={16} weight="bold" color="#F8FAFC" />}
           action={
-            <button
-              onClick={() => setShowNew((v) => !v)}
-              style={{ ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12 }}
-            >
-              <Plus size={13} weight="bold" /> New
-            </button>
+            <div style={{ display: 'inline-flex', gap: 8 }}>
+              <button
+                onClick={() => setDirectOpen(true)}
+                title="Message someone — a private 1:1 channel"
+                style={toolBtnStyle(directOpen, true)}
+              >
+                <ChatCircleText size={13} weight="bold" /> Direct
+              </button>
+              <button
+                onClick={() => setShowNew(true)}
+                title="Create a talkgroup — name, project, and members"
+                style={toolBtnStyle(showNew, true)}
+              >
+                <Plus size={13} weight="bold" /> New group
+              </button>
+            </div>
           }
           flush
         >
           <div style={{ padding: 10 }}>
-            {showNew && (
-              <div style={{ padding: 10, marginBottom: 8, borderRadius: 12, background: NEST, border: `1px solid ${BORDER}` }}>
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') createChannel(); }}
-                  placeholder="Channel name (e.g. Concrete crew)"
-                  autoFocus
-                  style={{
-                    width: '100%', boxSizing: 'border-box', padding: '9px 12px',
-                    background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10,
-                    color: WHITE, fontSize: 13, outline: 'none', marginBottom: 8,
-                  }}
-                />
-                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: MUTED, cursor: 'pointer', marginBottom: 10 }}>
-                  <input type="checkbox" checked={newAllowSubs} onChange={(e) => setNewAllowSubs(e.target.checked)} style={{ accentColor: GOLD }} />
-                  Subs can join this channel
-                </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={createChannel}
-                    disabled={!newName.trim() || creating}
-                    className="pmBtn"
-                    style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 12.5, opacity: !newName.trim() || creating ? 0.6 : 1 }}
-                  >
-                    {creating ? 'Creating…' : 'Create channel'}
-                  </button>
-                  <button
-                    onClick={() => setShowNew(false)}
-                    style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
             {firstLoad && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 4 }}>
                 {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={44} borderRadius={12} />)}
@@ -2173,122 +2597,88 @@ export default function RadioDispatchPage() {
             {!firstLoad && !chError && channels.length === 0 && (
               <PremiumEmpty compact icon={<Broadcast size={26} color={GOLD_HI} weight="fill" />} title="No channels yet" description={projectId ? 'Open a project to auto-create its All Hands talkgroup, or start a custom channel.' : 'Start a custom channel, or open Radio from a project to spin up its All Hands talkgroup.'} />
             )}
-            {channels.map(railRow)}
+            {railGroups.map((grp) => (
+              <div key={grp.key} style={{ marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px 4px', minWidth: 0 }}>
+                  <span style={{ ...eyebrowStyle, letterSpacing: '0.14em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                    {grp.label}
+                  </span>
+                  <span aria-hidden style={{ flex: 1, height: 1, background: BORDER }} />
+                  <span style={{ fontSize: 9.5, fontWeight: 800, color: FAINT, fontVariantNumeric: 'tabular-nums' }}>{grp.rows.length}</span>
+                </div>
+                <div style={{ paddingLeft: 6 }}>{grp.rows.map(railRow)}</div>
+              </div>
+            ))}
           </div>
         </SectionCard>
 
-        {/* ── Patch board — bridge two talkgroups until released ───────── */}
-        <SectionCard
-          title="Patch board"
-          icon={<PlugsConnected size={16} weight="bold" color="#F8FAFC" />}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <select
-              value={patchA}
-              onChange={(e) => setPatchA(e.target.value)}
-              aria-label="First channel to patch"
-              style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10, color: patchA ? WHITE : FAINT, fontSize: 12.5, outline: 'none' }}
-            >
-              <option value="">First channel…</option>
-              {channels.filter((c) => c.id !== patchB).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <select
-              value={patchB}
-              onChange={(e) => setPatchB(e.target.value)}
-              aria-label="Second channel to patch"
-              style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10, color: patchB ? WHITE : FAINT, fontSize: 12.5, outline: 'none' }}
-            >
-              <option value="">Second channel…</option>
-              {channels.filter((c) => c.id !== patchA).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => postPatch(patchA, patchB, false)}
-              disabled={!patchA || !patchB || patchBusy}
-              className="pmBtn"
-              style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 12.5, opacity: !patchA || !patchB || patchBusy ? 0.55 : 1 }}
-            >
-              <PlugsConnected size={13} weight="bold" /> {patchBusy ? 'Working…' : 'Patch channels'}
-            </button>
-            {patches.length > 0 ? (
-              <div style={{ marginTop: 4 }}>
-                <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', color: FAINT, marginBottom: 6 }}>ACTIVE PATCHES</div>
-                {patches.map((p) => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', borderRadius: 10, background: NEST, border: `1px solid ${AMBER_BORDER}`, marginBottom: 6 }}>
-                    <PlugsConnected size={13} weight="bold" color={GOLD_HI} style={{ flexShrink: 0 }} />
-                    <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {channelName(p.channel_a)} + {channelName(p.channel_b)}
-                    </span>
-                    <button
-                      onClick={() => postPatch(p.channel_a, p.channel_b, true)}
-                      disabled={patchBusy}
-                      title="Release this patch — the channels stop mirroring"
-                      style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: patchBusy ? 0.6 : 1 }}
-                    >
-                      Release
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: 11, color: FAINT }}>
-                Patch two talkgroups and their traffic mirrors both ways until released.
-              </div>
-            )}
-          </div>
-        </SectionCard>
         </div>
 
         {/* ── Feed ─────────────────────────────────────────────────────── */}
         <SectionCard
           title={active ? active.name : 'Channel'}
-          subtitle={active ? `${active.members} member${active.members === 1 ? '' : 's'}${activeOn ? ` · ${activeOn} on channel now` : ''}${active.priority ? ' · PRIORITY' : ''}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : ''}` : undefined}
+          subtitle={active ? `${active.project_name ? `${active.project_name} · ` : ''}${active.members} member${active.members === 1 ? '' : 's'}${activeOn ? ` · ${activeOn} on channel now` : ''}${active.locked ? ' · LOCKED' : ''}${active.priority ? ' · PRIORITY' : ''}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : active.kind === 'direct' ? ' · direct channel' : ''}` : undefined}
           icon={<Hash size={16} weight="bold" color="#F8FAFC" />}
           action={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {rtLive && (
                 <span
                   title="Live — transmissions arrive instantly over the realtime socket"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, order: 0 }}
                 >
                   <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: GREEN, boxShadow: '0 0 8px rgba(69,179,125,0.8)' }} />
                   LIVE
                 </span>
               )}
-              {catchingUp ? (
-                <button onClick={stopPlayback} style={{ ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12 }}>
-                  <Pause size={12} weight="fill" /> Stop
-                </button>
-              ) : (
-                <button
-                  onClick={startCatchUp}
-                  disabled={unheardVoice.length === 0}
-                  title="Play every unheard voice clip in order, oldest first"
-                  style={{
-                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
-                    opacity: unheardVoice.length ? 1 : 0.45,
-                    cursor: unheardVoice.length ? 'pointer' : 'default',
-                  }}
-                >
-                  <FastForward size={12} weight="fill" /> Catch me up{unheardVoice.length ? ` (${unheardVoice.length})` : ''}
+              {catchingUp && (
+                <button onClick={stopPlayback} title="Stop the catch-up playback" style={{ ...toolBtnStyle(true, true), order: 1 }}>
+                  <Pause size={13} weight="fill" /> Stop catch-up
                 </button>
               )}
-              {/* Share channel — guest links popover */}
-              <div ref={shareRef} style={{ position: 'relative' }}>
+              {/* Overflow — tertiary actions behind one machined control */}
+              <div ref={shareRef} style={{ position: 'relative', display: 'inline-flex', order: 4 }}>
                 <button
-                  onClick={() => { if (shareOpen) closeShare(); else setShareOpen(true); }}
+                  onClick={() => openPanel(menuOpen || shareOpen ? null : 'menu')}
                   disabled={!active}
-                  title="Share this channel with a guest — listen or talk, no account needed"
-                  style={{
-                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
-                    opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
-                  }}
+                  title="More — share channel, recording log, catch me up"
+                  aria-label="More channel actions"
+                  aria-expanded={menuOpen}
+                  style={{ ...toolBtnStyle(menuOpen || shareOpen, !!active), padding: '0 9px' }}
                 >
-                  <ShareNetwork size={12} weight="bold" /> Share channel
+                  <DotsThree size={17} weight="bold" />
+                  {unheardVoice.length > 0 && (
+                    <span
+                      title={`${unheardVoice.length} unheard voice clip${unheardVoice.length === 1 ? '' : 's'}`}
+                      style={{
+                        minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})`, color: '#241500',
+                        fontSize: 9.5, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {unheardVoice.length}
+                    </span>
+                  )}
                 </button>
+                {menuOpen && active && (
+                  <div style={{ ...popoverStyle(236), padding: 8 }}>
+                    <button onClick={() => openPanel('share')} style={menuItemStyle(true)}>
+                      <ShareNetwork size={14} weight="bold" color={GOLD_HI} /> Share channel
+                    </button>
+                    <button onClick={() => { openPanel(null); setLogOpen(true); }} style={menuItemStyle(true)}>
+                      <ClockCounterClockwise size={14} weight="bold" color={GOLD_HI} /> Recording log
+                    </button>
+                    <button
+                      onClick={() => { if (unheardVoice.length) { openPanel(null); startCatchUp(); } }}
+                      disabled={unheardVoice.length === 0}
+                      title="Play every unheard voice clip in order, oldest first"
+                      style={menuItemStyle(unheardVoice.length > 0)}
+                    >
+                      <FastForward size={14} weight="fill" color={unheardVoice.length ? GOLD_HI : FAINT} />
+                      Catch me up{unheardVoice.length ? ` (${unheardVoice.length})` : ''}
+                    </button>
+                  </div>
+                )}
                 {shareOpen && active && (
                   <div
                     style={{
@@ -2411,30 +2801,27 @@ export default function RadioDispatchPage() {
                   </div>
                 )}
               </div>
-              {/* Roster — members w/ presence dots + call signs; own row edits */}
-              <div ref={rosterRef} style={{ position: 'relative', display: 'inline-flex', gap: 8 }}>
-                <button
-                  onClick={() => { pendingSelfEditRef.current = true; setRosterOpen(true); }}
-                  disabled={!active}
-                  title="Set your handle (call sign)"
-                  style={{
-                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
-                    opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
-                  }}
-                >
-                  <PencilSimple size={12} weight="bold" /> {myRosterRow?.call_sign ? `Handle: ${myRosterRow.call_sign}` : 'Set handle'}
-                </button>
-                <button
-                  onClick={() => setRosterOpen((v) => !v)}
-                  disabled={!active}
-                  title="Channel roster — presence, call signs, and your own status"
-                  style={{
-                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
-                    opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
-                  }}
-                >
-                  <UsersThree size={12} weight="bold" /> Roster
-                </button>
+              {/* People group — [Roster · Set handle] fused segments */}
+              <div ref={rosterRef} style={{ position: 'relative', display: 'inline-flex', order: 2 }}>
+                <div style={toolGroupStyle}>
+                  <button
+                    onClick={() => { pendingSelfEditRef.current = false; openPanel(rosterOpen ? null : 'roster'); }}
+                    disabled={!active}
+                    title="Channel roster — presence, call signs, add and remove members"
+                    aria-expanded={rosterOpen}
+                    style={toolSegStyle(rosterOpen, !!active, false)}
+                  >
+                    <UsersThree size={13} weight="bold" /> Roster
+                  </button>
+                  <button
+                    onClick={() => { pendingSelfEditRef.current = true; openPanel('roster'); }}
+                    disabled={!active}
+                    title="Set your handle (call sign)"
+                    style={toolSegStyle(false, !!active, true)}
+                  >
+                    <PencilSimple size={13} weight="bold" /> {myRosterRow?.call_sign ? `Handle: ${myRosterRow.call_sign}` : 'Set handle'}
+                  </button>
+                </div>
                 {rosterOpen && active && (
                   <div
                     style={{
@@ -2451,6 +2838,42 @@ export default function RadioDispatchPage() {
                       <button onClick={() => setRosterOpen(false)} aria-label="Close the roster" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
                         <X size={14} weight="bold" />
                       </button>
+                    </div>
+                    {/* Add member — mini directory picker (staff + subs) */}
+                    <div style={{ marginBottom: 10 }}>
+                      {!rosterAddOpen ? (
+                        <button
+                          onClick={() => { setRosterAddOpen(true); setRosterAddQuery(''); }}
+                          style={{ ...toolBtnStyle(false, true), width: '100%' }}
+                        >
+                          <UserPlus size={13} weight="bold" /> Add member
+                        </button>
+                      ) : (
+                        <div style={{ padding: 8, borderRadius: 10, background: NEST, border: `1px solid ${BORDER}` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                            <input
+                              value={rosterAddQuery}
+                              onChange={(e) => setRosterAddQuery(e.target.value)}
+                              placeholder="Search staff and subs…"
+                              autoFocus
+                              style={{ ...fieldStyle, flex: 1, padding: '7px 10px', fontSize: 12 }}
+                            />
+                            <button onClick={() => setRosterAddOpen(false)} aria-label="Close the member picker" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex', flexShrink: 0 }}>
+                              <X size={13} weight="bold" />
+                            </button>
+                          </div>
+                          <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+                            {renderDirectory({
+                              query: rosterAddQuery,
+                              mode: 'pick',
+                              excludeUsers: rosterUserIds,
+                              excludeSubs: rosterSubIds,
+                              busyKey: memberBusy,
+                              onRow: addMember,
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div style={{ maxHeight: 290, overflowY: 'auto' }}>
                       {rosterKey && !rosterData && !rosterError && (
@@ -2482,6 +2905,25 @@ export default function RadioDispatchPage() {
                                   {mem.call_sign}
                                 </span>
                               )}
+                              {!self && !!mem.id && (removeArm === String(mem.id) ? (
+                                <button
+                                  onClick={() => removeMember(mem)}
+                                  disabled={memberBusy === String(mem.id)}
+                                  title="Confirm — remove this member from the channel"
+                                  style={{ ...rowActionStyle, flexShrink: 0, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: memberBusy === String(mem.id) ? 0.6 : 1 }}
+                                >
+                                  {memberBusy === String(mem.id) ? 'Removing…' : 'Remove?'}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setRemoveArm(String(mem.id))}
+                                  title={`Remove ${senderShort(mem.display_name)} from this channel`}
+                                  aria-label={`Remove ${senderShort(mem.display_name)} from this channel`}
+                                  style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex', flexShrink: 0 }}
+                                >
+                                  <X size={12} weight="bold" />
+                                </button>
+                              ))}
                               {self && !editingProfile && (
                                 <button
                                   onClick={() => startEditProfile(mem)}
@@ -2550,18 +2992,176 @@ export default function RadioDispatchPage() {
                   </div>
                 )}
               </div>
-              {/* Recording console — the legal-grade channel record */}
-              <button
-                onClick={() => setLogOpen(true)}
-                disabled={!active}
-                title="Channel log — date range, search, and a print-ready record"
-                style={{
-                  ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
-                  opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
-                }}
-              >
-                <ClockCounterClockwise size={12} weight="bold" /> Log
-              </button>
+              {/* Channel-bridging group — [Patch · Broadcast] fused segments */}
+              <div ref={patchBcRef} style={{ position: 'relative', display: 'inline-flex', order: 3 }}>
+                <div style={toolGroupStyle}>
+                  <button
+                    onClick={() => openPanel(patchOpen ? null : 'patch')}
+                    title="Patch board — bridge two talkgroups until released"
+                    aria-expanded={patchOpen}
+                    style={toolSegStyle(patchOpen || patches.length > 0, true, false)}
+                  >
+                    <PlugsConnected size={13} weight="bold" /> Patch{patches.length ? ` (${patches.length})` : ''}
+                  </button>
+                  <button
+                    onClick={() => openPanel(bcOpen ? null : 'broadcast')}
+                    title="Broadcast — one message onto up to eight channels"
+                    aria-expanded={bcOpen}
+                    style={toolSegStyle(bcOpen, true, true)}
+                  >
+                    <Megaphone size={13} weight="bold" /> Broadcast
+                  </button>
+                </div>
+                {patchOpen && (
+                  <div style={popoverStyle(300)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <PlugsConnected size={14} weight="bold" color={GOLD_HI} />
+                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>PATCH BOARD</span>
+                      <button onClick={() => setPatchOpen(false)} aria-label="Close the patch board" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                        <X size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <select
+                        value={patchA}
+                        onChange={(e) => setPatchA(e.target.value)}
+                        aria-label="First channel to patch"
+                        style={{ ...fieldStyle, padding: '8px 10px', color: patchA ? WHITE : FAINT }}
+                      >
+                        <option value="">First channel…</option>
+                        {channels.filter((c) => c.id !== patchB).map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}{c.project_name ? ` — ${c.project_name}` : ''}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={patchB}
+                        onChange={(e) => setPatchB(e.target.value)}
+                        aria-label="Second channel to patch"
+                        style={{ ...fieldStyle, padding: '8px 10px', color: patchB ? WHITE : FAINT }}
+                      >
+                        <option value="">Second channel…</option>
+                        {channels.filter((c) => c.id !== patchA).map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}{c.project_name ? ` — ${c.project_name}` : ''}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => postPatch(patchA, patchB, false)}
+                        disabled={!patchA || !patchB || patchBusy}
+                        className="pmBtn"
+                        style={{ ...goldButtonStyle, padding: '9px 14px', fontSize: 12.5, opacity: !patchA || !patchB || patchBusy ? 0.55 : 1 }}
+                      >
+                        <PlugsConnected size={13} weight="bold" /> {patchBusy ? 'Working…' : 'Patch channels'}
+                      </button>
+                      {patches.length > 0 ? (
+                        <div style={{ marginTop: 2 }}>
+                          <div style={{ ...eyebrowStyle, marginBottom: 6 }}>ACTIVE PATCHES</div>
+                          {patches.map((p) => (
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', borderRadius: 10, background: NEST, border: `1px solid ${AMBER_BORDER}`, marginBottom: 6 }}>
+                              <PlugsConnected size={13} weight="bold" color={GOLD_HI} style={{ flexShrink: 0 }} />
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {channelName(p.channel_a)} + {channelName(p.channel_b)}
+                              </span>
+                              <button
+                                onClick={() => postPatch(p.channel_a, p.channel_b, true)}
+                                disabled={patchBusy}
+                                title="Release this patch — the channels stop mirroring"
+                                style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: patchBusy ? 0.6 : 1 }}
+                              >
+                                Release
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 11, color: FAINT }}>
+                          Patch two talkgroups and their traffic mirrors both ways until released.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {bcOpen && (
+                  <div style={popoverStyle(340)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <Megaphone size={14} weight="bold" color={GOLD_HI} />
+                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>BROADCAST</span>
+                      <span style={{ fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: bcSel.size ? GOLD_HI : FAINT, border: `1px solid ${bcSel.size ? AMBER_BORDER : BORDER}`, borderRadius: 999, padding: '1px 8px' }}>
+                        {bcSel.size}/8
+                      </span>
+                      <button onClick={() => setBcOpen(false)} aria-label="Close the broadcast composer" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                        <X size={14} weight="bold" />
+                      </button>
+                    </div>
+                    {bcSent && (
+                      <div style={{ padding: '8px 10px', borderRadius: 10, background: GREEN_SOFT, border: `1px solid ${GREEN_BORDER}`, marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, marginBottom: 3 }}>
+                          SENT TO {bcSent.length} CHANNEL{bcSent.length === 1 ? '' : 'S'}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: WHITE, lineHeight: 1.5 }}>{bcSent.join(' · ')}</div>
+                      </div>
+                    )}
+                    <div style={{ maxHeight: 176, overflowY: 'auto', marginBottom: 10, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 6 }}>
+                      {channels.map((c) => {
+                        const on = bcSel.has(c.id);
+                        const full = !on && bcSel.size >= 8;
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => toggleBcChannel(c.id)}
+                            disabled={full}
+                            title={full ? 'Eight channels max per broadcast' : undefined}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8, width: '100%', boxSizing: 'border-box',
+                              padding: '5px 7px', borderRadius: 8, marginBottom: 2, textAlign: 'left',
+                              background: on ? AMBER_SOFT : 'transparent',
+                              border: on ? `1px solid ${AMBER_BORDER}` : '1px solid transparent',
+                              color: WHITE, cursor: full ? 'default' : 'pointer', opacity: full ? 0.45 : 1,
+                            }}
+                          >
+                            <span
+                              aria-hidden
+                              style={{
+                                flexShrink: 0, width: 15, height: 15, borderRadius: 5,
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                background: on ? `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})` : FIELD_BG,
+                                border: on ? 'none' : FIELD_BORDER, color: '#241500',
+                              }}
+                            >
+                              {on && <Check size={10} weight="bold" />}
+                            </span>
+                            <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                            <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 800, color: FAINT, whiteSpace: 'nowrap', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {c.kind === 'direct' ? 'Direct' : c.project_name || (c.project_id ? 'Project' : 'Organization')}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <input
+                      value={bcText}
+                      onChange={(e) => setBcText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') sendBroadcast(); }}
+                      placeholder="One message for every selected channel"
+                      style={{ ...fieldStyle, marginBottom: 8 }}
+                    />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5, color: MUTED, cursor: 'pointer', marginBottom: 10 }}>
+                      <input type="checkbox" checked={bcAlert} onChange={(e) => setBcAlert(e.target.checked)} style={{ accentColor: GOLD }} />
+                      Send as high-visibility alert
+                    </label>
+                    <button
+                      onClick={sendBroadcast}
+                      disabled={bcSel.size < 2 || !bcText.trim() || bcBusy}
+                      className="pmBtn"
+                      style={{ ...goldButtonStyle, width: '100%', padding: '9px 14px', fontSize: 12.5, opacity: bcSel.size < 2 || !bcText.trim() || bcBusy ? 0.55 : 1 }}
+                    >
+                      <Megaphone size={13} weight="bold" /> {bcBusy ? 'Sending…' : bcSel.size >= 2 ? `Send to ${bcSel.size} channels` : 'Send broadcast'}
+                    </button>
+                    <div style={{ fontSize: 10.5, color: FAINT, marginTop: 8 }}>
+                      Pick two to eight channels — the message lands on all of them at once.
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           }
           flush
@@ -3008,6 +3608,176 @@ export default function RadioDispatchPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {/* ── Create group — name + project + member picker ────────────────── */}
+      {showNew && (
+        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) setShowNew(false); }}>
+          <div style={modalCardStyle(470)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Plus size={15} weight="bold" color={GOLD_HI} />
+              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>NEW TALKGROUP</span>
+              <button onClick={() => setShowNew(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                <X size={15} weight="bold" />
+              </button>
+            </div>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Channel name (e.g. Concrete crew)"
+              autoFocus
+              style={{ ...fieldStyle, fontSize: 13, marginBottom: 8 }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <select
+                value={newProject}
+                onChange={(e) => setNewProject(e.target.value)}
+                aria-label="Project for this talkgroup"
+                style={{ ...fieldStyle, flex: 1, padding: '8px 10px' }}
+              >
+                <option value="">Organization-wide</option>
+                {projectOptions.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: MUTED, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <input type="checkbox" checked={newAllowSubs} onChange={(e) => setNewAllowSubs(e.target.checked)} style={{ accentColor: GOLD }} />
+                Subs can join
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={eyebrowStyle}>MEMBERS</span>
+              <span style={{ fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: newSel.length ? GOLD_HI : FAINT, border: `1px solid ${newSel.length ? AMBER_BORDER : BORDER}`, borderRadius: 999, padding: '1px 8px' }}>
+                {newSel.length} selected
+              </span>
+              <span style={{ fontSize: 10.5, color: FAINT, flex: 1, textAlign: 'right' }}>You join automatically as dispatcher</span>
+            </div>
+            <input
+              value={newQuery}
+              onChange={(e) => setNewQuery(e.target.value)}
+              placeholder="Search staff and subs…"
+              style={{ ...fieldStyle, padding: '7px 10px', fontSize: 12, marginBottom: 6 }}
+            />
+            <div style={{ maxHeight: 210, overflowY: 'auto', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 6, marginBottom: 12 }}>
+              {renderDirectory({
+                query: newQuery,
+                mode: 'check',
+                selectedKeys: new Set(newSel.map(personKey)),
+                onRow: toggleNewPerson,
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button
+                onClick={createChannel}
+                disabled={!newName.trim() || creating}
+                className="pmBtn"
+                style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: !newName.trim() || creating ? 0.6 : 1 }}
+              >
+                {creating ? 'Creating…' : newSel.length ? `Create + add ${newSel.length} member${newSel.length === 1 ? '' : 's'}` : 'Create channel'}
+              </button>
+              <button onClick={() => setShowNew(false)} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Direct 1:1 — staff picker ───────────────────────────────────── */}
+      {directOpen && (
+        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) setDirectOpen(false); }}>
+          <div style={modalCardStyle(420)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <ChatCircleText size={15} weight="bold" color={GOLD_HI} />
+              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>MESSAGE SOMEONE</span>
+              <button onClick={() => setDirectOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                <X size={15} weight="bold" />
+              </button>
+            </div>
+            <div style={{ fontSize: 11.5, color: MUTED, marginBottom: 10 }}>
+              Pick a teammate — a private 1:1 channel opens (or re-opens) and the console tunes to it.
+            </div>
+            <input
+              value={directQuery}
+              onChange={(e) => setDirectQuery(e.target.value)}
+              placeholder="Search staff…"
+              autoFocus
+              style={{ ...fieldStyle, marginBottom: 8 }}
+            />
+            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              {renderDirectory({
+                query: directQuery,
+                mode: 'pick',
+                staffOnly: true,
+                busyKey: directBusy,
+                pickIcon: <ChatCircleText size={13} weight="bold" />,
+                onRow: startDirect,
+              })}
+            </div>
+            <div style={{ fontSize: 10.5, color: FAINT, marginTop: 10 }}>
+              Direct channels are staff-to-staff. Reach subs through their project talkgroups.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Lock / unlock confirm — dispatcher intent gate ──────────────── */}
+      {lockConfirm && (
+        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) setLockConfirm(null); }}>
+          <div style={modalCardStyle(400)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              {lockConfirm.locked ? <LockOpen size={15} weight="bold" color={GOLD_HI} /> : <Lock size={15} weight="fill" color={GOLD_HI} />}
+              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>
+                {lockConfirm.locked ? 'UNLOCK CHANNEL' : 'LOCK CHANNEL'}
+              </span>
+              <button onClick={() => setLockConfirm(null)} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                <X size={15} weight="bold" />
+              </button>
+            </div>
+            <div style={{ fontSize: 12.5, color: WHITE, lineHeight: 1.55, marginBottom: 14 }}>
+              {lockConfirm.locked
+                ? `Unlock "${lockConfirm.name}"? It becomes visible to the whole team again and teammates join on their next visit.`
+                : `Lock "${lockConfirm.name}"? Only current members keep access — the channel disappears from everyone else's console until a dispatcher adds them from the roster.`}
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button
+                onClick={applyLock}
+                disabled={lockBusy}
+                className="pmBtn"
+                style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: lockBusy ? 0.6 : 1 }}
+              >
+                {lockConfirm.locked ? <LockOpen size={13} weight="bold" /> : <Lock size={13} weight="fill" />}
+                {lockBusy ? 'Working…' : lockConfirm.locked ? 'Unlock channel' : 'Lock channel'}
+              </button>
+              <button onClick={() => setLockConfirm(null)} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toasts — honest result reporting, bottom-right ──────────────── */}
+      {toasts.length > 0 && (
+        <div style={{ position: 'fixed', right: 18, bottom: 18, zIndex: 120, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 380 }}>
+          {toasts.map((tst) => (
+            <div
+              key={tst.id}
+              role="status"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 12,
+                background: 'rgba(24,24,27,0.98)',
+                border: `1px solid ${tst.tone === 'ok' ? GREEN_BORDER : RED_BORDER}`,
+                boxShadow: '0 14px 34px rgba(12,12,16,0.6)',
+                color: WHITE, fontSize: 12.5, fontWeight: 700, lineHeight: 1.45,
+              }}
+            >
+              {tst.tone === 'ok'
+                ? <Check size={14} weight="bold" color={GREEN} style={{ flexShrink: 0 }} />
+                : <Warning size={14} weight="fill" color={RED} style={{ flexShrink: 0 }} />}
+              <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{tst.text}</span>
+            </div>
+          ))}
         </div>
       )}
     </PremiumSurface>

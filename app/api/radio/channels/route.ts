@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/permissions';
+import { createNotification } from '@/lib/notifications';
 
 /**
  * Saguaro Radio — talkgroups.
  * GET ?projectId= — list the caller's channels (org-wide + this project's).
  *   Auto-creates the project's "All Hands" talkgroup on first touch (subs
- *   allowed — approved scope) and auto-joins the caller. The list response
- *   also carries `patches` — the tenant's live channel patches — so the
- *   dispatch patch board needs no extra GET.
+ *   allowed — approved scope) and auto-joins the caller. Each channel carries
+ *   `project_name` so the rail can tell four "All Hands" rows apart. The list
+ *   response also carries `patches` — the tenant's live channel patches — so
+ *   the dispatch patch board needs no extra GET.
  * GET ?roster=channelId — that channel's member roster (display_name,
  *   call_sign, presence_status, role, last_seen_at). Members only.
+ * GET ?directory=1 — member-picker source: tenant staff (project_team,
+ *   profiles fallback) + portal-sub identities (sessions + radio history).
  * POST { name, projectId?, allowSubs? } — create a custom talkgroup.
+ * POST { channelId, addUserId, memberRole? } — add a staff member (dedupes;
+ *   notifies them). POST { channelId, addPortalSubId, displayName? } — add a
+ *   portal sub. POST { removeMemberId } — drop a member row (a channel always
+ *   keeps at least one member).
  */
 export async function GET(req: NextRequest) {
   const g = await requirePermission(req, 'Projects', 'View');
@@ -23,11 +31,28 @@ export async function GET(req: NextRequest) {
       const { data: me } = await db.from('radio_members').select('id').eq('tenant_id', t).eq('channel_id', rosterId).eq('user_id', uid).limit(1);
       if (!me || me.length === 0) return NextResponse.json({ error: 'Not a member of this channel' }, { status: 403 });
       const { data: mem, error } = await db.from('radio_members')
-        .select('user_id, display_name, call_sign, presence_status, role, last_seen_at')
+        .select('id, user_id, portal_sub_id, display_name, call_sign, presence_status, role, last_seen_at')
         .eq('tenant_id', t).eq('channel_id', rosterId)
         .order('display_name', { ascending: true });
       if (error) throw error;
       return NextResponse.json({ members: mem || [] });
+    }
+
+    // ── Directory: the member-picker source (tenant staff + portal subs) ──
+    if (req.nextUrl.searchParams.get('directory') === '1') {
+      const [{ data: team }, { data: profs }, { data: subMems }, { data: subSessions }] = await Promise.all([
+        db.from('project_team').select('user_id, name, email, role').eq('tenant_id', t).not('user_id', 'is', null),
+        db.from('profiles').select('id, full_name, email, role').eq('tenant_id', t),
+        db.from('radio_members').select('portal_sub_id, display_name').eq('tenant_id', t).not('portal_sub_id', 'is', null),
+        db.from('portal_sub_sessions').select('sub_id, sub_company, sub_contact_name').eq('tenant_id', t),
+      ]);
+      const staff = new Map<string, { userId: string; name: string; role: string | null }>();
+      for (const m of (team || []) as any[]) if (m.user_id && !staff.has(m.user_id)) staff.set(m.user_id, { userId: m.user_id, name: m.name || m.email || 'Team member', role: m.role ?? null });
+      for (const p of (profs || []) as any[]) if (!staff.has(p.id)) staff.set(p.id, { userId: p.id, name: p.full_name || p.email || 'Team member', role: p.role ?? null });
+      const subs = new Map<string, { portalSubId: string; name: string }>();
+      for (const s of (subSessions || []) as any[]) if (s.sub_id && !subs.has(s.sub_id)) subs.set(s.sub_id, { portalSubId: s.sub_id, name: s.sub_company || s.sub_contact_name || 'Subcontractor' });
+      for (const m of (subMems || []) as any[]) if (m.portal_sub_id && !subs.has(m.portal_sub_id)) subs.set(m.portal_sub_id, { portalSubId: m.portal_sub_id, name: m.display_name || 'Subcontractor' });
+      return NextResponse.json({ staff: [...staff.values()], subs: [...subs.values()] });
     }
 
     const projectId = req.nextUrl.searchParams.get('projectId');
@@ -45,6 +70,15 @@ export async function GET(req: NextRequest) {
     const { data: channels, error } = await q.order('created_at', { ascending: true });
     if (error) throw error;
     const list = (channels || []) as any[];
+
+    // Project names ride along — without them the rail shows four identical
+    // "All Hands" rows with no way to tell which job is talking.
+    const projIds = [...new Set(list.map((c) => c.project_id).filter(Boolean))];
+    const projNames = new Map<string, string>();
+    if (projIds.length) {
+      const { data: projs } = await db.from('projects').select('id, name').in('id', projIds);
+      for (const p of (projs || []) as any[]) projNames.set(p.id, p.name);
+    }
 
     // ONE members query across every listed channel: caller auto-join,
     // per-channel headcount, and live presence (last_seen_at within 90s)
@@ -80,6 +114,7 @@ export async function GET(req: NextRequest) {
       const lm = (last || [])[0] as any;
       return {
         ...c,
+        project_name: c.project_id ? projNames.get(c.project_id) ?? null : null,
         members: chMembers.length,
         onChannel,
         unread: Math.min(unread ?? 0, 99),
@@ -166,6 +201,48 @@ export async function POST(req: NextRequest) {
       await db.from('radio_channels').update({ locked: body.locked === true } as never)
         .eq('id', body.lockChannelId).eq('tenant_id', t);
       return NextResponse.json({ ok: true });
+    }
+
+    // ── Member management: add staff / add portal sub / remove (roster panel) ──
+    if (body.channelId && (body.addUserId || body.addPortalSubId)) {
+      const { data: ch } = await db.from('radio_channels').select('id, name').eq('tenant_id', t).eq('id', body.channelId).maybeSingle();
+      if (!ch) return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+      if (body.addUserId) {
+        const { data: ex } = await db.from('radio_members').select('id').eq('tenant_id', t).eq('channel_id', body.channelId).eq('user_id', body.addUserId).limit(1);
+        if (ex && ex.length) return NextResponse.json({ ok: true, already: true });
+        // Display name: project_team first, profiles fallback.
+        let displayName: string | null = null;
+        const { data: pt } = await db.from('project_team').select('name, email').eq('tenant_id', t).eq('user_id', body.addUserId).limit(1);
+        if (pt && pt.length) displayName = (pt[0] as any).name || (pt[0] as any).email || null;
+        if (!displayName) {
+          const { data: prof } = await db.from('profiles').select('full_name, email').eq('id', body.addUserId).maybeSingle();
+          displayName = (prof as any)?.full_name || (prof as any)?.email || null;
+        }
+        await db.from('radio_members').insert({
+          channel_id: body.channelId, tenant_id: t, user_id: body.addUserId,
+          display_name: displayName, role: body.memberRole === 'dispatcher' ? 'dispatcher' : 'member',
+        } as never);
+        await createNotification(t, body.addUserId, 'radio_added', `Added to ${(ch as any).name}`,
+          `${g.user.email || 'A dispatcher'} added you to the ${(ch as any).name} talkgroup.`,
+          `/app/radio?channel=${body.channelId}`);
+        return NextResponse.json({ ok: true, added: true }, { status: 201 });
+      }
+      const { data: exSub } = await db.from('radio_members').select('id').eq('tenant_id', t).eq('channel_id', body.channelId).eq('portal_sub_id', body.addPortalSubId).limit(1);
+      if (exSub && exSub.length) return NextResponse.json({ ok: true, already: true });
+      await db.from('radio_members').insert({
+        channel_id: body.channelId, tenant_id: t, portal_sub_id: body.addPortalSubId,
+        display_name: String(body.displayName || 'Subcontractor').trim().slice(0, 60) || 'Subcontractor',
+      } as never);
+      return NextResponse.json({ ok: true, added: true }, { status: 201 });
+    }
+
+    if (body.removeMemberId) {
+      const { data: row } = await db.from('radio_members').select('id, channel_id').eq('tenant_id', t).eq('id', body.removeMemberId).maybeSingle();
+      if (!row) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+      const { count } = await db.from('radio_members').select('id', { count: 'exact', head: true }).eq('tenant_id', t).eq('channel_id', (row as any).channel_id);
+      if ((count ?? 0) <= 1) return NextResponse.json({ error: 'A channel needs at least one member' }, { status: 400 });
+      await db.from('radio_members').delete().eq('tenant_id', t).eq('id', body.removeMemberId);
+      return NextResponse.json({ ok: true, removed: true });
     }
 
     const name = String(body.name || '').trim();

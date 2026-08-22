@@ -127,7 +127,75 @@ async function main() {
   const { data: liveLoc } = await db.from('crew_locations').select('latitude').eq('project_id', projectId);
   check('R15: crew live position + ping history', (pings || []).length === 2 && (liveLoc || []).length === 1, `${(pings || []).length} pings, ${(liveLoc || []).length} live row`);
 
+  // ── R17: member add (roster management) — same insert shape as the route ──
+  const u3 = '00000000-0000-4000-8000-00000000a003';
+  const addMember = async (userId: string) => { // replicate POST {channelId, addUserId}
+    const { data: ex } = await db.from('radio_members').select('id').eq('tenant_id', tenantId).eq('channel_id', channelId).eq('user_id', userId).limit(1);
+    if (ex && ex.length) return 'already';
+    await db.from('radio_members').insert({ channel_id: channelId, tenant_id: tenantId, user_id: userId, display_name: MARK + ' Foreman', role: 'member' } as never);
+    return 'added';
+  };
+  const before17 = ((await db.from('radio_members').select('id').eq('channel_id', channelId)).data || []).length;
+  const a1 = await addMember(u3);
+  const a2 = await addMember(u3); // dedupe: re-add is a no-op
+  const after17 = ((await db.from('radio_members').select('id').eq('channel_id', channelId)).data || []).length;
+  check('R17: member add grows roster once (re-add deduped)', after17 === before17 + 1 && a1 === 'added' && a2 === 'already', `${before17} -> ${after17} members; second add: ${a2}`);
+
+  // ── R18: remove shrinks roster; the LAST member is protected (route guard) ──
+  const removeMember = async (memberId: string) => { // replicate POST {removeMemberId}
+    const { data: row } = await db.from('radio_members').select('id, channel_id').eq('tenant_id', tenantId).eq('id', memberId).maybeSingle();
+    if (!row) return 404;
+    const { count } = await db.from('radio_members').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('channel_id', (row as any).channel_id);
+    if ((count ?? 0) <= 1) return 400; // 'A channel needs at least one member'
+    await db.from('radio_members').delete().eq('tenant_id', tenantId).eq('id', memberId);
+    return 200;
+  };
+  const { data: u3row } = await db.from('radio_members').select('id').eq('channel_id', channelId).eq('user_id', u3).single();
+  const rm = await removeMember((u3row as any).id);
+  const after18 = ((await db.from('radio_members').select('id').eq('channel_id', channelId)).data || []).length;
+  const { data: solo } = await db.from('radio_channels').insert({ tenant_id: tenantId, project_id: projectId, kind: 'custom', name: MARK + ' solo' } as never).select().single();
+  const { data: soloMem } = await db.from('radio_members').insert({ channel_id: (solo as any).id, tenant_id: tenantId, user_id: u1, display_name: MARK + ' PM', role: 'dispatcher' } as never).select().single();
+  const guard = await removeMember((soloMem as any).id);
+  const soloLeft = ((await db.from('radio_members').select('id').eq('channel_id', (solo as any).id)).data || []).length;
+  check('R18: remove shrinks roster; last member protected', rm === 200 && after18 === before17 && guard === 400 && soloLeft === 1, `remove -> ${rm}, roster ${after17} -> ${after18}; last-member remove -> ${guard}, member kept`);
+
+  // ── R19: direct 1:1 channel — direct_key dedupe (two creates -> one channel) ──
+  const pair = [u1, u2].sort().join(':');
+  const direct = async () => { // replicate POST {directToUserId}
+    const { data: ex } = await db.from('radio_channels').select('id').eq('tenant_id', tenantId).eq('direct_key', pair).maybeSingle();
+    if (ex) return { id: (ex as any).id, existed: true };
+    const { data: ch } = await db.from('radio_channels').insert({ tenant_id: tenantId, project_id: projectId, kind: 'direct', name: MARK + ' direct', allow_subs: false, direct_key: pair, created_by: u1 } as never).select().single();
+    return { id: (ch as any).id, existed: false };
+  };
+  const d1 = await direct();
+  const d2 = await direct();
+  const { data: directRows } = await db.from('radio_channels').select('id').eq('tenant_id', tenantId).eq('direct_key', pair);
+  check('R19: direct channel deduped by direct_key', !d1.existed && d2.existed && d1.id === d2.id && (directRows || []).length === 1, `two creates -> ${(directRows || []).length} channel`);
+
+  // ── R20: locked channel invisible to non-members (the GET visibility filter) ──
+  const { data: lockedCh } = await db.from('radio_channels').insert({ tenant_id: tenantId, project_id: projectId, kind: 'custom', name: MARK + ' locked', locked: true } as never).select().single();
+  await db.from('radio_members').insert({ channel_id: (lockedCh as any).id, tenant_id: tenantId, user_id: u1, display_name: MARK + ' PM', role: 'dispatcher' } as never);
+  const visibleTo = async (uid: string) => { // replicate the route: locked channels skip auto-join, then filter
+    const { data: chs } = await db.from('radio_channels').select('id, locked').eq('tenant_id', tenantId).eq('project_id', projectId).is('deleted_at', null);
+    const { data: mem } = await db.from('radio_members').select('channel_id, user_id').eq('tenant_id', tenantId).in('channel_id', ((chs || []) as any[]).map((c) => c.id));
+    const mine = new Set(((mem || []) as any[]).filter((m) => m.user_id === uid).map((m) => m.channel_id));
+    return ((chs || []) as any[]).filter((c) => !c.locked || mine.has(c.id)).map((c) => c.id);
+  };
+  const u1Sees = await visibleTo(u1);
+  const u2Sees = await visibleTo(u2);
+  check('R20: locked channel visible to member, hidden from outsider', u1Sees.includes((lockedCh as any).id) && !u2Sees.includes((lockedCh as any).id), `member sees ${u1Sees.length} channel(s), outsider ${u2Sees.length}`);
+
+  // ── R21: broadcast fan-out — one message row per selected channel ──
+  const targets = [channelId, (solo as any).id, (lockedCh as any).id];
+  for (const cid of targets) {
+    await db.from('radio_messages').insert({ tenant_id: tenantId, channel_id: cid, project_id: projectId, sender_user_id: u1, sender_name: MARK + ' PM', kind: 'text', body: MARK + ' ALL-CALL' } as never);
+  }
+  const { data: bcast } = await db.from('radio_messages').select('channel_id').eq('body', MARK + ' ALL-CALL');
+  const bcastChans = new Set(((bcast || []) as any[]).map((b) => b.channel_id)).size;
+  check('R21: broadcast fans out one row per channel', (bcast || []).length === 3 && bcastChans === 3, `${(bcast || []).length} rows across ${bcastChans} channels`);
+
   // ── cleanup ──
+  for (const cid of [(solo as any).id, d1.id, (lockedCh as any).id]) await db.from('radio_channels').delete().eq('id', cid);
   await db.storage.from('project-files').remove([clipPath]);
   await db.from('notifications').delete().eq('project_id', projectId);
   await db.from('radio_assists').delete().eq('project_id', projectId);
