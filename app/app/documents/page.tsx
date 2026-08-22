@@ -73,8 +73,22 @@ function SkeletonRows({ rows = 4, cols }: { rows?: number; cols: number }) {
   );
 }
 
-const TABS = ['Pay Applications', 'Lien Waivers', 'Bonds & Forms', 'Payroll', 'Closeout'] as const;
+const TABS = ['Library', 'Pay Applications', 'Lien Waivers', 'Bonds & Forms', 'Payroll', 'Closeout'] as const;
 type Tab = typeof TABS[number];
+
+// Generated-document type slugs -> human labels; anything unmapped prettifies.
+const DOC_TYPE_LABELS: Record<string, string> = {
+  'pay-application': 'AIA G702/G703 Pay Application', g702: 'AIA G702', g703: 'AIA G703',
+  g701: 'AIA G701 Change Order', g704: 'AIA G704 Substantial Completion', g706: 'AIA G706 Affidavit',
+  g707: 'AIA G707 Consent of Surety', a101: 'AIA A101 Agreement', a310: 'A310 Bid Bond',
+  a312: 'A312 Bond', invoice: 'Invoice', 'lien-waiver': 'Lien Waiver', w9: 'W-9',
+  'purchase-order': 'Purchase Order', subcontract: 'Subcontract', ntp: 'Notice to Proceed',
+  'daily-report': 'Daily Report', wh347: 'WH-347 Certified Payroll', jha: 'Job Hazard Analysis',
+  closeout: 'Closeout Package', 'preliminary-notice': 'Preliminary Notice',
+  'notice-completion': 'Notice of Completion', 'prevailing-wage': 'Prevailing Wage',
+};
+const docTypeLabel = (t: string) =>
+  DOC_TYPE_LABELS[t] ?? t.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 const BOND_CARDS = [
   { code: 'A310', name: 'Bid Bond', desc: 'AIA A310 – Bid bond for proposal phase', icon: Clipboard },
@@ -143,7 +157,7 @@ const thStyle: React.CSSProperties = {
 };
 
 export default function DocumentsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('Pay Applications');
+  const [activeTab, setActiveTab] = useState<Tab>('Library');
   const [payApps, setPayApps] = useState<any[]>([]);
   const [lienWaivers, setLienWaivers] = useState<any[]>([]);
   const [payroll, setPayroll] = useState<any[]>([]);
@@ -157,6 +171,36 @@ export default function DocumentsPage() {
   const [errorPayroll, setErrorPayroll] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+
+  // Library tab — every generated document, tenant-scoped, freshly signable.
+  const [libDocs, setLibDocs] = useState<any[]>([]);
+  const [libTypes, setLibTypes] = useState<string[]>([]);
+  const [libTypeFilter, setLibTypeFilter] = useState<string>('');
+  const [loadingLib, setLoadingLib] = useState(true);
+  const [errorLib, setErrorLib] = useState(false);
+  const loadLibrary = useCallback(() => {
+    setLoadingLib(true); setErrorLib(false);
+    fetch('/api/documents/library')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => { setLibDocs(d.docs ?? []); setLibTypes(d.types ?? []); })
+      .catch(() => setErrorLib(true))
+      .finally(() => setLoadingLib(false));
+  }, []);
+  useEffect(() => { loadLibrary(); }, [loadLibrary]);
+  // Stored links expire (private bucket) — always open through a fresh signature.
+  async function openLibDoc(doc: any) {
+    setBusyKey(`lib-${doc.id}`);
+    try {
+      const res = await fetch('/api/documents/library', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ docId: doc.id }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.url) throw new Error(d.error || 'open failed');
+      window.open(d.url, '_blank', 'noopener');
+    } catch { alert('Could not open the document. Try regenerating it.'); }
+    finally { setBusyKey(null); }
+  }
 
   // Closeout tab — real per-project closeout items from the `closeout` table.
   const [closeoutItems, setCloseoutItems] = useState<CloseoutItem[]>([]);
@@ -374,6 +418,56 @@ export default function DocumentsPage() {
       <div>
 
         {/* ── Pay Applications ──────────────────────────────────────── */}
+        {activeTab === 'Library' && (
+          <SectionCard
+            title="Document Library"
+            subtitle="Every generated document — pay apps, invoices, waivers, bonds, payroll — with fresh signed links."
+            flush
+          >
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '14px 20px 4px' }}>
+              <button onClick={() => setLibTypeFilter('')} className="pmBtn" style={{ padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: !libTypeFilter ? 'rgba(245,158,11,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${!libTypeFilter ? 'rgba(245,158,11,0.45)' : 'rgba(255,255,255,0.1)'}`, color: !libTypeFilter ? '#F5B84D' : '#9CA3AF' }}>
+                All · {libDocs.length}
+              </button>
+              {libTypes.map(t => {
+                const n = libDocs.filter(d => d.doc_type === t).length;
+                const on = libTypeFilter === t;
+                return (
+                  <button key={t} onClick={() => setLibTypeFilter(on ? '' : t)} className="pmBtn" style={{ padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: on ? 'rgba(245,158,11,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${on ? 'rgba(245,158,11,0.45)' : 'rgba(255,255,255,0.1)'}`, color: on ? '#F5B84D' : '#9CA3AF' }}>
+                    {docTypeLabel(t)} · {n}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="pmTable" style={{ margin: '12px 20px 18px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr><th>Document</th><th>Project</th><th>Generated</th><th>Status</th><th style={{ textAlign: 'right' }}>Open</th></tr></thead>
+                <tbody>
+                  {loadingLib && <SkeletonRows rows={5} cols={5} />}
+                  {errorLib && !loadingLib && <ErrorRow colSpan={5} message="Couldn't load the library." onRetry={loadLibrary} />}
+                  {!loadingLib && !errorLib && libDocs.filter(d => (!libTypeFilter || d.doc_type === libTypeFilter) && (!query || `${docTypeLabel(d.doc_type)} ${d.projectName ?? ''}`.toLowerCase().includes(query.toLowerCase()))).map(doc => (
+                    <tr key={doc.id}>
+                      <td style={{ padding: '12px 16px', fontWeight: 700 }}>{docTypeLabel(doc.doc_type)}</td>
+                      <td style={{ padding: '12px 16px', color: '#9CA3AF' }}>{doc.projectName ?? '—'}</td>
+                      <td style={{ padding: '12px 16px', color: '#9CA3AF' }}>{fmtDay(doc.created_at) ?? '—'}</td>
+                      <td style={{ padding: '12px 16px' }}><Badge label={(doc.status || 'generated').toUpperCase()} color="#34D27B" bg="rgba(52,210,123,0.12)" /></td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <button onClick={() => openLibDoc(doc)} disabled={busyKey === `lib-${doc.id}`} className="pmBtn pmGold" style={{ padding: '6px 14px', borderRadius: 9, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
+                          {busyKey === `lib-${doc.id}` ? 'Opening…' : 'PDF'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!loadingLib && !errorLib && libDocs.length === 0 && (
+                    <tr><td colSpan={5} style={{ padding: '28px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>
+                      No generated documents yet — create a pay app, invoice PDF, or bond from the tabs above and it lands here.
+                    </td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
         {activeTab === 'Pay Applications' && (
           <SectionCard
             flush
