@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    let q = db.from('radio_channels').select('id, project_id, name, kind, allow_subs, locked, created_at').eq('tenant_id', t).is('deleted_at', null);
+    let q = db.from('radio_channels').select('id, project_id, name, kind, allow_subs, locked, priority, created_at').eq('tenant_id', t).is('deleted_at', null);
     if (projectId) q = q.or(`project_id.eq.${projectId},project_id.is.null`);
     const { data: channels, error } = await q.order('created_at', { ascending: true });
     if (error) throw error;
@@ -113,6 +113,30 @@ export async function POST(req: NextRequest) {
         { channel_id: (ch as any).id, tenant_id: t, user_id: body.directToUserId, display_name: dname },
       ] as never);
       return NextResponse.json({ channel: ch }, { status: 201 });
+    }
+
+    // ── Patch / release (GroupTalk group patching) ──
+    if (body.patch) {
+      const { a, b, release } = body.patch;
+      if (!a || !b || a === b) return NextResponse.json({ error: 'patch needs two distinct channels' }, { status: 400 });
+      const [ca, cb] = [a, b].sort();
+      if (release) {
+        await db.from('radio_channel_patches').update({ released_at: new Date().toISOString() } as never)
+          .eq('tenant_id', t).eq('channel_a', ca).eq('channel_b', cb).is('released_at', null);
+        return NextResponse.json({ ok: true, released: true });
+      }
+      const { data: ex } = await db.from('radio_channel_patches').select('id, released_at').eq('tenant_id', t).eq('channel_a', ca).eq('channel_b', cb).maybeSingle();
+      if (ex && !(ex as any).released_at) return NextResponse.json({ ok: true, already: true });
+      if (ex) await db.from('radio_channel_patches').update({ released_at: null, created_by: g.user.id, created_at: new Date().toISOString() } as never).eq('id', (ex as any).id);
+      else await db.from('radio_channel_patches').insert({ tenant_id: t, channel_a: ca, channel_b: cb, created_by: g.user.id } as never);
+      return NextResponse.json({ ok: true, patched: true }, { status: 201 });
+    }
+
+    // ── Priority channel toggle (interrupts scanning first) ──
+    if (body.priorityChannelId != null) {
+      await db.from('radio_channels').update({ priority: body.priority === true } as never)
+        .eq('id', body.priorityChannelId).eq('tenant_id', t);
+      return NextResponse.json({ ok: true });
     }
 
     // ── Lock/unlock (dispatcher-invite-only groups) ──

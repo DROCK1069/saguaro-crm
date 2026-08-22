@@ -47,6 +47,25 @@ export async function POST(req: NextRequest) {
     // Transcription brain: fire-and-forget (env-gated inside; never blocks the send).
     void transcribeRadioVoice(db, (msg as any)?.id, path);
 
+    // GROUP PATCHING: mirror the transmission onto patched channels (same clip).
+    void (async () => {
+      try {
+        const { data: patches } = await db.from('radio_channel_patches')
+          .select('channel_a, channel_b')
+          .eq('tenant_id', t).is('released_at', null)
+          .or(`channel_a.eq.${channelId},channel_b.eq.${channelId}`);
+        for (const p of (patches || []) as any[]) {
+          const other = p.channel_a === channelId ? p.channel_b : p.channel_a;
+          const { data: och } = await db.from('radio_channels').select('project_id').eq('id', other).single();
+          await db.from('radio_messages').insert({
+            tenant_id: t, channel_id: other, project_id: (och as any)?.project_id ?? null,
+            sender_user_id: g.user.id, sender_name: g.user.email || 'Team member',
+            kind: 'voice', audio_path: path, audio_duration_secs: durationSecs, patched_from: channelId,
+          } as never);
+        }
+      } catch { /* mirroring is best-effort */ }
+    })();
+
     // Radio push — members hear about traffic immediately.
     const { data: members } = await db.from('radio_members').select('user_id, monitoring').eq('channel_id', channelId).not('user_id', 'is', null);
     Promise.all(((members || []) as any[])

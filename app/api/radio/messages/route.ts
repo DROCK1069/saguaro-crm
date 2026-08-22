@@ -35,6 +35,11 @@ export async function GET(req: NextRequest) {
 
     let q = db.from('radio_messages').select('*').eq('tenant_id', t).eq('channel_id', channelId);
     if (after) q = q.gt('created_at', after);
+    // Recording console: date-range reads for the channel log export.
+    const from = req.nextUrl.searchParams.get('from');
+    const to = req.nextUrl.searchParams.get('to');
+    if (from) q = q.gte('created_at', from);
+    if (to) q = q.lte('created_at', to);
     const { data, error } = await q.order('created_at', { ascending: after ? true : false }).limit(100);
     if (error) throw error;
     const rows = (data || []) as any[];
@@ -75,9 +80,12 @@ export async function POST(req: NextRequest) {
     }
 
     const channelId = body.channelId;
-    const kind = body.kind === 'alert' ? 'alert' : 'text';
+    const kind = body.kind === 'alert' ? 'alert' : body.kind === 'tone' ? 'tone' : 'text';
     const text = String(body.body || '').trim();
     if (!channelId || !text) return NextResponse.json({ error: 'channelId and body required' }, { status: 400 });
+    if (kind === 'tone' && !['ack', 'negative', 'comein'].includes(text)) {
+      return NextResponse.json({ error: 'invalid tone' }, { status: 400 });
+    }
     if (!(await membership(db, t, g.user.id, channelId))) return NextResponse.json({ error: 'Not a member of this channel' }, { status: 403 });
 
     const { data: ch } = await db.from('radio_channels').select('project_id, name').eq('id', channelId).single();
@@ -88,7 +96,26 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     // Translation brain: fire-and-forget (env-gated inside; never blocks the send).
-    void translateRadioMessage(db, (msg as any)?.id, text);
+    if (kind !== 'tone') void translateRadioMessage(db, (msg as any)?.id, text);
+
+    // GROUP PATCHING: mirror the message onto every channel patched to this one.
+    void (async () => {
+      try {
+        const { data: patches } = await db.from('radio_channel_patches')
+          .select('channel_a, channel_b')
+          .eq('tenant_id', t).is('released_at', null)
+          .or(`channel_a.eq.${channelId},channel_b.eq.${channelId}`);
+        for (const p of (patches || []) as any[]) {
+          const other = p.channel_a === channelId ? p.channel_b : p.channel_a;
+          const { data: och } = await db.from('radio_channels').select('project_id').eq('id', other).single();
+          await db.from('radio_messages').insert({
+            tenant_id: t, channel_id: other, project_id: (och as any)?.project_id ?? null,
+            sender_user_id: g.user.id, sender_name: g.user.email || 'Team member',
+            kind, body: text, patched_from: channelId,
+          } as never);
+        }
+      } catch { /* mirroring is best-effort */ }
+    })();
 
     if (kind === 'alert') {
       const { data: members } = await db.from('radio_members').select('user_id').eq('channel_id', channelId).not('user_id', 'is', null);
