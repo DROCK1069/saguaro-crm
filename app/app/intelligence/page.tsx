@@ -1,161 +1,351 @@
 'use client';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { ChartLineUp, ChartBar, SquaresFour, Warning, Heartbeat, Selection } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle } from '@/components/ui/premium';
 import useSWR from 'swr';
+import { ChartLineUp, Lightbulb, SquaresFour, Selection, ArrowsClockwise } from '@phosphor-icons/react';
+import {
+  PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip,
+  InsightRow, Pill, GoldButton, GhostButton, goldButtonStyle,
+} from '@/components/ui/premium';
 import { useProjects } from '@/lib/hooks/useProjects';
-import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
-const GOLD = '#F59E0B', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF';
+// No 'intelligence' key exists in lib/module-identity — this surface stays on
+// the gold ground (money + flagship voice) rather than inventing a module hue.
+const GOLD = '#F59E0B', DIM = '#CBD5E1', TEXT = '#FFFFFF';
 // Desert-dusk semantic palette — harmonized with the dashboard (muted emerald,
-// terracotta, warm amber) so the risk/health accents sit on the aurora bg.
+// terracotta, warm amber) so severity accents sit on the aurora bg.
 const GREEN = '#45B37D', RED = '#E0644E', AMBER = '#F0A63C';
-// Nested surfaces layered on the PremiumSurface aurora: NEST = a lifted dark
-// panel inside a SectionCard, TILE = the innermost metric wells.
+// Nested surfaces layered on the PremiumSurface aurora (white-alpha glass —
+// dark-shell surfaces never take black alphas).
 const NEST = 'rgba(20,20,22,0.55)', NEST_BORDER = 'rgba(255,255,255,0.08)';
-const TILE = 'rgba(0,0,0,0.28)', TILE_BORDER = 'rgba(255,255,255,0.06)';
+const HAIR = 'rgba(255,255,255,0.06)';
 
-const fmt = (n: number) => '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// ─── Honest number handling ──────────────────────────────────────────────────
+// NUMERIC columns round-trip as strings; Number() ALWAYS. `null` means "the
+// API genuinely didn't have this figure" and renders as an em-dash + note —
+// never a fake zero.
+const num = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+const fmt = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtK = (n: number) => {
   const abs = Math.abs(n);
   if (abs >= 1_000_000) return (n < 0 ? '-' : '') + '$' + (abs / 1_000_000).toFixed(1) + 'M';
   if (abs >= 1_000) return (n < 0 ? '-' : '') + '$' + (abs / 1_000).toFixed(0) + 'K';
   return fmt(n);
 };
-const pct = (a: number, b: number) => b > 0 ? ((a / b) * 100).toFixed(1) : '0.0';
 
-interface Project {
-  id: string;
-  name: string;
-  status: string;
-  contract_amount: number;
-  start_date: string | null;
-  end_date: string | null;
-  created_at: string;
+// Local date-only parsing — never new Date('YYYY-MM-DD') (UTC shift). Full
+// timestamps go through Date directly; bare dates parse as local midnight.
+function daysAgo(iso?: string | null): number | null {
+  if (!iso || typeof iso !== 'string') return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const mid = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  return Math.max(0, Math.round((mid(new Date()) - mid(d)) / 86400000));
 }
 
-interface ProjectDetail {
-  project: any;
-  payApps: any[];
-  changeOrders: any[];
-  rfis: any[];
-  subs: any[];
-  budgetLines: any[];
+// ─── Health grading ──────────────────────────────────────────────────────────
+// Verdict bands over the server's 0–100 healthScore: >=85 Excellent, >=70
+// Healthy (both green), >=50 Watch (amber), <50 At Risk (red). No score ⇒ no
+// verdict — the ring stays empty rather than pretending.
+function healthGrade(score: number | null): { color: string; verdict: string } {
+  if (score == null) return { color: 'rgba(255,255,255,0.35)', verdict: 'No score' };
+  if (score >= 85) return { color: GREEN, verdict: 'Excellent' };
+  if (score >= 70) return { color: GREEN, verdict: 'Healthy' };
+  if (score >= 50) return { color: AMBER, verdict: 'Watch' };
+  return { color: RED, verdict: 'At risk' };
 }
 
-interface ProjectMetrics {
-  id: string;
-  name: string;
-  status: string;
-  contractAmount: number;
-  totalBilled: number;
-  burnRate: number;
-  schedulePct: number;
-  expectedPct: number;
-  coCount: number;
-  coTotal: number;
-  coPctOfContract: number;
-  coRisk: 'green' | 'amber' | 'red';
-  coApprovedCount: number;
-  coDecidedCount: number;
-  coApprovalRate: number;
-  openRfis: number;
-  retainageHeld: number;
-  subCount: number;
-  activeSubs: number;
-  subHealthScore: number;
+// healthComponents arrives in whatever shape the server settles on — tolerate
+// an array of {label,score,note}-ish entries or a plain record, and flatten to
+// tooltip lines.
+function componentLines(hc: unknown): string[] {
+  if (!hc) return [];
+  if (Array.isArray(hc)) {
+    return hc.map((c: any) => {
+      if (c == null) return '';
+      if (typeof c === 'string') return c;
+      if (typeof c !== 'object') return String(c);
+      const label = c.label ?? c.name ?? c.key ?? '';
+      const val = c.score ?? c.value ?? c.pts ?? c.points;
+      const note = c.note ?? c.text ?? c.detail ?? '';
+      return [label, val != null ? String(val) : '', note].filter(Boolean).join(' — ');
+    }).filter(Boolean);
+  }
+  if (typeof hc === 'object') {
+    return Object.entries(hc as Record<string, unknown>).map(([k, v]) =>
+      `${k}: ${v != null && typeof v === 'object' ? JSON.stringify(v) : String(v)}`);
+  }
+  return [];
 }
 
-const detailFetcher = async (url: string) => {
+// ─── Insight severity ────────────────────────────────────────────────────────
+const SEV_RED = ['red', 'critical', 'high', 'severe', 'danger', 'error'];
+const SEV_AMBER = ['amber', 'yellow', 'warn', 'warning', 'medium', 'moderate', 'caution'];
+function sevRail(s?: string): { rail: string; rank: number } {
+  const k = String(s || '').toLowerCase();
+  if (SEV_RED.includes(k)) return { rail: RED, rank: 0 };
+  if (SEV_AMBER.includes(k)) return { rail: AMBER, rank: 1 };
+  return { rail: 'rgba(255,255,255,0.25)', rank: 2 };
+}
+
+// ─── API shapes (every key optional — the page tolerates partial payloads) ───
+interface SummaryProject {
+  project?: { id?: string; name?: string; status?: string };
+  money?: {
+    contract?: unknown; billedToDate?: unknown; invoicedCosts?: unknown;
+    approvedCOs?: { value?: unknown; count?: unknown }; margin?: unknown;
+  };
+  schedule?: { expectedBurnPct?: unknown; actualBurnPct?: unknown };
+  burnDelta?: unknown;
+  field?: {
+    openRfis?: unknown; oldestRfiDays?: unknown; openPunch?: unknown;
+    dailyLogStreak?: unknown; lastActivityAt?: string | null;
+  };
+  healthScore?: unknown;
+  healthComponents?: unknown;
+}
+interface Insight { severity?: string; projectId?: string; text?: string }
+interface SummaryResponse { projects?: SummaryProject[]; totals?: unknown; insights?: Insight[] }
+
+interface Row {
+  id: string; name: string; status: string | null;
+  contract: number | null; billed: number | null; invoiced: number | null;
+  coValue: number | null; coCount: number | null; margin: number | null;
+  expected: number | null; actual: number | null; delta: number | null;
+  openRfis: number | null; oldestRfiDays: number | null; openPunch: number | null;
+  logStreak: number | null; lastActivityDays: number | null;
+  health: number | null; components: string[];
+}
+
+function deriveRow(sp: SummaryProject, fallbackName?: string): Row {
+  const expected = num(sp.schedule?.expectedBurnPct);
+  const actual = num(sp.schedule?.actualBurnPct);
+  // burnDelta = actualBurnPct − expectedBurnPct (billing pace vs calendar
+  // pace); positive = billed ahead of the calendar. Server figure wins; when
+  // absent we derive it only if BOTH sides are real.
+  const delta = num(sp.burnDelta) ?? (actual != null && expected != null ? actual - expected : null);
+  return {
+    id: String(sp.project?.id ?? ''),
+    name: sp.project?.name || fallbackName || 'Untitled Project',
+    status: sp.project?.status ?? null,
+    contract: num(sp.money?.contract),
+    billed: num(sp.money?.billedToDate),
+    invoiced: num(sp.money?.invoicedCosts),
+    coValue: num(sp.money?.approvedCOs?.value),
+    coCount: num(sp.money?.approvedCOs?.count),
+    margin: num(sp.money?.margin),
+    expected, actual, delta,
+    openRfis: num(sp.field?.openRfis),
+    oldestRfiDays: num(sp.field?.oldestRfiDays),
+    openPunch: num(sp.field?.openPunch),
+    logStreak: num(sp.field?.dailyLogStreak),
+    lastActivityDays: daysAgo(sp.field?.lastActivityAt),
+    health: num(sp.healthScore),
+    components: componentLines(sp.healthComponents),
+  };
+}
+
+const fetcher = async (url: string) => {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Request failed (${r.status})`);
   return r.json();
 };
 
-// Pure metric derivation from the project aggregate (unchanged math).
-function computeMetrics(pid: string, d: ProjectDetail): ProjectMetrics {
-  const p = d.project || {};
-  const payApps = d.payApps || [];
-  const cos = d.changeOrders || [];
-  const rfis = d.rfis || [];
-  const subs = d.subs || [];
-
-  const contractAmount = Number(p.contract_amount) || 0;
-  const approvedCOs = cos.filter((c: any) => c.status === 'approved');
-  const coTotal = approvedCOs.reduce((s: number, co: any) => s + (Number(co.amount) || 0), 0);
-
-  // Historical CO approval rate — real signal from this project's decided change
-  // orders (approved vs. approved+rejected). Not a forecast; only shown when the
-  // project actually has decided COs to base a rate on.
-  const rejectedCOs = cos.filter((c: any) => ['rejected', 'denied', 'declined'].includes(c.status));
-  const coApprovedCount = approvedCOs.length;
-  const coDecidedCount = coApprovedCount + rejectedCOs.length;
-  const coApprovalRate = coDecidedCount > 0 ? Math.round((coApprovedCount / coDecidedCount) * 100) : 0;
-  const adjustedContract = contractAmount + coTotal;
-  const totalBilled = payApps.length > 0 ? (Number(payApps[0].total_completed_stored) || 0) : 0;
-  const burnRate = adjustedContract > 0 ? (totalBilled / adjustedContract) * 100 : 0;
-
-  // Schedule performance estimate
-  const startDate = p.start_date ? new Date(p.start_date) : null;
-  const endDate = p.end_date ? new Date(p.end_date) : null;
-  const now = new Date();
-  let expectedPct = 0;
-  let schedulePct = burnRate; // Use billing as proxy for % complete
-  if (startDate && endDate && endDate > startDate) {
-    const totalDays = (endDate.getTime() - startDate.getTime()) / 86400000;
-    const elapsed = Math.max(0, (now.getTime() - startDate.getTime()) / 86400000);
-    expectedPct = Math.min(100, (elapsed / totalDays) * 100);
-  }
-
-  // Change order risk
-  const coPct = adjustedContract > 0 ? (coTotal / (contractAmount || 1)) * 100 : 0;
-  const coRisk: 'green' | 'amber' | 'red' = coPct > 20 ? 'red' : coPct > 10 ? 'amber' : 'green';
-
-  // RFIs
-  const openRfis = rfis.filter((r: any) => r.status === 'open' || r.status === 'pending').length;
-
-  // Retainage
-  const retainageHeld = payApps.reduce((s: number, pa: any) => s + (Number(pa.retainage_held) || 0), 0);
-
-  // Sub health
-  const activeSubs = subs.filter((s: any) => s.status === 'active' || s.status === 'approved').length;
-  const subHealthScore = subs.length > 0 ? Math.round((activeSubs / subs.length) * 100) : 100;
-
-  return {
-    id: pid,
-    name: p.name || 'Untitled Project',
-    status: p.status || 'active',
-    contractAmount: adjustedContract,
-    totalBilled,
-    burnRate: Math.round(burnRate * 10) / 10,
-    schedulePct: Math.round(schedulePct * 10) / 10,
-    expectedPct: Math.round(expectedPct * 10) / 10,
-    coCount: cos.length,
-    coTotal,
-    coPctOfContract: Math.round(coPct * 10) / 10,
-    coRisk,
-    coApprovedCount,
-    coDecidedCount,
-    coApprovalRate,
-    openRfis,
-    retainageHeld,
-    subCount: subs.length,
-    activeSubs,
-    subHealthScore,
-  };
+// ─── Health ring — color-graded score dial with a component tooltip ──────────
+function HealthRing({ score, components }: { score: number | null; components: string[] }) {
+  const g = healthGrade(score);
+  const R = 26, C = 2 * Math.PI * R;
+  const frac = score == null ? 0 : Math.max(0, Math.min(100, score)) / 100;
+  const tip = components.length
+    ? `Health components:\n${components.join('\n')}`
+    : score != null ? 'No component breakdown provided' : 'No health score for this project yet';
+  return (
+    <div title={tip} style={{ textAlign: 'center' as const, flexShrink: 0, cursor: 'help' }}>
+      <div style={{ position: 'relative' as const, width: 64, height: 64, margin: '0 auto' }}>
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="6" />
+          {score != null && (
+            <circle
+              cx="32" cy="32" r={R} fill="none"
+              stroke={g.color} strokeWidth="6"
+              strokeDasharray={`${frac * C} ${C}`}
+              strokeLinecap="round"
+              transform="rotate(-90 32 32)"
+            />
+          )}
+        </svg>
+        <div style={{
+          position: 'absolute' as const, top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          fontSize: 16, fontWeight: 800, color: score == null ? DIM : g.color, fontVariantNumeric: 'tabular-nums',
+        }}>
+          {score == null ? '—' : Math.round(score)}
+        </div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: g.color, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginTop: 4 }}>
+        {g.verdict}
+      </div>
+    </div>
+  );
 }
 
-// W-14: one SWR key per project detail — '/api/projects/{id}' is the same
-// cache entry the project sidebar + overview use, so scorecards for projects
-// you just visited render instantly and selections re-render from cache.
-function useProjectMetrics(pid: string | null): ProjectMetrics | null {
-  const { data } = useSWR<ProjectDetail>(pid ? `/api/projects/${pid}` : null, detailFetcher, {
-    revalidateOnFocus: false,
-    keepPreviousData: true,
-  });
-  return pid && data && (data as any).project ? computeMetrics(pid, data) : null;
+// ─── Burn bar — actual fill with the expected pace as a hairline marker ──────
+function BurnBar({ actual, expected, delta }: { actual: number | null; expected: number | null; delta: number | null }) {
+  // Fills cap at 100% visually; the labels keep the real figure.
+  const aw = actual == null ? 0 : Math.max(0, Math.min(actual, 100));
+  const ew = expected == null ? null : Math.max(0, Math.min(expected, 100));
+  const ahead = delta != null && delta >= 0;
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+        <span style={{ fontSize: 10, color: DIM, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
+          Billing burn vs schedule
+        </span>
+        {delta != null ? (
+          <span style={{ fontSize: 11, fontWeight: 800, color: ahead ? GREEN : RED, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' as const }}>
+            {ahead ? '+' : '-'}{Math.abs(delta).toFixed(1)} pts {ahead ? 'ahead' : 'behind'}
+          </span>
+        ) : (
+          <span style={{ fontSize: 11, color: DIM, whiteSpace: 'nowrap' as const }}>no schedule dates</span>
+        )}
+      </div>
+      <div style={{ position: 'relative' as const, height: 12 }}>
+        <div style={{ position: 'absolute' as const, inset: 0, background: 'rgba(255,255,255,0.08)', borderRadius: 6, overflow: 'hidden' }}>
+          {actual != null && (
+            <div style={{
+              height: '100%', width: `${aw}%`, borderRadius: 6,
+              background: 'linear-gradient(90deg, rgba(245,158,11,0.5), #F59E0B)',
+            }} />
+          )}
+        </div>
+        {ew != null && (
+          <div
+            title={`Expected ${expected!.toFixed(1)}% burned by today (share of schedule elapsed)`}
+            style={{
+              position: 'absolute' as const, left: `calc(${ew}% - 1px)`, top: -3, bottom: -3, width: 2,
+              background: TEXT, opacity: 0.9, borderRadius: 1, boxShadow: '0 0 6px rgba(255,255,255,0.55)',
+            }}
+          />
+        )}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontSize: 10.5, color: DIM, fontVariantNumeric: 'tabular-nums' }}>
+        <span>Actual {actual == null ? '— no billing data' : `${actual.toFixed(1)}%`}</span>
+        <span>Expected {expected == null ? '—' : `${expected.toFixed(1)}%`}</span>
+      </div>
+    </div>
+  );
+}
+
+// Money row — value gold when real, em-dash when the API had nothing.
+function moneyVal(v: number | null, suffix?: React.ReactNode): { value: React.ReactNode; accent?: string } {
+  if (v == null) return { value: '—', accent: 'rgba(255,255,255,0.35)' };
+  return { value: <>{fmtK(v)}{suffix}</>, accent: GOLD };
+}
+
+const RULE_LABEL: React.CSSProperties = {
+  fontSize: 10, color: DIM, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em',
+  margin: '14px 0 4px', paddingTop: 12, borderTop: `1px solid ${HAIR}`,
+};
+
+// ─── Per-project comparison card ─────────────────────────────────────────────
+function ProjectCard({ r }: { r: Row }) {
+  const co = moneyVal(r.coValue, r.coCount != null ? (
+    <span style={{ color: DIM, fontWeight: 600, fontSize: 11 }}> ({r.coCount})</span>
+  ) : undefined);
+  const marginAccent = r.margin == null ? 'rgba(255,255,255,0.35)' : r.margin < 0 ? RED : GOLD;
+  // Overdue = the oldest open RFI has aged past 14 days — that age reads red.
+  const rfiOverdue = r.openRfis != null && r.openRfis > 0 && r.oldestRfiDays != null && r.oldestRfiDays > 14;
+  const noField = r.openRfis == null && r.openPunch == null && r.logStreak == null && r.lastActivityDays == null;
+  return (
+    <SectionCard bodyStyle={{ padding: '18px 20px' }}>
+      {/* Header: identity left, health ring right */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
+        <div style={{ minWidth: 0 }}>
+          <Link href={`/app/projects/${r.id}`} style={{ fontSize: 15.5, fontWeight: 800, color: TEXT, textDecoration: 'none', letterSpacing: '-0.01em' }}>
+            {r.name}
+          </Link>
+          <div style={{ marginTop: 6 }}>
+            {r.status ? (
+              <Pill tone={r.status === 'active' ? 'green' : 'neutral'} caps>{r.status}</Pill>
+            ) : (
+              <span style={{ fontSize: 11, color: DIM }}>status unknown</span>
+            )}
+          </div>
+        </div>
+        <HealthRing score={r.health} components={r.components} />
+      </div>
+
+      <BurnBar actual={r.actual} expected={r.expected} delta={r.delta} />
+
+      {/* Money — gold, Number()-guarded upstream, em-dash when absent */}
+      <div style={RULE_LABEL}>Money</div>
+      <InsightRow label="Contract" {...moneyVal(r.contract)} />
+      <InsightRow label="Billed to date" {...moneyVal(r.billed)} />
+      <InsightRow label="Invoiced costs" {...moneyVal(r.invoiced)} />
+      <InsightRow label="Approved COs" value={co.value} accent={co.accent} />
+      <InsightRow label="Margin" value={r.margin == null ? '—' : fmtK(r.margin)} accent={marginAccent} strong />
+
+      {/* Field signals */}
+      <div style={RULE_LABEL}>Field</div>
+      {noField ? (
+        <div style={{ fontSize: 11.5, color: DIM, padding: '4px 0' }}>{'—'} no field telemetry yet</div>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, paddingTop: 4 }}>
+          {r.openRfis != null && (
+            <Pill tone={rfiOverdue ? 'red' : r.openRfis > 0 ? 'amber' : 'green'}>
+              {r.openRfis} open RFI{r.openRfis === 1 ? '' : 's'}
+              {r.openRfis > 0 && r.oldestRfiDays != null ? ` · oldest ${r.oldestRfiDays}d` : ''}
+            </Pill>
+          )}
+          {r.openPunch != null && (
+            <Pill tone={r.openPunch > 0 ? 'amber' : 'green'}>{r.openPunch} punch open</Pill>
+          )}
+          {r.logStreak != null && (
+            <Pill tone={r.logStreak >= 3 ? 'green' : 'neutral'}>{r.logStreak}d log streak</Pill>
+          )}
+          {r.lastActivityDays != null && (
+            <Pill tone="neutral">
+              {r.lastActivityDays === 0 ? 'active today' : `active ${r.lastActivityDays}d ago`}
+            </Pill>
+          )}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+// Grid-shaped loading skeleton — same card silhouette as ProjectCard.
+function GridSkeleton({ count }: { count: number }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 24 }}>
+      {Array.from({ length: Math.max(count, 1) }).map((_, i) => (
+        <div key={i} style={{ background: NEST, border: `1px solid ${NEST_BORDER}`, borderRadius: 16, padding: '18px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 18 }}>
+            <div>
+              <Skeleton width={150} height={16} />
+              <div style={{ height: 8 }} />
+              <Skeleton width={64} height={12} />
+            </div>
+            <Skeleton width={64} height={64} borderRadius={32} />
+          </div>
+          <Skeleton height={12} />
+          <div style={{ height: 16 }} />
+          {[0, 1, 2, 3].map((k) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
+              <Skeleton width={90} height={11} />
+              <Skeleton width={64} height={11} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function IntelligencePage() {
@@ -173,16 +363,32 @@ export default function IntelligencePage() {
     setSelectedIds(new Set(projects.slice(0, 3).map((p) => p.id)));
   }, [projects]);
 
-  // Up to 5 selections — one fixed hook call per slot keeps ONE SWR key per
-  // project, shared with the rest of the app (never a hook inside a loop).
-  const ids = useMemo(() => Array.from(selectedIds), [selectedIds]);
-  const m0 = useProjectMetrics(ids[0] ?? null);
-  const m1 = useProjectMetrics(ids[1] ?? null);
-  const m2 = useProjectMetrics(ids[2] ?? null);
-  const m3 = useProjectMetrics(ids[3] ?? null);
-  const m4 = useProjectMetrics(ids[4] ?? null);
-  const selected = [m0, m1, m2, m3, m4].filter(Boolean) as ProjectMetrics[];
-  const loadingMetrics = ids.length > 0 && selected.length < ids.length;
+  const ids = useMemo(() => Array.from(selectedIds).sort(), [selectedIds]);
+  const { data, error, isLoading, mutate } = useSWR<SummaryResponse>(
+    ids.length > 0 ? `/api/intelligence/summary?projectIds=${ids.join(',')}` : null,
+    fetcher,
+    { revalidateOnFocus: false, keepPreviousData: true },
+  );
+
+  const nameOf = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of projects) m.set(p.id, p.name);
+    for (const sp of data?.projects ?? []) {
+      const id = sp.project?.id; if (id && sp.project?.name) m.set(String(id), sp.project.name);
+    }
+    return m;
+  }, [projects, data]);
+
+  const rows = useMemo(
+    () => (data?.projects ?? []).map((sp) => deriveRow(sp, sp.project?.id ? nameOf.get(String(sp.project.id)) : undefined)),
+    [data, nameOf],
+  );
+  const insights = useMemo(() => {
+    const list = Array.isArray(data?.insights) ? data!.insights! : [];
+    return list.filter((i) => i && i.text).sort((a, b) => sevRail(a.severity).rank - sevRail(b.severity).rank);
+  }, [data]);
+
+  const summaryLoading = ids.length > 0 && isLoading && rows.length === 0;
 
   function toggleProject(pid: string) {
     setSelectedIds(prev => {
@@ -197,26 +403,26 @@ export default function IntelligencePage() {
     });
   }
 
-
-  // Chart max for bar comparisons
-  const maxContract = Math.max(...selected.map(m => m.contractAmount), 1);
-  const maxBilled = Math.max(...selected.map(m => m.totalBilled), 1);
-  const maxCO = Math.max(...selected.map(m => m.coTotal), 1);
-  const maxRfi = Math.max(...selected.map(m => m.openRfis), 1);
-  const maxRet = Math.max(...selected.map(m => m.retainageHeld), 1);
-
-  const barColors = ['#F59E0B', '#3dd68c', '#5ba3f5', '#e06be0', '#ff7070'];
-
-  // Portfolio roll-up - real sums across the selected projects (Number-guarded:
-  // DB numerics can round-trip as strings).
-  const totContract = selected.reduce((s, m) => s + (Number(m.contractAmount) || 0), 0);
-  const totBilled = selected.reduce((s, m) => s + (Number(m.totalBilled) || 0), 0);
-  const totCO = selected.reduce((s, m) => s + (Number(m.coTotal) || 0), 0);
-  const totCoCount = selected.reduce((s, m) => s + (Number(m.coCount) || 0), 0);
-  const totRfi = selected.reduce((s, m) => s + (Number(m.openRfis) || 0), 0);
-  const totRet = selected.reduce((s, m) => s + (Number(m.retainageHeld) || 0), 0);
-  const totActiveSubs = selected.reduce((s, m) => s + (Number(m.activeSubs) || 0), 0);
-  const totSubs = selected.reduce((s, m) => s + (Number(m.subCount) || 0), 0);
+  // Portfolio roll-up — real sums over the projects that actually report the
+  // figure. `n` says how many contributed; zero contributors renders em-dash.
+  const sum = (get: (r: Row) => number | null): { total: number; n: number } => {
+    let total = 0, n = 0;
+    for (const r of rows) { const v = get(r); if (v != null) { total += v; n++; } }
+    return { total, n };
+  };
+  const tContract = sum((r) => r.contract);
+  const tBilled = sum((r) => r.billed);
+  const tInvoiced = sum((r) => r.invoiced);
+  const tCO = sum((r) => r.coValue);
+  const tCOCount = sum((r) => r.coCount);
+  const tMargin = sum((r) => r.margin);
+  const tRfi = sum((r) => r.openRfis);
+  const tPunch = sum((r) => r.openPunch);
+  const coverage = (s: { n: number }) => s.n === rows.length ? `across ${rows.length} project${rows.length === 1 ? '' : 's'}` : `${s.n} of ${rows.length} reporting`;
+  const moneyStat = (label: string, s: { total: number; n: number }, sub?: string) =>
+    s.n > 0
+      ? { label, value: fmtK(s.total), sub: sub ?? coverage(s), accent: GOLD }
+      : { label, value: '—', sub: 'no data yet' };
 
   if (loading) {
     return (
@@ -228,32 +434,31 @@ export default function IntelligencePage() {
 
   return (
     <PremiumSurface maxWidth={1600}>
-      <style>{`@keyframes intSpin { to { transform: rotate(360deg); } }`}</style>
-
       {/* Header */}
       <ModuleHero
         eyebrow="Cross-Project Analytics"
         eyebrowIcon={<ChartLineUp size={13} weight="fill" color={GOLD} />}
         title="Project"
         accent="Intelligence"
-        subtitle={`Compare ${selected.length} project${selected.length !== 1 ? 's' : ''} side by side.`}
+        subtitle={`Health, burn, money, and field signals for ${ids.length} selected project${ids.length !== 1 ? 's' : ''} — every figure real or absent.`}
         actions={
-          <div style={{ position: 'relative' as const }}>
-            <button
-              onClick={() => setSelectorOpen(!selectorOpen)}
-              style={goldButtonStyle}
-              className="pmBtn"
-            >
+          <div style={{ position: 'relative' as const, display: 'flex', gap: 10, alignItems: 'center' }}>
+            {ids.length > 0 && (
+              <GhostButton size="md" icon={<ArrowsClockwise size={14} weight="bold" />} onClick={() => void mutate()}>
+                Refresh
+              </GhostButton>
+            )}
+            <GoldButton size="md" onClick={() => setSelectorOpen(!selectorOpen)}>
               Select Projects ({selectedIds.size})
-            </button>
+            </GoldButton>
 
             {/* Project selector dropdown */}
             {selectorOpen && (
               <div style={{
                 position: 'absolute' as const, top: '100%', right: 0, marginTop: 8,
-                background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14,
+                background: '#141416', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14,
                 padding: 12, minWidth: 320, maxHeight: 400, overflowY: 'auto' as const,
-                zIndex: 100, boxShadow: '0 24px 60px -20px rgba(0,0,0,.7)',
+                zIndex: 100, boxShadow: '0 24px 60px -20px rgba(4,6,10,0.8)',
               }}>
                 <div style={{ fontSize: 11, color: DIM, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 8 }}>
                   Select up to 5 projects
@@ -283,354 +488,133 @@ export default function IntelligencePage() {
                     </div>
                   </label>
                 ))}
-                <button
-                  onClick={() => setSelectorOpen(false)}
-                  style={{ ...goldButtonStyle, width: '100%', padding: '9px 0', marginTop: 8 }}
-                  className="pmBtn"
-                >
+                <GoldButton size="md" onClick={() => setSelectorOpen(false)} style={{ width: '100%', marginTop: 8 }}>
                   Done
-                </button>
+                </GoldButton>
               </div>
             )}
           </div>
         }
       />
 
-      {loadingMetrics && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
-          <SkeletonKPI />
-          <SkeletonKPI />
-          <SkeletonKPI />
-          <SkeletonKPI />
-        </div>
-      )}
-
-      {selected.length === 0 && !loadingMetrics && (
+      {/* Empty portfolio / empty selection */}
+      {ids.length === 0 && (
         <SectionCard>
           {projects.length === 0 ? (
             <PremiumEmpty
               icon={<Selection size={30} weight="duotone" color={GOLD} />}
               title="No projects to analyze yet"
-              description="Intelligence compares budget burn, schedule performance, change-order risk, retainage, and sub health side by side. Create your first project and this page builds itself from pay apps, COs, RFIs, and sub rosters - no setup needed."
+              description="Intelligence scores every project from its pay apps, invoices, change orders, RFIs, punch list, and daily logs — then compares them side by side. Create your first project and this page builds itself. No setup needed."
               action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn">Go to Projects</Link>}
             />
           ) : (
             <PremiumEmpty
               icon={<Selection size={30} weight="duotone" color={GOLD} />}
               title="No projects selected"
-              description={`You have ${projects.length} project${projects.length === 1 ? '' : 's'} available - pick up to 5 to compare budget burn, CO risk, open RFIs, retainage, and sub health side by side.`}
-              action={<button onClick={() => setSelectorOpen(true)} style={goldButtonStyle} className="pmBtn">Select Projects</button>}
+              description={`You have ${projects.length} project${projects.length === 1 ? '' : 's'} available — pick up to 5 to compare health scores, billing burn vs schedule, money position, and field signals side by side.`}
+              action={<GoldButton onClick={() => setSelectorOpen(true)}>Select Projects</GoldButton>}
             />
           )}
         </SectionCard>
       )}
 
-      {selected.length > 0 && (
+      {/* Summary failed and we have nothing cached to show */}
+      {ids.length > 0 && error && rows.length === 0 && (
+        <SectionCard>
+          <PremiumEmpty
+            tone="error"
+            icon={<Lightbulb size={30} weight="duotone" color={RED} />}
+            title="Couldn't load the intelligence summary"
+            description="The portfolio summary request failed. Your project data is untouched — retry when ready."
+            action={<GhostButton icon={<ArrowsClockwise size={15} weight="bold" />} onClick={() => void mutate()}>Retry</GhostButton>}
+          />
+        </SectionCard>
+      )}
+
+      {/* Loading — skeletons shaped like the surface they become */}
+      {summaryLoading && !error && (
         <>
-          {/* Portfolio pulse - what the selected projects add up to */}
-          <StatStrip items={[
-            { label: 'Combined Contract', value: fmtK(totContract), sub: `across ${selected.length} project${selected.length === 1 ? '' : 's'}` },
-            { label: 'Billed to Date', value: fmtK(totBilled), sub: `${pct(totBilled, totContract)}% of combined contract` },
-            { label: 'Approved COs', value: fmtK(totCO), sub: `${totCoCount} change order${totCoCount === 1 ? '' : 's'} logged`, accent: totCO > 0 ? AMBER : undefined },
-            { label: 'Open RFIs', value: String(totRfi), accent: totRfi > 10 ? RED : totRfi > 5 ? AMBER : undefined, sub: totRfi > 0 ? 'awaiting answers' : 'all answered' },
-            { label: 'Retainage Held', value: fmtK(totRet), accent: GOLD, sub: 'releases at closeout' },
-            { label: 'Subcontractors', value: `${totActiveSubs}/${totSubs}`, sub: 'active / total on selected jobs' },
-          ]} />
-
-          {/* Comparison Cards */}
           <SectionCard
-            title="Project Comparison"
-            subtitle="Key performance metrics at a glance"
-            icon={<SquaresFour size={17} weight="duotone" color={GOLD} />}
+            title="Portfolio Insights"
+            icon={<Lightbulb size={17} weight="duotone" color={GOLD} />}
             style={{ marginBottom: 24 }}
           >
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${Math.min(selected.length, 3)}, 1fr)`,
-              gap: 16,
-            }}>
-              {selected.map((m) => (
-                <div key={m.id} className="lift" style={{
-                  background: NEST, borderRadius: 14, border: `1px solid ${NEST_BORDER}`,
-                  padding: '18px', overflow: 'hidden',
-                }}>
-                  {/* Project header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                    <div>
-                      <Link href={`/app/projects/${m.id}`} style={{ fontSize: 15, fontWeight: 700, color: TEXT, textDecoration: 'none' }}>
-                        {m.name}
-                      </Link>
-                      <div style={{ fontSize: 11, color: DIM, marginTop: 2 }}>{fmtK(m.contractAmount)}</div>
-                    </div>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                      background: m.status === 'active' ? 'rgba(69,179,125,0.15)' : 'rgba(203,213,225,0.1)',
-                      color: m.status === 'active' ? GREEN : DIM,
-                      textTransform: 'uppercase' as const,
-                    }}>
-                      {m.status}
-                    </span>
-                  </div>
-
-                  {/* Metrics grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    {/* Burn rate */}
-                    <div style={{ background: TILE, border: `1px solid ${TILE_BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                        Budget Burn
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: m.burnRate > 90 ? RED : m.burnRate > 70 ? AMBER : TEXT }}>
-                        {m.burnRate}%
-                      </div>
-                      <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginTop: 6 }}>
-                        <div style={{ height: '100%', width: `${Math.min(m.burnRate, 100)}%`, borderRadius: 2, background: m.burnRate > 90 ? RED : m.burnRate > 70 ? AMBER : GREEN }} />
-                      </div>
-                    </div>
-
-                    {/* Schedule */}
-                    <div style={{ background: TILE, border: `1px solid ${TILE_BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                        Schedule
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: m.schedulePct < m.expectedPct - 10 ? RED : TEXT }}>
-                        {m.schedulePct}%
-                      </div>
-                      <div style={{ fontSize: 10, color: DIM, marginTop: 4 }}>
-                        Expected: {m.expectedPct}%
-                      </div>
-                    </div>
-
-                    {/* Change orders */}
-                    <div style={{ background: TILE, border: `1px solid ${TILE_BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                        Change Orders
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: m.coRisk === 'red' ? RED : m.coRisk === 'amber' ? AMBER : TEXT }}>
-                        {m.coCount}
-                      </div>
-                      <div style={{ fontSize: 10, color: DIM, marginTop: 4 }}>
-                        {fmtK(m.coTotal)} ({m.coPctOfContract}%)
-                      </div>
-                    </div>
-
-                    {/* Open RFIs */}
-                    <div style={{ background: TILE, border: `1px solid ${TILE_BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                        Open RFIs
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: m.openRfis > 10 ? RED : m.openRfis > 5 ? AMBER : TEXT }}>
-                        {m.openRfis}
-                      </div>
-                    </div>
-
-                    {/* Retainage */}
-                    <div style={{ background: TILE, border: `1px solid ${TILE_BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                        Retainage Held
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: GOLD }}>
-                        {fmtK(m.retainageHeld)}
-                      </div>
-                    </div>
-
-                    {/* Sub health */}
-                    <div style={{ background: TILE, border: `1px solid ${TILE_BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                        Sub Health
-                      </div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: m.subHealthScore >= 80 ? GREEN : m.subHealthScore >= 50 ? AMBER : RED }}>
-                        {m.subHealthScore}%
-                      </div>
-                      <div style={{ fontSize: 10, color: DIM, marginTop: 4 }}>
-                        {m.activeSubs}/{m.subCount} active
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+              {ids.map((id) => <Skeleton key={id} height={54} borderRadius={12} />)}
             </div>
           </SectionCard>
+          <GridSkeleton count={ids.length} />
+        </>
+      )}
 
-          {/* Side-by-Side Bar Chart Comparison */}
+      {rows.length > 0 && (
+        <>
+          {/* 1 — INSIGHTS: the honest sentences, severity first */}
           <SectionCard
-            title="Metric Comparison"
-            subtitle="Side-by-side visualization across selected projects"
-            icon={<ChartBar size={17} weight="duotone" color={GOLD} />}
+            title="Portfolio Insights"
+            subtitle="What the numbers say across your selected projects"
+            icon={<Lightbulb size={17} weight="duotone" color={GOLD} />}
             style={{ marginBottom: 24 }}
           >
-            {/* Legend */}
-            <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' as const }}>
-              {selected.map((m, idx) => (
-                <span key={m.id} style={{ fontSize: 11, color: DIM, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: barColors[idx % barColors.length] }} />
-                  {m.name}
-                </span>
-              ))}
-            </div>
-
-            {/* Chart rows */}
-            {[
-              { label: 'Contract Value', values: selected.map(m => m.contractAmount), max: maxContract, formatter: fmtK },
-              { label: 'Total Billed', values: selected.map(m => m.totalBilled), max: maxBilled, formatter: fmtK },
-              { label: 'Change Orders', values: selected.map(m => m.coTotal), max: maxCO > 0 ? maxCO : 1, formatter: fmtK },
-              { label: 'Open RFIs', values: selected.map(m => m.openRfis), max: maxRfi > 0 ? maxRfi : 1, formatter: (n: number) => String(n) },
-              { label: 'Retainage Held', values: selected.map(m => m.retainageHeld), max: maxRet > 0 ? maxRet : 1, formatter: fmtK },
-            ].map((row) => (
-              <div key={row.label} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: DIM, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>
-                  {row.label}
-                </div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  {row.values.map((val, idx) => {
-                    const widthPct = row.max > 0 ? (val / row.max) * 100 : 0;
-                    return (
-                      <div key={idx} style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1, height: 20, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                            <div style={{
-                              height: '100%', width: `${Math.max(widthPct, 2)}%`,
-                              background: barColors[idx % barColors.length],
-                              borderRadius: 4, transition: 'width 0.5s ease',
-                              opacity: 0.8,
-                            }} />
-                          </div>
-                          <span style={{ fontSize: 11, color: TEXT, fontWeight: 600, minWidth: 60, textAlign: 'right' as const }}>
-                            {row.formatter(val)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {insights.length === 0 ? (
+              <div style={{ fontSize: 13, color: DIM, padding: '2px 0' }}>
+                All projects tracking clean — nothing needs your attention right now.
               </div>
-            ))}
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+                {insights.map((ins, i) => {
+                  const { rail } = sevRail(ins.severity);
+                  const pname = ins.projectId ? nameOf.get(String(ins.projectId)) : undefined;
+                  return (
+                    <div key={i} style={{
+                      position: 'relative' as const, overflow: 'hidden',
+                      background: NEST, border: `1px solid ${NEST_BORDER}`, borderRadius: 12,
+                      padding: '12px 14px 12px 18px',
+                    }}>
+                      <div aria-hidden style={{ position: 'absolute' as const, left: 0, top: 0, bottom: 0, width: 3, background: rail }} />
+                      {pname && (
+                        <div style={{ fontSize: 10, fontWeight: 800, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4 }}>
+                          {pname}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.88)', lineHeight: 1.5 }}>{ins.text}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </SectionCard>
 
-          {/* AI Change Order Risk Scoring */}
-          <SectionCard
-            title="Change Order Risk Assessment"
-            subtitle="AI-analyzed risk based on change order volume as percentage of original contract"
-            icon={<Warning size={17} weight="duotone" color={GOLD} />}
-            style={{ marginBottom: 24 }}
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(selected.length, 3)}, 1fr)`, gap: 16 }}>
-              {selected.map((m) => {
-                const riskColor = m.coRisk === 'red' ? RED : m.coRisk === 'amber' ? AMBER : GREEN;
-                const riskLabel = m.coRisk === 'red' ? 'HIGH RISK' : m.coRisk === 'amber' ? 'MODERATE RISK' : 'LOW RISK';
-                const rateColor = m.coApprovalRate >= 70 ? GREEN : m.coApprovalRate >= 50 ? AMBER : RED;
+          {/* 2 — Comparison grid: one machined card per project */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <SquaresFour size={15} weight="duotone" color={GOLD} />
+            <span style={{ fontSize: 11, fontWeight: 800, color: DIM, textTransform: 'uppercase' as const, letterSpacing: '0.09em' }}>
+              Project Comparison
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 24 }}>
+            {rows.map((r) => <ProjectCard key={r.id || r.name} r={r} />)}
+          </div>
 
-                return (
-                  <div key={m.id} style={{
-                    background: NEST, borderRadius: 12, padding: '16px',
-                    border: `1px solid ${m.coRisk === 'red' ? 'rgba(224,100,78,0.3)' : m.coRisk === 'amber' ? 'rgba(240,166,60,0.3)' : NEST_BORDER}`,
-                  }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 10 }}>{m.name}</div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 4,
-                        background: `${riskColor}22`, color: riskColor, letterSpacing: 0.5,
-                      }}>
-                        {riskLabel}
-                      </span>
-                      <span style={{ fontSize: 20, fontWeight: 800, color: riskColor }}>{m.coPctOfContract}%</span>
-                    </div>
-
-                    <div style={{ fontSize: 11, color: DIM, marginBottom: 8 }}>
-                      {m.coCount} change order{m.coCount !== 1 ? 's' : ''} totaling {fmtK(m.coTotal)}
-                    </div>
-
-                    {/* Risk gauge */}
-                    <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, marginBottom: 10, position: 'relative' as const }}>
-                      {/* Threshold markers */}
-                      <div style={{ position: 'absolute' as const, left: '50%', top: -2, width: 1, height: 10, background: AMBER, opacity: 0.5 }} title="10% threshold" />
-                      <div style={{ position: 'absolute' as const, left: '100%', top: -2, width: 1, height: 10, background: RED, opacity: 0.5 }} title="20% threshold" />
-                      <div style={{
-                        height: '100%', width: `${Math.min((m.coPctOfContract / 25) * 100, 100)}%`,
-                        background: riskColor, borderRadius: 3,
-                      }} />
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: DIM }}>
-                      <span>0%</span>
-                      <span style={{ color: AMBER }}>10%</span>
-                      <span style={{ color: RED }}>20%+</span>
-                    </div>
-
-                    {/* Historical CO approval rate — only rendered when the project has
-                        decided change orders to compute a real rate from. No decided COs
-                        ⇒ no meter (rather than a fabricated number). */}
-                    {m.coDecidedCount > 0 && (
-                      <div style={{
-                        marginTop: 12, background: 'rgba(245, 158, 11,0.06)', borderRadius: 8,
-                        padding: '10px 12px', border: '1px solid rgba(245, 158, 11,0.15)',
-                      }}>
-                        <div style={{ fontSize: 10, color: DIM, fontWeight: 600, textTransform: 'uppercase' as const, marginBottom: 4 }}>
-                          Historical CO Approval Rate
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3 }}>
-                            <div style={{
-                              height: '100%', width: `${m.coApprovalRate}%`,
-                              background: rateColor,
-                              borderRadius: 3,
-                            }} />
-                          </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: rateColor }}>
-                            {m.coApprovalRate}%
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 10, color: DIM, marginTop: 6 }}>
-                          {m.coApprovedCount} of {m.coDecidedCount} decided change order{m.coDecidedCount !== 1 ? 's' : ''} approved
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>
-
-          {/* Sub Health Scorecard Summary */}
-          <SectionCard
-            title="Subcontractor Health Summary"
-            subtitle="Active vs total subcontractor engagement across projects"
-            icon={<Heartbeat size={17} weight="duotone" color={GOLD} />}
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(selected.length, 5)}, 1fr)`, gap: 12 }}>
-              {selected.map((m) => {
-                const healthColor = m.subHealthScore >= 80 ? GREEN : m.subHealthScore >= 50 ? AMBER : RED;
-                return (
-                  <div key={m.id} style={{ background: TILE, border: `1px solid ${TILE_BORDER}`, borderRadius: 12, padding: '16px', textAlign: 'center' as const }}>
-                    {/* Circular gauge */}
-                    <div style={{ position: 'relative' as const, width: 80, height: 80, margin: '0 auto 10px' }}>
-                      <svg width="80" height="80" viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-                        <circle
-                          cx="40" cy="40" r="34" fill="none"
-                          stroke={healthColor} strokeWidth="8"
-                          strokeDasharray={`${(m.subHealthScore / 100) * 213.6} 213.6`}
-                          strokeLinecap="round"
-                          transform="rotate(-90 40 40)"
-                        />
-                      </svg>
-                      <div style={{
-                        position: 'absolute' as const, top: '50%', left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        fontSize: 18, fontWeight: 800, color: healthColor,
-                      }}>
-                        {m.subHealthScore}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: TEXT, marginBottom: 4 }}>{m.name}</div>
-                    <div style={{ fontSize: 11, color: DIM }}>
-                      {m.activeSubs} active / {m.subCount} total
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>
+          {/* 3 — Portfolio totals: sums over projects that report the figure */}
+          <StatStrip items={[
+            moneyStat('Combined Contract', tContract),
+            moneyStat('Billed to Date', tBilled,
+              tContract.n > 0 && tContract.total > 0 && tBilled.n > 0
+                ? `${((tBilled.total / tContract.total) * 100).toFixed(1)}% of combined contract`
+                : undefined),
+            moneyStat('Invoiced Costs', tInvoiced),
+            moneyStat('Approved COs', tCO, tCOCount.n > 0 ? `${tCOCount.total} approved change order${tCOCount.total === 1 ? '' : 's'}` : undefined),
+            tMargin.n > 0
+              ? { label: 'Portfolio Margin', value: fmtK(tMargin.total), sub: coverage(tMargin), accent: tMargin.total < 0 ? RED : GOLD }
+              : { label: 'Portfolio Margin', value: '—', sub: 'no data yet' },
+            tRfi.n > 0
+              ? { label: 'Open RFIs', value: String(tRfi.total), sub: tRfi.total > 0 ? 'awaiting answers' : 'all answered', accent: tRfi.total > 10 ? RED : tRfi.total > 5 ? AMBER : undefined }
+              : { label: 'Open RFIs', value: '—', sub: 'no data yet' },
+            tPunch.n > 0
+              ? { label: 'Open Punch', value: String(tPunch.total), sub: coverage(tPunch), accent: tPunch.total > 0 ? AMBER : undefined }
+              : { label: 'Open Punch', value: '—', sub: 'no data yet' },
+          ]} />
         </>
       )}
     </PremiumSurface>
