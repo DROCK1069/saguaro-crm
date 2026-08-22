@@ -18,6 +18,7 @@ import {
   CinematicPage, ModuleHero, HeroButton, StatCard, SectionCard, SectionLink, EmptyStatePremium, CIN,
 } from '@/components/ui/cinematic';
 import GettingStartedRail from '@/components/GettingStartedRail';
+import PreConFlow from '@/components/PreConFlow';
 import { StatStrip } from '@/components/ui/premium';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#22C55E',RED='#EF4444';
@@ -213,6 +214,9 @@ export default function OverviewPage(){
           </HeroButton>
         </>}
       />
+
+      {/* Pre-con setup path — modules auto-sharing real data, in order, with one-click handoffs */}
+      <PreConFlow projectId={projectId}/>
 
       {/* GC Guided Journey — auto-hides once all 8 steps complete */}
       <GettingStartedRail projectId={projectId}/>
