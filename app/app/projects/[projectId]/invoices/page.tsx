@@ -8,6 +8,7 @@ import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatSt
 import { SkeletonRow } from '@/components/ui/Skeleton';
 import { Receipt, CurrencyDollar, CheckCircle, WarningCircle, PencilSimple, Percent, Copy, Trash, Plus, CaretDown, ClockCounterClockwise, Calculator } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -243,7 +244,7 @@ export default function InvoicesPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="Project Billing"
-        eyebrowIcon={<Receipt size={13} weight="fill" color={GOLD} />}
+        eyebrowIcon={<Receipt size={13} weight="fill" color={moduleAccent('invoices').hex} />}
         title="Client"
         accent="Invoices"
         subtitle="Owner billing and payment tracking."
@@ -421,7 +422,7 @@ export default function InvoicesPage() {
         style={{ marginBottom: 16 }}
       />
 
-      <SectionCard title="All Invoices" icon={<Receipt size={17} weight="duotone" color={GOLD} />} flush>
+      <SectionCard title="All Invoices" icon={<Receipt size={17} weight="duotone" color={moduleAccent('invoices').hex} />} flush>
         {loading ? <div><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /></div> : invoices.length === 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: ctx ? 'minmax(0, 1fr) 360px' : '1fr', alignItems: 'stretch' }}>
             <PremiumEmpty

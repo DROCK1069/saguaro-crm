@@ -8,6 +8,7 @@ import { getAuthHeaders } from '@/lib/supabase-browser';
 import { Clipboard, ClipboardText, Thermometer, HardHat, CalendarBlank, WarningCircle, Plus, X } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',BLUE='#F59E0B';
@@ -243,7 +244,7 @@ export default function DailyLogsPage(){
           {/* Header */}
           <ModuleHero
             eyebrow="FIELD REPORTS"
-            eyebrowIcon={<ClipboardText size={13} weight="fill" color={GOLD}/>}
+            eyebrowIcon={<ClipboardText size={13} weight="fill" color={moduleAccent('daily').hex}/>}
             title="Daily"
             accent="Logs"
             subtitle="Field reports — weather, crew, work performed, delays & safety"
@@ -256,11 +257,11 @@ export default function DailyLogsPage(){
 
           {/* KPIs */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
-            <StatCard icon={<Clipboard size={19} weight="duotone" color={GOLD}/>}
+            <StatCard icon={<Clipboard size={19} weight="duotone" color={moduleAccent('daily').hex}/>}
               label="Total Logs" value={String(logs.length)} accent={GOLD} sub="all field reports" delay={0.02}/>
-            <StatCard icon={<CalendarBlank size={19} weight="duotone" color={GOLD}/>}
+            <StatCard icon={<CalendarBlank size={19} weight="duotone" color={moduleAccent('daily').hex}/>}
               label="This Month" value={String(thisMonth)} sub="logged this month" delay={0.06}/>
-            <StatCard icon={<HardHat size={19} weight="duotone" color={GOLD}/>}
+            <StatCard icon={<HardHat size={19} weight="duotone" color={moduleAccent('daily').hex}/>}
               label="Avg Crew / Day" value={String(avgCrew)} accent={GOLD} sub="workers on site" delay={0.10}/>
             <StatCard icon={<WarningCircle size={19} weight="duotone" color={delayDays>0?RED:DIM}/>}
               label="Days w/ Delays" value={String(delayDays)} accent={delayDays>0?RED:undefined}
@@ -288,7 +289,7 @@ export default function DailyLogsPage(){
           {/* Filters + Log */}
           <SectionCard
             title="Log Entries"
-            icon={<ClipboardText size={17} weight="duotone" color={GOLD}/>}
+            icon={<ClipboardText size={17} weight="duotone" color={moduleAccent('daily').hex}/>}
             action={<span style={{fontSize:12,fontWeight:700,color:DIM,whiteSpace:'nowrap'}}>{filtered.length} of {logs.length}</span>}
             flush
           >

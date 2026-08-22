@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/premium';
 import { FileText, Clock, Hourglass, CheckCircle, Plus } from '@phosphor-icons/react';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
+import { moduleAccent } from '@/lib/module-identity';
 
 interface TimeEntry {
   id: string;
@@ -187,7 +188,7 @@ export default function TimesheetsPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="LABOR TRACKING"
-        eyebrowIcon={<Clock size={13} weight="fill" color={GOLD} />}
+        eyebrowIcon={<Clock size={13} weight="fill" color={moduleAccent('time').hex} />}
         title="Crew"
         accent="Timesheets"
         subtitle="Weekly crew timesheets and labor tracking"
@@ -212,8 +213,8 @@ export default function TimesheetsPage() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: 28 }}>
-        <StatCard icon={<FileText size={19} weight="duotone" color={GOLD} />} label="Total Entries" value={String(totalEntries)} accent={GOLD} sub="logged this period" delay={0.02} />
-        <StatCard icon={<Clock size={19} weight="duotone" color={GOLD} />} label="Total Hours" value={`${totalHours.toFixed(1)}h`} accent={GOLD} sub="regular + overtime" delay={0.06} />
+        <StatCard icon={<FileText size={19} weight="duotone" color={moduleAccent('time').hex} />} label="Total Entries" value={String(totalEntries)} accent={GOLD} sub="logged this period" delay={0.02} />
+        <StatCard icon={<Clock size={19} weight="duotone" color={moduleAccent('time').hex} />} label="Total Hours" value={`${totalHours.toFixed(1)}h`} accent={GOLD} sub="regular + overtime" delay={0.06} />
         <StatCard icon={<Hourglass size={19} weight="duotone" color={ORANGE} />} label="Pending Approval" value={String(pendingCount)} accent={pendingCount > 0 ? ORANGE : undefined} sub="awaiting review" delay={0.10} />
         <StatCard icon={<CheckCircle size={19} weight="duotone" color={GREEN} />} label="Approved" value={String(approvedCount)} accent={approvedCount > 0 ? GREEN : undefined} sub="this period" delay={0.14} />
       </div>
@@ -305,7 +306,7 @@ export default function TimesheetsPage() {
       )}
 
       {/* Table */}
-      <SectionCard title="Time Entries" icon={<Clock size={17} weight="duotone" color={GOLD} />} flush>
+      <SectionCard title="Time Entries" icon={<Clock size={17} weight="duotone" color={moduleAccent('time').hex} />} flush>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 44, color: 'rgba(255,255,255,0.62)', fontSize: 13 }}>Loading...</div>
         ) : filtered.length === 0 ? (

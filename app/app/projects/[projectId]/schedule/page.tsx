@@ -9,6 +9,7 @@ import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
 import { WarningCircle, CalendarBlank, X, Plus, TrendUp, CheckCircle, Clock, ListChecks } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -391,7 +392,7 @@ export default function SchedulePage(){
           {/* Header */}
           <ModuleHero
             eyebrow="Schedule"
-            eyebrowIcon={<CalendarBlank size={13} weight="fill" color={GOLD} />}
+            eyebrowIcon={<CalendarBlank size={13} weight="fill" color={moduleAccent('schedule').hex} />}
             title="Project"
             accent="Schedule"
             subtitle="Tasks, milestones & Gantt timeline"
@@ -420,9 +421,9 @@ export default function SchedulePage(){
               : <>
                   <StatCard icon={<TrendUp size={19} weight="duotone" color={GREEN} />}
                     label="% Complete" value={`${avgPct}%`} accent={GREEN} sub="avg completion" delay={0.02} />
-                  <StatCard icon={<Clock size={19} weight="duotone" color={GOLD} />}
+                  <StatCard icon={<Clock size={19} weight="duotone" color={moduleAccent('schedule').hex} />}
                     label="Days Remaining" value={daysLeft?String(daysLeft):'—'} sub="to project end" delay={0.06} />
-                  <StatCard icon={<CheckCircle size={19} weight="duotone" color={GOLD} />}
+                  <StatCard icon={<CheckCircle size={19} weight="duotone" color={moduleAccent('schedule').hex} />}
                     label="Tasks Complete" value={`${completedCount}/${tasks.length}`} accent={GOLD} sub="tasks finished" delay={0.10} />
                   <StatCard icon={<WarningCircle size={19} weight="duotone" color={delayedCount?RED:DIM} />}
                     label="Delayed" value={String(delayedCount)} accent={delayedCount?RED:undefined}
@@ -433,7 +434,7 @@ export default function SchedulePage(){
           {/* Gantt view */}
           {viewMode==='gantt'&&!loading&&!loadError&&tasks.length>0&&(
             <SectionCard title="Timeline" subtitle="Today marked with a gold line"
-              icon={<CalendarBlank size={17} weight="duotone" color={GOLD} />}
+              icon={<CalendarBlank size={17} weight="duotone" color={moduleAccent('schedule').hex} />}
               style={{marginBottom:20}} bodyStyle={{overflowX:'auto'}}>
               <GanttChart tasks={filtered.length?filtered:tasks}/>
             </SectionCard>
@@ -520,7 +521,7 @@ export default function SchedulePage(){
           {/* List view */}
           {!loading&&!loadError&&viewMode==='list'&&filtered.length>0&&(
             <SectionCard title="Tasks" flush
-              icon={<ListChecks size={17} weight="duotone" color={GOLD} />}
+              icon={<ListChecks size={17} weight="duotone" color={moduleAccent('schedule').hex} />}
               action={<span style={{fontSize:12,color:DIM,fontWeight:700}}>{filtered.length} shown</span>}>
               <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>

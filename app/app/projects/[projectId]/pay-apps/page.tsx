@@ -8,6 +8,7 @@ import DragHandle, { useDragReorder } from '../../../../../components/DragHandle
 import { Clipboard, ClipboardText, CheckCircle, FileText, CaretDown, PencilSimple, Copy, Trash, Receipt, Plus, Hourglass } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
 import { SkeletonRow } from '@/components/ui/Skeleton';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const SAGE='#45B37D',AMBER='#F0A63C';
@@ -261,7 +262,7 @@ export default function PayAppsPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="AIA BILLING"
-        eyebrowIcon={<Receipt size={13} weight="fill" color={GOLD} />}
+        eyebrowIcon={<Receipt size={13} weight="fill" color={moduleAccent('payapps').hex} />}
         title="Pay"
         accent="Applications"
         subtitle="AIA G702/G703 — Application and Certificate for Payment"
@@ -298,7 +299,7 @@ export default function PayAppsPage() {
       {/* KPI Row */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(190px, 1fr))',gap:16,marginBottom:28}}>
         <StatCard
-          icon={<ClipboardText size={19} weight="duotone" color={GOLD} />}
+          icon={<ClipboardText size={19} weight="duotone" color={moduleAccent('payapps').hex} />}
           label="Total Apps" value={String(payApps.length)} accent={GOLD}
           sub={money?.lastPayApp?`latest #${money.lastPayApp.appNumber} · ${String(money.lastPayApp.status||'draft').replace(/_/g,' ')}`:(payApps.length===1?'1 application':`${payApps.length} applications`)} delay={0.02}
         />

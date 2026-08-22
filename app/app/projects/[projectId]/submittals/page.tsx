@@ -9,6 +9,7 @@ import { Plus, Clipboard, X, CaretRight, ClipboardText, Clock, Eye, WarningCircl
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, AutoChip, goldButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS, SUB_TRADES } from '@/lib/construction-intelligence';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#c07830';
@@ -285,7 +286,7 @@ export default function SubmittalsPage(){
           {/* Header */}
           <ModuleHero
             eyebrow="PROJECT WORKFLOW"
-            eyebrowIcon={<ClipboardText size={13} weight="fill" color={GOLD} />}
+            eyebrowIcon={<ClipboardText size={13} weight="fill" color={moduleAccent('specs').hex} />}
             title="Submittal"
             accent="Log"
             subtitle="Shop drawings, product data & submittal log"
@@ -298,11 +299,11 @@ export default function SubmittalsPage(){
 
           {/* KPIs */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
-            <StatCard icon={<Stack size={19} weight="duotone" color={GOLD} />}
+            <StatCard icon={<Stack size={19} weight="duotone" color={moduleAccent('specs').hex} />}
               label="Total" value={String(total)} accent={GOLD} sub="submittals" delay={0.02} />
             <StatCard icon={<Clock size={19} weight="duotone" color={DIM} />}
               label="Pending" value={String(pending)} sub="awaiting submission" delay={0.06} />
-            <StatCard icon={<Eye size={19} weight="duotone" color={GOLD} />}
+            <StatCard icon={<Eye size={19} weight="duotone" color={moduleAccent('specs').hex} />}
               label="Under Review" value={String(underReview)} accent={GOLD} sub="in review" delay={0.10} />
             <StatCard icon={<WarningCircle size={19} weight="duotone" color={RED} />}
               label="Overdue" value={String(overdue)} accent={overdue>0?RED:undefined}
@@ -312,7 +313,7 @@ export default function SubmittalsPage(){
           {/* Filters + Log */}
           <SectionCard
             title="Submittal Log"
-            icon={<ClipboardText size={17} weight="duotone" color={GOLD} />}
+            icon={<ClipboardText size={17} weight="duotone" color={moduleAccent('specs').hex} />}
             action={<span style={{fontSize:12,fontWeight:700,color:DIM,whiteSpace:'nowrap'}}>{filtered.length} of {total}</span>}
             flush
           >

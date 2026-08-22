@@ -9,6 +9,7 @@ import { Plus, Ruler, X, Stack, CheckCircle, Eye, SquaresFour, UploadSimple } fr
 import { SHEET_DISCIPLINES } from '@/lib/construction-intelligence';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -356,7 +357,7 @@ export default function DrawingsPage(){
         {/* Header */}
         <ModuleHero
           eyebrow={ctx?.project?.name||'Drawings'}
-          eyebrowIcon={<Ruler size={13} weight="fill" color={GOLD}/>}
+          eyebrowIcon={<Ruler size={13} weight="fill" color={moduleAccent('drawings').hex}/>}
           title="Drawing"
           accent="Register"
           subtitle={current>0?`${current} current sheet${current===1?'':'s'} in force across ${disciplineCount} discipline${disciplineCount===1?'':'s'}${superseded>0?` — ${superseded} superseded kept on record`:''}.`:'Architectural and engineering drawing sets'}
@@ -381,7 +382,7 @@ export default function DrawingsPage(){
 
         {/* KPIs */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
-          <StatCard icon={<Stack size={19} weight="duotone" color="#FBBF24"/>} label="Total Drawings" value={String(total)} accent="#FBBF24" sub="in register" delay={0.02}/>
+          <StatCard icon={<Stack size={19} weight="duotone" color={moduleAccent('drawings').hex}/>} label="Total Drawings" value={String(total)} accent="#FBBF24" sub="in register" delay={0.02}/>
           <StatCard icon={<CheckCircle size={19} weight="duotone" color={GREEN}/>} label="Current" value={String(current)} accent={GREEN} sub={superseded>0?`vs ${superseded} superseded`:'active sheets'} delay={0.06}/>
           <StatCard icon={<Eye size={19} weight="duotone" color={GOLD}/>} label="For Review" value={String(forReview)} accent={GOLD} sub="awaiting review" delay={0.10}/>
           <StatCard icon={<SquaresFour size={19} weight="duotone" color="#a78bfa"/>} label="Disciplines" value={String(disciplineCount)} accent="#a78bfa" sub="represented" delay={0.14}/>
@@ -489,7 +490,7 @@ export default function DrawingsPage(){
         )}
 
         {!loading&&filtered.length>0&&!groupByDiscipline&&(
-          <SectionCard flush icon={<Ruler size={17} weight="duotone" color={GOLD}/>} title="All Drawings" subtitle={`${filtered.length} sheet${filtered.length===1?'':'s'}`}>
+          <SectionCard flush icon={<Ruler size={17} weight="duotone" color={moduleAccent('drawings').hex}/>} title="All Drawings" subtitle={`${filtered.length} sheet${filtered.length===1?'':'s'}`}>
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
                 {tableHead}

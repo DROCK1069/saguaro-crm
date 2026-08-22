@@ -9,6 +9,7 @@ import PhotoEditor from '../../../../../components/PhotoEditor';
 import { Camera, X, PencilSimple, Plus, Images, CalendarBlank, FolderSimple, WarningCircle } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -252,7 +253,7 @@ export default function PhotosPage(){
           {/* Header */}
           <ModuleHero
             eyebrow={ctx?.project?.name||'Photos'}
-            eyebrowIcon={<Camera size={13} weight="fill" color="#F59E0B" />}
+            eyebrowIcon={<Camera size={13} weight="fill" color={moduleAccent('photos').hex} />}
             title="Site"
             accent="Photos"
             subtitle="Site progress photos and documentation."
@@ -277,8 +278,8 @@ export default function PhotosPage(){
 
           {/* KPIs */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
-            <StatCard icon={<Images size={19} weight="duotone" color="#FBBF24" />} label="Total Photos" value={String(photos.length)} accent="#FBBF24" sub="all albums" delay={0.02} />
-            <StatCard icon={<CalendarBlank size={19} weight="duotone" color={GOLD} />} label="This Month" value={String(thisMonth)} accent={GOLD} sub="added this month" delay={0.06} />
+            <StatCard icon={<Images size={19} weight="duotone" color={moduleAccent('photos').hex} />} label="Total Photos" value={String(photos.length)} accent="#FBBF24" sub="all albums" delay={0.02} />
+            <StatCard icon={<CalendarBlank size={19} weight="duotone" color={moduleAccent('photos').hex} />} label="This Month" value={String(thisMonth)} accent={GOLD} sub="added this month" delay={0.06} />
             <StatCard icon={<FolderSimple size={19} weight="duotone" color={GREEN} />} label="Albums" value={String(albums.length||ALBUMS.length)} accent={GREEN} sub="in use" delay={0.10} />
             <StatCard icon={<WarningCircle size={19} weight="duotone" color={RED} />} label="Issues Tagged" value={String(issueCount)} accent={RED} sub="flagged" delay={0.14} />
           </div>
@@ -311,7 +312,7 @@ export default function PhotosPage(){
           {/* Gallery */}
           <SectionCard
             title="Gallery"
-            icon={<Images size={17} weight="duotone" color={GOLD} />}
+            icon={<Images size={17} weight="duotone" color={moduleAccent('photos').hex} />}
             action={<span style={{fontSize:12,color:'rgba(255,255,255,0.62)',fontWeight:600}}>{filtered.length} {filtered.length===1?'photo':'photos'}</span>}
           >
             {loading&&<div style={{padding:40,textAlign:'center',color:DIM}}>Loading photos...</div>}

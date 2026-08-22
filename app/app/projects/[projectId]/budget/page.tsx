@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/cinematic';
 import { StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#c03030';
 const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -297,8 +298,8 @@ export default function BudgetPage() {
   const hero = (
     <ModuleHero
       eyebrow="Cost Control"
-      eyebrowIcon={<Wallet size={12} weight="fill" />}
-      icon={<Wallet size={26} weight="duotone" color={CIN.goldHi} />}
+      eyebrowIcon={<Wallet size={12} weight="fill" color={moduleAccent('budget').hex} />}
+      icon={<Wallet size={26} weight="duotone" color={moduleAccent('budget').hex} />}
       title="Project Budget"
       subtitle="Job costing by CSI cost code — committed, actual, cost-to-complete, and forecast at completion."
       actions={<>

@@ -22,6 +22,7 @@ import { ListToolbar } from '@/components/ui/ListToolbar';
 import { Question, WarningCircle, Clipboard, FolderOpen, CheckCircle, Clock, Trash, Plus, Lightning, Buildings } from '@phosphor-icons/react';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
+import { moduleAccent } from '@/lib/module-identity';
 
 interface RFI {
   id: string;
@@ -321,7 +322,7 @@ export default function RFIsPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="Project RFIs"
-        eyebrowIcon={<Question size={13} weight="fill" color="#F59E0B" />}
+        eyebrowIcon={<Question size={13} weight="fill" color={moduleAccent('rfis').hex} />}
         title="Requests for"
         accent="Information"
         subtitle="Track questions, route the ball-in-court, and close out clarifications before they slow the field."
@@ -354,8 +355,8 @@ export default function RFIsPage() {
           </div>
         ) : (
           <>
-            <StatCard icon={<Clipboard size={19} weight="duotone" color={T.gold} />} label="Total RFIs" value={String(totalCount ?? 0)} delay={0.02} />
-            <StatCard icon={<FolderOpen size={19} weight="duotone" color={T.gold} />} label="Open" value={String(openCount ?? 0)} accent={T.gold} delay={0.06} />
+            <StatCard icon={<Clipboard size={19} weight="duotone" color={moduleAccent('rfis').hex} />} label="Total RFIs" value={String(totalCount ?? 0)} delay={0.02} />
+            <StatCard icon={<FolderOpen size={19} weight="duotone" color={moduleAccent('rfis').hex} />} label="Open" value={String(openCount ?? 0)} accent={T.gold} delay={0.06} />
             <StatCard icon={<CheckCircle size={19} weight="duotone" color={T.green} />} label="Answered" value={String(answeredCount ?? 0)} accent={T.green} delay={0.10} />
             <StatCard icon={<Clock size={19} weight="duotone" color={overdueCount > 0 ? T.red : T.faint} />} label="Overdue" value={String(overdueCount ?? 0)} accent={overdueCount > 0 ? T.red : undefined} sub={overdueCount > 0 ? 'Needs attention' : undefined} delay={0.14} />
           </>
@@ -385,7 +386,7 @@ export default function RFIsPage() {
             ]} />
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 330px', gap: 22, alignItems: 'start' }}>
-            <SectionCard title="New Request for Information" icon={<Question size={17} weight="duotone" color={T.gold} />}>
+            <SectionCard title="New Request for Information" icon={<Question size={17} weight="duotone" color={moduleAccent('rfis').hex} />}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={lbl}>Subject *</label>
@@ -503,7 +504,7 @@ export default function RFIsPage() {
       )}
 
       {/* Table */}
-      <SectionCard title="RFI Log" icon={<Clipboard size={17} weight="duotone" color={T.gold} />} flush>
+      <SectionCard title="RFI Log" icon={<Clipboard size={17} weight="duotone" color={moduleAccent('rfis').hex} />} flush>
         {loading ? (
           <div>
             <SkeletonRow />

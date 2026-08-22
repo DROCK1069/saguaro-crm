@@ -8,6 +8,7 @@ import { toCents, toDollars, summarizeContract } from '@/lib/calc';
 import { Robot, X, Warning, CheckCircle, XCircle, Plus, Clipboard, CaretDown, PencilSimple, Copy, Trash, CurrencyDollar, ClockCounterClockwise } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const AMBER='#d97706';
@@ -339,7 +340,7 @@ export default function ChangeOrdersPage() {
         {/* Header */}
         <ModuleHero
           eyebrow="Cost Control"
-          eyebrowIcon={<Clipboard size={13} weight="fill" color={GOLD} />}
+          eyebrowIcon={<Clipboard size={13} weight="fill" color={moduleAccent('changeorders').hex} />}
           title="Change"
           accent="Orders"
           subtitle={loading ? 'Loading…' : `${cos.length} change order${cos.length!==1?'s':''} — track scope changes, owner requests, and unforeseen conditions.`}
@@ -490,7 +491,7 @@ export default function ChangeOrdersPage() {
 
       {/* KPI Cards */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:24}}>
-        <StatCard icon={<Clipboard size={19} weight="duotone" color={GOLD} />} label="Total COs" value={String(cos.length)} delay={0.02} />
+        <StatCard icon={<Clipboard size={19} weight="duotone" color={moduleAccent('changeorders').hex} />} label="Total COs" value={String(cos.length)} delay={0.02} />
         <StatCard icon={<Warning size={19} weight="duotone" color={GOLD} />} label="Pending" value={String(cos.filter(c=>c.status==='pending').length)} accent={GOLD} delay={0.06} />
         <StatCard icon={<CheckCircle size={19} weight="duotone" color="#3dd68c" />} label="Approved" value={String(cos.filter(c=>c.status==='approved').length)} accent="#3dd68c" delay={0.10} />
         <StatCard icon={<XCircle size={19} weight="duotone" color={RED} />} label="Rejected" value={String(cos.filter(c=>c.status==='rejected').length)} accent={RED} delay={0.14} />
@@ -538,7 +539,7 @@ export default function ChangeOrdersPage() {
             count={{ shown: filteredCos.length, total: cos.length }}
             style={{ marginBottom: 16 }}
           />
-          <SectionCard title="Change Orders" icon={<Clipboard size={17} weight="duotone" color={GOLD} />} flush>
+          <SectionCard title="Change Orders" icon={<Clipboard size={17} weight="duotone" color={moduleAccent('changeorders').hex} />} flush>
           <div style={{overflowX:'auto'}}>
             <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
               <thead>

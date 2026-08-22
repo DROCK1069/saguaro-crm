@@ -21,6 +21,7 @@ import {
   AutoChip,
 } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -247,7 +248,7 @@ export default function PunchListPage(){
         {/* Header */}
         <ModuleHero
           eyebrow="Project Closeout"
-          eyebrowIcon={<ListChecks size={13} weight="fill" color={GOLD}/>}
+          eyebrowIcon={<ListChecks size={13} weight="fill" color={moduleAccent('punch').hex}/>}
           title="Punch"
           accent="List"
           subtitle="Deficiencies, corrections & closeout items — track every fix through to completion."
@@ -260,8 +261,8 @@ export default function PunchListPage(){
 
         {/* KPIs */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12,marginBottom:22}}>
-          <StatCard icon={<FolderOpen size={19} weight="duotone" color="#FBBF24"/>} label="Open" value={String(openCount)} accent="#FBBF24" delay={0.02}/>
-          <StatCard icon={<CircleHalf size={19} weight="duotone" color={GOLD}/>} label="In Progress" value={String(inProg)} accent={GOLD} delay={0.06}/>
+          <StatCard icon={<FolderOpen size={19} weight="duotone" color={moduleAccent('punch').hex}/>} label="Open" value={String(openCount)} accent="#FBBF24" delay={0.02}/>
+          <StatCard icon={<CircleHalf size={19} weight="duotone" color={moduleAccent('punch').hex}/>} label="In Progress" value={String(inProg)} accent={GOLD} delay={0.06}/>
           <StatCard icon={<CheckCircle size={19} weight="duotone" color={GREEN}/>} label="Completed" value={String(done)} accent={GREEN} delay={0.10}/>
           <StatCard icon={<WarningCircle size={19} weight="duotone" color={crit>0?RED:'rgba(255,255,255,0.42)'}/>} label="Critical Open" value={String(crit)} accent={crit>0?RED:undefined} sub={crit>0?'Needs attention':undefined} delay={0.14}/>
         </div>
@@ -305,7 +306,7 @@ export default function PunchListPage(){
         {/* List */}
         <SectionCard
           title="Punch Items"
-          icon={<ListChecks size={17} weight="duotone" color={GOLD}/>}
+          icon={<ListChecks size={17} weight="duotone" color={moduleAccent('punch').hex}/>}
           flush
           action={!loading&&!loadError?(
             <span style={{fontSize:12,color:'rgba(255,255,255,0.42)',fontVariantNumeric:'tabular-nums'}}>

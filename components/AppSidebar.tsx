@@ -54,6 +54,7 @@ import {
 import { colors, font, radius, shadow, sidebar as sidebarTokens, z } from '../lib/design-tokens';
 import { useWhiteLabel } from './WhiteLabelProvider';
 import { useEntitlements } from '../lib/hooks/useEntitlements';
+import { moduleAccent } from '../lib/module-identity';
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 interface NavItem {
@@ -62,6 +63,7 @@ interface NavItem {
   icon: React.ElementType;
   badge?: number;
   gate?: string; // gated feature flag; item hidden unless the tenant is entitled
+  accentKey?: string; // module-identity key -> tints the inactive icon + count badge
 }
 interface NavSection {
   title: string;
@@ -75,8 +77,8 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Dashboard',    href: '/app',              icon: GridFour },
       { label: 'Projects',     href: '/app/projects',     icon: FolderSimple },
-      { label: 'People & Access', href: '/app/people',    icon: Users },
-      { label: 'Time Clock',   href: '/app/time',         icon: Clock },
+      { label: 'People & Access', href: '/app/people',    icon: Users, accentKey: 'team' },
+      { label: 'Time Clock',   href: '/app/time',         icon: Clock, accentKey: 'time' },
       { label: 'Fleet',        href: '/app/fleet',        icon: Truck, gate: 'fleet' },
     ],
   },
@@ -109,8 +111,8 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Pre-Construction',
     items: [
       { label: 'Bids & Estimates', href: '/app/bids',         icon: CurrencyDollar },
-      { label: 'Takeoff Studio',   href: '/app/takeoff',      icon: Blueprint },
-      { label: 'Catalog',          href: '/app/catalog',      icon: Package },
+      { label: 'Takeoff Studio',   href: '/app/takeoff',      icon: Blueprint, accentKey: 'takeoff' },
+      { label: 'Catalog',          href: '/app/catalog',      icon: Package, accentKey: 'catalog' },
       { label: 'Heatmap',          href: '/field/heatmap',    icon: WifiHigh },
       { label: 'Intelligence',     href: '/app/intelligence', icon: Brain },
     ],
@@ -118,17 +120,17 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Execution',
     items: [
-      { label: 'Documents',   href: '/app/documents',  icon: FileText },
-      { label: 'Daily Logs',  href: '/app/daily-logs', icon: ClipboardText },
-      { label: 'Schedule',    href: '/app/schedule',   icon: CalendarBlank },
+      { label: 'Documents',   href: '/app/documents',  icon: FileText, accentKey: 'documents' },
+      { label: 'Daily Logs',  href: '/app/daily-logs', icon: ClipboardText, accentKey: 'daily' },
+      { label: 'Schedule',    href: '/app/schedule',   icon: CalendarBlank, accentKey: 'schedule' },
       { label: 'Field App',   href: '/field',          icon: DeviceMobile },
-      { label: 'Saguaro Radio', href: '/app/radio',    icon: Broadcast },
+      { label: 'Saguaro Radio', href: '/app/radio',    icon: Broadcast, accentKey: 'radio' },
     ],
   },
   {
     title: 'Financial',
     items: [
-      { label: 'Invoicing',   href: '/app/invoicing',  icon: CreditCard },
+      { label: 'Invoicing',   href: '/app/invoicing',  icon: CreditCard, accentKey: 'invoices' },
       { label: 'Billing',     href: '/app/billing',    icon: CurrencyDollar },
       { label: 'Reports',     href: '/app/reports',    icon: ChartBar },
     ],
@@ -137,7 +139,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Tools',
     items: [
       { label: 'Autopilot',   href: '/app/autopilot',   icon: Star },
-      { label: 'Compliance',  href: '/app/compliance',  icon: ShieldCheck },
+      { label: 'Compliance',  href: '/app/compliance',  icon: ShieldCheck, accentKey: 'compliance' },
       { label: 'Portals',     href: '/app/portals',     icon: SquaresFour },
     ],
   },
@@ -268,6 +270,7 @@ export default function AppSidebar({
             {visibleItems.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
+              const accent = item.accentKey ? moduleAccent(item.accentKey) : null;
               return (
                 <Link
                   key={item.href}
@@ -326,7 +329,7 @@ export default function AppSidebar({
                   <Icon
                     size={collapsed ? 20 : 18}
                     weight={active ? 'fill' : 'regular'}
-                    style={{ flexShrink: 0, opacity: active ? 1 : 0.85 }}
+                    style={{ flexShrink: 0, opacity: active ? 1 : 0.85, color: active ? undefined : accent?.hex }}
                   />
                   {!collapsed && <span>{item.label}</span>}
                   {!collapsed && item.badge && (
@@ -335,8 +338,8 @@ export default function AppSidebar({
                         marginLeft: 'auto',
                         fontSize: font.size.xs,
                         fontWeight: font.weight.bold,
-                        background: active ? colors.gold : colors.raisedAlt,
-                        color: active ? colors.dark : colors.textMuted,
+                        background: active ? colors.gold : accent ? accent.soft : colors.raisedAlt,
+                        color: active ? colors.dark : accent ? accent.hex : colors.textMuted,
                         borderRadius: radius.full,
                         padding: '1px 7px',
                         minWidth: 18,
