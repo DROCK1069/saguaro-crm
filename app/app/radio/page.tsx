@@ -10,12 +10,8 @@
  * socket is SUBSCRIBED, 4s otherwise) — voice clips with pseudo-waveform
  * players + transcript/translation (EN/ES, persisted under 'sag_lang'), amber
  * alerts, red panic rows with a numbered location trail, a NOW-TRANSMITTING /
- * NOW-PLAYING gold band with animated equalizer plus an analog S/RF meter
- * (needle driven by real Web Audio levels when taps are available — mic
- * AnalyserNode while keyed, media-element AnalyserNode while playing — and
- * by honest synthesized/seeded envelopes otherwise), "Catch me up"
- * sequential playback of unheard clips, and a hover "File to log" action
- * per row.
+ * NOW-PLAYING gold band with animated equalizer, "Catch me up" sequential
+ * playback of unheard clips, and a hover "File to log" action per row.
  *
  * PTT: browser hold-to-talk (MediaRecorder webm/opus, feature-detected) via
  * the mic button OR hold-SPACEBAR anywhere outside a text field (keydown keys
@@ -63,7 +59,6 @@ import {
   goldOutlineButtonStyle,
 } from '@/components/ui/premium';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { SMeter } from '@/components/ui/SMeter';
 import { HAS_SUPABASE, getSupabaseBrowser, ensureBrowserSession, getSession } from '@/lib/supabase-browser';
 
 /* ── Palette (dark shell: white/gold alphas only) ─────────────────────── */
@@ -171,21 +166,6 @@ function waveHeights(id: string, n: number): number[] {
     out.push(0.2 + ((Math.abs(h) % 1000) / 1000) * 0.8);
   }
   return out;
-}
-
-/* RMS of an analyser's current time-domain frame, soft-kneed onto the S/RF
- * meter's 0..1 scale (speech RMS lives around 0.03-0.3; the curve keeps the
- * needle lively across normal voice levels). */
-function levelFromAnalyser(an: AnalyserNode): number {
-  const buf = new Uint8Array(an.fftSize);
-  an.getByteTimeDomainData(buf);
-  let sum = 0;
-  for (let i = 0; i < buf.length; i++) {
-    const v = (buf[i] - 128) / 128;
-    sum += v * v;
-  }
-  const rms = Math.sqrt(sum / buf.length);
-  return Math.min(1, Math.pow(rms * 3.5, 0.6));
 }
 
 /* Animated equalizer bars (gold, staggered) — the ON AIR heartbeat. */
@@ -366,31 +346,6 @@ export default function RadioDispatchPage() {
     try { window.localStorage.setItem('sag_lang', l); } catch { /* best-effort */ }
   };
 
-  /* ── S/RF meter — Web Audio plumbing (feature-detected) ─────────────── */
-  /* One page-lifetime AudioContext serves both meter taps: an AnalyserNode
-   * on the PTT mic stream (TX) and one on the shared playback element (RX).
-   * A MediaElementSource can be created only ONCE per element — after that
-   * it owns the element's audio path for the element's lifetime — so the RX
-   * tap, once wired, is kept until the console unmounts. */
-  const [meterLevel, setMeterLevel] = useState(0);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const micAnalyserRef = useRef<AnalyserNode | null>(null);
-  const playSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const playAnalyserRef = useRef<AnalyserNode | null>(null);
-  const elementTapRef = useRef<'untried' | 'active' | 'failed'>('untried');
-  const tapPlayerRef = useRef<() => void>(() => {});
-  const getAudioCtx = useCallback((): AudioContext | null => {
-    if (audioCtxRef.current) return audioCtxRef.current;
-    try {
-      const AC = window.AudioContext
-        || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return null;
-      audioCtxRef.current = new AC();
-    } catch { return null; }
-    return audioCtxRef.current;
-  }, []);
-
   /* ── Voice playback (shared player + catch-up queue) ────────────────── */
   const [heard, setHeard] = useState<Set<string>>(new Set());
   useEffect(() => { setHeard(new Set(readHeard())); }, []);
@@ -415,27 +370,8 @@ export default function RadioDispatchPage() {
     if (!playerRef.current) {
       const a = new Audio();
       a.preload = 'none';
-      /* CORS mode so the RX meter's AnalyserNode reads real samples (signed
-       * Supabase storage URLs answer with ACAO:*). If the very first load
-       * rejects CORS, onerror drops the attribute and retries the clip
-       * un-tapped — playback always beats metering. */
-      a.crossOrigin = 'anonymous';
       a.onended = () => advanceRef.current();
-      a.onerror = () => {
-        if (!playSourceRef.current && a.crossOrigin === 'anonymous') {
-          elementTapRef.current = 'failed';
-          a.crossOrigin = null;
-          const src = a.src;
-          if (src) {
-            a.src = src;
-            a.load();
-            a.play().catch(() => advanceRef.current());
-            return;
-          }
-        }
-        advanceRef.current();
-      };
-      a.onplaying = () => tapPlayerRef.current();
+      a.onerror = () => advanceRef.current();
       a.ontimeupdate = () => setPlayProg(a.duration > 0 ? a.currentTime / a.duration : 0);
       playerRef.current = a;
     }
@@ -544,10 +480,6 @@ export default function RadioDispatchPage() {
       rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
       rec.onstop = async () => {
         stream.getTracks().forEach((tr) => tr.stop());
-        /* Release the meter's mic tap with the stream. */
-        try { micSourceRef.current?.disconnect(); } catch { /* graph already gone */ }
-        micSourceRef.current = null;
-        micAnalyserRef.current = null;
         const durationSecs = (Date.now() - recStartRef.current) / 1000;
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
         chunksRef.current = [];
@@ -568,20 +500,6 @@ export default function RadioDispatchPage() {
       recStartRef.current = Date.now();
       rec.start();
       setRecording(true);
-      /* Tap the live mic stream for the S/RF meter (feature-detected; the
-       * meter falls back to a synthesized envelope without Web Audio). */
-      try {
-        const ctx = getAudioCtx();
-        if (ctx) {
-          if (ctx.state !== 'running') void ctx.resume().catch(() => { /* meter falls back */ });
-          const src = ctx.createMediaStreamSource(stream);
-          const an = ctx.createAnalyser();
-          an.fftSize = 512;
-          src.connect(an); // analysis only — never wired to destination (no sidetone)
-          micSourceRef.current = src;
-          micAnalyserRef.current = an;
-        }
-      } catch { /* meter falls back to the synthesized envelope */ }
     } catch {
       // Mic denied or unavailable — hide the key gracefully.
       setPttSupported(false);
@@ -637,95 +555,6 @@ export default function RadioDispatchPage() {
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', cancel);
     };
-  }, []);
-
-  /* ── S/RF meter drive (tx while keyed, rx while playing, idle otherwise) */
-  /* RX tap: created on the first successful CORS 'playing' event, then kept
-   * for the element's lifetime (a MediaElementSource cannot be detached from
-   * its element). The tap re-routes the element's audio through the graph,
-   * so the analyser is wired on to destination to keep clips audible. */
-  const tapPlayer = () => {
-    const a = playerRef.current;
-    if (!a || playSourceRef.current || elementTapRef.current === 'failed') return;
-    if (a.crossOrigin !== 'anonymous') { elementTapRef.current = 'failed'; return; }
-    const ctx = getAudioCtx();
-    if (!ctx) { elementTapRef.current = 'failed'; return; }
-    if (ctx.state !== 'running') {
-      /* Autoplay policy: tapping a suspended context would mute the clip.
-       * Nudge it awake and try again on the next 'playing' event. */
-      void ctx.resume().catch(() => { /* stays untried */ });
-      return;
-    }
-    try {
-      const src = ctx.createMediaElementSource(a);
-      const an = ctx.createAnalyser();
-      an.fftSize = 512;
-      src.connect(an);
-      an.connect(ctx.destination); // keep playback audible through the tap
-      playSourceRef.current = src;
-      playAnalyserRef.current = an;
-      elementTapRef.current = 'active';
-    } catch { elementTapRef.current = 'failed'; }
-  };
-  tapPlayerRef.current = tapPlayer;
-
-  const meterMode: 'idle' | 'rx' | 'tx' = recording ? 'tx' : playingId ? 'rx' : 'idle';
-  const playingIdRef = useRef<string | null>(null);
-  playingIdRef.current = playingId;
-  useEffect(() => {
-    if (meterMode === 'idle') { setMeterLevel(0); return; }
-    let raf = 0;
-    let last = 0;
-    const tick = (now: number) => {
-      raf = requestAnimationFrame(tick);
-      if (now - last < 90) return; // ~11 Hz — the meter's own spring interpolates between samples
-      last = now;
-      const ctx = audioCtxRef.current;
-      const live = !!ctx && ctx.state === 'running';
-      let target = 0;
-      if (meterMode === 'tx') {
-        if (live && micAnalyserRef.current) {
-          target = levelFromAnalyser(micAnalyserRef.current); // real mic level
-        } else {
-          /* Honest fallback: no Web Audio tap available, so this is a
-           * synthesized modulation-style envelope — a plausible voice
-           * cadence, NOT the real microphone level. */
-          const t = now / 1000;
-          target = 0.44 + 0.26 * Math.sin(t * 6.7) * Math.sin(t * 1.9) + 0.12 * Math.sin(t * 13.1);
-        }
-      } else {
-        const a = playerRef.current;
-        if (live && playAnalyserRef.current) {
-          target = levelFromAnalyser(playAnalyserRef.current); // real playback level
-        } else if (a && a.duration > 0) {
-          /* Fallback: sample the same seeded pseudo-waveform the feed row
-           * renders, synced to currentTime — deterministic per clip, NOT
-           * real audio analysis. */
-          const id = playingIdRef.current;
-          if (id) {
-            const m = messagesRef.current.find((x) => x.id === id);
-            const n = Math.max(18, Math.min(42, Math.round((m?.audio_duration_secs || a.duration || 8) * 2)));
-            const hs = waveHeights(id, n);
-            const i = Math.min(n - 1, Math.max(0, Math.floor((a.currentTime / a.duration) * n)));
-            target = 0.12 + hs[i] * 0.7;
-          }
-        }
-      }
-      target = Math.min(0.98, Math.max(0.04, target));
-      setMeterLevel((prev) => (Math.abs(prev - target) < 0.015 ? prev : target));
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [meterMode]);
-
-  /* Tear the whole audio graph down with the console. */
-  useEffect(() => () => {
-    try { micSourceRef.current?.disconnect(); } catch { /* graph already gone */ }
-    micSourceRef.current = null;
-    micAnalyserRef.current = null;
-    const ctx = audioCtxRef.current;
-    audioCtxRef.current = null;
-    if (ctx) void ctx.close().catch(() => { /* already closed */ });
   }, []);
 
   /* ── File to log (row hover action) ─────────────────────────────────── */
@@ -1317,38 +1146,29 @@ export default function RadioDispatchPage() {
           flush
         >
           <div style={{ display: 'flex', flexDirection: 'column', height: 'min(680px, calc(100vh - 330px))', minHeight: 440 }}>
-            {/* Feed header — analog S/RF meter beside NOW TRANSMITTING / NOW PLAYING */}
-            <div
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px',
-                background: onAir
-                  ? 'linear-gradient(90deg, rgba(245,158,11,0.24), rgba(245,158,11,0.07))'
-                  : 'rgba(255,255,255,0.02)',
-                borderBottom: `1px solid ${onAir ? AMBER_BORDER : BORDER}`,
-              }}
-            >
-              <SMeter mode={meterMode} level={meterLevel} width={116} />
-              {onAir ? (
-                <>
-                  <EqBars color={recording ? RED : GOLD_HI} size={15} />
-                  <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.14em', color: recording ? RED : GOLD_HI, whiteSpace: 'nowrap' }}>
-                    {recording ? 'NOW TRANSMITTING' : 'NOW PLAYING'}
-                  </span>
-                  <span style={{ fontSize: 12, color: MUTED, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
-                    {recording
-                      ? `You are keyed up on ${active?.name || 'this channel'} — release to send`
-                      : `${senderShort(playingMsg?.sender_name ?? null)}${catchingUp ? ' · catch-up' : ''}${playingMsg?.audio_duration_secs ? ` · ${secsLabel(playingMsg.audio_duration_secs)}` : ''}`}
-                  </span>
-                  <span aria-hidden style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                    <EqBars color={recording ? RED : GOLD_HI} size={15} />
-                  </span>
-                </>
-              ) : (
-                <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.14em', color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
-                  {active ? `STANDING BY — ${active.name.toUpperCase()}` : 'STANDING BY'}
+            {/* NOW TRANSMITTING / NOW PLAYING — gold band with equalizer */}
+            {onAir && (
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px',
+                  background: 'linear-gradient(90deg, rgba(245,158,11,0.24), rgba(245,158,11,0.07))',
+                  borderBottom: `1px solid ${AMBER_BORDER}`,
+                }}
+              >
+                <EqBars color={recording ? RED : GOLD_HI} size={15} />
+                <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.14em', color: recording ? RED : GOLD_HI, whiteSpace: 'nowrap' }}>
+                  {recording ? 'NOW TRANSMITTING' : 'NOW PLAYING'}
                 </span>
-              )}
-            </div>
+                <span style={{ fontSize: 12, color: MUTED, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                  {recording
+                    ? `You are keyed up on ${active?.name || 'this channel'} — release to send`
+                    : `${senderShort(playingMsg?.sender_name ?? null)}${catchingUp ? ' · catch-up' : ''}${playingMsg?.audio_duration_secs ? ` · ${secsLabel(playingMsg.audio_duration_secs)}` : ''}`}
+                </span>
+                <span aria-hidden style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                  <EqBars color={recording ? RED : GOLD_HI} size={15} />
+                </span>
+              </div>
+            )}
 
             {/* Traffic */}
             <div ref={feedRef} style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 6px' }}>
