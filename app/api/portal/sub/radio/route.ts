@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
-import { signUrl } from '@/lib/storage-signing';
+import { signStoredUrl } from '@/lib/storage-signing';
 import { translateRadioMessage } from '@/lib/translate';
+import { transcribeRadioVoice } from '@/lib/transcribe';
 
 const BUCKET = 'project-files';
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -50,16 +51,27 @@ export async function GET(req: NextRequest) {
     if (!ch) return NextResponse.json({ channel: null, messages: [] });
     await ensureMember(a.db, a.session, ch.id);
     const after = req.nextUrl.searchParams.get('after');
+    // Presence: polling the feed is the heartbeat — mark this sub seen/read,
+    // then count everyone (crew + subs) seen on the channel in the last 90s.
+    const nowIso = new Date().toISOString();
+    await a.db.from('radio_members')
+      .update({ last_seen_at: nowIso, last_read_at: nowIso } as never)
+      .eq('channel_id', ch.id).eq('portal_sub_id', a.session.sub_id);
+    const presenceCutoff = new Date(Date.now() - 90 * 1000).toISOString();
+    const { count: onChannel } = await a.db.from('radio_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('channel_id', ch.id)
+      .gt('last_seen_at', presenceCutoff);
     let q = a.db.from('radio_messages').select('*').eq('channel_id', ch.id);
     if (after) q = q.gt('created_at', after);
     const { data } = await q.order('created_at', { ascending: after ? true : false }).limit(100);
     const rows = ((data || []) as any[]);
     const messages = await Promise.all((after ? rows : rows.reverse()).map(async (m) => ({
       ...m,
-      audio_url: m.audio_path ? await signUrl(m.audio_path, 3600) : null,
-      image_url: m.image_path ? await signUrl(m.image_path, 3600) : null,
+      audio_url: m.audio_path ? await signStoredUrl('project-files', m.audio_path, 3600) : null,
+      image_url: m.image_path ? await signStoredUrl('project-files', m.image_path, 3600) : null,
     })));
-    return NextResponse.json({ channel: { id: ch.id, name: ch.name }, messages });
+    return NextResponse.json({ channel: { id: ch.id, name: ch.name, on_channel: onChannel ?? 0 }, messages });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -93,6 +105,8 @@ export async function POST(req: NextRequest) {
         kind: 'voice', audio_path: path, audio_duration_secs: durationSecs,
       } as never).select().single();
       if (error) throw error;
+      // Transcription brain: fire-and-forget (env-gated inside; never blocks the send).
+      void transcribeRadioVoice(a.db, (msg as any)?.id, path);
       return NextResponse.json({ message: msg }, { status: 201 });
     }
 

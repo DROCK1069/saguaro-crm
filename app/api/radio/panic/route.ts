@@ -19,6 +19,42 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const db = createServerClient() as any;
+
+    // LIVE-TRACK follow-up: append a breadcrumb to the original panic's trail.
+    if (body.followUp === true && body.panicId) {
+      const loc = body.location && typeof body.location.lat === 'number' ? { lat: body.location.lat, lng: body.location.lng } : null;
+      if (!loc) return NextResponse.json({ error: 'location required' }, { status: 400 });
+      const { data: orig } = await db.from('radio_messages').select('id, location, created_at').eq('tenant_id', t).eq('id', body.panicId).eq('kind', 'panic').single();
+      if (!orig) return NextResponse.json({ error: 'Panic not found' }, { status: 404 });
+      const prev = (orig as any).location || {};
+      const trail: any[] = Array.isArray(prev.trail)
+        ? prev.trail
+        : (typeof prev.lat === 'number' ? [{ lat: prev.lat, lng: prev.lng, at: (orig as any).created_at }] : []);
+      trail.push({ lat: loc.lat, lng: loc.lng, at: new Date().toISOString() });
+      const location = { lat: loc.lat, lng: loc.lng, trail: trail.slice(-200) };
+      const { error: updErr } = await db.from('radio_messages').update({ location } as never).eq('id', body.panicId);
+      if (updErr) throw updErr;
+      return NextResponse.json({ ok: true, points: location.trail.length });
+    }
+
+    // RESOLVE: stamp the all-clear and drop it on the channel.
+    if (body.resolve === true && body.panicId) {
+      const { data: orig } = await db.from('radio_messages').select('id, channel_id, project_id, panic_resolved_at').eq('tenant_id', t).eq('id', body.panicId).eq('kind', 'panic').single();
+      if (!orig) return NextResponse.json({ error: 'Panic not found' }, { status: 404 });
+      const already = (orig as any).panic_resolved_at ?? null;
+      const resolvedAt = already || new Date().toISOString();
+      if (!already) {
+        const { error: updErr } = await db.from('radio_messages').update({ panic_resolved_at: resolvedAt } as never).eq('id', body.panicId);
+        if (updErr) throw updErr;
+        await db.from('radio_messages').insert({
+          tenant_id: t, channel_id: (orig as any).channel_id, project_id: (orig as any).project_id,
+          sender_user_id: g.user.id, sender_name: g.user.email || 'Team member',
+          kind: 'alert', body: `ALL CLEAR — panic alarm resolved by ${g.user.email || 'a team member'}`,
+        } as never);
+      }
+      return NextResponse.json({ ok: true, resolvedAt });
+    }
+
     let channelId: string | null = body.channelId ?? null;
     let projectId: string | null = body.projectId ?? null;
 

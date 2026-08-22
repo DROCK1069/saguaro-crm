@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/permissions';
 import { createServerClient } from '@/lib/supabase-server';
 import { createNotification } from '@/lib/notifications';
+import { transcribeRadioVoice } from '@/lib/transcribe';
 
 const BUCKET = 'project-files';
 const MAX_BYTES = 25 * 1024 * 1024; // 25MB — minutes of audio, not uploads gone wrong
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest) {
       kind: 'voice', audio_path: path, audio_duration_secs: durationSecs,
     } as never).select().single();
     if (error) throw error;
+
+    // Transcription brain: fire-and-forget (env-gated inside; never blocks the send).
+    void transcribeRadioVoice(db, (msg as any)?.id, path);
 
     // Radio push — members hear about traffic immediately.
     const { data: members } = await db.from('radio_members').select('user_id, monitoring').eq('channel_id', channelId).not('user_id', 'is', null);

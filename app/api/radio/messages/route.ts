@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/permissions';
-import { signUrl } from '@/lib/storage-signing';
+import { signStoredUrl } from '@/lib/storage-signing';
 import { createNotification } from '@/lib/notifications';
 import { translateRadioMessage } from '@/lib/translate';
 
@@ -26,6 +26,13 @@ export async function GET(req: NextRequest) {
     if (!channelId) return NextResponse.json({ error: 'channelId required' }, { status: 400 });
     if (!(await membership(db, t, g.user.id, channelId))) return NextResponse.json({ error: 'Not a member of this channel' }, { status: 403 });
 
+    // Presence + read piggyback: polling IS being on channel. Fire-and-forget —
+    // never blocks or fails the read.
+    const nowIso = new Date().toISOString();
+    void db.from('radio_members').update({ last_seen_at: nowIso, last_read_at: nowIso } as never)
+      .eq('tenant_id', t).eq('channel_id', channelId).eq('user_id', g.user.id)
+      .then(() => {}, () => {});
+
     let q = db.from('radio_messages').select('*').eq('tenant_id', t).eq('channel_id', channelId);
     if (after) q = q.gt('created_at', after);
     const { data, error } = await q.order('created_at', { ascending: after ? true : false }).limit(100);
@@ -33,8 +40,8 @@ export async function GET(req: NextRequest) {
     const rows = (data || []) as any[];
     const messages = await Promise.all((after ? rows : rows.reverse()).map(async (m) => ({
       ...m,
-      audio_url: m.audio_path ? await signUrl(m.audio_path, 3600) : null,
-      image_url: m.image_path ? await signUrl(m.image_path, 3600) : null,
+      audio_url: m.audio_path ? await signStoredUrl('project-files', m.audio_path, 3600) : null,
+      image_url: m.image_path ? await signStoredUrl('project-files', m.image_path, 3600) : null,
     })));
     return NextResponse.json({ messages });
   } catch {

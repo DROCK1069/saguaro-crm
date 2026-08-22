@@ -29,32 +29,43 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
     const list = (channels || []) as any[];
 
-    // Auto-join the caller to any listed channel they're not in yet.
+    // ONE members query across every listed channel: caller auto-join,
+    // per-channel headcount, and live presence (last_seen_at within 90s)
+    // all come out of the same rows.
     const ids = list.map((c) => c.id);
-    let memberships: any[] = [];
+    let allMembers: any[] = [];
     if (ids.length) {
-      const { data: mem } = await db.from('radio_members').select('channel_id, monitoring, role').eq('tenant_id', t).eq('user_id', uid).in('channel_id', ids);
-      memberships = (mem || []) as any[];
-      const joined = new Set(memberships.map((m) => m.channel_id));
+      const { data: mem } = await db.from('radio_members').select('channel_id, user_id, monitoring, role, last_seen_at, last_read_at').eq('tenant_id', t).in('channel_id', ids);
+      allMembers = (mem || []) as any[];
+      const joined = new Set(allMembers.filter((m) => m.user_id === uid).map((m) => m.channel_id));
       const toJoin = ids.filter((id) => !joined.has(id));
       if (toJoin.length) {
         await db.from('radio_members').insert(toJoin.map((channel_id) => ({ channel_id, tenant_id: t, user_id: uid, display_name: g.user.email || null })) as never);
-        for (const id of toJoin) memberships.push({ channel_id: id, monitoring: true, role: 'member' });
+        for (const id of toJoin) allMembers.push({ channel_id: id, user_id: uid, monitoring: true, role: 'member', last_seen_at: null, last_read_at: null });
       }
     }
-    const memMap = new Map(memberships.map((m) => [m.channel_id, m]));
+    const memMap = new Map(allMembers.filter((m) => m.user_id === uid).map((m) => [m.channel_id, m]));
+    const ONLINE_WINDOW_MS = 90 * 1000;
+    const nowMs = Date.now();
 
-    // Last message + member count per channel (small N — fine per channel).
+    // Last message + unread count per channel (small N — fine per channel).
     const enriched = await Promise.all(list.map(async (c) => {
-      const [{ data: last }, { count }] = await Promise.all([
+      const mine = memMap.get(c.id) as any;
+      let unreadQ = db.from('radio_messages').select('id', { count: 'exact', head: true }).eq('channel_id', c.id);
+      if (mine?.last_read_at) unreadQ = unreadQ.gt('created_at', mine.last_read_at);
+      const [{ data: last }, { count: unread }] = await Promise.all([
         db.from('radio_messages').select('kind, body, sender_name, created_at, audio_duration_secs').eq('channel_id', c.id).order('created_at', { ascending: false }).limit(1),
-        db.from('radio_members').select('id', { count: 'exact', head: true }).eq('channel_id', c.id),
+        unreadQ,
       ]);
+      const chMembers = allMembers.filter((m) => m.channel_id === c.id);
+      const onChannel = chMembers.filter((m) => m.last_seen_at && nowMs - new Date(m.last_seen_at).getTime() <= ONLINE_WINDOW_MS).length;
       const lm = (last || [])[0] as any;
       return {
         ...c,
-        members: count ?? 0,
-        monitoring: (memMap.get(c.id) as any)?.monitoring ?? true,
+        members: chMembers.length,
+        onChannel,
+        unread: Math.min(unread ?? 0, 99),
+        monitoring: mine?.monitoring ?? true,
         lastMessage: lm ? { kind: lm.kind, body: lm.body, sender: lm.sender_name, at: lm.created_at, secs: lm.audio_duration_secs } : null,
       };
     }));

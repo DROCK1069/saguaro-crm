@@ -1,25 +1,34 @@
 'use client';
 /**
- * Saguaro Radio — web dispatch console (dispatch-lite).
+ * Saguaro Radio — web dispatch console v2.
  *
  * Left rail: talkgroups (project + org-wide) with monitor toggles, member
- * counts, last-traffic preview, inline New Channel form. Main: near-real-time
- * channel feed (SWR polling every 4s) — voice clips with signed audio +
- * transcript/translation (EN/ES, persisted under 'sag_lang'), amber alerts,
- * red panic rows with a Google Maps link — plus a composer (Enter sends,
- * Alert broadcasts), browser hold-to-talk PTT (MediaRecorder webm/opus,
- * feature-detected), and a hold-to-confirm PANIC that fans out push/email/SMS.
+ * counts, presence ("on channel") and unread badges (v2 channel fields),
+ * last-traffic preview, inline New Channel form. Main: live channel feed —
+ * Supabase Realtime postgres_changes INSERT on the active channel triggers an
+ * immediate SWR revalidate, with polling as the safety net (15s while the
+ * socket is SUBSCRIBED, 4s otherwise) — voice clips with pseudo-waveform
+ * players + transcript/translation (EN/ES, persisted under 'sag_lang'), amber
+ * alerts, red panic rows with a numbered location trail, a NOW-TRANSMITTING /
+ * NOW-PLAYING gold band with animated equalizer, "Catch me up" sequential
+ * playback of unheard clips, and a hover "File to log" action per row.
+ *
+ * PTT: browser hold-to-talk (MediaRecorder webm/opus, feature-detected) via
+ * the mic button OR hold-SPACEBAR anywhere outside a text field (keydown keys
+ * up, keyup transmits). Hold-to-confirm PANIC fans out push/email/SMS.
  *
  * Server layer: /api/radio/channels · /api/radio/messages · /api/radio/voice ·
- * /api/radio/panic (all proven by the radio harness). Accepts ?projectId= and
- * ?channel= search params read on mount (house pattern — no Suspense gate).
+ * /api/radio/panic · /api/radio/file-to-log. Accepts ?projectId= and ?channel=
+ * search params read on mount (house pattern — no Suspense gate). Read/presence
+ * piggyback (radio_members.last_seen_at/last_read_at) rides the GETs server-side.
  *
  * The monitor toggle is a per-browser dispatch preference (localStorage
- * 'sag_radio_mon') layered over the server membership flag — the server flag
- * gates voice push fan-out; this controls what the console counts as watched.
+ * 'sag_radio_mon') layered over the server membership flag. Heard voice clips
+ * are tracked per-browser under 'sag_radio_heard' (capped at 500 ids).
  */
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import useSWR from 'swr';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import {
   Broadcast,
   Microphone,
@@ -34,6 +43,11 @@ import {
   Hash,
   ChatCircleText,
   SpeakerHigh,
+  Play,
+  Pause,
+  FastForward,
+  ClipboardText,
+  Check,
 } from '@phosphor-icons/react';
 import {
   PremiumSurface,
@@ -45,6 +59,7 @@ import {
   goldOutlineButtonStyle,
 } from '@/components/ui/premium';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { HAS_SUPABASE, getSupabaseBrowser, ensureBrowserSession, getSession } from '@/lib/supabase-browser';
 
 /* ── Palette (dark shell: white/gold alphas only) ─────────────────────── */
 const WHITE = '#FFFFFF';
@@ -61,9 +76,11 @@ const RED_BORDER = 'rgba(239,68,68,0.45)';
 const AMBER_SOFT = 'rgba(245,158,11,0.10)';
 const AMBER_BORDER = 'rgba(245,158,11,0.40)';
 const GREEN = '#45B37D';
+const GREEN_SOFT = 'rgba(69,179,125,0.15)';
+const GREEN_BORDER = 'rgba(69,179,125,0.5)';
 const NEST = 'rgba(20,20,22,0.55)';
 
-/* ── Types (mirror the server layer) ──────────────────────────────────── */
+/* ── Types (mirror the server layer; v2 fields optional — render only when present) */
 interface RadioChannel {
   id: string;
   project_id: string | null;
@@ -72,6 +89,10 @@ interface RadioChannel {
   allow_subs: boolean;
   members: number;
   monitoring: boolean;
+  /** v2: members seen on this channel in the last few minutes (presence). */
+  onChannel?: number;
+  /** v2: traffic since the caller's last_read_at. */
+  unread?: number;
   lastMessage: { kind: string; body: string | null; sender: string | null; at: string; secs: number | null } | null;
 }
 interface RadioMessage {
@@ -87,6 +108,12 @@ interface RadioMessage {
   translations: { en?: string; es?: string } | null;
   detected_lang: string | null;
   location: { lat: number; lng: number } | null;
+  /** v2: breadcrumb positions appended while a panic is live. */
+  location_trail?: { lat: number; lng: number; at?: string }[] | null;
+  /** v2: set when a dispatcher stands the panic down. */
+  panic_resolved_at?: string | null;
+  /** v2: members who have seen this row (from read piggyback), when computed. */
+  seen_count?: number | null;
   created_at: string;
 }
 
@@ -120,6 +147,50 @@ function readMonOverrides(): Record<string, boolean> {
   try { return JSON.parse(window.localStorage.getItem(MON_KEY) || '{}') || {}; } catch { return {}; }
 }
 
+/* Heard voice clips (per-browser; capped so localStorage never balloons). */
+const HEARD_KEY = 'sag_radio_heard';
+function readHeard(): string[] {
+  try {
+    const a = JSON.parse(window.localStorage.getItem(HEARD_KEY) || '[]');
+    return Array.isArray(a) ? a.filter((x) => typeof x === 'string') : [];
+  } catch { return []; }
+}
+
+/* Deterministic pseudo-waveform heights (FNV-ish hash of the message id). */
+function waveHeights(id: string, n: number): number[] {
+  let h = 2166136261;
+  const out: number[] = [];
+  for (let i = 0; i < n; i++) {
+    h ^= id.charCodeAt(i % Math.max(1, id.length)) + i * 131;
+    h = Math.imul(h, 16777619);
+    out.push(0.2 + ((Math.abs(h) % 1000) / 1000) * 0.8);
+  }
+  return out;
+}
+
+/* Animated equalizer bars (gold, staggered) — the ON AIR heartbeat. */
+function EqBars({ color = GOLD_HI, size = 14 }: { color?: string; size?: number }) {
+  return (
+    <span aria-hidden style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 2, height: size, flexShrink: 0 }}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          style={{
+            width: 3, height: size, borderRadius: 2, background: color, transformOrigin: 'bottom',
+            animation: `sagRadioEq ${0.7 + (i % 3) * 0.18}s ease-in-out ${i * 0.09}s infinite`,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+const rowActionStyle: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 8,
+  background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`,
+  color: MUTED, fontSize: 10.5, fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
+};
+
 export default function RadioDispatchPage() {
   /* ── URL params, read once on mount (no Suspense requirement) ───────── */
   const [ready, setReady] = useState(false);
@@ -132,6 +203,20 @@ export default function RadioDispatchPage() {
       setUrlChannel(sp.get('channel'));
     } catch { /* no-op */ }
     setReady(true);
+  }, []);
+
+  /* Who am I (for own-alert "Seen" + skipping own clips in catch-up). */
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        await ensureBrowserSession();
+        const s = await getSession();
+        if (alive) setMyUserId(s?.user?.id ?? null);
+      } catch { /* demo mode — no session */ }
+    })();
+    return () => { alive = false; };
   }, []);
 
   /* ── Channels rail ──────────────────────────────────────────────────── */
@@ -193,13 +278,54 @@ export default function RadioDispatchPage() {
     setCreating(false);
   };
 
-  /* ── Feed (poll every 4s while open) ────────────────────────────────── */
+  /* ── Realtime (postgres_changes INSERT on the active channel) ───────── */
+  /* radio_messages is in the supabase_realtime publication; the browser anon
+   * client is hydrated from the server's httpOnly cookies so RLS sees the
+   * caller. While the socket reports SUBSCRIBED, delivery is instant and the
+   * poll relaxes to a 15s safety net; any other state keeps the proven 4s poll. */
+  const [rtLive, setRtLive] = useState(false);
+  const mutateChannelsRef = useRef(mutateChannels);
+  mutateChannelsRef.current = mutateChannels;
+  const rtBumpRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (!activeId || !HAS_SUPABASE) { setRtLive(false); return; }
+    let cancelled = false;
+    let channel: RealtimeChannel | null = null;
+    (async () => {
+      await ensureBrowserSession(); // best-effort auth so RLS lets rows through
+      if (cancelled) return;
+      const sb = getSupabaseBrowser();
+      channel = sb
+        .channel(`radio:feed:${activeId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'radio_messages', filter: `channel_id=eq.${activeId}` },
+          () => {
+            rtBumpRef.current();          // immediate feed revalidate
+            void mutateChannelsRef.current(); // rail previews + unread stay fresh
+          },
+        )
+        .subscribe((status) => { if (!cancelled) setRtLive(status === 'SUBSCRIBED'); });
+    })();
+    return () => {
+      cancelled = true;
+      setRtLive(false);
+      if (channel) { try { getSupabaseBrowser().removeChannel(channel); } catch { /* socket already gone */ } }
+    };
+  }, [activeId]);
+
+  /* ── Feed (realtime-first; poll is the safety net) ──────────────────── */
   const messagesKey = activeId ? `/api/radio/messages?channelId=${encodeURIComponent(activeId)}` : null;
   const { data: msgData, error: msgError, mutate: mutateMessages } = useSWR<{ messages: RadioMessage[] }>(
     messagesKey, fetcher,
-    { refreshInterval: 4000, revalidateOnFocus: true, keepPreviousData: false, dedupingInterval: 1500 },
+    { refreshInterval: rtLive ? 15_000 : 4000, revalidateOnFocus: true, keepPreviousData: false, dedupingInterval: 1500 },
   );
   const messages = msgData?.messages ?? [];
+  const messagesRef = useRef<RadioMessage[]>(messages);
+  messagesRef.current = messages;
+  const mutateMessagesRef = useRef(mutateMessages);
+  mutateMessagesRef.current = mutateMessages;
+  rtBumpRef.current = () => { void mutateMessagesRef.current(); };
 
   const feedRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -219,6 +345,94 @@ export default function RadioDispatchPage() {
     setLang(l);
     try { window.localStorage.setItem('sag_lang', l); } catch { /* best-effort */ }
   };
+
+  /* ── Voice playback (shared player + catch-up queue) ────────────────── */
+  const [heard, setHeard] = useState<Set<string>>(new Set());
+  useEffect(() => { setHeard(new Set(readHeard())); }, []);
+  const markHeard = useCallback((id: string) => {
+    setHeard((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try { window.localStorage.setItem(HEARD_KEY, JSON.stringify([...next].slice(-500))); } catch { /* best-effort */ }
+      return next;
+    });
+  }, []);
+
+  const playerRef = useRef<HTMLAudioElement | null>(null);
+  const queueRef = useRef<string[]>([]);
+  const advanceRef = useRef<() => void>(() => {});
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [playProg, setPlayProg] = useState(0);
+  const [catchingUp, setCatchingUp] = useState(false);
+
+  const ensurePlayer = useCallback(() => {
+    if (!playerRef.current) {
+      const a = new Audio();
+      a.preload = 'none';
+      a.onended = () => advanceRef.current();
+      a.onerror = () => advanceRef.current();
+      a.ontimeupdate = () => setPlayProg(a.duration > 0 ? a.currentTime / a.duration : 0);
+      playerRef.current = a;
+    }
+    return playerRef.current;
+  }, []);
+
+  const stopPlayback = useCallback(() => {
+    const a = playerRef.current;
+    if (a) { a.pause(); a.removeAttribute('src'); }
+    queueRef.current = [];
+    setPlayingId(null);
+    setPlayProg(0);
+    setCatchingUp(false);
+  }, []);
+
+  const playById = useCallback((id: string) => {
+    const m = messagesRef.current.find((x) => x.id === id);
+    if (!m?.audio_url) { advanceRef.current(); return; }
+    const a = ensurePlayer();
+    a.src = m.audio_url;
+    a.currentTime = 0;
+    setPlayingId(id);
+    setPlayProg(0);
+    markHeard(id);
+    a.play().catch(() => advanceRef.current());
+  }, [ensurePlayer, markHeard]);
+
+  advanceRef.current = () => {
+    const next = queueRef.current.shift();
+    if (next) { playById(next); return; }
+    setPlayingId(null);
+    setPlayProg(0);
+    setCatchingUp(false);
+  };
+
+  const toggleClip = (m: RadioMessage) => {
+    if (playingId === m.id) { stopPlayback(); return; }
+    queueRef.current = [];
+    setCatchingUp(false);
+    playById(m.id);
+  };
+
+  const unheardVoice = useMemo(
+    () => messages.filter((m) =>
+      m.kind === 'voice' && m.audio_url && !heard.has(m.id) && (!myUserId || m.sender_user_id !== myUserId)),
+    [messages, heard, myUserId],
+  );
+  const startCatchUp = () => {
+    const q = unheardVoice.map((m) => m.id);
+    if (!q.length) return;
+    setCatchingUp(true);
+    queueRef.current = q.slice(1);
+    playById(q[0]);
+  };
+
+  /* Stop playback when the channel changes or the console unmounts. */
+  useEffect(() => { stopPlayback(); }, [activeId, stopPlayback]);
+  useEffect(() => () => {
+    const a = playerRef.current;
+    if (a) { a.pause(); a.removeAttribute('src'); }
+  }, []);
 
   /* ── Composer ───────────────────────────────────────────────────────── */
   const [draft, setDraft] = useState('');
@@ -255,6 +469,7 @@ export default function RadioDispatchPage() {
 
   const pttStart = async () => {
     if (!pttSupported || recording || !activeId) return;
+    stopPlayback(); // never transmit over receive
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(
@@ -296,6 +511,68 @@ export default function RadioDispatchPage() {
     setRecording(false);
   };
   useEffect(() => () => { if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop(); }, []);
+
+  /* ── Hold-SPACEBAR PTT (dispatcher muscle memory) ───────────────────── */
+  /* Keydown keys up, keyup transmits. Ignored while typing in any field. */
+  const [spaceKeyed, setSpaceKeyed] = useState(false);
+  const spaceDownRef = useRef(false);
+  const pttStartRef = useRef<() => void>(() => {});
+  const pttStopRef = useRef<() => void>(() => {});
+  pttStartRef.current = () => { void pttStart(); };
+  pttStopRef.current = pttStop;
+  useEffect(() => {
+    const isTyping = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      if (!el || !el.tagName) return false;
+      const tag = el.tagName.toLowerCase();
+      return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+    };
+    const down = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat || spaceDownRef.current || isTyping(e.target)) return;
+      e.preventDefault();
+      spaceDownRef.current = true;
+      setSpaceKeyed(true);
+      pttStartRef.current();
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || !spaceDownRef.current) return;
+      e.preventDefault();
+      spaceDownRef.current = false;
+      setSpaceKeyed(false);
+      pttStopRef.current();
+    };
+    const cancel = () => {
+      if (!spaceDownRef.current) return;
+      spaceDownRef.current = false;
+      setSpaceKeyed(false);
+      pttStopRef.current();
+    };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', cancel);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', cancel);
+    };
+  }, []);
+
+  /* ── File to log (row hover action) ─────────────────────────────────── */
+  const [filedIds, setFiledIds] = useState<Set<string>>(new Set());
+  const [filingId, setFilingId] = useState<string | null>(null);
+  const fileToLog = async (m: RadioMessage) => {
+    if (filingId || filedIds.has(m.id) || !activeId) return;
+    setFilingId(m.id);
+    try {
+      const r = await fetch('/api/radio/file-to-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: m.id, channelId: activeId }),
+      });
+      if (r.ok) setFiledIds((prev) => new Set(prev).add(m.id));
+    } catch { /* row simply stays unfiled — dispatcher retries */ }
+    setFilingId(null);
+  };
 
   /* ── PANIC (hold-to-confirm, best-effort geolocation) ───────────────── */
   const PANIC_HOLD_MS = 1500;
@@ -364,6 +641,8 @@ export default function RadioDispatchPage() {
   }, [channels, messages, isMonitored]);
 
   const firstLoad = !chData && !chError;
+  const playingMsg = playingId ? messages.find((m) => m.id === playingId) || null : null;
+  const onAir = recording || !!playingId;
 
   /* ── Render helpers ─────────────────────────────────────────────────── */
   const renderTranscript = (m: RadioMessage) => {
@@ -383,15 +662,70 @@ export default function RadioDispatchPage() {
     );
   };
 
+  const renderVoicePlayer = (m: RadioMessage) => {
+    if (!m.audio_url) return null;
+    const isPlaying = playingId === m.id;
+    const n = Math.max(18, Math.min(42, Math.round((m.audio_duration_secs || 8) * 2)));
+    const heights = waveHeights(m.id, n);
+    const playedTo = isPlaying ? Math.floor(playProg * n) : 0;
+    const unheardClip = !heard.has(m.id) && (!myUserId || m.sender_user_id !== myUserId);
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, maxWidth: 420 }}>
+        <button
+          onClick={() => toggleClip(m)}
+          aria-label={isPlaying ? 'Stop playback' : 'Play voice clip'}
+          title={isPlaying ? 'Stop' : 'Play'}
+          style={{
+            flexShrink: 0, width: 32, height: 32, borderRadius: 10, padding: 0, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            background: isPlaying ? 'linear-gradient(180deg, rgba(245,158,11,0.35), rgba(245,158,11,0.16))' : 'rgba(245,158,11,0.12)',
+            border: `1px solid ${AMBER_BORDER}`, color: GOLD_HI,
+          }}
+        >
+          {isPlaying ? <Pause size={13} weight="fill" /> : <Play size={13} weight="fill" />}
+        </button>
+        <span aria-hidden style={{ display: 'inline-flex', alignItems: 'center', gap: 2, height: 28, flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          {heights.map((h, i) => (
+            <span
+              key={i}
+              style={{
+                width: 3, flexShrink: 0, borderRadius: 2,
+                height: Math.round(5 + h * 22),
+                background: isPlaying && i < playedTo
+                  ? GOLD_HI
+                  : unheardClip ? 'rgba(245,158,11,0.50)' : 'rgba(255,255,255,0.24)',
+                transformOrigin: 'center',
+                animation: isPlaying && i >= playedTo
+                  ? `sagRadioEq ${0.8 + (i % 4) * 0.14}s ease-in-out ${(i % 5) * 0.07}s infinite`
+                  : undefined,
+              }}
+            />
+          ))}
+        </span>
+        {isPlaying && <EqBars size={12} />}
+      </div>
+    );
+  };
+
   const renderRow = (m: RadioMessage) => {
     const panic = m.kind === 'panic';
     const alert = m.kind === 'alert';
-    const rowBg = panic ? RED_SOFT : alert ? AMBER_SOFT : 'transparent';
-    const rowBorder = panic ? `1px solid ${RED_BORDER}` : alert ? `1px solid ${AMBER_BORDER}` : `1px solid ${BORDER}`;
+    const resolved = panic && !!m.panic_resolved_at;
+    const rowBg = panic ? (resolved ? 'rgba(239,68,68,0.05)' : RED_SOFT) : alert ? AMBER_SOFT : 'transparent';
+    const rowBorder = panic
+      ? `1px solid ${resolved ? 'rgba(239,68,68,0.20)' : RED_BORDER}`
+      : alert ? `1px solid ${AMBER_BORDER}` : `1px solid ${BORDER}`;
     const translatedBody = m.translations?.[lang];
+    const trail = panic && Array.isArray(m.location_trail)
+      ? m.location_trail.filter((p) => p && typeof p.lat === 'number' && typeof p.lng === 'number')
+      : [];
+    const unheardClip = m.kind === 'voice' && !!m.audio_url && !heard.has(m.id) && (!myUserId || m.sender_user_id !== myUserId);
+    const seenN = Number(m.seen_count ?? NaN);
+    const showSeen = (alert || panic) && !!myUserId && m.sender_user_id === myUserId && Number.isFinite(seenN) && seenN > 0;
     return (
       <div
         key={m.id}
+        className="sagRadioRow"
         style={{
           display: 'flex', gap: 12, padding: '12px 14px', borderRadius: 12,
           background: rowBg, border: rowBorder, marginBottom: 8,
@@ -419,6 +753,11 @@ export default function RadioDispatchPage() {
                 PANIC
               </span>
             )}
+            {resolved && (
+              <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', color: GREEN, border: `1px solid ${GREEN_BORDER}`, borderRadius: 999, padding: '1px 7px' }}>
+                RESOLVED {timeOf(m.panic_resolved_at as string)}
+              </span>
+            )}
             {alert && (
               <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, border: `1px solid ${AMBER_BORDER}`, borderRadius: 999, padding: '1px 7px' }}>
                 ALERT
@@ -427,14 +766,34 @@ export default function RadioDispatchPage() {
             {m.kind === 'voice' && m.audio_duration_secs != null && (
               <span style={{ fontSize: 11, color: FAINT, fontVariantNumeric: 'tabular-nums' }}>{secsLabel(m.audio_duration_secs)}</span>
             )}
+            {unheardClip && (
+              <span style={{ fontSize: 9, fontWeight: 900, letterSpacing: '0.1em', color: GOLD_HI, background: AMBER_SOFT, border: `1px solid ${AMBER_BORDER}`, borderRadius: 999, padding: '1px 6px' }}>
+                NEW
+              </span>
+            )}
             <span style={{ fontSize: 11, color: FAINT, marginLeft: 'auto', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
               {timeOf(m.created_at)}
             </span>
+            {/* Hover actions — file this transmission to the project daily log */}
+            <span className="sagRowActions" style={{ display: 'inline-flex', gap: 6, flexShrink: 0 }}>
+              {filedIds.has(m.id) ? (
+                <span style={{ ...rowActionStyle, cursor: 'default', color: GREEN, borderColor: GREEN_BORDER, background: GREEN_SOFT }}>
+                  <Check size={11} weight="bold" /> Filed
+                </span>
+              ) : (
+                <button
+                  onClick={() => fileToLog(m)}
+                  disabled={filingId === m.id}
+                  title="File this transmission to the project daily log"
+                  style={{ ...rowActionStyle, opacity: filingId === m.id ? 0.6 : 1 }}
+                >
+                  <ClipboardText size={11} weight="bold" /> {filingId === m.id ? 'Filing…' : 'File to log'}
+                </button>
+              )}
+            </span>
           </div>
 
-          {m.kind === 'voice' && m.audio_url && (
-            <audio controls preload="none" src={m.audio_url} style={{ width: '100%', maxWidth: 380, height: 36, marginTop: 8, display: 'block' }} />
-          )}
+          {m.kind === 'voice' && renderVoicePlayer(m)}
           {m.kind === 'voice' && renderTranscript(m)}
 
           {m.kind === 'image' && m.image_url && (
@@ -455,7 +814,32 @@ export default function RadioDispatchPage() {
             </div>
           )}
 
-          {panic && m.location && typeof m.location.lat === 'number' && (
+          {/* Location trail (v2) — numbered breadcrumbs, newest last */}
+          {trail.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', color: '#FCA5A5' }}>TRAIL</span>
+              {trail.map((p, i) => (
+                <a
+                  key={i}
+                  href={`https://maps.google.com/?q=${p.lat},${p.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`${i === trail.length - 1 ? 'Latest position' : `Position ${i + 1}`}${p.at ? ` — ${timeOf(p.at)}` : ''}`}
+                  style={{
+                    width: 24, height: 24, borderRadius: 999, textDecoration: 'none',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10.5, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
+                    background: i === trail.length - 1 ? 'rgba(239,68,68,0.35)' : RED_SOFT,
+                    border: `1px solid ${RED_BORDER}`, color: '#FCA5A5',
+                  }}
+                >
+                  {i + 1}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {panic && trail.length === 0 && m.location && typeof m.location.lat === 'number' && (
             <a
               href={`https://maps.google.com/?q=${m.location.lat},${m.location.lng}`}
               target="_blank"
@@ -470,6 +854,12 @@ export default function RadioDispatchPage() {
               <MapPin size={13} weight="fill" /> Open location in Google Maps
             </a>
           )}
+
+          {showSeen && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: FAINT, marginTop: 5 }}>
+              <Check size={11} weight="bold" /> Seen by {seenN}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -479,6 +869,8 @@ export default function RadioDispatchPage() {
     const isActive = c.id === activeId;
     const mon = isMonitored(c);
     const lm = c.lastMessage;
+    const unread = typeof c.unread === 'number' && c.unread > 0 ? c.unread : 0;
+    const onCh = typeof c.onChannel === 'number' && c.onChannel > 0 ? c.onChannel : 0;
     const preview = lm
       ? lm.kind === 'voice' ? `PTT ${secsLabel(lm.secs)}`
         : lm.kind === 'panic' ? 'PANIC ALARM'
@@ -520,9 +912,28 @@ export default function RadioDispatchPage() {
           </div>
           <div style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>
             <UsersThree size={11} weight="bold" style={{ verticalAlign: '-1px', marginRight: 4 }} />
-            {c.members} · {preview}
+            {c.members}
+            {onCh > 0 && (
+              <span style={{ color: GREEN, fontWeight: 800 }}>
+                {' '}<span aria-hidden style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 999, background: GREEN, verticalAlign: '1px' }} /> {onCh} on
+              </span>
+            )}
+            {' '}· {preview}
           </div>
         </div>
+        {unread > 0 && !isActive && (
+          <span
+            title={`${unread} unread transmission${unread === 1 ? '' : 's'}`}
+            style={{
+              flexShrink: 0, minWidth: 20, height: 20, padding: '0 6px', borderRadius: 999,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})`,
+              color: '#241500', fontSize: 10.5, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); toggleMonitor(c); }}
           title={mon ? 'Monitoring — click to mute on this board' : 'Muted on this board — click to monitor'}
@@ -542,8 +953,14 @@ export default function RadioDispatchPage() {
   };
 
   /* ── Page ───────────────────────────────────────────────────────────── */
+  const activeOn = active && typeof active.onChannel === 'number' && active.onChannel > 0 ? active.onChannel : 0;
   return (
     <PremiumSurface maxWidth={1500}>
+      <style>{`
+        @keyframes sagRadioEq { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+        .sagRadioRow .sagRowActions { opacity: 0; pointer-events: none; transition: opacity .15s ease; }
+        .sagRadioRow:hover .sagRowActions, .sagRadioRow:focus-within .sagRowActions { opacity: 1; pointer-events: auto; }
+      `}</style>
       <ModuleHero
         eyebrow="Saguaro Radio"
         eyebrowIcon={<Broadcast size={13} weight="bold" />}
@@ -581,8 +998,8 @@ export default function RadioDispatchPage() {
                 position: 'relative', overflow: 'hidden',
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '11px 20px', borderRadius: 12, cursor: panicFiring ? 'wait' : 'pointer',
-                background: panicSent ? 'rgba(69,179,125,0.15)' : RED_SOFT,
-                border: `1px solid ${panicSent ? 'rgba(69,179,125,0.5)' : RED_BORDER}`,
+                background: panicSent ? GREEN_SOFT : RED_SOFT,
+                border: `1px solid ${panicSent ? GREEN_BORDER : RED_BORDER}`,
                 color: panicSent ? GREEN : RED, fontWeight: 900, fontSize: 13, letterSpacing: '0.05em',
                 userSelect: 'none', touchAction: 'none',
               }}
@@ -693,11 +1110,66 @@ export default function RadioDispatchPage() {
         {/* ── Feed ─────────────────────────────────────────────────────── */}
         <SectionCard
           title={active ? active.name : 'Channel'}
-          subtitle={active ? `${active.members} member${active.members === 1 ? '' : 's'}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : ''}` : undefined}
+          subtitle={active ? `${active.members} member${active.members === 1 ? '' : 's'}${activeOn ? ` · ${activeOn} on channel now` : ''}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : ''}` : undefined}
           icon={<Hash size={16} weight="bold" color={GOLD_HI} />}
+          action={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {rtLive && (
+                <span
+                  title="Live — transmissions arrive instantly over the realtime socket"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN }}
+                >
+                  <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: GREEN, boxShadow: '0 0 8px rgba(69,179,125,0.8)' }} />
+                  LIVE
+                </span>
+              )}
+              {catchingUp ? (
+                <button onClick={stopPlayback} style={{ ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12 }}>
+                  <Pause size={12} weight="fill" /> Stop
+                </button>
+              ) : (
+                <button
+                  onClick={startCatchUp}
+                  disabled={unheardVoice.length === 0}
+                  title="Play every unheard voice clip in order, oldest first"
+                  style={{
+                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
+                    opacity: unheardVoice.length ? 1 : 0.45,
+                    cursor: unheardVoice.length ? 'pointer' : 'default',
+                  }}
+                >
+                  <FastForward size={12} weight="fill" /> Catch me up{unheardVoice.length ? ` (${unheardVoice.length})` : ''}
+                </button>
+              )}
+            </div>
+          }
           flush
         >
           <div style={{ display: 'flex', flexDirection: 'column', height: 'min(680px, calc(100vh - 330px))', minHeight: 440 }}>
+            {/* NOW TRANSMITTING / NOW PLAYING — gold band with equalizer */}
+            {onAir && (
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px',
+                  background: 'linear-gradient(90deg, rgba(245,158,11,0.24), rgba(245,158,11,0.07))',
+                  borderBottom: `1px solid ${AMBER_BORDER}`,
+                }}
+              >
+                <EqBars color={recording ? RED : GOLD_HI} size={15} />
+                <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.14em', color: recording ? RED : GOLD_HI, whiteSpace: 'nowrap' }}>
+                  {recording ? 'NOW TRANSMITTING' : 'NOW PLAYING'}
+                </span>
+                <span style={{ fontSize: 12, color: MUTED, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                  {recording
+                    ? `You are keyed up on ${active?.name || 'this channel'} — release to send`
+                    : `${senderShort(playingMsg?.sender_name ?? null)}${catchingUp ? ' · catch-up' : ''}${playingMsg?.audio_duration_secs ? ` · ${secsLabel(playingMsg.audio_duration_secs)}` : ''}`}
+                </span>
+                <span aria-hidden style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                  <EqBars color={recording ? RED : GOLD_HI} size={15} />
+                </span>
+              </div>
+            )}
+
             {/* Traffic */}
             <div ref={feedRef} style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 6px' }}>
               {!active && firstLoad && (
@@ -714,7 +1186,7 @@ export default function RadioDispatchPage() {
                 <PremiumEmpty tone="error" icon={<Warning size={30} color={RED} weight="fill" />} title="Feed unavailable" description="Could not load this channel's traffic. The console retries automatically every few seconds." />
               )}
               {active && msgData && messages.length === 0 && (
-                <PremiumEmpty icon={<Microphone size={30} color={GOLD_HI} weight="fill" />} title="Channel is quiet" description="No traffic yet. Key up with hold-to-talk below, or send the first text — every monitoring member hears about it." />
+                <PremiumEmpty icon={<Microphone size={30} color={GOLD_HI} weight="fill" />} title="Channel is quiet" description="No traffic yet. Key up with hold-to-talk below (or hold SPACE), or send the first text — every monitoring member hears about it." />
               )}
               {messages.map(renderRow)}
             </div>
@@ -728,11 +1200,11 @@ export default function RadioDispatchPage() {
                   onPointerLeave={pttStop}
                   onPointerCancel={pttStop}
                   disabled={!active || uploadingVoice}
-                  title="Hold to talk — release to transmit"
+                  title="Hold to talk — release to transmit (or hold SPACE anywhere)"
                   aria-label="Hold to talk"
                   style={{
-                    flexShrink: 0, width: 46, height: 42, borderRadius: 12, padding: 0,
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, width: 56, height: 42, borderRadius: 12, padding: 0,
+                    display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
                     cursor: active ? 'pointer' : 'not-allowed',
                     background: recording
                       ? `linear-gradient(180deg, ${RED}, #B91C1C)`
@@ -743,7 +1215,10 @@ export default function RadioDispatchPage() {
                     opacity: !active || uploadingVoice ? 0.55 : 1,
                   }}
                 >
-                  {uploadingVoice ? <Waveform size={18} weight="bold" /> : <Microphone size={18} weight="fill" />}
+                  {uploadingVoice ? <Waveform size={17} weight="bold" /> : <Microphone size={17} weight="fill" />}
+                  <span style={{ fontSize: 7.5, fontWeight: 900, letterSpacing: '0.16em', opacity: spaceKeyed || recording ? 1 : 0.65, lineHeight: 1 }}>
+                    SPACE
+                  </span>
                 </button>
               )}
               <input
