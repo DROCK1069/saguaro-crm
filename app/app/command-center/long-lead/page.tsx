@@ -2,14 +2,15 @@
 import { useMemo, useState } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import Link from 'next/link';
-import { Package, ArrowRight } from '@phosphor-icons/react';
+import { Package, ArrowRight, Plus } from '@phosphor-icons/react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useLongLead, createLongLead, advanceLongLead } from '@/lib/hooks/useFranchise';
 import { computeLongLead, lifecycleStage, LONGLEAD_LIFECYCLE, SEVERITY_ORDER, num, type Severity } from '@/lib/franchise';
 import {
   C, font, fmtDate, fmtMoney, fmtDays, useFranchiseGate, GateLoading,
-  PageHeader, Tile, SevDot, SevBadge, Chip, SearchInput, EmptyState, AttentionBanner, Metric, LiftCard,
+  SevDot, SevBadge, Chip, SearchInput, AttentionBanner, Metric, LiftCard,
 } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, GoldButton, GhostButton, Pill } from '@/components/ui/premium';
 
 const SEV_LABEL: Record<Severity, string> = { red: 'Critical', yellow: 'At Risk', green: 'On Track' };
 
@@ -54,26 +55,31 @@ export default function LongLeadPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1280, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="Long-Lead Tracker"
+    <PremiumSurface maxWidth={1280} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<Package size={13} weight="fill" color={C.gold} />}
+        title="Long-Lead"
+        accent="Tracker"
         subtitle="Every long-lead item across all sites, ordered by drop-dead order date. Protect the schedule — order the red ones now."
-        right={
-          <button onClick={() => setAdding((v) => !v)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
-            {adding ? 'Close' : '+ Add Item'}
-          </button>
-        }
+        actions={adding
+          ? <GhostButton onClick={() => setAdding(false)}>Close</GhostButton>
+          : <GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setAdding(true)}>Add Item</GoldButton>}
       />
 
       {adding && <AddItemForm projects={projects} onDone={() => setAdding(false)} />}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Long-Lead Items" value={summary.total} />
-        <Tile label="On Track" value={summary.green} color={C.green} />
-        <Tile label="At Risk" value={summary.yellow} color={C.yellow} />
-        <Tile label="Critical" value={summary.red} color={C.red} />
-        <Tile label="Committed Value" value={fmtMoney(summary.value)} />
-      </div>
+      {/* Procurement pulse — severity mix plus committed dollars, all Number()-coerced via num() */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Long-Lead Items', value: String(summary.total), sub: 'across all sites' },
+          { label: 'On Track', value: String(summary.green), accent: C.green, sub: 'order date protected' },
+          { label: 'At Risk', value: String(summary.yellow), accent: summary.yellow > 0 ? C.yellow : undefined, sub: 'order window closing' },
+          { label: 'Critical', value: String(summary.red), accent: summary.red > 0 ? C.red : undefined, sub: 'order now' },
+          { label: 'Committed Value', value: fmtMoney(Number(summary.value) || 0), accent: C.gold, sub: 'qty times unit cost' },
+        ]} />
+      )}
 
       <AttentionBanner red={summary.red} yellow={summary.yellow} noun="item" />
 
@@ -92,11 +98,16 @@ export default function LongLeadPage() {
         <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading procurement…</div>
       ) : filtered.length === 0 ? (
         rows.length === 0 ? (
-          <EmptyState icon={<Package size={34} color={C.dim} />} title="No long-lead items yet"
-            body="Track switchgear, rooftop units, elevators, simulator bays — anything with a long lead time. The tracker computes each item's drop-dead order date and flags what to order now."
-            action={<button onClick={() => setAdding(true)} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>+ Add your first item</button>} />
+          <SectionCard>
+            <PremiumEmpty icon={<Package size={32} weight="duotone" color={C.gold} />} title="No long-lead items yet"
+              description="Track switchgear, rooftop units, elevators, simulator bays — anything with a long lead time. The tracker computes each item's drop-dead order date and flags what to order now."
+              action={<GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setAdding(true)}>Add your first item</GoldButton>} />
+          </SectionCard>
         ) : (
-          <EmptyState title="Nothing matches this filter" />
+          <SectionCard>
+            <PremiumEmpty compact icon={<Package size={26} weight="duotone" color={C.gold} />} title="Nothing matches this filter"
+              description="No item matches the current severity or search. Clear the filters to see the full tracker." />
+          </SectionCard>
         )
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
@@ -147,8 +158,8 @@ export default function LongLeadPage() {
               })()}
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12, alignItems: 'center' }}>
-                {it.po_number && <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: '#1c1c1e', color: C.dim }}>PO {it.po_number}</span>}
-                {it.unit_cost != null && <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: '#1c1c1e', color: C.dim }}>{fmtMoney((num(it.unit_cost) ?? 0) * (num(it.quantity) ?? 1))}</span>}
+                {it.po_number && <Pill tone="neutral">PO {it.po_number}</Pill>}
+                {it.unit_cost != null && <Pill tone="gold">{fmtMoney((num(it.unit_cost) ?? 0) * (num(it.quantity) ?? 1))}</Pill>}
                 {h.daysToOrderBy != null && h.severity !== 'green' && (
                   <span style={{ fontSize: 11, fontWeight: 700, color: C.dim, marginLeft: 'auto' }}>Order {fmtDays(h.daysToOrderBy)}</span>
                 )}
@@ -157,7 +168,8 @@ export default function LongLeadPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }
 
@@ -178,8 +190,7 @@ function AddItemForm({ projects, onDone }: { projects: any[]; onDone: () => void
   }
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginBottom: 18 }}>
-      <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>Add long-lead item</div>
+    <SectionCard title="Add long-lead item" subtitle="The tracker computes the drop-dead order date from need-by minus lead time" icon={<Package size={16} weight="duotone" color={C.gold} />} style={{ marginBottom: 18 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={lbl}>Item description *</label>
@@ -208,9 +219,9 @@ function AddItemForm({ projects, onDone }: { projects: any[]; onDone: () => void
       </div>
       {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button onClick={submit} disabled={busy} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.gold, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Saving…' : 'Save item'}</button>
-        <button onClick={onDone} style={{ padding: '9px 18px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#141416', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+        <GoldButton size="md" onClick={submit} disabled={busy}>{busy ? 'Saving…' : 'Save item'}</GoldButton>
+        <GhostButton size="md" onClick={onDone}>Cancel</GhostButton>
       </div>
-    </div>
+    </SectionCard>
   );
 }

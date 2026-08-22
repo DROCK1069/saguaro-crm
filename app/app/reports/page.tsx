@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CurrencyDollar, ChartBar, Clipboard, ArrowsClockwise, Lock, ShieldCheck, CalendarBlank, CheckCircle, HardHat, Warning, Package, Clock, ArrowRight, X } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 // ── Color palette ──────────────────────────────────────────────
 const GOLD   = '#F59E0B';
@@ -419,7 +419,13 @@ export default function ReportsPage() {
         }
       />
 
-      {/* ── Sage Chat Bar ── */}
+      {/* What the reporting engine already knows — all figures live on this page */}
+      <StatStrip items={[
+        { label: 'Report Library', value: String(STANDARD_REPORTS.length), sub: 'standard reports, one tap each' },
+        { label: 'Projects In Scope', value: String(projects.length), sub: projectFilter ? (projects.find(p => p.id === projectFilter)?.name || 'one selected') : 'all projects' },
+        { label: 'Runs This Session', value: String(history.length), sub: history[0] ? `last: ${timeAgo(history[0].ts)}` : 'none yet' },
+        { label: 'Export Formats', value: '3', sub: 'CSV, Excel, and PDF' },
+      ]} />
       <SectionCard flush style={{ marginBottom: 16 }} bodyStyle={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Sage icon */}

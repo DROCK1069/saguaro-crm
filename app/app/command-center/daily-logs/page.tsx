@@ -4,8 +4,9 @@ import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useDailyLogs, submitDailyLog } from '@/lib/hooks/useFranchise';
-import { C, font, fmtDate, useFranchiseGate, GateLoading, PageHeader, Tile, EmptyState, SevBadge } from '@/components/franchise/kit';
-import { Circle, Warning, CheckCircle, Clipboard, HardHat, CloudSun, Camera } from '@phosphor-icons/react';
+import { C, font, fmtDate, useFranchiseGate, GateLoading, SevBadge } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, GoldButton, GhostButton } from '@/components/ui/premium';
+import { Circle, Warning, CheckCircle, Clipboard, HardHat, CloudSun, Camera, Plus } from '@phosphor-icons/react';
 
 const ACTIVE = (p: any) => !/complete|closed|closeout|won|archiv/i.test(String(p.status || ''));
 
@@ -27,18 +28,38 @@ export default function DailyLogsPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1200, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Daily Superintendent Reports" subtitle="Every site reports by 4 PM — photos, manpower, weather, progress, problems. You know the day without a phone call."
-        right={<button onClick={() => setSubmitting((v) => !v)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>{submitting ? 'Close' : '+ Submit Report'}</button>} />
+    <PremiumSurface maxWidth={1200} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<Clipboard size={13} weight="fill" color={C.gold} />}
+        title="Daily Superintendent"
+        accent="Reports"
+        subtitle="Every site reports by 4 PM — photos, manpower, weather, progress, problems. You know the day without a phone call."
+        actions={submitting
+          ? <GhostButton onClick={() => setSubmitting(false)}>Close</GhostButton>
+          : <GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setSubmitting(true)}>Submit Report</GoldButton>}
+      />
 
       {submitting && <SubmitForm projects={activeSites} onDone={() => setSubmitting(false)} />}
 
+      {/* Reporting pulse — today's compliance across active sites */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Reported Today', value: String(compliance.reported), accent: compliance.total > 0 && compliance.reported === compliance.total ? C.green : undefined, sub: `of ${compliance.total} active site${compliance.total === 1 ? '' : 's'}` },
+          { label: 'Awaiting', value: String(compliance.total - compliance.reported), accent: compliance.total - compliance.reported ? C.red : C.green, sub: compliance.total - compliance.reported ? 'no report yet' : 'all sites in' },
+          { label: 'Late (after 4 PM)', value: String(compliance.late), accent: compliance.late ? C.yellow : C.green, sub: 'site local time' },
+          { label: 'Reports (21d)', value: String((logs as any[]).length), sub: 'across all sites' },
+        ]} />
+      )}
+
       {/* 4 PM compliance */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', marginBottom: 18 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 800 }}>Today's 4 PM Compliance</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: compliance.reported === compliance.total ? C.green : C.red }}>{compliance.reported}/{compliance.total} reported</span>
-        </div>
+      <SectionCard
+        title="Today's 4 PM Compliance"
+        icon={<CheckCircle size={16} weight="duotone" color={C.gold} />}
+        action={<span style={{ fontSize: 13, fontWeight: 700, color: compliance.reported === compliance.total ? C.green : C.red, whiteSpace: 'nowrap' }}>{compliance.reported}/{compliance.total} reported</span>}
+        style={{ marginBottom: 18 }}
+      >
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {activeSites.map((p) => {
             const ok = todayByProject[p.id];
@@ -54,46 +75,42 @@ export default function DailyLogsPage() {
           })}
           {activeSites.length === 0 && <span style={{ fontSize: 13, color: C.dim }}>No active sites.</span>}
         </div>
-      </div>
+      </SectionCard>
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Reported Today" value={compliance.reported} color={C.green} />
-        <Tile label="Awaiting" value={compliance.total - compliance.reported} color={compliance.total - compliance.reported ? C.red : C.green} />
-        <Tile label="Late (after 4 PM)" value={compliance.late} color={compliance.late ? C.yellow : C.green} sub="site local time" />
-        <Tile label="Reports (21d)" value={(logs as any[]).length} />
-      </div>
-
-      <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: C.dim, margin: '4px 2px 10px' }}>Recent Reports</div>
-      {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
-      : (logs as any[]).length === 0 ? (
-        <EmptyState icon={<Clipboard size={34} weight="regular" color={C.dim} />} title="No daily reports yet" body="Every superintendent submits a daily report — photos, manpower, weather, progress, and problems — by 4 PM local. They roll up here across all sites."
-          action={<button onClick={() => setSubmitting(true)} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>+ Submit the first</button>} />
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
-          {(logs as any[]).map((l) => {
-            const hasIssue = !!(l.issues || l.delays || l.incidents);
-            return (
-              <div key={l.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${hasIssue ? C.yellow : C.green}`, borderRadius: 12, padding: '13px 15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800 }}>{l.project_id ? <Link href={`/app/projects/${l.project_id}`} style={{ color: C.text, textDecoration: 'none' }}>{l.project_name || 'Site'}</Link> : 'Site'}</div>
-                    <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{fmtDate(l.log_date)}{l.superintendent_name ? ` · ${l.superintendent_name}` : ''}</div>
+      <SectionCard title="Recent Reports" subtitle="Last 21 days, newest first" icon={<Clipboard size={16} weight="duotone" color={C.gold} />}>
+        {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
+        : (logs as any[]).length === 0 ? (
+          <PremiumEmpty icon={<Clipboard size={32} weight="duotone" color={C.gold} />} title="No daily reports yet"
+            description="Every superintendent submits a daily report — photos, manpower, weather, progress, and problems — by 4 PM local. They roll up here across all sites."
+            action={<GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setSubmitting(true)}>Submit the first</GoldButton>} />
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+            {(logs as any[]).map((l) => {
+              const hasIssue = !!(l.issues || l.delays || l.incidents);
+              return (
+                <div key={l.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${hasIssue ? C.yellow : C.green}`, borderRadius: 12, padding: '13px 15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800 }}>{l.project_id ? <Link href={`/app/projects/${l.project_id}`} style={{ color: C.text, textDecoration: 'none' }}>{l.project_name || 'Site'}</Link> : 'Site'}</div>
+                      <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{fmtDate(l.log_date)}{l.superintendent_name ? ` · ${l.superintendent_name}` : ''}</div>
+                    </div>
+                    {hasIssue && <SevBadge sev="yellow" label="Issue" />}
                   </div>
-                  {hasIssue && <SevBadge sev="yellow" label="Issue" />}
+                  <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 12, color: C.dim, flexWrap: 'wrap' }}>
+                    {l.manpower_count != null && <span><HardHat size={13} weight="fill" color={C.dim} style={{ verticalAlign: 'middle' }} /> {l.manpower_count} crew</span>}
+                    {l.weather && <span><CloudSun size={13} weight="fill" color={C.dim} style={{ verticalAlign: 'middle' }} /> {l.weather}</span>}
+                    {l.photos_count != null && <span><Camera size={13} weight="regular" color={C.dim} style={{ verticalAlign: 'middle' }} /> {l.photos_count}</span>}
+                  </div>
+                  {l.work_performed && <div style={{ fontSize: 13, color: C.text, marginTop: 9, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{l.work_performed}</div>}
+                  {(l.issues || l.delays) && <div style={{ fontSize: 12, color: C.red, marginTop: 6 }}><Warning size={13} weight="fill" color={C.red} style={{ verticalAlign: 'middle' }} /> {l.issues || l.delays}</div>}
                 </div>
-                <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 12, color: C.dim, flexWrap: 'wrap' }}>
-                  {l.manpower_count != null && <span><HardHat size={13} weight="fill" color={C.dim} style={{ verticalAlign: 'middle' }} /> {l.manpower_count} crew</span>}
-                  {l.weather && <span><CloudSun size={13} weight="fill" color={C.dim} style={{ verticalAlign: 'middle' }} /> {l.weather}</span>}
-                  {l.photos_count != null && <span><Camera size={13} weight="regular" color={C.dim} style={{ verticalAlign: 'middle' }} /> {l.photos_count}</span>}
-                </div>
-                {l.work_performed && <div style={{ fontSize: 13, color: C.text, marginTop: 9, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{l.work_performed}</div>}
-                {(l.issues || l.delays) && <div style={{ fontSize: 12, color: C.red, marginTop: 6 }}><Warning size={13} weight="fill" color={C.red} style={{ verticalAlign: 'middle' }} /> {l.issues || l.delays}</div>}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        )}
+      </SectionCard>
+      </div>
+    </PremiumSurface>
   );
 }
 
@@ -112,8 +129,7 @@ function SubmitForm({ projects, onDone }: { projects: any[]; onDone: () => void 
   }
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginBottom: 18 }}>
-      <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>Daily superintendent report</div>
+    <SectionCard title="Daily superintendent report" subtitle="Photos, manpower, weather, progress, problems — the whole day in one entry" icon={<HardHat size={16} weight="duotone" color={C.gold} />} style={{ marginBottom: 18 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
         <div><label style={lbl}>Site *</label><select style={inp} value={f.project_id || ''} onChange={(e) => set('project_id', e.target.value)}><option value="">Select…</option>{projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
         <div><label style={lbl}>Date</label><SaguaroDatePicker style={inp} value={f.log_date} onChange={(v) => set('log_date', v)} /></div>
@@ -130,9 +146,9 @@ function SubmitForm({ projects, onDone }: { projects: any[]; onDone: () => void 
       </div>
       {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button onClick={submit} disabled={busy} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.gold, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Submitting…' : 'Submit report'}</button>
-        <button onClick={onDone} style={{ padding: '9px 18px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#141416', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+        <GoldButton size="md" onClick={submit} disabled={busy}>{busy ? 'Submitting…' : 'Submit report'}</GoldButton>
+        <GhostButton size="md" onClick={onDone}>Cancel</GhostButton>
       </div>
-    </div>
+    </SectionCard>
   );
 }

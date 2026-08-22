@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { humanError } from '@/lib/errors';
-import { PremiumSurface, ModuleHero, StatStrip, PremiumEmpty } from '@/components/ui/premium';
-import { UsersThree, ChatCircleDots, Buildings, ClockCounterClockwise } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty } from '@/components/ui/premium';
+import { UsersThree, ChatCircleDots, Buildings, ClockCounterClockwise, ListChecks } from '@phosphor-icons/react';
 
 /* ── palette ──────────────────────────────────────────── */
 const GOLD='#F59E0B',BG='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',TEXT='#FFFFFF',DIM='#CBD5E1';
@@ -467,8 +467,14 @@ export default function ClientPortalPage() {
         <Stat label="Disabled" value={users.filter(u => u.status === 'disabled').length} color={RED} />
       </div>
 
-      {/* user table */}
-      <div style={{ ...card, padding: 0, overflow: 'auto' }}>
+      {/* user table — re-housed in the kit's SectionCard */}
+      <SectionCard
+        title="Portal Users"
+        subtitle={`${filteredUsers.length} of ${users.length} shown`}
+        icon={<UsersThree size={17} weight="duotone" color={GOLD} />}
+        flush
+        bodyStyle={{ overflow: 'auto' }}
+      >
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
           <thead>
             <tr style={{ background: BG }}>
@@ -557,7 +563,7 @@ export default function ClientPortalPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </SectionCard>
 
       {/* invite modal */}
       <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite New Client User" width={580}>
@@ -722,11 +728,14 @@ export default function ClientPortalPage() {
   function MessagesTab() {
     return (
       <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 280px)', minHeight: 480 }}>
-        {/* thread sidebar */}
-        <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, fontSize: 14, fontWeight: 700, color: TEXT }}>
-            Conversations
-          </div>
+        {/* thread sidebar — SectionCard shell */}
+        <SectionCard
+          title="Conversations"
+          icon={<ChatCircleDots size={17} weight="duotone" color={GOLD} />}
+          flush
+          style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column' }}
+          bodyStyle={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        >
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {threads.length === 0 && (
               <div style={{ padding: '22px 18px', color: DIM, fontSize: 12.5, lineHeight: 1.6 }}>
@@ -761,10 +770,14 @@ export default function ClientPortalPage() {
               </div>
             ))}
           </div>
-        </div>
+        </SectionCard>
 
-        {/* message area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', ...card, padding: 0, overflow: 'hidden' }}>
+        {/* message area — SectionCard shell */}
+        <SectionCard
+          flush
+          style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+          bodyStyle={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        >
           {!selectedThread ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
               <PremiumEmpty
@@ -829,7 +842,7 @@ export default function ClientPortalPage() {
               </div>
             </>
           )}
-        </div>
+        </SectionCard>
       </div>
     );
   }
@@ -845,7 +858,13 @@ export default function ClientPortalPage() {
         see a dollar figure; switch on Photos and they get the live progress gallery. Changes save
         automatically and apply on the client&apos;s next page load.
       </p>
-      <div style={{ ...card, padding: 0, overflow: 'auto' }}>
+      <SectionCard
+        title="Section Permissions"
+        subtitle="Toggle what each client can see"
+        icon={<ListChecks size={17} weight="duotone" color={GOLD} />}
+        flush
+        bodyStyle={{ overflow: 'auto' }}
+      >
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1000 }}>
           <thead>
             <tr style={{ background: BG }}>
@@ -879,11 +898,15 @@ export default function ClientPortalPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </SectionCard>
 
       {/* quick presets */}
-      <div style={{ marginTop: 20 }}>
-        <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: TEXT }}>Quick Permission Presets</h4>
+      <SectionCard
+        title="Quick Permission Presets"
+        subtitle="Apply a preset to every active user in one click"
+        icon={<ListChecks size={17} weight="duotone" color={GOLD} />}
+        style={{ marginTop: 20 }}
+      >
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
             { label: 'Full Access', desc: 'Enable all permissions', perms: PERM_KEYS.reduce((a, k) => ({ ...a, [k]: true }), {} as Record<string, boolean>) },
@@ -905,7 +928,7 @@ export default function ClientPortalPage() {
             </div>
           ))}
         </div>
-      </div>
+      </SectionCard>
     </>);
   }
 
@@ -919,15 +942,21 @@ export default function ClientPortalPage() {
         Manage which clients can access which projects. Check a box to grant access.
       </p>
       {projects.length === 0 ? (
-        <div style={{ ...card, padding: 0 }}>
+        <SectionCard flush>
           <PremiumEmpty
             icon={<Buildings size={30} weight="duotone" color={GOLD} />}
             title="No projects to share yet"
             description="Create a project and it appears here as a column — check a box to give a client a live portal view of that job. Clients only ever see the projects you explicitly grant."
           />
-        </div>
+        </SectionCard>
       ) : (
-        <div style={{ ...card, padding: 0, overflow: 'auto' }}>
+        <SectionCard
+          title="Project Access Matrix"
+          subtitle={`${activeUsers.length} active user${activeUsers.length === 1 ? '' : 's'} across ${projects.length} project${projects.length === 1 ? '' : 's'}`}
+          icon={<Buildings size={17} weight="duotone" color={GOLD} />}
+          flush
+          bodyStyle={{ overflow: 'auto' }}
+        >
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
             <thead>
               <tr style={{ background: BG }}>
@@ -973,7 +1002,7 @@ export default function ClientPortalPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </SectionCard>
       )}
 
       {/* summary stats */}
@@ -1024,8 +1053,13 @@ export default function ClientPortalPage() {
         }).length} color={GOLD} />
       </div>
 
-      {/* log entries */}
-      <div style={{ ...card, maxHeight: 520, overflowY: 'auto' }}>
+      {/* log entries — re-housed in the kit's SectionCard */}
+      <SectionCard
+        title="Audit Trail"
+        subtitle="Logins, page views, and approvals — timestamped with IP"
+        icon={<ClockCounterClockwise size={17} weight="duotone" color={GOLD} />}
+        bodyStyle={{ maxHeight: 520, overflowY: 'auto' }}
+      >
         {filteredLog.length === 0 && (
           logSearch || logSection !== 'all' ? (
             <div style={{ color: DIM, fontSize: 13, textAlign: 'center', padding: 40 }}>
@@ -1078,12 +1112,15 @@ export default function ClientPortalPage() {
             Showing first 100 of {filteredLog.length} entries
           </div>
         )}
-      </div>
+      </SectionCard>
 
       {/* top users by activity */}
-      <div style={{ marginTop: 22 }}>
-        <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: TEXT }}>Most Active Users</h4>
-        <div style={card}>
+      <SectionCard
+        title="Most Active Users"
+        subtitle="Ranked by total portal actions"
+        icon={<UsersThree size={17} weight="duotone" color={GOLD} />}
+        style={{ marginTop: 22 }}
+      >
           {(() => {
             const counts = new Map<string, { name: string; count: number }>();
             actLog.forEach(e => {
@@ -1104,8 +1141,7 @@ export default function ClientPortalPage() {
               </div>
             ));
           })()}
-        </div>
-      </div>
+      </SectionCard>
     </>);
   }
 

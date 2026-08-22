@@ -5,9 +5,10 @@ import { useEscalations } from '@/lib/hooks/useFranchise';
 import { escalationSeverity, escalationLevel, SEVERITY_ORDER, num, type Severity } from '@/lib/franchise';
 import {
   C, font, fmtDate, useFranchiseGate, GateLoading,
-  PageHeader, Tile, SevDot, SevBadge, Chip, SearchInput, EmptyState, AttentionBanner, Metric, LiftCard,
+  SevDot, SevBadge, Chip, SearchInput, AttentionBanner, Metric, LiftCard,
 } from '@/components/franchise/kit';
-import { Flag } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty } from '@/components/ui/premium';
+import { Flag, Ladder } from '@phosphor-icons/react';
 
 const SEV_LABEL: Record<Severity, string> = { red: 'Critical', yellow: 'Watch', green: 'Resolved' };
 const RESOLVED_RE = /resolved|closed/i;
@@ -62,25 +63,31 @@ export default function EscalationsPage() {
   const pill: React.CSSProperties = { fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: '#1c1c1e', color: C.dim };
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1280, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="Escalations"
+    <PremiumSurface maxWidth={1280} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<Flag size={13} weight="fill" color={C.gold} />}
+        title="Escalation"
+        accent="Matrix"
         subtitle="Everything escalated for attention across all sites — RFIs, submittals and action items that blew past their date. Clear the red ones first."
       />
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Escalations" value={summary.total} />
-        <Tile label="Open" value={summary.open} />
-        <Tile label="Critical" value={summary.red} color={C.red} sub="7d+ overdue" />
-        <Tile label="Watch" value={summary.yellow} color={C.yellow} sub="1–6d overdue" />
-        <Tile label="Resolved" value={summary.resolved} color={C.green} />
-      </div>
+      {/* Escalation pulse — open vs resolved, worst-first */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Escalations', value: String(summary.total), sub: 'across all sites' },
+          { label: 'Open', value: String(summary.open), accent: summary.open > 0 ? C.gold : undefined, sub: summary.open ? 'still in the chain' : 'nothing in flight' },
+          { label: 'Critical', value: String(summary.red), accent: summary.red > 0 ? C.red : undefined, sub: '7d+ overdue' },
+          { label: 'Watch', value: String(summary.yellow), accent: summary.yellow > 0 ? C.yellow : undefined, sub: '1–6d overdue' },
+          { label: 'Resolved', value: String(summary.resolved), accent: C.green, sub: 'cleared the chain' },
+        ]} />
+      )}
 
       <AttentionBanner red={summary.red} yellow={summary.yellow} noun="escalation" />
 
       {/* 4-level escalation matrix — who owns it as it ages (Super → PM → Director → Exec). */}
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: C.dim, margin: '0 2px 8px' }}>Escalation Matrix · who owns it now</div>
+      <SectionCard title="Escalation Matrix" subtitle="Who owns it now — ownership climbs as items age" icon={<Ladder size={16} weight="duotone" color={C.gold} />} style={{ marginBottom: 18 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
           {[
             { n: 1, owner: 'Superintendent', hint: '0–2d overdue', color: '#34C759' },
@@ -90,7 +97,7 @@ export default function EscalationsPage() {
           ].map((lv) => {
             const count = summary.levels[lv.n - 1];
             return (
-              <div key={lv.n} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${lv.color}`, borderRadius: 12, padding: '12px 14px', opacity: count ? 1 : 0.6 }}>
+              <div key={lv.n} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderLeft: `4px solid ${lv.color}`, borderRadius: 12, padding: '12px 14px', opacity: count ? 1 : 0.6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', background: lv.color, borderRadius: 6, padding: '2px 7px' }}>L{lv.n}</span>
                   <span style={{ fontSize: 22, fontWeight: 900, color: count ? lv.color : C.dim, marginLeft: 'auto', fontVariantNumeric: 'tabular-nums' }}>{count}</span>
@@ -101,7 +108,7 @@ export default function EscalationsPage() {
             );
           })}
         </div>
-      </div>
+      </SectionCard>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
         {(['all', 'red', 'yellow', 'green'] as const).map((f) => (
@@ -118,10 +125,15 @@ export default function EscalationsPage() {
         <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading escalations…</div>
       ) : filtered.length === 0 ? (
         rows.length === 0 ? (
-          <EmptyState icon={<Flag size={34} weight="regular" color={C.dim} />} title="No escalations"
-            body="Nothing has been escalated across your sites. When an RFI, submittal or action item runs past its date and gets bumped up the chain, it lands here — sorted worst-first so you always know what to chase." />
+          <SectionCard>
+            <PremiumEmpty icon={<Flag size={32} weight="duotone" color={C.gold} />} title="No escalations"
+              description="Nothing has been escalated across your sites. When an RFI, submittal or action item runs past its date and gets bumped up the chain, it lands here — sorted worst-first so you always know what to chase." />
+          </SectionCard>
         ) : (
-          <EmptyState title="Nothing matches this filter" />
+          <SectionCard>
+            <PremiumEmpty compact icon={<Flag size={26} weight="duotone" color={C.gold} />} title="Nothing matches this filter"
+              description="No escalation matches the current severity or search. Clear the filters to see the full list." />
+          </SectionCard>
         )
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
@@ -164,6 +176,7 @@ export default function EscalationsPage() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }

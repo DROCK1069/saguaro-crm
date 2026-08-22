@@ -9,6 +9,7 @@ import {
   MagnifyingGlass, FileText, Trash, Files, Fingerprint, WarningCircle,
 } from '@phosphor-icons/react';
 import { getAuthHeaders, getSupabaseBrowser } from '@/lib/supabase-browser';
+import { StandardSelect } from '@/components/ui/Select';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 // ─── Color Palette ────────────────────────────────────────────────
@@ -378,7 +379,6 @@ export default function DocumentVersionsPage() {
     background: C.BG, border: `1px solid ${C.BORDER}`, borderRadius: 6,
     padding: '8px 12px', color: C.TEXT, fontSize: 13, width: '100%', outline: 'none',
   };
-  const sSelect: React.CSSProperties = { ...sInput, cursor: 'pointer' };
   const sCard: React.CSSProperties = { background: C.RAISED, border: `1px solid ${C.BORDER}`, borderRadius: 10, padding: 16, marginBottom: 8 };
   const sOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(2,6,15,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 };
   const sModal: React.CSSProperties = { background: C.RAISED, border: `1px solid ${C.BORDER}`, borderRadius: 12, padding: 24, width: 660, maxWidth: '100%', maxHeight: '85vh', overflowY: 'auto', position: 'relative', boxShadow: 'var(--shadow-lg)' };
@@ -608,15 +608,13 @@ export default function DocumentVersionsPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               <div>
                 <label style={sLabel}>Version A</label>
-                <select style={sSelect} value={compareA} onChange={(e) => setCompareA(e.target.value)}>
-                  {selectedDoc.versions.map((v) => <option key={v.id} value={v.id}>{v.versionLabel} ({v.revisionCode})</option>)}
-                </select>
+                <StandardSelect value={compareA} onChange={setCompareA} ariaLabel="Version A" width="100%"
+                  options={selectedDoc.versions.map((v) => ({ value: v.id, label: `${v.versionLabel} (${v.revisionCode})` }))} />
               </div>
               <div>
                 <label style={sLabel}>Version B</label>
-                <select style={sSelect} value={compareB} onChange={(e) => setCompareB(e.target.value)}>
-                  {selectedDoc.versions.map((v) => <option key={v.id} value={v.id}>{v.versionLabel} ({v.revisionCode})</option>)}
-                </select>
+                <StandardSelect value={compareB} onChange={setCompareB} ariaLabel="Version B" width="100%"
+                  options={selectedDoc.versions.map((v) => ({ value: v.id, label: `${v.versionLabel} (${v.revisionCode})` }))} />
               </div>
             </div>
             {(() => {
@@ -703,16 +701,12 @@ export default function DocumentVersionsPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
                       <label style={sLabel}>Category</label>
-                      <select style={sSelect} value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)}>
-                        {UPLOAD_CATS.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                      <StandardSelect value={uploadCategory} onChange={setUploadCategory} ariaLabel="Category" width="100%" options={UPLOAD_CATS} />
                     </div>
                     <div>
                       <label style={sLabel}>Project</label>
-                      <select style={sSelect} value={uploadProjectId} onChange={(e) => setUploadProjectId(e.target.value)}>
-                        <option value="">Unassigned</option>
-                        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
+                      <StandardSelect value={uploadProjectId} onChange={setUploadProjectId} ariaLabel="Project" placeholder="Unassigned" width="100%"
+                        options={projects.map((p) => ({ value: p.id, label: p.name }))} />
                     </div>
                   </div>
                   <div>
@@ -805,11 +799,8 @@ export default function DocumentVersionsPage() {
               <div style={{ fontSize: 12, color: C.DIM, marginBottom: 8, fontWeight: 600 }}>Grant Access</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input style={{ ...sInput, flex: 1 }} placeholder="Name or email" value={accessEmail} onChange={(e) => setAccessEmail(e.target.value)} />
-                <select style={{ ...sSelect, width: 120 }} value={accessRole} onChange={(e) => setAccessRole(e.target.value as any)}>
-                  <option value="viewer">Viewer</option>
-                  <option value="editor">Editor</option>
-                  <option value="admin">Admin</option>
-                </select>
+                <StandardSelect value={accessRole} onChange={(v) => setAccessRole(v as any)} ariaLabel="Role" width={120}
+                  options={[{ value: 'viewer', label: 'Viewer' }, { value: 'editor', label: 'Editor' }, { value: 'admin', label: 'Admin' }]} />
                 <button style={sBtn(C.GREEN)} onClick={addAccess}><Plus size={15} weight="bold" /> Add</button>
               </div>
             </div>
@@ -825,16 +816,12 @@ export default function DocumentVersionsPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               <div>
                 <label style={sLabel}>Category for all</label>
-                <select style={sSelect} value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value)}>
-                  {UPLOAD_CATS.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <StandardSelect value={bulkCategory} onChange={setBulkCategory} ariaLabel="Category for all" width="100%" options={UPLOAD_CATS} />
               </div>
               <div>
                 <label style={sLabel}>Project for all</label>
-                <select style={sSelect} value={bulkProjectId} onChange={(e) => setBulkProjectId(e.target.value)}>
-                  <option value="">Unassigned</option>
-                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                <StandardSelect value={bulkProjectId} onChange={setBulkProjectId} ariaLabel="Project for all" placeholder="Unassigned" width="100%"
+                  options={projects.map((p) => ({ value: p.id, label: p.name }))} />
               </div>
             </div>
             <input ref={bulkInputRef} type="file" accept={ACCEPT} multiple style={{ display: 'none' }} onChange={(e) => setBulkFiles(Array.from(e.target.files || []))} />

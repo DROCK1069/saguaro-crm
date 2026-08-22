@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Clipboard, Plug, Shuffle, WifiHigh, Ruler, ChartBar, FileText, Archive } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, FlowStrip, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, FlowStrip, ghostButtonStyle } from '@/components/ui/premium';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -193,6 +193,19 @@ export default function ReportsPage() {
           </button>
         </>}
       />
+
+      {/* Document intelligence — live counts from this network project */}
+      {(() => {
+        const latest = history.reduce<ReportHistory | null>((best, r) => (!best || new Date(r.created_at) > new Date(best.created_at)) ? r : best, null);
+        return (
+          <StatStrip items={[
+            { label: 'Report Types', value: String(REPORT_TYPES.length), sub: 'IP schedule to as-built' },
+            { label: 'Formats', value: String(FORMAT_OPTIONS.length), sub: FORMAT_OPTIONS.map((f) => f.toUpperCase()).join(', ') },
+            { label: 'Reports Generated', value: String(history.length), sub: history.length ? 'archived in history below' : 'none generated yet' },
+            { label: 'Last Export', value: latest ? new Date(latest.created_at).toLocaleDateString() : 'Never', sub: latest ? latest.name : 'one tap builds the first' },
+          ]} />
+        );
+      })()}
 
       {/* Branding Section */}
       {showBranding && (

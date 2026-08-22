@@ -8,6 +8,7 @@ import {
   PremiumSurface,
   ModuleHero,
   SectionCard,
+  StatStrip,
   PremiumEmpty,
   goldButtonStyle,
   ghostButtonStyle,
@@ -170,6 +171,16 @@ export default function ConfigGeneratorPage() {
         accent="Generator"
         subtitle="Build device-ready configuration from vetted manufacturer templates, then apply it straight to your gear."
       />
+
+      {/* Generator intelligence — live counts from the data already fetched */}
+      {(templates.length > 0 || devices.length > 0) && (
+        <StatStrip items={[
+          { label: 'Templates', value: String(filteredTemplates.length), sub: activeTab === 'All' ? 'all manufacturers' : `${activeTab} library` },
+          { label: 'Manufacturers', value: String(MANUFACTURER_TABS.length - 1), sub: 'vetted template libraries' },
+          { label: 'Project Devices', value: String(devices.length), sub: 'ready to receive config' },
+          { label: 'Selected', value: selectedTemplate ? selectedTemplate.name : '—', sub: selectedTemplate ? selectedTemplate.manufacturer : 'pick a template to begin' },
+        ]} />
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, minHeight: '60vh' }}>
         {/* Left Panel - Template Library */}

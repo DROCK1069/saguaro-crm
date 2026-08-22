@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import SaguaroDatePicker from '../../../../components/SaguaroDatePicker';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { BUILDING_TYPES } from '@/lib/contractor-trades';
+import { SECTORS } from '@/lib/taxonomy';
 import { Plus, Buildings, MapPin, CalendarBlank, UsersThree, Sparkle, CurrencyDollar, ShieldCheck, Stack } from '@phosphor-icons/react';
 import { useProjects } from '@/lib/hooks/useProjects';
 
@@ -46,16 +47,8 @@ const CATEGORY_BY_BUILDING_TYPE: Record<string,string> = {
 // ── Procore-style SECTOR differentiation: one prominent choice that filters
 //    building types, derives the category, and pre-sets compliance flags
 //    (Government/Education/Infrastructure -> prevailing wage + public agency).
-const SECTORS: { key:string; label:string; cats:string[]; extraBts?:string[]; flags?:{pw:string; pub:string} }[] = [
-  { key:'residential',   label:'Residential',    cats:['residential','multifamily','addition','remodel'] },
-  { key:'commercial',    label:'Commercial',     cats:['commercial','remodel','mixed_use'] },
-  { key:'industrial',    label:'Industrial',     cats:['industrial'] },
-  { key:'government',    label:'Government',     cats:['government'], flags:{pw:'Yes — Davis-Bacon', pub:'Yes — Public Agency'} },
-  { key:'healthcare',    label:'Healthcare',     cats:['healthcare'] },
-  { key:'education',     label:'Education',      cats:['education'], flags:{pw:'Yes — State Law', pub:'Yes — Public Agency'} },
-  { key:'infrastructure',label:'Infrastructure', cats:['industrial'], extraBts:['Civil / Infrastructure','Parking Structure','Other'], flags:{pw:'Yes — Davis-Bacon', pub:'Yes — Public Agency'} },
-  { key:'mixed',         label:'Mixed-Use',      cats:['mixed_use','commercial','multifamily'] },
-];
+//    The sector list itself lives in the single taxonomy module (@/lib/taxonomy
+//    SECTORS) so every sector picker platform-wide shares one source.
 
 const FIELD = ({label,auto,hint,children}:{label:string,auto?:boolean,hint?:React.ReactNode,children:React.ReactNode}) => (
   <div style={{marginBottom:16}}>

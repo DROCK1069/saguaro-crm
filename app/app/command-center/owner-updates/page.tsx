@@ -3,9 +3,10 @@ import { useMemo, useState } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useLongLead, useRisks, useMilestones, useEscalations, emailOwnerUpdate } from '@/lib/hooks/useFranchise';
 import { computeHealth } from '@/lib/portfolio-health';
-import { computeLongLead, computeRisk, milestoneSlip, num, type Severity } from '@/lib/franchise';
-import { C, font, fmtDate, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, SevBadge } from '@/components/franchise/kit';
-import { CheckCircle, Warning } from '@phosphor-icons/react';
+import { computeLongLead, computeRisk, milestoneSlip, type Severity } from '@/lib/franchise';
+import { C, font, fmtDate, fmtMoneyShort, useFranchiseGate, GateLoading, SevBadge } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, GoldButton, GhostButton } from '@/components/ui/premium';
+import { CheckCircle, Warning, EnvelopeSimple, Buildings } from '@phosphor-icons/react';
 
 const SEV_WORD: Record<Severity, string> = { green: 'On track', yellow: 'Needs attention', red: 'At risk' };
 const weekEnding = () => { const d = new Date(); return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); };
@@ -84,66 +85,107 @@ export default function OwnerUpdatesPage() {
   if (gateLoading) return <GateLoading />;
   if (!ready) return null;
 
+  const redCount = updates.filter((u) => u.h.status === 'red').length;
+  const yellowCount = updates.filter((u) => u.h.status === 'yellow').length;
+  const greenCount = updates.length - redCount - yellowCount;
+  const slippingTotal = updates.reduce((s, u) => s + u.slipping, 0);
+  const escTotal = updates.reduce((s, u) => s + u.esc, 0);
+  const llTotal = updates.reduce((s, u) => s + u.llRisk, 0);
+
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1000, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Weekly Owner Updates" subtitle="An owner-ready progress update auto-drafted for every site — review, copy, and send. One voice, every location." />
-      {loading ? (
-        <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
-      ) : updates.length === 0 ? (
-        <div style={{ color: C.dim, padding: 48, textAlign: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: 14 }}>No active sites yet.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {updates.map(({ p, h, text, llRisk, openRisks, critRisks, slipping, esc, upcoming }) => (
-            <div key={p.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${h.status === 'red' ? C.red : h.status === 'yellow' ? C.yellow : C.green}`, borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ fontSize: 17, fontWeight: 900 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>Week ending {weekEnding()} · {[p.city, p.state].filter(Boolean).join(', ') || '—'}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  <SevBadge sev={h.status as Severity} label={SEV_WORD[h.status as Severity]} />
-                  <button onClick={() => copy(p.id, text)} style={{ padding: '7px 14px', borderRadius: 9, border: `1px solid ${C.border}`, background: copied === p.id ? C.green : '#1c1c1e', color: copied === p.id ? '#fff' : C.text, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>{copied === p.id ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, verticalAlign: 'middle' }}><CheckCircle size={14} weight="fill" color="#fff" />Copied</span> : 'Copy update'}</button>
+    <PremiumSurface maxWidth={1000} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+        <ModuleHero
+          eyebrow="Command Center"
+          eyebrowIcon={<EnvelopeSimple size={13} weight="fill" />}
+          title="Weekly Owner"
+          accent="Updates"
+          subtitle="An owner-ready progress update auto-drafted for every site — review, copy, and send. One voice, every location."
+        />
+
+        {!loading && updates.length > 0 && (
+          <StatStrip items={[
+            { label: 'Sites', value: String(updates.length), icon: <Buildings size={11} weight="bold" /> },
+            { label: 'On Track', value: String(greenCount), accent: greenCount > 0 ? C.green : undefined },
+            { label: 'Needs Attention', value: String(yellowCount), accent: yellowCount > 0 ? C.yellow : undefined },
+            { label: 'At Risk', value: String(redCount), accent: redCount > 0 ? C.red : undefined },
+            { label: 'Milestones Slipping', value: String(slippingTotal), accent: slippingTotal > 0 ? C.yellow : undefined },
+            { label: 'Escalations', value: String(escTotal), accent: escTotal > 0 ? C.red : undefined, sub: llTotal > 0 ? `${llTotal} long-lead at risk` : 'long-lead clear' },
+          ]} />
+        )}
+
+        {loading ? (
+          <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
+        ) : updates.length === 0 ? (
+          <SectionCard>
+            <PremiumEmpty
+              icon={<EnvelopeSimple size={32} weight="duotone" color={C.gold} />}
+              title="No active sites yet"
+              description="Launch a site from the Rollout Pipeline and its weekly owner update drafts itself here — status, schedule, procurement, and open items in one owner-ready note."
+            />
+          </SectionCard>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {updates.map(({ p, h, text, llRisk, openRisks, critRisks, slipping, esc, upcoming }) => (
+              <SectionCard
+                key={p.id}
+                accent={h.status === 'red' ? C.red : h.status === 'yellow' ? C.yellow : C.green}
+                title={
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {p.name}
+                    <SevBadge sev={h.status as Severity} label={SEV_WORD[h.status as Severity]} />
+                  </span>
+                }
+                subtitle={`Week ending ${weekEnding()} · ${[p.city, p.state].filter(Boolean).join(', ') || '—'}`}
+              >
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <GhostButton size="md" onClick={() => copy(p.id, text)} icon={copied === p.id ? <CheckCircle size={14} weight="fill" color={C.green} /> : undefined}>
+                    {copied === p.id ? 'Copied' : 'Copy update'}
+                  </GhostButton>
                   <input
                     type="email"
                     value={emailTo[p.id] || ''}
                     onChange={(e) => setEmailTo((s) => ({ ...s, [p.id]: e.target.value }))}
                     placeholder="owner@email.com"
-                    style={{ padding: '7px 10px', borderRadius: 9, border: `1px solid ${emailState[p.id] === 'error' ? C.red : C.border}`, fontSize: 13, width: 170, outline: 'none', fontFamily: font }}
+                    style={{ padding: '8px 11px', borderRadius: 10, border: `1px solid ${emailState[p.id] === 'error' ? C.red : C.border}`, fontSize: 13, width: 180, outline: 'none', background: '#1c1c1e', color: C.text, fontFamily: font }}
                   />
-                  <button
+                  <GoldButton
+                    size="md"
                     onClick={() => sendEmail(p.id, text)}
                     disabled={emailState[p.id] === 'sending'}
-                    style={{ padding: '7px 14px', borderRadius: 9, border: 'none', background: emailState[p.id] === 'sent' ? C.green : emailState[p.id] === 'error' ? C.red : C.gold, color: '#fff', fontWeight: 700, fontSize: 13, cursor: emailState[p.id] === 'sending' ? 'default' : 'pointer', opacity: emailState[p.id] === 'sending' ? 0.7 : 1 }}
-                  >{emailState[p.id] === 'sending' ? 'Sending…' : emailState[p.id] === 'sent' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, verticalAlign: 'middle' }}><CheckCircle size={14} weight="fill" color="#fff" />Sent</span> : emailState[p.id] === 'error' ? 'Retry' : 'Email to owner'}</button>
+                    icon={emailState[p.id] === 'sent' ? <CheckCircle size={14} weight="fill" /> : <EnvelopeSimple size={14} weight="bold" />}
+                  >
+                    {emailState[p.id] === 'sending' ? 'Sending…' : emailState[p.id] === 'sent' ? 'Sent' : emailState[p.id] === 'error' ? 'Retry' : 'Email to owner'}
+                  </GoldButton>
                 </div>
-              </div>
-              {emailState[p.id] === 'error' && emailErr[p.id] && (
-                <div style={{ marginTop: 8, fontSize: 12, color: C.red, textAlign: 'right' }}>{emailErr[p.id]}</div>
-              )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px,1fr))', gap: 10, marginTop: 14 }}>
-                <Stat label="Complete" value={h.percentComplete != null ? `${Math.round(h.percentComplete)}%` : '—'} />
-                <Stat label="Budget" value={h.variancePct != null ? `${h.variancePct > 0 ? '+' : ''}${h.variancePct.toFixed(0)}%` : '—'} color={h.variancePct != null && h.variancePct > 5 ? C.red : h.variancePct != null && h.variancePct > 1 ? C.yellow : C.text} />
-                <Stat label="Milestones slipping" value={slipping} color={slipping ? C.yellow : C.text} />
-                <Stat label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}>Long-lead <Warning size={12} weight="fill" color={C.faint} /></span>} value={llRisk} color={llRisk ? C.red : C.text} />
-                <Stat label="Open risks" value={`${openRisks}${critRisks ? ` (${critRisks}!)` : ''}`} color={critRisks ? C.red : C.text} />
-                <Stat label="Escalations" value={esc} color={esc ? C.red : C.text} />
-              </div>
-              {upcoming.length > 0 && (
-                <div style={{ marginTop: 12, fontSize: 13, color: C.dim }}>
-                  <b style={{ color: C.text }}>Next up:</b> {upcoming.map((m: any) => `${m.title || m.name} (${fmtDate(m.current_date || m.baseline_date)})`).join(' · ')}
+                {emailState[p.id] === 'error' && emailErr[p.id] && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: C.red }}>{emailErr[p.id]}</div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px,1fr))', gap: 10, marginTop: 14 }}>
+                  <Stat label="Complete" value={h.percentComplete != null ? `${Math.round(h.percentComplete)}%` : '—'} />
+                  <Stat label="Budget" value={h.variancePct != null ? `${h.variancePct > 0 ? '+' : ''}${h.variancePct.toFixed(0)}%` : '—'} color={h.variancePct != null && h.variancePct > 5 ? C.red : h.variancePct != null && h.variancePct > 1 ? C.yellow : C.text} />
+                  <Stat label="Milestones slipping" value={slipping} color={slipping ? C.yellow : C.text} />
+                  <Stat label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}>Long-lead <Warning size={12} weight="fill" color={C.faint} /></span>} value={llRisk} color={llRisk ? C.red : C.text} />
+                  <Stat label="Open risks" value={`${openRisks}${critRisks ? ` (${critRisks}!)` : ''}`} color={critRisks ? C.red : C.text} />
+                  <Stat label="Escalations" value={esc} color={esc ? C.red : C.text} />
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+                {upcoming.length > 0 && (
+                  <div style={{ marginTop: 12, fontSize: 13, color: C.dim }}>
+                    <b style={{ color: C.text }}>Next up:</b> {upcoming.map((m: any) => `${m.title || m.name} (${fmtDate(m.current_date || m.baseline_date)})`).join(' · ')}
+                  </div>
+                )}
+              </SectionCard>
+            ))}
+          </div>
+        )}
+      </div>
+    </PremiumSurface>
   );
 }
 
 function Stat({ label, value, color }: { label: React.ReactNode; value: React.ReactNode; color?: string }) {
   return (
-    <div style={{ background: '#1c1c1e', borderRadius: 10, padding: '10px 12px' }}>
+    <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 10, padding: '10px 12px' }}>
       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3, color: C.faint }}>{label}</div>
       <div style={{ fontSize: 16, fontWeight: 800, color: color || C.text, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>

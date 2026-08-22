@@ -5,14 +5,22 @@ import { toCents, toDollars, extend, sumCents, scaleCents, percentOf, addCents }
 import { CSI_DIVISIONS as CANONICAL_CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 import { SkeletonRow } from '@/components/ui/Skeleton';
+import { Calculator, WarningCircle, PencilSimple, Percent, CopySimple, Trash, StackSimple, GitDiff, ClockCounterClockwise, Gavel, FolderSimple } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
+const EST    = moduleAccent('estimates'); // copper — eyebrow/chips/rails only; money stays gold
 const GOLD   = '#F59E0B';
+const GOLD_HI = '#FBBF24';
 const BG     = '#0a0a0a';
 const RAISED = '#141416';
 const BORDER = 'rgba(255,255,255,0.12)';
+const HAIRLINE = 'rgba(255,255,255,0.08)';
+const SURFACE = 'linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))';
 const TEXT   = '#FFFFFF';
 const DIM    = '#CBD5E1';
+const FAINT  = 'rgba(255,255,255,0.45)';
 const GREEN  = '#22C55E';
 const RED    = '#EF4444';
 const AMBER  = '#F59E0B';
@@ -633,58 +641,67 @@ export default function EstimateBuilderPage() {
     setDeleteId(null);
   }
 
-  /* ─── Styles ────────────────────────────────────────────────────── */
-  const pageStyle: React.CSSProperties = { minHeight: '100vh', background: BG, color: TEXT, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '24px 32px' };
-  const cardStyle: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16, boxShadow: 'var(--shadow-sm)' };
+  /* ─── Styles (machined to the premium kit surface language) ─────── */
+  const cardStyle: React.CSSProperties = {
+    position: 'relative', background: SURFACE, border: `1px solid ${HAIRLINE}`, borderRadius: 16,
+    padding: 20, marginBottom: 16,
+    boxShadow: '0 24px 48px -32px rgba(245,158,11,0.22), inset 0 1px 0 rgba(255,255,255,0.06)',
+  };
   const btnStyle = (bg: string = GOLD, c: string = '#000'): React.CSSProperties => ({
     background: bg === GOLD ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : bg,
     color: bg === GOLD ? '#241500' : c,
-    border: 'none', borderRadius: 'var(--radius-sm)', padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6,
-    boxShadow: bg === GOLD ? '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : undefined,
+    border: 'none', borderRadius: 10, padding: '9px 16px', cursor: 'pointer', fontWeight: 800, fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '0.01em',
+    boxShadow: bg === GOLD ? '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : 'inset 0 1px 0 rgba(255,255,255,0.08)',
   });
   const btnSmStyle = (bg: string = BORDER): React.CSSProperties => ({
-    background: bg, color: TEXT, border: 'none', borderRadius: 4, padding: '4px 10px', cursor: 'pointer', fontSize: 12,
+    background: bg, color: TEXT, border: 'none', borderRadius: 8, padding: '5px 11px', cursor: 'pointer', fontSize: 12, fontWeight: 700,
   });
-  const inputStyle: React.CSSProperties = { background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, padding: '6px 10px', fontSize: 13, width: '100%' };
+  const inputStyle: React.CSSProperties = { background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, padding: '7px 10px', fontSize: 13, width: '100%', outline: 'none' };
   const selectStyle: React.CSSProperties = { ...inputStyle, width: 'auto' };
-  const thStyle: React.CSSProperties = { textAlign: 'left', padding: '8px 10px', borderBottom: `1px solid ${BORDER}`, color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' };
-  const tdStyle: React.CSSProperties = { padding: '6px 10px', borderBottom: `1px solid ${BORDER}`, fontSize: 13, verticalAlign: 'middle' };
+  const thStyle: React.CSSProperties = { textAlign: 'left', padding: '9px 10px', borderBottom: `1px solid ${BORDER}`, color: FAINT, fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' };
+  const tdStyle: React.CSSProperties = { padding: '7px 10px', borderBottom: `1px solid ${HAIRLINE}`, fontSize: 13, verticalAlign: 'middle' };
+  // Kit chip-style tab rail: gold wash + ring on the active tab, ghost otherwise.
   const tabBtnStyle = (active: boolean): React.CSSProperties => ({
-    background: active ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : 'transparent',
-    color: active ? '#241500' : DIM, border: `1px solid ${active ? 'transparent' : BORDER}`,
-    borderRadius: 'var(--radius-sm)', padding: '8px 18px', cursor: 'pointer', fontWeight: active ? 700 : 600, fontSize: 13, transition: 'all 0.15s',
-    boxShadow: active ? '0 2px 10px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' : undefined,
+    background: active ? 'linear-gradient(90deg, rgba(245,158,11,0.16), rgba(245,158,11,0.05))' : 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))',
+    color: active ? GOLD_HI : DIM, border: `1px solid ${active ? 'rgba(245,158,11,0.45)' : HAIRLINE}`,
+    borderRadius: 999, padding: '8px 16px', cursor: 'pointer', fontWeight: 800, fontSize: 11,
+    letterSpacing: '0.1em', textTransform: 'uppercase', transition: 'all 0.15s',
+    display: 'inline-flex', alignItems: 'center', gap: 7,
+    boxShadow: active ? '0 0 30px -10px rgba(245,158,11,0.5)' : undefined,
   });
   const badgeStyle = (bg: string): React.CSSProperties => ({
-    background: bg, color: '#fff', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 600,
+    background: bg, color: '#fff', borderRadius: 999, padding: '2px 9px', fontSize: 11, fontWeight: 700,
   });
 
   /* ─── Loading / Error ───────────────────────────────────────────── */
   if (loading) {
     return (
-      <div style={pageStyle}>
+      <PremiumSurface maxWidth={1600}>
         <ModuleSkeleton kpis={4} rows={6} />
-      </div>
+      </PremiumSurface>
     );
   }
 
   if (error) {
     return (
-      <div style={pageStyle}>
-        <div style={{ ...cardStyle, borderColor: RED, textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>!</div>
-          <div style={{ color: RED, fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Error</div>
-          <div style={{ color: DIM, marginBottom: 16 }}>{error}</div>
-          <button style={btnStyle(RED, '#fff')} onClick={() => window.location.reload()}>Reload Page</button>
-        </div>
-      </div>
+      <PremiumSurface maxWidth={1600}>
+        <SectionCard flush>
+          <PremiumEmpty
+            tone="error"
+            icon={<WarningCircle size={30} weight="duotone" color={RED} />}
+            title="Estimate builder failed to load"
+            description={error}
+            action={<button style={goldButtonStyle} onClick={() => window.location.reload()}>Reload Page</button>}
+          />
+        </SectionCard>
+      </PremiumSurface>
     );
   }
 
   /* ─── Render: Summary Sidebar ───────────────────────────────────── */
   const renderSummary = () => (
-    <div style={{ ...cardStyle, position: 'sticky', top: 24 }}>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, color: GOLD }}>Estimate Summary</div>
+    <div style={{ ...cardStyle, background: 'linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)), #101011', position: 'sticky', top: 24 }}>
+      <div style={{ fontSize: 10.5, fontWeight: 900, color: FAINT, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 14 }}>Estimate Summary</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
         {divisions.filter(d => d.items.length > 0).map(d => (
           <div key={d.code} style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -853,19 +870,19 @@ export default function EstimateBuilderPage() {
                                   {copiedId === item.id && <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>Copied!</span>}
                                   <button onClick={() => openLineMenu(item.id)} style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', fontSize: 10, padding: '2px 4px', lineHeight: 1, opacity: 0.6 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}>&#9662;</button>
                                   {menuId === item.id && (
-                                    <div style={{ position: 'absolute', top: 36, right: 14, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 4, zIndex: 100, minWidth: 150, boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
+                                    <div style={{ position: 'absolute', top: 36, right: 14, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 4, zIndex: 100, minWidth: 150, boxShadow: '0 18px 40px -18px rgba(245,158,11,0.28), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
                                       {[
-                                        { label: 'Edit Amount', icon: '\u270F\uFE0F', action: () => { setMenuId(null); setEditId(item.id); setEditVal(String(Math.round(lineTotal(item) * 100) / 100)); } },
-                                        { label: 'Adjust %', icon: '\uD83D\uDCCA', action: () => { setMenuId(null); setAdjustId(item.id); } },
-                                        { label: 'Copy Amount', icon: '\uD83D\uDCCB', action: () => handleCopyLine(item.id, lineTotal(item)) },
+                                        { label: 'Edit Amount', icon: <PencilSimple size={13} color={GOLD_HI} />, action: () => { setMenuId(null); setEditId(item.id); setEditVal(String(Math.round(lineTotal(item) * 100) / 100)); } },
+                                        { label: 'Adjust %', icon: <Percent size={13} color={GOLD_HI} />, action: () => { setMenuId(null); setAdjustId(item.id); } },
+                                        { label: 'Copy Amount', icon: <CopySimple size={13} color={GOLD_HI} />, action: () => handleCopyLine(item.id, lineTotal(item)) },
                                       ].map(mi => (
                                         <div key={mi.label} onClick={mi.action} style={{ padding: '7px 12px', fontSize: 12, color: TEXT, cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }} onMouseEnter={e => (e.currentTarget.style.background = BG)} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                                          <span style={{ fontSize: 14 }}>{mi.icon}</span>{mi.label}
+                                          <span style={{ display: 'inline-flex' }}>{mi.icon}</span>{mi.label}
                                         </div>
                                       ))}
                                       <div style={{ height: 1, background: BORDER, margin: '4px 0' }} />
                                       <div onClick={() => { setMenuId(null); setDeleteId(item.id); }} style={{ padding: '7px 12px', fontSize: 12, color: RED, cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8 }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,.08)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                                        <span style={{ fontSize: 14 }}>{'\uD83D\uDDD1\uFE0F'}</span>Delete Line
+                                        <span style={{ display: 'inline-flex' }}><Trash size={13} color={RED} /></span>Delete Line
                                       </div>
                                     </div>
                                   )}
@@ -897,8 +914,8 @@ export default function EstimateBuilderPage() {
 
         {/* Assembly Picker Modal (inline) */}
         {addingToDivision && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999 }} onClick={() => setAddingToDivision(null)}>
-            <div style={{ ...cardStyle, width: 560, maxHeight: '70vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(8,9,12,0.78)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999 }} onClick={() => setAddingToDivision(null)}>
+            <div style={{ ...cardStyle, background: RAISED, border: `1px solid ${BORDER}`, width: 560, maxHeight: '70vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12, color: GOLD }}>Apply Assembly to Div {addingToDivision}</div>
               <input style={{ ...inputStyle, marginBottom: 12 }} placeholder="Search assemblies..." value={assemblySearch} onChange={e => setAssemblySearch(e.target.value)} />
               {filteredAssemblies.length === 0 && <div style={{ color: DIM, fontStyle: 'italic', padding: 16, textAlign: 'center' }}>No assemblies match your search.</div>}
@@ -918,8 +935,8 @@ export default function EstimateBuilderPage() {
 
         {/* Takeoff Import Picker Modal */}
         {takeoffPicker && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999 }} onClick={() => !saving && setTakeoffPicker(false)}>
-            <div style={{ ...cardStyle, width: 560, maxHeight: '70vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(8,9,12,0.78)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999 }} onClick={() => !saving && setTakeoffPicker(false)}>
+            <div style={{ ...cardStyle, background: RAISED, border: `1px solid ${BORDER}`, width: 560, maxHeight: '70vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4, color: GOLD }}>Import from Takeoff</div>
               <div style={{ color: DIM, fontSize: 12, marginBottom: 12 }}>Select a takeoff project to pull its line items into this estimate.</div>
               {importError && <div style={{ color: RED, fontSize: 13, marginBottom: 12, padding: '8px 12px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 6 }}>{importError}</div>}
@@ -1313,43 +1330,40 @@ export default function EstimateBuilderPage() {
   );
 
   /* ─── Main Render ───────────────────────────────────────────────── */
-  const tabs: { key: TabKey; label: string }[] = [
-    { key: 'estimate', label: 'Estimate' },
-    { key: 'assemblies', label: 'Assembly Library' },
-    { key: 'compare', label: 'Compare' },
-    { key: 'history', label: 'Version History' },
-    { key: 'bidday', label: 'Bid Day' },
-    { key: 'templates', label: 'Templates' },
+  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+    { key: 'estimate', label: 'Estimate', icon: <Calculator size={13} weight="fill" /> },
+    { key: 'assemblies', label: 'Assembly Library', icon: <StackSimple size={13} weight="fill" /> },
+    { key: 'compare', label: 'Compare', icon: <GitDiff size={13} weight="fill" /> },
+    { key: 'history', label: 'Version History', icon: <ClockCounterClockwise size={13} weight="fill" /> },
+    { key: 'bidday', label: 'Bid Day', icon: <Gavel size={13} weight="fill" /> },
+    { key: 'templates', label: 'Templates', icon: <FolderSimple size={13} weight="fill" /> },
   ];
 
   return (
-    <div style={pageStyle}>
-      {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: TEXT, letterSpacing: '-0.02em' }}>Estimate Builder</h1>
-          <div style={{ color: DIM, fontSize: 13, marginTop: 4 }}>Build by CSI division, price every line, and lock your bid-day number.</div>
-        </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <div className="lift" style={{ background: RAISED, border: '1px solid var(--brand-primary-25)', borderRadius: 'var(--radius-md)', padding: '10px 18px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em' }}>GRAND TOTAL</div>
-            <div style={{ fontWeight: 800, fontSize: 22, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(grandTotal)}</div>
-          </div>
-          <div className="lift" style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-md)', padding: '10px 18px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em' }}>LINE ITEMS</div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{allItems.length}</div>
-          </div>
-          <div className="lift" style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 'var(--radius-md)', padding: '10px 18px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ color: 'var(--text-tertiary)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em' }}>VERSIONS</div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: TEXT, fontVariantNumeric: 'tabular-nums' }}>{versions.length}</div>
-          </div>
-        </div>
-      </div>
+    <PremiumSurface maxWidth={1600}>
+      {/* Hero */}
+      <ModuleHero
+        eyebrow="Preconstruction"
+        eyebrowIcon={<Calculator size={13} weight="fill" color={EST.hex} />}
+        title="Estimate"
+        accent="Builder"
+        subtitle="Build by CSI division, price every line, and lock your bid-day number."
+        style={{ marginBottom: 22 }}
+      />
 
-      {/* Tab Bar */}
+      {/* Money band — every figure flows through the integer-cents chain (lib/calc), coerced defensively */}
+      <StatStrip items={[
+        { label: 'Grand Total', value: fmt(Number(grandTotal) || 0), accent: GOLD, sub: `incl. tax ${fmt(Number(taxAmt) || 0)}`, icon: <Calculator size={12} weight="fill" color={EST.hex} /> },
+        { label: 'Direct Cost', value: fmt(Number(subtotal) || 0), sub: `${divisions.filter(d => d.items.length > 0).length} active division${divisions.filter(d => d.items.length > 0).length === 1 ? '' : 's'}` },
+        { label: 'Markups', value: fmt(Number(overheadAmt + profitAmt + contingencyAmt + bondAmt) || 0), sub: `OH ${pct(markup.overheadPct)} · profit ${pct(markup.profitPct)}` },
+        { label: 'Alternates + Allowances', value: fmt(Number(includedAlternates + allowanceTotal) || 0), sub: `${alternates.filter(a => a.included).length} alternate${alternates.filter(a => a.included).length === 1 ? '' : 's'} included` },
+        { label: 'Line Items', value: allItems.length, sub: `${versions.length} version${versions.length === 1 ? '' : 's'} saved` },
+      ]} />
+
+      {/* Tab rail — kit chip style */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {tabs.map(t => (
-          <button key={t.key} style={tabBtnStyle(tab === t.key)} onClick={() => setTab(t.key)}>{t.label}</button>
+          <button key={t.key} style={tabBtnStyle(tab === t.key)} onClick={() => setTab(t.key)}>{t.icon}{t.label}</button>
         ))}
       </div>
 
@@ -1360,6 +1374,6 @@ export default function EstimateBuilderPage() {
       {tab === 'history' && renderHistoryTab()}
       {tab === 'bidday' && renderBidDayTab()}
       {tab === 'templates' && renderTemplatesTab()}
-    </div>
+    </PremiumSurface>
   );
 }

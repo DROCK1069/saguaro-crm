@@ -3,9 +3,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useBudget, useChangeOrders, createChangeOrder, advanceChangeOrder } from '@/lib/hooks/useFranchise';
-import { C, font, fmtMoney, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, Chip, EmptyState } from '@/components/franchise/kit';
-import { StatStrip, FlowSteps } from '@/components/ui/premium';
-import { CurrencyDollar, NotePencil, ArrowRight } from '@phosphor-icons/react';
+import { C, font, fmtMoney, fmtMoneyShort, useFranchiseGate, GateLoading, Chip, EmptyState } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, FlowSteps, GoldButton, GhostButton } from '@/components/ui/premium';
+import { CurrencyDollar, NotePencil, ArrowRight, Plus } from '@phosphor-icons/react';
 
 const CO_STAGES: Record<string, { label: string; color: string }> = {
   draft: { label: 'Issued', color: C.dim }, pricing: { label: 'GC Pricing', color: '#5AC8FA' },
@@ -53,22 +53,33 @@ export default function BudgetPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1200, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Budget & Change Orders" subtitle="Where the money is across every site — original vs revised vs forecast, and every change order routed to approval. No surprises."
-        right={tab === 'cos' ? <button onClick={() => setAdding((v) => !v)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>{adding ? 'Close' : '+ New Change Order'}</button> : undefined} />
+    <PremiumSurface maxWidth={1200} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<CurrencyDollar size={13} weight="fill" color={C.gold} />}
+        title="Budget &"
+        accent="Change Orders"
+        subtitle="Where the money is across every site — original vs revised vs forecast, and every change order routed to approval. No surprises."
+        actions={tab === 'cos' ? (
+          adding
+            ? <GhostButton onClick={() => setAdding(false)}>Close</GhostButton>
+            : <GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setAdding(true)}>New Change Order</GoldButton>
+        ) : undefined}
+      />
 
       {/* Portfolio money strip — Original / Committed / Actual / Variance plus CO exposure, every figure Number()-coerced in the totals memo */}
-      <div>
-      <StatStrip items={[
-        { label: 'Portfolio Original', value: fmtMoneyShort(Number(totals.original) || 0), sub: `${(budgets as any[]).length} site budget${(budgets as any[]).length === 1 ? '' : 's'}` },
-        { label: 'Committed', value: fmtMoneyShort(Number(totals.committed) || 0), sub: 'subcontracts + POs' },
-        { label: 'Actual to Date', value: fmtMoneyShort(Number(totals.actual) || 0), sub: 'billed against budgets' },
-        { label: 'Approved COs', value: '+' + fmtMoneyShort(Number(totals.approvedCO) || 0), accent: C.green, sub: 'in revised budgets' },
-        { label: 'Pending COs', value: fmtMoneyShort(Number(totals.pendingCO) || 0), accent: totals.pendingCO ? C.gold : undefined, sub: totals.pendingCO ? 'awaiting approval' : 'none in flight' },
-        { label: 'Revised Budget', value: fmtMoneyShort(Number(totals.revised) || 0), sub: 'original + approved COs' },
-        { label: 'Forecast Variance', value: (portfolioVar >= 0 ? '+' : '') + fmtMoneyShort(portfolioVar), accent: portfolioVar < 0 ? C.red : C.green, sub: portfolioVar < 0 ? 'over budget' : 'under budget' },
-      ]} />
-      </div>
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Portfolio Original', value: fmtMoneyShort(Number(totals.original) || 0), accent: C.gold, sub: `${(budgets as any[]).length} site budget${(budgets as any[]).length === 1 ? '' : 's'}` },
+          { label: 'Committed', value: fmtMoneyShort(Number(totals.committed) || 0), sub: 'subcontracts + POs' },
+          { label: 'Actual to Date', value: fmtMoneyShort(Number(totals.actual) || 0), sub: 'billed against budgets' },
+          { label: 'Approved COs', value: '+' + fmtMoneyShort(Number(totals.approvedCO) || 0), accent: C.green, sub: 'in revised budgets' },
+          { label: 'Pending COs', value: fmtMoneyShort(Number(totals.pendingCO) || 0), accent: totals.pendingCO ? C.gold : undefined, sub: totals.pendingCO ? 'awaiting approval' : 'none in flight' },
+          { label: 'Revised Budget', value: fmtMoneyShort(Number(totals.revised) || 0), sub: 'original + approved COs' },
+          { label: 'Forecast Variance', value: (portfolioVar >= 0 ? '+' : '') + fmtMoneyShort(portfolioVar), accent: portfolioVar < 0 ? C.red : C.green, sub: portfolioVar < 0 ? 'over budget' : 'under budget' },
+        ]} />
+      )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
         <Chip active={tab === 'budget'} onClick={() => setTab('budget')} count={(budgets as any[]).length}>Budget</Chip>
@@ -81,18 +92,18 @@ export default function BudgetPage() {
       : tab === 'budget' ? (
         (budgets as any[]).length === 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(250px,1fr)', gap: 14, alignItems: 'start' }}>
-            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <CurrencyDollar size={20} color={C.gold} />
-                <div style={{ fontSize: 15, fontWeight: 800 }}>No site budgets yet — seed them per project</div>
-              </div>
+            <SectionCard
+              icon={<CurrencyDollar size={17} weight="duotone" color={C.gold} />}
+              title="No site budgets yet — seed them per project"
+              subtitle="Each site rolls up here automatically: original, committed, actual, and forecast variance."
+            >
               <div style={{ fontSize: 12.5, color: C.dim, lineHeight: 1.6, marginBottom: 14 }}>
-                Every project has its own Budget page — seed lines there by CSI division or pull bid-package estimates in one tap. Each site then rolls up here automatically: original, committed, actual, and forecast variance.
+                Every project has its own Budget page — seed lines there by CSI division or pull bid-package estimates in one tap.
               </div>
               {((projects || []) as any[]).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {((projects || []) as any[]).slice(0, 8).map((p: any) => (
-                    <Link key={p.id} href={`/app/projects/${p.id}/budget`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, background: 'rgba(255,255,255,0.02)', color: C.text, textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
+                    <Link key={p.id} href={`/app/projects/${p.id}/budget`} className="pmHover" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', color: C.text, textDecoration: 'none', fontSize: 13, fontWeight: 700 }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.gold, fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap' }}>Open budget <ArrowRight size={13} color={C.gold} /></span>
                     </Link>
@@ -102,20 +113,20 @@ export default function BudgetPage() {
               ) : (
                 <div style={{ fontSize: 12.5, color: C.dim }}>Create a project first — its budget page is ready the moment the project exists.</div>
               )}
-            </div>
-            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '18px 20px' }}>
+            </SectionCard>
+            <SectionCard>
               <FlowSteps title="How the roll-up builds" steps={[
                 { title: 'Seed lines by CSI division', desc: 'On each project: pick a division, or pull bid-package estimates in one tap.' },
                 { title: 'Committed books itself', desc: 'Awarded subcontracts and POs land on their coded lines.' },
                 { title: 'Actuals flow from bills', desc: 'Approved invoices hit the lines — nothing re-typed.' },
                 { title: 'Variance rolls up here', desc: 'Original, committed, actual, and forecast across every site.' },
               ]} />
-            </div>
+            </SectionCard>
           </div>
         )
         : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 14 }}>
           {(budgets as any[]).map((b) => (
-            <div key={b.project_id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${b.variance < 0 ? C.red : C.green}`, borderRadius: 14, padding: '16px 18px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <div key={b.project_id} className="pmHover" style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${b.variance < 0 ? C.red : C.green}`, borderRadius: 14, padding: '16px 18px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                 <Link href={`/app/projects/${b.project_id}`} style={{ fontSize: 15, fontWeight: 800, color: C.text, textDecoration: 'none' }}>{b.project_name}</Link>
                 <span style={{ fontSize: 13, fontWeight: 800, color: b.variance < 0 ? C.red : C.green }}>{b.variance < 0 ? '' : '+'}{fmtMoneyShort(b.variance)}</span>
@@ -137,8 +148,13 @@ export default function BudgetPage() {
           ))}
         </div>
       ) : (
-        (changeOrders as any[]).length === 0 ? <EmptyState icon={<NotePencil size={34} color={C.dim} />} title="No change orders" body="Every change routes the same way: Issued → GC Pricing → PM Review → Architect Review → Owner Approval → Executed → Schedule Updated → Budget Updated."
-          action={<button onClick={() => setAdding(true)} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>+ New change order</button>} />
+        (changeOrders as any[]).length === 0 ? (
+          <SectionCard>
+            <PremiumEmpty icon={<NotePencil size={32} weight="duotone" color={C.gold} />} title="No change orders"
+              description="Every change routes the same way: Issued, GC Pricing, PM Review, Architect Review, Owner Approval, Executed, Schedule Updated, Budget Updated."
+              action={<GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setAdding(true)}>New change order</GoldButton>} />
+          </SectionCard>
+        )
         : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {(changeOrders as any[]).map((co) => {
             const st = CO_STAGES[String(co.status)] || CO_STAGES.draft; const final = co.status === 'budget_updated' || co.status === 'rejected';
@@ -147,14 +163,14 @@ export default function BudgetPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 800 }}>CO #{co.co_number} · {co.title}</div>
-                    <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{co.project_name || 'Site'}{co.amount != null ? ` · ${fmtMoney(co.amount)}` : ''}{co.schedule_impact_days ? ` · +${co.schedule_impact_days}d` : ''}</div>
+                    <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{co.project_name || 'Site'}{co.amount != null ? ` · ${fmtMoney(Number(co.amount) || 0)}` : ''}{co.schedule_impact_days ? ` · +${co.schedule_impact_days}d` : ''}</div>
                     {co.status === 'rejected' && co.rejection_reason && <div style={{ fontSize: 12, color: C.red, marginTop: 3 }}>Rejected: {co.rejection_reason}</div>}
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: st.color, background: `${st.color}18`, padding: '4px 10px', borderRadius: 999, whiteSpace: 'nowrap' }}>{st.label}</span>
                     {!final && <>
-                      <button onClick={() => act(co.id, 'advance')} disabled={busy[co.id]} style={{ padding: '6px 11px', borderRadius: 8, border: 'none', background: C.green, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Advance <ArrowRight size={13} weight="regular" color="#fff" style={{ verticalAlign: 'middle' }} /></button>
-                      <button onClick={() => act(co.id, 'reject')} disabled={busy[co.id]} style={{ padding: '6px 11px', borderRadius: 8, border: `1px solid ${C.red}`, background: '#141416', color: C.red, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Reject</button>
+                      <button onClick={() => act(co.id, 'advance')} disabled={busy[co.id]} className="pmBtn" style={{ padding: '6px 11px', borderRadius: 8, border: 'none', background: C.green, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Advance <ArrowRight size={13} weight="regular" color="#fff" style={{ verticalAlign: 'middle' }} /></button>
+                      <button onClick={() => act(co.id, 'reject')} disabled={busy[co.id]} className="pmBtn" style={{ padding: '6px 11px', borderRadius: 8, border: `1px solid ${C.red}`, background: '#141416', color: C.red, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Reject</button>
                     </>}
                   </div>
                 </div>
@@ -163,14 +179,15 @@ export default function BudgetPage() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }
 
 function Line({ label, v, color, bold, plus }: { label: string; v: number; color?: string; bold?: boolean; plus?: boolean }) {
   return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
     <span style={{ color: C.dim }}>{label}</span>
-    <span style={{ fontWeight: bold ? 800 : 600, color: color || C.text, fontVariantNumeric: 'tabular-nums' }}>{plus && v ? '+' : ''}{fmtMoney(v)}</span>
+    <span style={{ fontWeight: bold ? 800 : 600, color: color || C.text, fontVariantNumeric: 'tabular-nums' }}>{plus && v ? '+' : ''}{fmtMoney(Number(v) || 0)}</span>
   </div>;
 }
 
@@ -188,8 +205,7 @@ function COForm({ projects, onDone }: { projects: any[]; onDone: () => void }) {
     try { await createChangeOrder(f); onDone(); } catch (e: any) { setErr(e?.message || 'Failed'); } finally { setBusy(false); }
   }
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginBottom: 18 }}>
-      <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>New change order</div>
+    <SectionCard title="New change order" subtitle="Routes through GC pricing, reviews, and owner approval automatically" icon={<NotePencil size={16} weight="duotone" color={C.gold} />} style={{ marginBottom: 18 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
         <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Title *</label><input style={inp} placeholder="e.g. Added rooftop screening" value={f.title || ''} onChange={(e) => set('title', e.target.value)} /></div>
         <div><label style={lbl}>Site *</label><select style={inp} value={f.project_id || ''} onChange={(e) => set('project_id', e.target.value)}><option value="">Select…</option>{projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
@@ -199,9 +215,9 @@ function COForm({ projects, onDone }: { projects: any[]; onDone: () => void }) {
       </div>
       {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button onClick={submit} disabled={busy} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.gold, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Saving…' : 'Issue change order'}</button>
-        <button onClick={onDone} style={{ padding: '9px 18px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#141416', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+        <GoldButton size="md" onClick={submit} disabled={busy}>{busy ? 'Saving…' : 'Issue change order'}</GoldButton>
+        <GhostButton size="md" onClick={onDone}>Cancel</GhostButton>
       </div>
-    </div>
+    </SectionCard>
   );
 }

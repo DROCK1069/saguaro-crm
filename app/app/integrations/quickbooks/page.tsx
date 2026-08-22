@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
 import { Plugs, ArrowsClockwise, ListChecks, SlidersHorizontal, ClockCounterClockwise, ArrowsLeftRight } from '@phosphor-icons/react';
 
 const GOLD = '#F59E0B', DARK = '#1c1c1e', BORDER = 'rgba(255,255,255,0.12)';
@@ -237,6 +237,15 @@ export default function QuickBooksPage() {
           </button>
         )}
       />
+
+      {/* What the integration already knows — every figure derived from live state */}
+      <StatStrip items={[
+        { label: 'Connection', value: connected ? 'Connected' : 'Not Connected', accent: connected ? GREEN : RED, sub: 'QuickBooks Online' },
+        { label: 'Last Sync', value: timeAgo(integration?.last_sync_at ?? null), sub: 'most recent run' },
+        { label: 'Syncs Recorded', value: String(syncHistory.length), sub: 'kept in history below' },
+        { label: 'Records Synced', value: String(syncHistory.reduce((s, h) => s + Object.values(h.results).reduce((x, r) => x + (r.count || 0), 0), 0)), sub: 'across all runs' },
+        { label: 'Entities Enabled', value: `${[syncInvoices, syncBills, syncCustomers, syncVendors].filter(Boolean).length}/${SYNC_ENTITIES.length}`, sub: 'invoices to vendors' },
+      ]} />
 
       {/* Connection Status */}
       <SectionCard accent={connected ? GREEN : GOLD} style={{ marginBottom: 24 }}>

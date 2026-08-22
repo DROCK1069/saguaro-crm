@@ -5,8 +5,9 @@ import { useToast } from '@/components/Toast';
 import { humanError } from '@/lib/errors';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { BUILDING_TYPES } from '@/lib/contractor-trades';
-import { StatStrip, AutoChip, FlowSteps } from '@/components/ui/premium';
+import { PremiumFX, ModuleHero, StatStrip, AutoChip, FlowSteps } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { Funnel } from '@phosphor-icons/react';
 
 /* ─── Palette ─── */
 const GOLD = '#F59E0B', BG = '#1c1c1e', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
@@ -384,31 +385,22 @@ export default function LeadsPage() {
 
   /* ═══════════════════════════════ RENDER ═══════════════════════════════ */
   return (
-    <div style={{
+    <div className="pmRoot" style={{
       padding: '28px 32px', maxWidth: 1600, margin: '0 auto', color: TEXT,
       fontFamily: '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif',
     }}>
 
       {/* ─── Header ─── */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        marginBottom: 24, flexWrap: 'wrap', gap: 14,
-      }}>
-        <div>
-          <div style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: 2,
-            textTransform: 'uppercase', color: DIM,
-          }}>CRM</div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: TEXT }}>
-            Lead Pipeline
-          </h1>
-          <div style={{ fontSize: 13, color: DIM, marginTop: 4 }}>
-            {loading
-              ? 'Loading leads...'
-              : `${filtered.length} lead${filtered.length !== 1 ? 's' : ''} \u00B7 Pipeline ${fmt(metrics.totalVal)}`}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <PremiumFX />
+      <ModuleHero
+        eyebrow="CRM"
+        eyebrowIcon={<Funnel size={13} weight="fill" />}
+        title="Lead"
+        accent="Pipeline"
+        subtitle={loading
+          ? 'Loading leads...'
+          : `${filtered.length} lead${filtered.length !== 1 ? 's' : ''} \u00B7 Pipeline ${fmt(metrics.totalVal)}`}
+        actions={<>
           {(['kanban', 'list', 'funnel'] as const).map(v => (
             <button key={v} onClick={() => setView(v)} style={{
               ...btnS(view === v ? GOLD : 'transparent', view === v ? '#000' : DIM),
@@ -424,8 +416,8 @@ export default function LeadsPage() {
             className="btn-gold" style={{ fontSize: 13 }}>
             + New Lead
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* ─── Pipeline Value Summary Cards ─── */}
       <div style={{

@@ -12,7 +12,8 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, Sun, CloudRain, Thermometer, UsersThree, Warning, ClipboardText } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
-import { StatStrip, InsightRow, AutoChip } from '@/components/ui/premium';
+import { PremiumFX, ModuleHero, StatStrip, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 
 interface DailyLog {
@@ -217,16 +218,21 @@ export default function DailyLogsPage() {
   const labelStyle: React.CSSProperties = { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.textMuted, marginBottom: 4, display: 'block' };
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: font.size['3xl'], fontWeight: font.weight.black, color: colors.text }}>Daily Logs</h1>
-          <p style={{ margin: '4px 0 0', fontSize: font.size.md, color: colors.textMuted }}>Track daily field activity, weather, crew, and work progress.</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 'var(--radius-md)', color: '#241500', fontSize: font.size.md, fontWeight: font.weight.black, cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
-          <Plus size={16} weight="bold" /> New Log
-        </button>
-      </div>
+    <div className="pmRoot" style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
+      {/* Header — standard module hero anatomy, accented by the daily module color */}
+      <PremiumFX />
+      <ModuleHero
+        eyebrow="Field Record"
+        eyebrowIcon={<ClipboardText size={13} weight="fill" color={moduleAccent('daily').hex} />}
+        title="Daily"
+        accent="Logs"
+        subtitle="Track daily field activity, weather, crew, and work progress."
+        actions={
+          <button onClick={() => setShowCreate(true)} className="pmBtn" style={goldButtonStyle}>
+            <Plus size={16} weight="bold" /> New Log
+          </button>
+        }
+      />
 
       {/* Cross-project field intelligence — no dead space above the table */}
       {!loading && logs.length > 0 && (() => {

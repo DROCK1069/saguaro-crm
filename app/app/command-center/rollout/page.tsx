@@ -7,10 +7,9 @@ import { moveStage, launchSite } from '@/lib/hooks/useFranchise';
 import { computeHealth } from '@/lib/portfolio-health';
 import { ROLLOUT_STAGES, STAGE_META, STAGE_IDS, GOLF_TEMPLATE } from '@/lib/franchise-template';
 import { num, type Severity } from '@/lib/franchise';
-import {
-  C, font, fmtMoneyShort, useFranchiseGate, GateLoading, PageHeader, Tile, SevBadge,
-} from '@/components/franchise/kit';
-import { Plus, ArrowLeft, ArrowRight, Cactus } from '@phosphor-icons/react';
+import { C, font, fmtMoneyShort, useFranchiseGate, GateLoading, SevBadge } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, GoldButton, GhostButton, goldButtonStyle } from '@/components/ui/premium';
+import { Plus, ArrowLeft, ArrowRight, Cactus, Buildings } from '@phosphor-icons/react';
 
 const SEV_LABEL: Record<Severity, string> = { red: 'Escalate', yellow: 'Watch', green: 'On Track' };
 
@@ -55,81 +54,91 @@ export default function RolloutPipelinePage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1400, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="Franchise Rollout Pipeline"
-        subtitle="Every location from site selection to grand opening. Move a site with the arrows; launch a new one from the standardized playbook."
-        right={
-          <button onClick={() => setLaunching(true)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
-            <Plus size={16} weight="bold" color="#fff" style={{ verticalAlign: 'middle', marginRight: 4 }} />Launch New Site
-          </button>
-        }
-      />
+    <PremiumSurface maxWidth={1400} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+        <ModuleHero
+          eyebrow="Command Center"
+          eyebrowIcon={<Cactus size={13} weight="fill" />}
+          title="Franchise Rollout"
+          accent="Pipeline"
+          subtitle="Every location from site selection to grand opening. Move a site with the arrows; launch a new one from the standardized playbook."
+          actions={
+            <GoldButton onClick={() => setLaunching(true)} icon={<Plus size={15} weight="bold" />}>Launch New Site</GoldButton>
+          }
+        />
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-        <Tile label="Locations" value={summary.total} />
-        <Tile label="In Construction" value={summary.inConstruction} color={C.yellow} />
-        <Tile label="Opening Soon" value={summary.openingSoon} color={C.green} />
-        <Tile label="Pipeline Value" value={fmtMoneyShort(summary.value)} />
+        <StatStrip items={[
+          { label: 'Locations', value: String(summary.total), icon: <Buildings size={11} weight="bold" /> },
+          { label: 'In Construction', value: String(summary.inConstruction), accent: summary.inConstruction > 0 ? C.yellow : undefined },
+          { label: 'Opening Soon', value: String(summary.openingSoon), accent: summary.openingSoon > 0 ? C.green : undefined },
+          { label: 'Pipeline Value', value: fmtMoneyShort(summary.value), accent: C.gold },
+        ]} />
+
+        {loading ? (
+          <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading pipeline…</div>
+        ) : (
+          <SectionCard
+            icon={<Cactus size={16} weight="duotone" color={C.gold} />}
+            title="Pipeline Board"
+            subtitle="Site selection to grand opening — every stage carries its playbook duration and committed value"
+            flush
+          >
+            <div style={{ display: 'flex', gap: 14, overflowX: 'auto', padding: 16, alignItems: 'flex-start' }}>
+              {ROLLOUT_STAGES.map((stage) => {
+                const items = byStage[stage.id] || [];
+                const colValue = items.reduce((s, p) => s + (num(p.contract_value) || 0), 0);
+                return (
+                  <div key={stage.id} style={{ flex: '0 0 288px', width: 288, background: '#1c1c1e', border: `1px solid ${C.border}`, borderRadius: 14, padding: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px 4px' }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 3, background: stage.color }} />
+                      <span style={{ fontSize: 13, fontWeight: 800 }}>{stage.label}</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: C.dim }}>{items.length}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 6px 8px' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: stage.color, background: `${stage.color}18`, borderRadius: 5, padding: '1px 6px' }}>{stage.weeks}</span>
+                      <span style={{ fontSize: 11, color: colValue > 0 ? C.gold : C.faint, fontWeight: 600 }}>{colValue > 0 ? fmtMoneyShort(colValue) : '—'}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 40 }}>
+                      {items.length === 0 ? (
+                        <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: '18px 0', border: `1px dashed ${C.border}`, borderRadius: 10 }}>Empty</div>
+                      ) : items.map((p) => {
+                        const h = computeHealth(p);
+                        return (
+                          <div key={p.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${stage.color}`, borderRadius: 10, padding: '10px 11px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                              <Link href={`/app/projects/${p.id}`} style={{ fontSize: 13, fontWeight: 800, color: C.text, textDecoration: 'none', lineHeight: 1.25 }}>{p.name || 'Untitled'}</Link>
+                              <SevBadge sev={h.status as Severity} label={SEV_LABEL[h.status as Severity]} />
+                            </div>
+                            <div style={{ fontSize: 11, color: C.dim, marginTop: 3 }}>
+                              {[p.city, p.state].filter(Boolean).join(', ') || '—'}
+                              {num(p.contract_value) ? ` · ${fmtMoneyShort(num(p.contract_value))}` : ''}
+                            </div>
+                            {/* progress */}
+                            <div style={{ height: 4, borderRadius: 2, background: '#1c1c1e', overflow: 'hidden', margin: '8px 0 9px' }}>
+                              <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, num(p.percent_complete) || 0))}%`, background: stage.color }} />
+                            </div>
+                            {/* stage controls */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <button onClick={() => shift(p, -1)} disabled={busy[p.id] || STAGE_META[stageOf(p)].order === 0}
+                                style={arrowStyle(busy[p.id] || STAGE_META[stageOf(p)].order === 0)}><ArrowLeft size={13} weight="regular" style={{ verticalAlign: 'middle' }} /></button>
+                              <button onClick={() => shift(p, 1)} disabled={busy[p.id] || STAGE_META[stageOf(p)].order === STAGE_IDS.length - 1}
+                                style={arrowStyle(busy[p.id] || STAGE_META[stageOf(p)].order === STAGE_IDS.length - 1)}>Advance <ArrowRight size={13} weight="regular" style={{ verticalAlign: 'middle' }} /></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
+
+        {launching && <LaunchModal onClose={() => setLaunching(false)} />}
       </div>
-
-      {loading ? (
-        <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading pipeline…</div>
-      ) : (
-        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 12, alignItems: 'flex-start' }}>
-          {ROLLOUT_STAGES.map((stage) => {
-            const items = byStage[stage.id] || [];
-            const colValue = items.reduce((s, p) => s + (num(p.contract_value) || 0), 0);
-            return (
-              <div key={stage.id} style={{ flex: '0 0 288px', width: 288, background: '#1c1c1e', border: `1px solid ${C.border}`, borderRadius: 14, padding: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px 4px' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 3, background: stage.color }} />
-                  <span style={{ fontSize: 13, fontWeight: 800 }}>{stage.label}</span>
-                  <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: C.dim }}>{items.length}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 6px 8px' }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: stage.color, background: `${stage.color}18`, borderRadius: 5, padding: '1px 6px' }}>{stage.weeks}</span>
-                  <span style={{ fontSize: 11, color: C.faint, fontWeight: 600 }}>{colValue > 0 ? fmtMoneyShort(colValue) : '—'}</span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 40 }}>
-                  {items.length === 0 ? (
-                    <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: '18px 0', border: `1px dashed ${C.border}`, borderRadius: 10 }}>Empty</div>
-                  ) : items.map((p) => {
-                    const h = computeHealth(p);
-                    return (
-                      <div key={p.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${stage.color}`, borderRadius: 10, padding: '10px 11px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-                          <Link href={`/app/projects/${p.id}`} style={{ fontSize: 13, fontWeight: 800, color: C.text, textDecoration: 'none', lineHeight: 1.25 }}>{p.name || 'Untitled'}</Link>
-                          <SevBadge sev={h.status as Severity} label={SEV_LABEL[h.status as Severity]} />
-                        </div>
-                        <div style={{ fontSize: 11, color: C.dim, marginTop: 3 }}>
-                          {[p.city, p.state].filter(Boolean).join(', ') || '—'}
-                          {num(p.contract_value) ? ` · ${fmtMoneyShort(num(p.contract_value))}` : ''}
-                        </div>
-                        {/* progress */}
-                        <div style={{ height: 4, borderRadius: 2, background: '#1c1c1e', overflow: 'hidden', margin: '8px 0 9px' }}>
-                          <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, num(p.percent_complete) || 0))}%`, background: stage.color }} />
-                        </div>
-                        {/* stage controls */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <button onClick={() => shift(p, -1)} disabled={busy[p.id] || STAGE_META[stageOf(p)].order === 0}
-                            style={arrowStyle(busy[p.id] || STAGE_META[stageOf(p)].order === 0)}><ArrowLeft size={13} weight="regular" style={{ verticalAlign: 'middle' }} /></button>
-                          <button onClick={() => shift(p, 1)} disabled={busy[p.id] || STAGE_META[stageOf(p)].order === STAGE_IDS.length - 1}
-                            style={arrowStyle(busy[p.id] || STAGE_META[stageOf(p)].order === STAGE_IDS.length - 1)}>Advance <ArrowRight size={13} weight="regular" style={{ verticalAlign: 'middle' }} /></button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {launching && <LaunchModal onClose={() => setLaunching(false)} />}
-    </div>
+    </PremiumSurface>
   );
 }
 
@@ -146,7 +155,7 @@ function LaunchModal({ onClose }: { onClose: () => void }) {
   const [err, setErr] = useState('');
   const [done, setDone] = useState<any>(null);
   const set = (k: string, v: any) => setF((p) => ({ ...p, [k]: v }));
-  const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, outline: 'none', background: '#1c1c1e', width: '100%' };
+  const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, outline: 'none', background: '#1c1c1e', color: C.text, width: '100%' };
   const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4, display: 'block' };
 
   async function submit() {
@@ -158,8 +167,8 @@ function LaunchModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px', overflow: 'auto' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, borderRadius: 16, padding: 24, width: 'min(560px, 100%)', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', fontFamily: font }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,4,8,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px', overflow: 'auto' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: 'min(560px, 100%)', boxShadow: '0 24px 80px rgba(2,4,8,0.55)', fontFamily: font, color: C.text }}>
         {done ? (
           <div>
             <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}><Cactus size={22} weight="fill" color={C.gold} style={{ verticalAlign: 'middle', marginRight: 6 }} />{f.name} launched</div>
@@ -173,8 +182,8 @@ function LaunchModal({ onClose }: { onClose: () => void }) {
               <div style={{ fontSize: 12, color: C.yellow, marginBottom: 12 }}>Note: {done.warnings.join('; ')}</div>
             )}
             <div style={{ display: 'flex', gap: 10 }}>
-              <Link href={`/app/projects/${done.project?.id}`} style={{ padding: '10px 18px', borderRadius: 10, background: C.gold, color: '#fff', fontWeight: 800, textDecoration: 'none', fontSize: 14 }}>Open site</Link>
-              <button onClick={onClose} style={{ padding: '10px 18px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#1c1c1e', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Done</button>
+              <Link href={`/app/projects/${done.project?.id}`} className="pmBtn" style={goldButtonStyle}>Open site</Link>
+              <GhostButton onClick={onClose}>Done</GhostButton>
             </div>
           </div>
         ) : (
@@ -192,8 +201,8 @@ function LaunchModal({ onClose }: { onClose: () => void }) {
             </div>
             {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-              <button onClick={submit} disabled={busy} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.gold, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Launching…' : 'Launch site'}</button>
-              <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#1c1c1e', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+              <GoldButton onClick={submit} disabled={busy}>{busy ? 'Launching…' : 'Launch site'}</GoldButton>
+              <GhostButton onClick={onClose}>Cancel</GhostButton>
             </div>
           </>
         )}

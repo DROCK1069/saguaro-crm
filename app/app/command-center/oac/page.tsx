@@ -1,13 +1,14 @@
 'use client';
 import { useMemo, useState } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
-import { CalendarBlank, CheckCircle, User, Users, Warning, Check, X } from '@phosphor-icons/react';
+import { CalendarBlank, CheckCircle, User, Users, Warning, Check, X, Plus } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useOAC, createMeeting, toggleAction } from '@/lib/hooks/useFranchise';
 import {
-  C, font, fmtDate, useFranchiseGate, GateLoading, PageHeader, Tile, Chip, SearchInput, EmptyState, SevBadge,
+  C, font, fmtDate, useFranchiseGate, GateLoading, Chip, SearchInput, SevBadge,
 } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, GoldButton, GhostButton, Pill } from '@/components/ui/premium';
 import { OAC_AGENDA } from '@/lib/franchise-template';
 
 const todayMs = () => Date.parse(new Date().toISOString().slice(0, 10));
@@ -72,43 +73,49 @@ export default function OacPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1280, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="OAC Workflow"
+    <PremiumSurface maxWidth={1280} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<Users size={13} weight="fill" color={C.gold} />}
+        title="OAC"
+        accent="Workflow"
         subtitle="Owner · Architect · Contractor meetings and the action items they generate — every site, one accountable list."
-        right={
-          <button onClick={() => setLogging(true)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>+ Log Meeting</button>
-        }
+        actions={<GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setLogging(true)}>Log Meeting</GoldButton>}
       />
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Meetings" value={summary.meetings} />
-        <Tile label="Open Actions" value={summary.open} color={summary.open ? C.blue : C.green} />
-        <Tile label="Overdue Actions" value={summary.overdue} color={summary.overdue ? C.red : C.green} />
-        <Tile label="Sites Covered" value={summary.sites} />
-      </div>
+      {/* Meeting pulse — logged meetings and the accountability they created */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Meetings', value: String(summary.meetings), sub: 'logged across sites' },
+          { label: 'Open Actions', value: String(summary.open), accent: summary.open ? C.gold : C.green, sub: summary.open ? 'awaiting owners' : 'all closed out' },
+          { label: 'Overdue Actions', value: String(summary.overdue), accent: summary.overdue ? C.red : C.green, sub: summary.overdue ? 'past their due date' : 'none late' },
+          { label: 'Sites Covered', value: String(summary.sites), sub: 'with logged meetings' },
+        ]} />
+      )}
 
       {/* GC / Saguaro weekly-call cadence — one call per site per week (per the spec's GC/Saguaro weekly call). */}
       {gcCadence.total > 0 && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ fontSize: 14, fontWeight: 800 }}>GC / Saguaro Weekly Call</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: gcCadence.onTrack === gcCadence.total ? C.green : C.gold }}>{gcCadence.onTrack}/{gcCadence.total} on cadence this week</span>
-          </div>
+        <SectionCard
+          title="GC / Saguaro Weekly Call"
+          icon={<CalendarBlank size={16} weight="duotone" color={C.gold} />}
+          action={<span style={{ fontSize: 13, fontWeight: 700, color: gcCadence.onTrack === gcCadence.total ? C.green : C.gold, whiteSpace: 'nowrap' }}>{gcCadence.onTrack}/{gcCadence.total} on cadence this week</span>}
+          style={{ marginBottom: 18 }}
+        >
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {gcCadence.rows.map(({ p, daysSince, current }) => {
               const bg = current ? 'rgba(52,199,89,0.12)' : daysSince == null ? 'rgba(255,59,48,0.10)' : 'rgba(255,149,0,0.12)';
               const fg = current ? C.green : daysSince == null ? C.red : C.yellow;
               const bd = current ? 'rgba(52,199,89,0.3)' : daysSince == null ? 'rgba(255,59,48,0.25)' : 'rgba(255,149,0,0.3)';
-              const note = current ? '✓' : daysSince == null ? 'never' : `${daysSince}d ago`;
+              const note = current ? null : daysSince == null ? 'never' : `${daysSince}d ago`;
               return (
                 <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, padding: '5px 11px', borderRadius: 999, background: bg, color: fg, border: `1px solid ${bd}` }}>
-                  {note === '✓' ? <CheckCircle size={13} weight="fill" color={fg} /> : <Warning size={13} weight="fill" color={fg} />} {p.name}{note === '✓' ? '' : ` · ${note}`}
+                  {current ? <CheckCircle size={13} weight="fill" color={fg} /> : <Warning size={13} weight="fill" color={fg} />} {p.name}{note ? ` · ${note}` : ''}
                 </span>
               );
             })}
           </div>
-        </div>
+        </SectionCard>
       )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
@@ -121,13 +128,15 @@ export default function OacPage() {
         <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
       ) : tab === 'meetings' ? (
         filteredMeetings.length === 0 ? (
-          <EmptyState icon={<CalendarBlank size={34} color={C.dim} />} title="No meetings logged yet"
-            body="Log OAC meetings across all your sites — capture attendees, decisions, and the action items that come out of them, each with an owner and a due date."
-            action={<button onClick={() => setLogging(true)} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>+ Log your first meeting</button>} />
+          <SectionCard>
+            <PremiumEmpty icon={<CalendarBlank size={32} weight="duotone" color={C.gold} />} title="No meetings logged yet"
+              description="Log OAC meetings across all your sites — capture attendees, decisions, and the action items that come out of them, each with an owner and a due date."
+              action={<GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setLogging(true)}>Log your first meeting</GoldButton>} />
+          </SectionCard>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
             {filteredMeetings.map((m) => (
-              <div key={m.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '15px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+              <div key={m.id} className="pmHover" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '15px 16px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 800 }}>{m.title || 'Meeting'}</div>
@@ -136,7 +145,7 @@ export default function OacPage() {
                       {m.project_city ? ` · ${m.project_city}, ${m.project_state}` : ''} · {fmtDate(m.meeting_date)}
                     </div>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: C.gold, background: 'rgba(245, 158, 11,0.12)', border: '1px solid rgba(245, 158, 11,0.3)', padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>{(m.meeting_type || 'OAC').toUpperCase()}</span>
+                  <Pill tone="gold" caps>{(m.meeting_type || 'OAC').toUpperCase()}</Pill>
                 </div>
                 <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: C.dim, flexWrap: 'wrap' }}>
                   {m.facilitator_name && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><User size={13} color={C.dim} />{m.facilitator_name}</span>}
@@ -150,7 +159,10 @@ export default function OacPage() {
         )
       ) : (
         sortedActions.length === 0 ? (
-          <EmptyState icon={<CheckCircle size={34} color={C.dim} />} title="No action items" body="Action items captured in OAC meetings show up here — assigned, dated, and checkable from anywhere." />
+          <SectionCard>
+            <PremiumEmpty icon={<CheckCircle size={32} weight="duotone" color={C.gold} />} title="No action items"
+              description="Action items captured in OAC meetings show up here — assigned, dated, and checkable from anywhere." />
+          </SectionCard>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sortedActions.map((a) => {
@@ -177,7 +189,8 @@ export default function OacPage() {
       )}
 
       {logging && <LogMeetingModal projects={projects} onClose={() => setLogging(false)} />}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }
 
@@ -202,8 +215,8 @@ function LogMeetingModal({ projects, onClose }: { projects: any[]; onClose: () =
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '6vh 16px', overflow: 'auto' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, borderRadius: 16, padding: 24, width: 'min(640px, 100%)', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', fontFamily: font }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,4,8,0.55)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '6vh 16px', overflow: 'auto' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: 'min(640px, 100%)', boxShadow: '0 24px 80px rgba(2,4,8,0.5), inset 0 1px 0 rgba(255,255,255,0.06)', fontFamily: font }}>
         <div style={{ fontSize: 19, fontWeight: 900, marginBottom: 14 }}>Log OAC Meeting</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Meeting title *</label><input style={inp} placeholder="e.g. Back Nine Buckeye — OAC #3" value={f.title || ''} onChange={(e) => set('title', e.target.value)} /></div>
@@ -249,8 +262,8 @@ function LogMeetingModal({ projects, onClose }: { projects: any[]; onClose: () =
 
         {err && <div style={{ color: C.red, fontSize: 13, marginTop: 12 }}>{err}</div>}
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button onClick={submit} disabled={busy} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.gold, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Saving…' : 'Save meeting'}</button>
-          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#1c1c1e', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          <GoldButton onClick={submit} disabled={busy}>{busy ? 'Saving…' : 'Save meeting'}</GoldButton>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
         </div>
       </div>
     </div>

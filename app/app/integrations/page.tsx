@@ -299,15 +299,14 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 14 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: TEXT }}>Integrations</h1>
-          <div style={{ fontSize: 13, color: DIM, marginTop: 5 }}>
-            {loading ? 'Loading...' : `${connectedCount} connected \u00B7 ${integrations.length} available`}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Header \u2014 the imported ModuleHero, finally rendered */}
+      <ModuleHero
+        eyebrow="Integrations"
+        eyebrowIcon={<Plugs size={13} weight="fill" color={GOLD} />}
+        title="Connect Your"
+        accent="Stack"
+        subtitle={loading ? 'Loading...' : `${connectedCount} connected \u00B7 ${integrations.length} available across ${categoryCount} categor${categoryCount === 1 ? 'y' : 'ies'}.`}
+        actions={<>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -324,8 +323,19 @@ export default function IntegrationsPage() {
           >
             API Docs
           </Link>
-        </div>
-      </div>
+        </>}
+      />
+
+      {/* Marketplace intelligence \u2014 the imported StatStrip, live figures only */}
+      {!loading && integrations.length > 0 && (
+        <StatStrip items={[
+          { label: 'Connected', value: String(connectedCount), accent: connectedCount > 0 ? GREEN : undefined, sub: connectedCount > 0 ? 'live and syncing' : 'none connected yet' },
+          { label: 'Available Now', value: String(availableCount), sub: 'ready to connect' },
+          { label: 'Coming Soon', value: String(comingSoonCount), sub: 'on the roadmap' },
+          { label: 'Categories', value: String(categoryCount), sub: 'accounting to storage' },
+          { label: 'Last Sync', value: lastSynced ? timeAgo(lastSynced.last_sync_at) : 'Never', sub: lastSynced ? lastSynced.name : 'no syncs recorded' },
+        ]} />
+      )}
 
       {/* Supported Integrations Strip */}
       <IntegrationStrip />
@@ -363,10 +373,26 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Grid */}
-      {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
-          {filtered.map((intg) => (
+      {/* Grid — re-housed into a SectionCard per category */}
+      {!loading && filtered.length > 0 && (() => {
+        const cats = CATEGORIES.filter((c) => c.key !== 'all');
+        const groups = cats
+          .map((c) => ({ key: c.key, label: c.label, items: filtered.filter((i) => i.category === c.key) }))
+          .filter((g) => g.items.length > 0);
+        const knownKeys = new Set(cats.map((c) => c.key));
+        const other = filtered.filter((i) => !knownKeys.has(i.category));
+        if (other.length > 0) groups.push({ key: 'other', label: 'Other', items: other });
+        return groups.map((g) => (
+          <SectionCard
+            key={g.key}
+            title={g.label}
+            subtitle={`${g.items.length} integration${g.items.length === 1 ? '' : 's'} · ${g.items.filter((i) => i.connected).length} connected`}
+            icon={<Plugs size={17} weight="duotone" color={CATEGORY_COLORS[g.key] || GOLD} />}
+            accent={CATEGORY_COLORS[g.key] || GOLD}
+            style={{ marginBottom: 18 }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 18 }}>
+              {g.items.map((intg) => (
             <div
               key={intg.key}
               style={{
@@ -497,9 +523,11 @@ export default function IntegrationsPage() {
                 )}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+              ))}
+            </div>
+          </SectionCard>
+        ));
+      })()}
 
       {!loading && filtered.length === 0 && (
         <SectionCard flush>

@@ -123,14 +123,14 @@ export default function DataTable<T extends Record<string, any>>({
         </div>
       </div>
 
-      {/* ── Table ────────────────────────────────────────────────────── */}
-      <div style={{ borderRadius: 'var(--radius-lg)', border: `1px solid ${colors.border}`, background: colors.raised, overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
+      {/* ── Table — machined panel (.pmTable milled plate + chrome header) ── */}
+      <div className="pmTable">
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
+                  {headerGroup.headers.map((header, hIdx) => {
                     const sorted = header.column.getIsSorted();
                     const canSort = header.column.getCanSort();
                     return (
@@ -138,15 +138,17 @@ export default function DataTable<T extends Record<string, any>>({
                         key={header.id}
                         onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                         style={{
-                          padding: '11px 16px',
-                          background: colors.darkAlt,
+                          // chrome band: subtle top-lit gradient (mobile chromeGrad)
+                          padding: `11px ${hIdx === headerGroup.headers.length - 1 ? 20 : 16}px 11px ${hIdx === 0 ? 20 : 16}px`,
+                          background: 'linear-gradient(180deg, #17181b 0%, #101114 100%)',
                           borderBottom: `1px solid ${colors.border}`,
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
                           textAlign: 'left',
                           fontSize: 10.5,
                           fontWeight: font.weight.bold,
                           color: colors.textDim,
                           textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
+                          letterSpacing: '0.09em',
                           cursor: canSort ? 'pointer' : 'default',
                           userSelect: 'none',
                           whiteSpace: 'nowrap',
@@ -207,28 +209,30 @@ export default function DataTable<T extends Record<string, any>>({
               ) : (
                 table.getRowModel().rows.map((row, rowIndex) => {
                   const isLast = rowIndex === table.getRowModel().rows.length - 1;
-                  const zebra = rowIndex % 2 === 1 ? 'rgba(255,255,255,.015)' : 'transparent';
+                  const cells = row.getVisibleCells();
+                  // zebra-free machined rows: hairlines + brand-08 hover wash
                   return (
                     <tr
                       key={row.id}
                       onClick={() => onRowClick?.(row.original)}
                       style={{
                         cursor: onRowClick ? 'pointer' : 'default',
-                        background: zebra,
+                        background: 'transparent',
                         transition: 'background .12s',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.045)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = zebra)}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-primary-08)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                      {row.getVisibleCells().map((cell) => (
+                      {cells.map((cell, cIdx) => (
                         <td
                           key={cell.id}
                           style={{
-                            padding: '12px 16px',
+                            padding: `12px ${cIdx === cells.length - 1 ? 20 : 16}px 12px ${cIdx === 0 ? 20 : 16}px`,
                             borderBottom: isLast ? 'none' : `1px solid ${colors.borderDim}`,
                             fontSize: font.size.md,
                             color: colors.text,
                             whiteSpace: 'nowrap',
+                            fontVariantNumeric: 'tabular-nums',
                           }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

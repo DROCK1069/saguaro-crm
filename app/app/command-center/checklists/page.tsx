@@ -3,8 +3,9 @@ import { useMemo, useState } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useChecklist, toggleChecklist } from '@/lib/hooks/useFranchise';
 import { CHECKLIST_TEMPLATE } from '@/lib/franchise-template';
-import { C, font, useFranchiseGate, GateLoading, PageHeader, EmptyState } from '@/components/franchise/kit';
-import { CheckCircle, Check } from '@phosphor-icons/react';
+import { C, font, useFranchiseGate, GateLoading } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, Pill } from '@/components/ui/premium';
+import { CheckCircle, Check, ListChecks, Flag } from '@phosphor-icons/react';
 
 const PHASE_ORDER = CHECKLIST_TEMPLATE.map((g) => g.phase);
 
@@ -39,6 +40,8 @@ export default function ChecklistsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups, done]);
 
+  const phasesComplete = groups.filter((g) => g.pct >= 100).length;
+
   async function check(it: any) {
     const next = !isDone(it);
     setDone((d) => ({ ...d, [it.id]: next }));
@@ -49,53 +52,74 @@ export default function ChecklistsPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 900, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Phase Checklists" subtitle="The same Phase 1–4 operating playbook on every site — nothing gets skipped, no matter the city or contractor."
-        right={
-          <select value={activeSite} onChange={(e) => setSite(e.target.value)} style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: '#1c1c1e', fontWeight: 600 }}>
+    <PremiumSurface maxWidth={900} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<ListChecks size={13} weight="fill" color={C.gold} />}
+        title="Phase"
+        accent="Checklists"
+        subtitle="The same Phase 1–4 operating playbook on every site — nothing gets skipped, no matter the city or contractor."
+        actions={
+          <select value={activeSite} onChange={(e) => setSite(e.target.value)} style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: '#1c1c1e', color: C.text, fontWeight: 600 }}>
             {(projects as any[]).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         } />
 
+      {/* Playbook pulse — real counts for the selected site */}
+      {!loading && groups.length > 0 && (
+        <StatStrip items={[
+          { label: 'Steps Complete', value: `${overall.done}/${overall.total}`, sub: 'on this site' },
+          { label: 'Progress', value: `${overall.pct}%`, accent: overall.pct >= 100 ? C.green : C.gold, sub: overall.pct >= 100 ? 'playbook complete' : 'of the playbook' },
+          { label: 'Phases', value: String(groups.length), sub: 'in the template' },
+          { label: 'Phases Complete', value: String(phasesComplete), accent: phasesComplete > 0 ? C.green : undefined, sub: `${groups.length - phasesComplete} still open` },
+        ]} />
+      )}
+
       {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
       : groups.length === 0 ? (
-        <EmptyState icon={<CheckCircle size={34} weight="regular" color={C.green} />} title="No checklist for this site" body="Sites launched from the standardized template come pre-loaded with the full Phase 1–4 checklist." />
+        <SectionCard>
+          <PremiumEmpty icon={<CheckCircle size={32} weight="duotone" color={C.gold} />} title="No checklist for this site"
+            description="Sites launched from the standardized template come pre-loaded with the full Phase 1–4 checklist." />
+        </SectionCard>
       ) : (
         <>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px', marginBottom: 18 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 800 }}>Overall progress</span>
-              <span style={{ fontSize: 20, fontWeight: 900, color: overall.pct >= 100 ? C.green : C.gold }}>{overall.pct}%</span>
-            </div>
+          <SectionCard
+            title="Overall progress"
+            subtitle={`${overall.done} of ${overall.total} steps complete`}
+            icon={<Flag size={16} weight="duotone" color={C.gold} />}
+            action={<span style={{ fontSize: 20, fontWeight: 900, color: overall.pct >= 100 ? C.green : C.gold, fontVariantNumeric: 'tabular-nums' }}>{overall.pct}%</span>}
+            style={{ marginBottom: 18 }}
+          >
             <div style={{ height: 8, borderRadius: 4, background: '#1c1c1e', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${overall.pct}%`, background: overall.pct >= 100 ? C.green : C.gold, transition: 'width .3s' }} />
             </div>
-            <div style={{ fontSize: 12, color: C.dim, marginTop: 6 }}>{overall.done} of {overall.total} steps complete</div>
-          </div>
+          </SectionCard>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {groups.map((g) => (
-              <div key={g.phase} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 18px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 10 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800 }}>{g.phase}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: g.pct >= 100 ? C.green : C.dim }}>{g.doneN}/{g.list.length}</span>
-                </div>
+              <SectionCard
+                key={g.phase}
+                title={g.phase}
+                action={<Pill tone={g.pct >= 100 ? 'green' : 'neutral'} caps>{g.doneN}/{g.list.length}</Pill>}
+              >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {g.list.map((it) => {
                     const d = isDone(it);
                     return (
-                      <button key={it.id} onClick={() => check(it)} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}>
+                      <button key={it.id} onClick={() => check(it)} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', color: 'inherit', fontFamily: 'inherit' }}>
                         <span style={{ marginTop: 1, width: 18, height: 18, borderRadius: 5, border: `2px solid ${d ? C.green : C.border}`, background: d ? C.green : '#1c1c1e', color: '#fff', flexShrink: 0, fontSize: 11, fontWeight: 900, lineHeight: '15px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{d ? <Check size={12} weight="bold" color="#fff" /> : ''}</span>
                         <span style={{ fontSize: 14, color: d ? C.faint : C.text, textDecoration: d ? 'line-through' : 'none' }}>{it.title}</span>
                       </button>
                     );
                   })}
                 </div>
-              </div>
+              </SectionCard>
             ))}
           </div>
         </>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }

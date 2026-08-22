@@ -4,7 +4,8 @@ import { useProjects } from '@/lib/hooks/useProjects';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { TRADESPERSON_ROLES as ROLES } from '@/lib/contractor-trades';
-import { SUB_TRADES as TRADES } from '@/lib/construction-intelligence';
+import { tradeOptions } from '@/lib/taxonomy';
+import { StandardSelect } from '@/components/ui/Select';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { UsersThree, ClipboardText, UserGear, Warning, Gauge, Scales, Plus, DownloadSimple, ArrowsClockwise, FunnelSimple, CurrencyDollar, Clock, TrendDown, UserMinus, CalendarBlank, Buildings } from '@phosphor-icons/react';
 
@@ -30,7 +31,8 @@ interface Assignment {
 interface Project { id: string; name: string; status?: string; }
 
 /* ===== CONSTANTS ===== */
-// TRADES = canonical SUB_TRADES taxonomy (@/lib/construction-intelligence); ROLES from @/lib/contractor-trades
+// Trade options = canonical taxonomy (@/lib/taxonomy tradeOptions, CSI-division grouped); ROLES from @/lib/contractor-trades
+const TRADE_OPTIONS = tradeOptions();
 const CERTS = ['OSHA 10','OSHA 30','First Aid/CPR','Confined Space','Fall Protection','Crane Operator','Welding','CDL','Master Electrician','Master Plumber','EPA 608','Rigging','Scaffolding'];
 const STATUS_COLORS: { [k: string]: string } = { assigned: BLUE, tentative: AMBER, confirmed: GREEN, released: DIM, unavailable: RED };
 const STATUS_OPTS: Assignment['status'][] = ['assigned','tentative','confirmed','released','unavailable'];
@@ -45,9 +47,6 @@ function btn(primary?: boolean): React.CSSProperties {
 }
 function inp(): React.CSSProperties {
   return { width: '100%', padding: '8px 12px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
-}
-function sel(): React.CSSProperties {
-  return { ...inp(), cursor: 'pointer' };
 }
 function Badge({ label, color }: { label: string; color: string }) {
   return <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: `${color}22`, color, textTransform: 'uppercase' as const, letterSpacing: .5 }}>{label}</span>;
@@ -486,23 +485,14 @@ export default function ResourcePlanningPage() {
     >
     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
       <input value={filterPerson} onChange={e => setFilterPerson(e.target.value)} placeholder="Search person..." style={{ ...inp(), width: 160 }} />
-      <select value={filterProject} onChange={e => setFilterProject(e.target.value)} style={{ ...sel(), width: 180 }}>
-        <option value="">All Projects</option>
-        {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
-      <select value={filterTrade} onChange={e => setFilterTrade(e.target.value)} style={{ ...sel(), width: 150 }}>
-        <option value="">All Trades</option>
-        {filterTrade && !TRADES.includes(filterTrade) && <option value={filterTrade}>{filterTrade}</option>}
-        {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
-      </select>
-      <select value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ ...sel(), width: 160 }}>
-        <option value="">All Roles</option>
-        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-      </select>
-      <select value={filterCert} onChange={e => setFilterCert(e.target.value)} style={{ ...sel(), width: 170 }}>
-        <option value="">All Certifications</option>
-        {CERTS.map(c => <option key={c} value={c}>{c}</option>)}
-      </select>
+      <StandardSelect value={filterProject} onChange={setFilterProject} ariaLabel="Project" placeholder="All Projects" width={180}
+        options={projects.map(p => ({ value: p.id, label: p.name }))} />
+      <StandardSelect value={filterTrade} onChange={setFilterTrade} ariaLabel="Trade" placeholder="All Trades" width={170}
+        options={TRADE_OPTIONS} />
+      <StandardSelect value={filterRole} onChange={setFilterRole} ariaLabel="Role" placeholder="All Roles" width={160}
+        options={ROLES} />
+      <StandardSelect value={filterCert} onChange={setFilterCert} ariaLabel="Certification" placeholder="All Certifications" width={170}
+        options={CERTS} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={{ fontSize: 11, color: DIM }}>From:</span>
         <SaguaroDatePicker value={filterDateStart} onChange={v => setFilterDateStart(v)} style={{ ...inp(), width: 140 }} />
@@ -543,23 +533,16 @@ export default function ResourcePlanningPage() {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>Project *</label>
-            <select value={form.project_id || ''} onChange={e => setForm({ ...form, project_id: e.target.value })} style={sel()}>
-              <option value="">Select project...</option>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <StandardSelect value={form.project_id || ''} onChange={v => setForm({ ...form, project_id: v })} ariaLabel="Project" placeholder="Select project..." width="100%"
+              options={projects.map(p => ({ value: p.id, label: p.name }))} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>Role</label>
-            <select value={form.role || ''} onChange={e => setForm({ ...form, role: e.target.value })} style={sel()}>
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <StandardSelect value={form.role || ''} onChange={v => setForm({ ...form, role: v })} ariaLabel="Role" width="100%" options={ROLES} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>Trade</label>
-            <select value={form.trade || ''} onChange={e => setForm({ ...form, trade: e.target.value })} style={sel()}>
-              {form.trade && !TRADES.includes(form.trade) && <option value={form.trade}>{form.trade}</option>}
-              {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+            <StandardSelect value={form.trade || ''} onChange={v => setForm({ ...form, trade: v })} ariaLabel="Trade" width="100%" options={TRADE_OPTIONS} />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
@@ -573,9 +556,7 @@ export default function ResourcePlanningPage() {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase' as const, letterSpacing: .5, marginBottom: 5 }}>Status</label>
-            <select value={form.status || 'assigned'} onChange={e => setForm({ ...form, status: e.target.value as Assignment['status'] })} style={sel()}>
-              {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <StandardSelect value={form.status || 'assigned'} onChange={v => setForm({ ...form, status: v as Assignment['status'] })} ariaLabel="Status" width="100%" options={STATUS_OPTS} />
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>

@@ -3,8 +3,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useStakeholders, addStakeholder, removeStakeholder } from '@/lib/hooks/useFranchise';
-import { C, font, useFranchiseGate, GateLoading, PageHeader, Tile, Chip, SearchInput, EmptyState } from '@/components/franchise/kit';
-import { Users, X, Buildings, Envelope, Phone, MapPin } from '@phosphor-icons/react';
+import { C, font, useFranchiseGate, GateLoading, Chip, SearchInput } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, GoldButton, GhostButton } from '@/components/ui/premium';
+import { Users, X, Buildings, Envelope, Phone, MapPin, Plus } from '@phosphor-icons/react';
 
 const ROLES = ['Owner / Franchisee', 'PM / Franchisor Rep', 'Saguaro Coordinator', 'General Contractor', 'Project Superintendent', 'Architect / Engineer', 'Municipality / City', 'Material / Equipment Vendor', 'Golf Simulator (Full-Swing)', 'IT / AV', 'Signage'];
 const roleColor = (r: string) => {
@@ -27,7 +28,11 @@ export default function DirectoryPage() {
   const [removed, setRemoved] = useState<Record<string, boolean>>({});
 
   const list = (stakeholders as any[]).filter((s) => !removed[s.id]);
-  const summary = useMemo(() => ({ total: list.length, sites: new Set(list.map((s) => s.project_id)).size }), [list]);
+  const summary = useMemo(() => ({
+    total: list.length,
+    sites: new Set(list.map((s) => s.project_id)).size,
+    roles: new Set(list.map((s) => String(s.role || s.role_label || 'Stakeholder'))).size,
+  }), [list]);
 
   const filtered = list.filter((s) =>
     (site === 'all' || s.project_id === site) &&
@@ -42,16 +47,29 @@ export default function DirectoryPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1200, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Stakeholder Directory" subtitle="The team behind every location — Owner, GC, Architect, City, Full-Swing, IT/AV, Signage. One roster, every site."
-        right={<button onClick={() => setAdding((v) => !v)} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>{adding ? 'Close' : '+ Add Stakeholder'}</button>} />
+    <PremiumSurface maxWidth={1200} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<Users size={13} weight="fill" color={C.gold} />}
+        title="Stakeholder"
+        accent="Directory"
+        subtitle="The team behind every location — Owner, GC, Architect, City, Full-Swing, IT/AV, Signage. One roster, every site."
+        actions={adding
+          ? <GhostButton onClick={() => setAdding(false)}>Close</GhostButton>
+          : <GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setAdding(true)}>Add Stakeholder</GoldButton>}
+      />
 
       {adding && <AddForm projects={projects} onDone={() => setAdding(false)} />}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Stakeholders" value={summary.total} />
-        <Tile label="Sites Covered" value={summary.sites} />
-      </div>
+      {/* Roster pulse — real counts across the portfolio */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Stakeholders', value: String(summary.total), accent: summary.total > 0 ? C.gold : undefined, sub: 'across the portfolio' },
+          { label: 'Sites Covered', value: String(summary.sites), sub: 'with a roster' },
+          { label: 'Distinct Roles', value: String(summary.roles), sub: 'trades, vendors, authorities' },
+        ]} />
+      )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
         <Chip active={site === 'all'} onClick={() => setSite('all')} count={list.length}>All Sites</Chip>
@@ -65,15 +83,24 @@ export default function DirectoryPage() {
 
       {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
       : filtered.length === 0 ? (
-        list.length === 0 ? <EmptyState icon={<Users size={34} weight="regular" color={C.dim} />} title="No stakeholders yet" body="Build the roster for each location — every trade, vendor, and authority in one place so anyone in the org knows who to call."
-          action={<button onClick={() => setAdding(true)} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>+ Add your first</button>} />
-        : <EmptyState title="Nothing matches" />
+        list.length === 0 ? (
+          <SectionCard>
+            <PremiumEmpty icon={<Users size={32} weight="duotone" color={C.gold} />} title="No stakeholders yet"
+              description="Build the roster for each location — every trade, vendor, and authority in one place so anyone in the org knows who to call."
+              action={<GoldButton icon={<Plus size={15} weight="bold" />} onClick={() => setAdding(true)}>Add your first</GoldButton>} />
+          </SectionCard>
+        ) : (
+          <SectionCard>
+            <PremiumEmpty compact icon={<Users size={26} weight="duotone" color={C.gold} />} title="Nothing matches"
+              description="No stakeholder matches this site or search. Clear the filters to see the full roster." />
+          </SectionCard>
+        )
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
           {filtered.map((s) => {
             const role = s.role || s.role_label || 'Stakeholder'; const col = roleColor(role);
             return (
-              <div key={s.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '14px 15px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+              <div key={s.id} className="pmHover" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '14px 15px', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 800 }}>{s.name}</div>
@@ -92,7 +119,8 @@ export default function DirectoryPage() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }
 
@@ -111,8 +139,7 @@ function AddForm({ projects, onDone }: { projects: any[]; onDone: () => void }) 
   }
 
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginBottom: 18 }}>
-      <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>Add stakeholder</div>
+    <SectionCard title="Add stakeholder" subtitle="Name, role, and how to reach them — tied to a site" icon={<Users size={16} weight="duotone" color={C.gold} />} style={{ marginBottom: 18 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
         <div><label style={lbl}>Name *</label><input style={inp} value={f.name || ''} onChange={(e) => set('name', e.target.value)} /></div>
         <div><label style={lbl}>Site *</label><select style={inp} value={f.project_id || ''} onChange={(e) => set('project_id', e.target.value)}><option value="">Select site…</option>{projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
@@ -123,9 +150,9 @@ function AddForm({ projects, onDone }: { projects: any[]; onDone: () => void }) 
       </div>
       {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button onClick={submit} disabled={busy} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.gold, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Saving…' : 'Add'}</button>
-        <button onClick={onDone} style={{ padding: '9px 18px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#141416', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+        <GoldButton size="md" onClick={submit} disabled={busy}>{busy ? 'Saving…' : 'Add'}</GoldButton>
+        <GhostButton size="md" onClick={onDone}>Cancel</GhostButton>
       </div>
-    </div>
+    </SectionCard>
   );
 }

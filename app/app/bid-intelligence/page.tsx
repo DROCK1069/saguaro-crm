@@ -1,8 +1,34 @@
 'use client';
+/**
+ * Bid Intelligence — the AI learning engine over this tenant's REAL win/loss
+ * record. Full premium anatomy (aurora surface, hero, stat strip, section
+ * cards, machined tables); every number rendered comes straight from
+ * /api/bids/win-factors and /api/bids/history — no hardcoded stats, and an
+ * honest empty state until outcomes are logged.
+ */
 import React, { useState, useEffect } from 'react';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
+import {
+  PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, FlowStrip,
+  goldButtonStyle, ghostButtonStyle,
+} from '@/components/ui/premium';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { moduleAccent } from '@/lib/module-identity';
+import {
+  Brain, Sparkle, Trophy, TrendUp, ChartBar, Percent, Stack, Notebook,
+  CurrencyCircleDollar, Warning, X,
+} from '@phosphor-icons/react';
 
-const GOLD='#F59E0B',DARK='#0a0a0a',BORDER='rgba(255,255,255,0.08)',HAIRLINE='rgba(255,255,255,0.08)',CARD='rgba(255,255,255,0.02)',DIM='#CBD5E1',MUTED='rgba(255,255,255,0.45)',TEXT='#FFFFFF',GREEN='#3dd68c',RED='#c03030';
+const GOLD = '#F59E0B', GOLD_HI = '#FBBF24', DARK = '#0a0a0a', BORDER = 'rgba(255,255,255,0.08)', HAIRLINE = 'rgba(255,255,255,0.07)';
+const DIM = '#CBD5E1', MUTED = 'rgba(255,255,255,0.45)', TEXT = '#FFFFFF', GREEN = '#3dd68c', RED = '#c03030';
+
+// Module accent — bids family (desert rose). Chips / eyebrows / badges ONLY.
+const BIDS = moduleAccent('bids');
+
+const INP: React.CSSProperties = { width: '100%', padding: '9px 12px', background: DARK, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' };
+const LBL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 };
+const TH: React.CSSProperties = { padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: MUTED, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' };
+const TD: React.CSSProperties = { padding: '12px 14px', fontSize: 13, color: TEXT, verticalAlign: 'top' };
 
 // Shapes returned by GET /api/bids/win-factors and GET /api/bids/history.
 type WinFactor = { csi_division:string; trade:string|null; win_rate:number; win_count:number; loss_count:number; suggested_multiplier:number; confidence:number; sample_count:number; avg_over_winner_pct:number };
@@ -83,107 +109,151 @@ export default function IntelligencePage() {
     setLoading(false);
   }
 
-  // Derived, all from real data above.
+  // Derived, all from real data above. Money columns can arrive as TEXT — every
+  // figure goes through Number() before math or formatting.
   const tradeLabel = (f: WinFactor) => (f.trade && f.trade.trim()) ? f.trade : (f.csi_division ? `CSI Div ${f.csi_division}` : 'Unspecified');
   const headlineWinRate = winRate != null ? Math.round(winRate * 100) : (stats ? stats.winRate : 0);
   const bidsAnalyzed = (wins + losses) || (stats ? stats.totalBids : 0);
   const avgMargin = stats ? stats.avgMargin : 0;
+  const totalValue = Number(stats?.totalValue) || 0;
+  const recordWins = wins || (stats ? Number(stats.wonBids) || 0 : 0);
+  const recordLosses = losses || (stats ? Number(stats.lostBids) || 0 : 0);
   const hasAnyData = factors.length > 0 || bids.length > 0;
   const ranked = [...factors].filter(f => (f.sample_count || 0) > 0).sort((a, b) => (b.win_rate || 0) - (a.win_rate || 0));
   const best = ranked[0];
   const worst = ranked[ranked.length - 1];
 
   return (
-    <div style={{padding:'40px 24px 80px',maxWidth:1200,margin:'0 auto'}}>
+    <PremiumSurface maxWidth={1200}>
       <style>{`@media (max-width: 640px){ .pg-stack-1{ grid-template-columns: 1fr !important } }`}</style>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:40,gap:24,flexWrap:'wrap'}}>
-        <div>
-          <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'5px 12px',background:'transparent',border:'1px solid rgba(255,255,255,0.14)',borderRadius:999,fontSize:11,fontWeight:500,letterSpacing:1,textTransform:'uppercase' as const,color:MUTED,marginBottom:14}}>
-            <span style={{width:5,height:5,borderRadius:'50%',background:GOLD,display:'inline-block'}}/>AI Learning Engine
-          </div>
-          <h1 style={{fontSize:26,fontWeight:600,color:TEXT,margin:'0 0 8px',letterSpacing:-0.3}}>Bid Intelligence</h1>
-          <div style={{fontSize:14,color:DIM,lineHeight:1.5}}>Saguaro learns from every bid you win or lose — and sharpens your next number with it.</div>
-        </div>
-        <button onClick={()=>setScoring(!scoring)} className="btn-gold" style={{fontSize:13,cursor:'pointer'}}>
-          Score New Opportunity
-        </button>
-      </div>
 
-      {/* Score opportunity panel */}
-      {scoring&&<div style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:14,padding:28,marginBottom:32}}>
-        <div style={{fontWeight:600,fontSize:16,marginBottom:20,color:TEXT}}>Score a new bid opportunity</div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:14}}>
-          {[['Opportunity Title',title,setTitle,'e.g. 3,200 SF Custom Home - Scottsdale'],['Estimated Value',value,setValue,'$450,000']].map(f=>(
-            <div key={f[0] as string}><label style={{display:'block',fontSize:11,fontWeight:500,color:MUTED,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>{f[0] as string}</label>
-              <input value={f[1] as string} onChange={e=>(f[2] as Function)(e.target.value)} placeholder={f[3] as string} style={{width:'100%',padding:'9px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none'}}/></div>
-          ))}
-          <div><label style={{display:'block',fontSize:11,fontWeight:500,color:MUTED,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Trade Category</label>
-            <select value={trade} onChange={e=>setTrade(e.target.value)} style={{width:'100%',padding:'9px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,cursor:'pointer'}}>
-              {!SUB_TRADES.includes(trade)&&<option value={trade}>{trade}</option>}
-              {SUB_TRADES_BY_DIVISION.map(g=>(
-                <optgroup key={g.division} label={g.division+' — '+g.name}>
-                  {g.trades.map(t=><option key={t} value={t}>{t}</option>)}
+      <ModuleHero
+        eyebrow="AI Learning Engine"
+        eyebrowIcon={<Brain size={13} weight="fill" color={BIDS.hex} />}
+        title="Bid"
+        accent="Intelligence"
+        subtitle="Saguaro learns from every bid you win or lose — and sharpens your next number with it."
+        actions={
+          <button onClick={()=>setScoring(!scoring)} style={goldButtonStyle} className="pmBtn">
+            {scoring ? <><X size={15} weight="bold" /> Close Scoring</> : <><Sparkle size={15} weight="bold" /> Score New Opportunity</>}
+          </button>
+        }
+      />
+
+      {/* Stat strip — the learning engine at a glance, all from recorded outcomes */}
+      {!dataLoading && hasAnyData && (
+        <StatStrip items={[
+          { label: 'Overall Win Rate', value: `${headlineWinRate}%`, accent: headlineWinRate >= 50 ? GREEN : undefined, sub: `${recordWins}W · ${recordLosses}L recorded`, icon: <Trophy size={11} weight="bold" color={BIDS.hex} /> },
+          { label: 'Avg Winning Margin', value: `${(avgMargin||0).toFixed(1)}%`, icon: <Percent size={11} weight="bold" color={BIDS.hex} /> },
+          { label: 'Bids Analyzed', value: String(bidsAnalyzed), sub: 'marked Won or Lost', icon: <Stack size={11} weight="bold" color={BIDS.hex} /> },
+          { label: 'Total Bid Value', value: `$${totalValue.toLocaleString()}`, accent: totalValue > 0 ? GOLD : undefined, sub: 'across logged bids', icon: <CurrencyCircleDollar size={11} weight="bold" color={GOLD_HI} /> },
+          { label: 'Trades Tracked', value: String(factors.length), sub: factors.length > 0 ? 'learned win factors' : 'none learned yet', icon: <ChartBar size={11} weight="bold" color={BIDS.hex} /> },
+        ]} />
+      )}
+
+      {/* Score opportunity panel — real AI scoring, inline on the page */}
+      {scoring && (
+        <SectionCard
+          title="Score a new bid opportunity"
+          subtitle="Claude reads your recorded win history and prices the fit — honest output, straight from the model"
+          icon={<Sparkle size={17} weight="duotone" color={BIDS.hex} />}
+          accent={BIDS.hex}
+          style={{ marginBottom: 24 }}
+        >
+          <div className="pg-stack-1" style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:14}}>
+            {[['Opportunity Title',title,setTitle,'e.g. 3,200 SF Custom Home - Scottsdale'],['Estimated Value',value,setValue,'$450,000']].map(f=>(
+              <div key={f[0] as string}><label style={LBL}>{f[0] as string}</label>
+                <input value={f[1] as string} onChange={e=>(f[2] as Function)(e.target.value)} placeholder={f[3] as string} style={INP}/></div>
+            ))}
+            <div><label style={LBL}>Trade Category</label>
+              <select value={trade} onChange={e=>setTrade(e.target.value)} style={{...INP,cursor:'pointer'}}>
+                {!SUB_TRADES.includes(trade)&&<option value={trade}>{trade}</option>}
+                {SUB_TRADES_BY_DIVISION.map(g=>(
+                  <optgroup key={g.division} label={g.division+' — '+g.name}>
+                    {g.trades.map(t=><option key={t} value={t}>{t}</option>)}
+                  </optgroup>
+                ))}
+                <optgroup label="Other / Specialty">
+                  {SUB_TRADES.filter(t=>!SUB_TRADES_BY_DIVISION.some(g=>g.trades.includes(t))).map(t=><option key={t} value={t}>{t}</option>)}
                 </optgroup>
-              ))}
-              <optgroup label="Other / Specialty">
-                {SUB_TRADES.filter(t=>!SUB_TRADES_BY_DIVISION.some(g=>g.trades.includes(t))).map(t=><option key={t} value={t}>{t}</option>)}
-              </optgroup>
-            </select></div>
-        </div>
-        <div style={{marginBottom:14}}><label style={{display:'block',fontSize:11,fontWeight:500,color:MUTED,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:6}}>Description</label>
-          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} placeholder="Describe the project scope..." style={{width:'100%',padding:'9px 12px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:8,color:TEXT,fontSize:13,outline:'none',resize:'vertical'}}/></div>
-        <div style={{display:'flex',gap:10}}>
-          <button onClick={scoreOpportunity} disabled={loading} className="btn-gold" style={{fontSize:13,cursor:'pointer'}}>{loading?'Scoring…':'Score with AI'}</button>
-          <button onClick={()=>setScoring(false)} style={{padding:'10px 20px',background:'transparent',border:`1px solid ${BORDER}`,borderRadius:8,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
-        </div>
-        {result&&('error' in result)&&<div style={{marginTop:20,background:'rgba(192,48,48,.08)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:10,padding:'14px 16px',fontSize:13,color:DIM}}>{result['error'] as string}</div>}
-        {result&&!('error' in result)&&<div style={{marginTop:24,background:CARD,border:`1px solid ${BORDER}`,borderRadius:14,padding:24}}>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:0,marginBottom:20,borderTop:`1px solid ${HAIRLINE}`,borderBottom:`1px solid ${HAIRLINE}`}}>
-            {[{l:'Fit Score',v:`${result['score']}/100`,c:TEXT},{l:'Win Probability',v:`${result['winProbability']}%`,c:GREEN},{l:'Recommendation',v:String(result['recommendation']??'').toUpperCase(),c:TEXT},{l:'Suggested Margin',v:`${result['suggestedMargin']}%`,c:TEXT}].map((k,i)=>(
-              <div key={k.l} style={{textAlign:'center' as const,padding:'16px 10px',borderLeft:i>0?`1px solid ${HAIRLINE}`:'none'}}><div style={{fontSize:10,color:MUTED,fontWeight:500,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:8}}>{k.l}</div><div style={{fontSize:22,fontWeight:600,color:k.c}}>{k.v}</div></div>
-            ))}
+              </select></div>
           </div>
-          <div style={{background:DARK,borderRadius:8,padding:14,fontSize:13,color:DIM,lineHeight:1.7}}>{result['reasoning'] as string}</div>
-          {Array.isArray(result['riskFactors'])&&(result['riskFactors'] as string[]).length>0&&<div style={{marginTop:14}}>
-            <div style={{fontSize:11,color:MUTED,fontWeight:600,textTransform:'uppercase' as const,letterSpacing:.5,marginBottom:8}}>Risk Factors</div>
-            {(result['riskFactors'] as string[]).map((rf,i)=>(
-              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:12,color:DIM,lineHeight:1.6,marginBottom:5}}>
-                <span style={{width:5,height:5,borderRadius:'50%',background:RED,marginTop:6,flexShrink:0}}/>{rf}
-              </div>
-            ))}
+          <div style={{marginBottom:16}}><label style={LBL}>Description</label>
+            <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} placeholder="Describe the project scope..." style={{...INP,resize:'vertical'}}/></div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+            <button onClick={scoreOpportunity} disabled={loading} className="pmBtn" style={{...goldButtonStyle,cursor:loading?'wait':'pointer',opacity:loading?0.6:1}}>
+              <Sparkle size={15} weight="bold" />{loading?'Scoring…':'Score with AI'}
+            </button>
+            <button onClick={()=>setScoring(false)} className="pmBtn" style={ghostButtonStyle}>Cancel</button>
+          </div>
+          {result&&('error' in result)&&<div style={{marginTop:20,background:'rgba(192,48,48,.08)',border:`1px solid rgba(192,48,48,.3)`,borderRadius:10,padding:'14px 16px',fontSize:13,color:DIM,display:'flex',alignItems:'center',gap:8}}><Warning size={15} weight="fill" color={RED} />{result['error'] as string}</div>}
+          {result&&!('error' in result)&&<div style={{marginTop:24}}>
+            {/* Machined verdict band — micro-caps labels over hairline-separated figures */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:0,marginBottom:20,borderTop:`1px solid ${HAIRLINE}`,borderBottom:`1px solid ${HAIRLINE}`}}>
+              {[{l:'Fit Score',v:`${result['score']}/100`,c:TEXT},{l:'Win Probability',v:`${result['winProbability']}%`,c:GREEN},{l:'Recommendation',v:String(result['recommendation']??'').toUpperCase(),c:GOLD_HI},{l:'Suggested Margin',v:`${result['suggestedMargin']}%`,c:TEXT}].map((k,i)=>(
+                <div key={k.l} style={{textAlign:'center' as const,padding:'16px 10px',borderLeft:i>0?`1px solid ${HAIRLINE}`:'none'}}><div style={{fontSize:10,color:MUTED,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',marginBottom:8}}>{k.l}</div><div style={{fontSize:22,fontWeight:800,color:k.c,fontVariantNumeric:'tabular-nums' as const,letterSpacing:'-0.01em'}}>{k.v}</div></div>
+              ))}
+            </div>
+            <div style={{background:DARK,border:`1px solid ${BORDER}`,borderRadius:10,padding:14,fontSize:13,color:DIM,lineHeight:1.7}}>{result['reasoning'] as string}</div>
+            {Array.isArray(result['riskFactors'])&&(result['riskFactors'] as string[]).length>0&&<div style={{marginTop:14}}>
+              <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',marginBottom:8}}>Risk Factors</div>
+              {(result['riskFactors'] as string[]).map((rf,i)=>(
+                <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:12,color:DIM,lineHeight:1.6,marginBottom:5}}>
+                  <span style={{width:5,height:5,borderRadius:'50%',background:RED,marginTop:6,flexShrink:0}}/>{rf}
+                </div>
+              ))}
+            </div>}
           </div>}
-        </div>}
-      </div>}
+        </SectionCard>
+      )}
 
       {dataLoading ? (
-        <div style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:14,padding:'48px 28px',textAlign:'center' as const,color:DIM,fontSize:13}}>
-          <div style={{width:26,height:26,border:`2px solid ${BORDER}`,borderTopColor:GOLD,borderRadius:'50%',animation:'biSpin .8s linear infinite',margin:'0 auto 12px'}}/>
-          Loading your win intelligence...
-          <style>{`@keyframes biSpin{to{transform:rotate(360deg)}}`}</style>
-        </div>
-      ) : !hasAnyData ? (
-        <div style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:14,padding:'56px 28px',textAlign:'center' as const}}>
-          <div style={{width:44,height:44,borderRadius:12,border:`1px solid ${BORDER}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
-            <span style={{width:8,height:8,borderRadius:'50%',background:GOLD,display:'inline-block'}}/>
+        <>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))',gap:12,marginBottom:20}}>
+            {[0,1,2,3,4].map(i=><Skeleton key={i} height={74} borderRadius={14} />)}
           </div>
-          <div style={{fontSize:16,fontWeight:600,color:TEXT,marginBottom:8}}>No win intelligence yet</div>
-          <div style={{fontSize:13,color:DIM,lineHeight:1.6,maxWidth:440,margin:'0 auto'}}>Mark bids Won/Lost to build your win intelligence. Saguaro learns from every outcome and shows where you win — and where you leave money on the table.</div>
-        </div>
-      ) : (
-      <div className="pg-stack-1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
-        {/* Win rate profile — learned trade factors + real headline stats */}
-        <div style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:14,padding:28}}>
-          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
-            <div style={{fontWeight:600,fontSize:16,color:TEXT}}>Bid intelligence profile</div>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:0,marginBottom:24,borderTop:`1px solid ${HAIRLINE}`,borderBottom:`1px solid ${HAIRLINE}`}}>
-            {[{l:'Overall Win Rate',v:`${headlineWinRate}%`},{l:'Avg Winning Margin',v:`${(avgMargin||0).toFixed(1)}%`},{l:'Bids Analyzed',v:String(bidsAnalyzed)}].map((k,i)=>(
-              <div key={k.l} style={{padding:'16px 12px',borderLeft:i>0?`1px solid ${HAIRLINE}`:'none'}}>
-                <div style={{fontSize:10.5,color:'var(--text-tertiary)',fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',marginBottom:6}}>{k.l}</div>
-                <div style={{fontSize:26,fontWeight:700,color:TEXT,letterSpacing:-0.4,fontVariantNumeric:'tabular-nums' as const}}>{k.v}</div>
-              </div>
+          <div className="pg-stack-1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
+            {[0,1].map(i=>(
+              <SectionCard key={i}>
+                <Skeleton height={16} width="42%" style={{marginBottom:18}} />
+                {[0,1,2,3].map(r=>(
+                  <div key={r} style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+                    <Skeleton height={13} width={`${62 - r * 8}%`} />
+                    <Skeleton height={13} width={64} />
+                  </div>
+                ))}
+              </SectionCard>
             ))}
           </div>
+        </>
+      ) : !hasAnyData ? (
+        <SectionCard accent={BIDS.hex}>
+          <PremiumEmpty
+            icon={<Brain size={32} weight="duotone" color={BIDS.hex} />}
+            title="No win intelligence yet"
+            description="Mark bids Won/Lost to build your win intelligence. Saguaro learns from every outcome and shows where you win — and where you leave money on the table."
+            action={
+              <button onClick={()=>setScoring(true)} style={goldButtonStyle} className="pmBtn">
+                <Sparkle size={15} weight="bold" /> Score New Opportunity
+              </button>
+            }
+          />
+          <FlowStrip steps={[
+            { title: 'Log outcomes', desc: 'mark bids Won or Lost' },
+            { title: 'Engine learns', desc: 'win rates per trade + CSI division' },
+            { title: 'Score the next one', desc: 'AI fit score against your record' },
+            { title: 'Sharpen the number', desc: 'suggested margin, honest risks' },
+          ]} />
+        </SectionCard>
+      ) : (
+      <div className="pg-stack-1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,alignItems:'start'}}>
+        {/* Win rate profile — learned trade factors + real headline stats */}
+        <SectionCard
+          title="Bid intelligence profile"
+          subtitle="Learned trade factors from your recorded outcomes"
+          icon={<TrendUp size={17} weight="duotone" color={BIDS.hex} />}
+          accent={BIDS.hex}
+        >
           {factors.length === 0 ? (
             <div style={{fontSize:12,color:DIM,lineHeight:1.6,padding:'4px 0 8px'}}>Trade-level win rates appear here as you log more Won/Lost outcomes across CSI divisions.</div>
           ) : factors.map(f=>{
@@ -193,39 +263,42 @@ export default function IntelligencePage() {
             return (
             <div key={`${f.csi_division}-${f.trade??''}`} style={{marginBottom:14}}>
               <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:5}}>
-                <span style={{color:TEXT,fontWeight:500}}>{tradeLabel(f)}</span>
-                <span style={{color:wr>=60?GREEN:wr>0?DIM:RED,fontWeight:600}}>{wr}% win ({f.win_count||0}/{f.sample_count||0})</span>
+                <span style={{color:TEXT,fontWeight:600}}>{tradeLabel(f)}</span>
+                <span style={{color:wr>=60?GREEN:wr>0?DIM:RED,fontWeight:700,fontVariantNumeric:'tabular-nums' as const}}>{wr}% win ({f.win_count||0}/{f.sample_count||0})</span>
               </div>
               <div style={{height:5,background:'rgba(255,255,255,.08)',borderRadius:3}}>
                 <div style={{height:'100%',width:`${wr}%`,background:wr>=60?GREEN:wr>0?DIM:RED,borderRadius:3}}/>
               </div>
               <div style={{display:'flex',gap:14,marginTop:5,fontSize:10,color:MUTED,flexWrap:'wrap' as const}}>
-                {Number.isFinite(ci)&&ci>0&&<span>Competitive index <span style={{color:DIM,fontWeight:600}}>{ci.toFixed(2)}×</span></span>}
+                {Number.isFinite(ci)&&ci>0&&<span>Competitive index <span style={{color:DIM,fontWeight:600}}>{ci.toFixed(2)}x</span></span>}
                 {Number.isFinite(over)&&<span>Avg above winner <span style={{color:DIM,fontWeight:600}}>{over>0?'+':''}{over.toFixed(1)}%</span></span>}
                 <span>{f.sample_count||0} sample{(f.sample_count||0)!==1?'s':''}</span>
               </div>
             </div>
           );})}
           {best && (
-            <div style={{marginTop:20,display:'flex',gap:10,alignItems:'flex-start',background:CARD,border:`1px solid ${BORDER}`,borderRadius:10,padding:14,fontSize:12,color:DIM,lineHeight:1.6}}>
-              <span style={{width:6,height:6,borderRadius:'50%',background:GOLD,marginTop:5,flexShrink:0}}/>
-              <span><strong style={{color:TEXT,fontWeight:600}}>AI Recommendation:</strong> Strongest on {tradeLabel(best)} — {Math.round((best.win_rate||0)*100)}% win rate.{worst && worst!==best && (worst.win_rate||0) < (best.win_rate||0) ? ` Weakest on ${tradeLabel(worst)} — ${Math.round((worst.win_rate||0)*100)}% win rate; sharpen pricing or qualify harder there.` : ''}</span>
+            <div style={{marginTop:20,display:'flex',gap:10,alignItems:'flex-start',background:'linear-gradient(180deg, rgba(245,158,11,0.08), rgba(255,255,255,0.02))',border:`1px solid rgba(245,158,11,0.3)`,borderRadius:10,padding:14,fontSize:12,color:DIM,lineHeight:1.6}}>
+              <Sparkle size={14} weight="fill" color={GOLD_HI} style={{marginTop:2,flexShrink:0}} />
+              <span><strong style={{color:TEXT,fontWeight:700}}>AI Recommendation:</strong> Strongest on {tradeLabel(best)} — {Math.round((best.win_rate||0)*100)}% win rate.{worst && worst!==best && (worst.win_rate||0) < (best.win_rate||0) ? ` Weakest on ${tradeLabel(worst)} — ${Math.round((worst.win_rate||0)*100)}% win rate; sharpen pricing or qualify harder there.` : ''}</span>
             </div>
           )}
-        </div>
+        </SectionCard>
 
-        {/* Bid history — this tenant's real recorded outcomes */}
-        <div style={{background:CARD,border:`1px solid ${BORDER}`,borderRadius:14,overflow:'hidden'}}>
-          <div style={{padding:'18px 24px',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',gap:10}}>
-            <span style={{fontWeight:600,fontSize:16,color:TEXT}}>Bid history</span>
-          </div>
+        {/* Bid history — this tenant's real recorded outcomes, machined table */}
+        <SectionCard
+          title="Bid history"
+          subtitle={`${bids.length} recorded bid${bids.length !== 1 ? 's' : ''}`}
+          icon={<Notebook size={17} weight="duotone" color={BIDS.hex} />}
+          accent={BIDS.hex}
+          flush
+        >
           {bids.length === 0 ? (
             <div style={{padding:'32px 24px',fontSize:13,color:DIM,lineHeight:1.6}}>No bids logged yet. Mark opportunities Won or Lost to build your history.</div>
           ) : (
           <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch',maxWidth:'100%'}}>
           <table style={{width:'100%',minWidth:640,borderCollapse:'collapse' as const,fontSize:12}}>
-            <thead><tr style={{borderBottom:`1px solid ${BORDER}`}}>
-              {['Project','Type','Bid','Margin','Result'].map(h=><th key={h} style={{padding:'12px 14px',textAlign:'left' as const,fontSize:10.5,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.06em',color:'var(--text-tertiary)'}}>{h}</th>)}
+            <thead><tr style={{background:DARK}}>
+              {['Project','Type','Bid','Margin','Result'].map((h,i)=><th key={h} style={{...TH,textAlign:(i===2||i===3)?'right' as const:'left' as const}}>{h}</th>)}
             </tr></thead>
             <tbody>{bids.map((o,i)=>{
               const oc = String(o.outcome||'').toLowerCase();
@@ -235,25 +308,27 @@ export default function IntelligencePage() {
               const amt = Number(o.bid_amount)||0;
               const mp = o.margin_pct==null ? null : Number(o.margin_pct);
               return (
-              <tr key={o.id||i} style={{borderBottom:`1px solid ${HAIRLINE}`}}>
-                <td style={{padding:'12px 14px',color:TEXT,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{proj}</td>
-                <td style={{padding:'12px 14px',color:DIM}}>{type}</td>
-                <td style={{padding:'12px 14px',color:TEXT}}>${amt.toLocaleString()}</td>
-                <td style={{padding:'12px 14px',color:DIM}}>{mp==null?'—':`${mp}%`}</td>
-                <td style={{padding:'12px 14px'}}>
-                  <span style={{fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:4,background:won?'rgba(26,138,74,.15)':lost?'rgba(192,48,48,.12)':'rgba(255,255,255,.06)',color:won?GREEN:lost?RED:DIM}}>
+              <tr key={o.id||i} style={{borderBottom:`1px solid ${HAIRLINE}`}}
+                onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.03)')}
+                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                <td style={{...TD,fontWeight:600,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' as const}}>{proj}</td>
+                <td style={{...TD,color:DIM}}>{type}</td>
+                <td style={{...TD,textAlign:'right' as const,color:GOLD,fontWeight:700,fontVariantNumeric:'tabular-nums' as const,whiteSpace:'nowrap' as const}}>${amt.toLocaleString()}</td>
+                <td style={{...TD,textAlign:'right' as const,color:DIM,fontVariantNumeric:'tabular-nums' as const}}>{mp==null?'—':`${mp}%`}</td>
+                <td style={TD}>
+                  <span style={{fontSize:10,fontWeight:800,letterSpacing:'0.04em',padding:'3px 9px',borderRadius:999,background:won?'rgba(26,138,74,.15)':lost?'rgba(192,48,48,.12)':'rgba(255,255,255,.06)',color:won?GREEN:lost?RED:DIM,whiteSpace:'nowrap' as const}}>
                     {(o.outcome||'').toString().toUpperCase()||'—'}
                   </span>
-                  {lost&&o.loss_reason&&<div style={{fontSize:10,color:MUTED,marginTop:2}}>{o.loss_reason}</div>}
+                  {lost&&o.loss_reason&&<div style={{fontSize:10,color:MUTED,marginTop:3}}>{o.loss_reason}</div>}
                 </td>
               </tr>
             );})}</tbody>
           </table>
           </div>
           )}
-        </div>
+        </SectionCard>
       </div>
       )}
-    </div>
+    </PremiumSurface>
   );
 }

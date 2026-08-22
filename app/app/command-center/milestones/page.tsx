@@ -5,8 +5,9 @@ import { useMilestones } from '@/lib/hooks/useFranchise';
 import { milestoneSlip, SEVERITY_ORDER, type Severity } from '@/lib/franchise';
 import {
   C, font, fmtDate, useFranchiseGate, GateLoading,
-  PageHeader, Tile, SevDot, SevBadge, Chip, SearchInput, EmptyState, AttentionBanner, Metric, LiftCard,
+  SevDot, SevBadge, Chip, SearchInput, AttentionBanner, Metric, LiftCard,
 } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, Pill } from '@/components/ui/premium';
 import { FlagCheckered } from '@phosphor-icons/react';
 
 const SEV_LABEL: Record<Severity, string> = { red: 'Critical Slip', yellow: 'Slipping', green: 'On Track' };
@@ -49,19 +50,26 @@ export default function MilestonesPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1280, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="Milestone Variance"
+    <PremiumSurface maxWidth={1280} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+      <ModuleHero
+        eyebrow="Command Center"
+        eyebrowIcon={<FlagCheckered size={13} weight="fill" color={C.gold} />}
+        title="Milestone"
+        accent="Variance"
         subtitle="Schedule slippage across all sites, measured against each milestone's baseline. Worst slips first — recover the red ones."
       />
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Total Milestones" value={summary.total} />
-        <Tile label="On Track" value={summary.green} color={C.green} />
-        <Tile label="Slipping" value={summary.yellow} color={C.yellow} />
-        <Tile label="Critical Slip" value={summary.red} color={C.red} />
-        <Tile label="Critical Path" value={summary.critical} />
-      </div>
+      {/* Schedule pulse — slip mix against baseline, worst-first */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Total Milestones', value: String(summary.total), sub: 'across all sites' },
+          { label: 'On Track', value: String(summary.green), accent: C.green, sub: 'holding baseline' },
+          { label: 'Slipping', value: String(summary.yellow), accent: summary.yellow > 0 ? C.yellow : undefined, sub: 'inside float' },
+          { label: 'Critical Slip', value: String(summary.red), accent: summary.red > 0 ? C.red : undefined, sub: 'recover these first' },
+          { label: 'Critical Path', value: String(summary.critical), accent: summary.critical > 0 ? C.gold : undefined, sub: 'drive the end date' },
+        ]} />
+      )}
 
       <AttentionBanner red={summary.red} yellow={summary.yellow} noun="milestone" />
 
@@ -80,10 +88,15 @@ export default function MilestonesPage() {
         <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading milestones…</div>
       ) : filtered.length === 0 ? (
         rows.length === 0 ? (
-          <EmptyState icon={<FlagCheckered size={34} weight="regular" color={C.dim} />} title="No milestones yet"
-            body="Milestones roll up here from every site's schedule. Once baseline and forecast dates are set, the tracker computes each one's slip against baseline and surfaces what's blowing the schedule." />
+          <SectionCard>
+            <PremiumEmpty icon={<FlagCheckered size={32} weight="duotone" color={C.gold} />} title="No milestones yet"
+              description="Milestones roll up here from every site's schedule. Once baseline and forecast dates are set, the tracker computes each one's slip against baseline and surfaces what's blowing the schedule." />
+          </SectionCard>
         ) : (
-          <EmptyState title="Nothing matches this filter" />
+          <SectionCard>
+            <PremiumEmpty compact icon={<FlagCheckered size={26} weight="duotone" color={C.gold} />} title="Nothing matches this filter"
+              description="No milestone matches the current severity or search. Clear the filters to see the full board." />
+          </SectionCard>
         )
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
@@ -113,13 +126,14 @@ export default function MilestonesPage() {
 
               {it.is_critical_path && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12, alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: `${C.red}14`, color: C.red }}>Critical Path</span>
+                  <Pill tone="red" caps>Critical Path</Pill>
                 </div>
               )}
             </LiftCard>
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PremiumSurface>
   );
 }

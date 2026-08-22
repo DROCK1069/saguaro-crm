@@ -5,7 +5,7 @@ import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { FolderOpen, MagnifyingGlass, Plus, ArrowRight, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { colors } from '../../../lib/design-tokens';
-import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, goldButtonStyle } from '@/components/ui/premium';
 import { accentForProject, projectMonogram } from '@/lib/project-identity';
 
 // Reconciled to the design-token ramp (no more bluish slab literals).
@@ -105,6 +105,23 @@ export default function ProjectsPage() {
           <Link href="/app/projects/new" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold"/> New Project</Link>
         </>}
       />
+
+      {/* Portfolio at a glance — counts the page already fetched */}
+      {!loading && !error && projects.length>0 && (()=>{
+        const active = projects.filter((p:any)=>p.status==='active').length;
+        const bidding = projects.filter((p:any)=>p.status==='bidding').length;
+        const complete = projects.filter((p:any)=>p.status==='complete'||p.status==='closed').length;
+        const totalContract = projects.reduce((s:number,p:any)=>s+(Number(p.contract_amount)||0),0);
+        return (
+          <StatStrip items={[
+            { label:'Projects', value:String(projects.length), sub:'in your portfolio' },
+            { label:'Active', value:String(active), accent:active>0?colors.green:undefined, sub:'under construction' },
+            { label:'Bidding', value:String(bidding), accent:bidding>0?GOLD:undefined, sub:'in pursuit' },
+            { label:'Complete / Closed', value:String(complete), sub:'delivered jobs' },
+            { label:'Portfolio Value', value:totalContract>0?fmt(totalContract):'—', accent:totalContract>0?GOLD:undefined, sub:'combined contracts' },
+          ]} />
+        );
+      })()}
 
       {/* Error */}
       {error && (

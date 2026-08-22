@@ -51,6 +51,22 @@ export const PREMIUM_FX = `
 .pmBtn{transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
 .pmBtn:hover{transform:translateY(-1px);filter:brightness(1.05)}
 .pmBtn:active{transform:scale(.98)}/* transient press; rest state stays transform:none */
+/* Machined button material (mobile MAT port — lib/theme goldGrad/ghostGrad/dangerGrad).
+   Class-based so :active gets REAL pressed depth: a full-step darker gradient with the
+   glow tucked in, not just a scale. Disabled: dimmed, glow off, faint top edge only. */
+.pmGold{background:linear-gradient(180deg,var(--brand-primary-strong),var(--brand-primary) 60%,var(--brand-primary-hover));color:#241500;border:none;box-shadow:0 4px 14px var(--brand-primary-25),inset 0 1px 0 rgba(255,255,255,0.35);transition:transform .16s ease,box-shadow .16s ease,filter .16s ease,background .16s ease}
+.pmGold:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 8px 22px var(--brand-primary-35),inset 0 1px 0 rgba(255,255,255,0.35)}
+.pmGold:active{transform:translateY(0.5px) scale(.985);filter:none;background:linear-gradient(180deg,var(--brand-primary) 0%,var(--brand-primary-hover) 55%,#B45309 100%);box-shadow:0 2px 8px var(--brand-primary-25),inset 0 1px 3px rgba(0,0,0,0.2)}
+.pmGhost{background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));color:rgba(255,255,255,0.82);border:1px solid ${BORDER};box-shadow:0 2px 10px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.07);transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease}
+.pmGhost:hover{transform:translateY(-1px);border-color:rgba(255,255,255,0.16)}
+.pmGhost:active{transform:translateY(0.5px) scale(.985);background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));box-shadow:inset 0 1px 3px rgba(0,0,0,0.25)}
+.pmDanger{background:linear-gradient(180deg,rgba(239,68,68,0.20),rgba(239,68,68,0.09));color:#EF4444;border:1px solid rgba(239,68,68,0.45);box-shadow:0 2px 10px rgba(239,68,68,0.18),inset 0 1px 0 rgba(255,255,255,0.10);transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.pmDanger:hover{transform:translateY(-1px);background:linear-gradient(180deg,rgba(239,68,68,0.26),rgba(239,68,68,0.12))}
+.pmDanger:active{transform:translateY(0.5px) scale(.985);background:linear-gradient(180deg,rgba(239,68,68,0.30),rgba(239,68,68,0.16));box-shadow:0 1px 6px rgba(239,68,68,0.15),inset 0 1px 3px rgba(0,0,0,0.25)}
+.pmGold:disabled,.pmGhost:disabled,.pmDanger:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)}
+/* Interactive milled plates press in slightly (pairs with .pmHover lift). !important
+   outranks pmRise's held fill value, same as the :hover rule above. */
+.pmHover:active{transform:translateY(-1px) scale(.985)!important}
 .pmTile{transition:transform .18s ease}
 .pmTile:hover{transform:translateY(-1px)}
 .pmShine{background-size:200% 100%;animation:pmShimmer 3.6s linear infinite}
@@ -59,7 +75,7 @@ export const PREMIUM_FX = `
 h1.pmH1{font-size:clamp(28px,4.4vw,46px)!important;font-weight:900!important;line-height:1.04!important;letter-spacing:-0.03em!important;margin:0!important}
 @media (prefers-reduced-motion: reduce){
   .pmRoot,.pmRoot *{animation:none!important;transition:none!important}
-  .pmHover:hover,.pmBtn:hover,.pmBtn:active,.pmTile:hover{transform:none!important}
+  .pmHover:hover,.pmHover:active,.pmBtn:hover,.pmBtn:active,.pmTile:hover,.pmGold:hover,.pmGold:active,.pmGhost:hover,.pmGhost:active,.pmDanger:hover,.pmDanger:active{transform:none!important}
 }
 `;
 
@@ -123,6 +139,7 @@ export function ModuleHero({
   subtitle,
   actions,
   align = 'left',
+  accentColor,
   style,
 }: {
   eyebrow?: string;
@@ -133,12 +150,18 @@ export function ModuleHero({
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   align?: 'left' | 'center';
+  /** Module accent HEX (lib/module-identity moduleAccent). When set, the eyebrow
+   *  pill, title shine and a StatCard-style 3px left bar wash in the module hue
+   *  instead of gold. Money modules simply don't pass it — they stay gold. */
+  accentColor?: string;
   style?: React.CSSProperties;
 }) {
   const centered = align === 'center';
+  const ac = accentColor;
   return (
     <div
       style={{
+        position: 'relative',
         display: 'flex',
         alignItems: centered ? 'center' : 'flex-end',
         flexDirection: centered ? 'column' : 'row',
@@ -146,10 +169,15 @@ export function ModuleHero({
         gap: 18,
         flexWrap: 'wrap',
         marginBottom: 30,
+        paddingLeft: ac && !centered ? 18 : undefined,
         textAlign: centered ? 'center' : 'left',
         ...style,
       }}
     >
+      {/* module-accent left bar (StatCard-style) — only when accentColor is set */}
+      {ac && !centered && (
+        <div aria-hidden style={{ position: 'absolute', left: 0, top: 2, bottom: 6, width: 3, borderRadius: 2, background: `linear-gradient(180deg, ${ac}, transparent)`, opacity: 0.85 }} />
+      )}
       <div style={{ minWidth: 0, maxWidth: centered ? 720 : undefined }}>
         {(eyebrow || aux) && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap', justifyContent: centered ? 'center' : 'flex-start' }}>
@@ -159,10 +187,12 @@ export function ModuleHero({
                   animation: 'pmRise .5s ease both',
                   display: 'inline-flex', alignItems: 'center', gap: 7,
                   padding: '6px 14px', borderRadius: 999,
-                  background: 'linear-gradient(90deg, rgba(245,158,11,0.16), rgba(245,158,11,0.05))',
-                  border: `1px solid ${A45}`, color: GOLD_HI,
+                  background: ac
+                    ? `linear-gradient(90deg, ${ac}29, ${ac}0D)`
+                    : 'linear-gradient(90deg, rgba(245,158,11,0.16), rgba(245,158,11,0.05))',
+                  border: `1px solid ${ac ? ac + '73' : A45}`, color: ac || GOLD_HI,
                   fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase',
-                  boxShadow: '0 0 30px -10px rgba(245,158,11,0.5)',
+                  boxShadow: ac ? `0 0 30px -10px ${ac}80` : '0 0 30px -10px rgba(245,158,11,0.5)',
                 }}
               >
                 {eyebrowIcon}{eyebrow}
@@ -179,7 +209,9 @@ export function ModuleHero({
               <span
                 className="pmShine"
                 style={{
-                  background: `linear-gradient(100deg, ${GOLD} 6%, ${GOLD_HI} 38%, #FDE68A 56%, ${GOLD} 92%)`,
+                  background: ac
+                    ? `linear-gradient(100deg, ${ac} 6%, color-mix(in srgb, ${ac} 70%, #FFFFFF) 38%, color-mix(in srgb, ${ac} 42%, #FFFFFF) 56%, ${ac} 92%)`
+                    : `linear-gradient(100deg, ${GOLD} 6%, ${GOLD_HI} 38%, #FDE68A 56%, ${GOLD} 92%)`,
                   WebkitBackgroundClip: 'text', backgroundClip: 'text',
                   WebkitTextFillColor: 'transparent', color: 'transparent',
                 }}
@@ -254,7 +286,8 @@ export function StatCard({
         position: 'relative', overflow: 'hidden',
         background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16,
         padding: '18px 20px',
-        boxShadow: `0 14px 34px -24px ${A30}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+        // milled plate: drop + top light + full-perimeter inset ring (mobile cardShadow)
+        boxShadow: `0 14px 34px -24px ${A30}, inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(255,255,255,0.03)`,
         cursor: interactive ? 'pointer' : 'default',
         animation: `pmRise .5s ease ${delay.toFixed(2)}s both`,
         height: '100%',
@@ -305,7 +338,8 @@ export function SectionCard({
       style={{
         position: 'relative', overflow: 'hidden',
         background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16,
-        boxShadow: `0 24px 48px -32px ${A22}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+        // milled plate: drop + top light + full-perimeter inset ring (mobile cardShadow)
+        boxShadow: `0 24px 48px -32px ${A22}, inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(255,255,255,0.03)`,
         ...style,
       }}
     >
@@ -395,6 +429,95 @@ export const goldOutlineButtonStyle: React.CSSProperties = {
   background: A12, color: GOLD_HI, border: `1px solid ${A45}`,
   fontWeight: 800, fontSize: 13.5, textDecoration: 'none',
 };
+
+// ─── Machined buttons (mobile Btn port) ──────────────────────────────────────
+// Real components over the style objects above: the .pmGold/.pmGhost/.pmDanger
+// classes (PREMIUM_FX) give :active a TRUE pressed state — a full-step darker
+// gradient with the glow tucked in — which inline style objects can't express.
+// goldButtonStyle/ghostButtonStyle stay exported; existing callers untouched.
+// Use inside a <PremiumSurface> (or render <PremiumFX/> once on the page).
+
+const BTN_SIZE: Record<'lg' | 'md', React.CSSProperties> = {
+  lg: { padding: '12px 22px', fontSize: 14, borderRadius: 12 },
+  md: { padding: '9px 16px', fontSize: 13, borderRadius: 10 },
+};
+
+const BTN_BASE: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  fontWeight: 800, letterSpacing: '0.01em', textDecoration: 'none',
+  cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.2, whiteSpace: 'nowrap',
+};
+
+type MachinedButtonProps = {
+  children: React.ReactNode;
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+  icon?: React.ReactNode;
+  size?: 'lg' | 'md';
+  disabled?: boolean;
+  /** Renders as an <a> (kit stays routing-agnostic, same as StatCard href). */
+  href?: string;
+  type?: 'button' | 'submit';
+  title?: string;
+  style?: React.CSSProperties;
+};
+
+function MachinedButton({ cls, children, onClick, icon, size = 'lg', disabled, href, type = 'button', title, style }: MachinedButtonProps & { cls: string }) {
+  const s = { ...BTN_BASE, ...BTN_SIZE[size], ...style };
+  if (href && !disabled) {
+    return <a className={cls} href={href} onClick={onClick} title={title} style={s}>{icon}{children}</a>;
+  }
+  return (
+    <button className={cls} type={type} onClick={onClick} disabled={disabled} title={title} style={s}>
+      {icon}{children}
+    </button>
+  );
+}
+
+/** Primary gold CTA — top-lit gradient, pressed = full-step darker + tucked glow. */
+export function GoldButton(props: MachinedButtonProps) {
+  return <MachinedButton cls="pmGold" {...props} />;
+}
+
+/** Frosted glass secondary — barely-there machined part, dims a step on press. */
+export function GhostButton(props: MachinedButtonProps) {
+  return <MachinedButton cls="pmGhost" {...props} />;
+}
+
+/** Destructive — red-tinted glass (mobile dangerGrad), same machined geometry. */
+export function DangerButton(props: MachinedButtonProps) {
+  return <MachinedButton cls="pmDanger" {...props} />;
+}
+
+// ─── Pill (mobile port) ──────────────────────────────────────────────────────
+/** Ringed status pill: fg-hue-derived 12% fill + 25% hairline ring, so every
+ *  tone reads as one machined material. `caps` = small-caps eyebrow voice. */
+export function Pill({ children, tone = 'neutral', caps, style }: {
+  children: React.ReactNode;
+  tone?: 'neutral' | 'green' | 'amber' | 'red' | 'gold';
+  caps?: boolean;
+  style?: React.CSSProperties;
+}) {
+  const map = {
+    neutral: { bg: 'rgba(255,255,255,0.06)', fg: 'rgba(255,255,255,0.72)', bd: 'rgba(255,255,255,0.10)' },
+    green:   { bg: '#22C55E1F', fg: '#22C55E', bd: '#22C55E40' },
+    amber:   { bg: '#F59E0B1F', fg: '#F59E0B', bd: '#F59E0B40' },
+    red:     { bg: '#EF44441F', fg: '#EF4444', bd: '#EF444440' },
+    gold:    { bg: A12, fg: GOLD_HI, bd: A45 },
+  } as const;
+  const t = map[tone];
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '3px 10px', borderRadius: 999,
+      background: t.bg, border: `1px solid ${t.bd}`, color: t.fg,
+      fontSize: caps ? 10 : 11, fontWeight: 800,
+      letterSpacing: caps ? '0.08em' : '0.02em',
+      textTransform: caps ? 'uppercase' : undefined,
+      whiteSpace: 'nowrap', lineHeight: 1.5,
+      ...style,
+    }}>{children}</span>
+  );
+}
 
 // ─── SmartCreate kit ─────────────────────────────────────────────────────────
 // Shared anatomy for every add/create flow: the screen walks in already knowing

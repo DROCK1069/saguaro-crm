@@ -564,17 +564,42 @@ input:-webkit-autofill:focus {
 /* Text selection: brand-tinted, readable everywhere. */
 ::selection { background: var(--brand-primary-25); color: #FFFFFF; }
 
-/* Tables: micro-cap headers + hairline rows wherever plain <table> is used. */
+/* ── Tables: machined panel material (2026-08-22) ──────────────────────────
+   Zebra-free milled rows: chrome header band + letterspaced micro-caps,
+   1px hairline body rows with a brand hover wash, tabular-nums numerics,
+   first/last cell padding rhythm, and a .pmTable milled-plate wrapper so
+   any table (DataTable included) reads as one machined panel.
+   All :where() → zero specificity: any authored/inline style still wins. */
+:root { --brand-primary-08: rgba(245,158,11,0.08); }
 :where(table) th {
   font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
+:where(table) thead th {
+  background: linear-gradient(180deg, #17181b 0%, #101114 100%);
+  border-bottom: 1px solid var(--border-default);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
 :where(table) td { border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; }
 :where(table) tbody tr { transition: background .12s ease; }
-:where(table) tbody tr:hover { background: rgba(255,255,255,0.03); }
+:where(table) tbody tr:hover { background: var(--brand-primary-08); }
+:where(table) th:first-child, :where(table) td:first-child { padding-left: 18px; }
+:where(table) th:last-child, :where(table) td:last-child { padding-right: 18px; }
+:where(table) td.num, :where(table) td[data-num] { text-align: right; font-variant-numeric: tabular-nums; }
+/* .pmTable — milled-plate wrapper: put it on the element wrapping a table (or
+   the table's own container) and the whole thing becomes a machined panel:
+   glass surface, full-perimeter inset ring, radius + overflow clip. */
+.pmTable {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)), var(--bg-surface);
+  box-shadow: 0 14px 34px -24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(255,255,255,0.03);
+  overflow: hidden;
+  overflow-x: auto;
+}
 
 /* Cards/links micro-interaction: anything opting in via .lift gets the standard hover. */
 .lift { transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease; }

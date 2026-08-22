@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { humanError } from '@/lib/errors';
 import { Sparkle, PaperPlaneRight, FileText, CaretRight, Question } from '@phosphor-icons/react';
-import { Aurora, PremiumFX, ModuleHero, SectionCard, goldButtonStyle } from '@/components/ui/premium';
+import { Aurora, PremiumFX, ModuleHero, SectionCard, StatStrip, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)';
 const DIM = '#CBD5E1', TEXT = '#FFFFFF', BLUE = '#FBBF24';
@@ -68,6 +68,17 @@ export default function AskDocsPage() {
             </select>
           }
         />
+
+        {/* Live session intelligence — what Sage can reach and what it has done */}
+        {projects.length > 0 && (
+          <StatStrip items={[
+            { label: 'Projects', value: String(projects.length), sub: 'searchable right now' },
+            { label: 'Doc Types', value: String(Object.keys(TYPE_LABEL).length), sub: 'RFIs to T&M tickets' },
+            { label: 'Questions Asked', value: String(turns.length), sub: 'this session' },
+            { label: 'Records Searched', value: String(turns.reduce((s, t) => s + t.searched, 0)), sub: 'across your questions' },
+            { label: 'Sources Cited', value: String(turns.reduce((s, t) => s + t.citations.length, 0)), accent: turns.some((t) => t.citations.length > 0) ? GOLD : undefined, sub: 'every answer grounded' },
+          ]} />
+        )}
 
         <div style={{ flex: 1, marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {turns.length === 0 && !busy && (

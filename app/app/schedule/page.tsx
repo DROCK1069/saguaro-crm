@@ -28,8 +28,10 @@ import {
 } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
-import { StatStrip, AutoChip } from '@/components/ui/premium';
-import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
+import { PremiumFX, ModuleHero, StatStrip, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
+import { StandardSelect } from '@/components/ui/Select';
+import { tradeOptions } from '@/lib/taxonomy';
 
 interface ScheduleTask {
   id: string;
@@ -60,6 +62,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   on_hold: { label: 'On Hold', color: colors.orange },
 };
 const STATUS_OPTIONS = ['not_started', 'in_progress', 'complete', 'blocked'] as const;
+const STATUS_SELECT_OPTIONS = STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_MAP[s].label }));
 
 function statusCfg(s?: string | null) {
   return STATUS_MAP[(s ?? 'not_started').toLowerCase()] ?? STATUS_MAP.not_started;
@@ -70,8 +73,7 @@ function barColor(t: ScheduleTask) {
 
 // ── Date-only helpers (no TZ drift: dates are 'YYYY-MM-DD') ─────────────────
 // Canonical trade taxonomy — CSI division groups plus the specialty markets outside them.
-const DIVISION_TRADE_SET = new Set(SUB_TRADES_BY_DIVISION.flatMap(d => d.trades));
-const EXTRA_TRADES = SUB_TRADES.filter(t => !DIVISION_TRADE_SET.has(t));
+const TRADE_OPTIONS = tradeOptions();
 
 const DAY = 86400000;
 function ymdToUTC(s: string): number {
@@ -359,19 +361,23 @@ export default function SchedulePage() {
   const formProjectTasks = tasks.filter(t => t.project_id === form.projectId);
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
+    <div className="pmRoot" style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}`}</style>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: font.size['3xl'], fontWeight: font.weight.black, color: colors.text }}>Schedule</h1>
-          <p style={{ margin: '4px 0 0', fontSize: font.size.md, color: colors.textMuted }}>Manage tasks, track progress, and map dependencies across the build.</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', border: 'none', borderRadius: 'var(--radius-md)', color: '#241500', fontSize: font.size.md, fontWeight: font.weight.black, cursor: 'pointer', boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)' }}>
-          <Plus size={16} weight="bold" /> New Task
-        </button>
-      </div>
+      {/* Header — standard module hero anatomy */}
+      <PremiumFX />
+      <ModuleHero
+        eyebrow="Execution"
+        eyebrowIcon={<CalendarBlank size={13} weight="fill" color={moduleAccent('schedule').hex} />}
+        title="Construction"
+        accent="Schedule"
+        subtitle="Manage tasks, track progress, and map dependencies across the build."
+        actions={
+          <button onClick={() => setShowCreate(true)} className="pmBtn" style={goldButtonStyle}>
+            <Plus size={16} weight="bold" /> New Task
+          </button>
+        }
+      />
 
       {/* Stat strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 18 }}>
@@ -390,10 +396,8 @@ export default function SchedulePage() {
 
       {/* Toolbar: project filter + view toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 220 }}>
-          <option value="">All projects</option>
-          {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+        <StandardSelect value={projectFilter} onChange={setProjectFilter} ariaLabel="Project" placeholder="All projects" style={{ minWidth: 220 }}
+          options={projects.map(p => ({ value: p.id, label: p.name }))} />
         <div style={{ display: 'inline-flex', background: colors.raised, border: `1px solid ${colors.border}`, borderRadius: radius.lg, padding: 3, gap: 3 }}>
           {([['list', 'List', ListBullets], ['timeline', 'Timeline', ChartBar]] as const).map(([key, label, Icon]) => (
             <button key={key} onClick={() => setView(key)} style={{
@@ -455,10 +459,8 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Project *</label>
-                  <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value, predecessorId: '' })} required style={inputStyle}>
-                    <option value="">Select project...</option>
-                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+                  <StandardSelect value={form.projectId} onChange={(v) => setForm({ ...form, projectId: v, predecessorId: '' })} required ariaLabel="Project" placeholder="Select project..." width="100%"
+                    options={projects.map(p => ({ value: p.id, label: p.name }))} />
                 </div>
                 <div>
                   <label style={labelStyle}>Phase</label>
@@ -466,23 +468,13 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Trade</label>
-                  <select value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })} style={inputStyle}>
-                    <option value="">Select trade...</option>
-                    {SUB_TRADES_BY_DIVISION.map(d => (
-                      <optgroup key={d.division} label={`Div ${d.division} — ${d.name}`}>
-                        {d.trades.map(t => <option key={t} value={t}>{t}</option>)}
-                      </optgroup>
-                    ))}
-                    <optgroup label="Specialty & Site Markets">
-                      {EXTRA_TRADES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </optgroup>
-                  </select>
+                  <StandardSelect value={form.trade} onChange={(v) => setForm({ ...form, trade: v })} ariaLabel="Trade" placeholder="Select trade..." width="100%"
+                    options={TRADE_OPTIONS} />
                 </div>
                 <div>
                   <label style={labelStyle}>Status</label>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} style={inputStyle}>
-                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_MAP[s].label}</option>)}
-                  </select>
+                  <StandardSelect value={form.status} onChange={(v) => setForm({ ...form, status: v })} ariaLabel="Status" width="100%"
+                    options={STATUS_SELECT_OPTIONS} />
                 </div>
                 <div>
                   <label style={labelStyle}>Start Date{auto.start && <AutoChip />}</label>
@@ -505,10 +497,8 @@ export default function SchedulePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Predecessor</label>
-                  <select value={form.predecessorId} onChange={(e) => setPredecessor(e.target.value)} disabled={!form.projectId} style={inputStyle}>
-                    <option value="">None</option>
-                    {formProjectTasks.map(t => <option key={t.id} value={t.id}>{t.name}{t.end_date ? ` (ends ${fmtDate(t.end_date)})` : ''}</option>)}
-                  </select>
+                  <StandardSelect value={form.predecessorId} onChange={setPredecessor} disabled={!form.projectId} ariaLabel="Predecessor" placeholder="None" width="100%"
+                    options={formProjectTasks.map(t => ({ value: t.id, label: `${t.name}${t.end_date ? ` (ends ${fmtDate(t.end_date)})` : ''}` }))} />
                   {form.predecessorId && (() => {
                     const p = taskById.get(form.predecessorId);
                     return p ? (
@@ -571,34 +561,37 @@ function PctEditor({ task, onSave, saving }: { task: ScheduleTask; onSave: (n: n
 function StatusEditor({ task, onSave, saving }: { task: ScheduleTask; onSave: (s: string) => void; saving: boolean }) {
   const cfg = statusCfg(task.status);
   return (
-    <select
+    <StandardSelect
       onClick={(e) => e.stopPropagation()}
       value={STATUS_OPTIONS.includes(task.status as any) ? task.status : 'not_started'}
-      onChange={(e) => onSave(e.target.value)}
+      onChange={onSave}
       disabled={saving}
+      size="sm"
+      accent={cfg.color}
+      ariaLabel="Status"
+      options={STATUS_SELECT_OPTIONS}
       style={{
         padding: '5px 10px', borderRadius: 999, fontSize: font.size.xs, fontWeight: font.weight.bold,
-        textTransform: 'uppercase', letterSpacing: 0.4, cursor: 'pointer', appearance: 'none',
-        background: `${cfg.color}22`, color: cfg.color, border: `1px solid ${cfg.color}55`, outline: 'none',
+        textTransform: 'uppercase', letterSpacing: 0.4,
+        background: `${cfg.color}22`, color: cfg.color, border: `1px solid ${cfg.color}55`,
       }}
-    >
-      {STATUS_OPTIONS.map(s => <option key={s} value={s} style={{ background: colors.surface, color: colors.text }}>{STATUS_MAP[s].label}</option>)}
-    </select>
+    />
   );
 }
 
 function PredecessorEditor({ task, options, onSave, saving }: { task: ScheduleTask; options: ScheduleTask[]; onSave: (id: string) => void; saving: boolean }) {
   return (
-    <select
+    <StandardSelect
       onClick={(e) => e.stopPropagation()}
       value={task.predecessor_id ?? ''}
-      onChange={(e) => onSave(e.target.value)}
+      onChange={onSave}
       disabled={saving || options.length === 0}
-      style={{ maxWidth: 160, padding: '5px 8px', background: colors.raisedAlt, border: `1px solid ${colors.border}`, borderRadius: radius.sm, color: task.predecessor_id ? colors.text : colors.textDim, fontSize: font.size.xs, outline: 'none', cursor: 'pointer' }}
-    >
-      <option value="">None</option>
-      {options.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-    </select>
+      size="sm"
+      ariaLabel="Predecessor"
+      placeholder="None"
+      options={options.map(o => ({ value: o.id, label: o.name }))}
+      style={{ maxWidth: 160, fontSize: font.size.xs }}
+    />
   );
 }
 

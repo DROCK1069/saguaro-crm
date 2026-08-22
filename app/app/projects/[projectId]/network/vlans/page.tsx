@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Network, Plus, Calculator, Stack } from '@phosphor-icons/react';
 import {
-  PremiumSurface, ModuleHero, SectionCard, PremiumEmpty,
+  PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty,
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
@@ -172,6 +172,22 @@ export default function VlanManagerPage() {
           </button>
         }
       />
+
+      {/* Segmentation at a glance — every figure derived from the fetched VLANs */}
+      {vlans.length > 0 && (() => {
+        const devicesAssigned = vlans.reduce((s, v) => s + (Number(v.device_count) || 0), 0);
+        const dhcpScopes = vlans.filter((v) => v.dhcp_start && v.dhcp_end).length;
+        const usableIps = vlans.reduce((s, v) => s + (calculateSubnetInfo(v.subnet || '')?.usableHosts || 0), 0);
+        const purposes = new Set(vlans.map((v) => v.purpose)).size;
+        return (
+          <StatStrip items={[
+            { label: 'VLANs', value: String(vlans.length), sub: `${purposes} purpose${purposes === 1 ? '' : 's'} in use` },
+            { label: 'Devices Assigned', value: String(devicesAssigned), sub: 'across all VLANs' },
+            { label: 'DHCP Scopes', value: String(dhcpScopes), sub: `of ${vlans.length} VLAN${vlans.length === 1 ? '' : 's'} have ranges` },
+            { label: 'Usable IPs Planned', value: usableIps.toLocaleString(), sub: 'from subnet CIDRs' },
+          ]} />
+        );
+      })()}
 
       {showForm && (
         <div style={{ marginBottom: 24 }}>

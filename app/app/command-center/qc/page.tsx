@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useQC, toggleQC } from '@/lib/hooks/useFranchise';
 import { QC_TRADES } from '@/lib/franchise-template';
-import { C, font, useFranchiseGate, GateLoading, PageHeader, Tile, EmptyState } from '@/components/franchise/kit';
+import { C, font, useFranchiseGate, GateLoading } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty } from '@/components/ui/premium';
 import { MagnifyingGlass, Check } from '@phosphor-icons/react';
 
 export default function QCPage() {
@@ -34,37 +35,58 @@ export default function QCPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 900, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Quality Control by Trade" subtitle="QC before inspections — the same 14-trade checklist on every site, so nothing reaches the inspector unchecked."
-        right={
-          <select value={activeSite} onChange={(e) => setSite(e.target.value)} style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: '#1c1c1e', fontWeight: 600 }}>
-            {(projects as any[]).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        } />
+    <PremiumSurface maxWidth={900} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+        <ModuleHero
+          eyebrow="Command Center"
+          eyebrowIcon={<MagnifyingGlass size={13} weight="fill" />}
+          title="Quality Control"
+          accent="by Trade"
+          subtitle="QC before inspections — the same 14-trade checklist on every site, so nothing reaches the inspector unchecked."
+          actions={
+            <select value={activeSite} onChange={(e) => setSite(e.target.value)} style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: '#1c1c1e', color: C.text, fontWeight: 600 }}>
+              {(projects as any[]).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          }
+        />
 
-      {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
-      : trades.list.length === 0 ? (
-        <EmptyState icon={<MagnifyingGlass size={34} weight="regular" color={C.dim} />} title="No QC checklist for this site" body={`Sites launched from the template come pre-loaded with the ${QC_TRADES.length}-trade QC checklist.`} />
-      ) : (
-        <>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-            <Tile label="Trades Passed" value={`${trades.passed}/${trades.list.length}`} color={trades.pct >= 100 ? C.green : C.gold} />
-            <Tile label="QC Complete" value={`${trades.pct}%`} color={trades.pct >= 100 ? C.green : C.gold} />
-          </div>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '10px 14px' }}>
-            {trades.list.map((it) => {
-              const d = isDone(it);
-              return (
-                <button key={it.id} onClick={() => toggle(it)} style={{ display: 'flex', gap: 12, alignItems: 'center', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, cursor: 'pointer', padding: '11px 4px' }}>
-                  <span style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${d ? C.green : C.border}`, background: d ? C.green : '#1c1c1e', color: '#fff', flexShrink: 0, fontSize: 12, fontWeight: 900, lineHeight: '17px', textAlign: 'center' }}>{d ? <Check size={13} weight="bold" color="#fff" style={{ verticalAlign: 'middle' }} /> : ''}</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: d ? C.faint : C.text, textDecoration: d ? 'line-through' : 'none', flex: 1 }}>{it.title}</span>
-                  {d && <span style={{ fontSize: 12, fontWeight: 700, color: C.green }}>Passed</span>}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
+        {loading ? (
+          <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
+        ) : trades.list.length === 0 ? (
+          <SectionCard>
+            <PremiumEmpty
+              icon={<MagnifyingGlass size={32} weight="duotone" color={C.gold} />}
+              title="No QC checklist for this site"
+              description={`Sites launched from the template come pre-loaded with the ${QC_TRADES.length}-trade QC checklist.`}
+            />
+          </SectionCard>
+        ) : (
+          <>
+            <StatStrip items={[
+              { label: 'Trades Passed', value: `${trades.passed}/${trades.list.length}`, accent: trades.pct >= 100 ? C.green : C.gold },
+              { label: 'Remaining', value: String(trades.list.length - trades.passed), accent: trades.list.length - trades.passed > 0 ? C.yellow : C.green },
+              { label: 'QC Complete', value: `${trades.pct}%`, accent: trades.pct >= 100 ? C.green : C.gold },
+            ]} />
+            <SectionCard
+              icon={<MagnifyingGlass size={16} weight="duotone" color={C.gold} />}
+              title="Trade Checklist"
+              subtitle="Tap a trade to mark it passed — it syncs across the whole team"
+              bodyStyle={{ padding: '10px 20px 12px' }}
+            >
+              {trades.list.map((it) => {
+                const d = isDone(it);
+                return (
+                  <button key={it.id} onClick={() => toggle(it)} className="pmBtn" style={{ display: 'flex', gap: 12, alignItems: 'center', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid rgba(255,255,255,0.07)`, cursor: 'pointer', padding: '11px 4px' }}>
+                    <span style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${d ? C.green : C.border}`, background: d ? C.green : '#1c1c1e', color: '#fff', flexShrink: 0, fontSize: 12, fontWeight: 900, lineHeight: '17px', textAlign: 'center' }}>{d ? <Check size={13} weight="bold" color="#fff" style={{ verticalAlign: 'middle' }} /> : ''}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: d ? C.faint : C.text, textDecoration: d ? 'line-through' : 'none', flex: 1 }}>{it.title}</span>
+                    {d && <span style={{ fontSize: 12, fontWeight: 700, color: C.green }}>Passed</span>}
+                  </button>
+                );
+              })}
+            </SectionCard>
+          </>
+        )}
+      </div>
+    </PremiumSurface>
   );
 }

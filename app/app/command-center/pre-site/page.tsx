@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { usePreSite, setPreSite } from '@/lib/hooks/useFranchise';
 import { PRESITE_CHECKLIST } from '@/lib/franchise-template';
-import { C, font, useFranchiseGate, GateLoading, PageHeader, Tile, EmptyState } from '@/components/franchise/kit';
+import { C, font, useFranchiseGate, GateLoading } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty } from '@/components/ui/premium';
 import { Clipboard, Flag, CheckCircle } from '@phosphor-icons/react';
 
 type PState = 'open' | 'passed' | 'flagged';
@@ -48,45 +49,65 @@ export default function PreSitePage() {
   });
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 960, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader title="Pre-Site Inspection" subtitle="Feasibility due-diligence run before lease + build — confirm a prospective location can actually take the indoor-golf TI. Flag anything that could kill or re-price the deal."
-        right={
-          <select value={activeSite} onChange={(e) => setSite(e.target.value)} style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: '#1c1c1e', fontWeight: 600 }}>
-            {(projects as any[]).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        } />
+    <PremiumSurface maxWidth={960} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+        <ModuleHero
+          eyebrow="Command Center"
+          eyebrowIcon={<Clipboard size={13} weight="fill" />}
+          title="Pre-Site"
+          accent="Inspection"
+          subtitle="Feasibility due-diligence run before lease + build — confirm a prospective location can actually take the indoor-golf TI. Flag anything that could kill or re-price the deal."
+          actions={
+            <select value={activeSite} onChange={(e) => setSite(e.target.value)} style={{ padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: '#1c1c1e', color: C.text, fontWeight: 600 }}>
+              {(projects as any[]).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          }
+        />
 
-      {loading ? <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
-      : view.list.length === 0 ? (
-        <EmptyState icon={<Clipboard size={34} weight="regular" color={C.dim} />} title="No pre-site checklist for this site" body={`Sites launched from the template come pre-loaded with the ${PRESITE_CHECKLIST.length}-point pre-site feasibility inspection.`} />
-      ) : (
-        <>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-            <Tile label="Reviewed" value={`${view.reviewed}/${view.list.length}`} color={view.pct >= 100 ? C.green : C.gold} />
-            <Tile label="Passed" value={view.passed} color={C.green} />
-            <Tile label="Flagged" value={view.flagged} color={view.flagged ? C.red : C.dim} sub={view.flagged ? 'needs resolution' : 'clear'} />
-            <Tile label="Complete" value={`${view.pct}%`} color={view.pct >= 100 ? C.green : C.gold} />
-          </div>
-          {view.flagged > 0 && (
-            <div style={{ background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.25)', borderRadius: 12, padding: '11px 14px', marginBottom: 14, fontSize: 13, color: C.text }}>
-              <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 4 }}><Flag size={16} weight="fill" color={C.red} /></span> <b>{view.flagged}</b> item(s) flagged — resolve or price these before signing the lease.
-            </div>
-          )}
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: '6px 14px' }}>
-            {view.list.map((it) => {
-              const st = stateOf(it);
-              const bar = st === 'passed' ? C.green : st === 'flagged' ? C.red : C.border;
-              return (
-                <div key={it.id} style={{ display: 'flex', gap: 12, alignItems: 'center', borderBottom: `1px solid ${C.border}`, borderLeft: `3px solid ${bar}`, paddingLeft: 10, padding: '11px 4px 11px 10px' }}>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: st === 'passed' ? C.faint : C.text, textDecoration: st === 'passed' ? 'line-through' : 'none' }}>{it.title}</span>
-                  <button onClick={() => mark(it, 'passed')} disabled={busy[it.id]} style={pill(st === 'passed', C.green)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}><CheckCircle size={13} weight="regular" /> Pass</span></button>
-                  <button onClick={() => mark(it, 'flagged')} disabled={busy[it.id]} style={pill(st === 'flagged', C.red)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}><Flag size={13} weight="regular" /> Flag</span></button>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
+        {loading ? (
+          <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
+        ) : view.list.length === 0 ? (
+          <SectionCard>
+            <PremiumEmpty
+              icon={<Clipboard size={32} weight="duotone" color={C.gold} />}
+              title="No pre-site checklist for this site"
+              description={`Sites launched from the template come pre-loaded with the ${PRESITE_CHECKLIST.length}-point pre-site feasibility inspection.`}
+            />
+          </SectionCard>
+        ) : (
+          <>
+            <StatStrip items={[
+              { label: 'Reviewed', value: `${view.reviewed}/${view.list.length}`, accent: view.pct >= 100 ? C.green : C.gold },
+              { label: 'Passed', value: String(view.passed), accent: C.green },
+              { label: 'Flagged', value: String(view.flagged), accent: view.flagged ? C.red : undefined, sub: view.flagged ? 'needs resolution' : 'clear' },
+              { label: 'Complete', value: `${view.pct}%`, accent: view.pct >= 100 ? C.green : C.gold },
+            ]} />
+            {view.flagged > 0 && (
+              <div style={{ background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.25)', borderRadius: 12, padding: '11px 14px', marginBottom: 14, fontSize: 13, color: C.text }}>
+                <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginRight: 4 }}><Flag size={16} weight="fill" color={C.red} /></span> <b>{view.flagged}</b> item(s) flagged — resolve or price these before signing the lease.
+              </div>
+            )}
+            <SectionCard
+              icon={<Clipboard size={16} weight="duotone" color={C.gold} />}
+              title="Feasibility Checklist"
+              subtitle={`${view.list.length} points — pass what clears, flag what could kill or re-price the deal`}
+              bodyStyle={{ padding: '6px 20px 10px' }}
+            >
+              {view.list.map((it) => {
+                const st = stateOf(it);
+                const bar = st === 'passed' ? C.green : st === 'flagged' ? C.red : C.border;
+                return (
+                  <div key={it.id} style={{ display: 'flex', gap: 12, alignItems: 'center', borderBottom: `1px solid rgba(255,255,255,0.07)`, borderLeft: `3px solid ${bar}`, paddingLeft: 10, padding: '11px 4px 11px 10px' }}>
+                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: st === 'passed' ? C.faint : C.text, textDecoration: st === 'passed' ? 'line-through' : 'none' }}>{it.title}</span>
+                    <button onClick={() => mark(it, 'passed')} disabled={busy[it.id]} className="pmBtn" style={pill(st === 'passed', C.green)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}><CheckCircle size={13} weight="regular" /> Pass</span></button>
+                    <button onClick={() => mark(it, 'flagged')} disabled={busy[it.id]} className="pmBtn" style={pill(st === 'flagged', C.red)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle' }}><Flag size={13} weight="regular" /> Flag</span></button>
+                  </div>
+                );
+              })}
+            </SectionCard>
+          </>
+        )}
+      </div>
+    </PremiumSurface>
   );
 }

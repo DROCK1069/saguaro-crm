@@ -10,6 +10,7 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
+import { VERTICAL_COST_CODE } from '@/lib/taxonomy';
 import {
   Package,
   Storefront,
@@ -36,13 +37,8 @@ const fmtDate = (d?: string | null) => {
 };
 const titleCase = (s: string) => s.replace(/[_-]+/g, ' ').replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1));
 
-/** Vertical -> CSI cost code, so catalog POs commit into the right budget line. */
-const VERTICAL_COST_CODE: Record<string, string> = {
-  'Low Voltage & Networking': '27 00 00', 'Electrical': '26 00 00', 'Plumbing': '22 00 00',
-  'HVAC': '23 00 00', 'Flooring & Carpet': '09 00 00', 'Drywall': '09 00 00', 'Paint': '09 00 00',
-  'Framing & Lumber': '06 00 00', 'Concrete': '03 00 00', 'Roofing': '07 00 00',
-  'Doors & Windows': '08 00 00', 'Insulation': '07 00 00',
-};
+// Vertical -> CSI cost code lives in the single taxonomy module (@/lib/taxonomy
+// VERTICAL_COST_CODE) so catalog POs and every vertical dropdown share one list.
 
 interface Offer {
   vendor: string;

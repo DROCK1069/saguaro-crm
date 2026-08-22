@@ -4,14 +4,14 @@ import Link from 'next/link';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useVerifications, createVerification, decideVerification } from '@/lib/hooks/useFranchise';
 import { ROLLOUT_STAGES, STAGE_META } from '@/lib/franchise-template';
-import {
-  C, font, fmtDate, useFranchiseGate, GateLoading, PageHeader, Tile, Chip, SearchInput, EmptyState,
-} from '@/components/franchise/kit';
-import { VideoCamera, MapPin, Camera, CheckCircle, XCircle, AirplaneTilt, Globe, House, FilmSlate, Phone, LinkSimple } from '@phosphor-icons/react';
+import { C, font, fmtDate, useFranchiseGate, GateLoading, Chip, SearchInput } from '@/components/franchise/kit';
+import { PremiumSurface, ModuleHero, StatStrip, SectionCard, PremiumEmpty, GoldButton, GhostButton, Pill } from '@/components/ui/premium';
+import { VideoCamera, MapPin, Camera, CheckCircle, XCircle, AirplaneTilt, Globe, House, FilmSlate, Phone, LinkSimple, Plus } from '@phosphor-icons/react';
 
 type VStatus = 'pending' | 'verified' | 'rejected';
 const STATUS_COLOR: Record<VStatus, string> = { pending: C.gold, verified: C.green, rejected: C.red };
 const STATUS_LABEL: Record<VStatus, string> = { pending: 'Pending', verified: 'Verified', rejected: 'Rejected' };
+const STATUS_TONE: Record<VStatus, 'gold' | 'green' | 'red'> = { pending: 'gold', verified: 'green', rejected: 'red' };
 
 // Verification methods — remote evidence types plus a physical on-site visit.
 const METHOD_META: Record<string, { label: string; linkLabel: string }> = {
@@ -65,90 +65,114 @@ export default function VerifyHubPage() {
   if (!ready) return null;
 
   return (
-    <div style={{ padding: '28px 24px 60px', maxWidth: 1200, margin: '0 auto', fontFamily: font, color: C.text }}>
-      <PageHeader
-        title="Remote Verification Hub"
-        subtitle="Sign off on site milestones from anywhere — photos, drone, 360°, Matterport, live video, or a physical on-site visit when one is required."
-        right={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button onClick={() => setWalkthrough(true)} style={{ padding: '9px 14px', borderRadius: 10, border: `1px solid ${C.blue}`, background: '#141416', color: C.blue, fontWeight: 800, fontSize: 14, cursor: 'pointer' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><VideoCamera size={15} weight="regular" color={C.blue} /></span> Start Live Walkthrough</button>
-          <button onClick={() => setRequesting({ method: 'site_visit' })} style={{ padding: '9px 14px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#141416', color: C.text, fontWeight: 800, fontSize: 14, cursor: 'pointer' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><MapPin size={15} weight="regular" color={C.text} /></span> Request On-Site Visit</button>
-          <button onClick={() => setRequesting({ method: 'photo' })} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>+ Request Verification</button>
-        </div>}
-      />
+    <PremiumSurface maxWidth={1200} pad="28px 24px 60px">
+      <div style={{ fontFamily: font, color: C.text }}>
+        <ModuleHero
+          eyebrow="Command Center"
+          eyebrowIcon={<Camera size={13} weight="fill" />}
+          title="Remote Verification"
+          accent="Hub"
+          subtitle="Sign off on site milestones from anywhere — photos, drone, 360°, Matterport, live video, or a physical on-site visit when one is required."
+          actions={
+            <>
+              <GhostButton onClick={() => setWalkthrough(true)} icon={<VideoCamera size={15} weight="bold" />}>Start Live Walkthrough</GhostButton>
+              <GhostButton onClick={() => setRequesting({ method: 'site_visit' })} icon={<MapPin size={15} weight="bold" />}>Request On-Site Visit</GhostButton>
+              <GoldButton onClick={() => setRequesting({ method: 'photo' })} icon={<Plus size={15} weight="bold" />}>Request Verification</GoldButton>
+            </>
+          }
+        />
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <Tile label="Pending" value={summary.pending} color={summary.pending ? C.gold : C.green} />
-        <Tile label="Verified" value={summary.verified} color={C.green} />
-        <Tile label="Rejected" value={summary.rejected} color={summary.rejected ? C.red : C.dim} />
-        <Tile label="Sites" value={summary.sites} />
-      </div>
+        {!loading && summary.total > 0 && (
+          <StatStrip items={[
+            { label: 'Pending', value: String(summary.pending), accent: summary.pending ? C.gold : C.green, sub: summary.pending ? 'awaiting your sign-off' : 'all reviewed' },
+            { label: 'Verified', value: String(summary.verified), accent: C.green },
+            { label: 'Rejected', value: String(summary.rejected), accent: summary.rejected ? C.red : undefined },
+            { label: 'Sites', value: String(summary.sites) },
+          ]} />
+        )}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
-        {(['pending', 'verified', 'rejected', 'all'] as const).map((f) => (
-          <Chip key={f} active={filter === f} color={f === 'all' ? C.text : STATUS_COLOR[f as VStatus]}
-            onClick={() => setFilter(f)} count={f === 'all' ? summary.total : (summary as any)[f]}>
-            {f === 'all' ? 'All' : STATUS_LABEL[f as VStatus]}
-          </Chip>
-        ))}
-        <SearchInput value={q} onChange={setQ} placeholder="Search item, site…" />
-      </div>
-
-      {loading ? (
-        <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
-      ) : filtered.length === 0 ? (
-        (verifications as any[]).length === 0 ? (
-          <EmptyState icon={<Camera size={34} weight="regular" color={C.dim} />} title="No verifications yet"
-            body="Request a remote sign-off on a milestone — the field uploads evidence, you review and verify from anywhere before the site advances a stage."
-            action={<button onClick={() => setRequesting({ method: 'photo' })} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: C.gold, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>+ Request your first</button>} />
-        ) : <EmptyState title="Nothing matches this filter" />
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
-          {filtered.map((v) => {
-            const st = statusOf(v);
-            const stage = v.stage ? STAGE_META[v.stage] : null;
-            return (
-              <div key={v.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderLeft: `4px solid ${STATUS_COLOR[st]}`, borderRadius: 14, padding: '15px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800 }}>{v.title}</div>
-                    <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>
-                      {v.project_id ? <Link href={`/app/projects/${v.project_id}`} style={{ color: C.blue, textDecoration: 'none' }}>{v.project_name || 'Site'}</Link> : 'Site'}
-                      {v.project_city ? ` · ${v.project_city}, ${v.project_state}` : ''}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: STATUS_COLOR[st], background: `${STATUS_COLOR[st]}14`, padding: '4px 9px', borderRadius: 999, whiteSpace: 'nowrap' }}>{STATUS_LABEL[st]}</span>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
-                  {v.method && METHOD_META[v.method] && (() => { const MI = METHOD_ICON[v.method]; return <span style={{ fontSize: 11, fontWeight: 700, color: C.text, background: '#1c1c1e', padding: '3px 9px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>{MI && <MI size={12} weight="regular" color={C.text} />}{METHOD_META[v.method].label}</span>; })()}
-                  {stage && <span style={{ fontSize: 11, fontWeight: 700, color: stage.color, background: `${stage.color}18`, padding: '3px 9px', borderRadius: 6 }}>Gate: {stage.label}</span>}
-                  {v.requested_by && <span style={{ fontSize: 11, color: C.dim, padding: '3px 0' }}>Requested by {v.requested_by}</span>}
-                </div>
-
-                {v.evidence_note && <div style={{ fontSize: 13, color: C.dim, marginTop: 10, lineHeight: 1.5 }}>{v.evidence_note}</div>}
-                {v.media_url && (() => { const MI = METHOD_ICON[v.method] || LinkSimple; return <a href={v.media_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: C.blue, marginTop: 8, textDecoration: 'none' }}><MI size={13} weight="regular" color={C.blue} /> View {METHOD_META[v.method]?.label?.toLowerCase() || 'evidence'}</a>; })()}
-                {v.photo_url && <a href={v.photo_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', fontSize: 12, fontWeight: 700, color: C.blue, marginTop: 8, marginLeft: v.media_url ? 12 : 0, textDecoration: 'none' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><Camera size={14} weight="regular" color={C.blue} /></span> View evidence photo</a>}
-
-                {st === 'pending' ? (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                    <button onClick={() => decide(v, 'verified')} disabled={busy[v.id]} style={{ flex: 1, padding: '8px', borderRadius: 9, border: 'none', background: C.green, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><CheckCircle size={15} weight="regular" color="#fff" /></span> Verify</button>
-                    <button onClick={() => decide(v, 'rejected')} disabled={busy[v.id]} style={{ flex: 1, padding: '8px', borderRadius: 9, border: `1px solid ${C.red}`, background: '#141416', color: C.red, fontWeight: 800, fontSize: 13, cursor: 'pointer' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><XCircle size={15} weight="regular" color={C.red} /></span> Reject</button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, fontSize: 12, color: C.dim }}>
-                    <span>{st === 'verified' ? <><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><CheckCircle size={14} weight="fill" color={C.dim} /></span> Verified</> : <><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><XCircle size={14} weight="fill" color={C.dim} /></span> Rejected</>}{v.verified_by ? ` by ${v.verified_by}` : ''}{v.verified_at ? ` · ${fmtDate(v.verified_at)}` : ''}</span>
-                    <button onClick={() => decide(v, 'pending')} disabled={busy[v.id]} style={{ fontSize: 11, fontWeight: 700, color: C.blue, background: 'none', border: 'none', cursor: 'pointer' }}>Reopen</button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+          {(['pending', 'verified', 'rejected', 'all'] as const).map((f) => (
+            <Chip key={f} active={filter === f} color={f === 'all' ? C.text : STATUS_COLOR[f as VStatus]}
+              onClick={() => setFilter(f)} count={f === 'all' ? summary.total : (summary as any)[f]}>
+              {f === 'all' ? 'All' : STATUS_LABEL[f as VStatus]}
+            </Chip>
+          ))}
+          <SearchInput value={q} onChange={setQ} placeholder="Search item, site…" />
         </div>
-      )}
 
-      {requesting && <RequestModal projects={projects} initialMethod={requesting.method} onClose={() => setRequesting(false)} />}
-      {walkthrough && <LiveWalkthroughModal projects={projects} onClose={() => setWalkthrough(false)} />}
-    </div>
+        {loading ? (
+          <div style={{ color: C.dim, padding: 40, textAlign: 'center' }}>Loading…</div>
+        ) : filtered.length === 0 ? (
+          (verifications as any[]).length === 0 ? (
+            <SectionCard>
+              <PremiumEmpty
+                icon={<Camera size={32} weight="duotone" color={C.gold} />}
+                title="No verifications yet"
+                description="Request a remote sign-off on a milestone — the field uploads evidence, you review and verify from anywhere before the site advances a stage."
+                action={<GoldButton onClick={() => setRequesting({ method: 'photo' })} icon={<Plus size={15} weight="bold" />}>Request your first</GoldButton>}
+              />
+            </SectionCard>
+          ) : (
+            <SectionCard>
+              <PremiumEmpty compact icon={<Camera size={26} weight="duotone" color={C.gold} />} title="Nothing matches this filter" description="Clear the search or switch status filters to see the rest of the queue." />
+            </SectionCard>
+          )
+        ) : (
+          <SectionCard
+            icon={<Camera size={16} weight="duotone" color={C.gold} />}
+            title="Verification Requests"
+            subtitle={`${filtered.length} shown · ${summary.pending} pending across ${summary.sites} site${summary.sites === 1 ? '' : 's'}`}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
+              {filtered.map((v) => {
+                const st = statusOf(v);
+                const stage = v.stage ? STAGE_META[v.stage] : null;
+                return (
+                  <div key={v.id} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,0.07)`, borderLeft: `4px solid ${STATUS_COLOR[st]}`, borderRadius: 14, padding: '15px 16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 800 }}>{v.title}</div>
+                        <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>
+                          {v.project_id ? <Link href={`/app/projects/${v.project_id}`} style={{ color: C.blue, textDecoration: 'none' }}>{v.project_name || 'Site'}</Link> : 'Site'}
+                          {v.project_city ? ` · ${v.project_city}, ${v.project_state}` : ''}
+                        </div>
+                      </div>
+                      <Pill tone={STATUS_TONE[st]} caps>{STATUS_LABEL[st]}</Pill>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
+                      {v.method && METHOD_META[v.method] && (() => { const MI = METHOD_ICON[v.method]; return <span style={{ fontSize: 11, fontWeight: 700, color: C.text, background: '#1c1c1e', padding: '3px 9px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>{MI && <MI size={12} weight="regular" color={C.text} />}{METHOD_META[v.method].label}</span>; })()}
+                      {stage && <span style={{ fontSize: 11, fontWeight: 700, color: stage.color, background: `${stage.color}18`, padding: '3px 9px', borderRadius: 6 }}>Gate: {stage.label}</span>}
+                      {v.requested_by && <span style={{ fontSize: 11, color: C.dim, padding: '3px 0' }}>Requested by {v.requested_by}</span>}
+                    </div>
+
+                    {v.evidence_note && <div style={{ fontSize: 13, color: C.dim, marginTop: 10, lineHeight: 1.5 }}>{v.evidence_note}</div>}
+                    {v.media_url && (() => { const MI = METHOD_ICON[v.method] || LinkSimple; return <a href={v.media_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: C.blue, marginTop: 8, textDecoration: 'none' }}><MI size={13} weight="regular" color={C.blue} /> View {METHOD_META[v.method]?.label?.toLowerCase() || 'evidence'}</a>; })()}
+                    {v.photo_url && <a href={v.photo_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', fontSize: 12, fontWeight: 700, color: C.blue, marginTop: 8, marginLeft: v.media_url ? 12 : 0, textDecoration: 'none' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><Camera size={14} weight="regular" color={C.blue} /></span> View evidence photo</a>}
+
+                    {st === 'pending' ? (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                        <button onClick={() => decide(v, 'verified')} disabled={busy[v.id]} className="pmBtn" style={{ flex: 1, padding: '8px', borderRadius: 9, border: 'none', background: C.green, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><CheckCircle size={15} weight="regular" color="#fff" /></span> Verify</button>
+                        <button onClick={() => decide(v, 'rejected')} disabled={busy[v.id]} className="pmBtn" style={{ flex: 1, padding: '8px', borderRadius: 9, border: `1px solid ${C.red}`, background: '#141416', color: C.red, fontWeight: 800, fontSize: 13, cursor: 'pointer' }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><XCircle size={15} weight="regular" color={C.red} /></span> Reject</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, fontSize: 12, color: C.dim }}>
+                        <span>{st === 'verified' ? <><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><CheckCircle size={14} weight="fill" color={C.dim} /></span> Verified</> : <><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><XCircle size={14} weight="fill" color={C.dim} /></span> Rejected</>}{v.verified_by ? ` by ${v.verified_by}` : ''}{v.verified_at ? ` · ${fmtDate(v.verified_at)}` : ''}</span>
+                        <button onClick={() => decide(v, 'pending')} disabled={busy[v.id]} style={{ fontSize: 11, fontWeight: 700, color: C.blue, background: 'none', border: 'none', cursor: 'pointer' }}>Reopen</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
+
+        {requesting && <RequestModal projects={projects} initialMethod={requesting.method} onClose={() => setRequesting(false)} />}
+        {walkthrough && <LiveWalkthroughModal projects={projects} onClose={() => setWalkthrough(false)} />}
+      </div>
+    </PremiumSurface>
   );
 }
 
@@ -160,7 +184,7 @@ function LiveWalkthroughModal({ projects, onClose }: { projects: any[]; onClose:
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: string, v: any) => setF((p) => ({ ...p, [k]: v }));
-  const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, outline: 'none', background: '#1c1c1e', width: '100%' };
+  const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, outline: 'none', background: '#1c1c1e', color: C.text, width: '100%' };
   const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4, display: 'block' };
 
   const PLATFORMS: Record<string, { label: string; instant: boolean; url?: string }> = {
@@ -206,8 +230,8 @@ function LiveWalkthroughModal({ projects, onClose }: { projects: any[]; onClose:
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px', overflow: 'auto' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, borderRadius: 16, padding: 24, width: 'min(540px, 100%)', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', fontFamily: font }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,4,8,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px', overflow: 'auto' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: 'min(540px, 100%)', boxShadow: '0 24px 80px rgba(2,4,8,0.55)', fontFamily: font, color: C.text }}>
         <div style={{ fontSize: 19, fontWeight: 900, marginBottom: 4 }}><span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><VideoCamera size={20} weight="regular" color={C.text} /></span> Start Live Walkthrough</div>
         <p style={{ fontSize: 13, color: C.dim, margin: '0 0 16px', lineHeight: 1.5 }}>Launch a live video walkthrough with the field and log it against the site. The call opens in your video app; Saguaro records that the walkthrough happened so you can verify the milestone after.</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -221,8 +245,8 @@ function LiveWalkthroughModal({ projects, onClose }: { projects: any[]; onClose:
         </div>
         {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button onClick={launch} disabled={busy} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.blue, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Launching…' : <><PIcon size={15} weight="regular" color="#fff" /> Launch &amp; log</>}</button>
-          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#141416', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          <GoldButton onClick={launch} disabled={busy} icon={busy ? undefined : <PIcon size={15} weight="regular" />}>{busy ? 'Launching…' : 'Launch & log'}</GoldButton>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
         </div>
       </div>
     </div>
@@ -234,7 +258,7 @@ function RequestModal({ projects, initialMethod, onClose }: { projects: any[]; i
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const set = (k: string, v: any) => setF((p) => ({ ...p, [k]: v }));
-  const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, outline: 'none', background: '#1c1c1e', width: '100%' };
+  const inp: React.CSSProperties = { padding: '9px 11px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, outline: 'none', background: '#1c1c1e', color: C.text, width: '100%' };
   const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4, display: 'block' };
   const isVisit = f.method === 'site_visit';
   const mm = METHOD_META[f.method] || METHOD_META.photo;
@@ -248,8 +272,8 @@ function RequestModal({ projects, initialMethod, onClose }: { projects: any[]; i
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px', overflow: 'auto' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, borderRadius: 16, padding: 24, width: 'min(540px, 100%)', boxShadow: '0 24px 80px rgba(0,0,0,0.3)', fontFamily: font }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(2,4,8,0.6)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px', overflow: 'auto' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: 'min(540px, 100%)', boxShadow: '0 24px 80px rgba(2,4,8,0.55)', fontFamily: font, color: C.text }}>
         <div style={{ fontSize: 19, fontWeight: 900, marginBottom: 4 }}>{isVisit ? 'Request On-Site Visit' : 'Request Verification'}</div>
         <p style={{ fontSize: 13, color: C.dim, margin: '0 0 16px', lineHeight: 1.5 }}>{isVisit
           ? 'Flag a site where a physical on-site visit is required (additional fee). It lands as a pending item until the visit is completed and signed off.'
@@ -265,8 +289,8 @@ function RequestModal({ projects, initialMethod, onClose }: { projects: any[]; i
         </div>
         {err && <div style={{ color: C.red, fontSize: 13, marginTop: 10 }}>{err}</div>}
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button onClick={submit} disabled={busy} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: busy ? C.dim : C.gold, color: '#fff', fontWeight: 800, cursor: busy ? 'default' : 'pointer' }}>{busy ? 'Saving…' : isVisit ? 'Request visit' : 'Request verification'}</button>
-          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#141416', color: C.dim, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          <GoldButton onClick={submit} disabled={busy}>{busy ? 'Saving…' : isVisit ? 'Request visit' : 'Request verification'}</GoldButton>
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
         </div>
       </div>
     </div>
