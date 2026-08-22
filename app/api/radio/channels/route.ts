@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { hasEntitlement, upsell } from '@/lib/entitlements';
 import { requirePermission } from '@/lib/permissions';
 
 /**
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
   const g = await requirePermission(req, 'Projects', 'View');
   if (!g.ok) return g.res;
   const db = g.db as any, t = g.user.tenantId, uid = g.user.id;
+  if (!(await hasEntitlement(db, t, 'radio'))) return NextResponse.json(upsell('radio'), { status: 403 });
   try {
     const projectId = req.nextUrl.searchParams.get('projectId');
 
@@ -80,6 +82,7 @@ export async function POST(req: NextRequest) {
   const g = await requirePermission(req, 'Projects', 'Edit');
   if (!g.ok) return g.res;
   const db = g.db as any, t = g.user.tenantId;
+  if (!(await hasEntitlement(db, t, 'radio'))) return NextResponse.json(upsell('radio'), { status: 403 });
   try {
     const body = await req.json().catch(() => ({}));
     const name = String(body.name || '').trim();

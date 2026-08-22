@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { hasEntitlement, upsell } from '@/lib/entitlements';
 import { requirePermission } from '@/lib/permissions';
 import { createServerClient } from '@/lib/supabase-server';
 import { createNotification } from '@/lib/notifications';
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
   const g = await requirePermission(req, 'Projects', 'View');
   if (!g.ok) return g.res;
   const t = g.user.tenantId;
+  if (!(await hasEntitlement(createServerClient() as any, t, 'radio'))) return NextResponse.json(upsell('radio'), { status: 403 });
   try {
     const form = await req.formData();
     const channelId = String(form.get('channelId') || '');
