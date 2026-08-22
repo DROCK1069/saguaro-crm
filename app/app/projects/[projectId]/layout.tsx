@@ -10,7 +10,7 @@ import {
   ShieldCheck, IdentificationBadge, ClipboardText, Camera, MagnifyingGlass,
   HardHat, CheckCircle, CheckSquare, Timer, Question, Export, ChatCircle,
   Folder, Bank, BookOpen, Users, Globe, Laptop, ArrowsSplit, Plug, Shield,
-  WifiHigh, Gear, Robot, ChartBar, Brain, CaretLeft, CaretRight, ArrowLeft, X,
+  WifiHigh, Broadcast, Gear, Robot, ChartBar, Brain, CaretLeft, CaretRight, ArrowLeft, X,
 } from '@phosphor-icons/react';
 
 const GOLD = '#F59E0B'; const DARK = '#0a0a0a'; const RAISED = '#141416';
@@ -99,6 +99,7 @@ const NAV_SECTIONS = [
       { label: 'Cables',           href: '/network/cables',     icon: Plug, badge: null },
       { label: 'Firewall',         href: '/network/firewall',   icon: Shield,  badge: null },
       { label: 'WiFi',             href: '/network/wifi',       icon: WifiHigh, badge: null },
+      { label: 'Signal Studio',    href: '/app/signal-studio',  icon: Broadcast, badge: null },
       { label: 'Config Gen',       href: '/network/config',     icon: Gear,  badge: null },
       { label: 'AI Wizard',        href: '/network/wizard',     icon: Robot, badge: null },
       { label: 'Reports',          href: '/network/reports',    icon: ChartBar, badge: null },
@@ -135,8 +136,9 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
   }, [pathname]);
 
   const isActive = (href: string) => {
-    const full = base + href;
     if (href === '') return pathname === base;
+    // App-level modules (absolute /app/... hrefs) live outside the project base.
+    const full = href.startsWith('/app/') ? href : base + href;
     return pathname.startsWith(full);
   };
 
@@ -177,7 +179,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             return (
               <Link
                 key={item.href}
-                href={base + item.href}
+                href={item.href.startsWith('/app/') ? `${item.href}?projectId=${projectId}` : base + item.href}
                 title={isCollapsed ? item.label : undefined}
                 style={{
                   display: 'flex',

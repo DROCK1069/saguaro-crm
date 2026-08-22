@@ -43,6 +43,11 @@ export interface Device {
   typeId: DeviceTypeId;
   pos: Pt;
   label?: string;
+  /** True when the ENGINE placed this device (smart.autoPlaceAPs / smart.placeInGap).
+   *  Re-running auto-design ignores these as anchors and smart.replaceAutoPlacedAps
+   *  swaps them out (replace-not-append) — hand-placed devices (field omitted) are
+   *  never dropped by auto-design. */
+  autoPlaced?: boolean;
   // RF (wifi_ap / ble_beacon / iot_gateway)
   band?: Band;
   txPowerDbm?: number;

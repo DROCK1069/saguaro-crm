@@ -5,8 +5,8 @@
 import type { Pt } from './geometry';
 import { dist, pointInPolygon } from './geometry';
 import type { Band, CoverageResult, Device, Env, GapRegion, HeatmapProject } from './types';
-import { apRssiAt, apUsableRadiusFt, computeCoverage, type CoverageOpts } from './engine';
-import { CHANNELS_24, CHANNELS_5 } from './models';
+import { apUsableRadiusFt, cellRf, computeCoverage, healthScoreFromStats, MIN_SINR_COVER_DB, type CoverageOpts } from './engine';
+import { CHANNELS_24, CHANNELS_5, RF_GAIN_DEFAULT_DBI, RF_TX_DEFAULT_DBM } from './models';
 import { UNIFI_APS } from './unifi';
 import type { UnifiAP } from './unifi';
 
@@ -38,6 +38,23 @@ function resolveBand(model: UnifiAP, want: Band): Band {
   if (model.txDbm['5'] != null) return '5';
   const first = Object.keys(model.txDbm)[0] as Band | undefined;
   return first ?? '5';
+}
+
+/** Resolve the radio to model with: explicit tx+gain (any vendor) wins, else the real
+ *  UniFi catalog model. Shared by autoPlaceAPs and placeInGap so the two placement
+ *  paths can never disagree about the hardware they simulate. */
+function resolveRadio(opts: {
+  band?: Band; apModel?: string; txPowerDbm?: number; antennaGainDbi?: number; label?: string;
+}): { band: Band; txPowerDbm: number; antennaGainDbi: number; label: string } {
+  const useExplicit = opts.txPowerDbm != null && opts.antennaGainDbi != null;
+  const model = useExplicit ? null : resolveApModel(opts.apModel);
+  const band = useExplicit ? (opts.band ?? '5') : resolveBand(model!, opts.band ?? '5');
+  return {
+    band,
+    txPowerDbm: useExplicit ? opts.txPowerDbm! : (model!.txDbm[band] ?? model!.txDbm['5'] ?? 15),
+    antennaGainDbi: useExplicit ? opts.antennaGainDbi! : model!.gainDbi,
+    label: useExplicit ? (opts.label ?? 'AP') : model!.model,
+  };
 }
 
 /* ── Footprint + area (foolproof auto-design foundation) ─────────────────────
@@ -108,6 +125,27 @@ export function areaPerApFt2(env: Env, density: CoverageDensity = 'standard'): n
   return Math.round(base * mult);
 }
 
+/** Minimum center-to-center AP separation (ft) for a given area-per-AP budget:
+ *  0.55 × the radius of the circle one AP is budgeted to serve, floored at 12 ft.
+ *  Two radios closer than this are one radio's coverage plus extra co-channel
+ *  interference — the "auto-design stacked an AP on an AP" failure mode. Every
+ *  engine placement path (seeding, gap-fill, placeInGap) enforces this invariant. */
+export function minApSeparationFt(perApFt2: number): number {
+  return Math.max(12, 0.55 * Math.sqrt(perApFt2 / Math.PI));
+}
+/** Keep points ≥ minSepPx from every `fixed` point and from each other (order-preserving).
+ *  Also collapses Lloyd-relaxation collisions (two seeds snapped to one candidate). */
+function enforceMinSep(pts: Pt[], fixed: Pt[], minSepPx: number): Pt[] {
+  const kept: Pt[] = [];
+  for (const q of pts) {
+    let ok = true;
+    for (const f of fixed) if (dist(q, f) < minSepPx) { ok = false; break; }
+    if (ok) for (const k of kept) if (dist(q, k) < minSepPx) { ok = false; break; }
+    if (ok) kept.push(q);
+  }
+  return kept;
+}
+
 /** Sample points on a grid that fall INSIDE the footprint polygon (image px). */
 function interiorPoints(poly: Pt[], spacingPx: number): Pt[] {
   const b = bboxOf(poly);
@@ -126,10 +164,11 @@ const nearest = (q: Pt, pts: Pt[]): Pt => pts.reduce((best, p) => (dist(q, p) < 
  *  repelled from any already-placed APs. First point is the one nearest the centroid. */
 function farthestSeed(cands: Pt[], m: number, repel: Pt[]): Pt[] {
   if (!cands.length || m <= 0) return [];
+  const want = Math.min(m, cands.length); // m > |candidates| would loop into duplicate cands[0] picks
   const cx = cands.reduce((s, p) => s + p.x, 0) / cands.length;
   const cy = cands.reduce((s, p) => s + p.y, 0) / cands.length;
   const chosen: Pt[] = [nearest({ x: cx, y: cy }, cands)];
-  while (chosen.length < m) {
+  while (chosen.length < want) {
     let best = -1, bestD = -1;
     for (let i = 0; i < cands.length; i++) {
       let md = Infinity;
@@ -164,10 +203,16 @@ function lloyd(aps: Pt[], cands: Pt[], iters: number): Pt[] {
  * APs are spread evenly (k-center + Lloyd), then a bounded gap-fill tops up genuine
  * holes up to the cap. Uses a REAL UniFi model (per-band TX + gain) for BOM accuracy.
  *
- * Wall handling: placement/verify call the same engine.apRssiAt the live heatmap uses,
- * so its shared wall model applies — heavy/structural walls carry full attenuation while
- * light partitions are env-discounted (already in the path-loss exponent). What the
- * optimizer trusts is therefore exactly what the map paints.
+ * Invariants:
+ *  - MIN SEPARATION: no placement (seeded or gap-fill) lands within minApSeparationFt
+ *    of any other AP — the same-spot / stacked-AP failure mode is structurally out.
+ *  - SAME GATE AS THE MAP: verification runs engine.cellRf (shared wall model) with a
+ *    provisional channel plan and requires RSSI ≥ target AND SINR ≥ MIN_SINR_COVER_DB —
+ *    exactly the gate the rendered heatmap paints, so auto-design can never claim
+ *    coverage the map then shows as dead.
+ *  - REPLACE-NOT-APPEND: emitted APs carry autoPlaced: true and previously auto-placed
+ *    APs are ignored as anchors; callers persist via replaceAutoPlacedAps so re-running
+ *    the design converges to the same layout instead of doubling the count.
  */
 export function autoPlaceAPs(
   p: HeatmapProject,
@@ -185,7 +230,7 @@ export function autoPlaceAPs(
 ): {
   aps: Device[]; achievedPct: number; metTarget: boolean;
   areaFt2?: number; footprintFt?: { w: number; h: number }; perApFt2?: number;
-  scaleSuspect?: boolean; apModel?: string;
+  scaleSuspect?: boolean; apModel?: string; minSepFt?: number;
 } {
   const empty = { aps: [] as Device[], achievedPct: 0, metTarget: false };
   if (!p.scale || !(p.scale.pxPerFt > 0)) return empty;
@@ -194,13 +239,9 @@ export function autoPlaceAPs(
 
   // Resolve the band/TX/gain to model with. An explicit tx+gain (any vendor) wins;
   // otherwise fall back to the real UniFi catalog model (unchanged default behavior).
-  const useExplicit = opts.txPowerDbm != null && opts.antennaGainDbi != null;
-  const model = useExplicit ? null : resolveApModel(opts.apModel);
-  const band = useExplicit ? (opts.band ?? '5') : resolveBand(model!, opts.band ?? '5');
-  const modelTxDbm = useExplicit ? opts.txPowerDbm! : (model!.txDbm[band] ?? model!.txDbm['5'] ?? 15);
-  const modelGainDbi = useExplicit ? opts.antennaGainDbi! : model!.gainDbi;
-  const modelLabel = useExplicit ? (opts.label ?? 'AP') : model!.model;
-  const txGain = modelTxDbm + modelGainDbi;
+  const radio = resolveRadio(opts);
+  const band = radio.band;
+  const modelTxDbm = radio.txPowerDbm, modelGainDbi = radio.antennaGainDbi, modelLabel = radio.label;
 
   // ── 1. Footprint + real floor area ──
   const { poly, areaFt2 } = deriveFootprint(p);
@@ -229,48 +270,79 @@ export function autoPlaceAPs(
   if (cells.length < 8) cells = interiorPoints(poly, Math.max(6, step)); // finer fallback for small plans
   if (!cells.length) return empty;
 
-  // Placement/verify use the SAME wall model as the live heatmap (engine.wallLossDb
-  // env-discounts light partitions), so what auto-place trusts == what the map paints.
-  const bestRssi = (cell: Pt, aps: Pt[]): number => {
-    let b = -Infinity;
-    for (const a of aps) { const r = apRssiAt(cell, a, p, band, txGain); if (r > b) b = r; }
-    return b;
+  // ── 3.5 Verification with the SAME gate as the rendered map ──
+  // engine.cellRf (shared wall model) with RSSI ≥ target AND SINR ≥ MIN_SINR_COVER_DB.
+  // Channels are only assigned after placement, so each candidate layout first gets a
+  // PROVISIONAL planChannels pass — RSSI-only verification used to claim coverage the
+  // SINR-gated map then painted dead. Hand-placed APs verify with their REAL radios;
+  // previously auto-placed APs are excluded (replace-not-append, see invariant above).
+  const handAps = p.devices.filter((d) => d.typeId === 'wifi_ap' && !d.autoPlaced);
+  const existing = handAps.map((d) => ({ ...d.pos }));
+  const minSepFt = minApSeparationFt(perAp);
+  const minSepPx = minSepFt * p.scale.pxPerFt;
+  const provisional = (addedPts: Pt[]): Device[] => {
+    const devs: Device[] = [
+      ...handAps.map((d) => ({ ...d })),
+      ...addedPts.map((pos, i): Device => ({
+        id: `prov_${i}`, typeId: 'wifi_ap', pos, band,
+        txPowerDbm: modelTxDbm, antennaGainDbi: modelGainDbi,
+      })),
+    ];
+    const plan = planChannels({ ...p, devices: devs }, band === '2.4' ? '2.4' : '5');
+    for (const d of devs) d.channel = plan[d.id];
+    return devs;
   };
-  const coveredFrac = (aps: Pt[]): { frac: number; worst: Pt | null } => {
-    if (!aps.length) return { frac: 0, worst: cells[0] ?? null };
-    let cov = 0, worstV = Infinity; let worst: Pt | null = null;
+  const verify = (addedPts: Pt[]): { frac: number; site: Pt | null } => {
+    const allPos = existing.concat(addedPts);
+    if (!allPos.length) return { frac: 0, site: cells[0] ?? null };
+    const devs = provisional(addedPts);
+    const sepOk = (c: Pt) => allPos.every((a) => dist(c, a) >= minSepPx);
+    let cov = 0;
+    let worst: Pt | null = null, worstV = Infinity;   // weakest RSSI-starved cell anywhere
+    let far: Pt | null = null, farD = -1;             // farthest min-sep-legal RSSI-starved cell
     for (const cell of cells) {
-      const r = bestRssi(cell, aps);
-      if (r >= target) cov++; else if (r < worstV) { worstV = r; worst = cell; }
+      const rf = cellRf(cell, devs, p);
+      if (rf.signalDbm >= target && rf.sinrDb >= MIN_SINR_COVER_DB) { cov++; continue; }
+      if (rf.signalDbm >= target) continue; // SINR-only failure — another radio would worsen it
+      if (rf.signalDbm < worstV) { worstV = rf.signalDbm; worst = cell; }
+      if (sepOk(cell)) {
+        let md = Infinity;
+        for (const a of allPos) { const d = dist(cell, a); if (d < md) md = d; }
+        if (md > farD) { farD = md; far = cell; }
+      }
     }
-    return { frac: cov / cells.length, worst };
+    // Min-separation invariant: the worst cell is only a legal AP site when it clears
+    // minSepFt of every AP; otherwise relocate to the farthest legal starved cell.
+    const site = worst && sepOk(worst) ? worst : far;
+    return { frac: cov / cells.length, site };
   };
 
-  // ── 4. Place: keep existing APs, add the area-anchored remainder, spread evenly ──
-  const existing = p.devices.filter((d) => d.typeId === 'wifi_ap').map((d) => ({ ...d.pos }));
+  // ── 4. Place: keep HAND-PLACED APs as anchors, add the area-anchored remainder,
+  // spread evenly. Every placement honors the min-separation invariant. ──
   const targetCount = Math.min(areaCount, maxDevices); // never exceed the density / scale-suspect cap
   const toAdd = Math.max(existing.length ? 0 : 1, targetCount - existing.length);
   let added = farthestSeed(cells, toAdd, existing);
   if (added.length > 1) added = lloyd(added, cells, 2);
+  added = enforceMinSep(added, existing, minSepPx); // drop Lloyd collisions / same-spot seeds
 
-  // ── 5. Bounded gap-fill: only close GENUINE holes, never exceed the density cap ──
-  let all = existing.concat(added);
-  let { frac, worst } = coveredFrac(all);
+  // ── 5. Bounded gap-fill: only close GENUINE RSSI holes, never exceed the density
+  // cap, never violate min separation (verify() only ever proposes legal sites) ──
+  let { frac, site } = verify(added);
   let guard = 0;
-  while (frac < targetPct && all.length < maxDevices && worst && guard++ < 30) {
-    added.push(worst);
-    all = existing.concat(added);
-    ({ frac, worst } = coveredFrac(all));
+  while (frac < targetPct && existing.length + added.length < maxDevices && site && guard++ < 30) {
+    added.push(site);
+    ({ frac, site } = verify(added));
   }
 
   const placed: Device[] = added.map((pos) => ({
     id: uid(), typeId: 'wifi_ap', pos: { ...pos }, band,
     txPowerDbm: modelTxDbm, antennaGainDbi: modelGainDbi, label: modelLabel,
+    autoPlaced: true,
   }));
   return {
     aps: placed, achievedPct: frac, metTarget: frac >= targetPct,
     // design basis (surfaced by the UI so the count is transparent + auditable)
-    areaFt2, footprintFt, perApFt2: perAp, scaleSuspect, apModel: modelLabel,
+    areaFt2, footprintFt, perApFt2: perAp, scaleSuspect, apModel: modelLabel, minSepFt,
   };
 }
 
@@ -295,6 +367,87 @@ export function gapsWorthFixing(p: HeatmapProject, gaps: GapRegion[], existingAp
   const cap = Math.max(1, Math.ceil(areaFt2 / 1500));
   const room = Math.max(0, cap - existingApCount);
   return real.slice(0, room);
+}
+
+/** Outcome of a placeInGap fix attempt. `skipped` gaps place NO hardware — report why. */
+export interface GapFix {
+  /** The AP to add (tagged autoPlaced), or null when the gap was skipped. */
+  device: Device | null;
+  skipped: boolean;
+  /** Why the gap was skipped: no scale, nothing actually uncovered inside it, or no
+   *  legal site clears the min-separation invariant (placement/antenna tweak instead). */
+  reason?: 'unscaled' | 'no-uncovered-cell' | 'min-separation';
+}
+
+/**
+ * Place ONE AP to close a detected dead zone — the engine-owned "fix dead zones" op.
+ * Targets the WORST UNCOVERED CELL inside the gap region, NEVER the raw centroid: a
+ * concave or annular dead zone's centroid is the MEAN of its member cells and can
+ * land directly ON the existing AP the zone wraps around (the same-spot killer).
+ * Coverage is judged with the SAME RSSI + SINR gate the rendered map paints, and the
+ * min-separation invariant holds: a site within minApSeparationFt of any existing AP
+ * is relocated to the farthest legal uncovered cell in the gap, else the gap is
+ * skipped and reported (small shadows are placement/antenna tweaks, not hardware).
+ */
+export function placeInGap(
+  p: HeatmapProject,
+  gap: GapRegion,
+  opts: {
+    band?: Band; apModel?: string; txPowerDbm?: number; antennaGainDbi?: number; label?: string;
+    density?: CoverageDensity;
+    /** Explicit floor-area-per-AP override (ft²) — must match the autoPlaceAPs call. */
+    areaPerApFt2?: number;
+  } = {},
+): GapFix {
+  if (!p.scale || !(p.scale.pxPerFt > 0)) return { device: null, skipped: true, reason: 'unscaled' };
+  const radio = resolveRadio(opts);
+  const perAp = opts.areaPerApFt2 ?? areaPerApFt2(p.env, opts.density ?? 'standard');
+  const minSepPx = minApSeparationFt(perAp) * p.scale.pxPerFt;
+  const aps = p.devices.filter((d) => d.typeId === 'wifi_ap');
+  const { poly } = deriveFootprint(p);
+  const target = p.rssiTargetDbm;
+
+  // Sample the gap REGION (bbox masked to the footprint) with the map's combined gate.
+  const b = gap.bbox;
+  const spacing = Math.max(4, p.scale.pxPerFt * 2, b.w / 24, b.h / 24); // ~2 ft, ≤ ~600 samples
+  let worstCell: Pt | null = null; let worstV = Infinity;  // weakest uncovered cell in the gap
+  let farCell: Pt | null = null; let farD = -1;            // farthest min-sep-legal uncovered cell
+  for (let y = b.y + spacing / 2; y < b.y + b.h; y += spacing) {
+    for (let x = b.x + spacing / 2; x < b.x + b.w; x += spacing) {
+      const q = { x, y };
+      if (!pointInPolygon(q, poly)) continue;
+      const rf = aps.length ? cellRf(q, aps, p) : null;
+      const covered = rf != null && rf.signalDbm >= target && rf.sinrDb >= MIN_SINR_COVER_DB;
+      if (covered) continue;
+      const v = rf ? rf.signalDbm : -Infinity;
+      if (v < worstV) { worstV = v; worstCell = q; }
+      let md = Infinity;
+      for (const a of aps) { const d = dist(q, a.pos); if (d < md) md = d; }
+      if (md >= minSepPx && md > farD) { farD = md; farCell = q; }
+    }
+  }
+  if (!worstCell) return { device: null, skipped: true, reason: 'no-uncovered-cell' };
+  const worstLegal = aps.every((a) => dist(worstCell!, a.pos) >= minSepPx);
+  const site = worstLegal ? worstCell : farCell;
+  if (!site) return { device: null, skipped: true, reason: 'min-separation' };
+  return {
+    device: {
+      id: uid(), typeId: 'wifi_ap', pos: { ...site }, band: radio.band,
+      txPowerDbm: radio.txPowerDbm, antennaGainDbi: radio.antennaGainDbi,
+      label: radio.label, autoPlaced: true,
+    },
+    skipped: false,
+  };
+}
+
+/**
+ * Replace-not-append: swap the previous auto-designed Wi-Fi layer for a fresh one.
+ * Hand-placed APs and every non-AP device survive; only wifi_ap devices tagged
+ * autoPlaced are dropped. Running auto-design twice therefore converges to the same
+ * count instead of doubling it (autoPlaceAPs also ignores autoPlaced APs as anchors).
+ */
+export function replaceAutoPlacedAps(existingDevices: Device[], placed: Device[]): Device[] {
+  return existingDevices.filter((d) => !(d.typeId === 'wifi_ap' && d.autoPlaced)).concat(placed);
 }
 
 /** Flood-fill dead-zone regions from a computed RF coverage result. */
@@ -334,17 +487,18 @@ export function disciplineAiDevices(p: HeatmapProject, scanned: Device[]): {
   for (const [t, list] of byType) {
     const cap = areaFt2 > 0 ? capFor(t) : list.length;
     if (list.length <= cap) { kept.push(...list); continue; }
-    // keep the most SPREAD-OUT subset (greedy max-min) — never a random slice
+    // keep the most SPREAD-OUT subset (greedy max-min / farthest-point) — never a
+    // random slice. Incremental nearest-chosen distances make this O(n·cap); the old
+    // chosen.includes() + full rescan per pick was O(n³).
     const chosen: Device[] = [list[0]];
+    const picked = new Uint8Array(list.length); picked[0] = 1;
+    const minD = list.map((d) => dist(d.pos, list[0].pos));
     while (chosen.length < cap) {
-      let best: Device | null = null, bestD = -1;
-      for (const d of list) {
-        if (chosen.includes(d)) continue;
-        const dm = Math.min(...chosen.map((c) => dist(c.pos, d.pos)));
-        if (dm > bestD) { bestD = dm; best = d; }
-      }
-      if (!best) break;
-      chosen.push(best);
+      let bi = -1, bd = -1;
+      for (let i = 0; i < list.length; i++) if (!picked[i] && minD[i] > bd) { bd = minD[i]; bi = i; }
+      if (bi < 0) break;
+      picked[bi] = 1; chosen.push(list[bi]);
+      for (let i = 0; i < list.length; i++) if (!picked[i]) { const dd = dist(list[i].pos, list[bi].pos); if (dd < minD[i]) minD[i] = dd; }
     }
     droppedExcess += list.length - chosen.length;
     kept.push(...chosen);
@@ -396,13 +550,19 @@ export function detectGaps(
 export function planChannels(p: HeatmapProject, band: '2.4' | '5' = '2.4'): Record<string, number> {
   const aps = p.devices.filter((d) => d.typeId === 'wifi_ap');
   const palette = band === '2.4' ? CHANNELS_24 : CHANNELS_5;
-  // interference edge if APs closer than ~1.4× usable radius (footprints overlap)
-  const rPx = (p.scale ? apUsableRadiusFt(p, band, 18, p.rssiTargetDbm) * p.scale.pxPerFt : 300) * 1.4;
+  // interference edge if APs closer than ~1.4× the mean of the two usable radii —
+  // each radius from that AP's ACTUAL radio (txPowerDbm + antennaGainDbi, registry
+  // defaults 15+3 when unset), not a hardcoded txGain of 18 for every model.
+  const radiiPx = aps.map((d) =>
+    p.scale
+      ? apUsableRadiusFt(p, band, (d.txPowerDbm ?? RF_TX_DEFAULT_DBM) + (d.antennaGainDbi ?? RF_GAIN_DEFAULT_DBI), p.rssiTargetDbm) * p.scale.pxPerFt
+      : 300,
+  );
   const adj: Record<string, Set<string>> = {};
   aps.forEach((a) => (adj[a.id] = new Set()));
   for (let i = 0; i < aps.length; i++)
     for (let j = i + 1; j < aps.length; j++)
-      if (dist(aps[i].pos, aps[j].pos) < rPx) { adj[aps[i].id].add(aps[j].id); adj[aps[j].id].add(aps[i].id); }
+      if (dist(aps[i].pos, aps[j].pos) < ((radiiPx[i] + radiiPx[j]) / 2) * 1.4) { adj[aps[i].id].add(aps[j].id); adj[aps[j].id].add(aps[i].id); }
 
   const color: Record<string, number> = {};
   // DSATUR: repeatedly pick uncolored AP with most distinct neighbor-colors
@@ -431,15 +591,14 @@ export function planChannels(p: HeatmapProject, band: '2.4' | '5' = '2.4'): Reco
   return color;
 }
 
-/** Coverage health score (0-100) + key metrics from an RF result. */
+/** Coverage health score (0-100) + key metrics from an RF result. healthScore is THE
+ *  engine score (engine.healthScoreFromStats) — one formula, dimensionless inputs,
+ *  every surface. The second formula that used to live here mixed units (dead-zone
+ *  ft² divided by a CELL COUNT) and could contradict the score the map displayed. */
 export function coverageMetrics(res: CoverageResult, p: HeatmapProject) {
   const s = res.stats;
   const gaps = s.activeType === 'wifi_ap' ? detectGaps(res, p) : { count: 0, totalAreaFt2: 0, regions: [] };
-  const deadPenalty = s.insideCells ? Math.min(1, gaps.totalAreaFt2 / Math.max(1, s.insideCells) / 0.1) : 0;
-  const cov = s.pctCovered / 100;
-  const qual = Math.max(0, Math.min(1, (s.avgValue - -85) / (-55 - -85)));
-  const health = Math.round(100 * (0.6 * cov + 0.25 * qual + 0.15 * (1 - deadPenalty)));
-  return { ...s, healthScore: Math.max(0, Math.min(100, health)), deadZones: gaps.count, deadArea: gaps.totalAreaFt2, gaps: gaps.regions.slice(0, 8) };
+  return { ...s, healthScore: healthScoreFromStats(s), deadZones: gaps.count, deadArea: gaps.totalAreaFt2, gaps: gaps.regions.slice(0, 8) };
 }
 
 export function recompute(p: HeatmapProject, cellPx = 10, opts: CoverageOpts = {}): CoverageResult {

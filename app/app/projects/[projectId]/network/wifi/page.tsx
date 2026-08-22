@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { WifiHigh, Broadcast, UsersThree, MapTrifold, Plus } from '@phosphor-icons/react';
+import { WifiHigh, Broadcast, UsersThree, MapTrifold, Plus, ArrowUpRight } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
 
@@ -48,6 +48,16 @@ interface AccessPoint {
   ssid_ids: string[];
 }
 
+/** Metadata row from GET /api/heatmap/designs — a saved Signal Studio design. */
+interface SavedDesign {
+  id: string;
+  name: string;
+  coverage_percent: number | null;
+  device_count: number;
+  active_type: string | null;
+  updated_at: string;
+}
+
 const SECURITY_TYPES = ['wpa3_enterprise', 'wpa3_personal', 'wpa2_enterprise', 'wpa2_personal', 'open'];
 const BANDS = ['2.4ghz', '5ghz', 'dual', '6ghz'];
 
@@ -69,7 +79,6 @@ const labelStyle: React.CSSProperties = {
 
 export default function WifiManagerPage() {
   const { projectId } = useParams() as { projectId: string };
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [networkProjectId, setNetworkProjectId] = useState('');
   const [networks, setNetworks] = useState<WifiNetwork[]>([]);
   const [aps, setAps] = useState<AccessPoint[]>([]);
@@ -77,8 +86,9 @@ export default function WifiManagerPage() {
   const [showSsidForm, setShowSsidForm] = useState(false);
   const [showApForm, setShowApForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [placeMode, setPlaceMode] = useState(false);
   const [selectedFloor, setSelectedFloor] = useState(1);
+  // Saved Signal Studio designs for this project — real engine runs, listed by name.
+  const [designs, setDesigns] = useState<SavedDesign[]>([]);
 
   const emptySsidForm = {
     ssid: '', security_type: 'wpa2_enterprise', password: '', vlan_id: '', band: 'dual',
@@ -112,99 +122,16 @@ export default function WifiManagerPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Heatmap rendering
+  // Saved Signal Studio designs — independent of the network-module setup, so the
+  // hand-off card can surface them even before this module has data.
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-
-    // Floor plan background
-    ctx.fillStyle = '#141416';
-    ctx.fillRect(0, 0, w, h);
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-    for (let y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-
-    // Draw AP coverage
-    const floorAps = aps.filter(ap => ap.floor === selectedFloor);
-    floorAps.forEach(ap => {
-      const cx = (ap.x_position / 100) * w;
-      const cy = (ap.y_position / 100) * h;
-      const r = (ap.coverage_radius / 100) * Math.min(w, h);
-
-      // Coverage gradient
-      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-      grad.addColorStop(0, 'rgba(34, 197, 94, 0.3)');
-      grad.addColorStop(0.4, 'rgba(234, 179, 8, 0.15)');
-      grad.addColorStop(0.7, 'rgba(239, 68, 68, 0.08)');
-      grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-
-      // AP dot
-      ctx.fillStyle = ap.status === 'online' ? GREEN : ap.status === 'offline' ? RED : '#6B7280';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Label
-      ctx.fillStyle = TEXT;
-      ctx.font = '11px system-ui';
-      ctx.textAlign = 'center';
-      ctx.fillText(ap.name, cx, cy - 14);
-      ctx.fillStyle = DIM;
-      ctx.font = '9px system-ui';
-      ctx.fillText(`Ch ${ap.channel} | ${ap.power_dbm}dBm`, cx, cy + 22);
-    });
-
-    // Legend
-    if (floorAps.length > 0) {
-      ctx.fillStyle = 'rgba(20,20,22,0.9)';
-      ctx.fillRect(w - 160, h - 80, 150, 70);
-      ctx.fillStyle = TEXT;
-      ctx.font = 'bold 10px system-ui';
-      ctx.textAlign = 'left';
-      ctx.fillText('Signal Strength', w - 150, h - 62);
-      const legendItems = [
-        { color: GREEN, label: 'Strong (-30 to -50 dBm)' },
-        { color: GOLD, label: 'Medium (-50 to -70 dBm)' },
-        { color: RED, label: 'Weak (-70 to -85 dBm)' },
-      ];
-      legendItems.forEach((item, i) => {
-        ctx.fillStyle = item.color;
-        ctx.fillRect(w - 150, h - 52 + i * 16, 10, 10);
-        ctx.fillStyle = DIM;
-        ctx.font = '9px system-ui';
-        ctx.fillText(item.label, w - 136, h - 43 + i * 16);
-      });
-    }
-  }, [aps, selectedFloor]);
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!placeMode) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setApForm({ ...apForm, x_position: Math.round(x), y_position: Math.round(y), floor: selectedFloor });
-    setPlaceMode(false);
-    setShowApForm(true);
-  };
+    let cancelled = false;
+    fetch(`/api/heatmap/designs?projectId=${projectId}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (!cancelled && Array.isArray(d?.designs)) setDesigns(d.designs); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   const handleSsidSubmit = async () => {
     if (!ssidForm.ssid || !networkProjectId) return;
@@ -255,7 +182,7 @@ export default function WifiManagerPage() {
         eyebrowIcon={<WifiHigh size={13} weight="fill" color={GOLD} />}
         title="WiFi"
         accent="Manager"
-        subtitle="SSID configuration, access-point placement, and predictive coverage heatmap."
+        subtitle="SSID configuration, access-point inventory, and a hand-off to Signal Studio for real coverage design."
         actions={
           <button onClick={() => setShowSsidForm(!showSsidForm)} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> Add SSID
@@ -386,42 +313,88 @@ export default function WifiManagerPage() {
         </SectionCard>
       </div>
 
-      {/* Heatmap Section */}
+      {/* Signal Studio hand-off — coverage design lives in the real engine, not a sketch */}
+      <div style={{ marginBottom: 24 }}>
+        <SectionCard
+          title="Coverage Design"
+          icon={<MapTrifold size={17} weight="duotone" color={GOLD} />}
+        >
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16,
+            padding: '18px 20px', borderRadius: 12, border: '1px solid rgba(245,184,77,0.28)',
+            background: 'linear-gradient(160deg, rgba(245,158,11,0.08), rgba(255,255,255,0.02))',
+          }}>
+            <div style={{
+              width: 46, height: 46, borderRadius: 12, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(245,184,77,0.12)', border: '1px solid rgba(245,184,77,0.45)',
+            }}>
+              <Broadcast size={24} weight="duotone" color="#F5B84D" />
+            </div>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ color: TEXT, fontSize: 15, fontWeight: 800 }}>Design this floor in Signal Studio</div>
+              <div style={{ color: DIM, fontSize: 12.5, marginTop: 3, lineHeight: 1.5 }}>
+                Physics-based RF propagation over your real floor plan — walls, materials, AP placement, and a priced bid when you approve.
+              </div>
+            </div>
+            <Link href={`/app/signal-studio?projectId=${projectId}`} className="pmBtn" style={{ ...goldButtonStyle, textDecoration: 'none' }}>
+              Open Signal Studio <ArrowUpRight size={15} weight="bold" />
+            </Link>
+          </div>
+
+          {designs.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ color: DIM, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
+                Saved designs for this project
+              </div>
+              <div style={{ display: 'grid', gap: 6 }}>
+                {designs.map(d => (
+                  <div key={d.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                    background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: `1px solid ${BORDER}`,
+                  }}>
+                    <MapTrifold size={16} weight="duotone" color="#F5B84D" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: TEXT, fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                      <div style={{ color: DIM, fontSize: 11, marginTop: 2 }}>
+                        {d.device_count} device{d.device_count === 1 ? '' : 's'}
+                        {typeof d.coverage_percent === 'number' ? ` · ${Math.round(d.coverage_percent)}% predicted coverage` : ''}
+                        {` · updated ${new Date(d.updated_at).toLocaleDateString()}`}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </SectionCard>
+      </div>
+
+      {/* Access Points — inventory only; placement + coverage modeling happen in Signal Studio */}
       <SectionCard
-        title="WiFi Heatmap"
-        icon={<MapTrifold size={17} weight="duotone" color={GOLD} />}
+        title="Access Points"
+        icon={<Broadcast size={17} weight="duotone" color={GOLD} />}
         action={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <select value={selectedFloor} onChange={e => setSelectedFloor(+e.target.value)} style={{ ...inputStyle, width: 120 }}>
               {[1, 2, 3, 4, 5].map(f => <option key={f} value={f}>Floor {f}</option>)}
             </select>
             <button
-              onClick={() => setPlaceMode(!placeMode)}
+              onClick={() => { setApForm({ ...apForm, floor: selectedFloor }); setShowApForm(!showApForm); }}
               style={{
-                padding: '8px 14px', background: placeMode ? `${GREEN}20` : 'rgba(255,255,255,0.05)',
-                color: placeMode ? GREEN : TEXT, border: `1px solid ${placeMode ? GREEN : BORDER}`,
+                padding: '8px 14px', background: 'rgba(255,255,255,0.05)',
+                color: TEXT, border: `1px solid ${BORDER}`,
                 borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
               }}
             >
-              {placeMode ? 'Click to Place AP' : 'Place AP'}
+              {showApForm ? 'Close Form' : 'Add AP'}
             </button>
           </div>
         }
       >
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={500}
-          onClick={handleCanvasClick}
-          style={{
-            width: '100%', height: 'auto', borderRadius: 8, border: `1px solid ${BORDER}`,
-            cursor: placeMode ? 'crosshair' : 'default',
-          }}
-        />
-
-        {/* Place AP Form */}
+        {/* Add AP Form */}
         {showApForm && (
-          <div style={{ marginTop: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: `1px solid ${BORDER}` }}>
+          <div style={{ marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: `1px solid ${BORDER}` }}>
             <h4 style={{ color: TEXT, fontSize: 14, fontWeight: 700, margin: '0 0 12px' }}>Configure Access Point</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               <div>
@@ -433,9 +406,8 @@ export default function WifiManagerPage() {
                 <input value={apForm.model} onChange={e => setApForm({ ...apForm, model: e.target.value })} placeholder="U6-Pro" style={inputStyle} />
               </div>
               <div>
-                <label style={labelStyle}>Coverage Radius</label>
-                <input type="range" min={20} max={150} value={apForm.coverage_radius} onChange={e => setApForm({ ...apForm, coverage_radius: +e.target.value })} style={{ width: '100%' }} />
-                <div style={{ color: DIM, fontSize: 11, textAlign: 'center' }}>{apForm.coverage_radius}px</div>
+                <label style={labelStyle}>Floor</label>
+                <input type="number" min={1} value={apForm.floor} onChange={e => setApForm({ ...apForm, floor: +e.target.value })} style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Channel</label>
@@ -444,10 +416,6 @@ export default function WifiManagerPage() {
               <div>
                 <label style={labelStyle}>Power (dBm)</label>
                 <input type="number" value={apForm.power_dbm} onChange={e => setApForm({ ...apForm, power_dbm: +e.target.value })} style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Position</label>
-                <div style={{ color: DIM, fontSize: 12, fontFamily: 'monospace', padding: '10px 0' }}>X: {apForm.x_position}%, Y: {apForm.y_position}%</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -464,8 +432,8 @@ export default function WifiManagerPage() {
         )}
 
         {/* AP List */}
-        {aps.length > 0 && (
-          <div style={{ marginTop: 16 }}>
+        {aps.length > 0 ? (
+          <div>
             <div style={{ color: DIM, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>ACCESS POINTS ({aps.filter(a => a.floor === selectedFloor).length} on Floor {selectedFloor})</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
               {aps.filter(a => a.floor === selectedFloor).map(ap => (
@@ -483,6 +451,14 @@ export default function WifiManagerPage() {
               ))}
             </div>
           </div>
+        ) : (
+          <PremiumEmpty
+            icon={<Broadcast size={30} weight="duotone" color={GOLD} />}
+            title="No access points logged yet"
+            description="Track installed APs here, or design the placement first in Signal Studio."
+            action={<Link href={`/app/signal-studio?projectId=${projectId}`} className="pmBtn" style={{ ...goldButtonStyle, textDecoration: 'none' }}><ArrowUpRight size={15} weight="bold" /> Open Signal Studio</Link>}
+            compact
+          />
         )}
       </SectionCard>
     </PremiumSurface>

@@ -64,7 +64,7 @@ export function calibrationNote(cal: CalibrationResult | null | undefined): stri
     const pts = `${cal.sampleCount} on-site survey point${cal.sampleCount === 1 ? '' : 's'}`;
     return `Validated against ${pts} — model accuracy ±${cal.rmseAfter.toFixed(1)} dB${medTxt}${better}.`;
   }
-  return 'Predictive design — Ekahau/Hamina-class RF model (±6 dB without an on-site survey).';
+  return 'Predictive RF model — validate on-site with a walk-test survey (import readings to calibrate).';
 }
 
 /**

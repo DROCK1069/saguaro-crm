@@ -81,7 +81,7 @@ const NAV_ITEMS = [
   { label: 'VLANs', href: 'vlans', icon: Shuffle, desc: 'VLAN management' },
   { label: 'Cables', href: 'cables', icon: Plug, desc: 'Cable schedule' },
   { label: 'Firewall', href: 'firewall', icon: Shield, desc: 'Firewall rules' },
-  { label: 'WiFi', href: 'wifi', icon: WifiHigh, desc: 'WiFi & heatmap' },
+  { label: 'WiFi', href: 'wifi', icon: WifiHigh, desc: 'WiFi & Signal Studio' },
   { label: 'Config', href: 'config', icon: Gear, desc: 'Config generator' },
   { label: 'Wizard', href: 'wizard', icon: Robot, desc: 'AI network wizard' },
   { label: 'Reports', href: 'reports', icon: ChartBar, desc: 'Reports & exports' },
@@ -257,7 +257,7 @@ export default function NetworkDashboard() {
               { title: 'AI Network Wizard', desc: 'Describe the site — the wizard drafts the device list, VLAN plan, and IP scheme.' },
               { title: 'Device & VLAN inventory', desc: 'Every switch, AP, and camera tracked with IP, MAC, VLAN, and location.' },
               { title: 'Cable schedule & testing', desc: 'Label every run, log certification results, and watch the pass rate climb.' },
-              { title: 'WiFi heatmap & reports', desc: 'Coverage maps and client-ready closeout documentation.' },
+              { title: 'Signal Studio & reports', desc: 'Physics-based coverage design in Signal Studio, plus client-ready closeout documentation.' },
             ]} />
           </SectionCard>
         </div>

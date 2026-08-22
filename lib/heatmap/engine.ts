@@ -5,7 +5,7 @@
  */
 import type { Pt } from './geometry';
 import { dist, crossings, angleDeg, angleDiff, pointInPolygon } from './geometry';
-import type { Band, CoverageCell, CoverageResult, Device, Env, HeatmapProject, MeasuredPoint, WallMaterialId } from './types';
+import type { Band, CoverageCell, CoverageResult, CoverageStats, Device, Env, HeatmapProject, MeasuredPoint, WallMaterialId } from './types';
 import {
   FT_PER_M, REF_LOSS_1M, PATH_LOSS_EXP, RSSI_ZONES, wallDb, DEVICE_REGISTRY,
   DORI_ZONES, doriDistanceFt, SPL_BANDS, RF_MEASURED_1M, RF_USABLE_FLOOR,
@@ -72,6 +72,30 @@ function antennaOffsetDb(cell: Pt, dev: Device, apPos: Pt): number {
  *  a solidly-excellent near-AP ceiling. avgValue is normalized 0..1 across this span. */
 const RF_QUALITY_LOW = -70;
 const RF_QUALITY_HIGH = -50;
+
+/**
+ * THE health score (0–100) — the ONE formula, used by every surface (the coverage
+ * grid, smart.coverageMetrics, multifloor rollups): 60% coverage + 25% in-band
+ * signal quality + 15% interference-free share of covered cells. Every input is a
+ * dimensionless fraction/percent, so the units always agree — the retired second
+ * formula in smart.ts divided a dead-zone ft² figure by a CELL COUNT and could
+ * contradict the score the map itself displayed.
+ */
+export function healthScoreFromStats(
+  s: Pick<CoverageStats, 'activeType' | 'deviceCount' | 'pctCovered' | 'avgValue' | 'coveredCells' | 'interferedCells'>,
+): number {
+  if (!s.deviceCount) return 0;
+  const isRf = DEVICE_REGISTRY[s.activeType].modelType === 'rf';
+  const qualityNorm = isRf
+    ? clamp01((s.avgValue - RF_QUALITY_LOW) / (RF_QUALITY_HIGH - RF_QUALITY_LOW))
+    : clamp01(s.pctCovered / 100);
+  const interferenceFreeShare = s.coveredCells
+    ? (isRf ? (s.coveredCells - (s.interferedCells ?? 0)) / s.coveredCells : 1)
+    : 0;
+  return Math.round(Math.max(0, Math.min(100,
+    0.60 * s.pctCovered + 0.25 * qualityNorm * 100 + 0.15 * interferenceFreeShare * 100,
+  )));
+}
 
 function pxToFt(px: number, pxPerFt: number) { return px / pxPerFt; }
 function distFt(a: Pt, b: Pt, pxPerFt: number) { return pxToFt(dist(a, b), pxPerFt); }
@@ -387,28 +411,12 @@ export function computeCoverage(p: HeatmapProject, cellPx = 10, opts: CoverageOp
   const pctCovered = inside ? (covered / inside) * 100 : 0;
   const avgValue = valued ? sum / valued : 0;
 
-  // Defensible 0-100 composite: 60% coverage, 25% in-band signal quality,
-  // 15% low-interference (share of covered cells NOT co-channel-degraded).
-  let qualityNorm: number;          // 0..1
-  let interferenceFreeShare: number; // 0..1
-  if (def.modelType === 'rf' && active.length) {
-    qualityNorm = clamp01((avgValue - RF_QUALITY_LOW) / (RF_QUALITY_HIGH - RF_QUALITY_LOW));
-    interferenceFreeShare = covered ? (covered - interferedCoveredCells) / covered : 0;
-  } else if (active.length) {
-    // Non-RF models have no RSSI band or co-channel interference; quality tracks coverage.
-    qualityNorm = clamp01(pctCovered / 100);
-    interferenceFreeShare = covered ? 1 : 0;
-  } else {
-    qualityNorm = 0;
-    interferenceFreeShare = 0;
-  }
-  const healthScore = active.length
-    ? Math.round(Math.max(0, Math.min(100,
-        0.60 * pctCovered +
-        0.25 * qualityNorm * 100 +
-        0.15 * interferenceFreeShare * 100,
-      )))
-    : 0;
+  // ONE health formula everywhere (healthScoreFromStats) — 60% coverage, 25% in-band
+  // signal quality, 15% low-interference (share of covered cells NOT co-channel-degraded).
+  const healthScore = healthScoreFromStats({
+    activeType: p.activeType, deviceCount: active.length, pctCovered, avgValue,
+    coveredCells: covered, interferedCells: interferedCoveredCells,
+  });
 
   const isRf = def.modelType === 'rf';
   return {

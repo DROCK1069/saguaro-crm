@@ -9,8 +9,13 @@
  *      density ceiling entirely (fixed by gapsWorthFixing: ≥150 ft², capped).
  * These tests pin both behaviors so neither regression can come back quietly.
  */
-import type { Device, HeatmapProject } from './types';
-import { autoPlaceAPs, disciplineAiDevices, gapsWorthFixing, recompute, AI_CAMERA_FT2, MIN_GAP_FIX_FT2 } from './smart';
+import type { Device, GapRegion, HeatmapProject } from './types';
+import {
+  areaPerApFt2, autoPlaceAPs, coverageMetrics, disciplineAiDevices, gapsWorthFixing,
+  minApSeparationFt, placeInGap, recompute, replaceAutoPlacedAps, AI_CAMERA_FT2, MIN_GAP_FIX_FT2,
+} from './smart';
+import { healthScoreFromStats } from './engine';
+import { calibrationNote } from './meta';
 import { computeBom } from './bom';
 
 let failures = 0;
@@ -176,6 +181,99 @@ const apCount = (d: Device[]) => d.filter((x) => x.typeId === 'wifi_ap').length;
   has(/door controller/, 'door controller');
   has(/poe switch/, 'PoE switch');
   has(/recorder/, 'NVR');
+}
+
+/* ── J: MIN-SEPARATION INVARIANT — no two APs from one auto-design run may sit
+   closer than minApSeparationFt (the same-spot / stacked-AP killer). Exercised at
+   'max' density on a 6,000 ft² office so several APs must share the floor. ── */
+{
+  const k = 10;
+  const p = proj(100, 60, k); // 6,000 ft²
+  const r = autoPlaceAPs(p, { targetPct: 0.92, density: 'max', ...RADIO });
+  const minSep = minApSeparationFt(r.perApFt2 ?? areaPerApFt2('office', 'max'));
+  let worstPair = Infinity;
+  for (let i = 0; i < r.aps.length; i++)
+    for (let j = i + 1; j < r.aps.length; j++) {
+      const d = Math.hypot(r.aps[i].pos.x - r.aps[j].pos.x, r.aps[i].pos.y - r.aps[j].pos.y) / k;
+      if (d < worstPair) worstPair = d;
+    }
+  check('J1: several APs placed at max density', r.aps.length >= 2, `placed ${r.aps.length}`);
+  check('J2: closest pair ≥ minSepFt', worstPair >= minSep, `closest ${worstPair === Infinity ? 'n/a' : worstPair.toFixed(1)} ft ≥ ${minSep.toFixed(1)} ft`);
+  check('J3: result reports its separation floor', (r.minSepFt ?? 0) === minSep, `minSepFt ${r.minSepFt?.toFixed(1)}`);
+}
+
+/* ── K: REPLACE-NOT-APPEND IDEMPOTENCE — auto-design twice through
+   replaceAutoPlacedAps yields the SAME AP count (converges, never doubles), and a
+   hand-placed AP always survives. ── */
+{
+  const k = 10;
+  const hand: Device = { id: 'hand_ap', typeId: 'wifi_ap', pos: { x: 12 * k, y: 12 * k }, band: '5', txPowerDbm: 20, antennaGainDbi: 5, label: 'Hand AP' };
+  const p: HeatmapProject = { ...proj(100, 60, k), devices: [hand] };
+  const r1 = autoPlaceAPs(p, { targetPct: 0.92, ...RADIO });
+  const d1 = replaceAutoPlacedAps(p.devices, r1.aps);
+  const p2: HeatmapProject = { ...p, devices: d1 };
+  const r2 = autoPlaceAPs(p2, { targetPct: 0.92, ...RADIO });
+  const d2 = replaceAutoPlacedAps(p2.devices, r2.aps);
+  check('K1: every auto AP is tagged autoPlaced', r1.aps.every((a) => a.autoPlaced === true), `${r1.aps.length} placed`);
+  check('K2: run twice → same count (idempotent)', apCount(d2) === apCount(d1), `run1 ${apCount(d1)} APs, run2 ${apCount(d2)} APs`);
+  check('K3: hand-placed AP survives the swap', d2.some((d) => d.id === 'hand_ap'), `${apCount(d2)} APs total`);
+}
+
+/* ── L: ANNULAR DEAD RING — a weak AP covers a disc; the dead zone wraps around it,
+   so the gap CENTROID (mean of member cells) lands ON the AP. placeInGap must place
+   in the ring, never at the centroid, and never within minSepFt of the AP. ── */
+{
+  const k = 10;
+  const weak: Device = { id: 'weak', typeId: 'wifi_ap', pos: { x: 40 * k, y: 40 * k }, band: '5', txPowerDbm: 2, antennaGainDbi: 0, channel: 36 };
+  const p: HeatmapProject = { ...proj(80, 80, k), devices: [weak] };
+  const minSep = minApSeparationFt(areaPerApFt2('office', 'standard'));
+  const ring: GapRegion = { area: 3000, centroid: { x: 40 * k, y: 40 * k }, bbox: { x: 10 * k, y: 10 * k, w: 60 * k, h: 60 * k }, worst: -84 };
+  const fix = placeInGap(p, ring, RADIO);
+  const dFt = fix.device ? Math.hypot(fix.device.pos.x - weak.pos.x, fix.device.pos.y - weak.pos.y) / k : 0;
+  check('L1: annular gap gets a fix AP', !fix.skipped && !!fix.device, `skipped=${fix.skipped}${fix.reason ? ` (${fix.reason})` : ''}`);
+  check('L2: fix is ≥ minSepFt from the wrapped AP (not the centroid)', dFt >= minSep, `${dFt.toFixed(1)} ft ≥ ${minSep.toFixed(1)} ft (centroid would be 0 ft)`);
+  check('L3: fix AP is tagged autoPlaced', fix.device?.autoPlaced === true, `autoPlaced=${fix.device?.autoPlaced}`);
+
+  // L4: every legal site inside the gap violates min separation → SKIP, report why.
+  const tiny: Device = { ...weak, id: 'tiny', txPowerDbm: -10 }; // covers only ~7 ft
+  const pTiny: HeatmapProject = { ...p, devices: [tiny] };
+  const hugging: GapRegion = { area: 400, centroid: { x: 40 * k, y: 40 * k }, bbox: { x: 27 * k, y: 27 * k, w: 26 * k, h: 26 * k }, worst: -88 };
+  const skip = placeInGap(pTiny, hugging, RADIO);
+  check('L4: all-too-close gap is skipped + reported', skip.skipped && skip.device == null && skip.reason === 'min-separation', `skipped=${skip.skipped} reason=${skip.reason}`);
+
+  // L5: fully covered region → nothing to fix, skipped (never stacks hardware).
+  const strong: Device = { ...weak, id: 'strong', txPowerDbm: 26, antennaGainDbi: 6 };
+  const pStrong: HeatmapProject = { ...p, devices: [strong] };
+  const none = placeInGap(pStrong, ring, RADIO);
+  check('L5: covered region → skipped (no phantom gap fix)', none.skipped && none.reason === 'no-uncovered-cell', `skipped=${none.skipped} reason=${none.reason}`);
+}
+
+/* ── M: ONE HEALTH FORMULA, CONSISTENT UNITS — bounded 0–100 at the extremes, and
+   the engine grid, coverageMetrics and healthScoreFromStats can never disagree
+   (the old second formula divided dead-zone ft² by a CELL COUNT). ── */
+{
+  const zero = healthScoreFromStats({ activeType: 'wifi_ap', deviceCount: 0, pctCovered: 100, avgValue: -40, coveredCells: 100, interferedCells: 0 });
+  const floor = healthScoreFromStats({ activeType: 'wifi_ap', deviceCount: 2, pctCovered: 0, avgValue: -200, coveredCells: 0, interferedCells: 0 });
+  const ceil = healthScoreFromStats({ activeType: 'wifi_ap', deviceCount: 2, pctCovered: 100, avgValue: -40, coveredCells: 100, interferedCells: 0 });
+  check('M1: no devices → 0', zero === 0, `${zero}`);
+  check('M2: dead floor → 0', floor === 0, `${floor}`);
+  check('M3: perfect floor → 100', ceil === 100, `${ceil}`);
+
+  const p = proj(60, 40, 10);
+  const r = autoPlaceAPs(p, { targetPct: 0.92, ...RADIO });
+  const design: HeatmapProject = { ...p, devices: replaceAutoPlacedAps(p.devices, r.aps) };
+  const res = recompute(design, cellOf(design));
+  const viaMetrics = coverageMetrics(res, design).healthScore;
+  const viaStats = healthScoreFromStats(res.stats);
+  check('M4: score bounded on a real design', res.stats.healthScore >= 0 && res.stats.healthScore <= 100, `${res.stats.healthScore}`);
+  check('M5: grid, metrics and formula agree', res.stats.healthScore === viaMetrics && viaMetrics === viaStats, `grid ${res.stats.healthScore} = metrics ${viaMetrics} = formula ${viaStats}`);
+}
+
+/* ── N: HONEST CLAIMS — an uncalibrated design must never assert a ±dB accuracy or
+   an Ekahau/Hamina-class equivalence; it directs to a walk-test survey instead. ── */
+{
+  const note = calibrationNote(null);
+  check('N: uncalibrated note is defensible', /walk-test survey/i.test(note) && !/±6 dB/.test(note) && !/Ekahau/i.test(note), note);
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nPASS — AP-count discipline holds through the real engine');

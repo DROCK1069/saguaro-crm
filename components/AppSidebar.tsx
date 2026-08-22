@@ -115,7 +115,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Bids & Estimates', href: '/app/bids',         icon: CurrencyDollar },
       { label: 'Takeoff Studio',   href: '/app/takeoff',      icon: Blueprint, accentKey: 'takeoff' },
       { label: 'Catalog',          href: '/app/catalog',      icon: Package, accentKey: 'catalog' },
-      { label: 'Heatmap',          href: '/field/heatmap',    icon: WifiHigh },
+      { label: 'Signal Studio',    href: '/app/signal-studio', icon: WifiHigh, accentKey: 'signal' },
       { label: 'Intelligence',     href: '/app/intelligence', icon: Brain },
     ],
   },
