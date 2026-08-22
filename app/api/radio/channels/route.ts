@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    let q = db.from('radio_channels').select('id, project_id, name, kind, allow_subs, created_at').eq('tenant_id', t).is('deleted_at', null);
+    let q = db.from('radio_channels').select('id, project_id, name, kind, allow_subs, locked, created_at').eq('tenant_id', t).is('deleted_at', null);
     if (projectId) q = q.or(`project_id.eq.${projectId},project_id.is.null`);
     const { data: channels, error } = await q.order('created_at', { ascending: true });
     if (error) throw error;
@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
       const { data: mem } = await db.from('radio_members').select('channel_id, user_id, monitoring, role, last_seen_at, last_read_at').eq('tenant_id', t).in('channel_id', ids);
       allMembers = (mem || []) as any[];
       const joined = new Set(allMembers.filter((m) => m.user_id === uid).map((m) => m.channel_id));
-      const toJoin = ids.filter((id) => !joined.has(id));
+      const lockedIds = new Set(list.filter((c: any) => c.locked).map((c: any) => c.id));
+      const toJoin = ids.filter((id) => !joined.has(id) && !lockedIds.has(id));
       if (toJoin.length) {
         await db.from('radio_members').insert(toJoin.map((channel_id) => ({ channel_id, tenant_id: t, user_id: uid, display_name: g.user.email || null })) as never);
         for (const id of toJoin) allMembers.push({ channel_id: id, user_id: uid, monitoring: true, role: 'member', last_seen_at: null, last_read_at: null });
@@ -70,7 +71,9 @@ export async function GET(req: NextRequest) {
       };
     }));
 
-    return NextResponse.json({ channels: enriched });
+    // Locked (dispatcher-invite-only) channels are invisible to non-members.
+    const visible = enriched.filter((c: any) => !c.locked || memMap.has(c.id));
+    return NextResponse.json({ channels: visible });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -82,6 +85,43 @@ export async function POST(req: NextRequest) {
   const db = g.db as any, t = g.user.tenantId;
   try {
     const body = await req.json().catch(() => ({}));
+
+    // ── Member profile: call sign + presence status (GroupTalk parity) ──
+    if (body.profile) {
+      const patch: Record<string, unknown> = {};
+      if (typeof body.profile.callSign === 'string') patch.call_sign = body.profile.callSign.trim().slice(0, 24) || null;
+      if (['available', 'busy', 'on_route', 'off'].includes(body.profile.presenceStatus)) patch.presence_status = body.profile.presenceStatus;
+      if (Object.keys(patch).length) {
+        await db.from('radio_members').update(patch as never).eq('tenant_id', t).eq('user_id', g.user.id);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── Direct 1:1 channel (deduped by sorted pair key) ──
+    if (body.directToUserId) {
+      const pair = [g.user.id, String(body.directToUserId)].sort().join(':');
+      const { data: existing } = await db.from('radio_channels').select('id, name').eq('tenant_id', t).eq('direct_key', pair).maybeSingle();
+      if (existing) return NextResponse.json({ channel: existing });
+      const dname = String(body.directToName || 'Direct').trim().slice(0, 60);
+      const { data: ch, error } = await db.from('radio_channels').insert({
+        tenant_id: t, project_id: body.projectId ?? null, kind: 'direct',
+        name: dname, allow_subs: false, direct_key: pair, created_by: g.user.id,
+      } as never).select().single();
+      if (error) throw error;
+      await db.from('radio_members').insert([
+        { channel_id: (ch as any).id, tenant_id: t, user_id: g.user.id, display_name: g.user.email || null },
+        { channel_id: (ch as any).id, tenant_id: t, user_id: body.directToUserId, display_name: dname },
+      ] as never);
+      return NextResponse.json({ channel: ch }, { status: 201 });
+    }
+
+    // ── Lock/unlock (dispatcher-invite-only groups) ──
+    if (body.lockChannelId != null) {
+      await db.from('radio_channels').update({ locked: body.locked === true } as never)
+        .eq('id', body.lockChannelId).eq('tenant_id', t);
+      return NextResponse.json({ ok: true });
+    }
+
     const name = String(body.name || '').trim();
     if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 });
     const { data, error } = await db.from('radio_channels').insert({

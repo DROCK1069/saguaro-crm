@@ -55,6 +55,25 @@ export async function POST(req: NextRequest) {
   const db = g.db as any, t = g.user.tenantId;
   try {
     const body = await req.json().catch(() => ({}));
+    // Broadcast (GroupTalk group-patch parity, the practical version): one
+    // compose can land on several channels at once.
+    if (Array.isArray(body.channelIds) && body.channelIds.length > 1) {
+      const text0 = String(body.body || '').trim();
+      if (!text0) return NextResponse.json({ error: 'body required' }, { status: 400 });
+      const sent: any[] = [];
+      for (const cid of body.channelIds.slice(0, 8)) {
+        if (!(await membership(db, t, g.user.id, cid))) continue;
+        const { data: chb } = await db.from('radio_channels').select('project_id').eq('id', cid).single();
+        const { data: bm } = await db.from('radio_messages').insert({
+          tenant_id: t, channel_id: cid, project_id: (chb as any)?.project_id ?? null,
+          sender_user_id: g.user.id, sender_name: g.user.email || 'Team member',
+          kind: body.kind === 'alert' ? 'alert' : 'text', body: text0,
+        } as never).select().single();
+        if (bm) { sent.push(bm); void translateRadioMessage(db, (bm as any).id, text0); }
+      }
+      return NextResponse.json({ messages: sent, broadcast: sent.length }, { status: 201 });
+    }
+
     const channelId = body.channelId;
     const kind = body.kind === 'alert' ? 'alert' : 'text';
     const text = String(body.body || '').trim();

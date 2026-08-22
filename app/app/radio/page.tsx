@@ -52,6 +52,11 @@ import {
   FastForward,
   ClipboardText,
   Check,
+  Paperclip,
+  ShareNetwork,
+  Copy,
+  Trash,
+  X,
 } from '@phosphor-icons/react';
 import {
   PremiumSurface,
@@ -121,6 +126,16 @@ interface RadioMessage {
   seen_count?: number | null;
   created_at: string;
 }
+/** Guest sharing link (staff rows from GET /api/radio/guest?channelId=). */
+interface GuestLink {
+  id: string;
+  token: string;
+  label: string | null;
+  can_talk: boolean;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
 
 const fetcher = async (url: string) => {
   const r = await fetch(url);
@@ -137,6 +152,16 @@ const isToday = (iso: string) => {
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 };
 const secsLabel = (s: number | null | undefined) => (s ? `${Math.max(1, Math.round(s))}s` : '');
+const sizeLabel = (bytes: number) =>
+  bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+/* Attachments — mirror /api/radio/media's accept list and 50MB cap so a bad
+ * pick fails instantly in the tray instead of round-tripping to a 4xx. */
+const MEDIA_OK = /\.(png|jpe?g|webp|heic|gif|pdf|mp4|mov|webm)$/i;
+const MEDIA_MAX_BYTES = 50 * 1024 * 1024;
+const MEDIA_ACCEPT =
+  'image/png,image/jpeg,image/webp,image/heic,image/gif,.png,.jpg,.jpeg,.webp,.heic,.gif,' +
+  'application/pdf,.pdf,video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm';
 const senderShort = (name: string | null) => {
   const n = (name || 'Unknown').trim();
   return n.includes('@') ? n.split('@')[0] : n;
@@ -516,6 +541,90 @@ export default function RadioDispatchPage() {
     setSending(false);
   };
 
+  /* ── Attach (photos / PDFs / video → /api/radio/media) ──────────────── */
+  /* Paperclip in the composer or drag-drop onto the feed; either way the
+   * file lands in a pending tray with an inline caption prompt first. */
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [mediaCaption, setMediaCaption] = useState('');
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const takeFile = useCallback((f: File | null | undefined) => {
+    if (!f) return;
+    if (!MEDIA_OK.test(f.name || '')) {
+      setPendingFile(null);
+      setAttachError('Unsupported type — the channel takes photos, PDFs, and video (mp4 / mov / webm).');
+      return;
+    }
+    if (f.size > MEDIA_MAX_BYTES) {
+      setPendingFile(null);
+      setAttachError(`Too large (${sizeLabel(f.size)}) — the channel takes files up to 50 MB.`);
+      return;
+    }
+    setAttachError(null);
+    setMediaCaption('');
+    setPendingFile(f);
+  }, []);
+
+  const clearAttach = () => {
+    setPendingFile(null);
+    setMediaCaption('');
+    setAttachError(null);
+  };
+
+  /* Dropping the attachment when the dispatcher switches channels. */
+  useEffect(() => { setPendingFile(null); setMediaCaption(''); setAttachError(null); }, [activeId]);
+
+  const sendMedia = async () => {
+    if (!pendingFile || !activeId || uploadingMedia) return;
+    setUploadingMedia(true);
+    try {
+      const fd = new FormData();
+      fd.append('channelId', activeId);
+      const cap = mediaCaption.trim();
+      if (cap) fd.append('caption', cap);
+      fd.append('file', pendingFile);
+      const r = await fetch('/api/radio/media', { method: 'POST', body: fd });
+      if (r.ok) {
+        clearAttach();
+        await mutateMessages();
+        void mutateChannels(); // rail preview shows the share
+      } else {
+        const j = await r.json().catch(() => null);
+        setAttachError((j && typeof j.error === 'string' && j.error) || `Upload failed (${r.status})`);
+      }
+    } catch { setAttachError('Upload failed — check your connection and try again.'); }
+    setUploadingMedia(false);
+  };
+
+  /* Drag-drop onto the feed — same intake as the paperclip. */
+  const hasFiles = (e: React.DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+  const onFeedDragEnter = (e: React.DragEvent) => {
+    if (!hasFiles(e) || !activeId) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setDragOver(true);
+  };
+  const onFeedDragOver = (e: React.DragEvent) => {
+    if (!hasFiles(e) || !activeId) return;
+    e.preventDefault();
+  };
+  const onFeedDragLeave = (e: React.DragEvent) => {
+    if (!hasFiles(e)) return;
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragOver(false);
+  };
+  const onFeedDrop = (e: React.DragEvent) => {
+    if (!hasFiles(e) || !activeId) return;
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    setDragOver(false);
+    takeFile(e.dataTransfer.files?.[0]);
+  };
+
   /* ── Browser PTT (MediaRecorder, feature-detected) ──────────────────── */
   const [pttSupported, setPttSupported] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -743,6 +852,104 @@ export default function RadioDispatchPage() {
       if (r.ok) setFiledIds((prev) => new Set(prev).add(m.id));
     } catch { /* row simply stays unfiled — dispatcher retries */ }
     setFilingId(null);
+  };
+
+  /* ── Share channel (guest links via /api/radio/guest) ───────────────── */
+  /* Header popover: list + revoke the channel's live links, mint new ones
+   * (label, talk toggle, expiry), copy the absolute guest URL one-click. */
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareRef = useRef<HTMLDivElement | null>(null);
+  const [shareLabel, setShareLabel] = useState('');
+  const [shareTalk, setShareTalk] = useState(true);
+  const [shareDays, setShareDays] = useState<'7' | '30' | '90' | 'never'>('30');
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const linksKey = shareOpen && activeId ? `/api/radio/guest?channelId=${encodeURIComponent(activeId)}` : null;
+  const { data: linkData, error: linkError, mutate: mutateLinks } = useSWR<{ links: GuestLink[] }>(
+    linksKey, fetcher, { revalidateOnFocus: false },
+  );
+  const guestLinks = (linkData?.links ?? []).filter((l) => !l.revoked_at);
+
+  const closeShare = useCallback(() => {
+    setShareOpen(false);
+    setCreatedUrl(null);
+    setShareError(null);
+  }, []);
+  useEffect(() => { closeShare(); setShareLabel(''); }, [activeId, closeShare]);
+  useEffect(() => {
+    if (!shareOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) closeShare();
+    };
+    window.addEventListener('pointerdown', onDown);
+    return () => window.removeEventListener('pointerdown', onDown);
+  }, [shareOpen, closeShare]);
+
+  const guestAbsUrl = (token: string) => `${window.location.origin}/portals/radio/${token}`;
+  const copyShare = async (key: string, text: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopiedKey(key);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopiedKey(null), 1800);
+    } catch { /* clipboard blocked — the URL stays visible to select by hand */ }
+  };
+  useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current); }, []);
+
+  const createGuestLink = async () => {
+    if (!activeId || creatingLink) return;
+    setCreatingLink(true);
+    setShareError(null);
+    try {
+      const payload: Record<string, unknown> = { channelId: activeId, canTalk: shareTalk };
+      const label = shareLabel.trim();
+      if (label) payload.label = label;
+      if (shareDays !== 'never') payload.expiresDays = Number(shareDays);
+      const r = await fetch('/api/radio/guest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.url) {
+        setCreatedUrl(`${window.location.origin}${j.url}`);
+        setShareLabel('');
+        await mutateLinks();
+      } else {
+        setShareError((j && typeof j.error === 'string' && j.error) || `Could not create the link (${r.status})`);
+      }
+    } catch { setShareError('Could not create the link — check your connection and try again.'); }
+    setCreatingLink(false);
+  };
+
+  const revokeGuestLink = async (linkId: string) => {
+    if (revokingId) return;
+    setRevokingId(linkId);
+    try {
+      const r = await fetch('/api/radio/guest', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkId }),
+      });
+      if (r.ok) await mutateLinks();
+    } catch { /* link stays listed — staff retries */ }
+    setRevokingId(null);
   };
 
   /* ── PANIC (hold-to-confirm, best-effort geolocation) ───────────────── */
@@ -1312,11 +1519,167 @@ export default function RadioDispatchPage() {
                   <FastForward size={12} weight="fill" /> Catch me up{unheardVoice.length ? ` (${unheardVoice.length})` : ''}
                 </button>
               )}
+              {/* Share channel — guest links popover */}
+              <div ref={shareRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => { if (shareOpen) closeShare(); else setShareOpen(true); }}
+                  disabled={!active}
+                  title="Share this channel with a guest — listen or talk, no account needed"
+                  style={{
+                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
+                    opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
+                  }}
+                >
+                  <ShareNetwork size={12} weight="bold" /> Share channel
+                </button>
+                {shareOpen && active && (
+                  <div
+                    style={{
+                      position: 'absolute', right: 0, top: 'calc(100% + 10px)', width: 350, zIndex: 50,
+                      background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
+                      borderRadius: 14, boxShadow: '0 22px 48px rgba(12,12,16,0.65)',
+                      padding: 14, textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <ShareNetwork size={14} weight="bold" color={GOLD_HI} />
+                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>GUEST ACCESS</span>
+                      <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>{active.name}</span>
+                      <button onClick={closeShare} aria-label="Close share panel" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                        <X size={14} weight="bold" />
+                      </button>
+                    </div>
+
+                    {createdUrl && (
+                      <div style={{ padding: 10, borderRadius: 10, background: GREEN_SOFT, border: `1px solid ${GREEN_BORDER}`, marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, marginBottom: 5 }}>LINK READY — SEND IT TO YOUR GUEST</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: WHITE, overflowWrap: 'anywhere', lineHeight: 1.4 }}>{createdUrl}</span>
+                          <button
+                            onClick={() => copyShare('created', createdUrl)}
+                            style={{ ...rowActionStyle, flexShrink: 0, color: copiedKey === 'created' ? GREEN : MUTED, borderColor: copiedKey === 'created' ? GREEN_BORDER : BORDER }}
+                          >
+                            {copiedKey === 'created' ? <Check size={11} weight="bold" /> : <Copy size={11} weight="bold" />} {copiedKey === 'created' ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <input
+                      value={shareLabel}
+                      onChange={(e) => setShareLabel(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') createGuestLink(); }}
+                      placeholder="Label (e.g. Inspector Diaz)"
+                      style={{
+                        width: '100%', boxSizing: 'border-box', padding: '8px 11px',
+                        background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10,
+                        color: WHITE, fontSize: 12.5, outline: 'none', marginBottom: 8,
+                      }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: MUTED, cursor: 'pointer', flex: 1, minWidth: 0, whiteSpace: 'nowrap' }}>
+                        <input type="checkbox" checked={shareTalk} onChange={(e) => setShareTalk(e.target.checked)} style={{ accentColor: GOLD }} />
+                        Guest can talk
+                      </label>
+                      <select
+                        value={shareDays}
+                        onChange={(e) => setShareDays(e.target.value as '7' | '30' | '90' | 'never')}
+                        aria-label="Link expiry"
+                        style={{ flexShrink: 0, padding: '6px 8px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 9, color: WHITE, fontSize: 11.5, outline: 'none' }}
+                      >
+                        <option value="7">Expires in 7 days</option>
+                        <option value="30">Expires in 30 days</option>
+                        <option value="90">Expires in 90 days</option>
+                        <option value="never">No expiry</option>
+                      </select>
+                    </div>
+                    <button
+                      onClick={createGuestLink}
+                      disabled={creatingLink}
+                      className="pmBtn"
+                      style={{ ...goldButtonStyle, width: '100%', padding: '9px 14px', fontSize: 12.5, opacity: creatingLink ? 0.6 : 1 }}
+                    >
+                      {creatingLink ? 'Creating…' : 'Create guest link'}
+                    </button>
+                    {shareError && <div style={{ fontSize: 11, color: RED, marginTop: 8 }}>{shareError}</div>}
+
+                    <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: 12, paddingTop: 10 }}>
+                      <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', color: FAINT, marginBottom: 8 }}>ACTIVE LINKS</div>
+                      <div style={{ maxHeight: 190, overflowY: 'auto' }}>
+                        {linksKey && !linkData && !linkError && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} height={34} borderRadius={10} />)}
+                          </div>
+                        )}
+                        {linkError && <div style={{ fontSize: 11.5, color: RED }}>Could not load guest links. Close and reopen to retry.</div>}
+                        {linkData && guestLinks.length === 0 && (
+                          <div style={{ fontSize: 11.5, color: FAINT }}>No guest links yet — create one above.</div>
+                        )}
+                        {guestLinks.map((l) => {
+                          const expired = !!l.expires_at && new Date(l.expires_at).getTime() < Date.now();
+                          return (
+                            <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', borderRadius: 10, background: NEST, border: `1px solid ${BORDER}`, marginBottom: 6 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {l.label || 'Guest link'}
+                                </div>
+                                <div style={{ fontSize: 10, color: expired ? RED : FAINT, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {l.can_talk === false ? 'Listen-only' : 'Talk + listen'}
+                                  {' · '}
+                                  {expired ? 'EXPIRED' : l.expires_at ? `expires ${new Date(l.expires_at).toLocaleDateString()}` : 'no expiry'}
+                                </div>
+                              </div>
+                              {!expired && (
+                                <button
+                                  onClick={() => copyShare(l.id, guestAbsUrl(l.token))}
+                                  title="Copy the guest link"
+                                  style={{ ...rowActionStyle, color: copiedKey === l.id ? GREEN : MUTED, borderColor: copiedKey === l.id ? GREEN_BORDER : BORDER }}
+                                >
+                                  {copiedKey === l.id ? <Check size={11} weight="bold" /> : <Copy size={11} weight="bold" />} {copiedKey === l.id ? 'Copied' : 'Copy'}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => revokeGuestLink(l.id)}
+                                disabled={revokingId === l.id}
+                                title="Revoke this link — the guest loses access immediately"
+                                style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: revokingId === l.id ? 0.6 : 1 }}
+                              >
+                                <Trash size={11} weight="bold" /> {revokingId === l.id ? 'Revoking…' : 'Revoke'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           }
           flush
         >
-          <div style={{ display: 'flex', flexDirection: 'column', height: 'min(680px, calc(100vh - 330px))', minHeight: 440 }}>
+          <div
+            onDragEnter={onFeedDragEnter}
+            onDragOver={onFeedDragOver}
+            onDragLeave={onFeedDragLeave}
+            onDrop={onFeedDrop}
+            style={{ display: 'flex', flexDirection: 'column', height: 'min(680px, calc(100vh - 330px))', minHeight: 440, position: 'relative' }}
+          >
+            {/* Drag-drop target — pointer-events none so the drop lands on the container */}
+            {dragOver && (
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', inset: 8, zIndex: 30, pointerEvents: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  borderRadius: 14, border: `2px dashed ${AMBER_BORDER}`,
+                  background: 'rgba(245,158,11,0.10)',
+                  color: GOLD_HI, fontSize: 13, fontWeight: 800,
+                }}
+              >
+                <Paperclip size={18} weight="bold" /> Drop to share on {active?.name || 'this channel'}
+              </div>
+            )}
             {/* Feed header — analog S/RF meter beside NOW TRANSMITTING / NOW PLAYING */}
             <div
               style={{
@@ -1371,6 +1734,58 @@ export default function RadioDispatchPage() {
               {messages.map(renderRow)}
             </div>
 
+            {/* Pending attachment — inline caption prompt before it transmits */}
+            {(pendingFile || attachError) && (
+              <div style={{ borderTop: `1px solid ${BORDER}`, padding: '10px 12px', background: NEST }}>
+                {attachError && (
+                  <div style={{ fontSize: 11.5, color: RED, marginBottom: pendingFile ? 8 : 0 }}>{attachError}</div>
+                )}
+                {pendingFile && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 240,
+                        padding: '6px 10px', borderRadius: 10, background: AMBER_SOFT,
+                        border: `1px solid ${AMBER_BORDER}`, color: GOLD_HI, fontSize: 11.5, fontWeight: 800,
+                      }}
+                    >
+                      <Paperclip size={12} weight="bold" style={{ flexShrink: 0 }} />
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pendingFile.name}</span>
+                      <span style={{ color: FAINT, fontWeight: 700, flexShrink: 0 }}>{sizeLabel(pendingFile.size)}</span>
+                    </span>
+                    <input
+                      value={mediaCaption}
+                      onChange={(e) => setMediaCaption(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') sendMedia(); }}
+                      placeholder="Add a caption (optional)"
+                      autoFocus
+                      style={{
+                        flex: 1, minWidth: 160, boxSizing: 'border-box', padding: '8px 12px',
+                        background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10,
+                        color: WHITE, fontSize: 12.5, outline: 'none',
+                      }}
+                    />
+                    <button
+                      onClick={sendMedia}
+                      disabled={uploadingMedia}
+                      className="pmBtn"
+                      style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 12.5, opacity: uploadingMedia ? 0.6 : 1 }}
+                    >
+                      {uploadingMedia ? 'Sending…' : 'Send'}
+                    </button>
+                    <button
+                      onClick={clearAttach}
+                      disabled={uploadingMedia}
+                      aria-label="Cancel attachment"
+                      style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Composer */}
             <div style={{ borderTop: `1px solid ${BORDER}`, padding: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
               {pttSupported && (
@@ -1401,6 +1816,29 @@ export default function RadioDispatchPage() {
                   </span>
                 </button>
               )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={MEDIA_ACCEPT}
+                style={{ display: 'none' }}
+                onChange={(e) => { const el = e.currentTarget; takeFile(el.files?.[0]); el.value = ''; }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!active || uploadingMedia}
+                title="Attach a photo, PDF, or video to this channel"
+                aria-label="Attach a file"
+                style={{
+                  flexShrink: 0, width: 42, height: 42, borderRadius: 12, padding: 0,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  background: pendingFile ? AMBER_SOFT : FIELD_BG,
+                  border: pendingFile ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
+                  color: pendingFile ? GOLD_HI : MUTED, cursor: active ? 'pointer' : 'not-allowed',
+                  opacity: !active || uploadingMedia ? 0.55 : 1,
+                }}
+              >
+                <Paperclip size={16} weight="bold" />
+              </button>
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
