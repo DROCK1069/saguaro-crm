@@ -15,10 +15,11 @@ export default function MarketingNav() {
   }, []);
 
   const navLinks = [
-    { label: 'Features', href: '/#features' },
-    { label: 'How It Works', href: '/#how-it-works' },
+    { label: 'Home', href: '/' },
+    { label: 'Product', href: '/product' },
+    { label: 'Field App', href: '/get-the-app' },
     { label: 'Pricing', href: '/pricing' },
-    { label: 'Compare', href: '/compare/procore' },
+    { label: 'Compare', href: '/compare' },
   ];
 
   const scrollTo = (href: string) => {

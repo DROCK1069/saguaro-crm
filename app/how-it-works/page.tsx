@@ -20,10 +20,10 @@ const C = {
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
-  { label: 'Features', href: '/features' },
+  { label: 'Product', href: '/product' },
   { label: 'Field App', href: '/get-the-app' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
-  { label: 'Switch from Procore', href: '/switch-from-procore' },
 ];
 
 const STEPS = [
@@ -303,7 +303,7 @@ export default function HowItWorksPage() {
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
                 { label: 'Home', href: '/' }, { label: 'Features', href: '/features' },
-                { label: 'Compare', href: '/compare' }, { label: 'Switch from Procore', href: '/switch-from-procore' },
+                { label: 'Compare', href: '/compare' },
                 { label: 'Field App', href: '/get-the-app' }, { label: 'Privacy', href: '/privacy' }, { label: 'Terms', href: '/terms' },
               ].map(link => (
                 <a key={link.label} href={link.href} style={{ fontSize: 13, color: C.dim, textDecoration: 'none', fontWeight: 500 }}>{link.label}</a>
