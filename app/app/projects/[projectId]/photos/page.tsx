@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 import { getAuthHeaders } from '@/lib/supabase-browser';
 import PhotoEditor from '../../../../../components/PhotoEditor';
 import { Camera, X, PencilSimple, Plus, Images, CalendarBlank, FolderSimple, WarningCircle } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, IconChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
 
@@ -253,7 +253,8 @@ export default function PhotosPage(){
           {/* Header */}
           <ModuleHero
             eyebrow={ctx?.project?.name||'Photos'}
-            eyebrowIcon={<Camera size={13} weight="fill" color={moduleAccent('photos').hex} />}
+            eyebrowIcon={<IconChip size={24} vivid={moduleAccent('photos').vivid ?? moduleAccent('photos').hex}><Camera size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+            accentColor={moduleAccent('photos').hex}
             title="Site"
             accent="Photos"
             subtitle="Site progress photos and documentation."

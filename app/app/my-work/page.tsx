@@ -21,7 +21,7 @@ import {
   ArrowRight, WarningCircle, FolderSimple, CalendarCheck, ClockCountdown, Stamp,
 } from '@phosphor-icons/react';
 import { colors } from '../../../lib/design-tokens';
-import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, ghostButtonStyle, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, IconChip, ghostButtonStyle, goldButtonStyle } from '@/components/ui/premium';
 import { accentForProject, projectMonogram } from '@/lib/project-identity';
 import { moduleAccent } from '@/lib/module-identity';
 
@@ -144,7 +144,8 @@ export default function MyWorkPage() {
     <PremiumSurface maxWidth={1200}>
       <ModuleHero
         eyebrow="My Work"
-        eyebrowIcon={<Briefcase size={13} weight="fill" />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('work').vivid ?? moduleAccent('work').hex}><Briefcase size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('work').hex}
         title="Your"
         accent="Day"
         subtitle={isLoading

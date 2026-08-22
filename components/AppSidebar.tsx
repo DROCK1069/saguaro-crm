@@ -273,6 +273,7 @@ export default function AppSidebar({
               const active = isActive(item.href);
               const Icon = item.icon;
               const accent = item.accentKey ? moduleAccent(item.accentKey) : null;
+              const vivid = accent ? (accent.vivid ?? accent.hex) : null;
               return (
                 <Link
                   key={item.href}
@@ -313,7 +314,7 @@ export default function AppSidebar({
                     }
                   }}
                 >
-                  {/* Active indicator — soft gold left rule */}
+                  {/* Active indicator — module vivid left rule (gold for un-accented items) */}
                   {active && !collapsed && (
                     <span
                       aria-hidden
@@ -324,15 +325,30 @@ export default function AppSidebar({
                         bottom: 8,
                         width: 3,
                         borderRadius: '0 3px 3px 0',
-                        background: colors.gold,
+                        background: vivid || colors.gold,
                       }}
                     />
                   )}
-                  <Icon
-                    size={collapsed ? 20 : 18}
-                    weight={active ? 'fill' : 'regular'}
-                    style={{ flexShrink: 0, opacity: active ? 1 : 0.85, color: active ? undefined : accent?.hex }}
-                  />
+                  {vivid && active ? (
+                    /* vivid module chip — saturated hue UNDER a white glyph, never hue-on-hue */
+                    <span
+                      style={{
+                        flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: collapsed ? 22 : 20, height: collapsed ? 22 : 20, borderRadius: 6,
+                        background: `linear-gradient(150deg, ${vivid}, color-mix(in srgb, ${vivid} 80%, #000000))`,
+                        border: `1px solid ${vivid}8C`,
+                        boxShadow: `0 0 12px -3px ${vivid}40, inset 0 1px 0 rgba(255,255,255,0.25)`,
+                      }}
+                    >
+                      <Icon size={collapsed ? 14 : 13} weight="fill" color="#F8FAFC" />
+                    </span>
+                  ) : (
+                    <Icon
+                      size={collapsed ? 20 : 18}
+                      weight={active ? 'fill' : 'regular'}
+                      style={{ flexShrink: 0, opacity: active ? 1 : 0.85, color: active ? undefined : vivid || undefined }}
+                    />
+                  )}
                   {!collapsed && <span>{item.label}</span>}
                   {!collapsed && item.badge && (
                     <span

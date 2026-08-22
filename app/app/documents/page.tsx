@@ -9,6 +9,7 @@ import {
   PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, IconChip,
   goldButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD = '#F59E0B';
 const BORDER = 'rgba(255,255,255,0.12)';
@@ -297,7 +298,8 @@ export default function DocumentsPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="Compliance"
-        eyebrowIcon={<FileText size={13} weight="fill" color="#F59E0B" />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('documents').vivid ?? moduleAccent('documents').hex}><FileText size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('documents').hex}
         title="Project"
         accent="Documents"
         subtitle="Generated contracts, forms, and compliance documents across all projects."

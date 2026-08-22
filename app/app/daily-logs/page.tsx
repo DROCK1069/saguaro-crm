@@ -12,7 +12,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, Sun, CloudRain, Thermometer, UsersThree, Warning, ClipboardText } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
-import { PremiumFX, ModuleHero, StatStrip, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumFX, ModuleHero, StatStrip, InsightRow, AutoChip, IconChip, goldButtonStyle } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 
@@ -223,7 +223,8 @@ export default function DailyLogsPage() {
       <PremiumFX />
       <ModuleHero
         eyebrow="Field Record"
-        eyebrowIcon={<ClipboardText size={13} weight="fill" color={moduleAccent('daily').hex} />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('daily').vivid ?? moduleAccent('daily').hex}><ClipboardText size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('daily').hex}
         title="Daily"
         accent="Logs"
         subtitle="Track daily field activity, weather, crew, and work progress."

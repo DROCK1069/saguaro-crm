@@ -11,7 +11,7 @@ import {
   Archive, ArrowCounterClockwise, PencilSimple, ClipboardText,
 } from '@phosphor-icons/react';
 import {
-  PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty,
+  PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, IconChip,
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
@@ -268,7 +268,8 @@ export default function CrewsPage() {
         <PremiumSurface maxWidth={1600}>
           <ModuleHero
             eyebrow="FIELD WORKFORCE"
-            eyebrowIcon={<UsersThree size={13} weight="fill" color={AC.hex} />}
+            eyebrowIcon={<IconChip size={24} vivid={AC.vivid ?? AC.hex}><UsersThree size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+            accentColor={AC.hex}
             title="Crews"
             accent="& Rosters"
             subtitle="Build crews once — foreman, trade, roster — and every daily log's manpower section fills itself."

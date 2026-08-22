@@ -16,6 +16,7 @@ import {
   FlowSteps,
   InsightRow,
   AutoChip,
+  IconChip,
 } from '@/components/ui/premium';
 import { SkeletonKPI, SkeletonRow } from '@/components/ui/Skeleton';
 import { ListToolbar } from '@/components/ui/ListToolbar';
@@ -322,7 +323,8 @@ export default function RFIsPage() {
       {/* Header */}
       <ModuleHero
         eyebrow="Project RFIs"
-        eyebrowIcon={<Question size={13} weight="fill" color={moduleAccent('rfis').hex} />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('rfis').vivid ?? moduleAccent('rfis').hex}><Question size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('rfis').hex}
         title="Requests for"
         accent="Information"
         subtitle="Track questions, route the ball-in-court, and close out clarifications before they slow the field."

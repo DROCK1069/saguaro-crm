@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Gauge, CheckCircle, WarningCircle, XCircle, FileText, Signature, MagnifyingGlass, Envelope, UsersThree, ArrowRight } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#45B37D',RED='#E0644E',AMBER='#F0A63C';
 
@@ -71,7 +72,8 @@ export default function CompliancePage(){
     {/* Header */}
     <ModuleHero
       eyebrow="Compliance"
-      eyebrowIcon={<ShieldCheck size={13} weight="fill" color={GOLD} />}
+      eyebrowIcon={<IconChip size={24} vivid={moduleAccent('compliance').vivid ?? moduleAccent('compliance').hex}><ShieldCheck size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+      accentColor={moduleAccent('compliance').hex}
       title="Subcontractor"
       accent="Compliance"
       subtitle="W-9, insurance, and lien waiver scorecard across your subcontractors."

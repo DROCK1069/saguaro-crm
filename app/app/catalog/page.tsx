@@ -25,7 +25,8 @@ import {
   CheckCircle,
   X,
 } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#3dd68c', AMBER = '#FBBF24', RED = '#c03030';
 
@@ -256,7 +257,8 @@ export default function CatalogPage() {
       `}</style>
       <ModuleHero
         eyebrow="Pre-Construction"
-        eyebrowIcon={<Storefront size={13} weight="fill" color={GOLD} />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('catalog').vivid ?? moduleAccent('catalog').hex}><Storefront size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('catalog').hex}
         title="Materials"
         accent="Catalog"
         subtitle="Compare big-box, wholesale, and supply-house pricing — select products and issue vendor-grouped purchase orders in one flow."

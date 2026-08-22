@@ -25,8 +25,9 @@ import { TRADESPERSON_ROLES } from '@/lib/contractor-trades';
 import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
 import {
   PremiumSurface, ModuleHero, StatCard, SectionCard, StatStrip, FlowSteps, FlowStrip,
-  InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle,
+  InsightRow, AutoChip, IconChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
@@ -46,10 +47,9 @@ const GREEN = '#3dd68c';
 const RED = '#f87171';
 const STEEL = '#7FA3C7';
 
-// T&M accent stays in the gold family (money module). 'tm' is not a key in
-// lib/module-identity (that file is owned elsewhere), so the accent is local —
-// used ONLY on icon chips / badges / eyebrows per the accent discipline.
-const TM_ACCENT = '#E8B04B';
+// T&M module accent — 'tm' in lib/module-identity (ledger green: money-adjacent,
+// never gold). Used ONLY on icon chips / badges / eyebrows per the accent discipline.
+const TM_ACCENT = moduleAccent('tm').hex;
 
 const INP: React.CSSProperties = { padding: '8px 12px', background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 7, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' };
 const LBL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 6 };
@@ -624,7 +624,8 @@ export default function TmTicketsPage() {
 
         <ModuleHero
           eyebrow="Field Money"
-          eyebrowIcon={<Receipt size={13} weight="fill" color={TM_ACCENT} />}
+          eyebrowIcon={<IconChip size={24} vivid={moduleAccent('tm').vivid ?? TM_ACCENT}><Receipt size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+          accentColor={TM_ACCENT}
           title="T&M"
           accent="Tickets"
           subtitle={loading ? 'Loading…' : `${tickets.length} ticket${tickets.length !== 1 ? 's' : ''} — capture time & material extras with signatures, get them approved, then billed or escalated to a change event.`}

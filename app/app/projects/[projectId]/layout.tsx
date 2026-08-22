@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { accentForProject } from '@/lib/project-identity';
+import { moduleAccent } from '@/lib/module-identity';
 import { useProject } from '@/lib/hooks/useProjects';
 import {
   SquaresFour, Ruler, Calculator, FileText, CalendarBlank, Package, Palette,
@@ -16,36 +17,38 @@ import {
 const GOLD = '#F59E0B'; const DARK = '#0a0a0a'; const RAISED = '#141416';
 const BORDER = 'rgba(255,255,255,0.12)'; const DIM = '#CBD5E1'; const TEXT = '#FFFFFF';
 
-// ALL sidebar nav items — every module Buildertrend has + more
+// ALL sidebar nav items — every module Buildertrend has + more.
+// `accent` = module-identity key (lib/module-identity): the item's icon wears
+// the module's VIVID chip when active and a vivid-tinted glyph when inactive.
 const NAV_SECTIONS = [
   {
     label: 'PROJECT',
     items: [
       { label: 'Overview',        href: '',                   icon: SquaresFour, badge: null },
-      { label: 'Takeoff',         href: '/takeoff',           icon: Ruler, badge: null },
-      { label: 'Estimate',        href: '/estimate',          icon: Calculator, badge: null },
+      { label: 'Takeoff',         href: '/takeoff',           icon: Ruler, badge: null, accent: 'takeoff' },
+      { label: 'Estimate',        href: '/estimate',          icon: Calculator, badge: null, accent: 'estimates' },
       { label: 'Proposal',        href: '/proposal',          icon: FileText, badge: null },
     ],
   },
   {
     label: 'EXECUTION',
     items: [
-      { label: 'Schedule',              href: '/schedule',          icon: CalendarBlank, badge: null },
-      { label: 'Bid Packages',          href: '/bid-packages',      icon: Package, badge: null },
+      { label: 'Schedule',              href: '/schedule',          icon: CalendarBlank, badge: null, accent: 'schedule' },
+      { label: 'Bid Packages',          href: '/bid-packages',      icon: Package, badge: null, accent: 'bids' },
       { label: 'Selections & Allowances', href: '/selections',      icon: Palette, badge: null },
-      { label: 'Contracts',             href: '/contracts',         icon: Clipboard, badge: null },
+      { label: 'Contracts',             href: '/contracts',         icon: Clipboard, badge: null, accent: 'contracts' },
       { label: 'PO & Subcontracts',     href: '/purchase-orders',   icon: NotePencil, badge: null },
     ],
   },
   {
     label: 'FINANCIAL',
     items: [
-      { label: 'Budget',          href: '/budget',            icon: Wallet, badge: null },
-      { label: 'Change Orders',   href: '/change-orders',     icon: ArrowsClockwise  },
-      { label: 'Pay Applications', href: '/pay-apps',         icon: Money, badge: null },
-      { label: 'Client Invoices', href: '/invoices',          icon: Receipt, badge: null },
-      { label: 'Bills',           href: '/bills',             icon: FileText, badge: null },
-      { label: 'Lien Waivers',    href: '/lien-waivers',      icon: Signature, badge: null },
+      { label: 'Budget',          href: '/budget',            icon: Wallet, badge: null, accent: 'budget' },
+      { label: 'Change Orders',   href: '/change-orders',     icon: ArrowsClockwise, accent: 'changeorders' },
+      { label: 'Pay Applications', href: '/pay-apps',         icon: Money, badge: null, accent: 'payapps' },
+      { label: 'Client Invoices', href: '/invoices',          icon: Receipt, badge: null, accent: 'invoices' },
+      { label: 'Bills',           href: '/bills',             icon: FileText, badge: null, accent: 'bills' },
+      { label: 'Lien Waivers',    href: '/lien-waivers',      icon: Signature, badge: null, accent: 'waivers' },
       { label: 'Insurance',       href: '/insurance',         icon: ShieldCheck,  badge: null },
       { label: 'Certified Payroll', href: '/payroll',         icon: IdentificationBadge, badge: null },
       { label: 'W-9 Requests',    href: '/w9',                icon: FileText, badge: null },
@@ -54,40 +57,40 @@ const NAV_SECTIONS = [
   {
     label: 'FIELD',
     items: [
-      { label: 'Daily Logs',      href: '/daily-logs',        icon: ClipboardText, badge: null },
-      { label: 'T&M Tickets',     href: '/tm-tickets',        icon: Money, badge: null },
-      { label: 'Photos',          href: '/photos',            icon: Camera, badge: null },
-      { label: 'Inspections',     href: '/inspections',       icon: MagnifyingGlass, badge: null },
-      { label: 'Safety',          href: '/safety',            icon: HardHat, badge: null },
-      { label: 'Punch List',      href: '/punch-list',        icon: CheckCircle, badge: null },
-      { label: 'To-Dos',          href: '/todos',             icon: CheckSquare,  badge: null },
-      { label: 'Timesheets',      href: '/timesheets',        icon: Timer,  badge: null },
-      { label: 'Crews',           href: '/crews',             icon: Users,  badge: null },
+      { label: 'Daily Logs',      href: '/daily-logs',        icon: ClipboardText, badge: null, accent: 'daily' },
+      { label: 'T&M Tickets',     href: '/tm-tickets',        icon: Money, badge: null, accent: 'tm' },
+      { label: 'Photos',          href: '/photos',            icon: Camera, badge: null, accent: 'photos' },
+      { label: 'Inspections',     href: '/inspections',       icon: MagnifyingGlass, badge: null, accent: 'inspections' },
+      { label: 'Safety',          href: '/safety',            icon: HardHat, badge: null, accent: 'safety' },
+      { label: 'Punch List',      href: '/punch-list',        icon: CheckCircle, badge: null, accent: 'punch' },
+      { label: 'To-Dos',          href: '/todos',             icon: CheckSquare,  badge: null, accent: 'todos' },
+      { label: 'Timesheets',      href: '/timesheets',        icon: Timer,  badge: null, accent: 'time' },
+      { label: 'Crews',           href: '/crews',             icon: Users,  badge: null, accent: 'crews' },
     ],
   },
   {
     label: 'COMMUNICATION',
     items: [
-      { label: 'RFIs',            href: '/rfis',              icon: Question  },
+      { label: 'RFIs',            href: '/rfis',              icon: Question, accent: 'rfis' },
       { label: 'Submittals',      href: '/submittals',        icon: Export, badge: null },
-      { label: 'Messages',        href: '/messages',          icon: ChatCircle, badge: null },
+      { label: 'Messages',        href: '/messages',          icon: ChatCircle, badge: null, accent: 'messages' },
     ],
   },
   {
     label: 'DOCUMENTS',
     items: [
-      { label: 'Files',           href: '/files',             icon: Folder, badge: null },
-      { label: 'Drawings',        href: '/drawings',          icon: Ruler, badge: null },
-      { label: 'Permits',         href: '/permits',           icon: Bank,  badge: null },
-      { label: 'Specifications',  href: '/specs',             icon: BookOpen, badge: null },
+      { label: 'Files',           href: '/files',             icon: Folder, badge: null, accent: 'documents' },
+      { label: 'Drawings',        href: '/drawings',          icon: Ruler, badge: null, accent: 'drawings' },
+      { label: 'Permits',         href: '/permits',           icon: Bank,  badge: null, accent: 'permits' },
+      { label: 'Specifications',  href: '/specs',             icon: BookOpen, badge: null, accent: 'specs' },
       { label: 'Closeout',        href: '/closeout',          icon: CheckCircle, badge: null },
     ],
   },
   {
     label: 'TEAM',
     items: [
-      { label: 'Team',            href: '/team',              icon: Users, badge: null },
-      { label: 'Compliance',      href: '/compliance',        icon: ShieldCheck,  badge: null },
+      { label: 'Team',            href: '/team',              icon: Users, badge: null, accent: 'team' },
+      { label: 'Compliance',      href: '/compliance',        icon: ShieldCheck,  badge: null, accent: 'compliance' },
     ],
   },
   {
@@ -99,7 +102,7 @@ const NAV_SECTIONS = [
       { label: 'Cables',           href: '/network/cables',     icon: Plug, badge: null },
       { label: 'Firewall',         href: '/network/firewall',   icon: Shield,  badge: null },
       { label: 'WiFi',             href: '/network/wifi',       icon: WifiHigh, badge: null },
-      { label: 'Signal Studio',    href: '/app/signal-studio',  icon: Broadcast, badge: null },
+      { label: 'Signal Studio',    href: '/app/signal-studio',  icon: Broadcast, badge: null, accent: 'signal' },
       { label: 'Config Gen',       href: '/network/config',     icon: Gear,  badge: null },
       { label: 'AI Wizard',        href: '/network/wizard',     icon: Robot, badge: null },
       { label: 'Reports',          href: '/network/reports',    icon: ChartBar, badge: null },
@@ -176,6 +179,8 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
           {section.items.map(item => {
             const active = isActive(item.href);
             const Icon = item.icon;
+            const acc = (item as { accent?: string }).accent ? moduleAccent((item as { accent?: string }).accent) : null;
+            const vivid = acc ? (acc.vivid ?? acc.hex) : null;
             return (
               <Link
                 key={item.href}
@@ -188,7 +193,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
                   padding: isCollapsed ? '8px 16px' : '7px 12px',
                   color: active ? GOLD : DIM,
                   background: active ? 'linear-gradient(180deg, var(--brand-primary-18), var(--brand-primary-12))' : 'transparent',
-                  borderLeft: `2px solid ${active ? GOLD : 'transparent'}`,
+                  borderLeft: `2px solid ${active ? (vivid || GOLD) : 'transparent'}`,
                   boxShadow: active ? 'inset 0 0 0 1px var(--brand-primary-25)' : 'none',
                   fontSize: 12.5,
                   fontWeight: active ? 700 : 500,
@@ -199,7 +204,14 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
                 onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#FFFFFF'; } }}
                 onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = DIM; } }}
               >
-                <span style={{ display: 'inline-flex', flexShrink: 0 }}><Icon size={16} weight="regular" /></span>
+                {vivid && active ? (
+                  /* vivid module chip — saturated hue UNDER a white glyph, never hue-on-hue */
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 20, height: 20, borderRadius: 6, background: `linear-gradient(150deg, ${vivid}, color-mix(in srgb, ${vivid} 80%, #000000))`, border: `1px solid ${vivid}8C`, boxShadow: `0 0 12px -3px ${vivid}40, inset 0 1px 0 rgba(255,255,255,0.25)` }}>
+                    <Icon size={13} weight="fill" color="#F8FAFC" />
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-flex', flexShrink: 0 }}><Icon size={16} weight="regular" color={vivid || undefined} /></span>
+                )}
                 {!isCollapsed && <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
                 {!isCollapsed && (item as { badge?: string }).badge && (
                   <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 8, background: active ? GOLD : '#B85C2A', color: '#1C1C1E' }}>

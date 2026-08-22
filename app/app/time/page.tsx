@@ -12,7 +12,8 @@ import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser
 import { computeTimesheet, weekKey, fmtHours, liveElapsed, type TimeEntry } from '@/lib/timeclock';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import { Clock, Play, Stop, Plus, Trash, PaperPlaneRight, Sun, Bandaids, MapPin, HardHat, Timer, CurrencyDollar } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, PremiumEmpty, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)';
 const DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#3dd68c', RED = '#ef4444';
@@ -143,7 +144,8 @@ export default function TimeClockPage() {
     <PremiumSurface maxWidth={1140}>
       <ModuleHero
         eyebrow="Field Workforce"
-        eyebrowIcon={<Clock size={13} weight="fill" color={GOLD} />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('time').vivid ?? moduleAccent('time').hex}><Clock size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('time').hex}
         title="Time"
         accent="Clock"
         subtitle="Timezone-aware, GPS-stamped, CSI-coded labor — the same deterministic engine as the phone."

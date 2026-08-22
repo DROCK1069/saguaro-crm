@@ -19,6 +19,7 @@ import {
   StatStrip,
   FlowSteps,
   AutoChip,
+  IconChip,
 } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
@@ -248,7 +249,8 @@ export default function PunchListPage(){
         {/* Header */}
         <ModuleHero
           eyebrow="Project Closeout"
-          eyebrowIcon={<ListChecks size={13} weight="fill" color={moduleAccent('punch').hex}/>}
+          eyebrowIcon={<IconChip size={24} vivid={moduleAccent('punch').vivid ?? moduleAccent('punch').hex}><ListChecks size={13} weight="fill" color="#F8FAFC"/></IconChip>}
+          accentColor={moduleAccent('punch').hex}
           title="Punch"
           accent="List"
           subtitle="Deficiencies, corrections & closeout items — track every fix through to completion."

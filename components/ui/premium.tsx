@@ -14,6 +14,7 @@
  */
 
 import React from 'react';
+import { moduleAccent } from '@/lib/module-identity';
 
 // Brand hooks (white-label re-themes these via WhiteLabelProvider) ------------
 const GOLD = 'var(--brand-primary)';        // #F59E0B default
@@ -237,21 +238,38 @@ export function ModuleHero({
 }
 
 // ─── IconChip ────────────────────────────────────────────────────────────────
-export function IconChip({ children, size = 40 }: { children: React.ReactNode; size?: number }) {
+// Default (no `vivid`): the classic low-alpha gold chip — byte-for-byte the
+// same treatment as before. With `vivid` (a module-identity vivid hex) the
+// chip goes chip-loud: saturated gradient ground (vivid -> ~20% darker), a
+// 1px vivid ring at 55%, and a soft outer glow at 25% — built for a WHITE
+// (#F8FAFC) glyph sitting ON the color. Never hue-on-hue.
+export function IconChip({ children, size = 40, vivid }: { children: React.ReactNode; size?: number; vivid?: string }) {
   return (
     <span
       className="pmChip"
       style={{
         flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         width: size, height: size, borderRadius: Math.round(size * 0.28),
-        background: 'linear-gradient(150deg, rgba(245,158,11,0.18), rgba(245,158,11,0.05))',
-        border: `1px solid ${A30}`, boxShadow: `0 0 0 3px ${A08}, inset 0 1px 0 rgba(255,255,255,0.08)`,
+        background: vivid
+          ? `linear-gradient(150deg, ${vivid}, color-mix(in srgb, ${vivid} 80%, #000000))`
+          : 'linear-gradient(150deg, rgba(245,158,11,0.18), rgba(245,158,11,0.05))',
+        border: `1px solid ${vivid ? vivid + '8C' : A30}`,
+        boxShadow: vivid
+          ? `0 0 0 3px ${vivid}1F, 0 6px 20px -6px ${vivid}40, inset 0 1px 0 rgba(255,255,255,0.25)`
+          : `0 0 0 3px ${A08}, inset 0 1px 0 rgba(255,255,255,0.08)`,
         transition: 'box-shadow .2s ease',
       }}
     >
       {children}
     </span>
   );
+}
+
+/** Vivid chip hue for a module key — moduleAccent(key).vivid, hex fallback.
+ *  Pair with <IconChip vivid={vividOf('daily')}> + a white (#F8FAFC) glyph. */
+export function vividOf(accentKey?: string | null): string {
+  const a = moduleAccent(accentKey);
+  return a.vivid ?? a.hex;
 }
 
 // ─── StatCard (premium) ──────────────────────────────────────────────────────

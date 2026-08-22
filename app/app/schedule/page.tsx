@@ -28,7 +28,7 @@ import {
 } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
-import { PremiumFX, ModuleHero, StatStrip, AutoChip, goldButtonStyle } from '@/components/ui/premium';
+import { PremiumFX, ModuleHero, StatStrip, AutoChip, IconChip, goldButtonStyle } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
 import { StandardSelect } from '@/components/ui/Select';
 import { tradeOptions } from '@/lib/taxonomy';
@@ -368,7 +368,8 @@ export default function SchedulePage() {
       <PremiumFX />
       <ModuleHero
         eyebrow="Execution"
-        eyebrowIcon={<CalendarBlank size={13} weight="fill" color={moduleAccent('schedule').hex} />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('schedule').vivid ?? moduleAccent('schedule').hex}><CalendarBlank size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('schedule').hex}
         title="Construction"
         accent="Schedule"
         subtitle="Manage tasks, track progress, and map dependencies across the build."

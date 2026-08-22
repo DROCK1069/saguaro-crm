@@ -290,6 +290,109 @@ function EqBars({ color = GOLD_HI, size = 14 }: { color?: string; size?: number 
   );
 }
 
+/* Vivid gold module chip — the platform icon standard: a saturated gold plate
+ * (bright-to-deep gradient) with a ring + soft glow and a near-white glyph ON
+ * the color. Never gold-on-gold. Radio stays in the gold family. */
+function VividGoldChip({
+  icon,
+  size = 40,
+  style,
+}: { icon: React.ReactNode; size?: number; style?: React.CSSProperties }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        flexShrink: 0, width: size, height: size, borderRadius: Math.round(size * 0.29),
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        background: `linear-gradient(145deg, ${GOLD_HI} 0%, ${GOLD} 52%, #B45309 100%)`,
+        border: '1px solid rgba(253,230,138,0.55)',
+        boxShadow: '0 0 0 3px rgba(245,158,11,0.16), 0 10px 26px -10px rgba(245,158,11,0.60), inset 0 1px 0 rgba(255,255,255,0.40)',
+        color: '#F8FAFC',
+        ...style,
+      }}
+    >
+      {icon}
+    </span>
+  );
+}
+
+/* Decorative tuning-band strip for the standby radio face — pure SVG in the
+ * S/RF meter's family look (dark face + hairline bezel, white ticks, a red
+ * top-band segment, gold needle, glass highlight). The "frequency" is seeded
+ * from the active channel id so every channel holds its own spot on the band.
+ * Purely decorative — no real RF here. */
+function FrequencyDial({ seed }: { seed: string }) {
+  const uid = React.useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const frac = 0.06 + ((Math.abs(h) % 1000) / 1000) * 0.88;
+  const W = 760, H = 92, L = 34, R = 726;
+  const xAt = (f: number) => L + f * (R - L);
+  const nx = xAt(frac);
+  const ticks = Array.from({ length: 41 }, (_, i) => i / 40);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', width: '100%', height: 'auto' }} aria-hidden focusable="false">
+      <defs>
+        <linearGradient id={`sagDialFace-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#17171C" />
+          <stop offset="1" stopColor="#0B0B0E" />
+        </linearGradient>
+        <linearGradient id={`sagDialGlass-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="rgba(255,255,255,0.09)" />
+          <stop offset="1" stopColor="rgba(255,255,255,0)" />
+        </linearGradient>
+        <linearGradient id={`sagDialNeedle-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={GOLD_HI} />
+          <stop offset="1" stopColor={GOLD} />
+        </linearGradient>
+      </defs>
+      {/* Bezel + face */}
+      <rect x={0.75} y={0.75} width={W - 1.5} height={H - 1.5} rx={16} fill="#18181E" stroke="rgba(255,255,255,0.13)" strokeWidth={1} />
+      <rect x={6} y={6} width={W - 12} height={H - 12} rx={12} fill={`url(#sagDialFace-${uid})`} stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
+      {/* Band line — white span + red top segment (the S-meter split) */}
+      <line x1={L} y1={22} x2={xAt(0.86)} y2={22} stroke="rgba(255,255,255,0.40)" strokeWidth={1.4} />
+      <line x1={xAt(0.86)} y1={22} x2={R} y2={22} stroke={RED} strokeWidth={3} />
+      {/* Ticks + MHz numerals */}
+      {ticks.map((f, i) => (
+        <line
+          key={i}
+          x1={xAt(f)} y1={24} x2={xAt(f)} y2={i % 5 === 0 ? 44 : 35}
+          stroke={f >= 0.86 ? 'rgba(248,113,113,0.75)' : i % 5 === 0 ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.40)'}
+          strokeWidth={i % 5 === 0 ? 1.6 : 1}
+        />
+      ))}
+      {[0, 10, 20, 30, 40].map((i) => (
+        <text key={i} x={xAt(i / 40)} y={58} textAnchor="middle" fontSize={11} fontWeight={700} fill={i === 40 ? '#F87171' : 'rgba(255,255,255,0.62)'}>
+          {(26.9 + (i / 40) * 0.5).toFixed(1)}
+        </text>
+      ))}
+      {/* Legend + standby lamp */}
+      <text x={W / 2} y={78} textAnchor="middle" fontSize={9} fontWeight={800} letterSpacing="0.22em" fill="rgba(255,255,255,0.46)">
+        FREQ — MHZ
+      </text>
+      <circle cx={30} cy={74} r={8.5} fill={GOLD_HI} opacity={0.16} />
+      <circle cx={30} cy={74} r={4.2} fill={GOLD_HI} stroke="rgba(255,255,255,0.30)" strokeWidth={0.8} />
+      <text x={40} y={77} fontSize={7.5} fontWeight={800} letterSpacing="0.08em" fill={GOLD_HI}>STBY</text>
+      {/* Needle — seeded per channel */}
+      <rect x={nx - 5} y={12} width={10} height={56} rx={4} fill={GOLD} opacity={0.14} />
+      <line x1={nx} y1={12} x2={nx} y2={66} stroke={`url(#sagDialNeedle-${uid})`} strokeWidth={2.4} strokeLinecap="round" />
+      <path d={`M ${nx - 4} 12 L ${nx + 4} 12 L ${nx} 19 Z`} fill={GOLD_HI} />
+      {/* Glass highlight */}
+      <path d={`M 6 6 H ${W - 6} V 34 Q ${W / 2} 52 6 34 Z`} fill={`url(#sagDialGlass-${uid})`} pointerEvents="none" />
+    </svg>
+  );
+}
+
+/* One-line preview of a channel's last transmission (standby panel). */
+const trafficPreview = (lm: NonNullable<RadioChannel['lastMessage']>) =>
+  lm.kind === 'voice' ? `PTT ${secsLabel(lm.secs)}`
+    : lm.kind === 'panic' ? 'PANIC ALARM'
+    : lm.kind === 'image' ? 'Photo'
+    : lm.kind === 'tone' ? 'Tone'
+    : (lm.body || '').slice(0, 80) || 'Traffic';
+const whenLabel = (iso: string) =>
+  isToday(iso) ? timeOf(iso) : new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
+
 const rowActionStyle: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 8,
   background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`,
@@ -1374,6 +1477,21 @@ export default function RadioDispatchPage() {
   const playingMsg = playingId ? messages.find((m) => m.id === playingId) || null : null;
   const onAir = recording || !!playingId;
 
+  /* ── Standby (radio-face panel when the feed is quiet) ──────────────── */
+  /* Most recent traffic anywhere on the band — the rail data already has it. */
+  const lastTraffic = useMemo(() => {
+    let best: RadioChannel | null = null;
+    for (const c of channels) {
+      const at = c.lastMessage?.at;
+      if (!at) continue;
+      if (!best || new Date(at).getTime() > new Date(best.lastMessage!.at).getTime()) best = c;
+    }
+    return best;
+  }, [channels]);
+  /* The feed region never renders as a void: with no channel selected, or a
+   * selected channel showing two or fewer rows, the standby panel fills it. */
+  const standbyOn = !firstLoad && !msgError && (active ? !!msgData && messages.length <= 2 : !chError);
+
   /* ── Render helpers ─────────────────────────────────────────────────── */
   const renderTranscript = (m: RadioMessage) => {
     const translated = m.translations?.[lang];
@@ -1739,9 +1857,18 @@ export default function RadioDispatchPage() {
         }
       `}</style>
       <ModuleHero
-        eyebrow="Saguaro Radio"
+        eyebrow="Dispatch Console"
         eyebrowIcon={<Broadcast size={13} weight="bold" />}
-        title="Dispatch"
+        title={
+          <>
+            <VividGoldChip
+              icon={<Broadcast size={26} weight="fill" />}
+              size={50}
+              style={{ verticalAlign: 'middle', marginRight: 16, transform: 'translateY(-3px)' }}
+            />
+            Saguaro
+          </>
+        }
         accent="Radio"
         subtitle="Live talkgroups across the field — push-to-talk traffic, transcripts in English and Spanish, alerts, and a panic fan-out that reaches every member in seconds."
         actions={
@@ -1846,7 +1973,7 @@ export default function RadioDispatchPage() {
       <SectionCard
         title="Site Map"
         subtitle={mapOpen ? 'Live crew positions and a human heatmap of where the work happened.' : undefined}
-        icon={<MapTrifold size={16} weight="bold" color={GOLD_HI} />}
+        icon={<MapTrifold size={16} weight="bold" color="#F8FAFC" />}
         action={
           <button
             onClick={() => setMapOpen((v) => !v)}
@@ -1888,7 +2015,7 @@ export default function RadioDispatchPage() {
           <SectionCard
             title="Assistance queue"
             subtitle={assistQueue.length ? `${assistOpenCount} waiting · ${assistQueue.length - assistOpenCount} acknowledged` : undefined}
-            icon={<Lifebuoy size={16} weight="bold" color={assistOpenCount > 0 ? RED : GOLD_HI} />}
+            icon={<Lifebuoy size={16} weight="bold" color={assistOpenCount > 0 ? RED : '#F8FAFC'} />}
             action={
               <button
                 onClick={() => setAssistShown(false)}
@@ -1986,7 +2113,7 @@ export default function RadioDispatchPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
         <SectionCard
           title="Channels"
-          icon={<Broadcast size={16} weight="bold" color={GOLD_HI} />}
+          icon={<Broadcast size={16} weight="bold" color="#F8FAFC" />}
           action={
             <button
               onClick={() => setShowNew((v) => !v)}
@@ -2053,7 +2180,7 @@ export default function RadioDispatchPage() {
         {/* ── Patch board — bridge two talkgroups until released ───────── */}
         <SectionCard
           title="Patch board"
-          icon={<PlugsConnected size={16} weight="bold" color={GOLD_HI} />}
+          icon={<PlugsConnected size={16} weight="bold" color="#F8FAFC" />}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <select
@@ -2119,7 +2246,7 @@ export default function RadioDispatchPage() {
         <SectionCard
           title={active ? active.name : 'Channel'}
           subtitle={active ? `${active.members} member${active.members === 1 ? '' : 's'}${activeOn ? ` · ${activeOn} on channel now` : ''}${active.priority ? ' · PRIORITY' : ''}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : ''}` : undefined}
-          icon={<Hash size={16} weight="bold" color={GOLD_HI} />}
+          icon={<Hash size={16} weight="bold" color="#F8FAFC" />}
           action={
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {rtLive && (
@@ -2495,7 +2622,7 @@ export default function RadioDispatchPage() {
             </div>
 
             {/* Traffic */}
-            <div ref={feedRef} style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 6px' }}>
+            <div ref={feedRef} style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 6px', display: 'flex', flexDirection: 'column' }}>
               {!active && firstLoad && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={58} borderRadius={12} />)}
@@ -2509,10 +2636,115 @@ export default function RadioDispatchPage() {
               {active && msgError && (
                 <PremiumEmpty tone="error" icon={<Warning size={30} color={RED} weight="fill" />} title="Feed unavailable" description="Could not load this channel's traffic. The console retries automatically every few seconds." />
               )}
-              {active && msgData && messages.length === 0 && (
-                <PremiumEmpty icon={<Microphone size={30} color={GOLD_HI} weight="fill" />} title="Channel is quiet" description="No traffic yet. Key up with hold-to-talk below (or hold SPACE), or send the first text — every monitoring member hears about it." />
-              )}
               {messages.map(renderRow)}
+              {/* ── Standby radio face — the feed is never a black void ──── */}
+              {standbyOn && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 300, maxWidth: 640, width: '100%', margin: '0 auto', paddingTop: messages.length ? 14 : 4, paddingBottom: 8 }}>
+                  {/* Lockup */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 14 }}>
+                    <VividGoldChip icon={<Broadcast size={20} weight="fill" />} size={40} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: WHITE, letterSpacing: '-0.01em' }}>
+                        Saguaro Radio — standing by
+                      </div>
+                      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 1 }}>
+                        {channels.length
+                          ? `Monitoring ${stats.monitored} of ${stats.channels} talkgroup${stats.channels === 1 ? '' : 's'} — traffic appears here the moment anyone keys up.`
+                          : 'No talkgroups yet — create your first channel and the band comes alive.'}
+                      </div>
+                    </div>
+                  </div>
+                  <FrequencyDial seed={activeId || 'saguaro'} />
+                  {/* Last traffic across the band */}
+                  {lastTraffic?.lastMessage && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 12px', marginTop: 12, borderRadius: 10, background: NEST, border: `1px solid ${BORDER}` }}>
+                      <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>LAST TRAFFIC</span>
+                      <span style={{ fontSize: 12, color: WHITE, fontWeight: 700, minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {senderShort(lastTraffic.lastMessage.sender)} — {trafficPreview(lastTraffic.lastMessage)}
+                      </span>
+                      <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                        {lastTraffic.name} · {whenLabel(lastTraffic.lastMessage.at)}
+                      </span>
+                    </div>
+                  )}
+                  {/* Channel guide — everything the rail knows, tappable */}
+                  {channels.length > 0 && (
+                    <div style={{ marginTop: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                        <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.14em', color: FAINT }}>CHANNEL GUIDE</span>
+                        <span style={{ fontSize: 10.5, color: FAINT }}>tap a channel to tune in</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 }}>
+                        {channels.slice(0, 8).map((c, i) => {
+                          const cur = c.id === activeId;
+                          const unread = typeof c.unread === 'number' && c.unread > 0 ? c.unread : 0;
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => setActiveId(c.id)}
+                              title={`Tune to ${c.name}`}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px',
+                                borderRadius: 11, cursor: 'pointer', textAlign: 'left',
+                                background: cur ? 'linear-gradient(180deg, rgba(245,158,11,0.16), rgba(245,158,11,0.06))' : FIELD_BG,
+                                border: cur ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
+                              }}
+                            >
+                              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 900, letterSpacing: '0.08em', color: cur ? GOLD_HI : FAINT, fontVariantNumeric: 'tabular-nums', border: `1px solid ${cur ? AMBER_BORDER : BORDER}`, borderRadius: 7, padding: '3px 6px' }}>
+                                CH {String(i + 1).padStart(2, '0')}
+                              </span>
+                              <span style={{ minWidth: 0, flex: 1 }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                  <span style={{ fontSize: 12.5, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                                  {c.priority && <Star size={10} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
+                                </span>
+                                <span style={{ display: 'block', fontSize: 10.5, color: FAINT, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {c.members} member{c.members === 1 ? '' : 's'}
+                                  {c.lastMessage?.at ? ` · last ${whenLabel(c.lastMessage.at)}` : ' · no traffic yet'}
+                                </span>
+                              </span>
+                              {unread > 0 && (
+                                <span style={{ flexShrink: 0, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})`, color: '#241500', fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
+                                  {unread > 99 ? '99+' : unread}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {channels.length > 8 && (
+                        <div style={{ fontSize: 10.5, color: FAINT, marginTop: 6 }}>+{channels.length - 8} more in the channel rail</div>
+                      )}
+                    </div>
+                  )}
+                  {/* Quick actions */}
+                  <div style={{ marginTop: 'auto', paddingTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => { pendingSelfEditRef.current = true; setRosterOpen(true); }}
+                      disabled={!active}
+                      title="Set your handle (call sign)"
+                      style={{ ...goldOutlineButtonStyle, padding: '7px 14px', fontSize: 12, opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default' }}
+                    >
+                      <PencilSimple size={12} weight="bold" /> Set handle
+                    </button>
+                    <button
+                      onClick={() => setShowNew(true)}
+                      title="Start a new talkgroup"
+                      style={{ ...goldOutlineButtonStyle, padding: '7px 14px', fontSize: 12 }}
+                    >
+                      <Plus size={12} weight="bold" /> New group
+                    </button>
+                    <button
+                      onClick={() => setShareOpen(true)}
+                      disabled={!active}
+                      title="Share this channel with a guest — listen or talk, no account needed"
+                      style={{ ...goldOutlineButtonStyle, padding: '7px 14px', fontSize: 12, opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default' }}
+                    >
+                      <ShareNetwork size={12} weight="bold" /> Share channel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pending attachment — inline caption prompt before it transmits */}

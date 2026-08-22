@@ -21,7 +21,8 @@ import { useState, useEffect } from 'react';
 import { UsersThree, ShieldCheck } from '@phosphor-icons/react';
 import { PeopleDirectory } from '@/components/team/PeopleDirectory';
 import { AccessManager } from '@/components/team/AccessManager';
-import { PremiumSurface, ModuleHero, StatStrip } from '@/components/ui/premium';
+import { PremiumSurface, ModuleHero, StatStrip, IconChip } from '@/components/ui/premium';
+import { moduleAccent } from '@/lib/module-identity';
 import { getAuthHeaders, getSupabaseBrowser } from '@/lib/supabase-browser';
 
 // Kit-aligned literals (mirror components/ui/premium.tsx tokens)
@@ -104,7 +105,8 @@ export default function PeopleAccessHub() {
       {/* ── cinematic header ── */}
       <ModuleHero
         eyebrow="Team"
-        eyebrowIcon={<UsersThree size={13} weight="fill" color={GOLD} />}
+        eyebrowIcon={<IconChip size={24} vivid={moduleAccent('team').vivid ?? moduleAccent('team').hex}><UsersThree size={13} weight="fill" color="#F8FAFC" /></IconChip>}
+        accentColor={moduleAccent('team').hex}
         title="People &"
         accent="Access"
         subtitle="Crew & HR records and role-based access control — manage your workforce and permissions in one place."
