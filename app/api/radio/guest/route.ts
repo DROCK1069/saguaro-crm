@@ -82,8 +82,17 @@ export async function POST(req: NextRequest) {
         const durationSecs = Number(form.get('durationSecs')) || null;
         if (!file) return NextResponse.json({ error: 'file required' }, { status: 400 });
         if (file.size > MAX_BYTES) return NextResponse.json({ error: 'Audio too large' }, { status: 413 });
-        const safeName = String(file.name || 'clip.webm').replace(/[^\w.\-]+/g, '_');
-        if (!AUDIO_OK.test(safeName)) return NextResponse.json({ error: 'Unsupported audio type' }, { status: 415 });
+        // Same rule as the staff voice route: a guest's hold-to-talk clip is
+        // renamed from its content type when the browser's blob name fails the
+        // pattern — never 415 a live transmission over a filename.
+        let safeName = String(file.name || 'clip.webm').replace(/[^\w.\-]+/g, '_');
+        if (!AUDIO_OK.test(safeName)) {
+          const ct = String(file.type || '').toLowerCase();
+          const ext = ct.includes('webm') ? 'webm' : ct.includes('ogg') ? 'ogg'
+            : ct.includes('wav') ? 'wav' : ct.includes('mpeg') || ct.includes('mp3') ? 'mp3'
+            : ct.includes('aac') ? 'aac' : ct.includes('mp4') ? 'm4a' : 'webm';
+          safeName = `clip.${ext}`;
+        }
         const path = `${ch.tenant_id}/radio/${ch.id}/${Date.now()}_guest_${safeName}`;
         const buffer = Buffer.from(await file.arrayBuffer());
         const { error: upErr } = await db.storage.from(BUCKET).upload(path, buffer, { contentType: file.type || 'audio/webm', upsert: false });

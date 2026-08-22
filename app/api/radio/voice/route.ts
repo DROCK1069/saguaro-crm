@@ -24,8 +24,18 @@ export async function POST(req: NextRequest) {
     const file = form.get('file') as File | null;
     if (!channelId || !file) return NextResponse.json({ error: 'channelId and file required' }, { status: 400 });
     if (file.size > MAX_BYTES) return NextResponse.json({ error: 'Audio too large' }, { status: 413 });
-    const safeName = String(file.name || 'clip.m4a').replace(/[^\w.\-]+/g, '_');
-    if (!ALLOWED.test(safeName)) return NextResponse.json({ error: 'Unsupported audio type' }, { status: 415 });
+    // Never bounce an authed PTT clip on its filename: browsers name blobs
+    // from negotiated mimeTypes (codecs suffixes and all), and a rejected key
+    // press reads as "the radio is broken" in the field. If the name fails the
+    // pattern, rename from the content type instead of 415ing.
+    let safeName = String(file.name || 'clip.m4a').replace(/[^\w.\-]+/g, '_');
+    if (!ALLOWED.test(safeName)) {
+      const ct = String(file.type || '').toLowerCase();
+      const ext = ct.includes('webm') ? 'webm' : ct.includes('ogg') ? 'ogg'
+        : ct.includes('wav') ? 'wav' : ct.includes('mpeg') || ct.includes('mp3') ? 'mp3'
+        : ct.includes('aac') ? 'aac' : 'm4a';
+      safeName = `clip.${ext}`;
+    }
 
     const db = createServerClient() as any;
     const { data: mem } = await db.from('radio_members').select('id').eq('tenant_id', t).eq('channel_id', channelId).eq('user_id', g.user.id).limit(1);

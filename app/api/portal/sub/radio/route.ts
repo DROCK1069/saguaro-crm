@@ -95,9 +95,17 @@ export async function POST(req: NextRequest) {
       const durationSecs = Number(form.get('durationSecs')) || null;
       if (!file) return NextResponse.json({ error: 'file required' }, { status: 400 });
       if (file.size > MAX_BYTES) return NextResponse.json({ error: 'File too large' }, { status: 413 });
-      const safeName = String(file.name || 'clip.m4a').replace(/[^\w.\-]+/g, '_');
+      let safeName = String(file.name || 'clip.m4a').replace(/[^\w.\-]+/g, '_');
       const isAttachment = IMAGE_ALLOWED.test(safeName);
-      if (!isAttachment && !ALLOWED.test(safeName)) return NextResponse.json({ error: 'Unsupported file type' }, { status: 415 });
+      // Voice clips are never bounced on filename: browsers name blobs from
+      // negotiated mimeTypes — rename from the content type instead of 415ing.
+      if (!isAttachment && !ALLOWED.test(safeName)) {
+        const fct = String(file.type || '').toLowerCase();
+        const ext = fct.includes('webm') ? 'webm' : fct.includes('ogg') ? 'ogg'
+          : fct.includes('wav') ? 'wav' : fct.includes('mpeg') || fct.includes('mp3') ? 'mp3'
+          : fct.includes('aac') ? 'aac' : 'm4a';
+        safeName = `clip.${ext}`;
+      }
       const path = `${a.session.tenant_id}/radio/${ch.id}/${Date.now()}_sub_${safeName}`;
       const buffer = Buffer.from(await file.arrayBuffer());
       const fallbackType = isAttachment ? 'application/octet-stream' : 'audio/mp4';

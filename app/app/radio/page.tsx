@@ -507,6 +507,16 @@ export default function RadioDispatchPage() {
     setStatusDraft(me.presence_status && PRESENCE[me.presence_status] ? me.presence_status : 'available');
     setEditingProfile(true);
   };
+  // "Handle" header chip: one click opens the roster ALREADY in self-edit —
+  // the CB handle must never be buried two taps deep.
+  const pendingSelfEditRef = useRef(false);
+  const myRosterRow = rosterMembers.find((m) => !!myUserId && m.user_id === myUserId) || null;
+  useEffect(() => {
+    if (!rosterOpen || !pendingSelfEditRef.current || !myRosterRow) return;
+    pendingSelfEditRef.current = false;
+    startEditProfile(myRosterRow);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rosterOpen, myRosterRow]);
   const saveProfile = async () => {
     if (savingProfile) return;
     setSavingProfile(true);
@@ -964,7 +974,8 @@ export default function RadioDispatchPage() {
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
         chunksRef.current = [];
         if (durationSecs < 0.5 || blob.size === 0 || !activeId) return;
-        const ext = (rec.mimeType || '').includes('mp4') ? 'mp4' : 'webm';
+        const mt = rec.mimeType || '';
+        const ext = mt.includes('mp4') ? 'mp4' : mt.includes('ogg') ? 'ogg' : mt.includes('wav') ? 'wav' : 'webm';
         const fd = new FormData();
         fd.append('channelId', activeId);
         fd.append('durationSecs', String(Math.round(durationSecs * 10) / 10));
@@ -2274,7 +2285,18 @@ export default function RadioDispatchPage() {
                 )}
               </div>
               {/* Roster — members w/ presence dots + call signs; own row edits */}
-              <div ref={rosterRef} style={{ position: 'relative' }}>
+              <div ref={rosterRef} style={{ position: 'relative', display: 'inline-flex', gap: 8 }}>
+                <button
+                  onClick={() => { pendingSelfEditRef.current = true; setRosterOpen(true); }}
+                  disabled={!active}
+                  title="Set your handle (call sign)"
+                  style={{
+                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
+                    opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
+                  }}
+                >
+                  <PencilSimple size={12} weight="bold" /> {myRosterRow?.call_sign ? `Handle: ${myRosterRow.call_sign}` : 'Set handle'}
+                </button>
                 <button
                   onClick={() => setRosterOpen((v) => !v)}
                   disabled={!active}
