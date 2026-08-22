@@ -5,7 +5,11 @@ import { requirePermission } from '@/lib/permissions';
  * Saguaro Radio — talkgroups.
  * GET ?projectId= — list the caller's channels (org-wide + this project's).
  *   Auto-creates the project's "All Hands" talkgroup on first touch (subs
- *   allowed — approved scope) and auto-joins the caller.
+ *   allowed — approved scope) and auto-joins the caller. The list response
+ *   also carries `patches` — the tenant's live channel patches — so the
+ *   dispatch patch board needs no extra GET.
+ * GET ?roster=channelId — that channel's member roster (display_name,
+ *   call_sign, presence_status, role, last_seen_at). Members only.
  * POST { name, projectId?, allowSubs? } — create a custom talkgroup.
  */
 export async function GET(req: NextRequest) {
@@ -13,6 +17,19 @@ export async function GET(req: NextRequest) {
   if (!g.ok) return g.res;
   const db = g.db as any, t = g.user.tenantId, uid = g.user.id;
   try {
+    // ── Roster: one channel's members (dispatch console member panel) ──
+    const rosterId = req.nextUrl.searchParams.get('roster');
+    if (rosterId) {
+      const { data: me } = await db.from('radio_members').select('id').eq('tenant_id', t).eq('channel_id', rosterId).eq('user_id', uid).limit(1);
+      if (!me || me.length === 0) return NextResponse.json({ error: 'Not a member of this channel' }, { status: 403 });
+      const { data: mem, error } = await db.from('radio_members')
+        .select('user_id, display_name, call_sign, presence_status, role, last_seen_at')
+        .eq('tenant_id', t).eq('channel_id', rosterId)
+        .order('display_name', { ascending: true });
+      if (error) throw error;
+      return NextResponse.json({ members: mem || [] });
+    }
+
     const projectId = req.nextUrl.searchParams.get('projectId');
 
     if (projectId) {
@@ -73,7 +90,12 @@ export async function GET(req: NextRequest) {
 
     // Locked (dispatcher-invite-only) channels are invisible to non-members.
     const visible = enriched.filter((c: any) => !c.locked || memMap.has(c.id));
-    return NextResponse.json({ channels: visible });
+
+    // Live patches ride along for the dispatch patch board.
+    const { data: livePatches } = await db.from('radio_channel_patches')
+      .select('id, channel_a, channel_b, created_at')
+      .eq('tenant_id', t).is('released_at', null);
+    return NextResponse.json({ channels: visible, patches: livePatches || [] });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

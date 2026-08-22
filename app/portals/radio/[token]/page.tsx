@@ -53,10 +53,41 @@ export default function RadioGuestPage() {
   const sentIdsRef = useRef<Set<string>>(new Set());
   const primedRef = useRef(false);
   const deniedRef = useRef(false);
+  const interactedRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const voiceSupported = typeof window !== 'undefined' && typeof MediaRecorder !== 'undefined' && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
   const showToast = useCallback((m: string) => { setToast(m); setTimeout(() => setToast(''), 3500); }, []);
+
+  /* ── Tone beep: WebAudio, armed by the first user gesture (autoplay guard —
+     browsers reject AudioContext playback before any interaction). ── */
+  useEffect(() => {
+    const arm = () => { interactedRef.current = true; };
+    window.addEventListener('pointerdown', arm, { once: true });
+    window.addEventListener('keydown', arm, { once: true });
+    return () => { window.removeEventListener('pointerdown', arm); window.removeEventListener('keydown', arm); };
+  }, []);
+  const playToneBeep = useCallback((tone: string) => {
+    if (!interactedRef.current || typeof window === 'undefined') return;
+    try {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AC) return;
+      const ctx = audioCtxRef.current || (audioCtxRef.current = new AC());
+      if (ctx.state === 'suspended') void ctx.resume();
+      const freqs = tone === 'negative' ? [330, 247] : tone === 'comein' ? [660, 880] : [880];
+      freqs.forEach((f, i) => {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        const t0 = ctx.currentTime + i * 0.14;
+        osc.type = 'sine'; osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.14);
+      });
+    } catch { /* audio unavailable: the chip still renders */ }
+  }, []);
 
   /* ── Feed: fetch immediately, poll every 4s. Signed audio URLs are kept
      from first sight per id so an <audio> element mid-playback never has
@@ -78,7 +109,10 @@ export default function RadioGuestPage() {
         setCanTalk(d.canTalk !== false);
         const incoming = (d.messages || []) as any[];
         // Unread-style flash: ids this session has never rendered (skip the first fill).
-        const fresh = primedRef.current ? incoming.filter((m: any) => m.id && !idsRef.current.has(m.id)).map((m: any) => m.id) : [];
+        const freshMsgs = primedRef.current ? incoming.filter((m: any) => m.id && !idsRef.current.has(m.id)) : [];
+        const fresh = freshMsgs.map((m: any) => m.id);
+        const freshTone = freshMsgs.find((m: any) => m.kind === 'tone');
+        if (freshTone) playToneBeep(String(freshTone.body || ''));
         incoming.forEach((m: any) => { if (m.id) idsRef.current.add(m.id); });
         primedRef.current = true;
         if (fresh.length) {
@@ -232,16 +266,31 @@ export default function RadioGuestPage() {
                 const c = m.kind === 'panic' ? RED : AMBER;
                 return (
                   <div key={m.id} style={{ padding: '10px 14px', background: c + '11', border: `1px solid ${c}55`, borderRadius: 8, marginBottom: 10, ...(flashIds.has(m.id) ? { animation: 'sgRadioRing 2.4s ease-out' } : {}) }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: c, textTransform: 'uppercase', letterSpacing: .6, marginBottom: 4 }}>{'\u26A0'} {m.kind === 'panic' ? 'Panic' : 'Alert'} &middot; {m.sender_name || 'Unknown'}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: c, textTransform: 'uppercase', letterSpacing: .6, marginBottom: 4 }}>{'\u26A0'} {m.kind === 'panic' ? 'Panic' : 'Alert'} &middot; {m.sender_name || 'Unknown'}{m.patched_from ? <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, color: GOLD, background: GOLD + '14', border: `1px solid ${GOLD}44`, borderRadius: 10, padding: '1px 7px', letterSpacing: .5, textTransform: 'none', verticalAlign: 'middle' }}>via patched channel</span> : null}</div>
                     {shown && <div style={{ fontSize: 13, color: TEXT, lineHeight: 1.5 }}>{shown}</div>}
                     <div style={{ fontSize: 10, color: DIM, marginTop: 4 }}>{new Date(m.created_at).toLocaleTimeString()}</div>
+                  </div>
+                );
+              }
+              if (m.kind === 'tone') {
+                const tone = String(m.body || '');
+                const tc = tone === 'negative' ? RED : tone === 'comein' ? AMBER : GREEN;
+                const tl = tone === 'negative' ? 'NEGATIVE' : tone === 'comein' ? 'COME IN' : 'ACK';
+                return (
+                  <div key={m.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', marginBottom: 10, ...(flashIds.has(m.id) ? { animation: 'sgRadioFlash 2.4s ease-out', borderRadius: 10 } : {}) }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: tc + '14', border: `1px solid ${tc}55`, borderRadius: 20, flexWrap: 'wrap' }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: tc, flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, fontWeight: 800, color: tc, letterSpacing: 1 }}>{tl}</span>
+                      <span style={{ fontSize: 10, color: DIM }}>{mine ? 'You' : (m.sender_name || 'Unknown')} &middot; {new Date(m.created_at).toLocaleTimeString()}</span>
+                      {m.patched_from && <span style={{ fontSize: 9, fontWeight: 700, color: GOLD, background: GOLD + '14', border: `1px solid ${GOLD}44`, borderRadius: 10, padding: '1px 7px', letterSpacing: .5 }}>via patched channel</span>}
+                    </div>
                   </div>
                 );
               }
               return (
                 <div key={m.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', marginBottom: 10, ...(flashIds.has(m.id) ? { animation: 'sgRadioFlash 2.4s ease-out', borderRadius: 10 } : {}) }}>
                   <div style={{ maxWidth: '82%', padding: '10px 14px', borderRadius: 12, background: mine ? GOLD + '1a' : DARK, border: `1px solid ${mine ? GOLD + '44' : BORDER}`, borderBottomRightRadius: mine ? 2 : 12, borderBottomLeftRadius: mine ? 12 : 2 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: mine ? GOLD : DIM, marginBottom: 4 }}>{mine ? 'You' : (m.sender_name || 'Unknown')}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: mine ? GOLD : DIM, marginBottom: 4 }}>{mine ? 'You' : (m.sender_name || 'Unknown')}{m.patched_from ? <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, color: GOLD, background: GOLD + '14', border: `1px solid ${GOLD}44`, borderRadius: 10, padding: '1px 7px', letterSpacing: .5, verticalAlign: 'middle' }}>via patched channel</span> : null}</div>
                     {m.kind === 'voice' ? (
                       <div>
                         <RadioWave seed={String(m.id || '')} color={mine ? GOLD : DIM} />

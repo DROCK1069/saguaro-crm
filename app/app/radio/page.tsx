@@ -29,6 +29,13 @@
  * The monitor toggle is a per-browser dispatch preference (localStorage
  * 'sag_radio_mon') layered over the server membership flag. Heard voice clips
  * are tracked per-browser under 'sag_radio_heard' (capped at 500 ids).
+ *
+ * Tier-1 dispatch controls: assistance queue (SWR 10s; one-click ack /
+ * resolve w/ header badge), channel roster w/ call signs + presence (GET
+ * ?roster= / POST profile), patch board (two-channel bridge w/ release;
+ * mirrored rows tagged 'via <channel>'), priority-channel star, tone
+ * signaling (ACK / NEG / COME IN — WebAudio beeps at distinct frequencies),
+ * and the recording console (date range + search + print-ready record).
  */
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import useSWR from 'swr';
@@ -57,6 +64,8 @@ import {
   Copy,
   Trash,
   X,
+  MapTrifold,
+  CaretDown,
 } from '@phosphor-icons/react';
 import {
   PremiumSurface,
@@ -69,7 +78,22 @@ import {
 } from '@/components/ui/premium';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SMeter } from '@/components/ui/SMeter';
+import { CrewMap, type CrewPin, type HeatBin } from '@/components/ui/CrewMap';
 import { HAS_SUPABASE, getSupabaseBrowser, ensureBrowserSession, getSession } from '@/lib/supabase-browser';
+/* Tier-1 dispatch console additions (separate import statement so the block
+ * above stays byte-stable for parallel workstreams). */
+import {
+  Star,
+  Printer,
+  PlugsConnected,
+  Lifebuoy,
+  BellRinging,
+  ClockCounterClockwise,
+  MagnifyingGlass,
+  PencilSimple,
+  CaretUp,
+} from '@phosphor-icons/react';
+import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 
 /* ── Palette (dark shell: white/gold alphas only) ─────────────────────── */
 const WHITE = '#FFFFFF';
@@ -103,11 +127,15 @@ interface RadioChannel {
   onChannel?: number;
   /** v2: traffic since the caller's last_read_at. */
   unread?: number;
+  /** Tier-1: dispatcher-invite-only channel (invisible to non-members). */
+  locked?: boolean;
+  /** Tier-1: priority channel — interrupts scanning first. */
+  priority?: boolean;
   lastMessage: { kind: string; body: string | null; sender: string | null; at: string; secs: number | null } | null;
 }
 interface RadioMessage {
   id: string;
-  kind: 'voice' | 'text' | 'image' | 'alert' | 'panic';
+  kind: 'voice' | 'text' | 'image' | 'alert' | 'panic' | 'tone';
   body: string | null;
   sender_name: string | null;
   sender_user_id: string | null;
@@ -124,6 +152,8 @@ interface RadioMessage {
   panic_resolved_at?: string | null;
   /** v2: members who have seen this row (from read piggyback), when computed. */
   seen_count?: number | null;
+  /** Tier-1: source channel id when this row was mirrored through a patch. */
+  patched_from?: string | null;
   created_at: string;
 }
 /** Guest sharing link (staff rows from GET /api/radio/guest?channelId=). */
@@ -135,6 +165,36 @@ interface GuestLink {
   expires_at: string | null;
   revoked_at: string | null;
   created_at: string;
+}
+/** Assistance request (rows from GET /api/radio/assist). */
+interface AssistRow {
+  id: string;
+  channel_id: string | null;
+  project_id: string | null;
+  requester_user_id: string | null;
+  requester_name: string | null;
+  note: string | null;
+  location: { lat: number; lng: number } | null;
+  status: string;
+  acknowledged_by: string | null;
+  acknowledged_at: string | null;
+  created_at: string;
+}
+/** Channel roster row (GET /api/radio/channels?roster=). */
+interface RosterMember {
+  user_id: string | null;
+  display_name: string | null;
+  call_sign: string | null;
+  presence_status: 'available' | 'busy' | 'on_route' | 'off' | null;
+  role: string | null;
+  last_seen_at: string | null;
+}
+/** Live channel patch (rides the channels GET as `patches`). */
+interface ActivePatch {
+  id: string;
+  channel_a: string;
+  channel_b: string;
+  created_at?: string;
 }
 
 const fetcher = async (url: string) => {
@@ -236,6 +296,29 @@ const rowActionStyle: React.CSSProperties = {
   color: MUTED, fontSize: 10.5, fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
 };
 
+/* Tone signaling — labels, colors, and distinct WebAudio beep frequencies. */
+const TONES: Record<string, { label: string; color: string; border: string; soft: string; freq: number; hold: number }> = {
+  ack: { label: 'ACK', color: GREEN, border: GREEN_BORDER, soft: GREEN_SOFT, freq: 880, hold: 0.22 },
+  negative: { label: 'NEGATIVE', color: RED, border: RED_BORDER, soft: RED_SOFT, freq: 294, hold: 0.3 },
+  comein: { label: 'COME IN', color: GOLD_HI, border: AMBER_BORDER, soft: AMBER_SOFT, freq: 587, hold: 0.45 },
+};
+
+/* Presence status — roster dot colors + labels (server enum). */
+const PRESENCE: Record<string, { label: string; color: string }> = {
+  available: { label: 'Available', color: GREEN },
+  busy: { label: 'Busy', color: RED },
+  on_route: { label: 'On route', color: GOLD_HI },
+  off: { label: 'Off', color: FAINT },
+};
+
+/* Age of an assistance request, live against a ticking now. */
+const ageLabel = (iso: string, nowMs: number) => {
+  const s = Math.max(0, Math.floor((nowMs - new Date(iso).getTime()) / 1000));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+};
+
 export default function RadioDispatchPage() {
   /* ── URL params, read once on mount (no Suspense requirement) ───────── */
   const [ready, setReady] = useState(false);
@@ -268,7 +351,7 @@ export default function RadioDispatchPage() {
   const channelsKey = ready
     ? (projectId ? `/api/radio/channels?projectId=${encodeURIComponent(projectId)}` : '/api/radio/channels')
     : null;
-  const { data: chData, error: chError, mutate: mutateChannels } = useSWR<{ channels: RadioChannel[] }>(
+  const { data: chData, error: chError, mutate: mutateChannels } = useSWR<{ channels: RadioChannel[]; patches?: ActivePatch[] }>(
     channelsKey, fetcher,
     { refreshInterval: 20_000, revalidateOnFocus: true, keepPreviousData: true },
   );
@@ -321,6 +404,121 @@ export default function RadioDispatchPage() {
       }
     } catch { /* surfaced by the rail staying unchanged */ }
     setCreating(false);
+  };
+
+  /* ── Assistance queue (SWR 10s — badge always live, board collapsible) ─ */
+  const assistKey = ready
+    ? (projectId ? `/api/radio/assist?projectId=${encodeURIComponent(projectId)}` : '/api/radio/assist')
+    : null;
+  const { data: assistData, mutate: mutateAssist } = useSWR<{ queue: AssistRow[] }>(
+    assistKey, fetcher,
+    { refreshInterval: 10_000, revalidateOnFocus: true, keepPreviousData: true },
+  );
+  const assistQueue = assistData?.queue ?? [];
+  const assistOpenCount = assistQueue.filter((a) => a.status === 'open').length;
+  const [assistShown, setAssistShown] = useState(false);
+  const [assistBusy, setAssistBusy] = useState<string | null>(null);
+  const [assistNow, setAssistNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!assistShown) return;
+    setAssistNow(Date.now());
+    const iv = setInterval(() => setAssistNow(Date.now()), 10_000);
+    return () => clearInterval(iv);
+  }, [assistShown]);
+  const triageAssist = async (id: string, action: 'ack' | 'resolve') => {
+    if (assistBusy) return;
+    setAssistBusy(id);
+    try {
+      const r = await fetch('/api/radio/assist', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assistId: id, action }),
+      });
+      if (r.ok) await mutateAssist();
+    } catch { /* row stays queued — dispatcher retries */ }
+    setAssistBusy(null);
+  };
+
+  /* ── Patch board (POST {patch:{a,b}}; live list rides the channels GET) */
+  const patches = chData?.patches ?? [];
+  const [patchA, setPatchA] = useState('');
+  const [patchB, setPatchB] = useState('');
+  const [patchBusy, setPatchBusy] = useState(false);
+  const channelName = useCallback(
+    (id: string) => channels.find((c) => c.id === id)?.name || 'Channel',
+    [channels],
+  );
+  const postPatch = async (a: string, b: string, release: boolean) => {
+    if (!a || !b || a === b || patchBusy) return;
+    setPatchBusy(true);
+    try {
+      const r = await fetch('/api/radio/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patch: release ? { a, b, release: true } : { a, b } }),
+      });
+      if (r.ok) {
+        if (!release) { setPatchA(''); setPatchB(''); }
+        await mutateChannels();
+      }
+    } catch { /* board unchanged — dispatcher retries */ }
+    setPatchBusy(false);
+  };
+
+  /* ── Priority channel (star toggle — interrupts scanning first) ─────── */
+  const [prioBusy, setPrioBusy] = useState<string | null>(null);
+  const togglePriority = async (c: RadioChannel) => {
+    if (prioBusy) return;
+    setPrioBusy(c.id);
+    try {
+      const r = await fetch('/api/radio/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priorityChannelId: c.id, priority: !c.priority }),
+      });
+      if (r.ok) await mutateChannels();
+    } catch { /* star stays — dispatcher retries */ }
+    setPrioBusy(null);
+  };
+
+  /* ── Roster (member panel: GET ?roster= + POST profile for own row) ─── */
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const rosterRef = useRef<HTMLDivElement | null>(null);
+  const rosterKey = rosterOpen && activeId ? `/api/radio/channels?roster=${encodeURIComponent(activeId)}` : null;
+  const { data: rosterData, error: rosterError, mutate: mutateRoster } = useSWR<{ members: RosterMember[] }>(
+    rosterKey, fetcher, { refreshInterval: 30_000, revalidateOnFocus: false },
+  );
+  const rosterMembers = rosterData?.members ?? [];
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [callSignDraft, setCallSignDraft] = useState('');
+  const [statusDraft, setStatusDraft] = useState<'available' | 'busy' | 'on_route' | 'off'>('available');
+  const [savingProfile, setSavingProfile] = useState(false);
+  useEffect(() => { setRosterOpen(false); setEditingProfile(false); }, [activeId]);
+  useEffect(() => {
+    if (!rosterOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (rosterRef.current && !rosterRef.current.contains(e.target as Node)) setRosterOpen(false);
+    };
+    window.addEventListener('pointerdown', onDown);
+    return () => window.removeEventListener('pointerdown', onDown);
+  }, [rosterOpen]);
+  const startEditProfile = (me: RosterMember) => {
+    setCallSignDraft(me.call_sign || '');
+    setStatusDraft(me.presence_status && PRESENCE[me.presence_status] ? me.presence_status : 'available');
+    setEditingProfile(true);
+  };
+  const saveProfile = async () => {
+    if (savingProfile) return;
+    setSavingProfile(true);
+    try {
+      const r = await fetch('/api/radio/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: { callSign: callSignDraft.trim(), presenceStatus: statusDraft } }),
+      });
+      if (r.ok) { setEditingProfile(false); await mutateRoster(); }
+    } catch { /* panel stays in edit — dispatcher retries */ }
+    setSavingProfile(false);
   };
 
   /* ── Realtime (postgres_changes INSERT on the active channel) ───────── */
@@ -540,6 +738,111 @@ export default function RadioDispatchPage() {
     } catch { /* keep the draft so nothing is lost */ }
     setSending(false);
   };
+
+  /* ── Tone signaling (ACK / NEGATIVE / COME IN — kind 'tone') ────────── */
+  /* Short sine beep through the page's shared AudioContext; each tone has
+   * its own frequency so dispatchers learn them by ear. Best-effort — the
+   * labeled chip in the feed is the source of truth. */
+  const playToneBeep = useCallback((tone: string) => {
+    const meta = TONES[tone];
+    if (!meta) return;
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state !== 'running') void ctx.resume().catch(() => { /* beep skipped */ });
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = meta.freq;
+      const t0 = ctx.currentTime;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.2, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + meta.hold);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + meta.hold + 0.1);
+    } catch { /* beep is best-effort — the chip still renders */ }
+  }, [getAudioCtx]);
+
+  const [toneSending, setToneSending] = useState<string | null>(null);
+  const sendTone = async (tone: 'ack' | 'negative' | 'comein') => {
+    if (!activeId || toneSending) return;
+    setToneSending(tone);
+    playToneBeep(tone); // local sidetone — the sender hears their own beep
+    try {
+      const r = await fetch('/api/radio/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelId: activeId, kind: 'tone', body: tone }),
+      });
+      if (r.ok) {
+        const j = await r.json().catch(() => null);
+        if (j?.message?.id) toneSeenRef.current.add(String(j.message.id)); // no double beep
+        await mutateMessages();
+      }
+    } catch { /* chip absence tells the dispatcher to re-key */ }
+    setToneSending(null);
+  };
+
+  /* Beep on arrival: any tone row this browser has not seen (and did not
+   * send) beeps once while fresh — old rows seed the set silently. */
+  const toneSeenRef = useRef<Set<string>>(new Set());
+  const toneChannelRef = useRef<string | null>(null);
+  useEffect(() => {
+    const seen = toneSeenRef.current;
+    if (toneChannelRef.current !== activeId) {
+      toneChannelRef.current = activeId;
+      seen.clear();
+    }
+    for (const m of messages) {
+      if (m.kind !== 'tone' || seen.has(m.id)) continue;
+      seen.add(m.id);
+      const fresh = Date.now() - new Date(m.created_at).getTime() < 30_000;
+      if (fresh && (!myUserId || m.sender_user_id !== myUserId)) playToneBeep(m.body || '');
+    }
+  }, [messages, activeId, myUserId, playToneBeep]);
+
+  /* ── Recording console (channel log: date range + search + print) ───── */
+  const [logOpen, setLogOpen] = useState(false);
+  const [logFrom, setLogFrom] = useState('');
+  const [logTo, setLogTo] = useState('');
+  const [logSearch, setLogSearch] = useState('');
+  useEffect(() => { setLogOpen(false); setLogSearch(''); }, [activeId]);
+  const logRangeParams = useMemo(() => {
+    /* SaguaroDatePicker hands back local calendar dates; the range is the
+     * whole local day on each end, sent as ISO instants (&from=&to=). */
+    const parse = (iso: string, end: boolean) => {
+      const [y, mo, d] = iso.split('-').map(Number);
+      if (!y || !mo || !d) return null;
+      const dt = end ? new Date(y, mo - 1, d, 23, 59, 59, 999) : new Date(y, mo - 1, d);
+      return isNaN(dt.getTime()) ? null : dt.toISOString();
+    };
+    const from = logFrom ? parse(logFrom, false) : null;
+    const to = logTo ? parse(logTo, true) : null;
+    return `${from ? `&from=${encodeURIComponent(from)}` : ''}${to ? `&to=${encodeURIComponent(to)}` : ''}`;
+  }, [logFrom, logTo]);
+  const logKey = logOpen && activeId
+    ? `/api/radio/messages?channelId=${encodeURIComponent(activeId)}${logRangeParams}`
+    : null;
+  const { data: logData, error: logError } = useSWR<{ messages: RadioMessage[] }>(
+    logKey, fetcher, { revalidateOnFocus: false, keepPreviousData: true },
+  );
+  const logText = useCallback((m: RadioMessage) => {
+    if (m.kind === 'voice') return m.transcript || `[voice clip${m.audio_duration_secs ? ` ${secsLabel(m.audio_duration_secs)}` : ''} — no transcript]`;
+    if (m.kind === 'tone') return `[tone — ${TONES[m.body || '']?.label || (m.body || '').toUpperCase()}]`;
+    if (m.kind === 'image') return m.body ? `[photo] ${m.body}` : '[photo]';
+    return m.body || '';
+  }, []);
+  const logRows = useMemo(() => {
+    const all = logData?.messages ?? [];
+    const q = logSearch.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter((m) =>
+      logText(m).toLowerCase().includes(q) ||
+      (m.sender_name || '').toLowerCase().includes(q) ||
+      m.kind.toLowerCase().includes(q));
+  }, [logData, logSearch, logText]);
 
   /* ── Attach (photos / PDFs / video → /api/radio/media) ──────────────── */
   /* Paperclip in the composer or drag-drop onto the feed; either way the
@@ -1010,6 +1313,44 @@ export default function RadioDispatchPage() {
   };
   useEffect(() => () => { if (panicTimerRef.current) clearInterval(panicTimerRef.current); }, []);
 
+  /* ── Site Map (dispatch map + human heatmap) ────────────────────── */
+  /* Collapsible panel over /api/radio/location: live pins poll at 15s while
+   * the panel is open, heat bins at 60s. Keys are null while collapsed (or
+   * without a projectId) so the closed panel costs zero requests. */
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mapHours, setMapHours] = useState(10);
+  const crewKey = mapOpen && projectId
+    ? `/api/radio/location?projectId=${encodeURIComponent(projectId)}`
+    : null;
+  const { data: crewData, error: crewErr } = useSWR<{ crew: CrewPin[] }>(
+    crewKey, fetcher,
+    { refreshInterval: 15_000, revalidateOnFocus: true, keepPreviousData: true },
+  );
+  const heatKey = mapOpen && projectId
+    ? `/api/radio/location?projectId=${encodeURIComponent(projectId)}&heatmap=1&hours=${mapHours}`
+    : null;
+  const { data: heatData, error: heatErr } = useSWR<{ bins: HeatBin[]; samples: number }>(
+    heatKey, fetcher,
+    { refreshInterval: 60_000, revalidateOnFocus: true, keepPreviousData: true },
+  );
+  /* Live unresolved panic positions from the active feed — pulsing red pins. */
+  const panicPins = useMemo(
+    () => messages
+      .filter((m) => m.kind === 'panic' && !m.panic_resolved_at)
+      .map((m) => {
+        const trail = Array.isArray(m.location_trail)
+          ? m.location_trail.filter((p) => p && typeof p.lat === 'number' && typeof p.lng === 'number')
+          : [];
+        const pos = trail.length ? trail[trail.length - 1] : m.location;
+        return pos && typeof pos.lat === 'number' && typeof pos.lng === 'number'
+          ? { lat: pos.lat, lng: pos.lng, name: senderShort(m.sender_name) }
+          : null;
+      })
+      .filter((p): p is { lat: number; lng: number; name: string } => !!p),
+    [messages],
+  );
+  const mapLoading = !!crewKey && ((!crewData && !crewErr) || (!heatData && !heatErr));
+
   /* ── Stats ──────────────────────────────────────────────────────────── */
   const stats = useMemo(() => {
     const reachable = channels.reduce((max, c) => Math.max(max, Number(c.members) || 0), 0);
@@ -1088,6 +1429,7 @@ export default function RadioDispatchPage() {
   const renderRow = (m: RadioMessage) => {
     const panic = m.kind === 'panic';
     const alert = m.kind === 'alert';
+    const tone = m.kind === 'tone' ? TONES[m.body || ''] : undefined;
     const resolved = panic && !!m.panic_resolved_at;
     const rowBg = panic ? (resolved ? 'rgba(239,68,68,0.05)' : RED_SOFT) : alert ? AMBER_SOFT : 'transparent';
     const rowBorder = panic
@@ -1119,13 +1461,21 @@ export default function RadioDispatchPage() {
             color: panic ? RED : GOLD_HI, fontSize: 11.5, fontWeight: 900,
           }}
         >
-          {panic ? <Siren size={16} weight="fill" /> : alert ? <Warning size={16} weight="fill" /> : m.kind === 'voice' ? <SpeakerHigh size={15} weight="fill" /> : initialsOf(m.sender_name)}
+          {panic ? <Siren size={16} weight="fill" /> : alert ? <Warning size={16} weight="fill" /> : m.kind === 'voice' ? <SpeakerHigh size={15} weight="fill" /> : m.kind === 'tone' ? <BellRinging size={15} weight="fill" /> : initialsOf(m.sender_name)}
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12.5, fontWeight: 800, color: panic ? RED : alert ? GOLD_HI : WHITE }}>
               {senderShort(m.sender_name)}
             </span>
+            {m.patched_from && (
+              <span
+                title={`Mirrored from ${channelName(m.patched_from)} through an active patch`}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9.5, fontWeight: 800, color: FAINT, border: `1px solid ${BORDER}`, borderRadius: 999, padding: '1px 7px', whiteSpace: 'nowrap' }}
+              >
+                <PlugsConnected size={10} weight="bold" /> via {channelName(m.patched_from)}
+              </span>
+            )}
             {panic && (
               <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', color: RED, border: `1px solid ${RED_BORDER}`, borderRadius: 999, padding: '1px 7px' }}>
                 PANIC
@@ -1171,6 +1521,15 @@ export default function RadioDispatchPage() {
             </span>
           </div>
 
+          {tone && (
+            <div style={{ marginTop: 6 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 999, background: tone.soft, border: `1px solid ${tone.border}`, color: tone.color, fontSize: 11, fontWeight: 900, letterSpacing: '0.12em' }}>
+                <BellRinging size={12} weight="fill" /> {tone.label}
+                <span style={{ color: FAINT, fontWeight: 700, letterSpacing: 'normal' }}>beep</span>
+              </span>
+            </div>
+          )}
+
           {m.kind === 'voice' && renderVoicePlayer(m)}
           {m.kind === 'voice' && renderTranscript(m)}
 
@@ -1180,7 +1539,7 @@ export default function RadioDispatchPage() {
             </a>
           )}
 
-          {m.kind !== 'voice' && m.body && (
+          {m.kind !== 'voice' && m.kind !== 'tone' && m.body && (
             <div style={{ fontSize: 13.5, color: panic ? '#FCA5A5' : WHITE, lineHeight: 1.55, marginTop: 4, overflowWrap: 'anywhere' }}>
               {m.body}
             </div>
@@ -1286,6 +1645,7 @@ export default function RadioDispatchPage() {
             <span style={{ fontSize: 13, fontWeight: 800, color: isActive ? GOLD_HI : WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {c.name}
             </span>
+            {c.priority && <Star size={11} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
             {lm?.kind === 'panic' && <Siren size={12} weight="fill" color={RED} style={{ flexShrink: 0 }} />}
           </div>
           <div style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>
@@ -1313,6 +1673,22 @@ export default function RadioDispatchPage() {
           </span>
         )}
         <button
+          onClick={(e) => { e.stopPropagation(); togglePriority(c); }}
+          disabled={prioBusy === c.id}
+          title={c.priority ? 'Priority channel — click to clear' : 'Make this a priority channel (interrupts scanning first)'}
+          aria-label={c.priority ? `Clear priority on ${c.name}` : `Make ${c.name} a priority channel`}
+          style={{
+            flexShrink: 0, width: 26, height: 26, borderRadius: 8, padding: 0,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            background: c.priority ? 'rgba(245,158,11,0.14)' : 'transparent',
+            border: c.priority ? '1px solid rgba(245,158,11,0.40)' : '1px solid transparent',
+            color: c.priority ? GOLD_HI : FAINT, cursor: 'pointer',
+            opacity: prioBusy === c.id ? 0.5 : 1,
+          }}
+        >
+          <Star size={13} weight={c.priority ? 'fill' : 'bold'} />
+        </button>
+        <button
           onClick={(e) => { e.stopPropagation(); toggleMonitor(c); }}
           title={mon ? 'Monitoring — click to mute on this board' : 'Muted on this board — click to monitor'}
           aria-label={mon ? `Stop monitoring ${c.name}` : `Monitor ${c.name}`}
@@ -1338,6 +1714,18 @@ export default function RadioDispatchPage() {
         @keyframes sagRadioEq { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
         .sagRadioRow .sagRowActions { opacity: 0; pointer-events: none; transition: opacity .15s ease; }
         .sagRadioRow:hover .sagRowActions, .sagRadioRow:focus-within .sagRowActions { opacity: 1; pointer-events: auto; }
+        @media print {
+          body * { visibility: hidden; }
+          #sagRadioLogPrint, #sagRadioLogPrint * {
+            visibility: visible;
+            color: #111111 !important;
+            background: #FFFFFF !important;
+            border-color: #BBBBBB !important;
+            box-shadow: none !important;
+          }
+          #sagRadioLogPrint { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; }
+          .sagRadioLogOverlay { position: static !important; overflow: visible !important; background: none !important; }
+        }
       `}</style>
       <ModuleHero
         eyebrow="Saguaro Radio"
@@ -1347,6 +1735,33 @@ export default function RadioDispatchPage() {
         subtitle="Live talkgroups across the field — push-to-talk traffic, transcripts in English and Spanish, alerts, and a panic fan-out that reaches every member in seconds."
         actions={
           <>
+            {/* Assistance queue toggle — badge counts the live queue */}
+            <button
+              onClick={() => setAssistShown((v) => !v)}
+              title="Assistance queue — field requests waiting on dispatch"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '9px 14px', borderRadius: 12, cursor: 'pointer',
+                background: assistShown ? 'linear-gradient(180deg, rgba(245,158,11,0.30), rgba(245,158,11,0.14))' : FIELD_BG,
+                border: assistOpenCount > 0 ? `1px solid ${RED_BORDER}` : FIELD_BORDER,
+                color: assistShown ? GOLD_HI : MUTED, fontWeight: 800, fontSize: 12.5,
+              }}
+            >
+              <Lifebuoy size={15} weight="bold" /> Assist
+              {assistQueue.length > 0 && (
+                <span
+                  style={{
+                    minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    background: assistOpenCount > 0 ? RED : 'rgba(255,255,255,0.14)',
+                    color: assistOpenCount > 0 ? WHITE : MUTED,
+                    fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {assistQueue.length}
+                </span>
+              )}
+            </button>
             {/* EN/ES transcript language toggle */}
             <div style={{ display: 'inline-flex', borderRadius: 10, overflow: 'hidden', border: FIELD_BORDER }}>
               {(['en', 'es'] as const).map((l) => (
@@ -1416,9 +1831,148 @@ export default function RadioDispatchPage() {
         />
       )}
 
+      {/* Site Map — live crew pins + human heatmap (collapsible) */}
+      <SectionCard
+        title="Site Map"
+        subtitle={mapOpen ? 'Live crew positions and a human heatmap of where the work happened.' : undefined}
+        icon={<MapTrifold size={16} weight="bold" color={GOLD_HI} />}
+        action={
+          <button
+            onClick={() => setMapOpen((v) => !v)}
+            aria-expanded={mapOpen}
+            style={{ ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12 }}
+          >
+            <CaretDown
+              size={13}
+              weight="bold"
+              style={{ transform: mapOpen ? 'rotate(180deg)' : 'none', transition: 'transform .18s ease' }}
+            />
+            {mapOpen ? 'Hide map' : 'Show map'}
+          </button>
+        }
+        style={{ marginBottom: 16 }}
+        flush
+      >
+        {mapOpen ? (
+          <CrewMap
+            crew={crewData?.crew ?? []}
+            bins={heatData?.bins ?? []}
+            samples={heatData?.samples ?? 0}
+            hours={mapHours}
+            onHoursChange={setMapHours}
+            panics={panicPins}
+            hasProject={!!projectId}
+            loading={mapLoading}
+          />
+        ) : (
+          <div style={{ padding: '10px 20px 14px', fontSize: 12, color: FAINT }}>
+            Live crew pins over a shift heatmap — positions appear when crews clock in with the Field app.
+          </div>
+        )}
+      </SectionCard>
+
+      {/* ── Assistance queue — collapsible dispatcher triage board ─────── */}
+      {assistShown && (
+        <div style={{ marginBottom: 20 }}>
+          <SectionCard
+            title="Assistance queue"
+            subtitle={assistQueue.length ? `${assistOpenCount} waiting · ${assistQueue.length - assistOpenCount} acknowledged` : undefined}
+            icon={<Lifebuoy size={16} weight="bold" color={assistOpenCount > 0 ? RED : GOLD_HI} />}
+            action={
+              <button
+                onClick={() => setAssistShown(false)}
+                aria-label="Collapse the assistance queue"
+                style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}
+              >
+                <CaretUp size={14} weight="bold" />
+              </button>
+            }
+          >
+            {assistQueue.length === 0 ? (
+              <div style={{ fontSize: 12.5, color: FAINT, padding: '2px 2px' }}>
+                Queue is clear — no field requests waiting on dispatch.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {assistQueue.map((a) => {
+                  const acked = a.status === 'acknowledged';
+                  return (
+                    <div
+                      key={a.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                        padding: '10px 12px', borderRadius: 12,
+                        background: acked ? NEST : AMBER_SOFT,
+                        border: `1px solid ${acked ? BORDER : AMBER_BORDER}`,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', borderRadius: 999, padding: '2px 8px',
+                          color: acked ? GREEN : RED,
+                          border: `1px solid ${acked ? GREEN_BORDER : RED_BORDER}`,
+                          background: acked ? GREEN_SOFT : RED_SOFT, whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {acked ? 'ACK' : 'OPEN'}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 180 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: WHITE }}>{senderShort(a.requester_name)}</span>
+                        {a.note && <span style={{ fontSize: 12.5, color: MUTED }}> — {a.note}</span>}
+                        {acked && a.acknowledged_by && (
+                          <div style={{ fontSize: 10.5, color: FAINT, marginTop: 2 }}>
+                            Acknowledged by {senderShort(a.acknowledged_by)}{a.acknowledged_at ? ` · ${timeOf(a.acknowledged_at)}` : ''}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        title={new Date(a.created_at).toLocaleString()}
+                        style={{ fontSize: 11, color: acked ? FAINT : GOLD_HI, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
+                      >
+                        {ageLabel(a.created_at, assistNow)} ago
+                      </span>
+                      {a.location && typeof a.location.lat === 'number' && (
+                        <a
+                          href={`https://maps.google.com/?q=${a.location.lat},${a.location.lng}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Open the requester's location in Google Maps"
+                          style={{ ...rowActionStyle, textDecoration: 'none' }}
+                        >
+                          <MapPin size={11} weight="fill" /> Location
+                        </a>
+                      )}
+                      {!acked && (
+                        <button
+                          onClick={() => triageAssist(a.id, 'ack')}
+                          disabled={assistBusy === a.id}
+                          title="Acknowledge — tells the requester dispatch is on it"
+                          style={{ ...rowActionStyle, color: GOLD_HI, borderColor: AMBER_BORDER, background: 'rgba(245,158,11,0.14)', opacity: assistBusy === a.id ? 0.6 : 1 }}
+                        >
+                          <Check size={11} weight="bold" /> Ack
+                        </button>
+                      )}
+                      <button
+                        onClick={() => triageAssist(a.id, 'resolve')}
+                        disabled={assistBusy === a.id}
+                        title="Resolve — closes the request and notifies the requester"
+                        style={{ ...rowActionStyle, color: GREEN, borderColor: GREEN_BORDER, background: GREEN_SOFT, opacity: assistBusy === a.id ? 0.6 : 1 }}
+                      >
+                        <Check size={11} weight="bold" /> Resolve
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </SectionCard>
+        </div>
+      )}
+
       {/* Rail + feed */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 300px) 1fr', gap: 16, alignItems: 'start' }}>
-        {/* ── Channel rail ─────────────────────────────────────────────── */}
+        {/* ── Channel rail + patch board ───────────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
         <SectionCard
           title="Channels"
           icon={<Broadcast size={16} weight="bold" color={GOLD_HI} />}
@@ -1485,13 +2039,78 @@ export default function RadioDispatchPage() {
           </div>
         </SectionCard>
 
+        {/* ── Patch board — bridge two talkgroups until released ───────── */}
+        <SectionCard
+          title="Patch board"
+          icon={<PlugsConnected size={16} weight="bold" color={GOLD_HI} />}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <select
+              value={patchA}
+              onChange={(e) => setPatchA(e.target.value)}
+              aria-label="First channel to patch"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10, color: patchA ? WHITE : FAINT, fontSize: 12.5, outline: 'none' }}
+            >
+              <option value="">First channel…</option>
+              {channels.filter((c) => c.id !== patchB).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              value={patchB}
+              onChange={(e) => setPatchB(e.target.value)}
+              aria-label="Second channel to patch"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10, color: patchB ? WHITE : FAINT, fontSize: 12.5, outline: 'none' }}
+            >
+              <option value="">Second channel…</option>
+              {channels.filter((c) => c.id !== patchA).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => postPatch(patchA, patchB, false)}
+              disabled={!patchA || !patchB || patchBusy}
+              className="pmBtn"
+              style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 12.5, opacity: !patchA || !patchB || patchBusy ? 0.55 : 1 }}
+            >
+              <PlugsConnected size={13} weight="bold" /> {patchBusy ? 'Working…' : 'Patch channels'}
+            </button>
+            {patches.length > 0 ? (
+              <div style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', color: FAINT, marginBottom: 6 }}>ACTIVE PATCHES</div>
+                {patches.map((p) => (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', borderRadius: 10, background: NEST, border: `1px solid ${AMBER_BORDER}`, marginBottom: 6 }}>
+                    <PlugsConnected size={13} weight="bold" color={GOLD_HI} style={{ flexShrink: 0 }} />
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {channelName(p.channel_a)} + {channelName(p.channel_b)}
+                    </span>
+                    <button
+                      onClick={() => postPatch(p.channel_a, p.channel_b, true)}
+                      disabled={patchBusy}
+                      title="Release this patch — the channels stop mirroring"
+                      style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: patchBusy ? 0.6 : 1 }}
+                    >
+                      Release
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: FAINT }}>
+                Patch two talkgroups and their traffic mirrors both ways until released.
+              </div>
+            )}
+          </div>
+        </SectionCard>
+        </div>
+
         {/* ── Feed ─────────────────────────────────────────────────────── */}
         <SectionCard
           title={active ? active.name : 'Channel'}
-          subtitle={active ? `${active.members} member${active.members === 1 ? '' : 's'}${activeOn ? ` · ${activeOn} on channel now` : ''}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : ''}` : undefined}
+          subtitle={active ? `${active.members} member${active.members === 1 ? '' : 's'}${activeOn ? ` · ${activeOn} on channel now` : ''}${active.priority ? ' · PRIORITY' : ''}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : ''}` : undefined}
           icon={<Hash size={16} weight="bold" color={GOLD_HI} />}
           action={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {rtLive && (
                 <span
                   title="Live — transmissions arrive instantly over the realtime socket"
@@ -1654,6 +2273,146 @@ export default function RadioDispatchPage() {
                   </div>
                 )}
               </div>
+              {/* Roster — members w/ presence dots + call signs; own row edits */}
+              <div ref={rosterRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setRosterOpen((v) => !v)}
+                  disabled={!active}
+                  title="Channel roster — presence, call signs, and your own status"
+                  style={{
+                    ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
+                    opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
+                  }}
+                >
+                  <UsersThree size={12} weight="bold" /> Roster
+                </button>
+                {rosterOpen && active && (
+                  <div
+                    style={{
+                      position: 'absolute', right: 0, top: 'calc(100% + 10px)', width: 330, zIndex: 50,
+                      background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
+                      borderRadius: 14, boxShadow: '0 22px 48px rgba(12,12,16,0.65)',
+                      padding: 14, textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <UsersThree size={14} weight="bold" color={GOLD_HI} />
+                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>ROSTER</span>
+                      <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>{active.name}</span>
+                      <button onClick={() => setRosterOpen(false)} aria-label="Close the roster" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                        <X size={14} weight="bold" />
+                      </button>
+                    </div>
+                    <div style={{ maxHeight: 290, overflowY: 'auto' }}>
+                      {rosterKey && !rosterData && !rosterError && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={40} borderRadius={10} />)}
+                        </div>
+                      )}
+                      {rosterError && <div style={{ fontSize: 11.5, color: RED }}>Could not load the roster. Close and reopen to retry.</div>}
+                      {rosterData && rosterMembers.length === 0 && (
+                        <div style={{ fontSize: 11.5, color: FAINT }}>No members on this channel yet.</div>
+                      )}
+                      {rosterMembers.map((mem, idx) => {
+                        const self = !!myUserId && mem.user_id === myUserId;
+                        const pres = mem.presence_status ? PRESENCE[mem.presence_status] || null : null;
+                        const onNow = !!mem.last_seen_at && Date.now() - new Date(mem.last_seen_at).getTime() <= 90_000;
+                        return (
+                          <div key={mem.user_id || idx} style={{ padding: '7px 9px', borderRadius: 10, background: self ? AMBER_SOFT : NEST, border: `1px solid ${self ? AMBER_BORDER : BORDER}`, marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span
+                                aria-hidden
+                                title={pres ? pres.label : 'No status set'}
+                                style={{ flexShrink: 0, width: 9, height: 9, borderRadius: 999, background: pres ? pres.color : 'rgba(255,255,255,0.18)', boxShadow: onNow && pres ? `0 0 6px ${pres.color}` : undefined }}
+                              />
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {senderShort(mem.display_name)}{self ? ' (you)' : ''}
+                              </span>
+                              {mem.call_sign && (
+                                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 900, letterSpacing: '0.08em', color: GOLD_HI, border: `1px solid ${AMBER_BORDER}`, borderRadius: 999, padding: '1px 7px' }}>
+                                  {mem.call_sign}
+                                </span>
+                              )}
+                              {self && !editingProfile && (
+                                <button
+                                  onClick={() => startEditProfile(mem)}
+                                  title="Edit your call sign and status"
+                                  aria-label="Edit your call sign and status"
+                                  style={{ background: 'none', border: 'none', color: MUTED, cursor: 'pointer', padding: 2, display: 'inline-flex', flexShrink: 0 }}
+                                >
+                                  <PencilSimple size={12} weight="bold" />
+                                </button>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 10, color: FAINT, marginTop: 2, paddingLeft: 17 }}>
+                              {pres ? pres.label : 'No status'}
+                              {mem.role === 'dispatcher' ? ' · dispatcher' : ''}
+                              {onNow ? ' · on channel now' : mem.last_seen_at ? ` · seen ${timeOf(mem.last_seen_at)}` : ''}
+                            </div>
+                            {self && editingProfile && (
+                              <div style={{ marginTop: 8 }}>
+                                <input
+                                  value={callSignDraft}
+                                  onChange={(e) => setCallSignDraft(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveProfile(); }}
+                                  placeholder="Call sign (e.g. UNIT 7)"
+                                  maxLength={24}
+                                  style={{ width: '100%', boxSizing: 'border-box', padding: '7px 10px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 9, color: WHITE, fontSize: 12, outline: 'none', marginBottom: 7 }}
+                                />
+                                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
+                                  {(['available', 'busy', 'on_route', 'off'] as const).map((s) => (
+                                    <button
+                                      key={s}
+                                      onClick={() => setStatusDraft(s)}
+                                      style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 999, cursor: 'pointer',
+                                        background: statusDraft === s ? AMBER_SOFT : FIELD_BG,
+                                        border: statusDraft === s ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
+                                        color: statusDraft === s ? GOLD_HI : MUTED, fontSize: 10.5, fontWeight: 800,
+                                      }}
+                                    >
+                                      <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: PRESENCE[s].color }} />
+                                      {PRESENCE[s].label}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                  <button
+                                    onClick={saveProfile}
+                                    disabled={savingProfile}
+                                    className="pmBtn"
+                                    style={{ ...goldButtonStyle, padding: '7px 12px', fontSize: 11.5, opacity: savingProfile ? 0.6 : 1 }}
+                                  >
+                                    {savingProfile ? 'Saving…' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingProfile(false)}
+                                    style={{ background: 'none', border: 'none', color: FAINT, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Recording console — the legal-grade channel record */}
+              <button
+                onClick={() => setLogOpen(true)}
+                disabled={!active}
+                title="Channel log — date range, search, and a print-ready record"
+                style={{
+                  ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12,
+                  opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default',
+                }}
+              >
+                <ClockCounterClockwise size={12} weight="bold" /> Log
+              </button>
             </div>
           }
           flush
@@ -1851,6 +2610,27 @@ export default function RadioDispatchPage() {
                   color: WHITE, fontSize: 13.5, outline: 'none',
                 }}
               />
+              {/* Tone signaling — quick ACK / NEG / COME IN beeps */}
+              <span style={{ flexShrink: 0, display: 'inline-flex', gap: 4 }}>
+                {(['ack', 'negative', 'comein'] as const).map((tn) => (
+                  <button
+                    key={tn}
+                    onClick={() => sendTone(tn)}
+                    disabled={!active || toneSending !== null}
+                    title={tn === 'ack' ? 'Send an ACK tone (affirmative)' : tn === 'negative' ? 'Send a NEGATIVE tone (denied / no)' : 'Send a COME IN tone (calling any unit)'}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
+                      background: TONES[tn].soft, border: `1px solid ${TONES[tn].border}`,
+                      color: TONES[tn].color, fontWeight: 900, fontSize: 9.5, letterSpacing: '0.08em',
+                      whiteSpace: 'nowrap',
+                      opacity: !active || toneSending !== null ? 0.5 : 1,
+                    }}
+                  >
+                    {tn === 'ack' ? 'ACK' : tn === 'negative' ? 'NEG' : 'COME IN'}
+                  </button>
+                ))}
+              </span>
               <button
                 onClick={() => sendText('alert')}
                 disabled={!active || !draft.trim() || sending}
@@ -1878,6 +2658,104 @@ export default function RadioDispatchPage() {
           </div>
         </SectionCard>
       </div>
+
+      {/* ── Recording console — date range + search + print-ready record ─ */}
+      {logOpen && active && (
+        <div
+          className="sagRadioLogOverlay"
+          onPointerDown={(e) => { if (e.target === e.currentTarget) setLogOpen(false); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 90,
+            background: 'rgba(12,12,16,0.72)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            padding: '6vh 16px 16px', overflowY: 'auto',
+          }}
+        >
+          <div
+            style={{
+              width: 'min(860px, 100%)', borderRadius: 16,
+              background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
+              boxShadow: '0 22px 48px rgba(12,12,16,0.65)', padding: 16,
+            }}
+          >
+            {/* Controls — hidden when printing */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+              <ClockCounterClockwise size={16} weight="bold" color={GOLD_HI} />
+              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>CHANNEL LOG</span>
+              <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>{active.name}</span>
+              <button
+                onClick={() => window.print()}
+                title="Print or save this record as a PDF"
+                style={{ ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12 }}
+              >
+                <Printer size={12} weight="bold" /> Print / Export
+              </button>
+              <button onClick={() => setLogOpen(false)} aria-label="Close the channel log" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+                <X size={15} weight="bold" />
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ width: 150 }}>
+                <SaguaroDatePicker value={logFrom} onChange={setLogFrom} placeholder="From date" />
+              </div>
+              <div style={{ width: 150 }}>
+                <SaguaroDatePicker value={logTo} onChange={setLogTo} placeholder="To date" />
+              </div>
+              <div style={{ flex: 1, minWidth: 180, position: 'relative' }}>
+                <MagnifyingGlass size={13} weight="bold" color={FAINT} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  value={logSearch}
+                  onChange={(e) => setLogSearch(e.target.value)}
+                  placeholder="Search text, transcripts, senders…"
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px 9px 30px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10, color: WHITE, fontSize: 12.5, outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Print target — @media print lifts this to black-on-white */}
+            <div id="sagRadioLogPrint">
+              <div style={{ borderBottom: `1px solid ${BORDER}`, paddingBottom: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 900, color: WHITE }}>Saguaro Radio — channel record: {active.name}</div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 3 }}>
+                  {logFrom || logTo ? `Range ${logFrom || 'start'} to ${logTo || 'now'}` : 'Most recent traffic'}
+                  {logSearch.trim() ? ` · filter \"${logSearch.trim()}\"` : ''}
+                  {` · ${logRows.length} transmission${logRows.length === 1 ? '' : 's'}`}
+                  {` · generated ${new Date().toLocaleString()}`}
+                </div>
+              </div>
+              {logKey && !logData && !logError && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={30} borderRadius={8} />)}
+                </div>
+              )}
+              {logError && <div style={{ fontSize: 12, color: RED }}>Could not load the record. Adjust the range and try again.</div>}
+              {logData && logRows.length === 0 && (
+                <div style={{ fontSize: 12, color: FAINT }}>No transmissions match this range and filter.</div>
+              )}
+              {logRows.map((m) => (
+                <div key={m.id} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '6px 2px', borderBottom: `1px solid ${BORDER}` }}>
+                  <span style={{ flexShrink: 0, width: 148, fontSize: 11, color: MUTED, fontVariantNumeric: 'tabular-nums' }}>
+                    {new Date(m.created_at).toLocaleString()}
+                  </span>
+                  <span style={{ flexShrink: 0, width: 120, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {senderShort(m.sender_name)}
+                  </span>
+                  <span style={{ flexShrink: 0, width: 52, fontSize: 9.5, fontWeight: 900, letterSpacing: '0.08em', color: m.kind === 'panic' ? RED : m.kind === 'alert' ? GOLD_HI : FAINT }}>
+                    {m.kind.toUpperCase()}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: WHITE, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                    {logText(m)}
+                    {m.patched_from ? ` (via ${channelName(m.patched_from)})` : ''}
+                  </span>
+                </div>
+              ))}
+              <div style={{ fontSize: 10, color: FAINT, marginTop: 8 }}>
+                Newest 100 transmissions in range shown, oldest first. End of record.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PremiumSurface>
   );
 }
