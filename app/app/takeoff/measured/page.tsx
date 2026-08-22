@@ -4,7 +4,8 @@
  * Add conditions; the shared lib/takeoff engine explodes each into a full priced
  * bill and rolls up LIVE — same engine + byte-identical numbers as iOS.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { explodeTakeoff, rollupTakeoff, ASSEMBLIES, type Condition, type MeasureKind, type Pt, type RateOverrides } from '@/lib/takeoff';
 import { buildEstimateReportHtml } from '@/lib/takeoff/estimate-report';
@@ -23,7 +24,14 @@ import { PremiumSurface, ModuleHero, SectionCard, ghostButtonStyle } from '@/com
 
 // W-16: the 1,160-line PlanTracer workspace (canvas tracer) loads only when the user opens
 // the tracer — out of this route's first-paint chunk (same lazy pattern as pdfjs at PlanTracer.tsx:430).
-const PlanTracer = dynamic(() => import('./PlanTracer'), { ssr: false });
+// Targeted-measure contract with the tracer: while `targetConditionId` is set, finishing a draft
+// SETS that condition's value via `onSetConditionValue` instead of appending a new condition.
+// Declared as an intersection here so the page and the tracer-side implementation land independently.
+type TracerTargetingProps = {
+  targetConditionId?: string;
+  onSetConditionValue?: (conditionId: string, value: number, meta?: unknown) => void;
+};
+const PlanTracer = dynamic<React.ComponentProps<(typeof import('./PlanTracer'))['default']> & TracerTargetingProps>(() => import('./PlanTracer'), { ssr: false });
 
 const BG = '#0a0a0a', PANEL = '#161b22', LINE = 'rgba(255,255,255,0.09)', GOLD = '#F59E0B';
 const TEXT = '#e6edf3', DIM = '#8b949e', GREEN = '#34D399', RED = '#f87171';
@@ -98,7 +106,9 @@ type SpecRow = { label: string; counted: number; scheduled: number | null; statu
 type AiCount = { symbol?: string; count?: number; assembly?: string | null; csi?: string; confidence?: number | null };
 type ReviewItem = { id: string; label: string; count: number; assemblyId: string; csi: string; confidence: number; aiConf: boolean; accept: boolean };
 
-export default function MeasuredTakeoffPage() {
+function MeasuredTakeoffInner() {
+  const searchParams = useSearchParams();
+  const urlProjectId = searchParams.get('projectId') || '';
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [projectId, setProjectId] = useState('');
   const [name, setName] = useState('Measured takeoff');
@@ -133,6 +143,29 @@ export default function MeasuredTakeoffPage() {
   const [cPts, setCPts] = useState<Pt[] | null>(null);
   // tracer (full workspace lives in <PlanTracer/>)
   const [tracing, setTracing] = useState(false);
+  // targeted measure: while set, finishing a draft in the tracer SETS this condition's value (no append)
+  const [targetConditionId, setTargetConditionId] = useState('');
+  // per-row qty edit buffers so "12." keeps its dot mid-keystroke; a buffer clears on blur
+  const [qtyDraft, setQtyDraft] = useState<Record<string, string>>({});
+  const setCondQty = (id: string, raw: string) => {
+    setQtyDraft((m) => ({ ...m, [id]: raw }));
+    const n = Number(raw.replace(/,/g, '').trim());
+    if (!Number.isFinite(n) || n < 0) return;
+    setConditions((cs) => cs.map((c) => (c.id === id ? { ...c, value: n, ...(n > 0 ? { measured: 'manual' as const } : {}) } : c)));
+  };
+  const commitQtyDraft = (id: string) => setQtyDraft((m) => { const { [id]: _drop, ...rest } = m; return rest; });
+  const traceCondition = (id: string) => { setTargetConditionId(id); setTracing(true); };
+  const onSetConditionValue = (conditionId: string, value: number, meta?: unknown) => {
+    const m = (meta && typeof meta === 'object' ? meta : {}) as { points?: Pt[] };
+    const v = Number(value);
+    if (!Number.isFinite(v) || v < 0) return;
+    setConditions((cs) => cs.map((c) => (c.id === conditionId
+      ? { ...c, value: v, measured: 'traced' as const, ...(Array.isArray(m.points) && m.points.length ? { points: m.points } : {}) }
+      : c)));
+    const nm = conditions.find((c) => c.id === conditionId)?.name || 'Condition';
+    setTargetConditionId('');
+    setMsg(`✓ ${nm} measured on the plan — quantity set to ${v}.`);
+  };
   const [planUrl, setPlanUrl] = useState('');
   const [dims, setDims] = useState({ w: 0, h: 0 });
   const [ppf, setPpf] = useState(0);
@@ -145,12 +178,32 @@ export default function MeasuredTakeoffPage() {
   const [wizStep, setWizStep] = useState(0);
   const blueprintInputRef = useRef<HTMLInputElement>(null);
   const { projects: liveProjects } = useProjects();
-  useEffect(() => { const ps = liveProjects; setProjects(ps); if (ps[0]) setProjectId((prev) => prev || ps[0].id); }, [liveProjects]);
+  // Deep-link: ?projectId= wins over "first project" whenever it exists in the list.
+  useEffect(() => { const ps = liveProjects; setProjects(ps); if (ps[0]) setProjectId((prev) => prev || ((urlProjectId && ps.some((p) => p.id === urlProjectId)) ? urlProjectId : ps[0].id)); }, [liveProjects, urlProjectId]);
   useEffect(() => { fetch('/api/takeoff/cost-rates').then((r) => r.json()).then((d) => { if (d.rates) { setRates(d.rates); setTenantRateCount(Object.keys(d.rates).length); } }).catch(() => {}); }, []);
   // first visit → auto-open the guided wizard (re-openable from the "?" button any time)
   useEffect(() => { try { if (!localStorage.getItem('saguaro_takeoff_wizard_v1')) { setWizStep(0); setWizardOpen(true); } } catch { /* SSR / privacy mode */ } }, []);
   const closeWizard = () => { setWizardOpen(false); try { localStorage.setItem('saguaro_takeoff_wizard_v1', '1'); } catch { /* */ } };
   const openWizard = () => { setWizStep(0); setWizardOpen(true); };
+
+  // Fixed bottom estimate bar: position:sticky dies inside PremiumSurface's overflow:hidden, so the
+  // bar is position:fixed, aligned to the content column (sidebar-aware) by measuring the page div.
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [barRect, setBarRect] = useState({ left: 0, width: 0 });
+  useEffect(() => {
+    const el = pageRef.current; if (!el) return;
+    const upd = () => {
+      const b = el.getBoundingClientRect();
+      setBarRect((p) => (Math.abs(p.left - b.left) < 0.5 && Math.abs(p.width - b.width) < 0.5 ? p : { left: b.left, width: b.width }));
+    };
+    upd();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(upd) : null;
+    ro?.observe(el);
+    const main = el.closest('.main-content-area');   // sidebar collapse/expand changes this width
+    if (main) ro?.observe(main);
+    window.addEventListener('resize', upd);
+    return () => { ro?.disconnect(); window.removeEventListener('resize', upd); };
+  }, []);
 
   const opts = useMemo(() => ({
     overheadPct: +oh || 0, profitPct: +pr || 0, contingencyPct: +cont || 0, buildingSf: +bsf || undefined,
@@ -381,8 +434,9 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
   const [shareUrl, setShareUrl] = useState('');
   const [shareExp, setShareExp] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
-  // any edit/import/AI change to conditions invalidates a prior save — the saved id no longer matches what's on screen
-  useEffect(() => { setSavedTakeoffId(''); setShareUrl(''); setShareExp(''); setShareCopied(false); }, [conditions]);
+  // any edit/import/AI change to conditions OR the markup stack (OH/profit/tax/region/rates…) invalidates
+  // a prior save — share/bid-package/revision buttons must never operate on a stale saved takeoff
+  useEffect(() => { setSavedTakeoffId(''); setShareUrl(''); setShareExp(''); setShareCopied(false); }, [conditions, opts]);
 
   // Mint (or reuse) a read-only, token-gated estimate URL a GC can send a client. Saves first if needed.
   const shareEstimate = async () => {
@@ -455,6 +509,7 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
   const [reading, setReading] = useState(false);
   const readBlueprint = async (f: File | undefined) => {
     if (!f || !projectId) { setMsg('Pick a project first'); return; }
+    if (conditions.length && !confirm(`Replaces your ${conditions.length} current condition${conditions.length === 1 ? '' : 's'} — continue?`)) return;
     setReading(true); setMsg('Reading every sheet…');
     try {
       const b64: string = await new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => res((rd.result as string).split(',')[1]); rd.onerror = rej; rd.readAsDataURL(f); });
@@ -663,7 +718,7 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
     <>
       <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
       <PremiumSurface maxWidth={1000}>
-      <div style={{ color: TEXT, fontFamily: 'system-ui,Segoe UI,sans-serif' }}>
+      <div ref={pageRef} style={{ color: TEXT, fontFamily: 'system-ui,Segoe UI,sans-serif', paddingBottom: conditions.length ? 72 : 0 }}>
         <ModuleHero
           eyebrow="Measurement-driven · deterministic"
           eyebrowIcon={<Ruler size={13} weight="fill" color={GOLD} />}
@@ -678,6 +733,25 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
             </select>
           </>}
         />
+
+        {/* ALWAYS-mounted status banner — "Pick a project first" / AI / file errors are never silent.
+            (The old msg span rendered only inside the Conditions card, which mounts only once conditions exist.) */}
+        {msg && (() => {
+          const ok = /^(✓|\+ |Saved|Blank takeoff|Read-only|AI proposed)/.test(msg) || /copied|downloaded|revoked|link ready|created —/.test(msg);
+          const busy = !ok && /…$/.test(msg);
+          const tone = ok ? GREEN : busy ? GOLD : RED;
+          return (
+            <div role="status" style={{ marginTop: 14, display: 'flex', alignItems: 'flex-start', gap: 10, border: `1px solid ${tone}55`, background: `${tone}14`, borderRadius: 12, padding: '11px 14px' }}>
+              {busy
+                ? <span style={{ width: 15, height: 15, borderRadius: 8, border: `2px solid ${GOLD}`, borderTopColor: 'transparent', display: 'inline-block', flexShrink: 0, marginTop: 1, animation: 'spin 0.7s linear infinite' }} />
+                : ok
+                  ? <CheckCircle size={17} weight="fill" color={GREEN} style={{ flexShrink: 0, marginTop: 1 }} />
+                  : <WarningCircle size={17} weight="fill" color={RED} style={{ flexShrink: 0, marginTop: 1 }} />}
+              <div style={{ flex: 1, fontSize: 13, color: TEXT, lineHeight: 1.45 }}>{msg}</div>
+              <button onClick={() => setMsg('')} title="Dismiss" style={{ background: 'none', border: 'none', color: DIM, cursor: 'pointer', display: 'inline-flex', padding: 0 }}><IconX size={15} /></button>
+            </div>
+          );
+        })()}
 
         {/* building-type templates — the 60-second cold start */}
         <SectionCard title="Start from a building type" subtitle="Drops a curated condition set — trace each to price it live" icon={<Stack size={17} weight="duotone" color={GOLD} />} style={{ marginTop: 8 }}>
@@ -715,7 +789,7 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
               <div style={{ fontWeight: 800, fontSize: 15, color: TEXT }}>{reading ? 'Reading every sheet…' : 'Read full blueprint'}</div>
               <div style={{ fontSize: 12.5, color: DIM, marginTop: 3, lineHeight: 1.4 }}>Upload the whole plan-set PDF — AI reads every sheet, extracts all conditions, the engine prices them.</div>
             </div>
-            <input ref={blueprintInputRef} type="file" accept="application/pdf,.pdf" disabled={reading} style={{ display: 'none' }} onChange={(e) => readBlueprint(e.target.files?.[0])} />
+            <input ref={blueprintInputRef} type="file" accept="application/pdf,.pdf" disabled={reading} style={{ display: 'none' }} onChange={(e) => { readBlueprint(e.target.files?.[0]); (e.target as HTMLInputElement).value = ''; }} />
           </label>
           <label style={{ display: 'flex', gap: 13, alignItems: 'flex-start', border: `1.5px solid rgba(56,189,248,0.5)`, background: 'linear-gradient(180deg,rgba(56,189,248,0.10),rgba(56,189,248,0.03))', borderRadius: 14, padding: '15px 16px', cursor: counting ? 'wait' : 'pointer' }}>
             <Ic name="aiCount" s={34} k="hero2" />
@@ -723,7 +797,7 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
               <div style={{ fontWeight: 800, fontSize: 15, color: TEXT }}>{counting ? 'Counting symbols…' : 'Count symbols + auto-scale'}</div>
               <div style={{ fontSize: 12.5, color: DIM, marginTop: 3, lineHeight: 1.4 }}>Upload one sheet — AI counts doors, fixtures &amp; receptacles, reads the scale, and auto-calibrates the tracer.</div>
             </div>
-            <input type="file" accept="image/*" disabled={counting} style={{ display: 'none' }} onChange={(e) => countSymbols(e.target.files?.[0])} />
+            <input type="file" accept="image/*" disabled={counting} style={{ display: 'none' }} onChange={(e) => { countSymbols(e.target.files?.[0]); (e.target as HTMLInputElement).value = ''; }} />
           </label>
           <button onClick={() => { setRevResult(null); setComparing(true); }} style={{ display: 'flex', gap: 13, alignItems: 'flex-start', textAlign: 'left', border: `1.5px solid rgba(167,139,250,0.5)`, background: 'linear-gradient(180deg,rgba(167,139,250,0.10),rgba(167,139,250,0.03))', borderRadius: 14, padding: '15px 16px', cursor: 'pointer' }}>
             <Ic name="compareRevs" s={34} k="hero3" />
@@ -758,8 +832,9 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
           {importing && <div style={{ marginTop: 8, fontSize: 13, color: GOLD, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 13, height: 13, borderRadius: 7, border: `2px solid ${GOLD}`, borderTopColor: 'transparent', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />{importing}</div>}
         </SectionCard>
 
-        {/* live estimate — sticky so the sell price a GC lives by never scrolls away (v4) */}
-        <div style={{ background: 'rgba(245,158,11,0.06)', border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 14, padding: 20, marginTop: 20, position: 'sticky', top: 10, zIndex: 3, backdropFilter: 'blur(6px)' }}>
+        {/* live estimate — the fixed bottom bar keeps sell + Save in view; position:sticky here was
+            dead (killed by PremiumSurface's overflow:hidden ancestor) */}
+        <div style={{ background: 'rgba(245,158,11,0.06)', border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 14, padding: 20, marginTop: 20 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 180 }}>
               <div style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: DIM, fontWeight: 700 }}>Estimate — computed live</div>
@@ -1226,6 +1301,17 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
                       <div style={{ color: DIM, fontSize: 13, marginTop: 2, display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>{c.value > 0
                       ? <span>{c.value} {unit}{c.heightFt ? ` · ${c.heightFt}′` : ''}{c.thicknessIn ? ` · ${c.thicknessIn}″` : ''} → {lines.length} items</span>
                       : <><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: GOLD, background: 'rgba(245,158,11,0.12)', border: `1px solid rgba(245,158,11,0.35)`, borderRadius: 20, padding: '2px 8px' }}><Ruler size={12} weight="bold" />needs measurement</span><span>{ASSEMBLIES[c.assemblyId]?.name}</span></>}</div></div>
+                    {/* inline qty editor + targeted Trace — a template/library condition is never a dead end */}
+                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginRight: 12, flexShrink: 0 }}>
+                      <input inputMode="decimal" placeholder="qty" value={qtyDraft[c.id] ?? (c.value > 0 ? String(c.value) : '')} onChange={(e) => setCondQty(c.id, e.target.value)} onBlur={() => commitQtyDraft(c.id)}
+                        title={`Quantity in ${unit} — type it, or hit Trace to measure it on the plan`}
+                        style={{ ...inp, width: 84, padding: '7px 9px', fontSize: 13, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }} />
+                      <span style={{ fontSize: 11, color: DIM, fontWeight: 700, minWidth: 18 }}>{unit}</span>
+                      <button onClick={() => traceCondition(c.id)} title="Open the tracer targeted at this condition — the next finished trace sets its quantity"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.08)', color: GOLD, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                        <Ic name="penTrace" s={14} k={`tr_${c.id}`} />Trace
+                      </button>
+                    </div>
                     <b style={{ color: GOLD, marginRight: 14 }}>{usd(tot)}</b>
                     <button onClick={(e) => { e.stopPropagation(); setConditions((cs) => cs.filter((x) => x.id !== c.id)); }} style={{ background: 'none', border: 'none', color: RED, fontSize: 20, cursor: 'pointer' }}>×</button>
                   </div>
@@ -1236,7 +1322,6 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12, flexWrap: 'wrap' }}>
               <input value={name} onChange={(e) => setName(e.target.value)} style={{ ...inp, flex: 1, minWidth: 180 }} />
               <button onClick={save} disabled={saving} style={{ ...btn, opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save measured takeoff'}</button>
-              {msg && <span style={{ fontSize: 13, color: msg.startsWith('✓') ? GREEN : msg.startsWith('Error') ? RED : DIM }}>{msg}</span>}
             </div>
           </SectionCard>
         )}
@@ -1364,7 +1449,7 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
                   <label key={w} style={{ border: `1.5px dashed ${url ? GOLD : LINE}`, borderRadius: 12, minHeight: 170, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: PANEL, padding: 8 }}>
                     <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: url ? GOLD : DIM, textTransform: 'uppercase', marginBottom: 6 }}>{w === 'A' ? 'Old revision' : 'New revision'}</div>
                     {url ? <img src={url} alt={w} style={{ maxWidth: '100%', maxHeight: 230, display: 'block', borderRadius: 6 }} /> : <span style={{ color: DIM, fontSize: 13 }}>Click to upload a sheet image</span>}
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => pickRev(w, e.target.files?.[0])} />
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { pickRev(w, e.target.files?.[0]); (e.target as HTMLInputElement).value = ''; }} />
                   </label>
                 );
               })}
@@ -1578,6 +1663,19 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
         </div>
       )}
 
+      {/* fixed bottom estimate bar — sell + Save stay in view once conditions exist (replaces the dead sticky) */}
+      {conditions.length > 0 && (
+        <div style={{ position: 'fixed', bottom: 0, left: barRect.left, ...(barRect.width ? { width: barRect.width } : { right: 0 }), zIndex: 40, background: 'rgba(13,17,23,0.94)', backdropFilter: 'blur(8px)', borderTop: '1px solid rgba(245,158,11,0.4)', boxShadow: '0 -10px 30px rgba(0,0,0,0.45)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: DIM, fontWeight: 700 }}>Sell price · live</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: GOLD, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{usd(r.sellCents)}</div>
+          </div>
+          <div style={{ fontSize: 11.5, color: DIM }}>{conditions.length} condition{conditions.length === 1 ? '' : 's'} · {r.lines.length} items</div>
+          {savedTakeoffId ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: GREEN }}><CheckCircle size={13} weight="fill" />saved</span> : null}
+          <button onClick={save} disabled={saving} style={{ ...btn, marginLeft: 'auto', padding: '10px 16px', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save takeoff'}</button>
+        </div>
+      )}
+
       {tracing && (
         <PlanTracer
           planUrl={planUrl}
@@ -1589,9 +1687,20 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
           setConditions={setConditions}
           result={r}
           opts={opts}
-          onClose={() => setTracing(false)}
+          targetConditionId={targetConditionId || undefined}
+          onSetConditionValue={onSetConditionValue}
+          onClose={() => { setTracing(false); setTargetConditionId(''); }}
         />
       )}
     </>
+  );
+}
+
+// useSearchParams requires a Suspense boundary (Next.js CSR bailout) — same pattern as /app/bids.
+export default function MeasuredTakeoffPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a0a0a' }} />}>
+      <MeasuredTakeoffInner />
+    </Suspense>
   );
 }

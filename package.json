@@ -35,7 +35,7 @@
     "engine:check": "node scripts/sync-heatmap-engine.mjs --check",
     "engine:sync": "node scripts/sync-heatmap-engine.mjs --sync",
     "engine:test": "npx -y tsx lib/heatmap/sanity.test.ts",
-    "prebuild": "node scripts/sync-heatmap-engine.mjs --check"
+    "prebuild": "node scripts/sync-heatmap-engine.mjs --check && node scripts/sync-takeoff-engine.mjs --check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",

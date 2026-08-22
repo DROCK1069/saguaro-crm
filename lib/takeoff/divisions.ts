@@ -1,4 +1,4 @@
-// SINGLE SOURCE OF TRUTH for CSI division color (mirror of the mobile lib/takeoff/divisions.ts).
+// SINGLE SOURCE OF TRUTH for CSI division color — CANONICAL copy: D:/Saguaro-Field (mobile) lib/takeoff/divisions.ts; the web repo carries a byte-exact mirror (scripts/sync-takeoff-engine.mjs).
 // Drives: hero accents, trade-breakdown bar segments, legend dots, division headers, PDF.
 // Reuses the exact hexes already in the Heatmap's SYSTEM_COLORS / WALL_MATERIALS
 // (teal #0D9488, orange #F97316, blue #2F6BFF, tan #C9A96A) so the two tools read

@@ -49,19 +49,30 @@ export type TracerCondition = Condition & {
   depthFt?: number;
   color?: string;
   sheetId?: string;   // which drawing-register sheet this was measured on (undefined = legacy/global)
+  ppf?: number;       // px/ft this condition was measured at — recompute() prefers it over the active
+                      // sheet's scale, so switching sheets never silently re-scales another sheet's numbers
   note?: string;      // free-form provenance (imported unit cost / CSI / CAD source) — the engine ignores it
 };
 
 /* ── multi-sheet drawing register ───────────────────────────────────────── */
 type Sheet = {
-  id: string;
+  id: string;         // DETERMINISTIC: sheetUid(source, page) — re-adding the same file reattaches old conditions
   pdfId: string;      // '' for raster; otherwise keys into the loaded pdf-doc map
   page: number;       // 1-based page within its PDF
   name: string;
   url: string;        // rendered raster (data/blob URL); '' until a PDF page is lazily rendered
   w: number; h: number;
   ppf: number;        // per-sheet scale — calibrating one sheet never wipes another
+  source: string;     // originating file name ('' = seeded from the opening plan) — the reattach key
 };
+/** Register metadata lifted to the parent (survives unmount; rasters are re-derived when the file is re-added). */
+export type PersistedSheet = { id: string; name: string; page: number; ppf: number; w: number; h: number; source: string };
+/** Deterministic sheet uid — FNV-1a over "source#page": the same plan re-added maps to the same id. */
+function sheetUid(source: string, page: number): string {
+  const s = `${source}#${page}`; let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return 'sh' + h.toString(36);
+}
 const COUNT_WORK_EDGE = 1400;   // downscale long edge for template match (NCC is O(W·H·tw·th))
 const FILL_WORK_EDGE = 2000;    // flood-fill is linear, so it can afford more resolution
 const PDF_LONG_EDGE = 2000;     // render PDF pages to ~2000px long edge for crisp tracing
@@ -152,11 +163,19 @@ interface Props {
   result: TakeoffResult;
   opts: ComputeOpts;
   onClose: () => void;
+  /** TARGETED TRACE — when set, finishing a draft measures INTO this existing condition (no new row). */
+  targetConditionId?: string;
+  /** Fires with the measured value + meta when a targeted trace completes (geometry/sheetId land via setConditions). */
+  onSetConditionValue?: (id: string, value: number, meta: Record<string, unknown>) => void;
+  /** Sheet-register persistence — register metadata is lifted here on every change (survives unmount). */
+  onSheetsChange?: (sheets: PersistedSheet[]) => void;
+  /** Reopen with a previously persisted register — deterministic ids reattach sheet-scoped conditions. */
+  initialSheets?: PersistedSheet[];
 }
 
 type Snap = { conditions: TracerCondition[]; draft: Pt[]; holes: Pt[][] };
 
-export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, conditions, setConditions, result, opts, onClose }: Props) {
+export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, conditions, setConditions, result, opts, onClose, targetConditionId, onSetConditionValue, onSheetsChange, initialSheets }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -219,6 +238,12 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
   // PERF — live vertex-drag geometry lives here, OFF the parent `conditions` state, so a drag no
   // longer re-runs the pricing engine per frame; committed once on pointer-up. draw() overlays it.
   const dragLiveRef = useRef<TracerCondition | null>(null);
+  // Undo honesty — the snapshot for a vertex drag is PENDED here at pointer-down and only pushed to
+  // `past` on pointer-up if the vertex actually moved (a bare tap must not burn a no-op undo step).
+  const pendingSnapRef = useRef<Snap | null>(null);
+  // vertex-list pagination (an auto-count can hold 3000 markers — rendering all rows froze the panel)
+  const [vtxPage, setVtxPage] = useState(0);
+  useEffect(() => { setVtxPage(0); }, [selId]);
   // PERF — rAF-coalesced repaint. draw() reads latest state via drawRef, so multiple state updates
   // in one frame collapse to a single canvas paint (and the decoupled drag repaints off the ref).
   const drawRef = useRef<() => void>(() => {});
@@ -313,26 +338,49 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
   }, [snapNow, setConditions]);
 
   /* ── recompute a condition's value from its (edited) geometry ───────── */
+  // SCALE CORRECTNESS: the condition's OWN stored ppf wins over the active sheet's — editing a shape
+  // while a differently-calibrated sheet is active must not re-scale its numbers. Only an explicit
+  // recalibration of ITS sheet restamps c.ppf (applyScale re-projects that sheet's conditions).
   const recompute = useCallback((c: TracerCondition): TracerCondition => {
+    const cp = c.ppf ?? ppf;
     const pts = c.points || []; const t = c.tool || c.kind;
     if (t === 'count') return { ...c, value: pts.length };
-    if (t === 'linear') return { ...c, value: lengthLF(pts, ppf) };
-    if (t === 'arc' && c.arc) { const f = fit3PointArc(pts[0] ?? c.arc.a, pts[1] ?? c.arc.mid, pts[2] ?? c.arc.b, ppf); return { ...c, arc: { a: pts[0] ?? c.arc.a, mid: pts[1] ?? c.arc.mid, b: pts[2] ?? c.arc.b }, value: f.arcLenFt }; }
-    if (t === 'pitch') return { ...c, value: slopeArea(grossSF(pts, ppf), c.riseOver12 ?? 4) };
-    if (t === 'volume') return { ...c, value: grossSF(pts, ppf) };
-    const net = netAreaSF(pts, c.holes || [], ppf); return { ...c, value: net.netSF };
+    if (t === 'linear') return { ...c, value: lengthLF(pts, cp) };
+    if (t === 'arc' && c.arc) { const f = fit3PointArc(pts[0] ?? c.arc.a, pts[1] ?? c.arc.mid, pts[2] ?? c.arc.b, cp); return { ...c, arc: { a: pts[0] ?? c.arc.a, mid: pts[1] ?? c.arc.mid, b: pts[2] ?? c.arc.b }, value: f.arcLenFt }; }
+    if (t === 'pitch') return { ...c, value: slopeArea(grossSF(pts, cp), c.riseOver12 ?? 4) };
+    if (t === 'volume') return { ...c, value: grossSF(pts, cp) };
+    const net = netAreaSF(pts, c.holes || [], cp); return { ...c, value: net.netSF };
   }, [ppf]);
 
-  /* ── finish the active draft → a priced Condition ──────────────────── */
+  /* void finishing — attach to the active area draft or the selected area condition.
+     Defined BEFORE finishDraft so finishDraft can list it as a real dependency (the old
+     dep-suppressed ordering left Enter finishing a void through a stale closure). */
+  const finishHole = useCallback(() => {
+    if (holeDraft.length < 3) { setMsg('A void needs at least 3 points.'); return; }
+    const hole = holeDraft.map((p) => ({ ...p }));
+    if (draft.length >= 3) { commit(() => { setHoles((hs) => [...hs, hole]); setHoleDraft([]); }); setMsg('Void added to the active area.'); return; }
+    const sel = conditions.find((c) => c.id === selId);
+    if (sel && (sel.tool === 'area' || sel.kind === 'area') && sel.points) {
+      commit(() => setConditions((cs) => cs.map((c) => c.id === sel.id ? recompute({ ...c, holes: [...(c.holes || []), hole] }) : c)));
+      setHoleDraft([]); setMsg('Void deducted from the selected area.'); return;
+    }
+    setMsg('Start an Area first, or select an area shape, then draw the void inside it.');
+    setHoleDraft([]);
+  }, [holeDraft, draft, conditions, selId, commit, setConditions, recompute]);
+
+  /* ── finish the active draft → a priced Condition (or, targeted, measure INTO an existing one) ── */
   const finishDraft = useCallback(() => {
     if (!engineKind) return;
     if (tool === 'deduction') { finishHole(); return; }
     if (ppf <= 0 && tool !== 'count') { setMsg('Set the scale first (Scale tool).'); return; }
     const need = tool === 'arc' ? 3 : tool === 'linear' ? 2 : tool === 'count' ? 1 : 3;
     if (draft.length < need) { setMsg(`Need at least ${need} point${need > 1 ? 's' : ''}.`); return; }
-    if (!asm) { setMsg('Pick an assembly.'); return; }
+    // TARGETED TRACE — the sibling hands us a condition id; the measurement lands on it, no new row,
+    // and no assembly pick is required (the target already has one).
+    const targeted = !!(targetConditionId && onSetConditionValue);
+    if (!targeted && !asm) { setMsg('Pick an assembly.'); return; }
     const a = ASSEMBLIES[asm];
-    const base: TracerCondition = { id: uid(), name: cName.trim() || a?.name || 'Condition', kind: engineKind, value: 0, assemblyId: asm, points: draft.map((p) => ({ ...p })), tool: tool as MeasureToolKind, color: divColor(a?.components?.[0]?.csi ?? '') };
+    const base: TracerCondition = { id: uid(), name: cName.trim() || a?.name || 'Condition', kind: engineKind, value: 0, assemblyId: asm, points: draft.map((p) => ({ ...p })), tool: tool as MeasureToolKind, color: divColor(a?.components?.[0]?.csi ?? ''), sheetId: activeSheet || undefined, ppf: ppf > 0 ? ppf : undefined };
     if (+cH > 0) base.heightFt = +cH;
     if (+cOpenSf > 0) base.openingsSf = +cOpenSf;
     if (+cOpenCt > 0) base.openingsCount = +cOpenCt;
@@ -356,42 +404,66 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
       } else { base.thicknessIn = +depthIn || 0; base.depthFt = (+depthIn || 0) / 12; }
     } else if (tool === 'arc') { base.value = mc.value; base.arc = { a: draft[0], mid: draft[1], b: draft[2] }; }
 
+    if (targeted) {
+      const target = conditions.find((c) => c.id === targetConditionId);
+      // traced geometry + scale land on the target through the existing onChange path…
+      const patch: Partial<TracerCondition> = { value: base.value, points: base.points, tool: base.tool, sheetId: base.sheetId, ppf: base.ppf };
+      if (base.holes) patch.holes = base.holes;
+      if (base.arc) patch.arc = base.arc;
+      if (base.riseOver12 != null) patch.riseOver12 = base.riseOver12;
+      if (base.thicknessIn != null) patch.thicknessIn = base.thicknessIn;
+      if (base.depthFt != null) patch.depthFt = base.depthFt;
+      commit(() => { setConditions((cs) => cs.map((c) => (c.id === targetConditionId ? { ...c, ...patch } : c))); setDraft([]); setHoles([]); setHoleDraft([]); });
+      // …and the measured value + meta go back to the caller
+      onSetConditionValue!(targetConditionId!, base.value, {
+        tool, kind: engineKind, unit: engineKind === 'area' ? 'SF' : engineKind === 'linear' ? 'LF' : 'EA',
+        sheetId: base.sheetId, ppf: base.ppf, points: base.points, holes: base.holes, arc: base.arc,
+        riseOver12: base.riseOver12, thicknessIn: base.thicknessIn, depthFt: base.depthFt,
+        ...(+cH > 0 ? { heightFt: +cH } : {}), ...(+cOpenSf > 0 ? { openingsSf: +cOpenSf } : {}), ...(+cOpenCt > 0 ? { openingsCount: +cOpenCt } : {}),
+      });
+      setMsg(`Measured ${target ? `"${target.name}"` : 'condition'} — ${measuredLabel({ ...base, ...patch } as TracerCondition)}.`);
+      setSelId(targetConditionId!);
+      return;
+    }
+
     commit(() => { setConditions((cs) => [...cs, base]); setDraft([]); setHoles([]); setHoleDraft([]); setCName(''); });
     setMsg(`Added "${base.name}" — ${measuredLabel(base)}.`);
     setSelId(base.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engineKind, tool, ppf, draft, holes, asm, cName, cH, cT, cOpenSf, cOpenCt, rise, depthIn, volMode, stations, commit, setConditions]);
-
-  /* void finishing — attach to the active area draft or the selected area condition */
-  const finishHole = useCallback(() => {
-    if (holeDraft.length < 3) { setMsg('A void needs at least 3 points.'); return; }
-    const hole = holeDraft.map((p) => ({ ...p }));
-    if (draft.length >= 3) { commit(() => { setHoles((hs) => [...hs, hole]); setHoleDraft([]); }); setMsg('Void added to the active area.'); return; }
-    const sel = conditions.find((c) => c.id === selId);
-    if (sel && (sel.tool === 'area' || sel.kind === 'area') && sel.points) {
-      commit(() => setConditions((cs) => cs.map((c) => c.id === sel.id ? recompute({ ...c, holes: [...(c.holes || []), hole] }) : c)));
-      setHoleDraft([]); setMsg('Void deducted from the selected area.'); return;
-    }
-    setMsg('Start an Area first, or select an area shape, then draw the void inside it.');
-    setHoleDraft([]);
-  }, [holeDraft, draft, conditions, selId, commit, setConditions, recompute]);
+  }, [engineKind, tool, ppf, draft, holes, asm, cName, cH, cT, cOpenSf, cOpenCt, rise, depthIn, volMode, stations, commit, setConditions, finishHole, activeSheet, targetConditionId, onSetConditionValue, conditions]);
 
   /* ── multi-sheet drawing register ─────────────────────────────────────── */
-  /* seed one register entry from whatever plan the tracer opened with (raster upload or AI-calibrated) */
+  /* seed the register: from parent-persisted metadata when provided (reopen — sheet-scoped conditions
+     reattach by deterministic id), else one entry from whatever plan the tracer opened with */
   useEffect(() => {
-    if (planUrl && sheets.length === 0) {
-      const id = uid();
-      setSheets([{ id, pdfId: '', page: 1, name: 'Sheet 1', url: planUrl, w: dims.w, h: dims.h, ppf }]);
+    if (sheets.length) return;
+    if (initialSheets && initialSheets.length) {
+      const seeded: Sheet[] = initialSheets.map((s) => ({ id: s.id, pdfId: '', page: s.page, name: s.name, url: '', w: s.w, h: s.h, ppf: s.ppf, source: s.source }));
+      // the parent's current plan (if any) is the raster for the first register entry
+      if (planUrl && seeded[0]) seeded[0] = { ...seeded[0], url: planUrl, w: dims.w || seeded[0].w, h: dims.h || seeded[0].h };
+      setSheets(seeded); setActiveSheet(seeded[0]?.id || '');
+      return;
+    }
+    if (planUrl) {
+      const id = sheetUid('', 1); // deterministic — reopening the same project reattaches sheet-scoped conditions
+      setSheets([{ id, pdfId: '', page: 1, name: 'Sheet 1', url: planUrl, w: dims.w, h: dims.h, ppf, source: '' }]);
       setActiveSheet(id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planUrl]);
+  }, [planUrl, initialSheets]);
 
   /* keep the active sheet's stored scale in sync as the user calibrates (never touches other sheets) */
   useEffect(() => {
     if (!activeSheet) return;
     setSheets((ss) => ss.map((s) => (s.id === activeSheet && s.ppf !== ppf ? { ...s, ppf } : s)));
   }, [ppf, activeSheet]);
+
+  /* SHEET REGISTER PERSISTENCE — lift the register metadata to the parent on every change, so the
+     sheets (ids, names, per-sheet scales, source refs) survive this component unmounting. */
+  const onSheetsChangeRef = useRef(onSheetsChange); onSheetsChangeRef.current = onSheetsChange;
+  useEffect(() => {
+    if (!sheets.length) return;
+    onSheetsChangeRef.current?.(sheets.map(({ id, name, page, ppf: sppf, w, h, source }) => ({ id, name, page, ppf: sppf, w, h, source })));
+  }, [sheets]);
 
   /* render a PDF page to a crisp raster (~PDF_LONG_EDGE long edge) → data URL + dims */
   const renderPdfPageToDataUrl = useCallback(async (pdf: any, n: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -410,12 +482,12 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
     setSelId(null); setDraft([]); setHoles([]); setHoleDraft([]); setCalib([]); setBox(null); boxRef.current = null;
     if (!s.url) {
       const doc = pdfDocsRef.current[s.pdfId];
-      if (doc) {
-        setBusy('Rendering sheet…');
-        try { const r = await renderPdfPageToDataUrl(doc, s.page); s = { ...s, url: r.url, w: r.w, h: r.h }; setSheets((ss) => ss.map((x) => (x.id === id ? s! : x))); }
-        catch (e) { console.error(e); setMsg("Couldn't render that page. Re-export a flattened PDF or a PNG and try again."); setBusy(''); return; }
-        setBusy('');
-      }
+      // persisted register entry whose file isn't loaded this session — never switch to a blank plan
+      if (!doc) { setMsg(`"${s.name}" isn't loaded in this session — Add ${s.source || 'its file'} again and it re-attaches (same sheet ids; its conditions and scale are intact).`); return; }
+      setBusy('Rendering sheet…');
+      try { const r = await renderPdfPageToDataUrl(doc, s.page); s = { ...s, url: r.url, w: r.w, h: r.h }; setSheets((ss) => ss.map((x) => (x.id === id ? s! : x))); }
+      catch (e) { console.error(e); setMsg("Couldn't render that page. Re-export a flattened PDF or a PNG and try again."); setBusy(''); return; }
+      setBusy('');
     }
     setActiveSheet(id);
     setPlan(s.url, s.w, s.h);
@@ -432,19 +504,33 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
       (pdfjs as any).GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'; // eslint-disable-line @typescript-eslint/no-explicit-any
       const buf = await file.arrayBuffer();
       const pdf = await (pdfjs as any).getDocument({ data: buf }).promise; // eslint-disable-line @typescript-eslint/no-explicit-any
-      const pdfId = uid(); pdfDocsRef.current[pdfId] = pdf;
+      // DETERMINISTIC ids (hash of file name + page) — re-adding the same plan set merges into the
+      // persisted register entries instead of duplicating, so their conditions + scales reattach.
+      const pdfId = sheetUid(file.name, 0); pdfDocsRef.current[pdfId] = pdf;
       const base = file.name.replace(/\.[^.]+$/, '');
       const first = await renderPdfPageToDataUrl(pdf, 1);
-      const added: Sheet[] = [];
-      for (let p = 1; p <= pdf.numPages; p++) {
-        added.push({ id: uid(), pdfId, page: p, name: pdf.numPages > 1 ? `${base} · p${p}` : base, url: p === 1 ? first.url : '', w: p === 1 ? first.w : 0, h: p === 1 ? first.h : 0, ppf: 0 });
-      }
-      setSheets((ss) => [...ss, ...added]);
-      const a = added[0]; setActiveSheet(a.id); setPlan(a.url, a.w, a.h); setPpf(0); setTool('scale');
-      setMsg(`Loaded ${pdf.numPages} sheet${pdf.numPages > 1 ? 's' : ''} — set the scale on this sheet, then trace.`);
+      const firstId = sheetUid(file.name, 1);
+      const prior = sheets.find((x) => x.id === firstId); // reattach → keep the stored calibration
+      setSheets((ss) => {
+        const next = [...ss];
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const id = sheetUid(file.name, p);
+          const url = p === 1 ? first.url : '', w = p === 1 ? first.w : 0, h = p === 1 ? first.h : 0;
+          const i = next.findIndex((x) => x.id === id);
+          if (i >= 0) next[i] = { ...next[i], pdfId, url: url || next[i].url, w: w || next[i].w, h: h || next[i].h, source: file.name };
+          else next.push({ id, pdfId, page: p, name: pdf.numPages > 1 ? `${base} · p${p}` : base, url, w, h, ppf: 0, source: file.name });
+        }
+        return next;
+      });
+      setActiveSheet(firstId); setPlan(first.url, first.w, first.h);
+      const keepPpf = prior?.ppf ?? 0;
+      setPpf(keepPpf); setTool(keepPpf > 0 ? 'area' : 'scale');
+      setMsg(prior
+        ? `Re-attached ${pdf.numPages} sheet${pdf.numPages > 1 ? 's' : ''} — stored scales and conditions are back.`
+        : `Loaded ${pdf.numPages} sheet${pdf.numPages > 1 ? 's' : ''} — set the scale on this sheet, then trace.`);
     } catch (e) { console.error(e); setMsg("Couldn't read that PDF. Re-export a flattened PDF or a PNG and try again."); }
     setBusy('');
-  }, [renderPdfPageToDataUrl, setPlan, setPpf]);
+  }, [sheets, renderPdfPageToDataUrl, setPlan, setPpf]);
 
   /* decode a phone-photo/scan format the browser can't render (HEIC/HEIF, TIFF, stubborn WEBP)
      server-side (/api/takeoff/decode-image → sharp) → PNG data-URL, then add it as a sheet. */
@@ -458,26 +544,39 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
       const resp = await fetch('/api/takeoff/decode-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: b64 }) });
       const d = await resp.json().catch(() => ({ ok: false, error: 'Bad response from the decoder.' }));
       if (!d.ok || !d.dataUrl) { setMsg(d.error || `Couldn't decode ${file.name}. Export it as PDF, PNG, or JPG.`); setBusy(''); return; }
-      const id = uid(); const name = file.name.replace(/\.[^.]+$/, '');
-      setSheets((ss) => [...ss, { id, pdfId: '', page: 1, name, url: d.dataUrl, w: d.width || 0, h: d.height || 0, ppf: 0 }]);
-      setActiveSheet(id); setPlan(d.dataUrl, d.width || 0, d.height || 0); setPpf(0); setTool('scale');
-      setMsg(`Decoded ${file.name} — set the scale on this sheet, then trace.`);
+      const id = sheetUid(file.name, 1); const name = file.name.replace(/\.[^.]+$/, '');
+      const prior = sheets.find((x) => x.id === id); // re-added file → reattach (keep the stored calibration)
+      setSheets((ss) => (ss.some((x) => x.id === id)
+        ? ss.map((x) => (x.id === id ? { ...x, url: d.dataUrl, w: d.width || x.w, h: d.height || x.h, source: file.name } : x))
+        : [...ss, { id, pdfId: '', page: 1, name, url: d.dataUrl, w: d.width || 0, h: d.height || 0, ppf: 0, source: file.name }]));
+      setActiveSheet(id); setPlan(d.dataUrl, d.width || 0, d.height || 0);
+      const keepPpf = prior?.ppf ?? 0; setPpf(keepPpf); setTool(keepPpf > 0 ? 'area' : 'scale');
+      setMsg(prior ? `Re-attached ${file.name} — its scale and conditions are back.` : `Decoded ${file.name} — set the scale on this sheet, then trace.`);
     } catch (e) { console.error(e); setMsg(`Couldn't decode ${file.name}. Try a PNG or JPG export of the sheet.`); }
     setBusy('');
-  }, [setPlan, setPpf]);
+  }, [sheets, setPlan, setPpf]);
 
-  /* add a raster image as a new register entry */
+  /* blob object URLs created for raster sheets — revoked on unmount (they leaked before) */
+  const objectUrlsRef = useRef<string[]>([]);
+  useEffect(() => () => { for (const u of objectUrlsRef.current) URL.revokeObjectURL(u); objectUrlsRef.current = []; }, []);
+
+  /* add a raster image as a new register entry (deterministic id — re-adding the same file reattaches) */
   const addImageSheet = useCallback((file: File) => {
     const url = URL.createObjectURL(file); const im = new Image();
     im.onload = () => {
-      const id = uid(); const name = file.name.replace(/\.[^.]+$/, '');
-      setSheets((ss) => [...ss, { id, pdfId: '', page: 1, name, url, w: im.naturalWidth, h: im.naturalHeight, ppf: 0 }]);
-      setActiveSheet(id); setPlan(url, im.naturalWidth, im.naturalHeight); setPpf(0); setTool('scale');
+      objectUrlsRef.current.push(url);
+      const id = sheetUid(file.name, 1); const name = file.name.replace(/\.[^.]+$/, '');
+      const prior = sheets.find((x) => x.id === id); // re-added file → reattach (keep the stored calibration)
+      setSheets((ss) => (ss.some((x) => x.id === id)
+        ? ss.map((x) => (x.id === id ? { ...x, url, w: im.naturalWidth, h: im.naturalHeight, source: file.name } : x))
+        : [...ss, { id, pdfId: '', page: 1, name, url, w: im.naturalWidth, h: im.naturalHeight, ppf: 0, source: file.name }]));
+      setActiveSheet(id); setPlan(url, im.naturalWidth, im.naturalHeight);
+      const keepPpf = prior?.ppf ?? 0; setPpf(keepPpf); setTool(keepPpf > 0 ? 'area' : 'scale');
     };
     // the browser couldn't render it (e.g. some WEBP/TIFF variants) → fall back to server-side decode
     im.onerror = () => { URL.revokeObjectURL(url); decodeAndAddSheet(file); };
     im.src = url;
-  }, [setPlan, setPpf, decodeAndAddSheet]);
+  }, [sheets, setPlan, setPpf, decodeAndAddSheet]);
 
   /* one file input → PDF plan-set, browser-native raster, or server-decoded phone-photo format */
   const onAddFile = useCallback((file: File | undefined) => {
@@ -559,7 +658,7 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
       const mc = measureCondition('area', { points: pts, holes: [], ppf, count: pts.length });
       const cond: TracerCondition = {
         id: uid(), name: 'Room fill', kind: 'area', value: mc.value, assemblyId: asmId,
-        points: pts, holes: [], tool: 'area', color: divColor(csiOfAsm(asmId)), sheetId: activeSheet || undefined,
+        points: pts, holes: [], tool: 'area', color: divColor(csiOfAsm(asmId)), sheetId: activeSheet || undefined, ppf,
       };
       commit(() => setConditions((cs) => [...cs, cond]));
       setSelId(cond.id); setTool('select');
@@ -606,7 +705,9 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
     }
     if (tool === 'select') {
       const hv = hitVertex(sx, sy);
-      if (hv) { dragRef.current = { mode: 'vertex', sx, sy, tx: 0, ty: 0, cid: hv.cid, idx: hv.idx, ring: hv.ring }; setSelId(hv.cid); setPast((p) => [...p.slice(-49), snapNow()]); setFuture([]); return; }
+      // Snapshot is PENDED, not pushed — a bare tap on a vertex must not burn a no-op undo step;
+      // onPointerUp pushes it only if the vertex actually moved.
+      if (hv) { dragRef.current = { mode: 'vertex', sx, sy, tx: 0, ty: 0, cid: hv.cid, idx: hv.idx, ring: hv.ring }; setSelId(hv.cid); pendingSnapRef.current = snapNow(); return; }
       setSelId(hitCondition(img)); return;
     }
     // drawing tools
@@ -658,14 +759,26 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
   const onPointerUp = useCallback(() => {
     if (dragRef.current.mode === 'vertex') {
       // Commit the dragged geometry to the parent ONCE — the engine reprices here, not per frame.
-      const dc = dragLiveRef.current;
-      if (dc) setConditions((cs) => cs.map((c) => (c.id === dc.id ? dc : c)));
-      dragLiveRef.current = null;
-      setMsg('Vertex moved.');
+      // Only a REAL move commits + pushes the pended undo snapshot: a bare tap (or a drag that
+      // snapped back to its start) leaves history and state untouched.
+      const d = dragRef.current; const dc = dragLiveRef.current;
+      if (dc) {
+        const orig = conditions.find((c) => c.id === d.cid);
+        const before = d.ring === 'outer' ? orig?.points?.[d.idx!] : orig?.holes?.[d.ring as number]?.[d.idx!];
+        const after = d.ring === 'outer' ? dc.points?.[d.idx!] : dc.holes?.[d.ring as number]?.[d.idx!];
+        if (before && after && (before.x !== after.x || before.y !== after.y)) {
+          const snap = pendingSnapRef.current;
+          if (snap) { setPast((p) => [...p.slice(-49), snap]); setFuture([]); }
+          setConditions((cs) => cs.map((c) => (c.id === dc.id ? dc : c)));
+          setMsg('Vertex moved.');
+        }
+      }
+      dragLiveRef.current = null; pendingSnapRef.current = null;
+      scheduleDraw(); // repaint from committed state (clears any live overlay from a reverted drag)
     }
     if (dragRef.current.mode === 'box') { dragRef.current = { mode: 'none', sx: 0, sy: 0, tx: 0, ty: 0 }; runCount(boxRef.current); return; }
     dragRef.current = { mode: 'none', sx: 0, sy: 0, tx: 0, ty: 0 };
-  }, [runCount, setConditions]);
+  }, [runCount, setConditions, conditions, scheduleDraw]);
   const onDoubleClick = useCallback(() => { if (tool === 'deduction') finishHole(); else finishDraft(); }, [tool, finishDraft, finishHole]);
 
   /* ── wheel zoom (non-passive) ──────────────────────────────────────── */
@@ -675,6 +788,15 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
     cv.addEventListener('wheel', onWheel, { passive: false });
     return () => cv.removeEventListener('wheel', onWheel);
   }, [zoomAt, planUrl]);
+
+  /* defined before the keyboard effect so Delete never fires a stale closure */
+  const deleteSelectedVertexOrCondition = useCallback(() => {
+    if (!selId) return;
+    // if a vertex is hovered/selected we can't know without a stored idx; delete last-hovered near cursor
+    const c = conditions.find((x) => x.id === selId); if (!c) return;
+    commit(() => setConditions((cs) => cs.filter((x) => x.id !== selId)));
+    setSelId(null); setMsg('Condition deleted.');
+  }, [selId, conditions, commit, setConditions]);
 
   /* ── keyboard ──────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -695,15 +817,7 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
     window.addEventListener('keydown', kd); window.addEventListener('keyup', ku);
     return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [undo, redo, finishDraft, fit, draft, holeDraft, selId, onClose]);
-
-  const deleteSelectedVertexOrCondition = useCallback(() => {
-    if (!selId) return;
-    // if a vertex is hovered/selected we can't know without a stored idx; delete last-hovered near cursor
-    const c = conditions.find((x) => x.id === selId); if (!c) return;
-    commit(() => setConditions((cs) => cs.filter((x) => x.id !== selId)));
-    setSelId(null); setMsg('Condition deleted.');
-  }, [selId, conditions, commit, setConditions]);
+  }, [undo, redo, finishDraft, fit, draft, holeDraft, selId, onClose, deleteSelectedVertexOrCondition]);
 
   /* delete a specific vertex (from the panel) */
   const deleteVertex = useCallback((cid: string, idx: number) => {
@@ -715,13 +829,31 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
     })));
   }, [commit, setConditions, recompute]);
 
+  /* bulk-delete one page of vertices (auto-count cleanup) — always leaves the geometric minimum */
+  const deleteVertexRange = useCallback((cid: string, start: number, end: number) => {
+    commit(() => setConditions((cs) => cs.map((c) => {
+      if (c.id !== cid || !c.points) return c;
+      const minPts = c.kind === 'area' ? 3 : c.kind === 'linear' ? 2 : 1;
+      let kept = c.points.filter((_, i) => i < start || i >= end);
+      if (kept.length < minPts) kept = [...c.points.slice(0, start), ...c.points.slice(start, start + (minPts - kept.length)), ...c.points.slice(end)];
+      return recompute({ ...c, points: kept });
+    })));
+  }, [commit, setConditions, recompute]);
+
   /* ── set scale from calibration ────────────────────────────────────── */
   const applyScale = () => {
     if (calib.length < 2) { setMsg('Click two points first.'); return; }
     const ft = parseFloat(knownFt); if (!(ft > 0)) { setMsg('Enter a positive distance.'); return; }
     const p = pxPerFt(calib[0], calib[1], ft); setPpf(p);
+    // SCALE CORRECTNESS: recalibrating THIS sheet re-projects every scale-bearing condition on it —
+    // stored ppf restamped to the new scale, values recomputed from the unchanged pixel geometry.
+    // Counts are scale-free and other sheets' conditions (own stored ppf) are untouched.
+    const onThis = (c: TracerCondition) => (!c.sheetId || c.sheetId === activeSheet) && !!c.points?.length && (c.tool ?? c.kind) !== 'count';
+    const n = conditions.filter(onThis).length;
+    if (n > 0) commit(() => setConditions((cs) => cs.map((c) => (onThis(c) ? recompute({ ...c, ppf: p }) : c))));
     const sanity = calibrationSanity(p, dims.w, dims.h);
-    setMsg(sanity.ok ? `Scale set — ${p.toFixed(2)} px/ft (sheet ≈ ${sanity.impliedWidthFt}×${sanity.impliedHeightFt} ft).` : `Scale set, but ${sanity.warning}`);
+    const re = n > 0 ? ` ${n} condition${n === 1 ? '' : 's'} re-measured at the new scale.` : '';
+    setMsg((sanity.ok ? `Scale set — ${p.toFixed(2)} px/ft (sheet ≈ ${sanity.impliedWidthFt}×${sanity.impliedHeightFt} ft).` : `Scale set, but ${sanity.warning}`) + re);
     setCalib([]); setKnownFt(''); setTool('area');
   };
 
@@ -779,7 +911,14 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
       const pts = c.points.map(sc);
       ctx.lineWidth = sel ? 3 : 2; ctx.strokeStyle = col; ctx.lineJoin = 'round';
       if (c.tool === 'count') {
-        for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, 7); ctx.fillStyle = col; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = '#0b0e13'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.strokeStyle = col; }
+        if (pts.length > 300) {
+          // heat-dot layer — a 3000-match auto-count paints as cheap squares (no per-point arc/stroke/state churn)
+          ctx.fillStyle = col; ctx.globalAlpha = sel ? 0.95 : 0.8;
+          for (const p of pts) ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+          ctx.globalAlpha = 1;
+        } else {
+          for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, 7); ctx.fillStyle = col; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = '#0b0e13'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.strokeStyle = col; }
+        }
       } else if (c.tool === 'arc' && c.arc) {
         drawArc(ctx, sc(c.arc.a), sc(c.arc.mid), sc(c.arc.b), col, sel ? 3 : 2);
       } else {
@@ -789,8 +928,9 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
         // voids
         if (c.holes) for (const h of c.holes) { const hp = h.map(sc); ctx.beginPath(); ctx.moveTo(hp[0].x, hp[0].y); for (let i = 1; i < hp.length; i++) ctx.lineTo(hp[i].x, hp[i].y); ctx.closePath(); ctx.fillStyle = 'rgba(248,113,113,0.18)'; ctx.fill(); ctx.setLineDash([5, 4]); ctx.strokeStyle = RED; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]); ctx.strokeStyle = col; }
       }
-      // vertices when selected
-      if (sel) for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, 7); ctx.fillStyle = GOLD; ctx.fill(); ctx.strokeStyle = '#0b0e13'; ctx.lineWidth = 1.5; ctx.stroke(); }
+      // vertices when selected — capped at 300 handles (an uncapped 3000-marker auto-count froze the paint;
+      // above the cap the heat-dot layer above is the selection affordance and the vertex list paginates)
+      if (sel && pts.length <= 300) for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, 7); ctx.fillStyle = GOLD; ctx.fill(); ctx.strokeStyle = '#0b0e13'; ctx.lineWidth = 1.5; ctx.stroke(); }
       // per-segment length HUD on the selected linear run (the "feels like Bluebeam" lever)
       if (sel && !isArea && c.tool !== 'count' && c.tool !== 'arc' && ppf > 0 && c.points.length >= 2) {
         const segs = segmentLengthsLF(c.points, ppf);
@@ -954,6 +1094,12 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
               {busy}
             </div>
           )}
+          {/* targeted-trace banner — measurements land on the caller's condition, not a new row */}
+          {targetConditionId && (
+            <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(13,17,23,0.95)', border: `1px solid ${GOLD}`, borderRadius: 9, padding: '7px 12px', fontSize: 12.5, color: GOLD, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <G g="linear" s={15} c={GOLD} />Tracing: {conditions.find((c) => c.id === targetConditionId)?.name || 'condition'}
+            </div>
+          )}
           {/* hint + scale entry */}
           <div style={{ position: 'absolute', left: 12, bottom: 12, right: 12, display: 'flex', gap: 10, alignItems: 'flex-end', pointerEvents: 'none' }}>
             <div style={{ pointerEvents: 'auto', background: 'rgba(13,17,23,0.9)', border: `1px solid ${LINE}`, borderRadius: 9, padding: '8px 12px', fontSize: 12.5, color: DIM, maxWidth: 460 }}>
@@ -981,10 +1127,12 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
 
                 {tool !== 'deduction' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
-                    <input placeholder="Name (optional)" value={cName} onChange={(e) => setCName(e.target.value)} style={inp} />
-                    <select value={asm} onChange={(e) => setAsm(e.target.value)} style={inp}>
-                      {engineKind && asmList(engineKind).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
+                    {!targetConditionId && (<>
+                      <input placeholder="Name (optional)" value={cName} onChange={(e) => setCName(e.target.value)} style={inp} />
+                      <select value={asm} onChange={(e) => setAsm(e.target.value)} style={inp}>
+                        {engineKind && asmList(engineKind).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                    </>)}
                     {(tool === 'linear') && (
                       <div style={{ display: 'flex', gap: 6 }}>
                         <input placeholder="Height ft" value={cH} onChange={(e) => setCH(e.target.value)} style={inp} />
@@ -1012,7 +1160,7 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
                             </div>}
                       </div>
                     )}
-                    <button onClick={finishDraft} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: GOLD, color: '#0a0a0a', fontWeight: 700, border: 'none', borderRadius: 8, padding: '10px', cursor: 'pointer', fontSize: 13.5 }}><G g="check" s={17} c="#0a0a0a" />Add condition</button>
+                    <button onClick={finishDraft} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: GOLD, color: '#0a0a0a', fontWeight: 700, border: 'none', borderRadius: 8, padding: '10px', cursor: 'pointer', fontSize: 13.5 }}><G g="check" s={17} c="#0a0a0a" />{targetConditionId ? 'Set measured value' : 'Add condition'}</button>
                   </div>
                 )}
                 {tool === 'deduction' && <div style={{ fontSize: 12, color: DIM, marginTop: 8 }}>Draw a hole inside the active area (or select an area shape first). Double-click to finish the void.</div>}
@@ -1045,16 +1193,35 @@ export default function PlanTracer({ planUrl, dims, ppf, setPpf, setPlan, condit
                 <select value={selected.assemblyId} onChange={(e) => setConditions((cs) => cs.map((c) => c.id === selected.id ? { ...c, assemblyId: e.target.value, color: divColor(csiOfAsm(e.target.value)) } : c))} style={{ ...inp, marginBottom: 8 }}>
                   {asmList(selected.kind).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
-                {selected.points && selected.points.length > 0 && (
-                  <div style={{ maxHeight: 130, overflowY: 'auto', border: `1px solid ${LINE}`, borderRadius: 7 }}>
-                    {selected.points.map((p, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', fontSize: 12, color: DIM, borderBottom: i < selected.points!.length - 1 ? `1px solid ${LINE}` : 'none' }}>
-                        <span style={{ flex: 1 }}>Vertex {i + 1}</span>
-                        <button onClick={() => deleteVertex(selected.id, i)} style={{ ...miniBtn, width: 26, height: 24 }}><G g="trash" s={13} c={RED} /></button>
+                {selected.points && selected.points.length > 0 && (() => {
+                  // paginated — an auto-count can hold 3000 markers; rendering one page of 100 keeps the panel instant
+                  const N = selected.points.length, PER = 100;
+                  const pages = Math.max(1, Math.ceil(N / PER));
+                  const pg = clamp(vtxPage, 0, pages - 1);
+                  const start = pg * PER, end = Math.min(N, start + PER);
+                  return (
+                    <>
+                      {pages > 1 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                          <button disabled={pg === 0} onClick={() => setVtxPage(pg - 1)} style={{ ...miniBtn, width: 30, height: 26, opacity: pg === 0 ? 0.4 : 1, fontSize: 12 }}>&lt;</button>
+                          <span style={{ flex: 1, fontSize: 11.5, color: DIM, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>Vertices {start + 1}–{end} of {N.toLocaleString()}</span>
+                          <button disabled={pg >= pages - 1} onClick={() => setVtxPage(pg + 1)} style={{ ...miniBtn, width: 30, height: 26, opacity: pg >= pages - 1 ? 0.4 : 1, fontSize: 12 }}>&gt;</button>
+                        </div>
+                      )}
+                      <div style={{ maxHeight: 130, overflowY: 'auto', border: `1px solid ${LINE}`, borderRadius: 7 }}>
+                        {selected.points.slice(start, end).map((_p, i) => (
+                          <div key={start + i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', fontSize: 12, color: DIM, borderBottom: i < end - start - 1 ? `1px solid ${LINE}` : 'none' }}>
+                            <span style={{ flex: 1 }}>Vertex {start + i + 1}</span>
+                            <button onClick={() => deleteVertex(selected.id, start + i)} style={{ ...miniBtn, width: 26, height: 24 }}><G g="trash" s={13} c={RED} /></button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
+                      {pages > 1 && (
+                        <button onClick={() => deleteVertexRange(selected.id, start, end)} style={{ ...miniBtn, width: '100%', height: 28, marginTop: 5, fontSize: 12, color: RED, borderColor: 'rgba(248,113,113,0.4)' }}>Delete this page ({end - start} markers)</button>
+                      )}
+                    </>
+                  );
+                })()}
                 <button onClick={() => { commit(() => setConditions((cs) => cs.filter((c) => c.id !== selected.id))); setSelId(null); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', marginTop: 8, border: `1px solid rgba(248,113,113,0.4)`, background: 'rgba(248,113,113,0.08)', color: RED, borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}><G g="trash" s={15} c={RED} />Delete condition</button>
               </div>
             )}

@@ -254,6 +254,9 @@ export default function TakeoffPage() {
   // manual-picker toggle ("Let me pick" reveals the individual document actions).
   const [autoSummary, setAutoSummary] = useState<AutoBuildSummary | null>(null);
   const [pickMode, setPickMode] = useState(false);
+  // Honest hand-off: the newest takeoff on this project is a MEASURED one (Takeoff
+  // Studio owns its condition-based detail) — link there instead of blanking to upload.
+  const [measuredHandoff, setMeasuredHandoff] = useState<{ id: string; name: string; total: number } | null>(null);
 
   // Load latest completed takeoff on mount
   useEffect(() => {
@@ -265,32 +268,63 @@ export default function TakeoffPage() {
       const { data: list } = await listRes.json();
       if (cancelled || !Array.isArray(list) || list.length === 0) return;
 
-      // Find the most recent completed takeoff
-      const completed = list.find((t: { status: string }) => t.status === 'complete');
-      if (!completed) return;
+      // Newest-first completed takeoffs. The newest may be a MEASURED takeoff
+      // (Takeoff Studio writes px_per_ft/scale_confidence onto the header and its
+      // lines live in takeoff_line_items) — its home is the Studio, so this AI
+      // viewer walks back to the newest takeoff that HAS renderable materials
+      // instead of blanking to the upload screen when the first pick comes up empty.
+      const completed: Array<Record<string, unknown>> = list.filter((t: { status: string }) => t.status === 'complete');
+      if (completed.length === 0) return;
+      const isMeasured = (t: Record<string, unknown>) => t.px_per_ft != null || t.scale_confidence != null;
 
-      // Step 2: load full detail (includes materials)
-      const detailRes = await fetch(`/api/takeoff/${completed.id}`);
-      if (cancelled || !detailRes.ok) return;
-      const { data } = await detailRes.json();
-      if (cancelled || !data || data.status !== 'complete') return;
-      const mats: Array<Record<string, unknown>> = data.materials || [];
-      if (mats.length === 0) return;
-
-      const items: TakeoffItem[] = mats
-        .filter((m) => Number(m.quantity) > 0 && Number(m.unit_cost) > 0)
-        .map((m) => ({
-          csiCode:     String(m.csi_code   || ''),
-          csiDivision: String(m.csi_code   || '').slice(0, 2),
-          csiName:     String(m.csi_name   || ''),
-          description: String(m.description || ''),
-          quantity:    Number(m.quantity)  || 0,
-          unit:        String(m.unit       || ''),
-          unitCost:    Number(m.unit_cost) || 0,
-          totalCost:   Number(m.total_cost) || (Number(m.quantity) * Number(m.unit_cost)),
-          laborHours:  Number(m.labor_hours) || 0,
-          notes:       String(m.notes      || ''),
-        }));
+      let data: Record<string, any> | null = null;
+      let items: TakeoffItem[] = [];
+      for (const t of completed) {
+        if (isMeasured(t)) continue; // measured → hand-off card below, not this viewer
+        // Step 2: load full detail (includes materials)
+        const detailRes = await fetch(`/api/takeoff/${t.id}`);
+        if (cancelled) return;
+        if (!detailRes.ok) continue;
+        const { data: d } = await detailRes.json();
+        if (cancelled) return;
+        if (!d || d.status !== 'complete') continue;
+        const mats: Array<Record<string, unknown>> = d.materials || [];
+        if (mats.length === 0) continue;
+        const mapped = mapMaterials(mats);
+        if (mapped.length === 0) continue;
+        data = d; items = mapped;
+        break;
+      }
+      if (!data) {
+        // Nothing renderable here — if the newest completed takeoff is a measured
+        // one, hand off honestly to Takeoff Studio instead of showing upload.
+        const newest = completed[0];
+        if (isMeasured(newest)) {
+          setMeasuredHandoff({
+            id: String(newest.id),
+            name: String(newest.name || newest.project_name_detected || 'Measured takeoff'),
+            total: Number(newest.sell_price ?? newest.grand_total) || 0,
+          });
+        }
+        return;
+      }
+      // (hoisted helper used by the loop above)
+      function mapMaterials(mats: Array<Record<string, unknown>>): TakeoffItem[] {
+        return mats
+          .filter((m) => Number(m.quantity) > 0 && Number(m.unit_cost) > 0)
+          .map((m) => ({
+            csiCode:     String(m.csi_code   || ''),
+            csiDivision: String(m.csi_code   || '').slice(0, 2),
+            csiName:     String(m.csi_name   || ''),
+            description: String(m.description || ''),
+            quantity:    Number(m.quantity)  || 0,
+            unit:        String(m.unit       || ''),
+            unitCost:    Number(m.unit_cost) || 0,
+            totalCost:   Number(m.total_cost) || (Number(m.quantity) * Number(m.unit_cost)),
+            laborHours:  Number(m.labor_hours) || 0,
+            notes:       String(m.notes      || ''),
+          }));
+      }
 
       const materialTotal  = items.reduce((s, i) => s + i.totalCost, 0);
       // Compute labor from hours × $65 if labor_cost not stored
@@ -828,6 +862,47 @@ export default function TakeoffPage() {
   // Copy values for the autonomous Sage card ("$X sell across N divisions, M items").
   const divCount = Object.keys(groupedItems).length;
   const sellTotal = (result?.totalProjectCost || 0) * sellMult;
+
+  // ── STATE A0: MEASURED HAND-OFF ──────────────────────────────────────────────
+  // The newest takeoff was measured by hand in Takeoff Studio. Its conditions,
+  // scale and markup stack live there — say so honestly and link across, instead of
+  // pretending this project has no takeoff and showing the upload hero.
+  if (state === 'upload' && measuredHandoff) {
+    return (
+      <div className="tkRoot" style={{ position: 'relative', overflow: 'hidden', minHeight: 'calc(100vh - 56px)' }}>
+        <style>{FX_KEYFRAMES}</style>
+        <Aurora />
+        <div style={{ position: 'relative', zIndex: 1, padding: '64px 24px', maxWidth: 680, margin: '0 auto' }}>
+          <div style={{ animation: 'tkRise .5s ease both', textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 999, background: 'linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.06))', border: '1px solid rgba(245,158,11,0.45)', color: GOLD_HI, fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+              <Ruler size={13} weight="bold" /> Measured takeoff
+            </div>
+          </div>
+          <div style={{ animation: 'tkRise .55s ease .05s both', borderRadius: 20, border: '1px solid rgba(245,158,11,0.3)', background: SURFACE, padding: '36px 28px', textAlign: 'center' }}>
+            <h1 style={{ color: '#fff', fontSize: 26, fontWeight: 800, margin: 0, lineHeight: 1.25 }}>{measuredHandoff.name}</h1>
+            <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: 14.5, lineHeight: 1.6, margin: '14px auto 0', maxWidth: 460 }}>
+              The latest takeoff on this project was traced and priced in Takeoff Studio.
+              Its conditions, plan scale and markup stack live there — open it to review or keep measuring.
+            </p>
+            {measuredHandoff.total > 0 && (
+              <div style={{ marginTop: 18 }}>
+                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sell price</div>
+                <div style={{ color: GREEN, fontSize: 32, fontWeight: 800, marginTop: 4 }}>{fmt$(measuredHandoff.total)}</div>
+              </div>
+            )}
+            <div style={{ marginTop: 26, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href="/app/takeoff/measured" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 22px', borderRadius: 12, background: `linear-gradient(135deg, ${GOLD}, ${AMBER})`, color: '#0B0E15', fontWeight: 800, fontSize: 14, textDecoration: 'none' }}>
+                Open in Takeoff Studio <ArrowRight size={16} weight="bold" />
+              </a>
+              <button onClick={() => setMeasuredHandoff(null)} style={{ padding: '12px 22px', borderRadius: 12, background: 'transparent', border: `1px solid ${BORDER}`, color: 'rgba(255,255,255,0.72)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                Start an AI blueprint takeoff instead
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── STATE A: UPLOAD ──────────────────────────────────────────────────────────
   if (state === 'upload') {

@@ -45,11 +45,31 @@ export async function GET(
     .eq('takeoff_id', takeoffId)
     .order('sort_order', { ascending: true });
 
-  const mats = (materials || []) as Array<{
+  type MatRow = {
     csi_code: string; csi_name: string; description: string;
     quantity: number; unit: string; unit_cost: number;
     total_cost: number; labor_hours: number; notes: string;
-  }>;
+  };
+  let mats = (materials || []) as MatRow[];
+  if (mats.length === 0) {
+    // Fallback: measured/deterministic takeoffs write takeoff_line_items (not
+    // takeoff_materials). Same mapping as sage-auto-docs, so those takeoffs export a
+    // real workbook instead of an empty shell.
+    const { data: liData } = await supabase
+      .from('takeoff_line_items')
+      .select('*')
+      .eq('takeoff_id', takeoffId)
+      .order('sort_order', { ascending: true });
+    mats = (liData || []).map((li) => {
+      const um = Number(li.unit_material_cost) || 0, ul = Number(li.unit_labor_cost) || 0, qty = Number(li.quantity) || 0;
+      return {
+        csi_code: li.csi_code || '', csi_name: li.category || '',
+        description: li.description || '', quantity: qty, unit: li.unit || 'EA',
+        unit_cost: um + ul, total_cost: qty * (um + ul), labor_hours: 0,
+        notes: li.notes || '',
+      } as MatRow;
+    });
+  }
 
   // ── UNIFIED PRICING: the SAME markup stack + per-trade crew wages the measured engine uses.
   //    No more flat $65/hr + 15% — one job now produces one sell number across every surface. ──

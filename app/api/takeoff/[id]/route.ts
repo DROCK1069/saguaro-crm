@@ -45,10 +45,31 @@ export async function GET(
 
     if (materialsErr) throw materialsErr;
 
+    let materialRows: Array<Record<string, unknown>> = materials || [];
+    if (materialRows.length === 0) {
+      // Fallback: measured/deterministic takeoffs write takeoff_line_items (not
+      // takeoff_materials). Map them to the same shape (same mapping as sage-auto-docs)
+      // so the detail API shows real lines from BOTH write paths instead of blanking.
+      const { data: liData } = await supabase
+        .from('takeoff_line_items')
+        .select('*')
+        .eq('takeoff_id', id)
+        .order('sort_order', { ascending: true });
+      materialRows = (liData || []).map((li) => {
+        const um = Number(li.unit_material_cost) || 0, ul = Number(li.unit_labor_cost) || 0, qty = Number(li.quantity) || 0;
+        return {
+          csi_code: li.csi_code || '', csi_name: li.category || '',
+          description: li.description || '', quantity: qty, unit: li.unit || 'EA',
+          unit_cost: um + ul, total_cost: qty * (um + ul), labor_hours: 0,
+          notes: li.notes || '', sort_order: Number(li.sort_order) || 0,
+        };
+      });
+    }
+
     const result = {
       ...takeoff,
       project_name: projectName,
-      materials: materials || [],
+      materials: materialRows,
     };
 
     return ok(result);

@@ -16,33 +16,47 @@ export const runtime = 'nodejs';
 const toDollars = (cents: number) => Math.round(cents) / 100;
 
 /**
+ * Multi-sheet tracing: a condition may carry the scale of the sheet it was traced on
+ * (ppf), and/or a sheetId that resolves through body.sheetScales. Extra JSON fields ride
+ * inside the stored `conditions` jsonb untouched, so no engine/type change is needed.
+ */
+type MeasuredCondition = Condition & { ppf?: number; sheetId?: string };
+
+/**
  * Server-side calibration + geometry cross-check (data integrity). A bad plan scale silently
  * mis-prices the whole estimate, so the server re-checks it rather than trusting the client:
  *  - plausibility of the scale for the sheet size (calibrationSanity), and
- *  - each traced condition's stored value vs the value its own geometry implies at that scale.
+ *  - each traced condition's stored value vs the value ITS OWN sheet's scale implies
+ *    (condition.ppf ?? sheetScales[condition.sheetId] ?? the global pxPerFt) — checking every
+ *    condition against one global scale threw false "check scale" warnings on multi-sheet takeoffs.
  * Returns a 0–100 confidence + human warnings (never blocks the save).
  */
-function verifyCalibration(conditions: Condition[], pxPerFt?: number, imgW?: number, imgH?: number): { confidence: number; warnings: string[] } {
+function verifyCalibration(conditions: MeasuredCondition[], pxPerFt?: number, imgW?: number, imgH?: number, sheetScales?: Record<string, number>): { confidence: number; warnings: string[] } {
   const warnings: string[] = [];
   let confidence = 100;
+  const hasPerSheetScale = (sheetScales != null && Object.values(sheetScales).some((v) => v > 0))
+    || conditions.some((c) => (c.ppf ?? 0) > 0);
   if (pxPerFt && imgW && imgH) {
     const cs = calibrationSanity(pxPerFt, imgW, imgH);
     if (!cs.ok) { warnings.push(cs.warning || 'Plan scale looks implausible — re-calibrate.'); confidence -= 45; }
-  } else {
+  } else if (!hasPerSheetScale) {
     confidence -= 15; // no scale metadata to verify against
   }
-  if (pxPerFt && pxPerFt > 0) {
-    for (const c of conditions) {
-      const pts = c.points as Pt[] | undefined;
-      if (!Array.isArray(pts) || pts.length < 2) continue;
-      const implied = c.kind === 'area' ? grossSF(pts, pxPerFt) : c.kind === 'linear' ? lengthLF(pts, pxPerFt) : 0;
-      if (implied <= 0 || !(c.value > 0)) continue;
-      const ratio = c.value / implied;
-      // pitch/void/thickness can shift value modestly; a >2x or <0.5x gap signals a scale/entry error
-      if (ratio > 2.2 || ratio < 0.45) {
-        warnings.push(`"${c.name}": entered ${Math.round(c.value)} vs traced geometry ≈ ${Math.round(implied)} ${c.kind === 'area' ? 'SF' : 'LF'} — check scale/value.`);
-        confidence -= 12;
-      }
+  for (const c of conditions) {
+    // each condition is checked against the scale of the sheet it was traced on
+    const ppf = (c.ppf && c.ppf > 0 ? c.ppf : undefined)
+      ?? (c.sheetId && sheetScales && sheetScales[c.sheetId] > 0 ? sheetScales[c.sheetId] : undefined)
+      ?? (pxPerFt && pxPerFt > 0 ? pxPerFt : undefined);
+    if (!ppf) continue;
+    const pts = c.points as Pt[] | undefined;
+    if (!Array.isArray(pts) || pts.length < 2) continue;
+    const implied = c.kind === 'area' ? grossSF(pts, ppf) : c.kind === 'linear' ? lengthLF(pts, ppf) : 0;
+    if (implied <= 0 || !(c.value > 0)) continue;
+    const ratio = c.value / implied;
+    // pitch/void/thickness can shift value modestly; a >2x or <0.5x gap signals a scale/entry error
+    if (ratio > 2.2 || ratio < 0.45) {
+      warnings.push(`"${c.name}": entered ${Math.round(c.value)} vs traced geometry ≈ ${Math.round(implied)} ${c.kind === 'area' ? 'SF' : 'LF'} — check scale/value.`);
+      confidence -= 12;
     }
   }
   return { confidence: Math.max(0, Math.min(100, confidence)), warnings };
@@ -53,9 +67,9 @@ export async function POST(req: NextRequest) {
   if (!g.ok) return g.res;
   const user = g.user;
 
-  let body: { projectId?: string; name?: string; conditions?: Condition[]; opts?: ComputeOpts; pxPerFt?: number; imgW?: number; imgH?: number };
+  let body: { projectId?: string; name?: string; conditions?: MeasuredCondition[]; opts?: ComputeOpts; pxPerFt?: number; imgW?: number; imgH?: number; sheetScales?: Record<string, number> };
   try { body = await req.json(); } catch { return Response.json({ error: 'Invalid body' }, { status: 400 }); }
-  const { projectId, name, conditions, opts, pxPerFt, imgW, imgH } = body;
+  const { projectId, name, conditions, opts, pxPerFt, imgW, imgH, sheetScales } = body;
   if (!projectId) return Response.json({ error: 'projectId required' }, { status: 400 });
   if (!Array.isArray(conditions) || !conditions.length) return Response.json({ error: 'At least one condition required' }, { status: 400 });
 
@@ -80,8 +94,9 @@ export async function POST(req: NextRequest) {
   }
   const r = computeTakeoff(conditions, { ...(opts || {}), rates, applyWinFactors, winFactorByDivision });
 
-  // server-side calibration integrity check (never trusts the client scale blindly)
-  const cal = verifyCalibration(conditions, pxPerFt, imgW, imgH);
+  // server-side calibration integrity check (never trusts the client scale blindly) —
+  // each condition verifies against ITS sheet's scale (ppf / sheetScales), not one global
+  const cal = verifyCalibration(conditions, pxPerFt, imgW, imgH, sheetScales);
 
   const { data: takeoff, error: tErr } = await supabase.from('takeoffs').insert({
     project_id: projectId, tenant_id: user.tenantId, name: name || 'Measured takeoff',
@@ -92,6 +107,10 @@ export async function POST(req: NextRequest) {
     sales_tax_pct: opts?.salesTaxPct ?? 0, labor_burden_pct: opts?.laborBurdenPct ?? 0,
     general_conditions_pct: opts?.generalConditionsPct ?? 0, bond_pct: opts?.bondPct ?? 0,
     region_multiplier: opts?.regionMultiplier ?? null, region_label: opts?.regionLabel ?? null,
+    // full markup-stack breakdown on the header — equipment/sub direct buckets + the
+    // contingency AMOUNT (contingency_pct alone loses the number the engine computed)
+    total_equipment: toDollars(r.equipmentCents), total_subcontractor: toDollars(r.subCents),
+    total_contingency: toDollars(r.contingencyCents),
     px_per_ft: pxPerFt ?? null, scale_confidence: cal.confidence,
     sell_price: toDollars(r.sellCents), grand_total: toDollars(r.sellCents), created_by: user.id,
   }).select('id').single();

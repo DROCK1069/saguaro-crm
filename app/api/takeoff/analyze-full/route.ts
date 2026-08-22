@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
-import { ASSEMBLIES, ASSEMBLY_MENU, explodeCondition, type Condition, type LineItem, type RateOverrides } from '@/lib/takeoff';
+import { ASSEMBLIES, ASSEMBLY_MENU, applyMarkupStack, explodeCondition, type ComputeOpts, type Condition, type LineItem, type RateOverrides } from '@/lib/takeoff';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   const user = g.user;
   if (!process.env.ANTHROPIC_API_KEY) return Response.json({ error: 'AI not configured' }, { status: 200 });
 
-  let body: { pdf?: string; projectId?: string; name?: string; save?: boolean };
+  let body: { pdf?: string; projectId?: string; name?: string; save?: boolean; opts?: ComputeOpts };
   try { body = await req.json(); } catch { return Response.json({ error: 'Invalid body' }, { status: 400 }); }
   const { pdf, projectId } = body;
   if (!pdf) return Response.json({ error: 'PDF required' }, { status: 400 });
@@ -117,7 +117,15 @@ export async function POST(req: NextRequest) {
   const div = new Map<string, number>();
   for (const l of allLines) { materialCents += l.materialCents; laborCents += l.laborCents; laborHrs += l.laborHrs; div.set(l.trade, (div.get(l.trade) || 0) + l.totalCents); }
   const subtotalCents = materialCents + laborCents;
-  const sellCents = subtotalCents; // markups applied later in the UI
+  // SELL_PRICE UNIFICATION — sell_price means ONE thing on every surface: the FULL
+  // markup-stack sell (tax → burden → GC → overhead → contingency → fee → bond) from the
+  // SAME applyMarkupStack the measured engine uses. Markup opts arrive exactly as on the
+  // measured path (body.opts, client-supplied); when the AI path sends none, the engine
+  // defaults (every pct 0) make sellCents === subtotalCents, so legacy callers see
+  // identical numbers. `subtotal` stays the raw direct subtotal — both are stored.
+  const opts: ComputeOpts = body.opts || {};
+  const mk = applyMarkupStack({ materialCents, laborCents }, opts);
+  const sellCents = mk.sellCents;
 
   // persist (create takeoff + line items) — only when asked; the review flow returns conditions unsaved
   let takeoffId: string | null = null;
@@ -131,8 +139,17 @@ export async function POST(req: NextRequest) {
       project_id: projectId, tenant_id: user.tenantId, name: body.name || parsed.project || 'Blueprint takeoff',
       project_name_detected: parsed.project || null, status: 'complete', conditions,
       material_cost: toDollars(materialCents), labor_cost: toDollars(laborCents), total_cost: toDollars(subtotalCents),
+      // subtotal = raw direct cost; sell_price = the full markup-stack sell (see above).
+      // The stack's pcts + amounts are persisted so export-xls reproduces the SAME number.
       subtotal: toDollars(subtotalCents), sell_price: toDollars(sellCents), grand_total: toDollars(sellCents),
-      sf: parsed.gross_sf || null, created_by: user.id,
+      overhead_pct: opts.overheadPct ?? 0, profit_pct: opts.profitPct ?? 0, contingency_pct: opts.contingencyPct ?? 0,
+      sales_tax_pct: opts.salesTaxPct ?? 0, labor_burden_pct: opts.laborBurdenPct ?? 0,
+      general_conditions_pct: opts.generalConditionsPct ?? 0, bond_pct: opts.bondPct ?? 0,
+      total_overhead: toDollars(mk.overheadCents), total_profit: toDollars(mk.profitCents),
+      total_contingency: toDollars(mk.contingencyCents),
+      // NOTE: the takeoffs table has no `sf` column (writing one made PostgREST reject the
+      // whole insert, 500-ing every save) — gross floor area lives in `building_area`.
+      building_area: parsed.gross_sf || null, created_by: user.id,
     }).select('id').single();
     // Surface a save failure instead of silently returning id:null (which reads as success)
     if (tkErr || !tk?.id) { console.error('[takeoff/analyze-full] save takeoff failed:', tkErr); return Response.json({ error: 'Could not save this takeoff. Please try again.' }, { status: 500 }); }
