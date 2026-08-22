@@ -22,7 +22,7 @@ async function main() {
   if (staleCh?.length) await db.from('radio_channels').delete().in('id', staleCh.map((c: any) => c.id));
   const { data: staleP } = await db.from('projects').select('id').like('name', 'CLAUDE-PROOF%');
   if (staleP?.length) {
-    for (const t of ['radio_channels', 'notifications']) await db.from(t).delete().in('project_id', staleP.map((p: any) => p.id));
+    for (const t of ['radio_channels', 'notifications', 'radio_assists', 'crew_location_pings', 'crew_locations']) await db.from(t).delete().in('project_id', staleP.map((p: any) => p.id));
     await db.from('projects').delete().in('id', staleP.map((p: any) => p.id));
   }
 
@@ -88,10 +88,54 @@ async function main() {
   const { data: history } = await db.from('radio_messages').select('kind').eq('channel_id', channelId).order('created_at', { ascending: true });
   check('R10: recorded history (voice + panic) reads back', (history || []).map((h: any) => h.kind).join(',') === 'voice,panic', (history || []).map((h: any) => h.kind).join(','));
 
+  // ── R11: assist queue lifecycle (raise → ack → resolve) — Tier 1 ──
+  const { data: assist } = await db.from('radio_assists').insert({
+    tenant_id: tenantId, channel_id: channelId, project_id: projectId,
+    requester_user_id: u1, requester_name: MARK + ' PM', note: 'ladder needed',
+    location: { lat: 33.31, lng: -111.85 },
+  } as never).select().single();
+  await db.from('radio_assists').update({ status: 'acknowledged', acknowledged_by: MARK, acknowledged_at: new Date().toISOString() } as never).eq('id', (assist as any).id);
+  await db.from('radio_assists').update({ status: 'resolved', resolved_at: new Date().toISOString() } as never).eq('id', (assist as any).id);
+  const { data: aDone } = await db.from('radio_assists').select('status, acknowledged_by, resolved_at').eq('id', (assist as any).id).single();
+  check('R11: assist raise→ack→resolve lifecycle', (aDone as any)?.status === 'resolved' && !!(aDone as any)?.acknowledged_by && !!(aDone as any)?.resolved_at, `status ${(aDone as any)?.status}, ack by ${(aDone as any)?.acknowledged_by ? 'set' : 'MISSING'}`);
+
+  // ── R12: channel patch pair — sorted, active, then released — Tier 1 ──
+  const { data: ch2 } = await db.from('radio_channels').insert({ tenant_id: tenantId, project_id: projectId, kind: 'custom', name: MARK + ' patch-b' } as never).select().single();
+  const [ca, cb] = [channelId, (ch2 as any).id].sort();
+  await db.from('radio_channel_patches').insert({ tenant_id: tenantId, channel_a: ca, channel_b: cb, created_by: u1 } as never);
+  const { data: liveP } = await db.from('radio_channel_patches').select('id').eq('tenant_id', tenantId).eq('channel_a', ca).eq('channel_b', cb).is('released_at', null);
+  await db.from('radio_channel_patches').update({ released_at: new Date().toISOString() } as never).eq('id', ((liveP || [])[0] as any)?.id);
+  const { data: relP } = await db.from('radio_channel_patches').select('released_at').eq('id', ((liveP || [])[0] as any)?.id).single();
+  check('R12: patch pair active then released', (liveP || []).length === 1 && !!(relP as any)?.released_at, `1 live pair, released_at ${(relP as any)?.released_at ? 'set' : 'MISSING'}`);
+
+  // ── R13: priority-scan flag persists on the channel — Tier 1 ──
+  await db.from('radio_channels').update({ priority: true } as never).eq('id', channelId);
+  const { data: prio } = await db.from('radio_channels').select('priority').eq('id', channelId).single();
+  check('R13: priority scanning flag persists', (prio as any)?.priority === true, `priority ${(prio as any)?.priority}`);
+
+  // ── R14: tone signaling row stores + reads back — Tier 1 ──
+  await db.from('radio_messages').insert({ tenant_id: tenantId, channel_id: channelId, project_id: projectId, sender_user_id: u1, sender_name: MARK + ' PM', kind: 'tone', body: 'ack' } as never);
+  const { data: tone } = await db.from('radio_messages').select('body').eq('channel_id', channelId).eq('kind', 'tone').single();
+  check('R14: tone row (ack) stored + readable', (tone as any)?.body === 'ack', `body ${(tone as any)?.body}`);
+
+  // ── R15: disclosed location — live upsert + ping history (heatmap fuel) — Tier 1 ──
+  await db.from('crew_locations').insert({ tenant_id: tenantId, project_id: projectId, user_id: u1, latitude: 33.3, longitude: -111.84, accuracy_meters: 8, battery_level: 76, trade: null, status: 'on_site', updated_at: new Date().toISOString() } as never);
+  for (const [la, ln] of [[33.3001, -111.8401], [33.3002, -111.8402]]) {
+    await db.from('crew_location_pings').insert({ tenant_id: tenantId, project_id: projectId, user_id: u1, display_name: MARK + ' PM', trade: null, latitude: la, longitude: ln, accuracy_meters: 8, source: 'radio' } as never);
+  }
+  const { data: pings } = await db.from('crew_location_pings').select('id').eq('project_id', projectId);
+  const { data: liveLoc } = await db.from('crew_locations').select('latitude').eq('project_id', projectId);
+  check('R15: crew live position + ping history', (pings || []).length === 2 && (liveLoc || []).length === 1, `${(pings || []).length} pings, ${(liveLoc || []).length} live row`);
+
   // ── cleanup ──
   await db.storage.from('project-files').remove([clipPath]);
   await db.from('notifications').delete().eq('project_id', projectId);
+  await db.from('radio_assists').delete().eq('project_id', projectId);
+  await db.from('crew_location_pings').delete().eq('project_id', projectId);
+  await db.from('crew_locations').delete().eq('project_id', projectId);
+  await db.from('radio_channel_patches').delete().eq('channel_a', ca).eq('channel_b', cb);
   await db.from('radio_channels').delete().eq('id', channelId); // cascades members+messages
+  await db.from('radio_channels').delete().eq('id', (ch2 as any).id);
   await db.from('projects').delete().eq('id', projectId);
   const { data: left } = await db.from('projects').select('id').eq('id', projectId);
   const { data: leftM } = await db.from('radio_messages').select('id').eq('channel_id', channelId);
