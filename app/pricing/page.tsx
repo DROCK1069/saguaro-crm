@@ -172,7 +172,7 @@ const SERVICES = [
     name: 'Free Migration',
     price: 0,
     label: 'FREE',
-    description: 'We migrate all your projects, contacts, documents, and history from Procore, Buildertrend, or any platform. Done in 1 business day.',
+    description: 'We migrate all your projects, contacts, documents, and history from any platform or spreadsheet. Done in 1 business day.',
     highlight: true,
   },
   {
@@ -240,7 +240,7 @@ const COMPETITOR_COMPARISON = [
 ];
 
 const FAQS = [
-  { q: 'Is the migration really free?', a: 'Yes, completely free. We migrate your projects, contacts, documents, and history from Procore, Buildertrend, CoConstruct, or any spreadsheet-based system. Our team handles everything — you\'ll be live in 1 business day.' },
+  { q: 'Is the migration really free?', a: 'Yes, completely free. We migrate your projects, contacts, documents, and history from any platform or spreadsheet-based system. Our team handles everything — you\'ll be live in 1 business day.' },
   { q: 'Is it really unlimited users?', a: 'Yes. One flat license covers every person on your team — PMs, field supers, estimators, accounting, owners — all included at no extra cost. We will never charge you per seat.' },
   { q: 'What happens after the 30-day free trial?', a: "You'll be prompted to enter payment info. If you choose not to, your account pauses with data preserved for 30 days before deletion. There are no surprise charges." },
   { q: 'Can I upgrade or downgrade my plan anytime?', a: 'Yes. Upgrade immediately and get prorated credit. Downgrade at the end of your billing cycle. No penalties, no fees.' },
@@ -297,14 +297,14 @@ export default function PricingPage() {
             Free migration included on all plans
           </div>
 
-          <h1 style={{ fontSize: 'clamp(26px, 4vw, 30px)', fontWeight: 600, lineHeight: 1.15, margin: '0 0 18px', letterSpacing: -0.5 }}>
+          <h1 style={{ fontSize: 'clamp(30px, 4.6vw, 44px)', fontWeight: 800, lineHeight: 1.12, margin: '0 0 18px', letterSpacing: '-0.02em' }}>
             One platform.{' '}
-            <span style={{ color: C.text }}>
+            <span style={{ background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>
               Your whole team.
             </span>
           </h1>
           <p style={{ fontSize: 'clamp(15px, 2vw, 17px)', color: C.dim, maxWidth: 600, margin: '0 auto 16px', lineHeight: 1.65 }}>
-            Flat pricing. No per-seat fees. No module upgrades. Free migration from Procore, Buildertrend, or any platform — we handle it for you.
+            Flat pricing. No per-seat fees. No module upgrades. Free migration from any platform — we handle it for you.
           </p>
 
           {/* Competitor savings callout */}

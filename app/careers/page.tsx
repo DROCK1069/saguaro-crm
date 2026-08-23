@@ -83,7 +83,7 @@ const ROLES = [
     team: 'Go-to-Market',
     location: 'Remote (US) · AZ preferred',
     type: 'Full-time',
-    desc: 'Sell to GCs switching off Procore, Buildertrend, and spreadsheets. You will own the full cycle — demo, migration story, close — and feed what you learn straight back into the roadmap.',
+    desc: 'Sell to GCs switching off legacy construction platforms and spreadsheets. You will own the full cycle — demo, migration story, close — and feed what you learn straight back into the roadmap.',
     tags: ['SaaS sales', 'Construction', 'Full-cycle'],
   },
   {

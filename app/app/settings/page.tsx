@@ -52,7 +52,7 @@ const SETTINGS_SECTIONS = [
     title: 'Support & Resources',
     sectionIcon: Lifebuoy,
     items: [
-      { icon: Rocket, label: 'Free Migration', desc: 'Migrate your data from Procore, Buildertrend, or any platform', href: 'mailto:support@saguarocontrol.net?subject=Migration Request' },
+      { icon: Rocket, label: 'Free Migration', desc: 'Migrate your data from any platform or spreadsheet', href: 'mailto:support@saguarocontrol.net?subject=Migration Request' },
       { icon: GraduationCap, label: 'Guided Onboarding', desc: 'Book a hands-on setup session with a Saguaro specialist ($1,200)', href: 'mailto:support@saguarocontrol.net?subject=Guided Onboarding' },
       { icon: Books, label: 'Help Center', desc: 'Tutorials, walkthroughs, and FAQs', href: 'mailto:support@saguarocontrol.net' },
       { icon: ChatCircle, label: 'Contact Support', desc: 'Email support@saguarocontrol.net — we respond within 48hrs', href: 'mailto:support@saguarocontrol.net' },

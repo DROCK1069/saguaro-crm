@@ -5,7 +5,7 @@ import Link from 'next/link';
 // Rolling promo ticker — rotates through benefit-only messages.
 // NO time/performance guarantees (e.g. "switch in 1 day") to avoid advertising liability.
 const MESSAGES: { text: string; cta: string; href: string }[] = [
-  { text: 'Free migration from Procore, Buildertrend, or spreadsheets', cta: 'See how', href: '/switch-from-procore' },
+  { text: 'Free migration from any platform or spreadsheet', cta: 'See how', href: '/switch-from-procore' },
   { text: 'One flat price · unlimited users · no per-seat fees', cta: 'View pricing', href: '/pricing' },
   { text: 'AI takeoff reads your blueprints and builds the estimate', cta: 'See the platform', href: '/features' },
   { text: 'Native iOS field app — included free for your whole crew', cta: 'Get the app', href: '/get-the-app' },

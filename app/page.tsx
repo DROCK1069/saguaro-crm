@@ -236,6 +236,36 @@ export default function LandingPage() {
       </section>
 
       {/* Integration logos — real vendor marks (react-icons), only for shipped integrations */}
+      {/* ══════════ 2. SONORAN — the origin story, front and center ══════════ */}
+      <section style={{ position: 'relative', overflow: 'hidden', padding: '88px 24px 84px', textAlign: 'center' as const, borderTop: '1px solid rgba(245,158,11,0.14)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {/* desert-heat backdrop: horizon glow, no images */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(90% 70% at 50% 115%, rgba(224,100,78,0.16) 0%, rgba(245,158,11,0.09) 38%, rgba(0,0,0,0) 72%)' }} />
+        <div style={{ position: 'relative', maxWidth: 980, margin: '0 auto' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 999, border: '1px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.08)', color: '#F5B84D', fontSize: 11.5, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' as const, marginBottom: 22 }}>
+            <Thermometer size={13} weight="fill" /> Field-proven at 115°
+          </span>
+          <h2 style={{ fontSize: 'clamp(34px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.08, margin: '0 0 18px' }}>
+            Born on <span style={{ background: 'linear-gradient(100deg, #E0644E 4%, #F59E0B 42%, #FDE68A 60%, #E0644E 96%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>Sonoran</span> jobsites.
+          </h2>
+          <p style={{ color: '#E4E4E7', fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.65, maxWidth: 660, margin: '0 auto 30px' }}>
+            Built where summers hit <strong style={{ color: '#F5B84D' }}>115 degrees</strong> and the far corner of the site has no bars.
+            The field app assumes gloves, glare, and no signal — because that is where it was raised.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' as const, gap: 12 }}>
+            {[
+              { Ic: Hand, label: 'Glove mode' },
+              { Ic: WifiSlash, label: 'Offline-first' },
+              { Ic: MapPin, label: 'GPS clock-in' },
+              { Ic: CloudSun, label: 'Auto weather on logs' },
+            ].map(b => (
+              <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 9, border: '1px solid rgba(245,158,11,0.30)', background: 'linear-gradient(180deg, rgba(245,158,11,0.10), rgba(245,158,11,0.04))', color: '#F4F4F5', fontSize: 14, fontWeight: 700, padding: '11px 18px', borderRadius: 999, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}>
+                <b.Ic size={17} weight="duotone" color="#F59E0B" />{b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <IntegrationStrip />
 
       {/* ══════════ 4. MODULE GRID ══════════ */}
@@ -315,29 +345,10 @@ export default function LandingPage() {
             <Receipt size={28} weight="duotone" color={GOLD} />
           </div>
           <div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', margin: '0 0 12px' }}>It shows you its receipts</h2>
+            <h2 style={{ fontSize: 'clamp(26px, 3.2vw, 34px)', fontWeight: 800, letterSpacing: '-0.015em', margin: '0 0 12px' }}>It shows you its <span style={{ background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>receipts</span></h2>
             <p style={{ color: DIM, fontSize: 14, lineHeight: 1.7, margin: '0 0 12px', maxWidth: 640 }}>Every number Saguaro suggests carries a ledger entry: what it measured on the plan, which catalog line it matched, and what your past corrections taught it. Fix a price once and the next estimate starts from your fix. Open any figure and read exactly where it came from.</p>
             <p style={{ color: TEXT, fontSize: 13.5, fontWeight: 600, margin: 0 }}>Every feature ships with automated live proof.</p>
           </div>
-        </div>
-      </section>
-
-      {/* ══════════ 6c. SONORAN ══════════ */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px 64px', textAlign: 'center' as const }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 10 }}>Born on Sonoran jobsites</h2>
-        <p style={{ color: DIM, fontSize: 14, marginBottom: 24, maxWidth: 560, marginLeft: 'auto', marginRight: 'auto' }}>Built where summers hit 115 degrees and the far corner of the site has no bars. The field app assumes gloves, glare, and no signal.</p>
-        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' as const, gap: 10 }}>
-          {[
-            { Ic: Hand, label: 'Glove mode' },
-            { Ic: WifiSlash, label: 'Offline-first' },
-            { Ic: MapPin, label: 'GPS clock-in' },
-            { Ic: CloudSun, label: 'Auto weather on logs' },
-            { Ic: Thermometer, label: 'Proven in 115° summers' },
-          ].map(b => (
-            <span key={b.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid rgba(245, 158, 11,0.25)', background: 'rgba(245, 158, 11,0.06)', color: TEXT, fontSize: 13, fontWeight: 600, padding: '8px 14px', borderRadius: 999 }}>
-              <b.Ic size={16} weight="duotone" color={GOLD} />{b.label}
-            </span>
-          ))}
         </div>
       </section>
 
