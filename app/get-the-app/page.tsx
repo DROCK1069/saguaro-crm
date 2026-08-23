@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { GoldButton, PremiumFX } from '@/components/ui/premium';
 import { PhoneFrame, LaptopFrame } from '@/components/marketing/DeviceFrame';
 import MarketingNav from '@/components/MarketingNav';
+import { TRIAL_DAYS } from '@/lib/plans';
 
 // TestFlight public invite — owner-controlled. This is the live open-beta link
 // already published across the site (see components/GetAppBadge.tsx); update
@@ -151,15 +152,20 @@ export default function GetTheAppPage() {
         }
         @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(0.85)} }
         .hero-h1 {
-          font-size: clamp(30px, 4vw, 36px);
-          font-weight: 600;
-          line-height: 1.15;
-          letter-spacing: -.03em;
+          font-size: clamp(32px, 4.5vw, 44px);
+          font-weight: 800;
+          line-height: 1.12;
+          letter-spacing: -0.02em;
           margin-bottom: 20px;
           color: var(--text);
         }
-        .hero-h1 .gold-gradient {
-          color: var(--text);
+        /* House display treatment — gold text-shine on ONE key phrase per heading. */
+        .gold-gradient {
+          background: linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
         }
         .hero-sub {
           font-size: 15px;
@@ -514,10 +520,10 @@ export default function GetTheAppPage() {
           text-align: center;
         }
         .final-h2 {
-          font-size: clamp(24px, 3vw, 32px);
-          font-weight: 600;
+          font-size: clamp(24px, 3.4vw, 34px);
+          font-weight: 800;
           color: var(--text);
-          letter-spacing: -.03em;
+          letter-spacing: -0.02em;
           margin-bottom: 36px;
           line-height: 1.15;
         }
@@ -620,7 +626,7 @@ export default function GetTheAppPage() {
 
               <h1 className="hero-h1">
                 The Field App That<br />
-                <span className="gold-gradient">Actually Works on</span><br />
+                <span className="gold-gradient">Actually Works</span> on<br />
                 Job Sites.
               </h1>
 
@@ -826,7 +832,7 @@ export default function GetTheAppPage() {
         {/* ── FINAL CTA ── */}
         <section className="final-cta">
           <div className="final-cta-inner">
-            <h2 className="final-h2">30 Seconds Away From a Better Job Site</h2>
+            <h2 className="final-h2">30 Seconds Away From a <span className="gold-gradient">Better</span> Job Site</h2>
             <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-block' }}>
               Join the iOS Beta →
             </a>
@@ -834,7 +840,7 @@ export default function GetTheAppPage() {
               Or <Link href="/signup">start a full company trial →</Link>
             </div>
             <div className="trust-note">
-              Your crew gets the app free during the beta. Managers get the full platform free for 30 days.<br />
+              Your crew gets the app free during the beta. Managers get the full platform free for {TRIAL_DAYS} days.<br />
               No credit card required.
             </div>
           </div>

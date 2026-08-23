@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import { PageWrap, SectionHeader, Card, CardHeader, CardBody, Btn, Badge, T } from '@/components/ui/shell';
+import { PdfIcon, XlsIcon, CsvIcon, FileButton } from '@/components/ui/FileTypeIcon';
 import {
   REPORT_ENTITIES,
   ENTITY_MAP,
@@ -75,12 +76,16 @@ function fmtCell(value: unknown, type: ColType): string {
   }
 }
 
-// Raw string used for CSV export (unformatted but human-readable).
-function csvCell(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  const s = typeof value === 'object' ? JSON.stringify(value) : String(value);
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+// Trigger a browser download for a served export blob.
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 const badgeColorFor = (v: string): 'gold' | 'green' | 'red' | 'amber' | 'blue' | 'muted' => {
@@ -237,22 +242,37 @@ export default function ReportBuilderPage() {
 
   const currencyCols = useMemo(() => (result ? result.columns.filter((c) => c.type === 'currency') : []), [result]);
 
-  // ── Export CSV (client-side) ──
-  const exportCSV = () => {
-    if (!result) return;
-    const header = result.columns.map((c) => csvCell(c.label)).join(',');
-    const lines = result.rows.map((row) => result.columns.map((c) => csvCell(row[c.key])).join(','));
-    const csv = [header, ...lines].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(reportName || entity.label).replace(/[^\w.-]+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  // ── Downloads: server-built, tenant-branded PDF / Excel / CSV ──
+  // All three formats run through /api/reports/export so every file carries the
+  // tenant's letterhead (PDF), typed money columns, and a real totals row.
+  const [exporting, setExporting] = useState<'' | 'csv' | 'xlsx' | 'pdf'>('');
+  const exportAs = useCallback(async (format: 'csv' | 'xlsx' | 'pdf') => {
+    if (!result || exporting) return;
+    setExporting(format);
+    setError('');
+    try {
+      const title = reportName || `${entity.label} Report`;
+      const r = await fetch('/api/reports/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          format,
+          title,
+          // 'bool' has no export peer — ship it as text.
+          columns: result.columns.map((c) => ({ key: c.key, label: c.label, type: c.type === 'bool' ? 'text' : c.type })),
+          rows: result.rows,
+        }),
+      });
+      if (!r.ok) throw new Error('Export failed');
+      const blob = await r.blob();
+      const base = `${title.replace(/[^\w.-]+/g, '_')}_${new Date().toISOString().slice(0, 10)}`;
+      downloadBlob(blob, `${base}.${format === 'xlsx' ? 'xlsx' : format}`);
+    } catch (e: unknown) {
+      console.error(e); setError(humanError(e, 'Export failed. Please try again.'));
+    } finally {
+      setExporting('');
+    }
+  }, [result, exporting, reportName, entity.label]);
 
   // ── Save / Load / Delete ──
   const saveReport = async () => {
@@ -495,9 +515,11 @@ export default function ReportBuilderPage() {
                   <span style={{ fontWeight: 700, color: T.white }}>{reportName || `${entity.label} Report`}</span>
                   {result && <span style={{ marginLeft: 10, fontSize: 12, color: T.faint }}>{result.rowCount} row{result.rowCount === 1 ? '' : 's'}</span>}
                 </div>
-                <div className="rb-noprint" style={{ display: 'flex', gap: 8 }}>
-                  <Btn size="sm" variant="ghost" onClick={exportCSV} disabled={!result || result.rowCount === 0}>Export CSV</Btn>
-                  <Btn size="sm" variant="ghost" onClick={() => window.print()} disabled={!result}>Print / PDF</Btn>
+                <div className="rb-noprint" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <FileButton icon={<PdfIcon size={16} />} label={exporting === 'pdf' ? 'Building…' : 'PDF'} onClick={() => exportAs('pdf')} disabled={!result || result.rowCount === 0 || !!exporting} title="Branded corporate PDF — letterhead, KPI band, totals" />
+                  <FileButton icon={<XlsIcon size={16} />} label={exporting === 'xlsx' ? 'Building…' : 'Excel'} onClick={() => exportAs('xlsx')} disabled={!result || result.rowCount === 0 || !!exporting} title="Excel workbook (.xlsx) with typed money columns and totals" />
+                  <FileButton icon={<CsvIcon size={16} />} label={exporting === 'csv' ? 'Building…' : 'CSV'} onClick={() => exportAs('csv')} disabled={!result || result.rowCount === 0 || !!exporting} title="Plain CSV (.csv) for any spreadsheet tool" />
+                  <Btn size="sm" variant="ghost" onClick={() => window.print()} disabled={!result}>Print</Btn>
                 </div>
               </CardHeader>
               <CardBody style={{ padding: 0 }}>

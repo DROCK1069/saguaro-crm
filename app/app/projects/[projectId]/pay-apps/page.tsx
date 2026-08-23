@@ -9,6 +9,8 @@ import { Clipboard, ClipboardText, CheckCircle, FileText, CaretDown, PencilSimpl
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
 import { SkeletonRow } from '@/components/ui/Skeleton';
 import { moduleAccent } from '@/lib/module-identity';
+import NudgeRing from '@/components/intelligence/NudgeRing';
+import { ANCHOR_PAY_APPS_DUE } from '@/lib/suggestions';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const SAGE='#45B37D',AMBER='#F0A63C';
@@ -363,8 +365,11 @@ export default function PayAppsPage() {
         </SectionCard>
       )}
 
-      {/* Table */}
+      {/* Table — NudgeRing pulses when the suggestion engine flags uncollected
+          certified money or held retainage on THIS project (ticker deep links
+          land on this anchor). */}
       {!loading && payApps.length>0 && (
+        <NudgeRing anchorId={ANCHOR_PAY_APPS_DUE} projectId={projectId}>
         <SectionCard style={{overflow:'visible'}} bodyStyle={{padding:0}}>
           <div style={{overflowX:'auto',padding:16}}>
             {/* Bulk action bar */}
@@ -476,6 +481,7 @@ export default function PayAppsPage() {
             </table>
           </div>
         </SectionCard>
+        </NudgeRing>
       )}
     </PremiumSurface>
   );

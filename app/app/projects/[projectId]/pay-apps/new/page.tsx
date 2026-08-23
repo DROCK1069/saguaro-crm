@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import SaguaroDatePicker from '../../../../../../components/SaguaroDatePicker';
 import { ArrowLeft, ArrowRight, Plus, X, Receipt, CalendarBlank, Table, Calculator, ClockCounterClockwise, Info } from '@phosphor-icons/react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
@@ -40,6 +42,11 @@ export default function NewPayAppPage() {
   const [step,setStep]             = useState(1);
   const [saving,setSaving]         = useState(false);
   const [error,setError]           = useState('');
+  // Unsaved-work protection (R14): arms once the GC touches any field —
+  // seeded defaults alone never arm the guard.
+  const [touched,setTouched]       = useState(false);
+  const [leaveTo,setLeaveTo]       = useState<string|null>(null);
+  const draftRestoredRef           = useRef(false);
 
   // Step 1
   const [periodFrom,setPeriodFrom]     = useState('');
@@ -69,7 +76,7 @@ export default function NewPayAppPage() {
     ctxSeededRef.current = true;
     const original = ctx.money?.originalContract || 0;
     if(original>0){ setContractSum(prev=>prev||String(original)); setAuto(a=>({...a,sum:true})); }
-    if(ctx.money?.retainagePct!=null && !seederSetRetRef.current){ setRetainagePct(String(ctx.money.retainagePct)); setAuto(a=>({...a,ret:true})); }
+    if(ctx.money?.retainagePct!=null && !seederSetRetRef.current && !draftRestoredRef.current){ setRetainagePct(String(ctx.money.retainagePct)); setAuto(a=>({...a,ret:true})); }
     // Suggested billing period: the day after the last app's period end,
     // through that month's end; first app defaults to the current month.
     const lastTo = ctx.money?.lastPayApp?.periodTo as string|undefined;
@@ -86,7 +93,8 @@ export default function NewPayAppPage() {
         const r = await fetch(`/api/pay-apps/create?projectId=${projectId}`);
         const seed = await r.json();
         if(seed.nextAppNumber) setAppNumber(seed.nextAppNumber);
-        if(Array.isArray(seed.priorSov) && seed.priorSov.length>0){
+        // A restored draft owns the SOV + retainage — the seeder never stomps it.
+        if(Array.isArray(seed.priorSov) && seed.priorSov.length>0 && !draftRestoredRef.current){
           setLines(seed.priorSov.map((s:any,i:number)=>({
             lineNumber:i+1, description:s.description||'',
             scheduledValue:s.scheduledValue||0, workFromPrev:s.workFromPrev||0,
@@ -94,10 +102,35 @@ export default function NewPayAppPage() {
           })));
           setRolledForward(true);
         }
-        if(seed.retainagePercent!=null){ seederSetRetRef.current = true; setRetainagePct(String(seed.retainagePercent)); }
+        if(seed.retainagePercent!=null && !draftRestoredRef.current){ seederSetRetRef.current = true; setRetainagePct(String(seed.retainagePercent)); }
       }catch{}
     })();
   },[projectId]);
+
+  /* ── Unsaved-work protection (R14): dirty once the GC has touched any field
+   *    (seeded defaults never arm the guard); the draft covers the full
+   *    header + SOV so a lost session comes back intact. ── */
+  const guard = useUnsavedGuard({
+    dirty: touched,
+    draftKey: `pay-app:${projectId}`,
+    draftData: { step, periodFrom, periodTo, contractSum, retainagePct, lines },
+    restoreDraft: (d) => {
+      const dr = d as { step?:number; periodFrom?:string; periodTo?:string; contractSum?:string; retainagePct?:string; lines?:SovLine[] };
+      draftRestoredRef.current = true;
+      if(dr.step) setStep(dr.step);
+      if(dr.periodFrom) setPeriodFrom(dr.periodFrom);
+      if(dr.periodTo) setPeriodTo(dr.periodTo);
+      if(dr.contractSum) setContractSum(dr.contractSum);
+      if(dr.retainagePct) setRetainagePct(dr.retainagePct);
+      if(Array.isArray(dr.lines) && dr.lines.length>0) setLines(dr.lines);
+      setTouched(true);
+    },
+    onSave: () => submitPayApp('draft'),
+  });
+
+  // Post-save exit routes through the guard (uniform with the rollout); dirty
+  // is cleared first, so the deferred requestLeave navigates without prompting.
+  useEffect(()=>{ if(leaveTo) guard.requestLeave(leaveTo); },[leaveTo, guard.requestLeave]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pct = Math.max(0,Math.min(100,Number(retainagePct)||10));
 
@@ -113,6 +146,7 @@ export default function NewPayAppPage() {
   }
 
   function updateLine(i:number, field:keyof SovLine, val:string){
+    setTouched(true);
     setLines(prev=>{
       const next = [...prev];
       const updated = {...next[i], [field]: field==='description' ? val : (parseFloat(val)||0)};
@@ -121,8 +155,8 @@ export default function NewPayAppPage() {
     });
   }
 
-  function addLine(){ setLines(prev=>[...prev,blankLine(prev.length+1)]); }
-  function removeLine(i:number){ setLines(prev=>prev.filter((_,idx)=>idx!==i).map((l,idx)=>({...l,lineNumber:idx+1}))); }
+  function addLine(){ setTouched(true); setLines(prev=>[...prev,blankLine(prev.length+1)]); }
+  function removeLine(i:number){ setTouched(true); setLines(prev=>prev.filter((_,idx)=>idx!==i).map((l,idx)=>({...l,lineNumber:idx+1}))); }
 
   // Live totals
   const thisPeriodTotal  = lines.reduce((s,l)=>s+(l.workThisPeriod||0),0);
@@ -143,8 +177,10 @@ export default function NewPayAppPage() {
   const sovScheduled= lines.reduce((s,l)=>s+(l.scheduledValue||0),0);
   const subCount    = (ctx?.subs||[]).length;
 
-  async function save(status:'draft'|'submitted'){
-    if(!periodFrom||!periodTo){ setError('Period From and Period To are required.'); return; }
+  /** POST the application — shared by the page buttons and the guard's
+   *  "Save & leave". Returns true on success; never navigates itself. */
+  async function submitPayApp(status:'draft'|'submitted'): Promise<boolean>{
+    if(!periodFrom||!periodTo){ setError('Period From and Period To are required.'); return false; }
     setSaving(true); setError('');
     try{
       const body = {
@@ -185,11 +221,20 @@ export default function NewPayAppPage() {
         if(d2.error) throw new Error(d2.error);
       }
 
-      router.push(`/app/projects/${projectId}/pay-apps`);
+      return true;
     }catch(e:any){
       console.error(e); setError(humanError(e, 'Failed to save the pay application. Please try again.'));
+      return false;
     }finally{
       setSaving(false);
+    }
+  }
+
+  async function save(status:'draft'|'submitted'){
+    if(await submitPayApp(status)){
+      guard.clearDraft();
+      setTouched(false);
+      setLeaveTo(`/app/projects/${projectId}/pay-apps`);
     }
   }
 
@@ -246,17 +291,17 @@ export default function NewPayAppPage() {
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18,marginBottom:6}}>
                   <div>
                     <label style={LBL}>Period From *{auto.period && <AutoChip/>}</label>
-                    <SaguaroDatePicker value={periodFrom} onChange={setPeriodFrom} style={INP}/>
+                    <SaguaroDatePicker value={periodFrom} onChange={v=>{setTouched(true);setPeriodFrom(v);}} style={INP}/>
                     {lastApp && <div style={HINT}>Suggested — App #{lastApp.appNumber} billed through {fmtDate(lastApp.periodTo)}.</div>}
                   </div>
                   <div>
                     <label style={LBL}>Period To *{auto.period && <AutoChip/>}</label>
-                    <SaguaroDatePicker value={periodTo} onChange={setPeriodTo} style={INP}/>
+                    <SaguaroDatePicker value={periodTo} onChange={v=>{setTouched(true);setPeriodTo(v);}} style={INP}/>
                     {auto.period && <div style={HINT}>Defaulted to month end — adjust freely.</div>}
                   </div>
                   <div>
                     <label style={LBL}>Original Contract Sum ($){auto.sum && <AutoChip/>}</label>
-                    <input type="number" value={contractSum} onChange={e=>setContractSum(e.target.value)} placeholder="0" min="0" style={INP}/>
+                    <input type="number" value={contractSum} onChange={e=>{setTouched(true);setContractSum(e.target.value);}} placeholder="0" min="0" style={INP}/>
                     <div style={HINT}>
                       {coTotal>0
                         ? <>G702 line 1. With {money?.approvedCoCount} approved CO{money?.approvedCoCount===1?'':'s'} ({fmt(coTotal)}), contract sum to date is <b style={{color:TEXT}}>{fmt(revised)}</b> — change orders print on line 2 automatically.</>
@@ -265,7 +310,7 @@ export default function NewPayAppPage() {
                   </div>
                   <div>
                     <label style={LBL}>Retainage %{auto.ret && <AutoChip/>}</label>
-                    <input type="number" value={retainagePct} onChange={e=>setRetainagePct(e.target.value)} placeholder="10" min="0" max="100" style={INP}/>
+                    <input type="number" value={retainagePct} onChange={e=>{setTouched(true);setRetainagePct(e.target.value);}} placeholder="10" min="0" max="100" style={INP}/>
                     <div style={HINT}>{lastApp ? `Carried from App #${lastApp.appNumber}.` : 'From project contract terms.'}</div>
                   </div>
                 </div>
@@ -436,6 +481,8 @@ export default function NewPayAppPage() {
           </div>
         )}
       </div>
+
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

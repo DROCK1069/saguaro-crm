@@ -5,9 +5,10 @@
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
-import { useRouter } from 'next/navigation';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, Sun, CloudRain, Thermometer, UsersThree, Warning, ClipboardText } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
@@ -15,6 +16,8 @@ import { colors, font, radius } from '../../../lib/design-tokens';
 import { PremiumFX, ModuleHero, StatStrip, InsightRow, AutoChip, IconChip, goldButtonStyle } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import NudgeRing from '@/components/intelligence/NudgeRing';
+import { ANCHOR_DAILY_LOG_GAP } from '@/lib/suggestions';
 
 interface DailyLog {
   id: string;
@@ -50,7 +53,6 @@ function missedWorkdays(fromIso: string, toIso: string) {
 }
 
 export default function DailyLogsPage() {
-  const router = useRouter();
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,9 +115,38 @@ export default function DailyLogsPage() {
       .catch(() => {});
   }, [fetchLogs]);
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.projectId) return;
+  /* ── Unsaved-work protection (R14): dirty once anything beyond the default
+   *    date is filled in; draft autosaves to this device and restores on
+   *    return. Losing a day's field notes is exactly the failure mode the
+   *    guard exists for. ── */
+  const logFormDirty = showCreate && (
+    !!form.projectId || !!form.weather || !!form.temperatureHigh || !!form.temperatureLow ||
+    !!form.crewCount || !!form.workPerformed || !!form.delays || !!form.safetyNotes ||
+    !!form.materialsDelivered || !!form.visitors || !!form.notes || !!form.superintendent ||
+    !!form.precipitation || !!form.windConditions || !!form.phaseOfWork || !!form.equipment
+  );
+  const guard = useUnsavedGuard({
+    dirty: logFormDirty,
+    draftKey: 'daily-log-create',
+    draftData: form,
+    restoreDraft: (d) => {
+      setForm(f => ({ ...f, ...(d as Partial<typeof form>) }));
+      setShowCreate(true);
+    },
+    onSave: () => submitCreate(),
+  });
+
+  /** Close paths (backdrop / × / Cancel) run through the guard. */
+  function closeCreate() {
+    guard.requestClose(() => setShowCreate(false));
+  }
+
+  /** POST the form — shared by the form submit and the guard's "Save & leave". */
+  async function submitCreate(): Promise<boolean> {
+    if (!form.projectId) {
+      setError('Pick a project before the log can be saved.');
+      return false;
+    }
     setCreating(true);
     try {
       const res = await fetch('/api/daily-logs/create', {
@@ -146,11 +177,18 @@ export default function DailyLogsPage() {
       setForm({ projectId: '', logDate: new Date().toISOString().slice(0, 10), weather: '', temperatureHigh: '', temperatureLow: '', crewCount: '', workPerformed: '', delays: '', safetyNotes: '', materialsDelivered: '', visitors: '', notes: '', superintendent: '', precipitation: '', windConditions: '', phaseOfWork: '', equipment: '' });
       setAutoCrew(false);
       await fetchLogs();
+      return true;
     } catch (e: any) {
       console.error(e); setError(humanError(e, 'Something went wrong. Please try again.'));
+      return false;
     } finally {
       setCreating(false);
     }
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (await submitCreate()) guard.clearDraft();
   }
 
   const columns = useMemo(() => [
@@ -281,22 +319,26 @@ export default function DailyLogsPage() {
         style={{ marginBottom: 16 }}
       />
 
-      <DataTable
-        data={visibleLogs}
-        columns={columns}
-        loading={loading}
-        searchPlaceholder="Refine within results..."
-        emptyMessage="No daily logs yet. Create your first log to start tracking."
-        onRowClick={(row) => router.push(`/app/daily-logs/${row.id}`)}
-      />
+      {/* NudgeRing pulses the log table when the suggestion engine flags an
+          active project that has gone 3+ workdays without a daily log. */}
+      <NudgeRing anchorId={ANCHOR_DAILY_LOG_GAP}>
+        <DataTable
+          data={visibleLogs}
+          columns={columns}
+          loading={loading}
+          searchPlaceholder="Refine within results..."
+          emptyMessage="No daily logs yet. Create your first log to start tracking."
+          onRowClick={(row) => guard.requestLeave(`/app/daily-logs/${row.id}`)}
+        />
+      </NudgeRing>
 
       {/* ── Create Modal ───────────────────────────────────────────── */}
       {showCreate && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => { if (e.target === e.currentTarget) closeCreate(); }}>
           <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, width: '100%', maxWidth: 600, maxHeight: '80vh', overflow: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,.6)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: colors.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: font.size.xl, fontWeight: font.weight.black, color: colors.text }}>New Daily Log</h2>
-              <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 22 }}>×</button>
+              <button onClick={closeCreate} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 22 }}>×</button>
             </div>
             <form onSubmit={handleCreate} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {form.projectId && ctx ? (() => {
@@ -403,7 +445,7 @@ export default function DailyLogsPage() {
                 <input value={form.visitors} onChange={(e) => setForm({ ...form, visitors: e.target.value })} style={inputStyle} placeholder="Inspector, owner, architect..." />
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowCreate(false)} style={{ padding: '10px 20px', background: 'none', border: `1px solid ${colors.border}`, borderRadius: radius.lg, color: colors.textMuted, fontSize: font.size.md, fontWeight: font.weight.semibold, cursor: 'pointer' }}>Cancel</button>
+                <button type="button" onClick={closeCreate} style={{ padding: '10px 20px', background: 'none', border: `1px solid ${colors.border}`, borderRadius: radius.lg, color: colors.textMuted, fontSize: font.size.md, fontWeight: font.weight.semibold, cursor: 'pointer' }}>Cancel</button>
                 <button type="submit" disabled={creating} style={{ padding: '10px 24px', background: colors.gold, border: 'none', borderRadius: radius.lg, color: colors.dark, fontSize: font.size.md, fontWeight: font.weight.black, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.6 : 1 }}>
                   {creating ? 'Creating...' : 'Create Log'}
                 </button>
@@ -412,6 +454,8 @@ export default function DailyLogsPage() {
           </div>
         </div>
       )}
+
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

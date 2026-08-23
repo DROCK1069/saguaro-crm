@@ -6,13 +6,17 @@ import { ENTITY_MAP, type ColType } from '@/lib/report-entities';
 import {
   buildCsv,
   buildXlsx,
-  buildPdf,
   safeFilename,
   todayStamp,
   EXPORT_CONTENT_TYPE,
   type ReportColumn,
   type ColumnType,
 } from '@/lib/report-export';
+import {
+  generateExecReportPdf,
+  computeCurrencyTotals,
+  resolveBrandingValues,
+} from '@/lib/document-templates/exec-report-generator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,8 +33,10 @@ export const dynamic = 'force-dynamic';
  *     report_type) → lib/reports/run.runReport  (POST /api/reports/run)
  *   • a canned reportType (report_type / template_data.reportType / .preset)
  *     → lib/reports/generate.generateReportData  (POST /api/reports/generate)
- * then streams the ACTUAL rows through the shared CSV/XLSX/PDF builders in
- * lib/report-export.ts.
+ * then streams the ACTUAL rows through the shared CSV/XLSX builders in
+ * lib/report-export.ts; the PDF renders through the corporate exec builder in
+ * lib/document-templates/exec-report-generator.ts (tenant letterhead, KPI band,
+ * Page X of Y footers).
  *
  * If the definition maps to no runnable engine, we return an honest error — we
  * never fabricate placeholder rows and present them as data.
@@ -197,8 +203,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const safeTitle = safeFilename(title);
     const dateStamp = todayStamp();
 
+    // Sum every currency column so all three formats carry a real totals row
+    // (money is NUMERIC-as-TEXT — computeCurrencyTotals Number()s every cell).
+    const totals = computeCurrencyTotals(columns, rows);
+    const branding = await resolveBrandingValues({ tenantId: user.tenantId });
+
     if (format === 'csv') {
-      const csv = buildCsv(columns, rows, title);
+      const csv = buildCsv(columns, rows, title, totals, branding.companyName);
       return new NextResponse(csv, {
         headers: {
           'Content-Type': EXPORT_CONTENT_TYPE.csv,
@@ -208,7 +219,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     if (format === 'xlsx') {
-      const xlsxBuffer = buildXlsx(columns, rows, title);
+      const xlsxBuffer = buildXlsx(columns, rows, title, totals, branding.companyName);
       return new NextResponse(xlsxBuffer as unknown as BodyInit, {
         headers: {
           'Content-Type': EXPORT_CONTENT_TYPE.xlsx,
@@ -217,8 +228,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       });
     }
 
-    // pdf
-    const pdfBytes = await buildPdf(columns, rows, title);
+    // pdf — corporate exec-style rendering: tenant letterhead (logo + accent),
+    // KPI band, line-item table, Page X of Y footers.
+    const pdfBytes = await generateExecReportPdf({
+      title,
+      columns,
+      rows,
+      totals,
+      tenantId: user.tenantId,
+      docLabel: 'Saved Report',
+    });
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': EXPORT_CONTENT_TYPE.pdf,

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CurrencyDollar, ChartBar, Clipboard, ArrowsClockwise, Lock, ShieldCheck, CalendarBlank, CheckCircle, HardHat, Warning, Package, Clock, ArrowRight, X } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { PdfIcon, XlsIcon, CsvIcon, FileButton } from '@/components/ui/FileTypeIcon';
 
 // ── Color palette ──────────────────────────────────────────────
 const GOLD   = '#F59E0B';
@@ -627,9 +628,9 @@ export default function ReportsPage() {
               style={{ marginBottom: 20 }}
               action={
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
-                  <button onClick={exportCSV} style={exportBtnStyle} className="pmBtn">CSV</button>
-                  <button onClick={exportXLS} style={exportBtnStyle} className="pmBtn">Excel</button>
-                  <button onClick={exportPDF} style={exportBtnStyle} className="pmBtn">PDF</button>
+                  <FileButton icon={<PdfIcon size={16} />} label="PDF" onClick={exportPDF} title="Branded corporate PDF — letterhead, KPI band, totals" />
+                  <FileButton icon={<XlsIcon size={16} />} label="Excel" onClick={exportXLS} title="Excel workbook (.xlsx) with typed money columns and totals" />
+                  <FileButton icon={<CsvIcon size={16} />} label="CSV" onClick={exportCSV} title="Plain CSV (.csv) for any spreadsheet tool" />
                   <button
                     onClick={() => { setPageState('idle'); setReportResult(null); }}
                     aria-label="Close report"

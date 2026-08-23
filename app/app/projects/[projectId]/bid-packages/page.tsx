@@ -10,6 +10,8 @@ import { X, Plus, ArrowLeft, ArrowRight, Package, FileText, Trophy, UsersThree, 
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle } from '@/components/ui/premium';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
+import NudgeRing from '@/components/intelligence/NudgeRing';
+import { ANCHOR_BID_DECISION } from '@/lib/suggestions';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -585,6 +587,10 @@ export default function BidPackagesPage() {
         </SectionCard>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 22, alignItems: 'start' }}>
+          {/* NudgeRing pulses the package list when the suggestion engine flags
+              a closed package on THIS project still awaiting an award decision
+              (ticker deep links land on this anchor). */}
+          <NudgeRing anchorId={ANCHOR_BID_DECISION} projectId={projectId} radius={16} style={{ minWidth: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
             {packages.map(pkg => {
               const det = detail[pkg.id];
@@ -641,6 +647,7 @@ export default function BidPackagesPage() {
               );
             })}
           </div>
+          </NudgeRing>
 
           {/* Context rail — the pipeline this module actually enforces */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

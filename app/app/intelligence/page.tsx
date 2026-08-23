@@ -10,6 +10,7 @@ import {
 import { useProjects } from '@/lib/hooks/useProjects';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
+import SuggestionTicker from '@/components/intelligence/SuggestionTicker';
 
 // No 'intelligence' key exists in lib/module-identity — this surface stays on
 // the gold ground (money + flagship voice) rather than inventing a module hue.
@@ -496,6 +497,10 @@ export default function IntelligencePage() {
           </div>
         }
       />
+
+      {/* Live suggestion ticker — the same feed the module NudgeRings sync to:
+          every item is a real row with an honest $ figure, deep-linked. */}
+      <SuggestionTicker style={{ marginBottom: 24 }} />
 
       {/* Empty portfolio / empty selection */}
       {ids.length === 0 && (

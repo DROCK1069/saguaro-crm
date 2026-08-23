@@ -8,6 +8,7 @@
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { rankChunks, buildContext, terms, type DocChunk } from '@/lib/rag';
+import { SAGE_CONDUCT_MANDATE } from '@/lib/sage-prompts';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -78,7 +79,9 @@ export async function POST(req: NextRequest) {
   if (!ranked.length) return Response.json({ answer: `Nothing in ${(proj as any).name || 'this project'}'s records matched that. Try rephrasing.`, citations: [], searched: chunks.length });
   const { context, citations } = buildContext(ranked);
 
-  const system = `You are Sage, answering a general contractor's question using ONLY the numbered project records provided. Rules:
+  const system = `${SAGE_CONDUCT_MANDATE}
+
+You are Sage, answering a general contractor's question using ONLY the numbered project records provided. Rules:
 - Answer directly and concisely, like a sharp PM. Cite every fact with its source number in brackets, e.g. [1].
 - If the records don't contain the answer, say so plainly — do NOT invent details.
 - Prefer specifics (numbers, spec sections, dates, names) pulled from the records.`;
@@ -87,7 +90,7 @@ export async function POST(req: NextRequest) {
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const resp = await client.messages.create({
-      model: 'claude-sonnet-4-6', max_tokens: 1024, system,
+      model: 'claude-sonnet-5', max_tokens: 1024, system,
       messages: [{ role: 'user', content: `QUESTION: ${question}\n\nPROJECT RECORDS:\n${context}` }],
     });
     const answer = (resp.content || []).filter((x: any) => x.type === 'text').map((x: any) => x.text).join('').trim();

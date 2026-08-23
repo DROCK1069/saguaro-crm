@@ -4,12 +4,12 @@ import { requirePermission } from '@/lib/permissions';
 import {
   buildCsv,
   buildXlsx,
-  buildPdf,
   safeFilename,
   todayStamp,
   EXPORT_CONTENT_TYPE,
   type ReportColumn,
 } from '@/lib/report-export';
+import { generateExecReportPdf } from '@/lib/document-templates/exec-report-generator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,7 +83,15 @@ async function build(req: NextRequest, projectId: string, ids: string[], format:
         },
       });
     }
-    const pdfBytes = await buildPdf(COLUMNS, rows, title, undefined, logoUrl, companyName);
+    // Corporate exec-style PDF: tenant letterhead + KPI band + Page X of Y footers.
+    const pdfBytes = await generateExecReportPdf({
+      title,
+      columns: COLUMNS,
+      rows,
+      tenantId: user.tenantId,
+      brandingOverride: { companyName, logoUrl },
+      docLabel: 'Safety Incident Report',
+    });
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': EXPORT_CONTENT_TYPE.pdf,

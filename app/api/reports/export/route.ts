@@ -4,12 +4,16 @@ import { requirePermission } from '@/lib/permissions';
 import {
   buildCsv,
   buildXlsx,
-  buildPdf,
   safeFilename,
   todayStamp,
   EXPORT_CONTENT_TYPE,
   type ReportColumn,
 } from '@/lib/report-export';
+import {
+  generateExecReportPdf,
+  computeCurrencyTotals,
+  resolveBrandingValues,
+} from '@/lib/document-templates/exec-report-generator';
 
 export const runtime = 'nodejs';
 
@@ -36,16 +40,28 @@ export async function POST(req: NextRequest) {
       title = 'Report',
       columns = [],
       rows = [],
-      totals,
       logoUrl,
       companyName,
     } = body;
+
+    // Totals: trust the caller's when present, otherwise sum every currency
+    // column server-side (money is NUMERIC-as-TEXT — Number() everything).
+    const totals = (body.totals && Object.keys(body.totals).length > 0)
+      ? body.totals
+      : computeCurrencyTotals(columns, rows);
+
+    // Server-resolved tenant branding is authoritative; the client-passed
+    // values only fill gaps (e.g. tenant record has no company_name yet).
+    const branding = await resolveBrandingValues({ tenantId: user.tenantId });
+    const brandName = (branding.companyName !== 'Saguaro Control Systems' && branding.companyName)
+      ? branding.companyName
+      : (companyName || branding.companyName);
 
     const safeTitle = safeFilename(title);
     const dateStamp = todayStamp();
 
     if (format === 'csv') {
-      const csv = buildCsv(columns, rows, title, totals, companyName);
+      const csv = buildCsv(columns, rows, title, totals, brandName);
       return new NextResponse(csv, {
         headers: {
           'Content-Type': EXPORT_CONTENT_TYPE.csv,
@@ -55,7 +71,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (format === 'xlsx') {
-      const xlsxBuffer = buildXlsx(columns, rows, title, totals, companyName);
+      const xlsxBuffer = buildXlsx(columns, rows, title, totals, brandName);
       return new NextResponse(xlsxBuffer as unknown as BodyInit, {
         headers: {
           'Content-Type': EXPORT_CONTENT_TYPE.xlsx,
@@ -65,7 +81,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (format === 'pdf') {
-      const pdfBytes = await buildPdf(columns, rows, title, totals, logoUrl, companyName);
+      // Corporate exec-style PDF: tenant letterhead + KPI band + line-item
+      // table + Page X of Y footers (lib/document-templates).
+      const pdfBytes = await generateExecReportPdf({
+        title,
+        columns,
+        rows,
+        totals,
+        tenantId: user.tenantId,
+        brandingOverride: { companyName: companyName || '', logoUrl: logoUrl || '' },
+      });
       return new NextResponse(Buffer.from(pdfBytes), {
         headers: {
           'Content-Type': EXPORT_CONTENT_TYPE.pdf,

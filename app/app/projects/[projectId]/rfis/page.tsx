@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import { useParams } from 'next/navigation';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { T, Badge, Btn, Table } from '@/components/ui/shell';
 import {
   PremiumSurface,
@@ -175,8 +177,43 @@ export default function RFIsPage() {
     return true;
   });
 
-  async function submitRFI() {
-    if (!fSubject.trim()) { setError('Subject is required'); return; }
+  /* ── Unsaved-work protection (R14): the create form arms the guard once any
+   *    field differs from its seeded default (the architect assignee and the
+   *    +7-day due date never count on their own). ── */
+  const createDirty = showForm && (
+    !!fSubject.trim() || !!fQuestion.trim() || !!fSpecSection.trim() ||
+    !!fAssignedOther.trim() || fUrgent ||
+    (!!fDueDate && fDueDate !== isoPlusDays(7)) ||
+    (!!fAssignedTo && fAssignedTo !== architectName)
+  );
+  const guard = useUnsavedGuard({
+    dirty: createDirty,
+    draftKey: `rfi:${projectId}`,
+    draftData: { fSubject, fQuestion, fSpecSection, fDueDate, fAssignedTo, fAssignedOther, fUrgent },
+    restoreDraft: (d) => {
+      const dr = d as { fSubject?: string; fQuestion?: string; fSpecSection?: string; fDueDate?: string; fAssignedTo?: string; fAssignedOther?: string; fUrgent?: boolean };
+      if (dr.fSubject !== undefined) setFSubject(dr.fSubject);
+      if (dr.fQuestion !== undefined) setFQuestion(dr.fQuestion);
+      if (dr.fSpecSection !== undefined) setFSpecSection(dr.fSpecSection);
+      if (dr.fDueDate) setFDueDate(dr.fDueDate);
+      if (dr.fAssignedTo) setFAssignedTo(dr.fAssignedTo);
+      if (dr.fAssignedOther !== undefined) setFAssignedOther(dr.fAssignedOther);
+      if (dr.fUrgent !== undefined) setFUrgent(dr.fUrgent);
+      setShowForm(true);
+    },
+    onSave: () => submitRFI(),
+  });
+
+  /** Close paths for the create form (hero Cancel / footer Cancel) run through the guard. */
+  function closeCreate() {
+    guard.requestClose(() => { setShowForm(false); setError(''); });
+  }
+
+  /** POST the RFI — shared by the form button and the guard's "Save & leave".
+   *  Optimistic: the row lands and the form closes instantly; returns true
+   *  once the server confirms. */
+  async function submitRFI(): Promise<boolean> {
+    if (!fSubject.trim()) { setError('Subject is required'); return false; }
     // Optimistic create (house pattern: budget saveEdit) — the row lands in the
     // log and the form closes instantly; the network settles in the background.
     const assignedName = (fAssignedTo === '__other' ? fAssignedOther.trim() : fAssignedTo) || '';
@@ -209,7 +246,9 @@ export default function RFIsPage() {
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       if (d.rfi) setRfis(prev => prev.map(x => (x.id === tempId ? d.rfi : x)));
+      guard.clearDraft();
       revalidate();
+      return true;
     } catch (e: unknown) {
       // Rollback + reopen with the typed values intact — input is never lost.
       setRfis(prev => prev.filter(x => x.id !== tempId));
@@ -218,6 +257,7 @@ export default function RFIsPage() {
       setFAssignedTo(fAssignedTo);
       setShowForm(true);
       setError((e as Error).message || 'Failed to create RFI');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -330,7 +370,7 @@ export default function RFIsPage() {
         subtitle="Track questions, route the ball-in-court, and close out clarifications before they slow the field."
         actions={
           showForm ? (
-            <button onClick={() => setShowForm(false)} style={ghostButtonStyle} className="pmBtn">Cancel</button>
+            <button onClick={closeCreate} style={ghostButtonStyle} className="pmBtn">Cancel</button>
           ) : (
             <button onClick={() => setShowForm(true)} style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Create RFI</button>
           )
@@ -453,7 +493,7 @@ export default function RFIsPage() {
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                 <button onClick={submitRFI} disabled={saving || !fSubject.trim()} className="pmBtn" style={disabledGold(saving || !fSubject.trim())}>{saving ? 'Submitting...' : 'Submit RFI'}</button>
-                <button onClick={() => { setShowForm(false); setError(''); }} style={ghostButtonStyle} className="pmBtn">Cancel</button>
+                <button onClick={closeCreate} style={ghostButtonStyle} className="pmBtn">Cancel</button>
               </div>
             </SectionCard>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -625,6 +665,8 @@ export default function RFIsPage() {
           </>
         )}
       </SectionCard>
+
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

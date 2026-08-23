@@ -6,6 +6,7 @@ import { IntegrationStrip } from '../components/Integrations';
 import PromoTicker from '../components/PromoTicker';
 import MarketingFooter, { SocialRow } from '../components/MarketingFooter';
 import { moduleAccent } from '../lib/module-identity';
+import { PLANS, TRIAL_DAYS, STARTING_PRICE_FLAT } from '../lib/plans';
 
 /* ── palette ── */
 const BG = '#0a0a0a';
@@ -68,41 +69,23 @@ const StatusCell = ({ v }: { v: Mark }) =>
   v === 'yes' ? <CheckIcon /> : v === 'partial' ? <PartialIcon /> : <XIcon />;
 
 const PRICE_LABELS: Record<'saguaro' | 'comp1' | 'comp2', { text: string; color: string }> = {
-  saguaro: { text: '$499/mo flat', color: GREEN },
+  saguaro: { text: STARTING_PRICE_FLAT, color: GREEN },
   comp1: { text: 'Custom quote', color: '#EF4444' },
   comp2: { text: 'Per-seat', color: GOLD },
 };
 
-/* ── pricing data ── */
-const PLANS = [
-  {
-    name: 'Starter',
-    price: '$499',
-    period: '/mo',
-    desc: 'Perfect for small GCs getting started',
-    features: ['Unlimited users — no per-seat fees', '15 active projects', 'AI Takeoff (150 pages/mo)', 'Pay apps & invoicing', 'Lien waivers', 'Mobile field app', 'Email support'],
-    cta: 'Start Free Trial',
-    highlighted: false,
-  },
-  {
-    name: 'Professional',
-    price: '$750',
-    period: '/mo',
-    desc: 'For growing contractors who need it all',
-    features: ['Unlimited users — no per-seat fees', 'Unlimited projects', 'Unlimited AI Takeoffs', 'Sage AI Assistant', 'Bid package manager', 'Client & sub portals', 'Certified payroll', 'Priority support'],
-    cta: 'Start Free Trial',
-    highlighted: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Call for Quote',
-    period: '',
-    desc: 'For large firms with custom needs',
-    features: ['Everything in Professional', 'Dedicated account manager', 'Custom integrations', 'SSO & advanced security', 'On-site training', 'SLA guarantee', 'API access'],
-    cta: 'Contact Sales',
-    highlighted: false,
-  },
-];
+/* ── pricing data — rendered from the ONE canonical source (lib/plans.ts).
+      Never hardcode tier prices or features here. ── */
+const HOME_PLANS = PLANS.map(p => ({
+  name: p.name,
+  price: p.priceMo > 0 ? `$${p.priceMo}` : 'Call for Quote',
+  period: p.priceMo > 0 ? '/mo' : '',
+  desc: p.blurb,
+  features: p.cardFeatures,
+  cta: p.cta,
+  ctaHref: p.ctaHref,
+  highlighted: p.popular,
+}));
 
 /* ===========================
    MAIN PAGE COMPONENT
@@ -357,7 +340,7 @@ export default function LandingPage() {
         <h2 style={{ textAlign: 'center' as const, fontSize: 24, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 8 }}>Simple, Transparent Pricing</h2>
         <p style={{ textAlign: 'center' as const, color: DIM, fontSize: 14, marginBottom: 36 }}>No hidden fees. No per-user charges. Cancel anytime.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }} className="pricing-grid">
-          {PLANS.map(plan => (
+          {HOME_PLANS.map(plan => (
             <div key={plan.name} style={{
               background: 'rgba(255,255,255,0.02)',
               border: plan.highlighted ? '1px solid rgba(245, 158, 11,0.35)' : '1px solid rgba(255,255,255,0.09)',
@@ -385,7 +368,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href={plan.name === 'Enterprise' ? '/contact' : '/signup'} style={{
+              <a href={plan.ctaHref} style={{
                 display: 'block',
                 textAlign: 'center' as const,
                 padding: '11px 0',
@@ -398,7 +381,7 @@ export default function LandingPage() {
                   : { border: '1px solid rgba(255,255,255,0.12)', color: TEXT }),
               }}>
                 {plan.cta}
-              </Link>
+              </a>
             </div>
           ))}
         </div>
@@ -407,9 +390,9 @@ export default function LandingPage() {
       {/* ══════════ 9. CTA SECTION ══════════ */}
       <section style={{ maxWidth: 640, margin: '0 auto', padding: '88px 24px 96px', textAlign: 'center' as const }}>
         <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 12 }}>Ready to build smarter?</h2>
-        <p style={{ color: DIM, fontSize: 14, marginBottom: 28 }}>Every module unlocked for 14 days. Run a real job on it and judge for yourself.</p>
+        <p style={{ color: DIM, fontSize: 14, marginBottom: 28 }}>Every module unlocked for {TRIAL_DAYS} days. Run a real job on it and judge for yourself.</p>
         <Link href="/signup" style={{ background: GOLD, color: '#0a0a0a', textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '12px 30px', borderRadius: 8, display: 'inline-block' }}>Start your free trial</Link>
-        <p style={{ color: DIM, fontSize: 12, marginTop: 14 }}>No credit card required. 14-day free trial.</p>
+        <p style={{ color: DIM, fontSize: 12, marginTop: 14 }}>No credit card required. {TRIAL_DAYS}-day free trial.</p>
       </section>
 
       {/* ══════════ 10. FOOTER ══════════ */}

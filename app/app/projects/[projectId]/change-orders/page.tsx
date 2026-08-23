@@ -1,7 +1,9 @@
 'use client';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
 import { toCents, toDollars, summarizeContract } from '@/lib/calc';
@@ -157,6 +159,32 @@ export default function ChangeOrdersPage() {
   const [fSchedule,setFSchedule]   = useState('');
   const [fRelatedPkg,setFRelatedPkg] = useState('');
 
+  /* ── Unsaved-work protection (R14): dirty once anything is typed in the
+   *    composer; draft autosaves per project and restores on return. ── */
+  const coFormDirty = showForm && (!!fTitle || !!fDesc || !!fReason || !!fCost || !!fSchedule || !!fRelatedPkg);
+  const coDraft = useMemo(() => ({
+    fTitle, fDesc, fReason, fCost, fSchedule, fRelatedPkg,
+  }), [fTitle, fDesc, fReason, fCost, fSchedule, fRelatedPkg]);
+  const guard = useUnsavedGuard({
+    dirty: coFormDirty,
+    draftKey: `change-order:${projectId}`,
+    draftData: coDraft,
+    restoreDraft: (d) => {
+      const v = d as Partial<typeof coDraft>;
+      if (!v) return;
+      setFTitle(v.fTitle ?? ''); setFDesc(v.fDesc ?? ''); setFReason(v.fReason ?? '');
+      setFCost(v.fCost ?? ''); setFSchedule(v.fSchedule ?? ''); setFRelatedPkg(v.fRelatedPkg ?? '');
+      setShowForm(true);
+    },
+    onSave: () => submitCO(),
+  });
+
+  /** Close the composer through the guard — clean closes immediately, dirty
+   *  asks Save / Discard / Stay first. */
+  function closeCoForm() {
+    guard.requestClose(() => { setShowForm(false); setError(''); });
+  }
+
   async function analyzeRisk(coData: Record<string, unknown>, targetKey: 'form' | string) {
     setRiskTarget(targetKey);
     setRiskResult(null);
@@ -210,8 +238,9 @@ export default function ChangeOrdersPage() {
     }
   },[loading, cos.length]);
 
-  async function createCO(){
-    if(!fTitle.trim()){ setError('Title is required'); return; }
+  /** POST the composer — shared by the Create button and the guard's "Save & leave". */
+  async function submitCO(): Promise<boolean>{
+    if(!fTitle.trim()){ setError('Title is required'); return false; }
     setSaving(true); setError('');
     try{
       const r = await fetch('/api/change-orders/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -224,11 +253,17 @@ export default function ChangeOrdersPage() {
       setFTitle(''); setFDesc(''); setFReason(''); setFCost(''); setFSchedule(''); setFRelatedPkg('');
       setShowForm(false);
       await load();
+      return true;
     }catch(e:any){
       console.error(e); setError(humanError(e, 'Failed to create the change order. Please try again.'));
+      return false;
     }finally{
       setSaving(false);
     }
+  }
+
+  async function createCO(){
+    if(await submitCO()) guard.clearDraft();
   }
 
   async function approveCO(id:string){
@@ -345,7 +380,7 @@ export default function ChangeOrdersPage() {
           accent="Orders"
           subtitle={loading ? 'Loading…' : `${cos.length} change order${cos.length!==1?'s':''} — track scope changes, owner requests, and unforeseen conditions.`}
           actions={
-            <button onClick={()=>setShowForm(!showForm)} style={goldButtonStyle} className="pmBtn">
+            <button onClick={()=>{ if(showForm) closeCoForm(); else setShowForm(true); }} style={goldButtonStyle} className="pmBtn">
               {showForm
                 ? <><X size={15} weight="bold" /> Cancel</>
                 : <><Plus size={15} weight="bold" /> New Change Order</>}
@@ -431,7 +466,7 @@ export default function ChangeOrdersPage() {
                   style={{...goldButtonStyle,cursor:saving?'wait':'pointer',opacity:(saving||!fTitle.trim())?0.6:1}} className="pmBtn">
                   {saving ? 'Creating…' : 'Create Change Order'}
                 </button>
-                <button onClick={()=>{setShowForm(false);setError('');}}
+                <button onClick={closeCoForm}
                   style={ghostButtonStyle} className="pmBtn">
                   Cancel
                 </button>
@@ -652,6 +687,8 @@ export default function ChangeOrdersPage() {
           </SectionCard>
         </>)}
       </PremiumSurface>
+
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

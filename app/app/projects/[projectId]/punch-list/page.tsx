@@ -1,6 +1,8 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { useParams } from 'next/navigation';
@@ -133,8 +135,35 @@ export default function PunchListPage(){
   function viewItem(item:any){setSelected(item);setMode('view');}
   function closePanel(){setSelected(null);setMode(null);}
 
-  async function save(){
-    if(!form.description.trim()){showToast('Description is required','error');return;}
+  /* ── Unsaved-work protection (R14): only the create drawer arms the guard —
+   *    dirty once any field differs from a fresh item's defaults (the +7-day
+   *    auto due date and the roster auto-assignee never count on their own). ── */
+  const createDirty = mode==='create' && (
+    !!String(form.description||'').trim() || !!String(form.location||'').trim() ||
+    !!String(form.notes||'').trim() ||
+    (!autoAssign && !!String(form.assigned_to||'').trim()) ||
+    form.trade!=='General Contractor' || form.priority!=='Medium' ||
+    form.status!=='open' || !autoDue
+  );
+  const guard = useUnsavedGuard({
+    dirty: createDirty,
+    draftKey: `punch:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => {
+      setForm({...EMPTY,...(d as Record<string,any>)});
+      setAutoDue(false);setAutoAssign(false);setAssignOther(false);
+      setSelected(null);setMode('create');
+    },
+    onSave: () => save(),
+  });
+
+  /** User-initiated drawer closes (backdrop / X / Cancel) run through the guard. */
+  function requestClosePanel(){ guard.requestClose(closePanel); }
+
+  /** Create/update the item — shared by the drawer button and the guard's
+   *  "Save & leave". Returns true on success (optimistic close, then network). */
+  async function save(): Promise<boolean>{
+    if(!form.description.trim()){showToast('Description is required','error');return false;}
     // Optimistic save (house pattern: budget saveEdit) — the list updates and
     // the panel closes instantly; the network settles in the background.
     const snapshot={...form};
@@ -155,6 +184,7 @@ export default function PunchListPage(){
         if(!r.ok){setItems(prev=>prev.filter((i:any)=>i.id!==tempId));throw new Error(await r.text());}
         const d=await r.json();
         if(d.item) setItems(prev=>prev.map((i:any)=>i.id===tempId?d.item:i));
+        guard.clearDraft();
         revalidate();
       }else if(mode==='edit'&&selected){
         const prevItem=selected;
@@ -169,10 +199,12 @@ export default function PunchListPage(){
         if(!r.ok){setItems(prev=>prev.map((i:any)=>i.id===prevItem.id?prevItem:i));throw new Error(await r.text());}
         revalidate();
       }
+      return true;
     }catch(e:any){
       console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');
       // Rollback already applied — reopen the drawer with the input intact.
       setForm(snapshot);setMode(prevMode);setSelected(prevSelected);
+      return false;
     }
     finally{setSaving(false);}
   }
@@ -389,7 +421,7 @@ export default function PunchListPage(){
 
       {/* Side panel — right drawer */}
       {mode!==null&&(
-        <div onClick={e=>{if(e.target===e.currentTarget) closePanel();}}
+        <div onClick={e=>{if(e.target===e.currentTarget) requestClosePanel();}}
           style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,.45)',
             display:'flex',justifyContent:'flex-end'}}>
           <div style={{width:460,maxWidth:'100%',height:'100%',borderLeft:`1px solid ${BORDER}`,background:DARK,
@@ -417,7 +449,7 @@ export default function PunchListPage(){
                   </button>
                 </>
               )}
-              <button onClick={closePanel}
+              <button onClick={requestClosePanel}
                 style={{padding:'6px 10px',background:'rgba(143,163,192,.1)',
                   border:`1px solid ${BORDER}`,borderRadius:6,color:DIM,fontSize:12,cursor:'pointer'}}>
                 <X size={12} weight="bold" color={DIM}/>
@@ -508,7 +540,7 @@ export default function PunchListPage(){
                   </Field>
                   <Field label={<>Due Date{autoDue&&mode==='create'&&<AutoChip/>}</>}>
                     <SaguaroDatePicker value={form.due_date}
-                      onChange={v=>setForm(f=>({...f,due_date:v}))}
+                      onChange={v=>{setAutoDue(false);setForm(f=>({...f,due_date:v}));}}
                       style={inp}/>
                     {mode==='create'&&(
                       <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>
@@ -532,7 +564,7 @@ export default function PunchListPage(){
                     style={{...goldButtonStyle,flex:1,opacity:saving?.6:1,cursor:saving?'not-allowed':'pointer'}}>
                     {saving?'Saving…':mode==='create'?'Add Item':'Save Changes'}
                   </button>
-                  <button onClick={closePanel} style={ghostButtonStyle} className="pmBtn">
+                  <button onClick={requestClosePanel} style={ghostButtonStyle} className="pmBtn">
                     Cancel
                   </button>
                 </div>
@@ -606,6 +638,8 @@ export default function PunchListPage(){
           </div>
         </div>
       )}
+
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

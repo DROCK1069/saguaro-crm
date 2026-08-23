@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import MarketingNav from '@/components/MarketingNav';
+import { TRIAL_DAYS } from '@/lib/plans';
 
 const C = {
   dark: '#0B0B0F',
@@ -26,6 +27,15 @@ const NAV_LINKS = [
   { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
 ];
+
+/* House display treatment — gold text-shine on ONE key word per heading. */
+const SHINE: React.CSSProperties = {
+  background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  color: 'transparent',
+};
 
 const STEPS = [
   {
@@ -138,11 +148,9 @@ export default function HowItWorksPage() {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.gold, display: 'inline-block' }} />
             How it works
           </div>
-          <h1 style={{ fontSize: 'clamp(26px, 4vw, 30px)', fontWeight: 600, lineHeight: 1.15, margin: '0 0 18px', letterSpacing: -0.5 }}>
+          <h1 style={{ fontSize: 'clamp(30px, 4.6vw, 44px)', fontWeight: 800, lineHeight: 1.12, margin: '0 0 18px', letterSpacing: '-0.02em' }}>
             From blueprint to closeout{' '}
-            <span style={{ color: C.text }}>
-              in one platform.
-            </span>
+            in <span style={SHINE}>one platform</span>.
           </h1>
           <p style={{ fontSize: 'clamp(15px, 2vw, 17px)', color: C.dim, maxWidth: 620, margin: '0 auto 36px', lineHeight: 1.65 }}>
             Saguaro Control Systems runs the whole job — AI takeoff, bidding, the field app, pay apps, owner and sub portals, and closeout — so your team works in one system instead of a dozen disconnected tools.
@@ -247,12 +255,12 @@ export default function HowItWorksPage() {
         {/* Final CTA */}
         <section style={{ padding: '112px 24px', background: 'transparent', borderTop: `1px solid ${C.hairline}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(22px, 3vw, 26px)', fontWeight: 600, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: -0.4 }}>
-              See your whole job in{' '}
-              <span style={{ color: C.text }}>one platform.</span>
+            <h2 style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+              See your <span style={SHINE}>whole job</span> in{' '}
+              one platform.
             </h2>
             <p style={{ fontSize: 16, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
-              30-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
+              {TRIAL_DAYS}-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
               <Link href="/signup" style={{ display: 'inline-block', padding: '12px 28px', background: C.gold, borderRadius: 8, color: '#0B0B0F', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
@@ -263,7 +271,7 @@ export default function HowItWorksPage() {
               </Link>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {['30 days free', 'Free migration', 'Cancel anytime', 'No per-seat fees', 'Unlimited users'].map(pill => (
+              {[`${TRIAL_DAYS} days free`, 'Free migration', 'Cancel anytime', 'No per-seat fees', 'Unlimited users'].map(pill => (
                 <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 12, fontWeight: 500, color: C.dim }}>
                   <CheckIcon size={12} color={C.dim} />
                   {pill}

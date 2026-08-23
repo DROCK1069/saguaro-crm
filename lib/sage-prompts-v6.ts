@@ -4,6 +4,8 @@
 
 import type { SageIntelligence } from '@/lib/sage-intelligence-v6';
 import { buildUltraMemoryBlock } from '@/lib/sage-intelligence-v6';
+import { SAGE_CONDUCT_MANDATE } from '@/lib/sage-prompts';
+import type { SageBrainSections } from '@/lib/sage-brain';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROJECT CONTEXT DATA INTERFACE
@@ -1198,10 +1200,15 @@ export function buildSageSystemPromptV6(params: {
   intelligence: SageIntelligence;
   projectContext?: ProjectContextData | null;
   pageContext?: string;
+  /** SAGE BRAIN (R16–R19) sections from lib/sage-brain.ts. All optional/tolerant. */
+  brain?: SageBrainSections | null;
 }): string {
-  const { intelligence, projectContext, pageContext } = params;
+  const { intelligence, projectContext, pageContext, brain } = params;
 
   const sections: string[] = [];
+
+  // Section 0: Conduct mandate — owner requirements, overrides everything.
+  sections.push(SAGE_CONDUCT_MANDATE);
 
   // Section 1: Temporal awareness
   sections.push(buildTemporalBlock());
@@ -1225,8 +1232,15 @@ ${memoryBlock}
     sections.push(buildProjectContextBlock(projectContext));
   }
 
-  // Section 5: Communication style directive
-  sections.push(buildCommunicationStyleBlock(intelligence));
+  // Section 5: Communication style directive.
+  // R16: when the transparent style profile block is available it REPLACES the
+  // legacy inferred directive — the user-visible profile is the single source
+  // of styling truth (and reflects their edit/toggle choices).
+  if (brain?.styleBlock) {
+    sections.push(brain.styleBlock);
+  } else {
+    sections.push(buildCommunicationStyleBlock(intelligence));
+  }
 
   // Page context (injected between style and mastery)
   if (pageContext) {
@@ -1248,6 +1262,12 @@ The user is currently on the ${pageContext} page in Saguaro. Prioritize advice, 
   // Sections 11–12: Conversational intelligence and self-awareness
   sections.push(CONVERSATIONAL_INTELLIGENCE);
   sections.push(SAGE_SELF_AWARENESS);
+
+  // SAGE BRAIN sections (R17–R19): bid brain, consent-first automation,
+  // general-assistant capability honesty.
+  if (brain?.bidBrainBlock) sections.push(brain.bidBrainBlock);
+  if (brain?.automationBlock) sections.push(brain.automationBlock);
+  if (brain?.assistantBlock) sections.push(brain.assistantBlock);
 
   return sections.join('\n\n');
 }
@@ -1279,6 +1299,8 @@ TIME: ${hour12}:${minute} ${ampm}
 YEAR: ${year} | QUARTER: Q${quarter}
 
 You always know the exact date and time above. Never say you don't know what day or year it is.
+
+${SAGE_CONDUCT_MANDATE}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 IDENTITY

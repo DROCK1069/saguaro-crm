@@ -1,8 +1,15 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
+/**
+ * Settings — workspace control panel.
+ * Every control on this page does something real: profile fields save to
+ * profiles, branding saves to tenants.settings (with instant sidebar refresh
+ * via the `saguaro:branding-updated` event), and every hub row links to a
+ * live route. No dead clicks.
+ */
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { CreditCard, DeviceMobile, Bell, Users, Key, Clipboard, FileText, Gear, Rocket, GraduationCap, Books, ChatCircle, Clock, ArrowRight, CloudArrowUp, ShieldCheck, Plugs, UserCircle, Palette, Lifebuoy } from '@phosphor-icons/react';
-import { PremiumSurface, ModuleHero, SectionCard, StatStrip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { CreditCard, DeviceMobile, Bell, Users, Clipboard, FileText, Gear, Rocket, GraduationCap, Books, ChatCircle, Clock, ArrowRight, CloudArrowUp, ShieldCheck, Plugs, UserCircle, Palette, Lifebuoy, UploadSimple, CheckCircle, WarningCircle } from '@phosphor-icons/react';
+import { PremiumSurface, ModuleHero, SectionCard, StatStrip, GoldButton, DangerButton, Pill, goldButtonStyle } from '@/components/ui/premium';
 
 const GOLD  = '#F59E0B';
 const BORDER = 'rgba(255,255,255,0.12)';
@@ -13,11 +20,28 @@ const RED   = '#ef4444';
 // Premium-surface field styling — legible on the aurora/glass backdrop.
 const FIELD_BG = 'rgba(0,0,0,0.22)';
 
+const inputStyle: React.CSSProperties = {
+  width: '100%', background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 10,
+  padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+  fontFamily: 'inherit',
+};
+const labelStyle: React.CSSProperties = {
+  fontSize: 11, color: DIM, fontWeight: 700, display: 'block', marginBottom: 6,
+  letterSpacing: '0.08em', textTransform: 'uppercase',
+};
+
 interface SubInfo {
   plan_name: string;
   status: string;
   trial_ends_at: string | null;
   current_period_end: string | null;
+}
+interface MeInfo {
+  name: string;
+  email: string;
+  phone: string | null;
+  title: string | null;
+  role: string;
 }
 
 const SETTINGS_SECTIONS = [
@@ -54,7 +78,7 @@ const SETTINGS_SECTIONS = [
     items: [
       { icon: Rocket, label: 'Free Migration', desc: 'Migrate your data from any platform or spreadsheet', href: 'mailto:support@saguarocontrol.net?subject=Migration Request' },
       { icon: GraduationCap, label: 'Guided Onboarding', desc: 'Book a hands-on setup session with a Saguaro specialist ($1,200)', href: 'mailto:support@saguarocontrol.net?subject=Guided Onboarding' },
-      { icon: Books, label: 'Help Center', desc: 'Tutorials, walkthroughs, and FAQs', href: 'mailto:support@saguarocontrol.net' },
+      { icon: Books, label: 'Help Center', desc: 'Tutorials, walkthroughs, and FAQs', href: 'mailto:support@saguarocontrol.net?subject=Help Center' },
       { icon: ChatCircle, label: 'Contact Support', desc: 'Email support@saguarocontrol.net — we respond within 48hrs', href: 'mailto:support@saguarocontrol.net' },
     ],
   },
@@ -65,25 +89,105 @@ function daysLeft(dateStr: string | null): number {
   return Math.max(0, Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000));
 }
 
+/** "Acme General Contractors" -> "AG" — matches the sidebar lockup fallback. */
+function companyInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  return (words.length >= 2 ? words[0][0] + words[1][0] : words[0].slice(0, 2)).toUpperCase();
+}
+
+/** Inline save feedback — ✓ green when saved, warning red on failure. */
+function SaveNotice({ notice }: { notice: { text: string; ok: boolean } | null }) {
+  if (!notice) return null;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: notice.ok ? GREEN : RED, fontWeight: 600 }}>
+      {notice.ok ? <CheckCircle size={15} weight="fill" color={GREEN} /> : <WarningCircle size={15} weight="fill" color={RED} />}
+      {notice.text}
+    </span>
+  );
+}
+
 export default function SettingsPage() {
   const [sub, setSub] = useState<SubInfo | null>(null);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [platformAdmin, setPlatformAdmin] = useState(false);
+
+  // ── Profile ────────────────────────────────────────────────────────
+  const [me, setMe] = useState<MeInfo | null>(null);
+  const [profile, setProfile] = useState({ full_name: '', title: '', phone: '' });
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const profileMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Branding ───────────────────────────────────────────────────────
   const [branding, setBranding] = useState({ company_name: '', logo_url: '', primary_color: '' });
   const [brandingSaving, setBrandingSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [brandingMsg, setBrandingMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const brandingMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [platformAdmin, setPlatformAdmin] = useState(false);
 
   useEffect(() => {
-    fetch('/api/billing/subscription').then(r => r.ok ? r.json() : null).then(setSub);
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(setUser);
-    fetch('/api/platform/me').then(r => r.ok ? r.json() : null).then(d => setPlatformAdmin(!!d?.isPlatformAdmin));
+    fetch('/api/billing/subscription').then(r => r.ok ? r.json() : null).then(setSub).catch(() => {});
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d) {
+        setMe({ name: d.name ?? '', email: d.email ?? '', phone: d.phone ?? null, title: d.title ?? null, role: d.role ?? 'member' });
+        setProfile({ full_name: d.name ?? '', title: d.title ?? '', phone: d.phone ?? '' });
+      }
+    }).catch(() => {});
+    fetch('/api/platform/me').then(r => r.ok ? r.json() : null).then(d => setPlatformAdmin(!!d?.isPlatformAdmin)).catch(() => {});
     fetch('/api/branding').then(r => r.ok ? r.json() : null).then(d => {
       if (d) setBranding({ company_name: d.company_name ?? '', logo_url: d.logo_url ?? '', primary_color: d.primary_color ?? '' });
-    });
+    }).catch(() => {});
   }, []);
+
+  // The sidebar lockup deep-links to /app/settings#branding — land on the card.
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.location.hash !== '#branding') return undefined;
+    const t = setTimeout(() => document.getElementById('branding')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    return () => clearTimeout(t);
+  }, []);
+
+  const flashProfile = (text: string, ok: boolean) => {
+    setProfileMsg({ text, ok });
+    if (profileMsgTimer.current) clearTimeout(profileMsgTimer.current);
+    profileMsgTimer.current = setTimeout(() => setProfileMsg(null), 3500);
+  };
+  const flashBranding = (text: string, ok: boolean) => {
+    setBrandingMsg({ text, ok });
+    if (brandingMsgTimer.current) clearTimeout(brandingMsgTimer.current);
+    brandingMsgTimer.current = setTimeout(() => setBrandingMsg(null), 3500);
+  };
+
+  // Tell the app shell the tenant brand changed → sidebar lockup refreshes instantly.
+  const notifyShellBrandingChanged = () => {
+    try { window.dispatchEvent(new CustomEvent('saguaro:branding-updated')); } catch { /* SSR-safe no-op */ }
+  };
+
+  const saveProfile = async () => {
+    if (!profile.full_name.trim()) { flashProfile('Name cannot be empty.', false); return; }
+    setProfileSaving(true);
+    try {
+      const res = await fetch('/api/auth/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: profile.full_name, title: profile.title, phone: profile.phone }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMe(m => m ? { ...m, name: profile.full_name.trim(), title: profile.title.trim() || null, phone: profile.phone.trim() || null } : m);
+        setProfileDirty(false);
+        flashProfile('Profile saved.', true);
+      } else {
+        flashProfile(d.error || 'Save failed.', false);
+      }
+    } catch {
+      flashProfile('Save failed.', false);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const saveBranding = async () => {
     setBrandingSaving(true);
@@ -93,18 +197,24 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(branding),
       });
-      const ok = res.ok;
-      setBrandingMsg({ text: ok ? 'Branding saved.' : 'Save failed.', ok });
+      if (res.ok) {
+        flashBranding('Branding saved.', true);
+        notifyShellBrandingChanged();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        flashBranding(d.error || 'Save failed.', false);
+      }
     } catch {
-      setBrandingMsg({ text: 'Save failed.', ok: false });
+      flashBranding('Save failed.', false);
     } finally {
       setBrandingSaving(false);
-      if (brandingMsgTimer.current) clearTimeout(brandingMsgTimer.current);
-      brandingMsgTimer.current = setTimeout(() => setBrandingMsg(null), 3500);
     }
   };
 
-  const uploadLogo = async (file: File) => {
+  const uploadLogo = useCallback(async (file: File) => {
+    const okTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+    if (!okTypes.includes(file.type)) { flashBranding('Use PNG, JPG, WEBP, or SVG.', false); return; }
+    if (file.size > 5 * 1024 * 1024) { flashBranding('Logo must be under 5 MB.', false); return; }
     setUploading(true);
     try {
       const fd = new FormData();
@@ -113,24 +223,26 @@ export default function SettingsPage() {
       const d = await res.json().catch(() => ({}));
       if (res.ok && d.logo_url) {
         setBranding(b => ({ ...b, logo_url: d.logo_url }));
-        setBrandingMsg({ text: 'Logo uploaded.', ok: true });
+        flashBranding('Logo uploaded — sidebar updated.', true);
+        // The upload endpoint persists the URL server-side, so refresh the shell now.
+        notifyShellBrandingChanged();
       } else {
-        setBrandingMsg({ text: d.error || 'Upload failed.', ok: false });
+        flashBranding(d.error || 'Upload failed.', false);
       }
     } catch {
-      setBrandingMsg({ text: 'Upload failed.', ok: false });
+      flashBranding('Upload failed.', false);
     } finally {
       setUploading(false);
-      if (brandingMsgTimer.current) clearTimeout(brandingMsgTimer.current);
-      brandingMsgTimer.current = setTimeout(() => setBrandingMsg(null), 3500);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const trialDays = sub?.trial_ends_at ? daysLeft(sub.trial_ends_at) : null;
   const isTrialing = sub?.status === 'trialing';
   const isPastDue = sub?.status === 'past_due';
 
   const acctBorder = isPastDue ? RED : (isTrialing && trialDays !== null && trialDays <= 5 ? 'rgba(245,158,11,0.4)' : undefined);
+  const previewColor = /^#[0-9a-fA-F]{6}$/.test(branding.primary_color) ? branding.primary_color : GOLD;
 
   return (
     <PremiumSurface maxWidth={920}>
@@ -144,7 +256,7 @@ export default function SettingsPage() {
       />
 
       {/* Workspace snapshot — what the system knows about this account */}
-      {(user || sub) && (
+      {(me || sub) && (
         <StatStrip items={[
           { label: 'Plan', value: sub?.plan_name || 'Free Trial', accent: isPastDue ? RED : undefined, sub: sub?.status === 'active' ? 'subscription active' : isTrialing ? 'trial in progress' : isPastDue ? 'payment failed — fix in Billing' : 'manage in Billing' },
           ...(isTrialing && trialDays !== null
@@ -154,45 +266,82 @@ export default function SettingsPage() {
               : []),
           { label: 'Branding', value: (branding.logo_url || branding.company_name) ? 'Custom' : 'Default', accent: (branding.logo_url || branding.company_name) ? GREEN : undefined, sub: branding.company_name || 'set a name + logo below' },
           { label: 'Brand Color', value: branding.primary_color || 'Saguaro Gold', sub: branding.primary_color ? 'white-label accent' : 'default accent' },
-          { label: 'Signed In As', value: user?.name || '—', sub: user?.email || undefined },
+          { label: 'Signed In As', value: me?.name || '—', sub: me?.email || undefined },
         ]} />
       )}
 
-      {/* Account summary card */}
-      {(user || sub) && (
-        <div style={{ marginBottom: 24 }}>
-          <SectionCard
-            title="Your Account"
-            icon={<UserCircle size={18} weight="duotone" color={GOLD} />}
-            accent={isPastDue ? RED : GOLD}
-            style={acctBorder ? { borderColor: acctBorder } : undefined}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-              <div>
-                {user && <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{user.name}</div>}
-                {user && <div style={{ fontSize: 13, color: DIM }}>{user.email}</div>}
+      {/* ── Your Profile — editable, saves to profiles ─────────────── */}
+      <div style={{ marginBottom: 24 }}>
+        <SectionCard
+          title="Your Profile"
+          subtitle="Your name and contact info — shown on daily logs, approvals, and team lists."
+          icon={<UserCircle size={18} weight="duotone" color={GOLD} />}
+          accent={isPastDue ? RED : GOLD}
+          style={acctBorder ? { borderColor: acctBorder } : undefined}
+          action={sub ? (
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 12.5, color: DIM, marginBottom: 3 }}>
+                Plan: <strong style={{ color: TEXT }}>{sub.plan_name ?? 'Free Trial'}</strong>
               </div>
-              {sub && (
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 13, color: DIM, marginBottom: 4 }}>
-                    Plan: <strong style={{ color: TEXT }}>{sub.plan_name ?? 'Free Trial'}</strong>
-                  </div>
-                  {isTrialing && trialDays !== null && (
-                    <div style={{ fontSize: 13, color: trialDays <= 5 ? GOLD : DIM }}>
-                      {trialDays} day{trialDays !== 1 ? 's' : ''} left in trial
-                    </div>
-                  )}
-                  {isPastDue && <div style={{ fontSize: 13, color: RED, fontWeight: 600 }}>Payment failed</div>}
-                  {sub.status === 'active' && sub.current_period_end && (
-                    <div style={{ fontSize: 13, color: GREEN }}>Active · renews {new Date(sub.current_period_end).toLocaleDateString()}</div>
-                  )}
-                  <Link href="/app/billing" style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600 }}>Manage Billing <span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><ArrowRight size={12} weight="regular" color={GOLD} /></span></Link>
-                </div>
+              {isTrialing && trialDays !== null && (
+                <div style={{ fontSize: 12.5, color: trialDays <= 5 ? GOLD : DIM }}>{trialDays} day{trialDays !== 1 ? 's' : ''} left in trial</div>
               )}
+              {isPastDue && <div style={{ fontSize: 12.5, color: RED, fontWeight: 600 }}>Payment failed</div>}
+              {sub.status === 'active' && sub.current_period_end && (
+                <div style={{ fontSize: 12.5, color: GREEN }}>Active · renews {new Date(sub.current_period_end).toLocaleDateString()}</div>
+              )}
+              <Link href="/app/billing" style={{ fontSize: 12, color: GOLD, textDecoration: 'none', fontWeight: 600 }}>
+                Manage Billing <span style={{ display: 'inline-flex', verticalAlign: 'middle' }}><ArrowRight size={12} weight="regular" color={GOLD} /></span>
+              </Link>
             </div>
-          </SectionCard>
-        </div>
-      )}
+          ) : undefined}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+            <div>
+              <label style={labelStyle}>Full Name</label>
+              <input
+                type="text"
+                value={profile.full_name}
+                onChange={e => { setProfile(p => ({ ...p, full_name: e.target.value })); setProfileDirty(true); }}
+                placeholder="Your name"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Job Title</label>
+              <input
+                type="text"
+                value={profile.title}
+                onChange={e => { setProfile(p => ({ ...p, title: e.target.value })); setProfileDirty(true); }}
+                placeholder="e.g. Project Executive"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Phone</label>
+              <input
+                type="tel"
+                value={profile.phone}
+                onChange={e => { setProfile(p => ({ ...p, phone: e.target.value })); setProfileDirty(true); }}
+                placeholder="(602) 555-0100"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Email · Sign-In</label>
+              <input type="email" value={me?.email ?? ''} readOnly disabled title="Your sign-in email cannot be changed here — contact support to migrate accounts."
+                style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 16, flexWrap: 'wrap' }}>
+            <GoldButton size="md" onClick={saveProfile} disabled={profileSaving || !profileDirty}>
+              {profileSaving ? 'Saving…' : 'Save Profile'}
+            </GoldButton>
+            {me?.role && <Pill tone="neutral" caps>{me.role}</Pill>}
+            <SaveNotice notice={profileMsg} />
+          </div>
+        </SectionCard>
+      </div>
 
       {/* Trial warning banner */}
       {isTrialing && trialDays !== null && trialDays <= 7 && (
@@ -206,106 +355,182 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Company Branding */}
-      <div style={{ marginBottom: 24 }}>
-        <SectionCard title="Company Branding" icon={<Palette size={18} weight="duotone" color={GOLD} />}>
-          <div style={{ fontSize: 13, color: DIM, marginBottom: 18 }}>
-            Your company name and logo will appear on all exported reports (PDF and Excel).
-          </div>
+      {/* ── Company Branding — logo, name, color + live sidebar preview ── */}
+      <div id="branding" style={{ marginBottom: 24, scrollMarginTop: 72 }}>
+        <SectionCard
+          title="Company Branding"
+          subtitle="Your logo and name appear in the app sidebar and on every exported report (PDF and Excel)."
+          icon={<Palette size={18} weight="duotone" color={GOLD} />}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 22 }}>
 
-          {/* Logo preview */}
-          {branding.logo_url && (
-            <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
-              <img
-                src={branding.logo_url}
-                alt="Company logo"
-                style={{ maxHeight: 56, maxWidth: 180, objectFit: 'contain', borderRadius: 6, border: `1px solid ${BORDER}`, background: 'rgba(0,0,0,0.2)', padding: 8 }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-              <span style={{ fontSize: 12, color: DIM }}>Logo preview</span>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>COMPANY NAME</label>
-              <input
-                type="text"
-                value={branding.company_name}
-                onChange={e => setBranding(b => ({ ...b, company_name: e.target.value }))}
-                placeholder="e.g. Acme General Contractors"
-                style={{ width: '100%', maxWidth: 420, background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>LOGO URL</label>
-              <input
-                type="url"
-                value={branding.logo_url}
-                onChange={e => setBranding(b => ({ ...b, logo_url: e.target.value }))}
-                placeholder="https://yoursite.com/logo.png or Supabase storage URL"
-                style={{ width: '100%', maxWidth: 520, background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-              <div style={{ fontSize: 11, color: DIM, marginTop: 5 }}>
-                Paste a public URL, or upload a file (PNG, JPG, WEBP, SVG · max 5 MB).
-              </div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                style={{ display: 'none' }}
-                onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); e.currentTarget.value = ''; }}
-              />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="pmBtn"
-                style={{ ...ghostButtonStyle, marginTop: 10, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.7 : 1 }}
-              >
-                {uploading ? 'Uploading…' : 'Upload logo file'}
-              </button>
-            </div>
-
-            {/* Brand color */}
-            <div>
-              <label style={{ fontSize: 12, color: DIM, fontWeight: 600, display: 'block', marginBottom: 6 }}>BRAND COLOR</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <input
-                  type="color"
-                  value={/^#[0-9a-fA-F]{6}$/.test(branding.primary_color) ? branding.primary_color : '#F59E0B'}
-                  onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
-                  style={{ width: 48, height: 40, border: `1px solid ${BORDER}`, borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }}
-                  aria-label="Brand color"
-                />
+            {/* ── Left: the form ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Company Name</label>
                 <input
                   type="text"
-                  value={branding.primary_color}
-                  onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
-                  placeholder="#F59E0B"
-                  style={{ width: 130, background: FIELD_BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px', color: TEXT, fontSize: 14, outline: 'none' }}
+                  value={branding.company_name}
+                  onChange={e => setBranding(b => ({ ...b, company_name: e.target.value }))}
+                  placeholder="e.g. Acme General Contractors"
+                  style={inputStyle}
                 />
-                {branding.primary_color
-                  ? <button onClick={() => setBranding(b => ({ ...b, primary_color: '' }))} style={{ background: 'none', border: 'none', color: DIM, fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>Reset to Saguaro gold</button>
-                  : <span style={{ fontSize: 12, color: DIM }}>Defaults to Saguaro gold</span>}
               </div>
-              <div style={{ fontSize: 11, color: DIM, marginTop: 5 }}>
-                Applies across your dashboard, portals, and document letterheads on the white-label plan.
+
+              <div>
+                <label style={labelStyle}>Company Logo</label>
+                {/* Drag-and-drop upload zone */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Upload company logo"
+                  onClick={() => !uploading && fileRef.current?.click()}
+                  onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !uploading) { e.preventDefault(); fileRef.current?.click(); } }}
+                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={e => {
+                    e.preventDefault(); setDragOver(false);
+                    const f = e.dataTransfer.files?.[0];
+                    if (f && !uploading) uploadLogo(f);
+                  }}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '22px 16px', borderRadius: 12, cursor: uploading ? 'wait' : 'pointer',
+                    border: `1.5px dashed ${dragOver ? GOLD : 'rgba(255,255,255,0.2)'}`,
+                    background: dragOver ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.02)',
+                    transition: 'border-color .15s ease, background .15s ease',
+                    textAlign: 'center',
+                  }}
+                >
+                  <UploadSimple size={22} weight="bold" color={dragOver ? GOLD : DIM} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>
+                    {uploading ? 'Uploading…' : dragOver ? 'Drop to upload' : 'Drop your logo here, or click to browse'}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: DIM }}>PNG, JPG, WEBP, or SVG · max 5 MB · transparent PNG looks best</div>
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  style={{ display: 'none' }}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); e.currentTarget.value = ''; }}
+                />
+                {/* Advanced: paste a hosted URL instead */}
+                <div style={{ marginTop: 10 }}>
+                  <input
+                    type="url"
+                    value={branding.logo_url}
+                    onChange={e => setBranding(b => ({ ...b, logo_url: e.target.value }))}
+                    placeholder="…or paste a public logo URL (https://yoursite.com/logo.png)"
+                    style={{ ...inputStyle, fontSize: 12.5, padding: '8px 12px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Brand color */}
+              <div>
+                <label style={labelStyle}>Brand Color</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <input
+                    type="color"
+                    value={previewColor === GOLD && !branding.primary_color ? '#F59E0B' : previewColor}
+                    onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
+                    style={{ width: 48, height: 40, border: `1px solid ${BORDER}`, borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }}
+                    aria-label="Brand color"
+                  />
+                  <input
+                    type="text"
+                    value={branding.primary_color}
+                    onChange={e => setBranding(b => ({ ...b, primary_color: e.target.value }))}
+                    placeholder="#F59E0B"
+                    style={{ ...inputStyle, width: 130 }}
+                  />
+                  {branding.primary_color
+                    ? <button onClick={() => setBranding(b => ({ ...b, primary_color: '' }))} style={{ background: 'none', border: 'none', color: DIM, fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Reset to Saguaro gold</button>
+                    : <span style={{ fontSize: 12, color: DIM }}>Defaults to Saguaro gold</span>}
+                </div>
+                <div style={{ fontSize: 11, color: DIM, marginTop: 5 }}>
+                  Applies across your dashboard, portals, and document letterheads on the white-label plan.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 2, flexWrap: 'wrap' }}>
+                <GoldButton size="md" onClick={saveBranding} disabled={brandingSaving}>
+                  {brandingSaving ? 'Saving…' : 'Save Branding'}
+                </GoldButton>
+                <SaveNotice notice={brandingMsg} />
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 4 }}>
-              <button
-                onClick={saveBranding}
-                disabled={brandingSaving}
-                className="pmBtn"
-                style={{ ...goldButtonStyle, cursor: brandingSaving ? 'not-allowed' : 'pointer', opacity: brandingSaving ? 0.7 : 1 }}
-              >
-                {brandingSaving ? 'Saving...' : 'Save Branding'}
-              </button>
-              {brandingMsg && (
-                <span style={{ fontSize: 13, color: brandingMsg.ok ? GREEN : RED, fontWeight: 600 }}>
-                  {brandingMsg.text}
-                </span>
-              )}
+
+            {/* ── Right: live sidebar preview — exactly what the lockup renders ── */}
+            <div>
+              <label style={labelStyle}>Live Sidebar Preview</label>
+              <div style={{
+                borderRadius: 14, border: `1px solid ${BORDER}`, overflow: 'hidden',
+                background: 'linear-gradient(180deg, #141416, #0c0d10)',
+              }}>
+                <div style={{ padding: '12px 12px 11px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{
+                    padding: '12px 12px 11px', borderRadius: 12,
+                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                  }}>
+                    {branding.logo_url ? (
+                      <>
+                        <img
+                          src={branding.logo_url}
+                          alt="Logo preview"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          style={{ display: 'block', maxWidth: '100%', maxHeight: 48, width: 'auto', height: 'auto', objectFit: 'contain', objectPosition: 'left center', marginBottom: 9 }}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          {branding.company_name && (
+                            <span style={{ flex: '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, fontWeight: 700, color: DIM }}>
+                              {branding.company_name}
+                            </span>
+                          )}
+                          <Pill tone={isTrialing ? 'amber' : 'gold'} caps>{isTrialing ? 'Trial' : (sub?.plan_name || 'Plan')}</Pill>
+                        </div>
+                      </>
+                    ) : branding.company_name ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+                        <span aria-hidden style={{
+                          width: 42, height: 42, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          borderRadius: 11,
+                          background: `linear-gradient(150deg, ${previewColor}, color-mix(in srgb, ${previewColor} 72%, #000000))`,
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
+                          color: '#241500', fontSize: 16, fontWeight: 900,
+                        }}>
+                          {companyInitials(branding.company_name)}
+                        </span>
+                        <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13.5, fontWeight: 800, color: TEXT }}>
+                            {branding.company_name}
+                          </span>
+                          <span style={{ display: 'flex' }}>
+                            <Pill tone={isTrialing ? 'amber' : 'gold'} caps>{isTrialing ? 'Trial' : (sub?.plan_name || 'Plan')}</Pill>
+                          </span>
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 12.5, color: DIM, padding: '4px 0' }}>
+                        Set a company name or upload a logo to see your sidebar lockup.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Faux nav rows so the preview reads as the actual sidebar */}
+                <div aria-hidden style={{ padding: '10px 12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[92, 70, 110].map((w, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                      <span style={{ width: 14, height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.08)' }} />
+                      <span style={{ width: w, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.07)' }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: DIM, marginTop: 7 }}>
+                Updates in the real sidebar the moment you upload or save — no reload needed.
+              </div>
             </div>
           </div>
         </SectionCard>
@@ -374,7 +599,9 @@ export default function SettingsPage() {
 
       {/* Logout */}
       <div style={{ textAlign: 'center', paddingBottom: 8 }}>
-        <button onClick={async () => {
+        <DangerButton
+          size="md"
+          onClick={async () => {
             await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
             try {
               for (const k of Object.keys(localStorage)) {
@@ -384,9 +611,9 @@ export default function SettingsPage() {
             } catch { /* storage unavailable — ignore */ }
             window.location.replace('/login');
           }}
-          style={{ padding: '10px 28px', background: 'transparent', border: `1px solid rgba(239,68,68,0.3)`, borderRadius: 8, color: RED, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+        >
           Sign Out
-        </button>
+        </DangerButton>
       </div>
 
     </PremiumSurface>

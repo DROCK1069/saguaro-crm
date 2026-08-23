@@ -24,6 +24,15 @@ const NAV_LINKS = [
   { label: 'Compare', href: '/compare' },
 ];
 
+/* House display treatment — gold text-shine on ONE key word per heading. */
+const SHINE: React.CSSProperties = {
+  background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  color: 'transparent',
+};
+
 const POSITIONING = 'Construction Management · Project Controls · National Rollout Specialists';
 const TAGLINE = 'Control Every Project. Deliver Every Promise.';
 
@@ -100,8 +109,8 @@ export default function AboutPage() {
         {/* Hero */}
         <section style={{ textAlign: 'center', padding: '120px 24px 72px', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(245, 158, 11,0.05) 0%, transparent 70%)` }}>
           <Eyebrow>About Saguaro Control Systems</Eyebrow>
-          <h1 style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.15, margin: '0 auto 20px', letterSpacing: '-0.03em', maxWidth: 760, color: C.text }}>
-            We build the systems that make construction predictable.
+          <h1 style={{ fontSize: 'clamp(30px, 4.6vw, 44px)', fontWeight: 800, lineHeight: 1.12, margin: '0 auto 20px', letterSpacing: '-0.02em', maxWidth: 820, color: C.text }}>
+            We build the systems that make construction <span style={SHINE}>predictable</span>.
           </h1>
           <div style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 22 }}>
             {POSITIONING}
@@ -274,8 +283,8 @@ export default function AboutPage() {
         {/* Final CTA */}
         <section style={{ marginTop: 96, padding: '112px 24px', background: `radial-gradient(ellipse at center, rgba(245, 158, 11,0.05) 0%, transparent 70%)`, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 660, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 28, fontWeight: 600, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-0.03em', color: C.text }}>
-              Control every project. Deliver every promise.
+            <h2 style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.02em', color: C.text }}>
+              Control every project. Deliver <span style={SHINE}>every promise</span>.
             </h2>
             <p style={{ fontSize: 15, color: C.dim, margin: '0 0 36px', lineHeight: 1.7 }}>
               Whether you are planning a single tenant improvement or a national franchise rollout, we bring the discipline, the controls, and the platform to keep it on schedule and within budget.

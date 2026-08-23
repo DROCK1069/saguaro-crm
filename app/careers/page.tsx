@@ -25,6 +25,15 @@ const NAV_LINKS = [
   { label: 'Compare', href: '/compare' },
 ];
 
+/* House display treatment — gold text-shine on ONE key word per heading. */
+const SHINE: React.CSSProperties = {
+  background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  color: 'transparent',
+};
+
 const VALUES = [
   {
     title: 'Ship for the field, not the boardroom',
@@ -132,8 +141,8 @@ export default function CareersPage() {
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.gold }} />
             Careers at Saguaro
           </div>
-          <h1 style={{ fontSize: 'clamp(26px, 4vw, 30px)', fontWeight: 600, lineHeight: 1.2, margin: '0 0 20px', letterSpacing: -0.5 }}>
-            Build the software construction runs on.
+          <h1 style={{ fontSize: 'clamp(30px, 4.6vw, 44px)', fontWeight: 800, lineHeight: 1.12, margin: '0 0 20px', letterSpacing: '-0.02em' }}>
+            Build the software <span style={SHINE}>construction</span> runs on.
           </h1>
           <p style={{ fontSize: 'clamp(15px, 2vw, 17px)', color: C.dim, maxWidth: 600, margin: '0 auto 36px', lineHeight: 1.65 }}>
             We are a small, remote team building the AI-powered platform that runs takeoffs, bids, pay apps, RFIs, and compliance for general contractors. Real product, real users, real ownership.
@@ -275,8 +284,8 @@ export default function CareersPage() {
         {/* Final CTA */}
         <section style={{ padding: '112px 24px', borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(22px, 3vw, 26px)', fontWeight: 600, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: -0.4 }}>
-              Want to see what you'd be building?
+            <h2 style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+              Want to see what you'd be <span style={SHINE}>building</span>?
             </h2>
             <p style={{ fontSize: 16, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
               The best way to understand Saguaro is to use it. Spin up a free account and explore AI takeoff, Sage, pay apps, and the field app firsthand.

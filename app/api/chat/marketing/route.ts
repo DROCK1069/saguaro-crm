@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
 import { getPublicSagePrompt } from '@/lib/sage-prompts';
+import { isSageEngineConfigured, SAGE_ENGINE_UNCONFIGURED_MESSAGE } from '@/lib/sage-brain';
 
 const client = new Anthropic();
 
@@ -32,6 +33,21 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Invalid messages' }, { status: 400 });
     }
 
+    // Honest fallback — never a silent failure or a fake canned answer.
+    if (!isSageEngineConfigured()) {
+      const enc = new TextEncoder();
+      const readable = new ReadableStream({
+        start(controller) {
+          controller.enqueue(enc.encode(`data: ${JSON.stringify({ text: SAGE_ENGINE_UNCONFIGURED_MESSAGE })}\n\n`));
+          controller.enqueue(enc.encode('data: [DONE]\n\n'));
+          controller.close();
+        },
+      });
+      return new Response(readable, {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+      });
+    }
+
     const systemPrompt = [
       getPublicSagePrompt(),
       memoryContext ?? '',
@@ -39,7 +55,7 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean).join('\n\n');
 
     const stream = await client.messages.stream({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 2048,
       system: systemPrompt,
       messages: messages.slice(-20),

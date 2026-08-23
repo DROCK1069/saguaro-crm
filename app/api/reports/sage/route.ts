@@ -17,6 +17,7 @@
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
+import { SAGE_CONDUCT_MANDATE } from '@/lib/sage-prompts';
 import type { Database } from '@/lib/database.types';
 
 // Tables that have a direct project_id column
@@ -80,7 +81,9 @@ interface ReportPlan {
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
-const SAGE_SYSTEM_PROMPT = `You are Sage, Saguaro Control Systems's expert construction data analyst. Given a user's report request, determine what data to query.
+const SAGE_SYSTEM_PROMPT = `${SAGE_CONDUCT_MANDATE}
+
+You are Sage, Saguaro Control Systems's expert construction data analyst. Given a user's report request, determine what data to query.
 
 NOTE: All tables are already filtered by tenant_id and project_id server-side — do NOT include tenant_id or project_id in your filters. Focus on business-logic filters only (status, date ranges, etc.).
 
@@ -329,7 +332,7 @@ function buildSageStream(q: string, projectId?: string, tenantId?: string): Resp
             : `Report request: ${q}`;
 
           const claudeStream = await client.messages.create({
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-5',
             max_tokens: 2000,
             system: SAGE_SYSTEM_PROMPT,
             messages: [{ role: 'user', content: userMessage }],

@@ -8,8 +8,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { humanError } from '@/lib/errors';
-import { Sparkle, PaperPlaneRight, FileText, CaretRight, Question } from '@phosphor-icons/react';
+import { Sparkle, PaperPlaneRight, FileText, CaretRight, Question, GearSix } from '@phosphor-icons/react';
 import { Aurora, PremiumFX, ModuleHero, SectionCard, StatStrip, goldButtonStyle } from '@/components/ui/premium';
+import SageSettings from '@/components/SageSettings';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)';
 const DIM = '#CBD5E1', TEXT = '#FFFFFF', BLUE = '#FBBF24';
@@ -26,6 +27,7 @@ export default function AskDocsPage() {
   const [busy, setBusy] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [err, setErr] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   const { projects: liveProjects } = useProjects();
@@ -63,11 +65,21 @@ export default function AskDocsPage() {
           subtitle="Plain-English answers grounded in this project's real records — RFIs, submittals, daily logs, change orders, safety — with every source cited."
           style={{ marginBottom: 16 }}
           actions={
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} style={{ ...inp, width: 'auto', padding: '9px 11px', fontSize: 14 }}>
-              {projects.length === 0 ? <option value="">No projects yet</option> : projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select value={projectId} onChange={(e) => setProjectId(e.target.value)} style={{ ...inp, width: 'auto', padding: '9px 11px', fontSize: 14 }}>
+                {projects.length === 0 ? <option value="">No projects yet</option> : projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <button
+                onClick={() => setShowSettings(true)}
+                title="Sage settings — style profile, automation rules, activity trail, bid brain"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, color: GOLD, padding: '9px 12px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
+                <GearSix size={15} weight="bold" /> Sage settings
+              </button>
+            </div>
           }
         />
+        {showSettings && <SageSettings onClose={() => setShowSettings(false)} />}
 
         {/* Live session intelligence — what Sage can reach and what it has done */}
         {projects.length > 0 && (

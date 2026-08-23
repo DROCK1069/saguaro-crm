@@ -1,11 +1,21 @@
 'use client';
 import React, { useState } from 'react';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
+import { TRIAL_DAYS } from '@/lib/plans';
 import Link from 'next/link';
 import MarketingNav from '@/components/MarketingNav';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#22c55e';
 const HAIR='rgba(255,255,255,0.08)',CARD='rgba(255,255,255,0.02)';
+
+/* House display treatment — gold text-shine on ONE key word per heading. */
+const SHINE: React.CSSProperties = {
+  background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  color: 'transparent',
+};
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
@@ -127,11 +137,11 @@ export default function SignupPage(){
           {/* Trial badge */}
           <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'6px 14px',background:'transparent',border:'1px solid rgba(255,255,255,0.14)',borderRadius:20,fontSize:12,fontWeight:600,color:DIM,letterSpacing:1,textTransform:'uppercase',marginBottom:28}}>
             <span style={{width:6,height:6,borderRadius:'50%',background:GREEN,display:'inline-block'}}/>
-            30-Day Free Trial — No Credit Card
+            {TRIAL_DAYS}-Day Free Trial — No Credit Card
           </div>
 
-          <h1 style={{fontSize:'clamp(24px,3vw,30px)',fontWeight:600,color:TEXT,lineHeight:1.2,marginBottom:12,letterSpacing:-0.4}}>
-            The fastest way to run your construction company
+          <h1 style={{fontSize:'clamp(26px,3.4vw,36px)',fontWeight:800,color:TEXT,lineHeight:1.15,marginBottom:12,letterSpacing:'-0.02em'}}>
+            The <span style={SHINE}>fastest way</span> to run your construction company
           </h1>
           <p style={{fontSize:15,color:DIM,lineHeight:1.7,marginBottom:40}}>
             Saguaro is a <strong style={{color:TEXT}}>web-based platform</strong> — nothing to download or install on a computer. Sign up, log in from any browser, and your whole team is running in minutes.

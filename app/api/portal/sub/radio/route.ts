@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { signStoredUrl } from '@/lib/storage-signing';
 import { translateRadioMessage } from '@/lib/translate';
 import { transcribeRadioVoice } from '@/lib/transcribe';
+import { stampPresentAtSend, receiptsByMessage } from '@/lib/radio-receipts';
 
 const BUCKET = 'project-files';
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -68,8 +69,11 @@ export async function GET(req: NextRequest) {
     if (after) q = q.gt('created_at', after);
     const { data } = await q.order('created_at', { ascending: after ? true : false }).limit(100);
     const rows = ((data || []) as any[]);
+    // R13 heard-by: subs see who played their own transmissions too.
+    const receiptMap = await receiptsByMessage(a.db, a.session.tenant_id, rows.map((m) => m.id));
     const messages = await Promise.all((after ? rows : rows.reverse()).map(async (m) => ({
       ...m,
+      receipts: receiptMap.get(m.id) ?? [],
       audio_url: m.audio_path ? await signStoredUrl('project-files', m.audio_path, 3600) : null,
       image_url: m.image_path ? await signStoredUrl('project-files', m.image_path, 3600) : null,
     })));
@@ -120,6 +124,7 @@ export async function POST(req: NextRequest) {
           kind: 'image', image_path: path,
         } as never).select().single();
         if (error) throw error;
+        void stampPresentAtSend(a.db, a.session.tenant_id, ch.id, (msg as any)?.id);
         return NextResponse.json({ message: msg }, { status: 201 });
       }
       const { data: msg, error } = await a.db.from('radio_messages').insert({
@@ -130,10 +135,38 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
       // Transcription brain: fire-and-forget (env-gated inside; never blocks the send).
       void transcribeRadioVoice(a.db, (msg as any)?.id, path);
+      void stampPresentAtSend(a.db, a.session.tenant_id, ch.id, (msg as any)?.id);
       return NextResponse.json({ message: msg }, { status: 201 });
     }
 
     const body = await req.json().catch(() => ({}));
+
+    // R13 heard-by: a sub's device finished playing clips — record receipts
+    // under the sub's portal identity. Tolerant pre-063; dedupe via the
+    // partial unique index (insert errors ignored). Own sends never count.
+    if (Array.isArray(body.receiptMessageIds)) {
+      const ids = [...new Set(
+        body.receiptMessageIds.filter((x: unknown) => typeof x === 'string' && x.length > 0 && !String(x).startsWith('local-')).slice(0, 25),
+      )] as string[];
+      let stored = 0;
+      if (ids.length) {
+        const { data: msgs } = await a.db.from('radio_messages')
+          .select('id, tenant_id, channel_id, sender_portal_sub_id').in('id', ids);
+        for (const m of ((msgs || []) as any[])) {
+          if (m.tenant_id !== a.session.tenant_id || m.channel_id !== ch.id) continue;
+          if (m.sender_portal_sub_id === a.session.sub_id) continue;
+          try {
+            const { error } = await a.db.from('radio_receipts').insert({
+              tenant_id: a.session.tenant_id, channel_id: ch.id, message_id: m.id,
+              portal_sub_id: a.session.sub_id, display_name: sender, action: 'played',
+            } as never);
+            if (!error) stored += 1;
+          } catch { /* tolerant: receipts never fail the caller */ }
+        }
+      }
+      return NextResponse.json({ ok: true, stored });
+    }
+
     const text = String(body.body || '').trim();
     if (!text) return NextResponse.json({ error: 'body required' }, { status: 400 });
     const { data: msg, error } = await a.db.from('radio_messages').insert({
@@ -143,6 +176,7 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
     // Translation brain: fire-and-forget (env-gated inside; never blocks the send).
     void translateRadioMessage(a.db, (msg as any)?.id, text);
+    void stampPresentAtSend(a.db, a.session.tenant_id, ch.id, (msg as any)?.id);
     return NextResponse.json({ message: msg }, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

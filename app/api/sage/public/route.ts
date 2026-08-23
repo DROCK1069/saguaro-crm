@@ -26,6 +26,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Honest fallback — never a silent failure or a fake canned answer.
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json({
+        response:
+          "Sage's reasoning engine isn't configured yet on this server (missing ANTHROPIC_API_KEY). An administrator needs to add the key before Sage can respond.",
+      });
+    }
+
     const systemPrompt = buildSagePublicPromptV6();
 
     const client = new Anthropic();

@@ -12,6 +12,8 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { humanError } from '@/lib/errors';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -66,6 +68,24 @@ const STATUS_COLORS: Record<string, string> = {
 function statusColor(status?: string | null): string {
   const key = (status ?? 'draft').toLowerCase();
   return STATUS_COLORS[key] ?? colors.textDim;
+}
+
+/** Edit-form snapshot of an invoice — used both to seed the modal and as the
+ *  clean baseline for the unsaved-work guard. */
+function formFromInvoice(inv: Invoice) {
+  return {
+    invoice_number: inv.invoice_number ?? '',
+    vendor_name: inv.vendor_name ?? '',
+    vendor_email: inv.vendor_email ?? '',
+    description: inv.description ?? '',
+    category: inv.category ?? '',
+    cost_code: inv.cost_code ?? '',
+    amount: inv.amount != null ? String(inv.amount) : '',
+    tax: inv.tax != null ? String(inv.tax) : '',
+    due_date: inv.due_date ? inv.due_date.slice(0, 10) : '',
+    status: (inv.status ?? 'draft').toLowerCase(),
+    notes: inv.notes ?? '',
+  };
 }
 
 function money(v: number | null | undefined): string {
@@ -171,24 +191,32 @@ export default function InvoiceDetailPage() {
 
   function openEdit() {
     if (!invoice) return;
-    setForm({
-      invoice_number: invoice.invoice_number ?? '',
-      vendor_name: invoice.vendor_name ?? '',
-      vendor_email: invoice.vendor_email ?? '',
-      description: invoice.description ?? '',
-      category: invoice.category ?? '',
-      cost_code: invoice.cost_code ?? '',
-      amount: invoice.amount != null ? String(invoice.amount) : '',
-      tax: invoice.tax != null ? String(invoice.tax) : '',
-      due_date: invoice.due_date ? invoice.due_date.slice(0, 10) : '',
-      status: (invoice.status ?? 'draft').toLowerCase(),
-      notes: invoice.notes ?? '',
-    });
+    setForm(formFromInvoice(invoice));
     setEditing(true);
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  /* ── Unsaved-work protection (R14): dirty when the edit modal's fields
+   *    differ from the loaded invoice; draft autosaves per invoice id. ── */
+  const editDirty = editing && !!invoice && JSON.stringify(form) !== JSON.stringify(formFromInvoice(invoice));
+  const guard = useUnsavedGuard({
+    dirty: editDirty,
+    draftKey: `invoice:${id}`,
+    draftData: form,
+    draftEnabled: !loading && !!invoice,
+    restoreDraft: (d) => {
+      setForm(f => ({ ...f, ...(d as Partial<typeof form>) }));
+      setEditing(true);
+    },
+    onSave: () => submitSave(),
+  });
+
+  /** Close the edit modal through the guard — clean closes immediately,
+   *  dirty asks Save / Discard / Stay first. */
+  function closeEdit() {
+    guard.requestClose(() => setEditing(false));
+  }
+
+  async function submitSave(): Promise<boolean> {
     setBusy('save');
     try {
       const amountNum = form.amount ? parseFloat(form.amount) : null;
@@ -217,11 +245,18 @@ export default function InvoiceDetailPage() {
       setInvoice(data.invoice ?? data);
       setEditing(false);
       showToast('Invoice updated');
+      return true;
     } catch (e: any) {
       console.error(e); showToast(humanError(e, 'Update failed. Please try again.'), colors.red);
+      return false;
     } finally {
       setBusy('');
     }
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (await submitSave()) guard.clearDraft();
   }
 
   async function handleSend() {
@@ -349,7 +384,7 @@ export default function InvoiceDetailPage() {
       <PremiumSurface maxWidth={1100}>
       {/* Back link */}
       <button
-        onClick={() => router.push('/app/invoicing')}
+        onClick={() => guard.requestLeave('/app/invoicing')}
         style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: font.size.md, cursor: 'pointer', padding: 0, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}
       >
         <ArrowLeft size={14} /> Invoicing
@@ -541,12 +576,12 @@ export default function InvoiceDetailPage() {
       {editing && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={(e) => { if (e.target === e.currentTarget) setEditing(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}
         >
           <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, width: '100%', maxWidth: 600, maxHeight: '85vh', overflow: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,.6)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: colors.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: font.size.xl, fontWeight: font.weight.black, color: colors.text }}>Edit Invoice</h2>
-              <button onClick={() => setEditing(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', display: 'flex' }}>
+              <button onClick={closeEdit} style={{ background: 'none', border: 'none', color: colors.textMuted, cursor: 'pointer', display: 'flex' }}>
                 <XIcon size={20} />
               </button>
             </div>
@@ -605,7 +640,7 @@ export default function InvoiceDetailPage() {
                 <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Internal notes..." />
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setEditing(false)} style={{ padding: '10px 20px', background: 'none', border: `1px solid ${colors.border}`, borderRadius: radius.lg, color: colors.textMuted, fontSize: font.size.md, fontWeight: font.weight.semibold, cursor: 'pointer' }}>Cancel</button>
+                <button type="button" onClick={closeEdit} style={{ padding: '10px 20px', background: 'none', border: `1px solid ${colors.border}`, borderRadius: radius.lg, color: colors.textMuted, fontSize: font.size.md, fontWeight: font.weight.semibold, cursor: 'pointer' }}>Cancel</button>
                 <button type="submit" disabled={busy === 'save'} style={{ padding: '10px 24px', background: colors.gold, border: 'none', borderRadius: radius.lg, color: colors.dark, fontSize: font.size.md, fontWeight: font.weight.black, cursor: busy === 'save' ? 'not-allowed' : 'pointer', opacity: busy === 'save' ? 0.6 : 1 }}>
                   {busy === 'save' ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -614,6 +649,8 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       )}
+
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

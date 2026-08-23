@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { COMPETITORS } from '@/lib/competitors';
 import { IntegrationStrip } from '@/components/Integrations';
 import MarketingNav from '@/components/MarketingNav';
+import { STARTING_PRICE_MO, STARTING_PRICE_FLAT } from '@/lib/plans';
 
 export const metadata: Metadata = {
   title: 'Saguaro vs Every Construction Software — Full Comparisons',
@@ -23,6 +25,15 @@ const BORDER = 'rgba(255,255,255,0.08)';
 const PILL = 'rgba(255,255,255,0.14)';
 const CARD = 'rgba(255,255,255,0.02)';
 const GREEN = '#22c55e';
+
+/* House display treatment — gold text-shine on ONE key word per heading. */
+const SHINE: CSSProperties = {
+  background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  color: 'transparent',
+};
 
 export default function ComparePage() {
   const competitors = Object.values(COMPETITORS);
@@ -48,12 +59,10 @@ export default function ComparePage() {
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, display: 'inline-block' }} />
             Head-to-head comparisons
           </div>
-          <h1 style={{ fontSize: 'clamp(26px, 4vw, 30px)', fontWeight: 600, lineHeight: 1.15, margin: '0 0 18px', letterSpacing: -0.5 }}>
+          <h1 style={{ fontSize: 'clamp(30px, 4.6vw, 44px)', fontWeight: 800, lineHeight: 1.12, margin: '0 0 18px', letterSpacing: '-0.02em' }}>
             Saguaro vs. every construction
             <br />
-            <span style={{ color: TEXT }}>
-              software tool — compared
-            </span>
+            software tool — <span style={SHINE}>compared</span>
           </h1>
           <p style={{ fontSize: 'clamp(15px, 2vw, 17px)', color: DIM, maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.65 }}>
             We don&apos;t hide from comparisons. See exactly how we stack up against every major competitor.
@@ -89,7 +98,7 @@ export default function ComparePage() {
                   Saguaro vs. Procore
                 </h2>
                 <p style={{ fontSize: 16, color: DIM, margin: '0 0 24px', lineHeight: 1.5 }}>
-                  Procore starts at $375–600/mo+ per seat with a 3–6 month implementation. Saguaro is $499/mo flat for your whole team, live today.
+                  Procore starts at $375–600/mo+ per seat with a 3–6 month implementation. Saguaro is {STARTING_PRICE_FLAT} for your whole team, live today.
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                   {['AI Takeoff Included', 'Lien Waivers All 50 States', 'Certified Payroll WH-347', 'Flat Rate Pricing', 'Go Live Today'].map((feat) => (
@@ -107,7 +116,7 @@ export default function ComparePage() {
               }}>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 13, color: DIM, marginBottom: 4 }}>Saguaro starting price</div>
-                  <div style={{ fontSize: 32, fontWeight: 600, color: TEXT }}>$499/mo</div>
+                  <div style={{ fontSize: 32, fontWeight: 600, color: TEXT }}>{STARTING_PRICE_MO}</div>
                   <div style={{ fontSize: 13, color: DIM }}>vs Procore $375–600+/mo per seat</div>
                 </div>
                 <div style={{
@@ -186,8 +195,8 @@ export default function ComparePage() {
           textAlign: 'center',
         }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(22px, 3vw, 26px)', fontWeight: 600, color: TEXT, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: -0.4 }}>
-              Ready to see why GCs are switching?
+            <h2 style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', fontWeight: 800, color: TEXT, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+              Ready to see why GCs are <span style={SHINE}>switching</span>?
             </h2>
             <p style={{ fontSize: 16, color: DIM, margin: '0 0 36px', lineHeight: 1.6 }}>
               Start free — no credit card required. Go live today, not in 3 months.

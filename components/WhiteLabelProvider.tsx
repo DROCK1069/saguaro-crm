@@ -48,7 +48,7 @@ export default function WhiteLabelProvider({ children }: { children: React.React
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       try {
         const res = await fetch('/api/branding/tenant');
         if (!res.ok) return;
@@ -71,8 +71,17 @@ export default function WhiteLabelProvider({ children }: { children: React.React
       } catch {
         // Silently keep Saguaro defaults.
       }
-    })();
-    return () => { cancelled = true; };
+    };
+    load();
+
+    // Settings → Branding dispatches this after a successful save/upload so the
+    // sidebar lockup refreshes instantly — no hard reload needed.
+    const onBrandingUpdated = () => { load(); };
+    window.addEventListener('saguaro:branding-updated', onBrandingUpdated);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('saguaro:branding-updated', onBrandingUpdated);
+    };
   }, []);
 
   return (

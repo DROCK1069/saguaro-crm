@@ -125,6 +125,8 @@ export default function SubPortal(){
   const radioFeedRef=useRef<HTMLDivElement>(null);
   const radioIdsRef=useRef<Set<string>>(new Set());
   const radioPrimedRef=useRef(false);
+  /* R13 heard-by: one play receipt per clip per session (server dedupes across sessions). */
+  const radioReceiptSentRef=useRef<Set<string>>(new Set());
   const [radioFlashIds,setRadioFlashIds]=useState<Set<string>>(new Set());
   const startRadioRecRef=useRef<()=>void>(()=>{});
   const stopRadioRecRef=useRef<()=>void>(()=>{});
@@ -1126,7 +1128,7 @@ export default function SubPortal(){
                     {m.kind==='voice'?(
                       <div>
                         <RadioWave seed={String(m.id||'')} color={mine?GOLD:DIM}/>
-                        {m.audio_url?<audio controls preload="none" src={m.audio_url} style={{width:230,maxWidth:'100%',height:36,display:'block'}}/>:<div style={{fontSize:12,color:DIM}}>Voice message</div>}
+                        {m.audio_url?<audio controls preload="none" src={m.audio_url} onPlay={()=>{if(mine||!m.id||radioReceiptSentRef.current.has(m.id))return;radioReceiptSentRef.current.add(m.id);fetch(`/api/portal/sub/radio?token=${token}`,{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({receiptMessageIds:[m.id]})}).catch(()=>{});}} style={{width:230,maxWidth:'100%',height:36,display:'block'}}/>:<div style={{fontSize:12,color:DIM}}>Voice message</div>}
                         <div style={{fontSize:10,color:DIM,marginTop:4}}>{m.audio_duration_secs?`${m.audio_duration_secs}s voice`:'voice'}</div>
                         {(t[radioLang]||m.transcript)&&(
                           <div style={{fontSize:12,color:DIM,marginTop:6,lineHeight:1.5,fontStyle:t[radioLang]?'normal':'italic',borderLeft:`2px solid ${BORDER}`,paddingLeft:8}}>

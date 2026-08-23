@@ -1,5 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { humanError } from '@/lib/errors';
 import { toCents, toDollars, extend, sumCents, scaleCents, percentOf, addCents } from '@/lib/calc';
 import { CSI_DIVISIONS as CANONICAL_CSI_DIVISIONS } from '@/lib/construction-intelligence';
@@ -8,6 +10,8 @@ import { SkeletonRow } from '@/components/ui/Skeleton';
 import { Calculator, WarningCircle, PencilSimple, Percent, CopySimple, Trash, StackSimple, GitDiff, ClockCounterClockwise, Gavel, FolderSimple } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
+import NudgeRing from '@/components/intelligence/NudgeRing';
+import { ANCHOR_TAKEOFF_ESTIMATE } from '@/lib/suggestions';
 
 /* ─── Colors ────────────────────────────────────────────────────────── */
 const EST    = moduleAccent('estimates'); // copper — eyebrow/chips/rails only; money stays gold
@@ -324,6 +328,48 @@ export default function EstimateBuilderPage() {
     }, 600);
     return () => clearTimeout(timer);
   }, []);
+
+  /* ─── Unsaved-work protection (R14) ─────────────────────────────── */
+  // The whole estimate lives in browser state — navigating away used to lose
+  // every line item. Dirty once any content exists; the full workspace
+  // autosaves as a local draft and restores (with a toast) on return.
+  const DEFAULT_MARKUP = '{"overheadPct":10,"profitPct":8,"contingencyPct":5,"bondPct":1.5,"taxPct":8.25}';
+  const estimateDirty = !loading && (
+    divisions.some(d => d.items.length > 0) ||
+    alternates.length > 0 || allowances.length > 0 || bidAdjustments.length > 0 ||
+    versions.length > 0 || templates.length > 0 ||
+    estimateName !== 'New Estimate' ||
+    JSON.stringify(markup) !== DEFAULT_MARKUP
+  );
+  interface EstimateDraft {
+    estimateName: string; divisions: Division[]; markup: MarkupConfig;
+    alternates: Alternate[]; allowances: Allowance[]; bidAdjustments: BidDayAdjustment[];
+    versions: EstimateVersion[]; templates: EstimateTemplate[]; linkedTakeoffId: string | null;
+  }
+  const estimateDraft = useMemo<EstimateDraft>(() => ({
+    estimateName, divisions, markup, alternates, allowances, bidAdjustments, versions, templates, linkedTakeoffId,
+  }), [estimateName, divisions, markup, alternates, allowances, bidAdjustments, versions, templates, linkedTakeoffId]);
+  const guard = useUnsavedGuard<EstimateDraft>({
+    dirty: estimateDirty,
+    draftKey: 'estimate-builder',
+    draftData: estimateDraft,
+    draftEnabled: !loading,
+    restoreDraft: (d) => {
+      if (!d || !Array.isArray(d.divisions)) return;
+      setEstimateName(d.estimateName ?? 'New Estimate');
+      setDivisions(d.divisions);
+      if (d.markup) setMarkup(d.markup);
+      setAlternates(Array.isArray(d.alternates) ? d.alternates : []);
+      setAllowances(Array.isArray(d.allowances) ? d.allowances : []);
+      setBidAdjustments(Array.isArray(d.bidAdjustments) ? d.bidAdjustments : []);
+      setVersions(Array.isArray(d.versions) ? d.versions : []);
+      setTemplates(Array.isArray(d.templates) ? d.templates : []);
+      setLinkedTakeoffId(d.linkedTakeoffId ?? null);
+    },
+    // No onSave: "Save to takeoff" appends line items server-side, so an
+    // automatic save-on-leave could double-post rows. The local draft keeps
+    // the workspace safe either way.
+  });
 
   /* ─── Computed ──────────────────────────────────────────────────── */
   // Whole markup/total chain in exact integer cents (see @/lib/calc), then surfaced as dollars.
@@ -1367,13 +1413,21 @@ export default function EstimateBuilderPage() {
         ))}
       </div>
 
-      {/* Tab Content */}
-      {tab === 'estimate' && renderEstimateTab()}
+      {/* Tab Content — the estimate tab (home of "Import from Takeoff") rides a
+          NudgeRing: it pulses when the suggestion engine flags completed
+          takeoffs whose priced value never became an estimate. */}
+      {tab === 'estimate' && (
+        <NudgeRing anchorId={ANCHOR_TAKEOFF_ESTIMATE}>
+          {renderEstimateTab()}
+        </NudgeRing>
+      )}
       {tab === 'assemblies' && renderAssembliesTab()}
       {tab === 'compare' && renderCompareTab()}
       {tab === 'history' && renderHistoryTab()}
       {tab === 'bidday' && renderBidDayTab()}
       {tab === 'templates' && renderTemplatesTab()}
+
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

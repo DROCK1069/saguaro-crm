@@ -20,7 +20,9 @@ export type LearningKind =
   | 'sub_suggested'        // usage-ranked sub suggestion served/accepted
   | 'context_prefill'      // create form seeded from project-context
   | 'ai_extract'           // voice/AI extraction filled a form
-  | 'catalog_best_price';  // best-price PO issued from the catalog
+  | 'catalog_best_price'   // best-price PO issued from the catalog
+  | 'suggestion_accepted'  // suggestion-feed deep link followed (engine found it first)
+  | 'suggestion_dismissed';// suggestion dismissed — suppressed on recompute for 30 days
 
 /** Conservative manual-effort estimates (seconds) per automation. */
 export const SAVED_SECONDS: Record<LearningKind, number> = {
@@ -31,6 +33,8 @@ export const SAVED_SECONDS: Record<LearningKind, number> = {
   context_prefill: 45,
   ai_extract: 240,
   catalog_best_price: 300, // calling vendors for pricing
+  suggestion_accepted: 120, // combing the module to spot the same issue yourself
+  suggestion_dismissed: 0,  // no time saved — recorded so the feed stops re-surfacing it
 };
 
 export async function recordLearning(

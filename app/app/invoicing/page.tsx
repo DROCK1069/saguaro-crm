@@ -5,15 +5,18 @@
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
-import { useRouter } from 'next/navigation';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Plus, CurrencyDollar, PaperPlaneTilt, Trash, Warning, Receipt, FilePdf } from '@phosphor-icons/react';
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, IconChip, Pill, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
+import NudgeRing from '@/components/intelligence/NudgeRing';
+import { ANCHOR_INVOICES_OVERDUE } from '@/lib/suggestions';
 
 interface Invoice {
   id: string;
@@ -85,7 +88,6 @@ function isOverdue(i: { due_date?: string | null; status?: string | null }): boo
 }
 
 export default function InvoicingPage() {
-  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,9 +173,30 @@ export default function InvoicingPage() {
       .catch(() => {});
   }, [fetchInvoices]);
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.project_id || !form.vendor_name) return;
+  /* ── Unsaved-work protection (R14): dirty once anything is typed in the
+   *    composer; draft autosaves to this device and restores on return. ── */
+  const formDirty = showCreate && (
+    !!form.project_id || !!form.vendor_name || !!form.invoice_number || !!form.vendor_email ||
+    !!form.description || !!form.category || !!form.cost_code || !!form.amount || !!form.tax ||
+    !!form.due_date || !!form.notes
+  );
+  const guard = useUnsavedGuard({
+    dirty: formDirty,
+    draftKey: 'invoice-create',
+    draftData: form,
+    restoreDraft: (d) => {
+      setForm(f => ({ ...f, ...(d as Partial<typeof form>) }));
+      setShowCreate(true);
+    },
+    onSave: () => submitCreate(),
+  });
+
+  /** POST the composer — shared by the form submit and the guard's "Save & leave". */
+  async function submitCreate(): Promise<boolean> {
+    if (!form.project_id || !form.vendor_name) {
+      setError('Project and vendor name are required before the invoice can be saved.');
+      return false;
+    }
     setCreating(true);
     try {
       const res = await fetch('/api/invoices/create', {
@@ -201,12 +224,28 @@ export default function InvoicingPage() {
       setShowCreate(false);
       setForm({ project_id: '', vendor_name: '', invoice_number: '', vendor_email: '', description: '', category: '', cost_code: '', amount: '', tax: '', due_date: '', status: 'draft', notes: '' });
       await fetchInvoices();
+      return true;
     } catch (e: any) {
       console.error(e);
       setError(humanError(e, "Couldn't create the invoice. Please try again."));
+      return false;
     } finally {
       setCreating(false);
     }
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (await submitCreate()) guard.clearDraft();
+  }
+
+  /** Every close path (Close / Cancel / hero toggle) runs through the guard:
+   *  clean closes immediately, dirty asks Save / Discard / Stay first. */
+  function closeComposer() {
+    guard.requestClose(() => {
+      setShowCreate(false);
+      setForm({ project_id: '', vendor_name: '', invoice_number: '', vendor_email: '', description: '', category: '', cost_code: '', amount: '', tax: '', due_date: '', status: 'draft', notes: '' });
+    });
   }
 
   async function handleDelete(id: string) {
@@ -350,7 +389,7 @@ export default function InvoicingPage() {
         title="Invoicing"
         subtitle="Manage invoices, track payments, and send to vendors."
         actions={
-          <button onClick={() => setShowCreate(v => !v)} style={goldButtonStyle} className="pmBtn">
+          <button onClick={() => (showCreate ? closeComposer() : setShowCreate(true))} style={goldButtonStyle} className="pmBtn">
             <Plus size={15} weight="bold" /> New Invoice
           </button>
         }
@@ -379,7 +418,7 @@ export default function InvoicingPage() {
             title="New Invoice"
             icon={<Plus size={17} weight="bold" color="#F59E0B" />}
             subtitle="The server computes the total — amount + tax, every time."
-            action={<button type="button" onClick={() => setShowCreate(false)} style={{ ...ghostButtonStyle, padding: '7px 14px', fontSize: 12.5 }} className="pmBtn">Close</button>}
+            action={<button type="button" onClick={closeComposer} style={{ ...ghostButtonStyle, padding: '7px 14px', fontSize: 12.5 }} className="pmBtn">Close</button>}
           >
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
               {ctx && (
@@ -479,7 +518,7 @@ export default function InvoicingPage() {
                 <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Internal notes..." />
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowCreate(false)} style={ghostButtonStyle}>Cancel</button>
+                <button type="button" onClick={closeComposer} style={ghostButtonStyle}>Cancel</button>
                 <button type="submit" disabled={creating} className="pmBtn" style={{ ...goldButtonStyle, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.6 : 1 }}>
                   {creating ? 'Creating...' : 'Create Invoice'}
                 </button>
@@ -512,16 +551,21 @@ export default function InvoicingPage() {
         </div>
       )}
 
-      {/* All invoices — DataTable rides its own machined .pmTable plate */}
-      <DataTable
-        data={invoices}
-        columns={columns}
-        loading={loading}
-        searchPlaceholder="Search invoices..."
-        emptyMessage="No invoices yet. Create your first invoice to get started."
-        onRowClick={(row) => router.push(`/app/invoicing/${row.id}`)}
-      />
+      {/* All invoices — DataTable rides its own machined .pmTable plate.
+          NudgeRing pulses this section when the suggestion engine flags
+          overdue invoices (ticker deep-links land on this anchor). */}
+      <NudgeRing anchorId={ANCHOR_INVOICES_OVERDUE}>
+        <DataTable
+          data={invoices}
+          columns={columns}
+          loading={loading}
+          searchPlaceholder="Search invoices..."
+          emptyMessage="No invoices yet. Create your first invoice to get started."
+          onRowClick={(row) => guard.requestLeave(`/app/invoicing/${row.id}`)}
+        />
+      </NudgeRing>
     </PremiumSurface>
+    <UnsavedGuardModal guard={guard} />
     </>
   );
 }

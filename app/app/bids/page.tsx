@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { WarningCircle, Brain, ChartBar, ArrowRight, Tray, CaretDown, PencilSimple, Clipboard, ChatCircle, Trash, CheckCircle, XCircle, Clock, Robot, X, Users, CalendarBlank, CurrencyDollar, Gavel, Plus, TrendUp } from '@phosphor-icons/react';
 import { useProjects } from '@/lib/hooks/useProjects';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
@@ -133,6 +135,34 @@ function BidsPageInner() {
   // Hidden richer inputs the auto-fill supplies (used by submitScore + hints).
   const [scoreMeta, setScoreMeta] = useState<{location?:string;dueDate?:string|null;ownerName?:string;projectType?:string;valueSource?:string|null;historyHint?:string}>({});
 
+  /* ── Unsaved-work protection (R14): dirty once the score form has content
+   *    and no result yet (scoring persists the bid, so a result = saved). ── */
+  const scoreDirty = showScore && !scoreResult && (
+    !!scoreForm.projectName || !!scoreForm.bidAmount || !!scoreForm.margin || !!scoreForm.tradeType || !!scoreForm.notes
+  );
+  const scoreDraft = useMemo(() => ({ scoreForm, scoreMeta, pickProject }), [scoreForm, scoreMeta, pickProject]);
+  const guard = useUnsavedGuard({
+    dirty: scoreDirty,
+    draftKey: 'bid-score',
+    draftData: scoreDraft,
+    restoreDraft: (d) => {
+      const v = d as Partial<typeof scoreDraft>;
+      if (!v || !v.scoreForm) return;
+      setScoreForm(f => ({ ...f, ...v.scoreForm }));
+      if (v.scoreMeta) setScoreMeta(v.scoreMeta);
+      if (v.pickProject) setPickProject(v.pickProject);
+      setShowScore(true);
+    },
+    onSave: () => submitScore(),
+  });
+
+  /** Close the score modal through the guard — clean closes immediately,
+   *  dirty asks Save / Discard / Stay first. */
+  function closeScore() {
+    guard.requestClose(() => {
+      setShowScore(false); setScoreResult(null); setScoreError(null); setPickProject(''); setScoreMeta({});
+    });
+  }
 
   async function autofillFromProject(id: string) {
     setPickProject(id);
@@ -300,8 +330,11 @@ function BidsPageInner() {
     return 'BID WITH CAUTION — review scope';
   }
 
-  async function submitScore() {
-    if (!scoreForm.projectName || !scoreForm.bidAmount) return;
+  async function submitScore(): Promise<boolean> {
+    if (!scoreForm.projectName || !scoreForm.bidAmount) {
+      setScoreError('Project name and bid amount are required to score.');
+      return false;
+    }
     setScoring(true);
     setScoreResult(null);
     setScoreError(null);
@@ -327,7 +360,7 @@ function BidsPageInner() {
       if (!r.ok) {
         // No silent heuristic fallback — surface the real failure so the user can retry.
         setScoreError(d.error || 'Scoring failed. Please try again.');
-        return;
+        return false;
       }
       const label = recLabel(d.recommendation);
       setScoreResult({
@@ -339,8 +372,11 @@ function BidsPageInner() {
       // there, and reset the History fetch guard so a switch reloads fresh data.
       setHistoryBids([]);
       if (tab === 'history') fetchHistory(historyFilter === 'all' ? undefined : historyFilter);
+      guard.clearDraft();
+      return true;
     } catch {
       setScoreError('Network error — could not reach the scoring service. Please try again.');
+      return false;
     } finally {
       setScoring(false);
     }
@@ -688,7 +724,7 @@ function BidsPageInner() {
         <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:14,padding:28,width:480,maxWidth:'95vw',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
             <div style={{fontWeight:800,fontSize:17,color:TEXT,display:'inline-flex',alignItems:'center',gap:8}}><Robot size={18} weight="regular" />Score This Bid</div>
-            <button onClick={()=>{setShowScore(false);setScoreResult(null);setScoreError(null);setPickProject('');setScoreMeta({});}} style={{background:'none',border:'none',color:DIM,fontSize:20,cursor:'pointer',lineHeight:1}}><X size={20} weight="regular" /></button>
+            <button onClick={closeScore} style={{background:'none',border:'none',color:DIM,fontSize:20,cursor:'pointer',lineHeight:1}}><X size={20} weight="regular" /></button>
           </div>
           {scoreResult ? (
             <div>
@@ -761,12 +797,14 @@ function BidsPageInner() {
                 <button onClick={submitScore} disabled={scoring||!scoreForm.projectName||!scoreForm.bidAmount} style={{flex:1,padding:'10px 18px',background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-md)',color:'#1C1C1E',fontSize:13,fontWeight:800,cursor:'pointer',boxShadow:'0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',opacity:scoring||!scoreForm.projectName||!scoreForm.bidAmount?0.6:1}}>
                   {scoring?'Scoring…':<span style={{display:'inline-flex',alignItems:'center',gap:6}}><Robot size={14} weight="regular" />Score This Bid</span>}
                 </button>
-                <button onClick={()=>{setShowScore(false);setPickProject('');setScoreMeta({});}} style={{padding:'10px 16px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
+                <button onClick={closeScore} style={{padding:'10px 16px',background:DARK,border:`1px solid ${BORDER}`,borderRadius:7,color:DIM,fontSize:13,cursor:'pointer'}}>Cancel</button>
               </div>
             </div>
           )}
         </div>
       </div>}
+
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

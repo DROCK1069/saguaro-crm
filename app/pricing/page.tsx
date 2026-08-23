@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { IntegrationStrip } from '@/components/Integrations';
 import MarketingNav from '@/components/MarketingNav';
+import { PLANS, PLAN_ADDONS, ONE_TIME_SERVICES, FEATURE_MATRIX, TRIAL_DAYS, PRICE_RANGE, SALES_EMAIL, STARTER, PROFESSIONAL, MAX_ANNUAL_SAVINGS } from '@/lib/plans';
 
 const C = {
   dark: '#0B0B0F',
@@ -28,207 +29,6 @@ const NAV_LINKS = [
   { label: 'Compare', href: '/compare' },
 ];
 
-const PLANS = [
-  {
-    name: 'Starter',
-    price_mo: 499,
-    price_yr: 449,
-    tagline: 'For small GCs getting off spreadsheets',
-    popular: false,
-    cta: 'Start Free Trial',
-    cta_href: '/signup',
-    highlight: 'Best for 1–5 person teams',
-    features: [
-      'Unlimited users — no per-seat fees',
-      'Up to 15 active projects',
-      'Saguaro Radio — base radio included free',
-      'AI Takeoff — Takeoff Studio included',
-      'Pay Applications G702/G703',
-      'Lien Waivers — all 50 states',
-      'Basic RFI & Change Orders',
-      'Mobile Field App (Saguaro Control Systems)',
-      'Free migration from any platform',
-      'Email support (48hr response)',
-    ],
-    not_included: [
-      'Certified Payroll WH-347',
-      'ACORD 25 Insurance Tracker',
-      'Owner & Sub Portals',
-      'Bid Intelligence',
-      'White Label',
-      'API Integrations',
-    ],
-  },
-  {
-    name: 'Professional',
-    price_mo: 750,
-    price_yr: 650,
-    tagline: 'For growing GCs managing multiple projects',
-    popular: true,
-    cta: 'Start Free Trial',
-    cta_href: '/signup',
-    highlight: 'Best for 5–50 person teams',
-    features: [
-      'Unlimited active projects',
-      'Unlimited users',
-      'Saguaro Radio — base radio included free',
-      'AI Takeoff — Takeoff Studio included',
-      'All AIA Documents (G702–G706, A310, A312)',
-      'All 4 Lien Waiver types — all 50 states',
-      'Certified Payroll WH-347 + DOL wage lookup',
-      'ACORD 25 Insurance Tracker + COI Parser',
-      'OSHA 300 Log',
-      'Preliminary Notices AZ/CA/TX',
-      'Owner & Sub Portals',
-      'Autopilot RFI/CO automation',
-      'Bid Intelligence + Jacket Generator',
-      'Free migration from any platform',
-      'Priority chat + email support (4hr response)',
-    ],
-    not_included: [
-      'White Label your brand/domain',
-      'Custom API integrations',
-      'SAML SSO',
-      'Dedicated account manager',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    price_mo: 0,
-    price_yr: 0,
-    tagline: 'For ENR 400 firms, large GCs & resellers',
-    popular: false,
-    cta: 'Contact Sales',
-    cta_href: 'mailto:sales@saguarocontrol.net',
-    highlight: 'Custom pricing for 50+ person firms',
-    features: [
-      'Everything in Professional',
-      'White Label your brand/domain',
-      'Unlimited sandbox accounts',
-      'Custom API integrations',
-      'QuickBooks sync',
-      'Dedicated account manager',
-      'SLA — 99.9% uptime guarantee',
-      'Custom contract & invoicing',
-      'SAML SSO',
-      'Custom onboarding + training',
-      'Free migration — we handle everything',
-      'Phone support + 1hr response SLA',
-    ],
-    not_included: [],
-  },
-];
-
-const ADDONS: {
-  name: string; price: string; per?: string; service?: boolean;
-  description: string; available: string; mailSubject: string;
-}[] = [
-  {
-    name: 'Saguaro Radio — Live Streaming',
-    price: 'Contact us',
-    description: 'Ultra-low-latency live voice for your crews — full-duplex channels instead of store-and-forward clips. Base radio is included free on every plan.',
-    available: 'All plans',
-    mailSubject: 'Saguaro Radio Live Streaming add-on',
-  },
-  {
-    name: 'QuickBooks Sync',
-    price: '$99', per: '/mo',
-    description: 'Bidirectional sync of budgets, pay apps, and change orders with QuickBooks.',
-    available: 'Starter, Professional — included in Enterprise',
-    mailSubject: 'QuickBooks Sync add-on',
-  },
-  {
-    name: 'API Access',
-    price: '$149', per: '/mo',
-    description: 'Full REST API + webhooks. Build custom integrations with your tech stack.',
-    available: 'Starter, Professional — included in Enterprise',
-    mailSubject: 'API Access add-on',
-  },
-  {
-    name: 'White Label',
-    price: '$299', per: '/mo',
-    description: 'Your own brand, logo, and custom domain — on the platform and on every PDF it generates.',
-    available: 'Starter, Professional — included in Enterprise',
-    mailSubject: 'White Label add-on',
-  },
-  {
-    name: 'Priority Support',
-    price: '$300', per: '/mo', service: true,
-    description: 'Live chat + email with 4hr response. Dedicated support agent for your account.',
-    available: 'Starter — included in Professional and Enterprise',
-    mailSubject: 'Priority Support add-on',
-  },
-  {
-    name: 'Dedicated CSM',
-    price: '$299', per: '/mo', service: true,
-    description: 'Named Customer Success Manager. Phone support, weekly check-ins, 1hr SLA.',
-    available: 'Starter, Professional — included in Enterprise',
-    mailSubject: 'Dedicated CSM add-on',
-  },
-];
-
-const SERVICES = [
-  {
-    name: 'Free Migration',
-    price: 0,
-    label: 'FREE',
-    description: 'We migrate all your projects, contacts, documents, and history from any platform or spreadsheet. Done in 1 business day.',
-    highlight: true,
-  },
-  {
-    name: 'Guided Onboarding',
-    price: 1200,
-    label: '$1,200',
-    description: 'Hands-on 3-hour setup session with a Saguaro specialist. Configure your company, import your templates, and train your team.',
-    highlight: false,
-  },
-  {
-    name: 'Custom Training',
-    price: 299,
-    label: '$299/session',
-    description: '2-hour live training session for your team. Field app, takeoff, pay apps, or any workflow. Remote or on-site (travel extra).',
-    highlight: false,
-  },
-  {
-    name: 'Template Build-Out',
-    price: 399,
-    label: '$399',
-    description: 'We build your custom bid templates, pay app headers, lien waiver forms, and company documents — ready on day one.',
-    highlight: false,
-  },
-];
-
-const COMPARISON_FEATURES: { label: string; starter: boolean | string; pro: boolean | string; ent: boolean | string }[] = [
-  { label: 'Active Projects', starter: '15', pro: 'Unlimited', ent: 'Unlimited' },
-  { label: 'Users / Seats', starter: 'Unlimited', pro: 'Unlimited', ent: 'Unlimited' },
-  { label: 'Saguaro Radio — base', starter: 'Free', pro: 'Free', ent: 'Free' },
-  { label: 'Saguaro Radio — Live Streaming', starter: 'Add-on', pro: 'Add-on', ent: 'Add-on' },
-  { label: 'Takeoff Studio — AI takeoff', starter: true, pro: true, ent: true },
-  { label: 'Signal Studio', starter: true, pro: true, ent: true },
-  { label: 'My Work', starter: true, pro: true, ent: true },
-  { label: 'Crews', starter: true, pro: true, ent: true },
-  { label: 'T&M Tickets', starter: true, pro: true, ent: true },
-  { label: 'Daily Logs', starter: true, pro: true, ent: true },
-  { label: 'Documents', starter: true, pro: true, ent: true },
-  { label: 'Intelligence', starter: true, pro: true, ent: true },
-  { label: 'Pay Applications G702/G703', starter: true, pro: true, ent: true },
-  { label: 'Lien Waivers — all 50 states', starter: true, pro: true, ent: true },
-  { label: 'RFIs & Change Orders', starter: 'Basic', pro: 'Full', ent: 'Full' },
-  { label: 'All AIA Documents (G702–G706, A310, A312)', starter: false, pro: true, ent: true },
-  { label: 'All 4 Lien Waiver types', starter: false, pro: true, ent: true },
-  { label: 'Certified Payroll WH-347', starter: false, pro: true, ent: true },
-  { label: 'ACORD 25 / COI Parser', starter: false, pro: true, ent: true },
-  { label: 'Owner & Sub Portals', starter: false, pro: true, ent: true },
-  { label: 'Autopilot RFI/CO', starter: false, pro: true, ent: true },
-  { label: 'Bid Jackets + Bid Intelligence', starter: false, pro: true, ent: true },
-  { label: 'Preliminary Notices AZ/CA/TX', starter: false, pro: true, ent: true },
-  { label: 'Free Migration', starter: true, pro: true, ent: true },
-  { label: 'White Label', starter: 'Add-on', pro: 'Add-on', ent: true },
-  { label: 'API Access', starter: 'Add-on', pro: 'Add-on', ent: true },
-  { label: 'QuickBooks Sync', starter: 'Add-on', pro: 'Add-on', ent: true },
-  { label: 'SAML SSO', starter: false, pro: false, ent: true },
-];
-
 const COMPETITOR_COMPARISON = [
   { name: 'Competitor 1', price: '$3,750–$12,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
   { name: 'Competitor 2', price: '$2,500–$8,000+/mo', model: 'Per user + modules', migration: false, flatPrice: false },
@@ -236,20 +36,25 @@ const COMPETITOR_COMPARISON = [
   { name: 'Competitor 4', price: '$499–$1,099/mo', model: 'Flat (limited features)', migration: false, flatPrice: true },
   { name: 'Competitor 5', price: '$54–$104/user/mo', model: 'Per user', migration: false, flatPrice: false },
   { name: 'Competitor 6', price: '$49–$299/mo', model: 'Flat (basic features)', migration: false, flatPrice: true },
-  { name: 'Saguaro Control Systems', price: '$499–$750/mo', model: 'Flat, unlimited users', migration: true, flatPrice: true, isSaguaro: true },
+  { name: 'Saguaro Control Systems', price: `${PRICE_RANGE}`, model: 'Flat, unlimited users', migration: true, flatPrice: true, isSaguaro: true },
 ];
+
+// QuickBooks add-on pricing renders from lib/plans.ts (the canonical add-on
+// list) so the FAQ can never drift from the add-ons grid above it.
+const QB_ADDON = PLAN_ADDONS.find((a) => a.name.toLowerCase().includes('quickbooks'));
+const QB_PRICE = QB_ADDON ? `${QB_ADDON.price}${QB_ADDON.per ?? ''}` : 'see add-ons above';
 
 const FAQS = [
   { q: 'Is the migration really free?', a: 'Yes, completely free. We migrate your projects, contacts, documents, and history from any platform or spreadsheet-based system. Our team handles everything — you\'ll be live in 1 business day.' },
   { q: 'Is it really unlimited users?', a: 'Yes. One flat license covers every person on your team — PMs, field supers, estimators, accounting, owners — all included at no extra cost. We will never charge you per seat.' },
-  { q: 'What happens after the 30-day free trial?', a: "You'll be prompted to enter payment info. If you choose not to, your account pauses with data preserved for 30 days before deletion. There are no surprise charges." },
+  { q: `What happens after the ${TRIAL_DAYS}-day free trial?`, a: "You'll be prompted to enter payment info. If you choose not to, your account pauses with data preserved for 30 days before deletion. There are no surprise charges." },
   { q: 'Can I upgrade or downgrade my plan anytime?', a: 'Yes. Upgrade immediately and get prorated credit. Downgrade at the end of your billing cycle. No penalties, no fees.' },
   { q: 'Do you support prevailing wage projects?', a: 'Yes. The WH-347 Certified Payroll generator connects to the DOL Davis-Bacon wage API and validates every worker\'s hourly rate against current prevailing wages for their trade and county.' },
   { q: 'Which states are supported for lien waivers?', a: 'All 50 states. AZ, CA, TX, NV, FL, CO, WA, OR, UT, and NM use state-specific statutory language. All other states use our attorney-reviewed generic form.' },
-  { q: 'What is annual billing and how much do I save?', a: 'Annual billing locks in your rate for 12 months and saves you up to 13%: Starter drops from $499 to $449/mo ($600 saved), Professional drops from $750 to $650/mo ($1,200 saved). Billed as one upfront payment.' },
+  { q: 'What is annual billing and how much do I save?', a: `Annual billing locks in your rate for 12 months and saves you up to 13%: Starter drops from $${STARTER.priceMo} to $${STARTER.priceYr}/mo ($${(STARTER.priceMo - STARTER.priceYr) * 12} saved), Professional drops from $${PROFESSIONAL.priceMo} to $${PROFESSIONAL.priceYr}/mo ($${((PROFESSIONAL.priceMo - PROFESSIONAL.priceYr) * 12).toLocaleString()} saved). Billed as one upfront payment.` },
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime from your billing settings. Monthly plans retain access until end of period. Annual plans are non-refundable but can be paused.' },
   { q: 'What is the White Label add-on?', a: 'Your GC firm or software company can use Saguaro under your own brand, domain, and logo. Each of your clients receives their own sandboxed account. Available as an add-on or included in Enterprise.' },
-  { q: 'Do you integrate with QuickBooks?', a: 'QuickBooks sync is available as an add-on ($99/mo) or included in Enterprise. Budget line items, pay applications, and change orders sync bidirectionally with your QuickBooks company file.' },
+  { q: 'Do you integrate with QuickBooks?', a: `QuickBooks sync is available as an add-on (${QB_PRICE}) or included in Enterprise. Budget line items, pay applications, and change orders sync bidirectionally with your QuickBooks company file.` },
 ];
 
 function CheckIcon({ size = 16, color = C.green }: { size?: number; color?: string }) {
@@ -323,11 +128,11 @@ export default function PricingPage() {
             </button>
             <button onClick={() => setAnnual(true)} style={{ padding: '8px 22px', borderRadius: 999, border: '1px solid transparent', background: annual ? 'rgba(255,255,255,0.08)' : 'transparent', color: annual ? C.text : C.dim, fontWeight: 500, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 0.15s, color 0.15s' }}>
               Annual
-              <span style={{ fontSize: 11, fontWeight: 500, color: C.dim, background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, padding: '1px 7px', borderRadius: 999 }}>Save up to $1,200/yr</span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: C.dim, background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, padding: '1px 7px', borderRadius: 999 }}>Save up to ${MAX_ANNUAL_SAVINGS.toLocaleString()}/yr</span>
             </button>
           </div>
           <div style={{ fontSize: 13, color: C.dim }}>
-            {annual ? 'Billed annually — cancel anytime' : 'Switch to annual and save up to $1,200/yr'}
+            {annual ? 'Billed annually — cancel anytime' : `Switch to annual and save up to $${MAX_ANNUAL_SAVINGS.toLocaleString()}/yr`}
           </div>
         </section>
 
@@ -354,16 +159,16 @@ export default function PricingPage() {
                     {plan.highlight}
                   </div>
 
-                  {plan.price_mo > 0 ? (
+                  {plan.priceMo > 0 ? (
                     <div style={{ marginBottom: 28 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 4 }}>
-                        <span style={{ fontSize: 40, fontWeight: 600, color: C.text, lineHeight: 1 }}>${annual ? plan.price_yr : plan.price_mo}</span>
+                        <span style={{ fontSize: 40, fontWeight: 600, color: C.text, lineHeight: 1 }}>${annual ? plan.priceYr : plan.priceMo}</span>
                         <span style={{ fontSize: 15, color: C.dim, paddingBottom: 6 }}>/mo</span>
                       </div>
                       {annual ? (
-                        <div style={{ fontSize: 12, color: C.dim }}>Billed annually — <span style={{ color: C.dim, fontWeight: 500 }}>save ${(plan.price_mo - plan.price_yr) * 12}/yr</span></div>
+                        <div style={{ fontSize: 12, color: C.dim }}>Billed annually — <span style={{ color: C.dim, fontWeight: 500 }}>save ${(plan.priceMo - plan.priceYr) * 12}/yr</span></div>
                       ) : (
-                        <div style={{ fontSize: 12, color: C.dim }}>Or <span style={{ color: C.dim, fontWeight: 500 }}>${plan.price_yr}/mo</span> billed annually</div>
+                        <div style={{ fontSize: 12, color: C.dim }}>Or <span style={{ color: C.dim, fontWeight: 500 }}>${plan.priceYr}/mo</span> billed annually</div>
                       )}
                     </div>
                   ) : (
@@ -373,7 +178,7 @@ export default function PricingPage() {
                     </div>
                   )}
 
-                  <a href={plan.cta_href} style={{
+                  <a href={plan.ctaHref} style={{
                     display: 'block', textAlign: 'center', padding: '12px 0',
                     background: plan.popular ? 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))' : 'transparent',
                     border: plan.popular ? '1px solid transparent' : `1px solid ${C.hairline}`,
@@ -395,7 +200,7 @@ export default function PricingPage() {
                           <span style={{ fontSize: 13, color: C.text, lineHeight: 1.45, fontWeight: 400 }}>{f}</span>
                         </div>
                       ))}
-                      {plan.not_included.map(f => (
+                      {plan.notIncluded.map(f => (
                         <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', opacity: 0.38 }}>
                           <DashIcon size={16} />
                           <span style={{ fontSize: 13, color: C.dim, lineHeight: 1.45 }}>{f}</span>
@@ -414,7 +219,7 @@ export default function PricingPage() {
           <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, padding: '28px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>Not sure? Every plan starts with a free trial — switch anytime.</div>
             <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, maxWidth: 560 }}>
-              30 days free, no credit card. Upgrades take effect immediately with prorated credit; downgrades apply at the end of your billing cycle.{' '}
+              {TRIAL_DAYS} days free, no credit card. Upgrades take effect immediately with prorated credit; downgrades apply at the end of your billing cycle.{' '}
               <Link href="/how-to-get-started" style={{ color: C.gold, textDecoration: 'none', fontWeight: 500 }}>See how to get started →</Link>
             </div>
           </div>
@@ -458,7 +263,7 @@ export default function PricingPage() {
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto' }}>Add only what you need. Cancel any add-on anytime.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-            {ADDONS.map(addon => (
+            {PLAN_ADDONS.map(addon => (
               <div key={addon.name} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: 14, padding: '24px 24px 22px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
                   <div style={{ fontSize: 16, fontWeight: 600, color: C.text, lineHeight: 1.35 }}>
@@ -476,7 +281,7 @@ export default function PricingPage() {
                 <div style={{ fontSize: 11, color: C.dim, background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 6, padding: '4px 10px', alignSelf: 'flex-start' }}>
                   Available for: {addon.available}
                 </div>
-                <a className="btn-gold" href={`mailto:sales@saguarocontrol.net?subject=${encodeURIComponent(addon.mailSubject)}`} style={{ justifyContent: 'center', textDecoration: 'none', fontSize: 13, marginTop: 4 }}>
+                <a className="btn-gold" href={`mailto:${SALES_EMAIL}?subject=${encodeURIComponent(addon.mailSubject)}`} style={{ justifyContent: 'center', textDecoration: 'none', fontSize: 13, marginTop: 4 }}>
                   Add to plan
                 </a>
               </div>
@@ -494,7 +299,7 @@ export default function PricingPage() {
             <p style={{ fontSize: 16, color: C.dim, maxWidth: 480, margin: '0 auto' }}>Optional professional services. Pay once, get set up right.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
-            {SERVICES.map(service => (
+            {ONE_TIME_SERVICES.map(service => (
               <div key={service.name} style={{
                 background: 'transparent',
                 borderTop: `1px solid ${C.hairline}`,
@@ -590,8 +395,8 @@ export default function PricingPage() {
                 </tr>
               </thead>
               <tbody>
-                {COMPARISON_FEATURES.map((row, i) => (
-                  <tr key={row.label} style={{ borderBottom: i < COMPARISON_FEATURES.length - 1 ? `1px solid ${C.hairline}` : 'none' }}>
+                {FEATURE_MATRIX.map((row, i) => (
+                  <tr key={row.label} style={{ borderBottom: i < FEATURE_MATRIX.length - 1 ? `1px solid ${C.hairline}` : 'none' }}>
                     <td style={{ padding: '14px 24px', fontSize: 13, color: C.dim, fontWeight: 500 }}>{row.label}</td>
                     {(['starter', 'pro', 'ent'] as const).map((key) => (
                       <td key={key} style={{ padding: '14px 16px', textAlign: 'center', verticalAlign: 'middle', background: key === 'pro' ? 'rgba(255,255,255,0.03)' : 'transparent', borderLeft: `1px solid ${C.hairline}`, borderRight: key === 'pro' ? `1px solid ${C.hairline}` : undefined }}>
@@ -642,7 +447,7 @@ export default function PricingPage() {
               <span style={{ color: C.text }}>per-seat prices?</span>
             </h2>
             <p style={{ fontSize: 16, color: C.dim, margin: '0 0 36px', lineHeight: 1.6 }}>
-              30-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
+              {TRIAL_DAYS}-day free trial. Free migration. No credit card required. Your whole team, one flat rate.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
               <Link href="/signup" className="btn-gold" style={{ padding: '12px 28px', fontSize: 15, textDecoration: 'none' }}>
@@ -653,7 +458,7 @@ export default function PricingPage() {
               </Link>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {['30 days free', 'Free migration', 'Cancel anytime', 'No per-seat fees', 'Unlimited users'].map(pill => (
+              {[`${TRIAL_DAYS} days free`, 'Free migration', 'Cancel anytime', 'No per-seat fees', 'Unlimited users'].map(pill => (
                 <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 12, fontWeight: 500, color: C.dim }}>
                   <CheckIcon size={12} color={C.dim} />
                   {pill}

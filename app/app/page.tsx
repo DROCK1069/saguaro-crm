@@ -10,6 +10,7 @@ import { CurrencyDollar, ShieldCheck, ClipboardText, CheckCircle, ChartBar, Tren
 import { useSavedLayout, ConfiguredDashboard } from '@/components/dashboard-widgets';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import GettingStartedRail from '@/components/GettingStartedRail';
+import SuggestionTicker from '@/components/intelligence/SuggestionTicker';
 
 // Lazy-load Recharts to avoid SSR issues
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false });
@@ -388,6 +389,10 @@ export default function DashboardPage() {
             <Link href="/app/dashboard-config" title="Customize dashboard" style={ghostButtonStyle} className="pmBtn"><SlidersHorizontal size={15} weight="bold" /> Customize</Link>
           </>}
         />
+
+        {/* Live suggestion ticker — real learning moments with honest $ impact,
+            each deep-linking to the flagged module section (NudgeRing sync). */}
+        <SuggestionTicker style={{ marginBottom: 24 }} />
 
         {/* GC Guided Journey — 8 steps from first project to first payment */}
         <GettingStartedRail />

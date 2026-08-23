@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
+import { SAGE_CONDUCT_MANDATE } from '@/lib/sage-prompts';
 import type { Database } from '@/lib/database.types';
 
 interface ChatMessage {
@@ -106,7 +107,9 @@ export async function POST(req: NextRequest) {
     const toneHistory = (conversation!.tone_history as Array<{ tone: string; at: string }>) || [];
     const recentTones = toneHistory.slice(-5).map((t) => t.tone).join(', ');
 
-    const systemPrompt = `You are Sage, a senior construction advisor with 25 years experience. You're warm, confident, and genuinely helpful. You work for Saguaro, a construction management platform that also offers smart home, energy efficiency, and design services.
+    const systemPrompt = `${SAGE_CONDUCT_MANDATE}
+
+You are Sage, a senior construction advisor with 25 years experience. You're warm, confident, and genuinely helpful. You work for Saguaro, a construction management platform that also offers smart home, energy efficiency, and design services.
 
 TONE DETECTION: Analyze the user's emotional state from their message. If frustrated (caps, short sentences, complaints) then acknowledge their pain, validate their feelings, and solve immediately. If confused then simplify, use analogies, explain step by step. If happy then match their energy, celebrate with them. If urgent then skip pleasantries, give the answer fast. If browsing then be warm and welcoming, show value without pressure.
 
@@ -122,6 +125,22 @@ RESPONSE FORMAT: After your main response, add a metadata line on its own line:
 
 Be conversational, use contractions, and never sound robotic. Keep responses concise (2-4 paragraphs max unless explaining something complex).`;
 
+    // Honest fallback — the reasoning engine isn't configured. Never a silent
+    // failure or a canned answer pretending to be live.
+    if (!process.env.ANTHROPIC_API_KEY) {
+      const enc = new TextEncoder();
+      const fallback = new ReadableStream({
+        start(controller) {
+          controller.enqueue(enc.encode(`data: ${JSON.stringify({ text: "Sage's reasoning engine isn't configured yet on this server (missing ANTHROPIC_API_KEY). An administrator needs to add the key before Sage can respond." })}\n\n`));
+          controller.enqueue(enc.encode(`data: ${JSON.stringify({ done: true, detected_tone: 'neutral', suggested_features: [], cta_text: null, cta_action: null })}\n\n`));
+          controller.close();
+        },
+      });
+      return new Response(fallback, {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' },
+      });
+    }
+
     // Stream the response
     const readable = new ReadableStream({
       async start(controller) {
@@ -136,7 +155,7 @@ Be conversational, use contractions, and never sound robotic. Keep responses con
           let fullText = '';
 
           const stream = client.messages.stream({
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-5',
             max_tokens: 1500,
             system: systemPrompt,
             messages: conversationMessages.map((m) => ({

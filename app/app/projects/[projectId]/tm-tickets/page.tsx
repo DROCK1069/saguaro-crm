@@ -20,6 +20,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import useSWR from 'swr';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { humanError } from '@/lib/errors';
 import { TRADESPERSON_ROLES } from '@/lib/contractor-trades';
 import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
@@ -332,6 +334,47 @@ export default function TmTicketsPage() {
     setContractorSig(''); setOwnerSig('');
   };
 
+  /* ── Unsaved-work protection (R14): dirty once any composer field differs
+   *    from a fresh ticket (the defaulted work date never counts on its own);
+   *    the draft covers every line grid plus both signature pads. ── */
+  const composerDirty = showForm && (
+    !!fDesc.trim() || !!fRef.trim() || !!fNotes.trim() ||
+    fLabor.some(l => l.worker.trim() || l.regHours || l.otHours || l.rate) ||
+    fMaterials.some(m => m.description.trim() || m.qty || m.unitCost) ||
+    fEquipment.some(eq => eq.description.trim() || eq.hours || eq.rate) ||
+    fMarkup !== '15' || fTax !== '0' || !!contractorSig || !!ownerSig
+  );
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `tm-ticket:${projectId}`,
+    draftData: { fDate, fDesc, fRef, fNotes, fLabor, fMaterials, fEquipment, fMarkup, fTax, contractorSig, ownerSig },
+    restoreDraft: (d) => {
+      const dr = d as {
+        fDate?: string; fDesc?: string; fRef?: string; fNotes?: string;
+        fLabor?: LaborLine[]; fMaterials?: MaterialLine[]; fEquipment?: EquipmentLine[];
+        fMarkup?: string; fTax?: string; contractorSig?: string; ownerSig?: string;
+      };
+      if (dr.fDate) setFDate(dr.fDate);
+      if (dr.fDesc !== undefined) setFDesc(dr.fDesc);
+      if (dr.fRef !== undefined) setFRef(dr.fRef);
+      if (dr.fNotes !== undefined) setFNotes(dr.fNotes);
+      if (Array.isArray(dr.fLabor) && dr.fLabor.length > 0) setFLabor(dr.fLabor);
+      if (Array.isArray(dr.fMaterials) && dr.fMaterials.length > 0) setFMaterials(dr.fMaterials);
+      if (Array.isArray(dr.fEquipment) && dr.fEquipment.length > 0) setFEquipment(dr.fEquipment);
+      if (dr.fMarkup !== undefined) setFMarkup(dr.fMarkup);
+      if (dr.fTax !== undefined) setFTax(dr.fTax);
+      if (dr.contractorSig) setContractorSig(dr.contractorSig);
+      if (dr.ownerSig) setOwnerSig(dr.ownerSig);
+      setShowForm(true);
+    },
+    onSave: () => createTicket('draft'),
+  });
+
+  /** Composer close paths (hero Cancel toggle / footer Cancel) run through the guard. */
+  function closeComposer() {
+    guard.requestClose(() => setShowForm(false));
+  }
+
   // Composer preview — SAME operations as the server route so the preview and
   // the persisted total agree to the cent.
   const previewLabor = fLabor.reduce((s, l) => s + num(l.regHours) * num(l.rate) + num(l.otHours) * num(l.rate) * 1.5, 0);
@@ -342,8 +385,10 @@ export default function TmTicketsPage() {
   const previewTaxAmt = ((previewSub + previewMarkupAmt) * num(fTax)) / 100;
   const previewTotal = previewSub + previewMarkupAmt + previewTaxAmt;
 
-  async function createTicket(status: 'draft' | 'submitted') {
-    if (!fDesc.trim() || saving) return;
+  /** POST the ticket — shared by the composer buttons and the guard's
+   *  "Save & leave" (which saves as a draft). Returns true on success. */
+  async function createTicket(status: 'draft' | 'submitted'): Promise<boolean> {
+    if (!fDesc.trim() || saving) return false;
     setSaving(true);
     try {
       const payload = {
@@ -368,9 +413,12 @@ export default function TmTicketsPage() {
       await mutateTickets(current => ({ tickets: [d.ticket as TmTicketRow, ...(current?.tickets ?? [])] }), { revalidate: false });
       resetForm();
       setShowForm(false);
+      guard.clearDraft();
       setToast({ msg: status === 'submitted' ? 'T&M ticket submitted for approval.' : 'T&M ticket saved as draft.', type: 'success' });
+      return true;
     } catch (e) {
       setToast({ msg: humanError(e, 'Failed to create the T&M ticket. Please try again.'), type: 'error' });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -630,7 +678,7 @@ export default function TmTicketsPage() {
           accent="Tickets"
           subtitle={loading ? 'Loading…' : `${tickets.length} ticket${tickets.length !== 1 ? 's' : ''} — capture time & material extras with signatures, get them approved, then billed or escalated to a change event.`}
           actions={
-            <button onClick={() => setShowForm(!showForm)} style={goldButtonStyle} className="pmBtn">
+            <button onClick={() => { if (showForm) closeComposer(); else setShowForm(true); }} style={goldButtonStyle} className="pmBtn">
               {showForm ? <><X size={15} weight="bold" /> Cancel</> : <><Plus size={15} weight="bold" /> New T&M Ticket</>}
             </button>
           }
@@ -775,7 +823,7 @@ export default function TmTicketsPage() {
                   style={{ ...goldOutlineButtonStyle, cursor: saving ? 'wait' : 'pointer', opacity: (saving || !fDesc.trim()) ? 0.6 : 1 }} className="pmBtn">
                   Save as Draft
                 </button>
-                <button onClick={() => setShowForm(false)} style={ghostButtonStyle} className="pmBtn">Cancel</button>
+                <button onClick={closeComposer} style={ghostButtonStyle} className="pmBtn">Cancel</button>
               </div>
             </SectionCard>
 
@@ -1063,6 +1111,8 @@ export default function TmTicketsPage() {
           </aside>
         </>
       )}
+
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

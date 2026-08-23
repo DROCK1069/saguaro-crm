@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
-import { buildPdf, safeFilename, todayStamp, EXPORT_CONTENT_TYPE, type ReportColumn } from '@/lib/report-export';
+import { safeFilename, todayStamp, EXPORT_CONTENT_TYPE, type ReportColumn } from '@/lib/report-export';
+import { generateExecReportPdf } from '@/lib/document-templates/exec-report-generator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -88,7 +89,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     };
 
     const title = `Takeoff Estimate — ${str(project.name) || 'Untitled'}`;
-    const pdfBytes = await buildPdf(COLUMNS, rows, title, totals);
+    // Corporate exec-style PDF: tenant letterhead + KPI band (money totals in
+    // gold) + Page X of Y footers.
+    const pdfBytes = await generateExecReportPdf({
+      title,
+      columns: COLUMNS,
+      rows,
+      totals,
+      tenantId: user.tenantId,
+      docLabel: 'Takeoff Estimate',
+    });
 
     const fileName = `takeoff-${safeFilename(str(project.name) || id)}-${todayStamp()}.pdf`;
     return new NextResponse(Buffer.from(pdfBytes), {

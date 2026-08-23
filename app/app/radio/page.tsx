@@ -99,6 +99,8 @@ import {
   UserPlus,
 } from '@phosphor-icons/react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 /* ── Palette (dark shell: white/gold alphas only) ─────────────────────── */
 const WHITE = '#FFFFFF';
@@ -161,6 +163,10 @@ interface RadioMessage {
   seen_count?: number | null;
   /** Tier-1: source channel id when this row was mirrored through a patch. */
   patched_from?: string | null;
+  /** R13 heard-by: who has played this clip (migration 063; absent pre-migration). */
+  receipts?: { user_id?: string | null; portal_sub_id?: string | null; display_name?: string | null; action?: string | null; created_at?: string }[] | null;
+  /** R13 heard-by: who was live on the channel at send time (snapshot). */
+  present_at_send?: { user_id?: string | null; portal_sub_id?: string | null; name?: string | null }[] | null;
   created_at: string;
 }
 /** Guest sharing link (staff rows from GET /api/radio/guest?channelId=). */
@@ -552,8 +558,18 @@ export default function RadioDispatchPage() {
   useEffect(() => {
     if (activeId || channels.length === 0) return;
     const fromUrl = urlChannel && channels.find((c) => c.id === urlChannel);
-    const allHands = channels.find((c) => c.kind === 'project');
-    setActiveId((fromUrl || allHands || channels[0]).id);
+    /* Busiest-channel instant-on: land on the channel with the most unread
+     * traffic, tie-broken by the most recent last message — never the oldest
+     * row just because it sorts first. */
+    const busiest = channels.reduce<RadioChannel | null>((best, c) => {
+      if (!best) return c;
+      const bu = Number(best.unread) || 0, cu = Number(c.unread) || 0;
+      if (cu !== bu) return cu > bu ? c : best;
+      const bt = best.lastMessage?.at ? new Date(best.lastMessage.at).getTime() : 0;
+      const ct = c.lastMessage?.at ? new Date(c.lastMessage.at).getTime() : 0;
+      return ct > bt ? c : best;
+    }, null);
+    setActiveId((fromUrl || busiest || channels[0]).id);
   }, [channels, activeId, urlChannel]);
   const active = channels.find((c) => c.id === activeId) || null;
 
@@ -582,9 +598,38 @@ export default function RadioDispatchPage() {
   const [newQuery, setNewQuery] = useState('');
   const [newSel, setNewSel] = useState<DirectoryPerson[]>([]);
   const [creating, setCreating] = useState(false);
+  /* R14: the open-reset must not clobber a just-restored draft. */
+  const groupDraftRestoringRef = useRef(false);
   useEffect(() => {
-    if (showNew) { setNewProject(projectId || ''); setNewQuery(''); setNewSel([]); }
+    if (showNew) {
+      if (groupDraftRestoringRef.current) { groupDraftRestoringRef.current = false; return; }
+      setNewProject(projectId || ''); setNewQuery(''); setNewSel([]);
+    }
   }, [showNew, projectId]);
+  /* R14 unsaved-work guard: an accidental dismiss (Cancel / X / backdrop) of
+   * a modal holding a name or picked members asks first, and the fields ride
+   * a localStorage draft so even a hard exit brings them back. */
+  const newGroupGuard = useUnsavedGuard<{
+    name: string; allowSubs: boolean; project: string; query: string; sel: DirectoryPerson[];
+  }>({
+    dirty: showNew && (!!newName.trim() || newSel.length > 0 || newAllowSubs),
+    draftKey: 'radio-group-create',
+    draftData: { name: newName, allowSubs: newAllowSubs, project: newProject, query: newQuery, sel: newSel },
+    restoreDraft: (d) => {
+      if (!d || (!String(d.name || '').trim() && !(Array.isArray(d.sel) && d.sel.length))) return;
+      groupDraftRestoringRef.current = true;
+      setNewName(String(d.name || ''));
+      setNewAllowSubs(!!d.allowSubs);
+      setNewProject(String(d.project || ''));
+      setNewQuery(String(d.query || ''));
+      setNewSel(Array.isArray(d.sel) ? d.sel : []);
+      setShowNew(true);
+    },
+  });
+  /* Every dismissal of the create modal routes through the guard. */
+  const closeNewModal = () => {
+    newGroupGuard.requestClose(() => setShowNew(false));
+  };
   const toggleNewPerson = (p: DirectoryPerson) => {
     setNewSel((prev) => prev.some((x) => personKey(x) === personKey(p))
       ? prev.filter((x) => personKey(x) !== personKey(p))
@@ -623,7 +668,8 @@ export default function RadioDispatchPage() {
             if (ar.ok) added += 1; else failed.push(personName(p));
           } catch { failed.push(personName(p)); }
         }
-        setNewName(''); setNewAllowSubs(false); setShowNew(false);
+        setNewName(''); setNewAllowSubs(false); setNewSel([]); setShowNew(false);
+        newGroupGuard.clearDraft(); // created for real — the safety copy is done
         pushToast(`"${name}" is on the air${added ? ` — ${added} member${added === 1 ? '' : 's'} added` : ''}`, 'ok');
         if (failed.length) pushToast(`Could not add ${failed.join(', ')} — retry from the roster`, 'err');
         await mutateChannels();
@@ -864,6 +910,21 @@ export default function RadioDispatchPage() {
     });
   }, []);
 
+  /* R13 heard-by: tell the sender their clip was played. Fire-and-forget,
+   * once per message per page-load — the server dedupes across sessions and
+   * degrades to a silent no-op until migration 063 is applied. */
+  const postedReceiptRef = useRef<Set<string>>(new Set());
+  const postPlayReceipt = useCallback((m: RadioMessage) => {
+    if (!m?.id || m.id.startsWith('local-')) return;
+    if (myUserId && m.sender_user_id === myUserId) return; // your own traffic
+    if (postedReceiptRef.current.has(m.id)) return;
+    postedReceiptRef.current.add(m.id);
+    fetch('/api/radio/receipts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messageIds: [m.id] }),
+    }).catch(() => { /* garnish — never surface */ });
+  }, [myUserId]);
+
   const playerRef = useRef<HTMLAudioElement | null>(null);
   const queueRef = useRef<string[]>([]);
   const advanceRef = useRef<() => void>(() => {});
@@ -920,8 +981,9 @@ export default function RadioDispatchPage() {
     setPlayingId(id);
     setPlayProg(0);
     markHeard(id);
+    postPlayReceipt(m); // R13: the sender's "heard by" updates
     a.play().catch(() => advanceRef.current());
-  }, [ensurePlayer, markHeard]);
+  }, [ensurePlayer, markHeard, postPlayReceipt]);
 
   advanceRef.current = () => {
     const next = queueRef.current.shift();
@@ -965,14 +1027,25 @@ export default function RadioDispatchPage() {
     const body = draft.trim();
     if (!body || !activeId || sending) return;
     setSending(true);
-    try {
-      const r = await fetch('/api/radio/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channelId: activeId, kind, body }),
-      });
-      if (r.ok) { setDraft(''); await mutateMessages(); }
-    } catch { /* keep the draft so nothing is lost */ }
+    const post = async () => {
+      try {
+        const r = await fetch('/api/radio/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelId: activeId, kind, body }),
+        });
+        return r.ok;
+      } catch { return false; }
+    };
+    /* One automatic retry after ~1.5s, then an honest toast. The draft stays
+     * in the composer on failure so nothing is lost. */
+    let ok = await post();
+    if (!ok) {
+      await new Promise((res) => setTimeout(res, 1500));
+      ok = await post();
+    }
+    if (ok) { setDraft(''); await mutateMessages(); }
+    else pushToast(`${kind === 'alert' ? 'Alert' : 'Message'} not sent — your draft is kept in the composer`, 'err');
     setSending(false);
   };
 
@@ -1007,18 +1080,27 @@ export default function RadioDispatchPage() {
     if (!activeId || toneSending) return;
     setToneSending(tone);
     playToneBeep(tone); // local sidetone — the sender hears their own beep
-    try {
-      const r = await fetch('/api/radio/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channelId: activeId, kind: 'tone', body: tone }),
-      });
-      if (r.ok) {
+    const post = async () => {
+      try {
+        const r = await fetch('/api/radio/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelId: activeId, kind: 'tone', body: tone }),
+        });
+        if (!r.ok) return false;
         const j = await r.json().catch(() => null);
         if (j?.message?.id) toneSeenRef.current.add(String(j.message.id)); // no double beep
-        await mutateMessages();
-      }
-    } catch { /* chip absence tells the dispatcher to re-key */ }
+        return true;
+      } catch { return false; }
+    };
+    /* One automatic retry after ~1.5s, then an honest toast. */
+    let ok = await post();
+    if (!ok) {
+      await new Promise((res) => setTimeout(res, 1500));
+      ok = await post();
+    }
+    if (ok) await mutateMessages();
+    else pushToast(`${TONES[tone]?.label || tone.toUpperCase()} tone not sent — re-key to try again`, 'err');
     setToneSending(null);
   };
 
@@ -1168,6 +1250,10 @@ export default function RadioDispatchPage() {
   /* ── Browser PTT (MediaRecorder, feature-detected) ──────────────────── */
   const [pttSupported, setPttSupported] = useState(false);
   const [recording, setRecording] = useState(false);
+  /* TX immediacy: set synchronously on key-down — BEFORE the getUserMedia
+   * await — so the needle and ON AIR band slam the instant the key lands.
+   * Cleared on stop and on every abort path. */
+  const [keying, setKeying] = useState(false);
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -1180,8 +1266,22 @@ export default function RadioDispatchPage() {
     );
   }, []);
 
+  /* Mic pre-flight: the first hover over the talk key warms the mic path —
+   * permission prompt + device spin-up happen BEFORE the first real key-down.
+   * Once-only per page load; errors are swallowed (the real pttStart still
+   * handles denial honestly). */
+  const micPreflightRef = useRef(false);
+  const preflightMic = () => {
+    if (micPreflightRef.current || !pttSupported || !navigator.mediaDevices?.getUserMedia) return;
+    micPreflightRef.current = true;
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => stream.getTracks().forEach((tr) => tr.stop()))
+      .catch(() => { /* denial surfaces on the real key-down */ });
+  };
+
   const pttStart = async () => {
     if (!pttSupported || recording || !activeId) return;
+    setKeying(true); // synchronous — the console keys up before the mic resolves
     stopPlayback(); // never transmit over receive
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1208,10 +1308,21 @@ export default function RadioDispatchPage() {
         fd.append('durationSecs', String(Math.round(durationSecs * 10) / 10));
         fd.append('file', new File([blob], `ptt.${ext}`, { type: blob.type }));
         setUploadingVoice(true);
-        try {
-          const r = await fetch('/api/radio/voice', { method: 'POST', body: fd });
-          if (r.ok) await mutateMessages();
-        } catch { /* clip dropped — dispatcher re-keys */ }
+        const post = async () => {
+          try {
+            const r = await fetch('/api/radio/voice', { method: 'POST', body: fd });
+            return r.ok;
+          } catch { return false; }
+        };
+        /* One automatic retry after ~1.5s, then an honest toast — the clip is
+         * never dropped silently. */
+        let ok = await post();
+        if (!ok) {
+          await new Promise((res) => setTimeout(res, 1500));
+          ok = await post();
+        }
+        if (ok) await mutateMessages();
+        else pushToast('Transmission failed — clip not delivered', 'err');
         setUploadingVoice(false);
       };
       recRef.current = rec;
@@ -1234,6 +1345,7 @@ export default function RadioDispatchPage() {
       } catch { /* meter falls back to the synthesized envelope */ }
     } catch {
       // Mic denied or unavailable — hide the key gracefully.
+      setKeying(false);
       setPttSupported(false);
     }
   };
@@ -1241,6 +1353,7 @@ export default function RadioDispatchPage() {
     if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop();
     recRef.current = null;
     setRecording(false);
+    setKeying(false);
   };
   useEffect(() => () => { if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop(); }, []);
 
@@ -1319,7 +1432,7 @@ export default function RadioDispatchPage() {
   };
   tapPlayerRef.current = tapPlayer;
 
-  const meterMode: 'idle' | 'rx' | 'tx' = recording ? 'tx' : playingId ? 'rx' : 'idle';
+  const meterMode: 'idle' | 'rx' | 'tx' = recording || keying ? 'tx' : playingId ? 'rx' : 'idle';
   const playingIdRef = useRef<string | null>(null);
   playingIdRef.current = playingId;
   useEffect(() => {
@@ -1909,7 +2022,7 @@ export default function RadioDispatchPage() {
 
   const firstLoad = !chData && !chError;
   const playingMsg = playingId ? messages.find((m) => m.id === playingId) || null : null;
-  const onAir = recording || !!playingId;
+  const onAir = recording || keying || !!playingId;
 
   /* ── Standby (radio-face panel when the feed is quiet) ──────────────── */
   /* Most recent traffic anywhere on the band — the rail data already has it. */
@@ -2005,6 +2118,17 @@ export default function RadioDispatchPage() {
     const unheardClip = m.kind === 'voice' && !!m.audio_url && !heard.has(m.id) && (!myUserId || m.sender_user_id !== myUserId);
     const seenN = Number(m.seen_count ?? NaN);
     const showSeen = (alert || panic) && !!myUserId && m.sender_user_id === myUserId && Number.isFinite(seenN) && seenN > 0;
+    /* R13 heard-by: on YOUR voice rows, who has played the clip vs. who was
+     * live on the channel when you sent it. Absent pre-migration → no chip. */
+    const mine = !!myUserId && m.sender_user_id === myUserId;
+    const played = mine && m.kind === 'voice'
+      ? (m.receipts || []).filter((r) => r && r.action !== 'seen' && (!myUserId || r.user_id !== myUserId))
+      : [];
+    const presentN = mine && m.kind === 'voice' && Array.isArray(m.present_at_send)
+      ? m.present_at_send.filter((p) => p && (!myUserId || p.user_id !== myUserId)).length
+      : 0;
+    const heardNames = played.map((r) => r.display_name || 'Member').join(', ');
+    const showHeard = mine && m.kind === 'voice' && (played.length > 0 || presentN > 0);
     return (
       <div
         key={m.id}
@@ -2158,6 +2282,17 @@ export default function RadioDispatchPage() {
           {showSeen && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: FAINT, marginTop: 5 }}>
               <Check size={11} weight="bold" /> Seen by {seenN}
+            </div>
+          )}
+          {showHeard && (
+            <div
+              title={played.length ? `Played by: ${heardNames}` : 'Nobody has played this clip yet'}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: played.length ? GREEN : FAINT, marginTop: 5, fontWeight: 700 }}
+            >
+              <Check size={11} weight="bold" />
+              {presentN > 0
+                ? `Heard by ${played.length} of ${presentN} on channel`
+                : `Heard by ${played.length}`}
             </div>
           )}
         </div>
@@ -3412,6 +3547,7 @@ export default function RadioDispatchPage() {
             <div style={{ borderTop: `1px solid ${BORDER}`, padding: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
               {pttSupported && (
                 <button
+                  onPointerEnter={preflightMic}
                   onPointerDown={pttStart}
                   onPointerUp={pttStop}
                   onPointerLeave={pttStop}
@@ -3621,12 +3757,12 @@ export default function RadioDispatchPage() {
       )}
       {/* ── Create group — name + project + member picker ────────────────── */}
       {showNew && (
-        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) setShowNew(false); }}>
+        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) closeNewModal(); }}>
           <div style={modalCardStyle(470)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <Plus size={15} weight="bold" color={GOLD_HI} />
               <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>NEW TALKGROUP</span>
-              <button onClick={() => setShowNew(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
+              <button onClick={closeNewModal} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
                 <X size={15} weight="bold" />
               </button>
             </div>
@@ -3684,7 +3820,7 @@ export default function RadioDispatchPage() {
               >
                 {creating ? 'Creating…' : newSel.length ? `Create + add ${newSel.length} member${newSel.length === 1 ? '' : 's'}` : 'Create channel'}
               </button>
-              <button onClick={() => setShowNew(false)} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={closeNewModal} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                 Cancel
               </button>
             </div>
@@ -3765,6 +3901,9 @@ export default function RadioDispatchPage() {
           </div>
         </div>
       )}
+
+      {/* ── R14: Save / Discard / Stay confirm for the create-group modal ─ */}
+      <UnsavedGuardModal guard={newGroupGuard} />
 
       {/* ── Toasts — honest result reporting, bottom-right ──────────────── */}
       {toasts.length > 0 && (

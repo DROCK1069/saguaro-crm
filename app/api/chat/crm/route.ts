@@ -2,6 +2,13 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest } from 'next/server';
 import { getUser, createServerClient } from '@/lib/supabase-server';
 import { getAuthenticatedSagePrompt, SageContext } from '@/lib/sage-prompts';
+import {
+  buildSageBrainSections,
+  isSageEngineConfigured,
+  loadAutomationRules,
+  logSageActivity,
+  SAGE_ENGINE_UNCONFIGURED_MESSAGE,
+} from '@/lib/sage-brain';
 
 const client = new Anthropic();
 
@@ -437,7 +444,122 @@ const SAGE_TOOLS: Anthropic.Tool[] = [
       required: ['meeting_type', 'project_name', 'meeting_date', 'attendees', 'agenda_items', 'action_items'],
     },
   },
+  {
+    name: 'create_automation_rule',
+    description: 'Create a consent-first automation rule AFTER the GC explicitly answers "Create rule" to your Send / Edit / Create rule / Dismiss ask. Their answer IS the approval — call this tool immediately with the rule you offered. Never call it without that explicit go-ahead. The rule appears in Sage settings (visible, toggleable, revocable) and every action taken under it is logged to the activity trail.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        title: { type: 'string', description: 'Short human-readable rule name, e.g. "Draft COI renewal reminders"' },
+        description: { type: 'string', description: 'One sentence describing exactly what the rule authorizes Sage to do' },
+        trigger_type: { type: 'string', enum: ['rfi_overdue', 'invoice_overdue', 'coi_expiring'], description: 'What condition fires the rule: rfi_overdue (open RFIs past their due date), invoice_overdue (sent invoices past due with a balance), coi_expiring (insurance certificates expiring within 30 days or lapsed)' },
+        action_type: { type: 'string', enum: ['draft_email', 'draft_message'], description: 'What the rule authorizes: draft_email or draft_message. Drafts only — Sage never sends anything itself.' },
+        config: { type: 'object', description: 'Optional extra settings the GC specified (e.g. { "tone": "firm" }). Omit if none.' },
+      },
+      required: ['title', 'trigger_type', 'action_type'],
+    },
+  },
+  {
+    name: 'list_automation_rules',
+    description: 'List the GC\'s current automation rules (active and paused, never revoked ones). Use when they ask "what rules do I have", "what have I authorized you to do", or before creating a rule to avoid duplicates.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
 ];
+
+/** Tools that hit the database and need the authenticated user — executed by
+ *  executeAsyncSageTool instead of the pure/sync executeTool. */
+const ASYNC_SAGE_TOOLS = new Set(['create_automation_rule', 'list_automation_rules']);
+
+async function executeAsyncSageTool(
+  name: string,
+  input: Record<string, unknown>,
+  user: { id: string; tenantId: string; email: string }
+): Promise<string> {
+  switch (name) {
+
+    case 'create_automation_rule': {
+      const title = String(input.title ?? '').trim();
+      const triggerType = String(input.trigger_type ?? '').trim();
+      const actionType = String(input.action_type ?? '').trim();
+      if (!title || !triggerType || !actionType) {
+        return JSON.stringify({ ok: false, error: 'title, trigger_type, and action_type are required.' });
+      }
+      const description = typeof input.description === 'string' ? input.description.trim() : '';
+      const config = (input.config && typeof input.config === 'object' && !Array.isArray(input.config))
+        ? (input.config as Record<string, unknown>)
+        : {};
+      // Same DB path as POST /api/sage/rules — own-user scoping, tolerant of
+      // the 064_sage_brain.sql migration not being applied yet.
+      const db = createServerClient();
+      let createdId: string | null = null;
+      try {
+        const { data, error } = await (db as any)
+          .from('sage_automation_rules')
+          .insert({
+            user_id: user.id,
+            tenant_id: user.tenantId,
+            title: title.slice(0, 200),
+            description: description ? description.slice(0, 1000) : null,
+            trigger_type: triggerType.slice(0, 100),
+            action_type: actionType.slice(0, 100),
+            config,
+            enabled: true,
+          })
+          .select('id')
+          .single();
+        if (error) throw error;
+        createdId = (data as { id: string }).id;
+      } catch {
+        return JSON.stringify({
+          ok: false,
+          error: 'Automation rules storage is not migrated yet (064_sage_brain.sql). The rule could not be saved — tell the user honestly and do not claim it exists.',
+        });
+      }
+      // The GC consented in-conversation — actor is the user, not Sage.
+      await logSageActivity({
+        userId: user.id,
+        tenantId: user.tenantId,
+        actor: 'user',
+        ruleId: createdId,
+        actionType: 'rule_created',
+        summary: `Automation rule approved by GC in chat: "${title}" (trigger: ${triggerType}, action: ${actionType}).`,
+        detail: { config, source: 'sage_chat' },
+      });
+      return JSON.stringify({
+        ok: true,
+        rule: { id: createdId, title, trigger_type: triggerType, action_type: actionType, enabled: true },
+        note: 'Rule saved and enabled. It is visible and revocable in Sage settings → Automation rules, and every action taken under it will be logged to the activity trail. Tell the user exactly that.',
+      });
+    }
+
+    case 'list_automation_rules': {
+      const rules = await loadAutomationRules(user.id);
+      return JSON.stringify({
+        ok: true,
+        count: rules.length,
+        rules: rules.map((r) => ({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          trigger_type: r.trigger_type,
+          action_type: r.action_type,
+          enabled: r.enabled,
+          created_at: r.created_at,
+        })),
+        note: rules.length === 0
+          ? 'No rules exist — Sage has no standing automation authority.'
+          : 'These are the GC\'s approved rules. They can toggle or revoke any of them in Sage settings.',
+      });
+    }
+
+    default:
+      return JSON.stringify({ error: 'Unknown tool' });
+  }
+}
 
 // ── Tool execution ────────────────────────────────────────────────────────
 function executeTool(name: string, input: Record<string, unknown>): string {
@@ -2089,6 +2211,23 @@ export async function POST(req: NextRequest) {
 
   try {
     const { messages, memoryContext, styleInstructions, currentPage, projectId } = await req.json();
+
+    // Honest fallback when the reasoning engine isn't configured — the widget
+    // streams SSE, so answer in-band with the real status, never a fake reply.
+    if (!isSageEngineConfigured()) {
+      const enc = new TextEncoder();
+      const readable = new ReadableStream({
+        start(controller) {
+          controller.enqueue(enc.encode(`data: ${JSON.stringify({ text: SAGE_ENGINE_UNCONFIGURED_MESSAGE })}\n\n`));
+          controller.enqueue(enc.encode('data: [DONE]\n\n'));
+          controller.close();
+        },
+      });
+      return new Response(readable, {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+      });
+    }
+
     const db = createServerClient();
 
     // Pull rich live data from Supabase in parallel
@@ -2238,9 +2377,24 @@ TOOL USE GUIDANCE:
 - After using a tool, present results clearly and offer the next logical step
 - Reference the user's actual project names in every response
 - If you spot a risk in their data (overdue RFI, pending CO, approaching lien deadline), flag it
+- AUTOMATION RULES: when the GC answers "Create rule" to your Send / Edit / Create rule / Dismiss ask, call create_automation_rule right then with the rule you offered — their answer IS the approval. This in-chat path supersedes any instruction to send them to Sage settings to create it by hand (settings remains where they view, toggle, or revoke rules). Use list_automation_rules when they ask what rules they have. Never call create_automation_rule without that explicit go-ahead.
 `,
       memoryContext ?? '',
       styleInstructions ?? '',
+    ].filter(Boolean).join('\n\n');
+
+    // SAGE BRAIN (R16-R19): transparent style profile, bid brain with
+    // sample-size honesty, consent-first automation, capability honesty.
+    // Tolerant — degrades gracefully if the 064 migration isn't applied yet.
+    // The server-side style profile supersedes the client styleInstructions
+    // hint, so it is appended last.
+    const brain = await buildSageBrainSections(user.id, user.tenantId).catch(() => null);
+    const FULL_SYSTEM_PROMPT = [
+      SYSTEM_PROMPT,
+      brain?.bidBrainBlock ?? '',
+      brain?.automationBlock ?? '',
+      brain?.assistantBlock ?? '',
+      brain?.styleBlock ?? '',
     ].filter(Boolean).join('\n\n');
 
     const conversationMessages: Anthropic.MessageParam[] = (messages as Array<{ role: 'user' | 'assistant'; content: string }>).slice(-50);
@@ -2256,9 +2410,9 @@ TOOL USE GUIDANCE:
           while (iterations < 8) {
             iterations++;
             const stream = client.messages.stream({
-              model: 'claude-sonnet-4-6',
+              model: 'claude-sonnet-5',
               max_tokens: 4096,
-              system: SYSTEM_PROMPT,
+              system: FULL_SYSTEM_PROMPT,
               tools: SAGE_TOOLS,
               tool_choice: { type: 'auto' },
               messages: currentMessages,
@@ -2287,7 +2441,9 @@ TOOL USE GUIDANCE:
                 inToolUse = false;
                 try { toolUseBlock.input = JSON.parse(toolInputJson); } catch { toolUseBlock.input = {}; }
               } else if (chunk.type === 'message_delta' && chunk.delta.stop_reason === 'tool_use' && toolUseBlock) {
-                const toolResult = executeTool(toolUseBlock.name, toolUseBlock.input);
+                const toolResult = ASYNC_SAGE_TOOLS.has(toolUseBlock.name)
+                  ? await executeAsyncSageTool(toolUseBlock.name, toolUseBlock.input, user)
+                  : executeTool(toolUseBlock.name, toolUseBlock.input);
                 currentMessages = [
                   ...currentMessages,
                   {

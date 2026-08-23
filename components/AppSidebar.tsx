@@ -56,6 +56,7 @@ import { colors, font, radius, shadow, sidebar as sidebarTokens, z } from '../li
 import { useWhiteLabel } from './WhiteLabelProvider';
 import { useEntitlements } from '../lib/hooks/useEntitlements';
 import { moduleAccent } from '../lib/module-identity';
+import { Pill } from './ui/premium';
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 interface NavItem {
@@ -69,6 +70,193 @@ interface NavItem {
 interface NavSection {
   title: string;
   items: NavItem[];
+}
+
+/** "Acme General Contractors" -> "AG" (first letters of the first two words). */
+function companyInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  return (words.length >= 2 ? words[0][0] + words[1][0] : words[0].slice(0, 2)).toUpperCase();
+}
+
+/* ── Tenant brand lockup ────────────────────────────────────────────────
+ * The upper-left identity block. When the tenant has ANY branding (uploaded
+ * logo or company name) it renders a proper lockup: the logo at a real size
+ * with graceful aspect handling, company name + plan pill beneath, hover
+ * state, and a click-through to Settings → Branding. When there is no logo
+ * it falls back to a clean typographic monogram — never a tiny box, never a
+ * fake logo. No tenant branding at all → the Saguaro lockup (unchanged). */
+function BrandLockup({ collapsed }: { collapsed: boolean }) {
+  const wl = useWhiteLabel();
+  const [imgFailed, setImgFailed] = useState(false);
+  const [hover, setHover] = useState(false);
+  const [plan, setPlan] = useState<{ name: string | null; status: string | null } | null>(null);
+
+  // A fresh logo URL gets a fresh chance to load.
+  useEffect(() => { setImgFailed(false); }, [wl.logoUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/billing/subscription')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d && !cancelled) setPlan({ name: d.plan_name ?? null, status: d.status ?? null }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const hasLogo = !!wl.logoUrl && !imgFailed;
+  const hasTenantBrand = hasLogo || !!wl.companyName;
+
+  // Plan pill — honest states only: nothing renders until billing answers.
+  const planPill = (() => {
+    if (!plan) return null;
+    if (plan.status === 'past_due') return <Pill tone="red" caps>Past due</Pill>;
+    if (plan.status === 'trialing') return <Pill tone="amber" caps>Trial</Pill>;
+    if (plan.name) return <Pill tone="gold" caps>{plan.name}</Pill>;
+    return null;
+  })();
+
+  /* ── Default Saguaro lockup (no tenant branding yet) ── */
+  if (!hasTenantBrand) {
+    return (
+      <div
+        style={{
+          height: sidebarTokens.headerHeight,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          padding: collapsed ? '0' : '0 16px',
+          borderBottom: `1px solid ${colors.border}`,
+          flexShrink: 0,
+        }}
+      >
+        <Link
+          href="/app"
+          aria-label="Saguaro — Dashboard"
+          style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', overflow: 'hidden' }}
+        >
+          {collapsed ? (
+            <img src="/logo-badge.png" alt="Saguaro Control Systems" style={{ height: 32, width: 32, objectFit: 'contain', display: 'block' }} />
+          ) : (
+            <img src="/logo-horizontal.png" alt="Saguaro Control Systems" style={{ height: 30, width: 'auto', objectFit: 'contain', display: 'block' }} />
+          )}
+        </Link>
+      </div>
+    );
+  }
+
+  const monogram = (size: number, fontSize: number) => (
+    <span
+      aria-hidden
+      style={{
+        width: size, height: size, flexShrink: 0,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: Math.round(size * 0.27),
+        background: 'linear-gradient(150deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',
+        boxShadow: '0 4px 14px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
+        color: '#241500', fontSize, fontWeight: 900, letterSpacing: '0.02em',
+        userSelect: 'none',
+      }}
+    >
+      {companyInitials(wl.companyName || '?')}
+    </span>
+  );
+
+  /* ── Collapsed: one generous tile, logo contained (or monogram) ── */
+  if (collapsed) {
+    return (
+      <div style={{ borderBottom: `1px solid ${colors.border}`, flexShrink: 0, padding: '10px 8px', display: 'flex', justifyContent: 'center' }}>
+        <Link
+          href="/app/settings#branding"
+          title={`${wl.companyName || 'Company branding'} — brand settings`}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 44, height: 44, borderRadius: 12, textDecoration: 'none',
+            background: hover ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${hover ? 'var(--brand-primary-35)' : colors.borderDim}`,
+            transition: 'background .15s ease, border-color .15s ease',
+            overflow: 'hidden',
+          }}
+        >
+          {hasLogo ? (
+            <img
+              src={wl.logoUrl}
+              alt={wl.companyName || 'Company logo'}
+              onError={() => setImgFailed(true)}
+              style={{ maxWidth: 36, maxHeight: 36, width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+            />
+          ) : monogram(36, 14)}
+        </Link>
+      </div>
+    );
+  }
+
+  /* ── Expanded: full lockup — logo at a real size, name + plan beneath ── */
+  return (
+    <div style={{ borderBottom: `1px solid ${colors.border}`, flexShrink: 0, padding: '10px 10px 9px' }}>
+      <Link
+        href="/app/settings#branding"
+        title="Company branding — open Settings"
+        aria-label={`${wl.companyName || 'Company'} — brand settings`}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{
+          display: 'block', textDecoration: 'none',
+          padding: '12px 12px 11px', borderRadius: 12,
+          background: hover ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${hover ? 'var(--brand-primary-35)' : colors.borderDim}`,
+          boxShadow: hover ? '0 6px 18px -10px var(--brand-primary-35), inset 0 1px 0 rgba(255,255,255,0.06)' : 'inset 0 1px 0 rgba(255,255,255,0.04)',
+          transition: 'background .15s ease, border-color .15s ease, box-shadow .15s ease',
+          overflow: 'hidden',
+        }}
+      >
+        {hasLogo ? (
+          <>
+            {/* Logo at a proper size — contained, aspect preserved, left-anchored */}
+            <img
+              src={wl.logoUrl}
+              alt={wl.companyName || 'Company logo'}
+              onError={() => setImgFailed(true)}
+              style={{
+                display: 'block', maxWidth: '100%', maxHeight: 48,
+                width: 'auto', height: 'auto', objectFit: 'contain', objectPosition: 'left center',
+                marginBottom: (wl.companyName || planPill) ? 9 : 0,
+              }}
+            />
+            {(wl.companyName || planPill) && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                {wl.companyName && (
+                  <span style={{
+                    flex: '1 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontSize: 12, fontWeight: font.weight.bold, color: colors.textMuted, letterSpacing: '0.01em',
+                  }}>
+                    {wl.companyName}
+                  </span>
+                )}
+                {planPill}
+              </span>
+            )}
+          </>
+        ) : (
+          /* Typographic lockup — monogram + name + plan. Clean, never a box. */
+          <span style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+            {monogram(42, 16)}
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+              <span style={{
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                fontSize: 13.5, fontWeight: font.weight.black, color: colors.text, letterSpacing: '-0.01em', lineHeight: 1.2,
+              }}>
+                {wl.companyName}
+              </span>
+              {planPill && <span style={{ display: 'flex' }}>{planPill}</span>}
+            </span>
+          </span>
+        )}
+      </Link>
+    </div>
+  );
 }
 
 /* ── Navigation Config ─────────────────────────────────────────────── */
@@ -164,7 +352,6 @@ export default function AppSidebar({
   userInitials: string;
 }) {
   const pathname = usePathname();
-  const wl = useWhiteLabel();
   const { features } = useEntitlements(); // fail-closed: gated items hidden until entitled
   const width = collapsed ? sidebarTokens.widthCollapsed : sidebarTokens.width;
 
@@ -197,48 +384,8 @@ export default function AppSidebar({
         overflow: 'hidden',
       }}
     >
-      {/* ── Logo + Brand ───────────────────────────────────────────── */}
-      <div
-        style={{
-          height: sidebarTokens.headerHeight,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          padding: collapsed ? '0' : '0 16px',
-          gap: 11,
-          borderBottom: `1px solid ${colors.border}`,
-          flexShrink: 0,
-        }}
-      >
-        <Link
-          href="/app"
-          aria-label="Saguaro — Dashboard"
-          style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none', overflow: 'hidden' }}
-        >
-          {/* Brand lockup. On the white-label tier (with a logo set) we show the
-              TENANT's logo; otherwise the Saguaro lockup — badge when collapsed,
-              full horizontal lockup when expanded. */}
-          {wl.whiteLabelEnabled && wl.logoUrl ? (
-            <img
-              src={wl.logoUrl}
-              alt={wl.companyName || 'Logo'}
-              style={{ height: collapsed ? 32 : 30, width: collapsed ? 32 : 'auto', maxWidth: collapsed ? 32 : 168, objectFit: 'contain', display: 'block' }}
-            />
-          ) : collapsed ? (
-            <img
-              src="/logo-badge.png"
-              alt="Saguaro Control Systems"
-              style={{ height: 32, width: 32, objectFit: 'contain', display: 'block' }}
-            />
-          ) : (
-            <img
-              src="/logo-horizontal.png"
-              alt="Saguaro Control Systems"
-              style={{ height: 30, width: 'auto', objectFit: 'contain', display: 'block' }}
-            />
-          )}
-        </Link>
-      </div>
+      {/* ── Tenant brand lockup (logo / monogram + name + plan) ─────── */}
+      <BrandLockup collapsed={collapsed} />
 
       {/* ── Navigation Sections ─────────────────────────────────────── */}
       <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '10px 0' }}>

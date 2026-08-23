@@ -3,6 +3,7 @@ import { requirePermission } from '@/lib/permissions';
 import { signStoredUrl } from '@/lib/storage-signing';
 import { createNotification } from '@/lib/notifications';
 import { translateRadioMessage } from '@/lib/translate';
+import { stampPresentAtSend, receiptsByMessage } from '@/lib/radio-receipts';
 
 /**
  * Saguaro Radio — channel traffic.
@@ -15,6 +16,7 @@ async function membership(db: any, t: string, uid: string, channelId: string) {
   const { data } = await db.from('radio_members').select('id, role').eq('tenant_id', t).eq('channel_id', channelId).eq('user_id', uid).limit(1);
   return (data || [])[0] ?? null;
 }
+
 
 export async function GET(req: NextRequest) {
   const g = await requirePermission(req, 'Projects', 'View');
@@ -43,8 +45,12 @@ export async function GET(req: NextRequest) {
     const { data, error } = await q.order('created_at', { ascending: after ? true : false }).limit(100);
     if (error) throw error;
     const rows = (data || []) as any[];
+    // HEARD-BY (R13): one IN query attaches receipts to the page. Tolerant —
+    // pre-migration this returns an empty map and rows ship without receipts.
+    const receiptMap = await receiptsByMessage(db, t, rows.map((m) => m.id));
     const messages = await Promise.all((after ? rows : rows.reverse()).map(async (m) => ({
       ...m,
+      receipts: receiptMap.get(m.id) ?? [],
       audio_url: m.audio_path ? await signStoredUrl('project-files', m.audio_path, 3600) : null,
       image_url: m.image_path ? await signStoredUrl('project-files', m.image_path, 3600) : null,
     })));
@@ -74,7 +80,13 @@ export async function POST(req: NextRequest) {
           sender_user_id: g.user.id, sender_name: g.user.email || 'Team member',
           kind: body.kind === 'alert' ? 'alert' : 'text', body: text0,
         } as never).select().single();
-        if (bm) { sent.push(bm); void translateRadioMessage(db, (bm as any).id, text0); }
+        if (bm) {
+          sent.push(bm);
+          void translateRadioMessage(db, (bm as any).id, text0);
+          // HEARD-BY (R13): broadcast rows get the same present-at-send
+          // snapshot as single-channel traffic. Fire-and-forget.
+          void stampPresentAtSend(db, t, cid, (bm as any).id);
+        }
       }
       return NextResponse.json({ messages: sent, broadcast: sent.length }, { status: 201 });
     }
@@ -98,6 +110,10 @@ export async function POST(req: NextRequest) {
     // Translation brain: fire-and-forget (env-gated inside; never blocks the send).
     if (kind !== 'tone') void translateRadioMessage(db, (msg as any)?.id, text);
 
+    // HEARD-BY (R13): snapshot who was live on the channel at send time.
+    // Fire-and-forget; tolerant of the pre-063 schema.
+    void stampPresentAtSend(db, t, channelId, (msg as any)?.id);
+
     // GROUP PATCHING: mirror the message onto every channel patched to this one.
     void (async () => {
       try {
@@ -108,11 +124,14 @@ export async function POST(req: NextRequest) {
         for (const p of (patches || []) as any[]) {
           const other = p.channel_a === channelId ? p.channel_b : p.channel_a;
           const { data: och } = await db.from('radio_channels').select('project_id').eq('id', other).single();
-          await db.from('radio_messages').insert({
+          const { data: pm } = await db.from('radio_messages').insert({
             tenant_id: t, channel_id: other, project_id: (och as any)?.project_id ?? null,
             sender_user_id: g.user.id, sender_name: g.user.email || 'Team member',
             kind, body: text, patched_from: channelId,
-          } as never);
+          } as never).select().single();
+          // HEARD-BY (R13): mirrored rows carry their own present-at-send
+          // snapshot for the patched channel. Fire-and-forget.
+          if (pm) void stampPresentAtSend(db, t, other, (pm as any).id);
         }
       } catch { /* mirroring is best-effort */ }
     })();

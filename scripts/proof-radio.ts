@@ -4,6 +4,7 @@
  * membership, and translation-layer columns. Fixture fully cleaned up. */
 import { createClient } from '@supabase/supabase-js';
 import * as fs from 'node:fs';
+import { stampPresentAtSend } from '../lib/radio-receipts';
 
 const env = fs.readFileSync('D:/saguaro-web/.env.local', 'utf8');
 const get = (k: string) => (env.match(new RegExp(`^${k}=(.*)$`, 'm')) || [])[1]?.trim();
@@ -194,6 +195,46 @@ async function main() {
   const bcastChans = new Set(((bcast || []) as any[]).map((b) => b.channel_id)).size;
   check('R21: broadcast fans out one row per channel', (bcast || []).length === 3 && bcastChans === 3, `${(bcast || []).length} rows across ${bcastChans} channels`);
 
+  // ── R22: heard-by receipts lifecycle (Task R13 — migration 063) ──
+  // POST semantics mirrored from app/api/radio/receipts/route.ts: membership
+  // row supplies the display name (call sign first), action defaults 'played',
+  // and the partial unique index dedupes repeat plays silently.
+  const voiceMsgId = (vmsg as any)?.id;
+  const postReceipt = async (listenerId: string) => {
+    const { data: memRows } = await db.from('radio_members').select('id, display_name, call_sign')
+      .eq('tenant_id', tenantId).eq('channel_id', channelId).eq('user_id', listenerId).limit(1);
+    const mem = ((memRows || [])[0] as any) ?? null;
+    if (!mem) return { stored: false, error: 'not a member' };
+    const { error } = await db.from('radio_receipts').insert({
+      tenant_id: tenantId, channel_id: channelId, message_id: voiceMsgId, user_id: listenerId,
+      display_name: mem.call_sign || mem.display_name || null, action: 'played',
+    } as never);
+    return { stored: !error, error: error?.message };
+  };
+  const rc1 = await postReceipt(u2); // u2 heard u1's voice clip
+  const { data: rcRows1 } = await db.from('radio_receipts').select('user_id, display_name, action').eq('message_id', voiceMsgId);
+  check('R22a: play receipt stored with member display name',
+    rc1.stored && (rcRows1 || []).length === 1 && ((rcRows1 || [])[0] as any)?.display_name === MARK + ' Super' && ((rcRows1 || [])[0] as any)?.action === 'played',
+    rc1.stored ? `1 receipt, name "${((rcRows1 || [])[0] as any)?.display_name}"` : `insert failed: ${rc1.error}`);
+
+  const rc2 = await postReceipt(u2); // identical replay — unique index must dedupe
+  const { data: rcRows2 } = await db.from('radio_receipts').select('id').eq('message_id', voiceMsgId).eq('user_id', u2);
+  check('R22b: second identical receipt deduped by unique index',
+    !rc2.stored && (rcRows2 || []).length === 1,
+    `dup insert rejected: ${!rc2.stored}, still ${(rcRows2 || []).length} row(s)`);
+
+  // present_at_send: members live on the channel (last_seen_at within 90s) at
+  // send time get snapshotted onto the message by lib/radio-receipts.ts.
+  await db.from('radio_members').update({ last_seen_at: new Date().toISOString() } as never)
+    .eq('channel_id', channelId).in('user_id', [u1, u2]);
+  await stampPresentAtSend(db, tenantId, channelId, voiceMsgId);
+  const { data: stamped } = await db.from('radio_messages').select('present_at_send').eq('id', voiceMsgId).single();
+  const present = Array.isArray((stamped as any)?.present_at_send) ? (stamped as any).present_at_send : [];
+  const presentIds = present.map((p: any) => p.user_id);
+  check('R22c: present_at_send stamps live members onto the message',
+    present.length === 2 && presentIds.includes(u1) && presentIds.includes(u2) && present.every((p: any) => !!p.name),
+    `${present.length} present, ids [${presentIds.join(', ')}]`);
+
   // ── cleanup ──
   for (const cid of [(solo as any).id, d1.id, (lockedCh as any).id]) await db.from('radio_channels').delete().eq('id', cid);
   await db.storage.from('project-files').remove([clipPath]);
@@ -207,7 +248,8 @@ async function main() {
   await db.from('projects').delete().eq('id', projectId);
   const { data: left } = await db.from('projects').select('id').eq('id', projectId);
   const { data: leftM } = await db.from('radio_messages').select('id').eq('channel_id', channelId);
-  check('Z: fixture fully cleaned up (cascade verified)', (left || []).length === 0 && (leftM || []).length === 0, 'no test rows remain');
+  const { data: leftR } = await db.from('radio_receipts').select('id').eq('channel_id', channelId);
+  check('Z: fixture fully cleaned up (cascade verified)', (left || []).length === 0 && (leftM || []).length === 0 && (leftR || []).length === 0, 'no test rows remain (messages + receipts cascaded)');
 
   console.log(`\n${fail === 0 ? 'RADIO PROOF PASSED' : 'RADIO PROOF FAILED'} — ${pass} ok, ${fail} failed`);
   process.exit(fail ? 1 : 0);

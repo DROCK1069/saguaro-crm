@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import SageSettings from '@/components/SageSettings';
 
 // ─── TYPES ─────────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ export default function SageV6Chat({
   const [error, setError]                     = useState('');
   const [isMobile, setIsMobile]               = useState(false);
   const [greetingFetched, setGreetingFetched] = useState(false);
+  const [showSettings, setShowSettings]       = useState(false);
 
   const messagesEndRef  = useRef<HTMLDivElement>(null);
   const inputRef        = useRef<HTMLTextAreaElement>(null);
@@ -499,6 +501,33 @@ export default function SageV6Chat({
                 <DepthBadge depth={relationshipDepth} />
               </div>
 
+              {/* settings gear — opens the transparent Sage Brain surface */}
+              <button
+                onClick={() => setShowSettings(true)}
+                title="Sage settings"
+                style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: 'transparent', border: 'none',
+                  cursor: 'pointer', color: C.DIM,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, transition: 'background 0.15s, color 0.15s',
+                  lineHeight: 1,
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.14)';
+                  (e.currentTarget as HTMLButtonElement).style.color = C.GOLD;
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                  (e.currentTarget as HTMLButtonElement).style.color = C.DIM;
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+              </button>
+
               {/* close */}
               <button
                 onClick={handleClose}
@@ -866,6 +895,9 @@ export default function SageV6Chat({
 
         </div>
       )}
+
+      {/* ── SAGE SETTINGS MODAL ───────────────────────────────────────── */}
+      {showSettings && <SageSettings onClose={() => setShowSettings(false)} />}
     </>
   );
 }

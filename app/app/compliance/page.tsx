@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ShieldCheck, Gauge, CheckCircle, WarningCircle, XCircle, FileText, Signature, MagnifyingGlass, Envelope, UsersThree, ArrowRight } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
+import NudgeRing from '@/components/intelligence/NudgeRing';
+import { ANCHOR_INSURANCE_EXPIRING } from '@/lib/suggestions';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#45B37D',RED='#E0644E',AMBER='#F0A63C';
 
@@ -115,6 +117,10 @@ export default function CompliancePage(){
 
     {/* Scorecard + detail split */}
     <div style={{display:'grid',gridTemplateColumns:selected?'1fr 360px':'1fr',gap:20,transition:'grid-template-columns .2s',alignItems:'start'}}>
+      {/* NudgeRing pulses the scorecard when the suggestion engine flags an
+          expired / expiring insurance certificate (ticker deep links land on
+          this anchor). */}
+      <NudgeRing anchorId={ANCHOR_INSURANCE_EXPIRING} style={{minWidth:0}}>
       <SectionCard
         icon={<ShieldCheck size={17} weight="duotone" color={GOLD} />}
         title="Compliance Scorecard"
@@ -190,6 +196,7 @@ export default function CompliancePage(){
           </table>
         </div>}
       </SectionCard>
+      </NudgeRing>
 
       {selected&&<SectionCard
         icon={<ShieldCheck size={17} weight="duotone" color={GOLD} />}

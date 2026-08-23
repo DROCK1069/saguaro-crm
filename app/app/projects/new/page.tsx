@@ -1,6 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import SaguaroDatePicker from '../../../../components/SaguaroDatePicker';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { BUILDING_TYPES } from '@/lib/contractor-trades';
@@ -170,6 +172,57 @@ export default function NewProjectPage() {
     if(retMode) setRetainage(prev=> prev==='10' ? retMode : prev);
   },[portfolioProjects, portfolioLoading, portfolioError, year]);
 
+  /* ── Unsaved-work protection (R14): dirty once the GC has entered anything
+   *    beyond the seeded defaults (project number / retainage / jurisdiction /
+   *    start date arm only after a manual edit clears their AUTO flag). The
+   *    draft covers the whole intake form, AUTO chips included. ── */
+  const createDirty =
+    !!name.trim() || !!sector || !!buildingType || !!description.trim() || !!address.trim() ||
+    !!budget.trim() || !!owner.trim() || !!ownerEmail.trim() || !!arch.trim() || !!archEmail.trim() ||
+    !!awardDate || !!ntpDate || !!subDate || !!finalDate ||
+    contractType !== 'Lump Sum GMP' ||
+    prevailingWage !== 'No' || publicProject !== 'No — Private' ||
+    (!auto.num && !!projectNumber.trim()) || (!auto.ret && retainage !== '10') ||
+    !auto.state || !auto.start || (!auto.cat && type !== 'residential');
+  const draftData = {
+    name, projectNumber, buildingType, type, sector, description,
+    address, stateJurisdiction, budget, contractType, retainage,
+    awardDate, ntpDate, startDate, subDate, finalDate,
+    owner, ownerEmail, arch, archEmail, prevailingWage, publicProject, auto,
+  };
+  const guard = useUnsavedGuard({
+    dirty: createDirty,
+    draftKey: 'project-create',
+    draftData,
+    restoreDraft: (d) => {
+      const dr = d as Partial<typeof draftData>;
+      if (dr.name !== undefined) setName(dr.name);
+      if (dr.projectNumber) setProjectNumber(dr.projectNumber);
+      if (dr.buildingType !== undefined) setBuildingType(dr.buildingType);
+      if (dr.type) setType(dr.type);
+      if (dr.sector !== undefined) setSector(dr.sector);
+      if (dr.description !== undefined) setDescription(dr.description);
+      if (dr.address !== undefined) setAddress(dr.address);
+      if (dr.stateJurisdiction) setStateJurisdiction(dr.stateJurisdiction);
+      if (dr.budget !== undefined) setBudget(dr.budget);
+      if (dr.contractType) setContractType(dr.contractType);
+      if (dr.retainage) setRetainage(dr.retainage);
+      if (dr.awardDate !== undefined) setAwardDate(dr.awardDate);
+      if (dr.ntpDate !== undefined) setNtpDate(dr.ntpDate);
+      if (dr.startDate) setStartDate(dr.startDate);
+      if (dr.subDate !== undefined) setSubDate(dr.subDate);
+      if (dr.finalDate !== undefined) setFinalDate(dr.finalDate);
+      if (dr.owner !== undefined) setOwner(dr.owner);
+      if (dr.ownerEmail !== undefined) setOwnerEmail(dr.ownerEmail);
+      if (dr.arch !== undefined) setArch(dr.arch);
+      if (dr.archEmail !== undefined) setArchEmail(dr.archEmail);
+      if (dr.prevailingWage) setPrevailingWage(dr.prevailingWage);
+      if (dr.publicProject) setPublicProject(dr.publicProject);
+      if (dr.auto) setAuto(dr.auto);
+    },
+    onSave: () => submitCreate(),
+  });
+
   // Picking a canonical building type derives the DB category automatically.
   function onBuildingTypeChange(v:string){
     setBuildingType(v);
@@ -188,9 +241,10 @@ export default function NewProjectPage() {
     if(em) setArchEmail(prev=>{ if(!prev){ setAuto(a=>({...a,archEmail:true})); return em; } return prev; });
   }
 
-  async function create(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim() || !address.trim()) return;
+  /** POST the project — shared by the form submit and the guard's "Save & leave".
+   *  Returns true on success (after kicking off navigation to the new project). */
+  async function submitCreate(): Promise<boolean> {
+    if (!name.trim() || !address.trim()) { setError('Name and address are required.'); return false; }
     setSaving(true);
     setError('');
     try {
@@ -216,15 +270,25 @@ export default function NewProjectPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ projectId: d.projectId }),
         }).catch(() => {});
+        guard.clearDraft();
         router.push(`/app/projects/${d.projectId}/overview`);
+        return true;
       } else {
         setError(d.error || 'Failed to create project');
         setSaving(false);
+        return false;
       }
     } catch (err) {
       setError('Network error — please try again');
       setSaving(false);
+      return false;
     }
+  }
+
+  async function create(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !address.trim()) return;
+    await submitCreate();
   }
 
   const submitDisabled = saving||!name.trim()||!address.trim();
@@ -371,7 +435,7 @@ export default function NewProjectPage() {
               <button type="submit" disabled={submitDisabled} className="pmBtn" style={{...goldButtonStyle,padding:'13px 32px',fontSize:15,cursor:submitDisabled?'not-allowed':'pointer',opacity:submitDisabled?0.6:1}}>
                 {saving?'Creating…':'Create Project'}
               </button>
-              <button type="button" onClick={()=>router.back()} className="pmBtn" style={{...ghostButtonStyle,padding:'13px 20px'}}>
+              <button type="button" onClick={()=>guard.requestClose(()=>router.back())} className="pmBtn" style={{...ghostButtonStyle,padding:'13px 20px'}}>
                 Cancel
               </button>
               {submitDisabled && !saving && (
@@ -414,6 +478,8 @@ export default function NewProjectPage() {
         <datalist id="np-owner-book">{ownerNames.map(n=><option key={n} value={n}/>)}</datalist>
         <datalist id="np-arch-book">{archNames.map(n=><option key={n} value={n}/>)}</datalist>
       </form>
+
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

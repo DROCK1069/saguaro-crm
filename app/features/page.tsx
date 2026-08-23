@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { IntegrationStrip } from '@/components/Integrations';
 import MarketingNav from '@/components/MarketingNav';
+import { TRIAL_DAYS } from '@/lib/plans';
 
 const C = {
   dark: '#0a0a0a',
@@ -24,6 +25,15 @@ const NAV_LINKS = [
   { label: 'Pricing', href: '/pricing' },
   { label: 'Compare', href: '/compare' },
 ];
+
+/* House display treatment — gold text-shine on ONE key word per heading. */
+const SHINE: React.CSSProperties = {
+  background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)',
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  color: 'transparent',
+};
 
 type Feature = {
   eyebrow: string;
@@ -205,11 +215,9 @@ export default function FeaturesPage() {
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.gold }} />
             The Complete Platform
           </div>
-          <h1 style={{ fontSize: 'clamp(28px, 4vw, 34px)', fontWeight: 600, lineHeight: 1.15, margin: '0 0 20px', letterSpacing: '-0.03em', maxWidth: 760, marginInline: 'auto' }}>
+          <h1 style={{ fontSize: 'clamp(30px, 4.6vw, 44px)', fontWeight: 800, lineHeight: 1.12, margin: '0 0 20px', letterSpacing: '-0.02em', maxWidth: 820, marginInline: 'auto' }}>
             Everything you need to run the job —{' '}
-            <span style={{ color: C.text }}>
-              in one platform
-            </span>
+            in <span style={SHINE}>one platform</span>
           </h1>
           <p style={{ fontSize: 15, fontWeight: 400, color: C.dim, maxWidth: 600, margin: '0 auto 32px', lineHeight: 1.7 }}>
             AI-powered estimating, bidding, billing, field reporting, and compliance — built for general contractors who are tired of stitching together a dozen disconnected tools. One login. Your whole company.
@@ -217,7 +225,7 @@ export default function FeaturesPage() {
           <Link href="/signup" style={{ display: 'inline-block', padding: '12px 26px', background: C.gold, borderRadius: 8, color: '#0a0a0a', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
             Start Free Trial — No Credit Card →
           </Link>
-          <div style={{ marginTop: 14, fontSize: 12.5, color: 'rgba(255,255,255,0.45)' }}>30 days free · Unlimited users · Free migration</div>
+          <div style={{ marginTop: 14, fontSize: 12.5, color: 'rgba(255,255,255,0.45)' }}>{TRIAL_DAYS} days free · Unlimited users · Free migration</div>
         </section>
 
         {/* Feature sections */}
@@ -280,12 +288,12 @@ export default function FeaturesPage() {
         {/* Final CTA */}
         <section style={{ padding: '100px 24px', background: C.raised, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 600, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-0.03em' }}>
-              See every feature{' '}
-              <span style={{ color: C.text }}>on your own jobs.</span>
+            <h2 style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+              See every feature on{' '}
+              <span style={SHINE}>your own jobs</span>.
             </h2>
             <p style={{ fontSize: 15, color: C.dim, margin: '0 0 36px', lineHeight: 1.7 }}>
-              Spin up a free account and run a real project through Saguaro today. 30 days free, free migration, no credit card required.
+              Spin up a free account and run a real project through Saguaro today. {TRIAL_DAYS} days free, free migration, no credit card required.
             </p>
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
               <Link href="/signup" style={{ display: 'inline-block', padding: '12px 26px', background: C.gold, borderRadius: 8, color: '#0a0a0a', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
@@ -296,7 +304,7 @@ export default function FeaturesPage() {
               </Link>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {['30 days free', 'Free migration', 'Cancel anytime', 'Unlimited users'].map(pill => (
+              {[`${TRIAL_DAYS} days free`, 'Free migration', 'Cancel anytime', 'Unlimited users'].map(pill => (
                 <div key={pill} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border}`, borderRadius: 20, fontSize: 12, fontWeight: 500, color: C.dim }}>
                   <CheckIcon size={12} color={C.dim} />
                   {pill}

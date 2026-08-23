@@ -3,6 +3,7 @@ import { requirePermission } from '@/lib/permissions';
 import { createServerClient } from '@/lib/supabase-server';
 import { createNotification } from '@/lib/notifications';
 import { transcribeRadioVoice } from '@/lib/transcribe';
+import { stampPresentAtSend } from '@/lib/radio-receipts';
 
 const BUCKET = 'project-files';
 const MAX_BYTES = 25 * 1024 * 1024; // 25MB — minutes of audio, not uploads gone wrong
@@ -56,6 +57,10 @@ export async function POST(req: NextRequest) {
 
     // Transcription brain: fire-and-forget (env-gated inside; never blocks the send).
     void transcribeRadioVoice(db, (msg as any)?.id, path);
+
+    // HEARD-BY (R13): snapshot who was live on the channel at send time.
+    // Fire-and-forget; tolerant of the pre-063 schema.
+    void stampPresentAtSend(db, t, channelId, (msg as any)?.id);
 
     // GROUP PATCHING: mirror the transmission onto patched channels (same clip).
     void (async () => {
