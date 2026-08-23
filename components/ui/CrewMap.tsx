@@ -142,6 +142,8 @@ export function CrewMap({
   onHoursChange,
   panics = [],
   hasProject = true,
+  projects = [],
+  onPickProject,
   loading = false,
   height = 380,
 }: {
@@ -155,6 +157,9 @@ export function CrewMap({
   panics?: PanicPin[];
   /** False when the console has no projectId — shows the teaching state. */
   hasProject?: boolean;
+  /** Pickable projects for the no-project state — never make the user hand-edit a URL. */
+  projects?: { id: string; name: string }[];
+  onPickProject?: (id: string) => void;
   loading?: boolean;
   height?: number;
 }) {
@@ -393,12 +398,38 @@ export function CrewMap({
 
   if (!hasProject) {
     return (
-      <PremiumEmpty
-        compact
-        icon={<MapTrifold size={26} color={GOLD_HI} weight="fill" />}
-        title="Pick a project to map"
-        description="Open Radio from a project (or add ?projectId= to the URL) and the site map plots that crew's live pins and shift heat."
-      />
+      <div style={{ padding: '18px 20px 22px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          <MapTrifold size={26} color={GOLD_HI} weight="fill" />
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#F4F4F5', marginBottom: 4 }}>Pick a project to map</div>
+        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.55)', maxWidth: 460, margin: '0 auto 14px' }}>
+          The site map plots that crew’s live pins and shift heat.
+        </div>
+        {projects.length > 0 && onPickProject ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+            {projects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => onPickProject(p.id)}
+                className="pmBtn"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 15px',
+                  borderRadius: 999, border: '1px solid rgba(245,158,11,0.35)',
+                  background: 'linear-gradient(180deg, rgba(245,158,11,0.14), rgba(245,158,11,0.05))',
+                  color: '#F5B84D', fontSize: 12.5, fontWeight: 800, cursor: 'pointer',
+                }}
+              >
+                <MapTrifold size={14} weight="fill" />{p.name}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
+            No projects with radio channels yet — open a project to spin up its All Hands talkgroup.
+          </div>
+        )}
+      </div>
     );
   }
 

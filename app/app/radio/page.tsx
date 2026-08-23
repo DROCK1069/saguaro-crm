@@ -2451,6 +2451,15 @@ export default function RadioDispatchPage() {
             onHoursChange={setMapHours}
             panics={panicPins}
             hasProject={!!projectId}
+            projects={projectOptions}
+            onPickProject={(id) => {
+              setProjectId(id);
+              try {
+                const u = new URL(window.location.href);
+                u.searchParams.set('projectId', id);
+                window.history.replaceState(null, '', u.toString());
+              } catch { /* URL sync is cosmetic */ }
+            }}
             loading={mapLoading}
           />
         ) : (
