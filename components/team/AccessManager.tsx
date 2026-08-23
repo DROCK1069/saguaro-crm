@@ -19,7 +19,7 @@ const PURPLE = '#8B5CF6';
 /* ── types ── */
 type PermLevel = 'None' | 'View' | 'Edit' | 'Full';
 type PermissionMap = Record<string, PermLevel>;
-type Tab = 'roles' | 'matrix' | 'users' | 'compare' | 'audit';
+type Tab = 'team' | 'roles' | 'matrix' | 'users' | 'compare' | 'audit';
 
 interface Role {
   id: string;
@@ -90,8 +90,36 @@ const ROLE_PRESETS: { name: string; desc: string; color: string; perms: Permissi
 const ROLE_COLORS = [GOLD, BLUE, GREEN, RED, AMBER, PURPLE, '#EC4899', '#14B8A6', '#F97316'];
 
 /* ── view types for the two lightweight lookup lists ── */
-interface TenantUser { id: string; name: string; email: string }
+interface TenantUser {
+  id: string; name: string; email: string;
+  role?: string | null; title?: string | null; avatarUrl?: string | null;
+  createdAt?: string | null; lastSignInAt?: string | null;
+}
 interface TenantProject { id: string; name: string }
+
+/* project_team row — project-level membership (may or may not map to a sign-in) */
+interface ProjTeamRow { id: string; user_id: string | null; email: string | null; name: string; project_id: string; role: string | null }
+
+/* Base roles the server treats as an unconditional Full-on-everything bypass
+   (mirrors ADMIN_ROLES in lib/permissions.ts). */
+const ADMIN_BYPASS = new Set(['admin', 'owner']);
+
+/* One row of the Team tab: a PERSON (profiles + project_team merged), with
+   their real grant rollup. Every field traces to a real row — no invention. */
+interface PersonRow {
+  key: string;
+  userId: string | null;          // profiles.id when they have a sign-in
+  name: string; email: string;
+  avatarUrl: string | null;
+  baseRole: string | null;        // profiles.role (or project_team.role for contacts)
+  title: string | null;
+  status: 'active' | 'invited' | 'contact';
+  lastSignInAt: string | null;    // auth.users.last_sign_in_at (real)
+  globalGrants: UserAssignment[]; // user_role_assignments, project_id IS NULL
+  projectGrants: UserAssignment[];// user_role_assignments, project-scoped
+  projectNames: string[];         // project_team memberships
+  invite: PendingInvite | null;
+}
 
 /* pending sent invite (team_invites row, status='pending') */
 interface PendingInvite {
@@ -263,7 +291,8 @@ function Spinner() {
 
 /* ======================================================================== */
 export function AccessManager() {
-  const [tab, setTab] = useState<Tab>('roles');
+  // Land on Team — the people-first view. Everything else is one tab away.
+  const [tab, setTab] = useState<Tab>('team');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -275,6 +304,10 @@ export function AccessManager() {
   /* real tenant lookups (replace the deleted mock arrays) */
   const [users, setUsers] = useState<TenantUser[]>([]);
   const [projects, setProjects] = useState<TenantProject[]>([]);
+  const [projTeam, setProjTeam] = useState<ProjTeamRow[]>([]);
+
+  /* Team tab search */
+  const [teamSearch, setTeamSearch] = useState('');
 
   /* transient success / error toast for actions (load errors use `error`) */
   const [toast, setToast] = useState<{ msg: string; kind: 'ok' | 'err' } | null>(null);
@@ -329,9 +362,10 @@ export function AccessManager() {
 
       /* Real tenant users (profiles) + real projects, in parallel. */
       const sb = getSupabaseBrowser();
-      const [usersRes, projRes] = await Promise.all([
+      const [usersRes, projRes, ptRes] = await Promise.all([
         fetch('/api/team/users', { headers }),
         sb.from('projects').select('id, name').order('name'),
+        sb.from('project_team').select('id, user_id, email, name, project_id, role'),
       ]);
 
       const loadedUsers: TenantUser[] = usersRes.ok
@@ -341,6 +375,9 @@ export function AccessManager() {
 
       const loadedProjects: TenantProject[] = (projRes.data ?? []).map((p) => ({ id: p.id as string, name: (p.name as string) ?? 'Project' }));
       setProjects(loadedProjects);
+
+      /* Project-level memberships (RLS-scoped) — merged into the Team roster. */
+      setProjTeam((ptRes.data ?? []) as ProjTeamRow[]);
 
       /* Roles — seed the built-in presets as REAL rows if this tenant has none. */
       const rolesRes = await fetch('/api/roles', { headers });
@@ -500,6 +537,14 @@ export function AccessManager() {
     }
   };
 
+  /** Open the assign modal pre-targeted at one person (Team tab action). */
+  const openAssignFor = (userId: string) => {
+    setAssignUserId(userId);
+    setAssignRoleId('');
+    setAssignProjectId('');
+    setShowAssign(true);
+  };
+
   const assignRole = async () => {
     if (!assignUserId || !assignRoleId) return;
     const headers = await getAuthHeaders();
@@ -605,11 +650,89 @@ export function AccessManager() {
     return list;
   }, [assignments, userSearch, filterRoleId]);
 
+  /* ── Team roster: EVERYONE — profiles + project_team merged, with the real
+        grant rollup per person. Grants come straight from user_role_assignments;
+        project memberships from project_team; invite status from team_invites. ── */
+  const teamRows = useMemo<PersonRow[]>(() => {
+    const projName = (pid: string) => projects.find(p => p.id === pid)?.name ?? 'Project';
+    const rows = new Map<string, PersonRow>();
+
+    /* 1) Platform sign-ins (profiles). */
+    for (const u of users) {
+      rows.set(u.id, {
+        key: u.id, userId: u.id, name: u.name, email: u.email,
+        avatarUrl: u.avatarUrl ?? null, baseRole: u.role ?? null, title: u.title ?? null,
+        status: 'active', lastSignInAt: u.lastSignInAt ?? null,
+        globalGrants: [], projectGrants: [], projectNames: [], invite: null,
+      });
+    }
+    const byEmail = new Map<string, PersonRow>();
+    for (const r of rows.values()) if (r.email) byEmail.set(r.email.toLowerCase(), r);
+
+    /* 2) project_team memberships — attach to a sign-in when they map (by
+          user_id, else by email), otherwise a project-contact row. */
+    for (const pt of projTeam) {
+      const target = (pt.user_id && rows.get(pt.user_id)) || (pt.email && byEmail.get(pt.email.toLowerCase())) || null;
+      const pn = projName(pt.project_id);
+      if (target) {
+        if (!target.projectNames.includes(pn)) target.projectNames.push(pn);
+      } else {
+        const ck = `contact:${(pt.email || pt.name).toLowerCase()}`;
+        const existing = rows.get(ck);
+        if (existing) {
+          if (!existing.projectNames.includes(pn)) existing.projectNames.push(pn);
+        } else {
+          const row: PersonRow = {
+            key: ck, userId: null, name: pt.name || pt.email || 'Unknown', email: pt.email ?? '',
+            avatarUrl: null, baseRole: pt.role ?? null, title: null,
+            status: 'contact', lastSignInAt: null,
+            globalGrants: [], projectGrants: [], projectNames: [pn], invite: null,
+          };
+          rows.set(ck, row);
+          if (row.email) byEmail.set(row.email.toLowerCase(), row);
+        }
+      }
+    }
+
+    /* 3) Pending invites — someone on their way in. An address that already
+          has a sign-in keeps Active status (the invite panel still lists it). */
+    for (const inv of pendingInvites) {
+      const em = (inv.email || '').toLowerCase();
+      const existing = em ? byEmail.get(em) : undefined;
+      if (existing) {
+        if (existing.status !== 'active') { existing.status = 'invited'; existing.invite = inv; }
+      } else if (em) {
+        const row: PersonRow = {
+          key: `invite:${inv.id}`, userId: null, name: inv.email, email: inv.email,
+          avatarUrl: null, baseRole: inv.role ?? null, title: null,
+          status: 'invited', lastSignInAt: null,
+          globalGrants: [], projectGrants: [], projectNames: [], invite: inv,
+        };
+        rows.set(row.key, row);
+        byEmail.set(em, row);
+      }
+    }
+
+    /* 4) Grant rollup — real user_role_assignments split global vs project. */
+    for (const a of assignments) {
+      const r = rows.get(a.userId);
+      if (!r) continue;
+      (a.projectId ? r.projectGrants : r.globalGrants).push(a);
+    }
+
+    const rank = { active: 0, invited: 1, contact: 2 } as const;
+    let list = Array.from(rows.values()).sort((x, y) => rank[x.status] - rank[y.status] || x.name.localeCompare(y.name));
+    const q = teamSearch.trim().toLowerCase();
+    if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || (r.baseRole ?? '').toLowerCase().includes(q));
+    return list;
+  }, [users, projTeam, pendingInvites, assignments, projects, teamSearch]);
+
   /* ── tab bar ── */
   const tabs: { key: Tab; label: string }[] = [
+    { key: 'team', label: 'Team' },
     { key: 'roles', label: 'Roles' },
     { key: 'matrix', label: 'Permission Matrix' },
-    { key: 'users', label: 'User Assignments' },
+    { key: 'users', label: 'Assignments & Invites' },
     { key: 'compare', label: 'Compare Roles' },
     { key: 'audit', label: 'Audit Log' },
   ];
@@ -655,6 +778,159 @@ export function AccessManager() {
           }}>{t.label}</button>
         ))}
       </div>
+
+      {/* ── TAB: TEAM — everyone (profiles + project_team merged) ── */}
+      {tab === 'team' && (
+        <div>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input placeholder="Search people..." value={teamSearch} onChange={e => setTeamSearch(e.target.value)}
+              style={{ ...inputStyle(), maxWidth: 280 }} />
+            <span style={{ color: DIM, fontSize: 12 }}>
+              {teamRows.length} {teamRows.length === 1 ? 'person' : 'people'} · {teamRows.filter(r => r.status === 'active').length} sign-ins · {teamRows.filter(r => r.status === 'invited').length} invited · {teamRows.filter(r => r.status === 'contact').length} project contacts
+            </span>
+            <div style={{ flex: 1 }} />
+            <button onClick={() => setShowInvite(true)} style={{ ...btn('transparent', GOLD), background: 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))', border: `1px solid ${BORDER}` }}>+ Invite User</button>
+            <button onClick={() => { setAssignUserId(''); setAssignRoleId(''); setAssignProjectId(''); setShowAssign(true); }} style={{ ...btn(GOLD, '#241500'), background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(245,158,11,0.28)' }}>+ Assign Role</button>
+          </div>
+
+          <div style={{ ...card(), overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr>
+                  {['Person', 'Base Role', 'Access', 'Projects', 'Last Active', 'Status', ''].map(h => (
+                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: DIM, fontWeight: 600,
+                      borderBottom: `2px solid ${BORDER}`, fontSize: 12 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {teamRows.length === 0 ? (
+                  <tr><td colSpan={7} style={{ padding: 30, textAlign: 'center', color: DIM }}>
+                    {teamSearch ? 'No people match your search.' : 'No people yet — invite your first teammate.'}
+                  </td></tr>
+                ) : teamRows.map(r => {
+                  const isBypass = !!r.userId && ADMIN_BYPASS.has((r.baseRole || '').toLowerCase());
+                  const ini = (r.name || '?').split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '?';
+                  const inviteExp = r.invite ? inviteExpiry(r.invite.created_at) : null;
+                  return (
+                    <tr key={r.key} style={{ borderBottom: `1px solid ${BORDER}15` }}>
+                      {/* Person */}
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                          {r.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={r.avatarUrl} alt="" style={{ width: 32, height: 32, borderRadius: 16, objectFit: 'cover', flexShrink: 0 }} />
+                          ) : (
+                            <span style={{ width: 32, height: 32, borderRadius: 16, background: 'rgba(245,158,11,0.16)', color: GOLD,
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{ini}</span>
+                          )}
+                          <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1.3 }}>
+                            <span style={{ color: TEXT, fontWeight: 600 }}>{r.name}</span>
+                            <span style={{ color: DIM, fontSize: 11.5 }}>{[r.email, r.title].filter(Boolean).join(' · ') || '—'}</span>
+                          </span>
+                        </span>
+                      </td>
+                      {/* Base role */}
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                          color: isBypass ? '#241500' : DIM,
+                          background: isBypass ? `linear-gradient(135deg, ${GOLD}, #FBBF24)` : 'rgba(255,255,255,0.05)',
+                          border: isBypass ? 'none' : `1px solid ${BORDER}`, textTransform: 'capitalize' }}>
+                          {r.baseRole || 'member'}
+                        </span>
+                      </td>
+                      {/* Access — computed exactly the way the server enforces it */}
+                      <td style={{ padding: '10px 12px', maxWidth: 300 }}>
+                        {isBypass ? (
+                          <span style={{ color: GOLD, fontSize: 12, fontWeight: 700 }}>Full — admin bypass ({CATEGORIES.length}/{CATEGORIES.length} categories)</span>
+                        ) : r.status !== 'active' ? (
+                          <span style={{ color: DIM, fontSize: 12 }}>{r.status === 'invited' ? 'No access until the invite is accepted' : 'No sign-in — project contact only'}</span>
+                        ) : r.globalGrants.length === 0 && r.projectGrants.length === 0 ? (
+                          <span style={{ color: DIM, fontSize: 12 }}>Member default — View-only, Admin locked</span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                            {r.globalGrants.map(g => {
+                              const role = roles.find(x => x.id === g.roleId);
+                              return (
+                                <span key={g.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)',
+                                  border: `1px solid ${BORDER}`, borderRadius: 999, padding: '2px 9px', fontSize: 11, fontWeight: 600, color: TEXT }}>
+                                  <span style={{ width: 7, height: 7, borderRadius: 4, background: role?.color ?? BORDER, flexShrink: 0 }} />
+                                  {role?.name ?? 'Unknown'}
+                                  <button onClick={() => removeAssignment(g.id)} title="Remove this grant"
+                                    style={{ background: 'transparent', border: 'none', color: RED, cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 }}>x</button>
+                                </span>
+                              );
+                            })}
+                            {r.projectGrants.length > 0 && (
+                              <span title={r.projectGrants.map(g => `${roles.find(x => x.id === g.roleId)?.name ?? 'Role'} @ ${g.projectName ?? 'Project'}`).join('\n')}
+                                style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(245,158,11,0.10)', border: `1px solid rgba(245,158,11,0.35)`,
+                                  borderRadius: 999, padding: '2px 9px', fontSize: 11, fontWeight: 700, color: AMBER }}>
+                                {r.projectGrants.length} project-scoped
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </td>
+                      {/* Projects (project_team memberships) */}
+                      <td style={{ padding: '10px 12px', color: r.projectNames.length ? TEXT : DIM, fontSize: 12 }}>
+                        <span title={r.projectNames.join('\n')}>{r.projectNames.length || '—'}</span>
+                      </td>
+                      {/* Last active — real auth.users.last_sign_in_at */}
+                      <td style={{ padding: '10px 12px', color: r.lastSignInAt ? TEXT : DIM, fontSize: 12 }}>
+                        {r.lastSignInAt ? relTimeAgo(r.lastSignInAt) : r.status === 'active' ? 'never signed in' : '—'}
+                      </td>
+                      {/* Status */}
+                      <td style={{ padding: '10px 12px' }}>
+                        {r.status === 'active' ? (
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700,
+                            color: GREEN, background: `${GREEN}18`, border: `1px solid ${GREEN}` }}>Active</span>
+                        ) : r.status === 'invited' ? (
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700,
+                            color: inviteExp?.expired ? RED : AMBER, background: inviteExp?.expired ? `${RED}18` : `${AMBER}18`,
+                            border: `1px solid ${inviteExp?.expired ? RED : AMBER}` }}>
+                            {inviteExp?.expired ? 'Invite expired' : `Invited · expires ${inviteExp?.label ?? ''}`}
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700,
+                            color: DIM, background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}` }}>Project contact</span>
+                        )}
+                      </td>
+                      {/* Actions */}
+                      <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {r.status === 'active' && r.userId ? (
+                          <>
+                            <button onClick={() => openAssignFor(r.userId!)}
+                              style={{ ...btn('transparent', GOLD), padding: '6px 12px' }}>Assign Role</button>
+                            <button onClick={() => resetUserPassword(r.userId!, r.name)}
+                              style={{ ...btn('transparent', DIM), padding: '6px 12px', marginLeft: 4 }}>Reset PW</button>
+                          </>
+                        ) : r.status === 'invited' && r.invite ? (
+                          <>
+                            <button onClick={() => resendInvite(r.invite!.id)}
+                              style={{ ...btn('transparent', GOLD), padding: '6px 12px' }}>Resend</button>
+                            <button onClick={() => cancelInvite(r.invite!.id)}
+                              style={{ ...btn('transparent', RED), padding: '6px 12px', marginLeft: 4 }}>Cancel</button>
+                          </>
+                        ) : (
+                          <span style={{ color: DIM, fontSize: 11.5 }}>no sign-in</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Honest footnote: how Access is computed + what deactivation can and cannot do today. */}
+          <p style={{ color: DIM, fontSize: 11.5, lineHeight: 1.55, marginTop: 4 }}>
+            Access is computed exactly the way the server enforces it (lib/permissions): admin/owner base roles bypass everything;
+            everyone else takes the highest level per category across their role grants; a member with no grants gets the
+            View-only default with Admin locked. Account deactivation is not yet supported server-side — to revoke elevated
+            access today, remove the person&apos;s role grants above. Last-active is their real last sign-in.
+          </p>
+        </div>
+      )}
 
       {/* ── TAB: ROLES ── */}
       {tab === 'roles' && (

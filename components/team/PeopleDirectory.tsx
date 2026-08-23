@@ -126,7 +126,7 @@ export function PeopleDirectory() {
 
                 <Section title="Contact & pay">
                   <Info I={Envelope} k="Email" v={detail.email} /><Info I={Phone} k="Phone" v={detail.phone} /><Info I={MapPin} k="Address" v={detail.address} />
-                  <Info I={Briefcase} k="Type" v={detail.employment_type} /><Info I={CurrencyDollar} k="Rate" v={detail.regular_rate ? `$${detail.regular_rate}/hr${detail.overtime_rate ? ` · OT $${detail.overtime_rate}` : ''}` : null} />
+                  <Info I={Briefcase} k="Type" v={detail.employment_type} /><Info I={CurrencyDollar} k="Rate" v={Number(detail.regular_rate) > 0 ? <span style={{ color: GOLD, fontWeight: 800 }}>{`$${(Number(detail.regular_rate) || 0).toFixed(2)}/hr${Number(detail.overtime_rate) > 0 ? ` · OT $${(Number(detail.overtime_rate) || 0).toFixed(2)}` : ''}`}</span> : null} />
                   <Info I={FirstAid} k="Emergency" v={detail.emergency_contact_name ? `${detail.emergency_contact_name}${detail.emergency_contact_phone ? ` · ${detail.emergency_contact_phone}` : ''}` : null} />
                 </Section>
 

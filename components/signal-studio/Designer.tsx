@@ -17,11 +17,11 @@ import type { Pt } from '@/lib/heatmap/geometry';
 import { angleDeg, dist } from '@/lib/heatmap/geometry';
 import { summarizeCables, recommendCabling, runLengthFt } from '@/lib/heatmap/cabling-spec';
 import type { Band, CoverageResult, Device, DeviceTypeId, Env, HeatmapProject, Wall, WallMaterialId, Ssid, SsidBand, SsidSecurity } from '@/lib/heatmap/types';
-import { DEVICE_REGISTRY, WALL_MATERIALS, deviceDef, doriDistanceFt, SYSTEM_COLORS, RSSI_ZONES } from '@/lib/heatmap/models';
+import { DEVICE_REGISTRY, WALL_MATERIALS, deviceDef, doriDistanceFt, SYSTEM_COLORS, RSSI_ZONES, type DeviceDef } from '@/lib/heatmap/models';
 import { isoLines, interferenceMask } from '@/lib/heatmap/overlays';
 import { TEMPLATES, type TemplateSpec } from '@/lib/heatmap/templates';
 import { computeCoverage, apRssiAt, apUsableRadiusFt, inspectAt } from '@/lib/heatmap/engine';
-import { autoPlaceAPs, deriveFootprint, disciplineAiDevices, gapsWorthFixing, planChannels, recompute } from '@/lib/heatmap/smart';
+import { areaPerApFt2, autoPlaceAPs, deriveFootprint, disciplineAiDevices, gapsWorthFixing, minApSeparationFt, planChannels, recompute } from '@/lib/heatmap/smart';
 import * as smartEngine from '@/lib/heatmap/smart';
 import { summarizeBuilding } from '@/lib/heatmap/multifloor';
 import { UNIFI_APS, UNIFI_CAMERAS } from '@/lib/heatmap/unifi';
@@ -96,6 +96,127 @@ const placeInGap = (project: HeatmapProject, gap: { centroid: Pt }): Pt => {
   return gap.centroid;
 };
 
+/* ── ADVISOR + IDF ENGINE SHIM — sibling engine contract ─────────────────────
+   The canonical engine (synced by scripts/sync-heatmap-engine.mjs before every
+   web build) is gaining an 'idf' device type plus three advisor exports:
+     designDensityFlag(project)        → { flagged, apCount, capAps, areaFt2 } legacy over-density guard
+     computeCableRuns(project, idfId)  → per-device cable runs to the placed IDF (run ft, cable, over-limit)
+     adviseDesign(project)             → density verdict + per-AP reasoning + camera/sensor checks
+   Probed tolerantly (same pattern as the auto-design shim above); until the sync
+   lands, local fallbacks compute IDENTICAL semantics from the engine primitives
+   already imported (deriveFootprint / minApSeparationFt / areaPerApFt2 /
+   runLengthFt / recommendCabling) — every number SHOWN is engine math either way. ── */
+const IDF_TYPE = 'idf' as unknown as DeviceTypeId; // engine adds 'idf' to DeviceTypeId; double-cast keeps tsc green pre-sync
+const isIdfDevice = (d: Device) => (d.typeId as string) === 'idf';
+/** Registry-tolerant device def: pre-sync an 'idf' device renders with this fallback; post-sync the engine def wins. */
+const IDF_FALLBACK_DEF: DeviceDef = { label: 'IDF / network rack', short: 'IDF', modelType: 'radius', wallBlocked: false, color: SYSTEM_COLORS.cabling, defaults: { rangeFt: 0 } };
+const defOf = (t: DeviceTypeId): DeviceDef => DEVICE_REGISTRY[t] ?? IDF_FALLBACK_DEF;
+const AP_CAP_FT2 = 1500; // absolute engineering ceiling — the same 1 AP / 1,500 ft² constant autoPlaceAPs hard-caps to
+type DensityFlagInfo = { flagged: boolean; apCount: number; capAps: number; areaFt2: number; perApFt2: number | null };
+type ApAdviceRow = { id: string; label: string; band: string; txDbm: number; nnFt: number | null; areaFt2: number | null; status: 'ok' | 'crowded' };
+type AdviceCheck = { label: string; detail: string; status: 'ok' | 'warn' };
+type DesignAdvice = { density: DensityFlagInfo; minSepFt: number; apRows: ApAdviceRow[]; checks: AdviceCheck[] };
+type CableRunRow = { id: string; label: string; pos: Pt | null; lengthFt: number; cable: string; overLimit: boolean };
+type CableRunsInfo = { idfPos: Pt; runs: CableRunRow[]; totalFt: number; orderFt: number; overCount: number };
+const advisorEngine = smartEngine as unknown as Partial<{
+  designDensityFlag: (p: HeatmapProject) => unknown;
+  computeCableRuns: (p: HeatmapProject, idfId: string) => unknown;
+  adviseDesign: (p: HeatmapProject) => unknown;
+}>;
+const getDensityFlag = (p: HeatmapProject): DensityFlagInfo => {
+  if (typeof advisorEngine.designDensityFlag === 'function') {
+    try {
+      const r = advisorEngine.designDensityFlag(p) as Partial<DensityFlagInfo> | null;
+      if (r && typeof r.flagged === 'boolean' && Number.isFinite(Number(r.apCount)) && Number.isFinite(Number(r.capAps)))
+        return { flagged: r.flagged, apCount: Number(r.apCount), capAps: Number(r.capAps), areaFt2: Math.round(Number(r.areaFt2) || 0), perApFt2: Number.isFinite(Number(r.perApFt2)) ? Math.round(Number(r.perApFt2)) : null };
+    } catch { /* fall through to the local math */ }
+  }
+  const apCount = p.devices.filter((d) => d.typeId === 'wifi_ap').length;
+  const areaFt2 = deriveFootprint(p).areaFt2;
+  const capAps = areaFt2 > 0 ? Math.max(1, Math.ceil(areaFt2 / AP_CAP_FT2)) : 0;
+  return { flagged: areaFt2 > 0 && apCount > capAps, apCount, capAps, areaFt2: Math.round(areaFt2), perApFt2: apCount > 0 && areaFt2 > 0 ? Math.round(areaFt2 / apCount) : null };
+};
+const getCableRuns = (p: HeatmapProject, idfId: string): CableRunsInfo | null => {
+  const idf = p.devices.find((d) => d.id === idfId);
+  if (!idf || !p.scale) return null;
+  const posOf = (id: string): Pt | null => p.devices.find((d) => d.id === id)?.pos ?? null;
+  if (typeof advisorEngine.computeCableRuns === 'function') {
+    try {
+      const r = advisorEngine.computeCableRuns(p, idfId) as { runs?: unknown[]; totalFt?: number; orderFt?: number } | null;
+      if (r && Array.isArray(r.runs)) {
+        const runs: CableRunRow[] = r.runs.flatMap((raw) => {
+          const row = raw as Partial<CableRunRow> & { deviceId?: string };
+          const id = row.id || row.deviceId; const len = Number(row.lengthFt);
+          if (!id || !Number.isFinite(len)) return [];
+          return [{ id, label: String(row.label || ''), pos: posOf(id), lengthFt: Math.round(len), cable: String(row.cable || '—'), overLimit: row.overLimit === true || len > 328 }];
+        });
+        if (runs.length) {
+          const totalFt = Number.isFinite(Number(r.totalFt)) ? Math.round(Number(r.totalFt)) : runs.reduce((s, x) => s + x.lengthFt, 0);
+          const orderFt = Number.isFinite(Number(r.orderFt)) ? Math.round(Number(r.orderFt)) : Math.ceil(totalFt / 1000) * 1000;
+          return { idfPos: idf.pos, runs, totalFt, orderFt, overCount: runs.filter((x) => x.overLimit).length };
+        }
+      }
+    } catch { /* fall through to the local math */ }
+  }
+  const pxPerFt = p.scale.pxPerFt;
+  const runs: CableRunRow[] = p.devices.filter((d) => d.id !== idfId && !isIdfDevice(d)).map((d) => {
+    const lengthFt = runLengthFt(d.pos, idf.pos, pxPerFt);
+    const rec = recommendCabling(d.typeId, { distanceFt: lengthFt });
+    return { id: d.id, label: d.label || defOf(d.typeId).short, pos: d.pos, lengthFt, cable: rec.dataCable?.name || rec.powerCable?.name || '—', overLimit: lengthFt > 328 };
+  });
+  if (!runs.length) return null;
+  const totalFt = runs.reduce((s, x) => s + x.lengthFt, 0);
+  return { idfPos: idf.pos, runs, totalFt, orderFt: Math.ceil(totalFt / 1000) * 1000, overCount: runs.filter((x) => x.overLimit).length };
+};
+const getAdvice = (p: HeatmapProject, cov: CoverageResult | null): DesignAdvice => {
+  const density = getDensityFlag(p);
+  const localMinSep = Math.round(minApSeparationFt(areaPerApFt2(p.env)));
+  if (typeof advisorEngine.adviseDesign === 'function') {
+    try {
+      const r = advisorEngine.adviseDesign(p) as Partial<DesignAdvice> | null;
+      if (r && Array.isArray(r.apRows) && Array.isArray(r.checks))
+        return {
+          density,
+          minSepFt: Number.isFinite(Number(r.minSepFt)) ? Number(r.minSepFt) : localMinSep,
+          apRows: r.apRows.flatMap((raw) => { const a = raw as Partial<ApAdviceRow>; return a && a.id ? [{ id: a.id, label: String(a.label || 'AP'), band: String(a.band || '5'), txDbm: Number(a.txDbm) || 0, nnFt: Number.isFinite(Number(a.nnFt)) ? Number(a.nnFt) : null, areaFt2: Number.isFinite(Number(a.areaFt2)) ? Number(a.areaFt2) : null, status: a.status === 'crowded' ? 'crowded' as const : 'ok' as const }] : []; }),
+          checks: r.checks.flatMap((raw) => { const c = raw as Partial<AdviceCheck>; return c && c.label ? [{ label: String(c.label), detail: String(c.detail || ''), status: c.status === 'warn' ? 'warn' as const : 'ok' as const }] : []; }),
+        };
+    } catch { /* fall through to the local math */ }
+  }
+  const pxPerFt = p.scale?.pxPerFt || 0;
+  const aps = p.devices.filter((d) => d.typeId === 'wifi_ap');
+  const servedFt2 = (apId: string): number | null => {
+    if (!cov || cov.stats.activeType !== 'wifi_ap' || pxPerFt <= 0) return null;
+    let n = 0;
+    for (const c of cov.cells) if (c && c.covered && c.serverId === apId) n++;
+    const cellFt = cov.cellPx / pxPerFt;
+    return Math.round(n * cellFt * cellFt);
+  };
+  const apRows: ApAdviceRow[] = aps.map((ap, i) => {
+    let nn = Infinity;
+    for (const o of aps) if (o !== ap) nn = Math.min(nn, dist(ap.pos, o.pos) / (pxPerFt || 1));
+    const nnFt = pxPerFt > 0 && nn !== Infinity ? nn : null;
+    return { id: ap.id, label: ap.label || `AP ${i + 1}`, band: (ap.band || '5') as string, txDbm: ap.txPowerDbm ?? 15, nnFt, areaFt2: servedFt2(ap.id), status: nnFt != null && nnFt < localMinSep ? 'crowded' : 'ok' };
+  });
+  const checks: AdviceCheck[] = [];
+  const cams = p.devices.filter((d) => d.typeId === 'camera');
+  if (cams.length) {
+    const detect = cams.map((c) => Math.round(doriDistanceFt(c.resolutionPx ?? 2688, c.hfovDeg ?? 68, 25)));
+    checks.push({ label: 'Cameras', detail: `${cams.length} placed · detect range ${Math.min(...detect)}–${Math.max(...detect)} ft (EN 62676-4 DORI)`, status: 'ok' });
+  } else checks.push({ label: 'Cameras', detail: 'None placed', status: 'ok' });
+  const smokes = p.devices.filter((d) => d.typeId === 'smoke_detector_spot' || d.typeId === 'heat_detector_spot').length;
+  if (smokes > 0 && density.areaFt2 > 0) {
+    const guideline = Math.ceil(density.areaFt2 / 900); // NFPA 72 spot spacing 30 ft ≈ 900 ft² each — a LAYOUT guideline; the AHJ + NFPA 72 govern
+    checks.push(smokes < guideline
+      ? { label: 'Smoke / heat', detail: `${smokes} placed — 30 ft NFPA 72 spacing suggests ~${guideline} for ${density.areaFt2.toLocaleString()} ft² (AHJ governs)`, status: 'warn' }
+      : { label: 'Smoke / heat', detail: `${smokes} placed for ${density.areaFt2.toLocaleString()} ft² — meets the 30 ft spacing guideline (~${guideline})`, status: 'ok' });
+  } else checks.push({ label: 'Smoke / heat', detail: smokes ? `${smokes} placed — set the scale to check spacing` : 'None placed (fire-alarm scope)', status: 'ok' });
+  const motionCeil = p.devices.filter((d) => d.typeId === 'motion_pir_ceiling').length;
+  const motionWall = p.devices.filter((d) => d.typeId === 'motion_pir_wall').length;
+  checks.push({ label: 'Motion', detail: motionCeil + motionWall ? `${motionCeil + motionWall} placed · ${motionCeil} ceiling / ${motionWall} wall` : 'None placed', status: 'ok' });
+  return { density, minSepFt: localMinSep, apRows, checks };
+};
+
 const PLACEABLE: DeviceTypeId[] = ['wifi_ap', 'camera', 'motion_pir_ceiling', 'motion_pir_wall', 'smoke_detector_spot', 'heat_detector_spot', 'paging_speaker', 'access_reader', 'ble_beacon', 'iot_gateway', 'smart_switch', 'smart_plug', 'thermostat', 'door_lock', 'ev_charger', 'projector', 'display', 'electrical_outlet', 'data_jack', 'voice_jack', 'combo_plate', 'cable_term'];
 // annotation-only markers (electrical / data / voice / termination rough-in) — placeable but never a coverage layer
 const MARKER_TYPES: DeviceTypeId[] = ['electrical_outlet', 'data_jack', 'voice_jack', 'combo_plate', 'cable_term'];
@@ -156,7 +277,7 @@ const hexA = (hex: string, a: number) => {
 const HERO_ICON_SVG = `<svg width="30" height="30" viewBox="0 0 32 32" fill="none"><defs><linearGradient id="ss_hero_sheet" x1="6" y1="6" x2="26" y2="27" gradientUnits="userSpaceOnUse"><stop stop-color="#EDF1F6"/><stop offset="1" stop-color="#C6CFDC"/></linearGradient><linearGradient id="ss_hero_roll" x1="5" y1="5" x2="9" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#4A5A72"/><stop offset="1" stop-color="#2C3A4E"/></linearGradient><linearGradient id="ss_hero_gold" x1="20" y1="5" x2="20" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#FBBF24"/><stop offset="1" stop-color="#E08E0B"/></linearGradient></defs><path d="M9 6.4c0-.9.7-1.6 1.6-1.6h14.8c.9 0 1.6.7 1.6 1.6v19.2c0 .9-.7 1.6-1.6 1.6H10.6c-.9 0-1.6-.7-1.6-1.6V6.4Z" fill="url(#ss_hero_sheet)"/><path d="M13 11h11M13 15h11M13 19h7" stroke="#FBBF24" stroke-width="1.4" stroke-linecap="round"/><rect x="18" y="4.8" width="9" height="3.1" rx="1.1" fill="url(#ss_hero_gold)"/><path d="M4.6 6.6C4.6 5.4 5.6 4.4 6.8 4.4S9 5.4 9 6.6v18.8c0 1.2-1 2.2-2.2 2.2s-2.2-1-2.2-2.2V6.6Z" fill="url(#ss_hero_roll)"/><ellipse cx="6.8" cy="6.6" rx="2.2" ry="1.4" fill="#1b2532"/></svg>`;
 
 function makeDevice(typeId: DeviceTypeId, pos: Pt, model?: string): Device {
-  const def = DEVICE_REGISTRY[typeId];
+  const def = defOf(typeId); // registry-tolerant: 'idf' works pre-sync too
   const d: Device = { id: uid(), typeId, pos, label: def.short, ...(def.defaults as object) };
   if (typeId === 'wifi_ap' && model) {
     const ap = UNIFI_APS.find((a) => a.model === model);
@@ -389,6 +510,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
   const [projList, setProjList] = useState<{ id: string; name: string }[]>([]);
   const [designList, setDesignList] = useState<{ id: string; name: string; coverage_percent: number | null; device_count: number; updated_at: string; project_id: string | null }[]>([]);
   const [modal, setModal] = useState<'none' | 'save' | 'open' | 'share'>('none');
+  const [advisorOpen, setAdvisorOpen] = useState(true); // right-rail Advisor card (collapsible)
   const [shareUrl, setShareUrl] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
   const [saveName, setSaveName] = useState('');
@@ -403,8 +525,9 @@ export default function Designer({ projectId }: { projectId: string | null }) {
   const drag = useRef<{ mode: 'none' | 'pan' | 'device'; id?: string; sx: number; sy: number; moved: boolean; ox: number; oy: number }>({ mode: 'none', sx: 0, sy: 0, moved: false, ox: 0, oy: 0 });
 
   const activeDef = project ? deviceDef(project.activeType) : null;
-  const bom = useMemo(() => (project ? computeBom(project.devices) : null), [project?.devices]); // eslint-disable-line react-hooks/exhaustive-deps
-  const sched = useMemo(() => (project ? planSchedule(project.devices) : null), [project?.devices]); // eslint-disable-line react-hooks/exhaustive-deps
+  // registry-known devices only — pre-sync an 'idf' marker must never crash the BOM/schedule engines
+  const bom = useMemo(() => (project ? computeBom(project.devices.filter((d) => !!DEVICE_REGISTRY[d.typeId])) : null), [project?.devices]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sched = useMemo(() => (project ? planSchedule(project.devices.filter((d) => !!DEVICE_REGISTRY[d.typeId])) : null), [project?.devices]); // eslint-disable-line react-hooks/exhaustive-deps
   const interference = useMemo(
     () => (project && coverage && showInterference && project.activeType === 'wifi_ap' ? interferenceMask(project, coverage) : null),
     [project, coverage, showInterference],
@@ -701,6 +824,15 @@ export default function Designer({ projectId }: { projectId: string | null }) {
     }
     if (tool === 'wall') { setPendingWall((w) => [...w, snapMaybe(pt)]); return; }
     if (tool === 'place') {
+      if ((placeType as string) === 'idf') {
+        // ONE IDF per floor — a second click MOVES it (the cable schedule keys off "the IDF")
+        snapshot();
+        const existing = project.devices.find(isIdfDevice);
+        if (existing) { patch({ devices: project.devices.map((x) => (x.id === existing.id ? { ...x, pos: pt } : x)) }); setSelId(existing.id); }
+        else { const d = makeDevice(IDF_TYPE, pt); d.label = 'IDF'; patch({ devices: [...project.devices, d] }); setSelId(d.id); }
+        setAiNotes([project.scale ? 'IDF placed — cable runs + the schedule now measure from plan geometry to this rack. Click again to move it.' : 'IDF placed — set the scale so cable-run footage is real.']);
+        return;
+      }
       const model = placeType === 'wifi_ap' ? apModel : placeType === 'camera' ? camModel : undefined;
       snapshot(); const d = makeDevice(placeType, pt, model);
       // marker rough-in: stamp the chosen gang / port / gender + a pro label
@@ -925,6 +1057,11 @@ export default function Designer({ projectId }: { projectId: string | null }) {
     () => (project && coverage ? gapsWorthFixing(project, coverage.gaps ?? [], project.devices.filter((d) => d.typeId === 'wifi_ap').length) : []),
     [project, coverage],
   );
+  // ── ADVISOR data: density guard + per-AP reasoning + IDF cable schedule (engine shim, module scope) ──
+  const densityFlag = useMemo(() => (project ? getDensityFlag(project) : null), [project]);
+  const idfDevice = useMemo(() => project?.devices.find(isIdfDevice) ?? null, [project]);
+  const cableRuns = useMemo(() => (project && idfDevice ? getCableRuns(project, idfDevice.id) : null), [project, idfDevice]);
+  const advice = useMemo(() => (project ? getAdvice(project, coverage) : null), [project, coverage]);
   // Current field step: derived from what the design actually has, unless the user
   // pinned one on the rail. Completing a step clears the pin so the flow advances.
   // IDENTICAL derivation to mobile (coverage-heatmap.tsx): walls are OPTIONAL (reachable
@@ -1037,6 +1174,42 @@ export default function Designer({ projectId }: { projectId: string | null }) {
       } catch {
         setBusy(''); setAiNotes(['Auto-design failed — try Auto-place, then Fix dead zones.']);
       }
+    }, 20);
+  };
+  // ── LEGACY GUARD action: an over-dense design (pre-cap auto-designs stacked APs) gets ONE
+  //    corrective button. Confirm-first, then strip EVERY AP (manual + auto — this is the one
+  //    action allowed to) and run the corrected engine design: place → close dead zones (capped)
+  //    → plan channels → recompute. Everything that is not a wifi_ap is untouched. ──
+  const redesignCoverage = () => {
+    if (!project || !project.scale || !densityFlag) return;
+    const ok = window.confirm(`Re-design coverage?\n\nThis REPLACES ALL ${densityFlag.apCount} access points with a fresh engine design (cap ${densityFlag.capAps} AP${densityFlag.capAps === 1 ? '' : 's'} for ${densityFlag.areaFt2.toLocaleString()} ft²). Cameras, sensors and everything else stay. Undo reverts.`);
+    if (!ok) return;
+    const radio = apCat ? toDeviceRadio(apCat, autoBand) : null;
+    const apLabel = apCat ? apCat.model : apModel.replace('UniFi ', '');
+    setBusy('Re-designing coverage…');
+    setTimeout(() => {
+      try {
+        const opts = { measured: project.measured, calRmseDb: calResult?.rmseAfter };
+        const seed = { ...project, activeType: 'wifi_ap' as DeviceTypeId, devices: project.devices.filter((d) => d.typeId !== 'wifi_ap') };
+        const removed = project.devices.length - seed.devices.length;
+        const placed = autoPlaceAPs(seed, radio
+          ? { targetPct: autoTarget, band: radio.band, txPowerDbm: radio.txPowerDbm, antennaGainDbi: radio.antennaGainDbi, label: apLabel }
+          : { targetPct: autoTarget, band: autoBand, apModel }).aps;
+        let design = { ...seed, devices: [...seed.devices, ...placed.map(tagAutoPlaced)] };
+        let cov = recompute(covProject(design), 10, opts);
+        const gaps = gapsWorthFixing(design, cov.gaps ?? [], design.devices.filter((d) => d.typeId === 'wifi_ap').length);
+        if (gaps.length) {
+          const fix = gaps.map((g) => { const pos = placeInGap(design, g); if (radio) { const d = makeDevice('wifi_ap', pos); d.band = radio.band; d.txPowerDbm = radio.txPowerDbm; d.antennaGainDbi = radio.antennaGainDbi; d.label = apLabel; return tagAutoPlaced(d); } return tagAutoPlaced(makeDevice('wifi_ap', pos, apModel)); });
+          design = { ...design, devices: [...design.devices, ...fix] };
+          cov = recompute(covProject(design), 10, opts);
+        }
+        const chan = planChannels(design, autoBand === '2.4' ? '2.4' : '5');
+        design = { ...design, devices: design.devices.map((d) => (chan[d.id] != null ? { ...d, channel: chan[d.id] } : d)) };
+        snapshot(); setProject(design); setCoverage(cov); setBusy('');
+        const apCount = design.devices.filter((d) => d.typeId === 'wifi_ap').length;
+        const pct = Number.isFinite(cov.stats.pctCovered) ? Math.round(cov.stats.pctCovered) : 0;
+        setAiNotes([`Re-designed: removed ${removed} AP${removed === 1 ? '' : 's'}, placed ${apCount} × ${apLabel} → ${pct}% coverage · ${(cov.gaps ?? []).length} dead zone(s). Undo reverts.`]);
+      } catch { setBusy(''); setAiNotes(['Re-design failed — try Auto-design in the Devices step.']); }
     }, 20);
   };
   // ── "DESIGN MY BUILDING" AUTOPILOT — raw plan → AI reads walls/scale + places cameras/sensors →
@@ -1224,9 +1397,24 @@ export default function Designer({ projectId }: { projectId: string | null }) {
       ctx.strokeStyle = meta.color; ctx.lineWidth = lw;
       ctx.beginPath(); ctx.moveTo(w.a.x, w.a.y); ctx.lineTo(w.b.x, w.b.y); ctx.stroke();
     }
+    // ── IDF cable runs: faint polylines device → placed IDF (the plan-geometry cable schedule) ──
+    if (cableRuns) {
+      ctx.save(); ctx.setLineDash([5, 6]);
+      for (const r of cableRuns.runs) {
+        if (!r.pos) continue;
+        ctx.strokeStyle = r.overLimit ? 'rgba(255,69,58,0.55)' : hexA(SYSTEM_COLORS.cabling, 0.3);
+        ctx.lineWidth = r.overLimit ? 1.6 : 1;
+        ctx.beginPath(); ctx.moveTo(r.pos.x, r.pos.y); ctx.lineTo(cableRuns.idfPos.x, cableRuns.idfPos.y); ctx.stroke();
+      }
+      ctx.restore(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(cableRuns.idfPos.x, cableRuns.idfPos.y, 7, 0, 7); ctx.fillStyle = SYSTEM_COLORS.cabling; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#0a0a0a'; ctx.stroke();
+      chip(ctx, `IDF · ${cableRuns.totalFt.toLocaleString()} ft`, cableRuns.idfPos.x, cableRuns.idfPos.y - 18, 'rgba(13,17,23,0.92)', SYSTEM_COLORS.cabling);
+    }
     // ── structured cabling: thin steel home-run lines from cabled devices to the rack/MDF ──
     if (showCabling && project.devices.length) {
-      const rack = (project.devices.find((d) => d.typeId === 'iot_gateway' || d.typeId === 'smart_switch')?.pos)
+      const rack = (project.devices.find(isIdfDevice)?.pos)
+        || (project.devices.find((d) => d.typeId === 'iot_gateway' || d.typeId === 'smart_switch')?.pos)
         || { x: project.imgW / 2, y: project.imgH / 2 };
       ctx.strokeStyle = SYSTEM_COLORS.cabling; ctx.lineWidth = 1.4; ctx.setLineDash([]);
       for (const d of project.devices) {
@@ -1284,7 +1472,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
     // ── devices (aim cone / DORI bands + marker + label) ──
     for (const d of project.devices) {
       if (layerVis[deviceLayerKey(d.typeId)] === false) continue; // layer hidden → skip
-      const def = DEVICE_REGISTRY[d.typeId]; const sel = d.id === selId;
+      const def = defOf(d.typeId); const sel = d.id === selId;
       const pxPerFt = project.scale?.pxPerFt ?? 0;
       if (def.modelType === 'camera') {
         const aim = (d.aimDeg ?? 0) * Math.PI / 180;
@@ -1369,7 +1557,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
       ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx, by - 6); ctx.lineTo(bx, by + 6); ctx.moveTo(bx + barPx, by - 6); ctx.lineTo(bx + barPx, by + 6); ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(`${niceFt} ft`, bx + barPx / 2, by - 5);
     }
-  }, [project, coverage, heatComposite, showHeat, showContours, showInterference, showDori, showCabling, showMeasured, showRoam, showConfidence, measured, interference, pendingWall, pendingScale, selId, layerVis]);
+  }, [project, coverage, heatComposite, showHeat, showContours, showInterference, showDori, showCabling, cableRuns, showMeasured, showRoam, showConfidence, measured, interference, pendingWall, pendingScale, selId, layerVis]);
 
   // ── survey model-accuracy: mean-abs-error + worst point (predicted vs measured), computed live so it works pre-calibration too ──
   const accuracy = useMemo(() => {
@@ -1508,16 +1696,18 @@ export default function Designer({ projectId }: { projectId: string | null }) {
         return `<tr><td><b>${ap.label || 'AP ' + (i + 1)}</b>${ap.channel != null ? ` · ch ${ap.channel}` : ''}</td><td>${nn != null ? Math.round(nn) + ' ft' : 'isolated'}</td><td><b style="color:${half ? '#a8620a' : '#137a3f'}">${half ? 'Half (50%)' : 'Full (100%)'}</b></td><td style="color:#555;font-size:12px">${half ? 'Overlaps a neighbour closely — half power trims co-channel interference and improves roaming.' : 'Well spaced — full power to reach the edges of its cell.'}</td></tr>`;
       }).join('')}</tbody></table></div>` : '';
     // ── cable & termination schedule (rack = a gateway/switch if placed, else plan centre) ──
-    const rack = (project.devices.find((d) => d.typeId === 'iot_gateway' || d.typeId === 'smart_switch')?.pos) || { x: project.imgW / 2, y: project.imgH / 2 };
+    const idfDev = project.devices.find(isIdfDevice);
+    const rack = idfDev?.pos || (project.devices.find((d) => d.typeId === 'iot_gateway' || d.typeId === 'smart_switch')?.pos) || { x: project.imgW / 2, y: project.imgH / 2 };
     const cs = summarizeCables(project, rack);
     const cabRows = project.devices.filter((d) => recommendCabling(d.typeId).dataCable || recommendCabling(d.typeId).powerCable);
     const cableHtml = cabRows.length ? `<div class="sect"><h2>Cable &amp; termination schedule</h2>
       <table><thead><tr><th>Device</th><th>Run</th><th>Cable</th><th>Termination</th></tr></thead><tbody>${cabRows.map((d) => {
         const len = runLengthFt(d.pos, rack, pxPerFt); const rec = recommendCabling(d.typeId, { distanceFt: len });
         const cab = rec.dataCable ? rec.dataCable.name : (rec.powerCable ? rec.powerCable.name : '—');
-        return `<tr><td><b>${d.label || DEVICE_REGISTRY[d.typeId].short}</b></td><td>${len} ft</td><td>${cab}</td><td style="color:#555;font-size:12px">${rec.termination}</td></tr>`;
+        return `<tr><td><b>${d.label || defOf(d.typeId).short}</b></td><td>${len} ft</td><td>${cab}</td><td style="color:#555;font-size:12px">${rec.termination}</td></tr>`;
       }).join('')}</tbody></table>
-      <p style="font-size:12.5px;margin-top:8px"><b>Cable materials:</b> ${cs.byCable.map((c) => `${c.cable.name} ${c.feet.toLocaleString()} ft ($${c.cost.toLocaleString()})`).join(' · ')} &nbsp;—&nbsp; <b>~$${cs.totalCost.toLocaleString()}</b> est. ${cs.totalFeet.toLocaleString()} ft total (incl. 35% routing/drop allowance).</p></div>` : '';
+      <p style="font-size:12.5px;margin-top:8px"><b>Cable materials:</b> ${cs.byCable.map((c) => `${c.cable.name} ${c.feet.toLocaleString()} ft ($${c.cost.toLocaleString()})`).join(' · ')} &nbsp;—&nbsp; <b>~$${cs.totalCost.toLocaleString()}</b> est. ${cs.totalFeet.toLocaleString()} ft total (incl. 35% routing/drop allowance).</p>
+      <p style="font-size:12.5px;margin-top:4px"><b>Order footage:</b> ${cs.byCable.map((c) => `${c.cable.name} ${(Math.ceil(c.feet / 1000) * 1000).toLocaleString()} ft`).join(' · ')} — next full 1,000 ft box per cable type. ${idfDev ? 'Runs measured on the plan to the placed IDF.' : 'Runs measured to the assumed head-end — place an IDF on the plan to pin them.'}</p></div>` : '';
 
     // ── cinematic hero image(s): one per floor (best-server field), active floor first ──
     const planFloors = floors.filter((f) => f.proj);
@@ -1547,7 +1737,26 @@ export default function Designer({ projectId }: { projectId: string | null }) {
     const dz = summary ? summary.totalDeadZones : (covStats ? covStats.deadZones : 0);
     const grade = vpct == null ? '' : vpct >= 90 ? 'Strong, reliable' : vpct >= 75 ? 'Solid, dependable' : vpct >= 60 ? 'Workable but uneven' : 'Limited';
     const verdict = vpct == null ? ''
-      : `${grade} Wi-Fi across <b>${vpct}%</b> of ${multi ? 'the building' : 'the floor'} with <b>${apCount}</b> access point${apCount === 1 ? '' : 's'}${dz ? ` — <b>${dz}</b> area${dz === 1 ? '' : 's'} still need${dz === 1 ? 's' : ''} attention.` : ' and no dead zones.'}`;
+      : `${grade} Wi-Fi across <b>${vpct}%</b> of ${multi ? 'the building' : 'the floor'} with <b>${apCount}</b> access point${apCount === 1 ? '' : 's'}${dz ? ` — <b>${dz}</b> area${dz === 1 ? '' : 's'} still need${dz === 1 ? 's' : ''} attention.` : ' and no dead zones.'} <span style="font-weight:600;color:#6b7688">Predictive model — validate with a walk-test.</span>`;
+    // ── the report SHOWS the engineering math, never bare claims: density line + per-AP justification ──
+    const dflag = getDensityFlag(project);
+    const covForAps = coverage ?? activeHero?.cov ?? null;
+    const servedFt2 = (apId: string): number | null => {
+      if (!covForAps || covForAps.stats.activeType !== 'wifi_ap' || !project.scale) return null;
+      let cells = 0; for (const c of covForAps.cells) if (c && c.covered && c.serverId === apId) cells++;
+      const cellFt = covForAps.cellPx / project.scale.pxPerFt;
+      return Math.round(cells * cellFt * cellFt);
+    };
+    const densityHtml = dflag.areaFt2 > 0 && aps.length
+      ? `<p style="font-size:12.5px;margin:0 2px 16px;color:#333"><b>Density check:</b> ${aps.length} AP${aps.length === 1 ? '' : 's'} on ${dflag.areaFt2.toLocaleString()} ft² = 1 AP per ${Math.round(dflag.areaFt2 / aps.length).toLocaleString()} ft² — engineering ceiling 1 AP / 1,500 ft² (max ${dflag.capAps} for this floor)${dflag.flagged ? ' — <b style="color:#b42318">over the cap, re-design recommended</b>' : ' — within the cap'}.</p>`
+      : '';
+    const apJustHtml = aps.length ? `<div class="sect"><h2>Access points — why each one is there</h2>
+      <table><thead><tr><th>AP</th><th class="r">Area served</th><th class="r">Spacing</th><th class="c">Band</th><th class="r">Tx power</th></tr></thead>
+      <tbody>${aps.map((ap, i) => {
+        const nn = nnFt(ap); const a = servedFt2(ap.id);
+        return `<tr><td><b>${ap.label || 'AP ' + (i + 1)}</b>${ap.channel != null ? ` · ch ${ap.channel}` : ''}</td><td class="r">${a != null ? a.toLocaleString() + ' ft²' : '—'}</td><td class="r">${nn != null ? Math.round(nn) + ' ft to nearest' : 'only AP'}</td><td class="c">${ap.band || '5'} GHz</td><td class="r">${ap.txPowerDbm ?? 15} dBm</td></tr>`;
+      }).join('')}</tbody></table>
+      <p style="font-size:12px;color:#555;margin-top:6px">Area served = floor cells where this AP is the strongest signal (best-server model${covForAps ? `, ${covForAps.cellPx} px grid` : ''}). Spacing is centre-to-centre on the plan.</p></div>` : '';
 
     // ── building-wide summary section (multi-floor only) ──
     const buildingHtml = summary ? `<div class="sect"><h2>Building summary</h2>
@@ -1608,6 +1817,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
       </div>
       <div class="meta"><span>Project: <b>${project.name}</b></span><span>Layer: <b>${DEVICE_REGISTRY[project.activeType].label}</b></span><span>Environment: <b>${project.env}</b></span>${multi ? `<span>Floors: <b>${summary!.floorCount}</b></span>` : ''}<span>Date: <b>${dstr}</b></span></div>
       ${verdict ? `<div class="verdict">${verdict}</div>` : ''}
+      ${densityHtml}
       ${buildingHtml}
       ${heroSectionHtml}
       <div class="sect"><h2>${multi ? `Active floor — ${activeHero?.name || project.name}` : 'Coverage metrics'}</h2>
@@ -1625,10 +1835,11 @@ export default function Designer({ projectId }: { projectId: string | null }) {
       <tfoot><tr><td>Total (hardware, est.)</td><td></td><td></td><td class="r">$${bom.total.toLocaleString()}</td></tr></tfoot></table></div>
       <div class="sect"><h2>Cabling &amp; power</h2>
       <p style="font-size:13px">PoE load ≈ <b>${bom.poeWatts} W</b> · <b>${bom.cat6Runs}</b> Cat6 home-runs · recommended switch: <b>${bom.recSwitch?.model || '—'}</b> (${bom.recSwitch?.poeBudgetW || 0} W budget)${bom.recNvr ? ` · recorder: <b>${bom.recNvr.model}</b>` : ''}</p></div>
+      ${apJustHtml}
       ${powerHtml}
       ${cableHtml}
       <div class="sect">${netHtml}</div>
-      <p class="note">${calibrationNote(calResult)} Camera ranges per EN 62676-4 DORI. Prices are estimates; confirm current pricing, PoE budget, licensing and retention before ordering.</p>
+      <p class="note">${calibrationNote(calResult)} Coverage % is a predictive RF model — validate with an on-site walk-test before closeout. Camera ranges per EN 62676-4 DORI. Prices are estimates; confirm current pricing, PoE budget, licensing and retention before ordering.</p>
       <div class="foot">Generated by Saguaro Control Systems · Signal Studio · ${engineStamp(project)}</div>
     </div></body></html>`);
     w.document.close(); setTimeout(() => { try { w.print(); } catch { /* */ } }, 500);
@@ -2008,6 +2219,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
                 {placeType === 'electrical_outlet' && <select className="hm-sel" value={gangSel} onChange={(e) => setGangSel(+e.target.value)}><option value={2}>Duplex (2)</option><option value={4}>Quad (4)</option><option value={6}>6-gang (6)</option></select>}
                 {(placeType === 'data_jack' || placeType === 'voice_jack') && <select className="hm-sel" value={portsSel} onChange={(e) => setPortsSel(+e.target.value)}><option value={1}>1 port</option><option value={2}>2 ports</option><option value={4}>4 ports</option></select>}
                 {placeType === 'cable_term' && <select className="hm-sel" value={genderSel} onChange={(e) => setGenderSel(e.target.value as 'M' | 'F')}><option value="F">Jack — female (RJ45 keystone)</option><option value="M">Plug — male</option></select>}
+                <button className="hm-big" data-alt="true" data-on={tool === 'place' && (placeType as string) === 'idf'} title="Drop the IDF / rack — cable runs & the schedule measure to it from plan geometry" onClick={() => { finishWall(); setTool('place'); setPlaceType(IDF_TYPE); }}>{idfDevice ? 'Move IDF' : 'Place IDF (rack)'}</button>
                 {project.devices.length > 0 && <button className="hm-big" data-alt="true" onClick={() => openStep('heatmap')}>{project.devices.length} placed → Heatmap</button>}
               </>}
               {fieldStep === 'heatmap' && <>
@@ -2046,6 +2258,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
               </select>
               {placeType === 'wifi_ap' && <select className="hm-sel" value={apModel} onChange={(e) => setApModel(e.target.value)}>{UNIFI_APS.map((a) => <option key={a.model} value={a.model}>{a.model}</option>)}</select>}
               {placeType === 'camera' && <select className="hm-sel" value={camModel} onChange={(e) => setCamModel(e.target.value)}>{UNIFI_CAMERAS.map((c) => <option key={c.model} value={c.model}>{c.model}</option>)}</select>}
+              <button className="hm-tool" data-on={(placeType as string) === 'idf'} title="Place / move the IDF (rack) — cable runs measure to it from plan geometry" onClick={() => setPlaceType(IDF_TYPE)}>IDF</button>
               {placeType === 'electrical_outlet' && <select className="hm-sel" value={gangSel} onChange={(e) => setGangSel(+e.target.value)}><option value={2}>Duplex (2)</option><option value={4}>Quad (4)</option><option value={6}>6-gang (6)</option></select>}
               {(placeType === 'data_jack' || placeType === 'voice_jack') && <select className="hm-sel" value={portsSel} onChange={(e) => setPortsSel(+e.target.value)}><option value={1}>1 port</option><option value={2}>2 ports</option><option value={4}>4 ports</option></select>}
               {placeType === 'cable_term' && <select className="hm-sel" value={genderSel} onChange={(e) => setGenderSel(e.target.value as 'M' | 'F')}><option value="F">Jack — female (RJ45 keystone)</option><option value="M">Plug — male</option></select>}
@@ -2075,6 +2288,13 @@ export default function Designer({ projectId }: { projectId: string | null }) {
             <div className="hm-fieldnote">
               <div style={{ flex: 1 }}>{aiNotes.map((n, i) => <div key={i}>{n}</div>)}</div>
               <button type="button" className="hm-fieldnote-x" onClick={() => setAiNotes([])} title="Dismiss">×</button>
+            </div>
+          )}
+          {/* ── LEGACY GUARD: over-dense design loaded → say the numbers, offer the corrected re-design ── */}
+          {densityFlag?.flagged && (
+            <div className="hm-guardband">
+              <span style={{ flex: 1, minWidth: 220 }}>This design has {densityFlag.apCount} APs — engineering cap for {densityFlag.areaFt2.toLocaleString()} ft² is {densityFlag.capAps} (1 AP / 1,500 ft²). Older auto-designs over-placed hardware.</span>
+              <button className="hm-btn" onClick={redesignCoverage}>Re-design coverage (replaces ALL APs)</button>
             </div>
           )}
 
@@ -2123,10 +2343,78 @@ export default function Designer({ projectId }: { projectId: string | null }) {
               {/* Field mode: compact selected-device card — no panel needed to rename-level ops */}
               {fieldMode && sel && (
                 <div className="hm-selcard">
-                  <i style={{ background: DEVICE_REGISTRY[sel.typeId].color, width: 10, height: 10, borderRadius: '50%', display: 'inline-block' }} />
+                  <i style={{ background: defOf(sel.typeId).color, width: 10, height: 10, borderRadius: '50%', display: 'inline-block' }} />
                   <b style={{ fontSize: 13 }}>{sel.label}</b>
                   <button className="hm-tool" style={{ color: '#FF453A' }} onClick={() => { snapshot(); patch({ devices: project.devices.filter((x) => x.id !== sel.id) }); setSelId(null); }}>Remove</button>
                   <button className="hm-tool" onClick={() => flipFieldMode(false)} title="Full inspector in Details mode">Edit…</button>
+                </div>
+              )}
+              {/* ── ADVISOR — collapsible right-rail card: density verdict, per-AP reasoning, camera/sensor checks, IDF cable schedule.
+                     Pointer events stop here (like the 3D overlay) so a click can never place/pan under the card. ── */}
+              {advice && (
+                <div className="hm-advisor" onMouseDown={(e) => e.stopPropagation()} onMouseMove={(e) => e.stopPropagation()} onMouseUp={(e) => e.stopPropagation()}>
+                  <button type="button" className="hm-advisor-head" onClick={() => setAdvisorOpen((v) => !v)} title={advisorOpen ? 'Collapse the Advisor' : 'Expand the Advisor'}>
+                    <span>Advisor</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {(advice.density.flagged || advice.apRows.some((r) => r.status === 'crowded') || advice.checks.some((c) => c.status === 'warn') || (cableRuns?.overCount ?? 0) > 0) && <i className="hm-advdot" data-bad={advice.density.flagged} />}
+                      <span style={{ color: MUTED, fontWeight: 800 }}>{advisorOpen ? '−' : '+'}</span>
+                    </span>
+                  </button>
+                  {advisorOpen && (
+                    <div className="hm-advisor-body">
+                      <div className="hm-advdict" data-bad={advice.density.flagged}>
+                        {advice.density.apCount === 0
+                          ? 'No access points yet — Auto-design places the engine-correct count for this floor.'
+                          : advice.density.areaFt2 > 0
+                            ? <>{advice.density.apCount} AP{advice.density.apCount === 1 ? '' : 's'} on {advice.density.areaFt2.toLocaleString()} ft² = 1 AP / {advice.density.perApFt2?.toLocaleString() ?? '—'} ft² — cap {advice.density.capAps} (1 / 1,500 ft²){advice.density.flagged ? ' · OVER' : ' ✓'}</>
+                            : <>{advice.density.apCount} AP{advice.density.apCount === 1 ? '' : 's'} placed — set the scale to check density against the 1 AP / 1,500 ft² cap.</>}
+                      </div>
+                      {advice.apRows.length > 0 && <>
+                        <div className="hm-advlabel">Access points · spacing floor {advice.minSepFt} ft</div>
+                        {advice.apRows.map((r) => (
+                          <div key={r.id} className="hm-advrow">
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              <b>{r.label}</b>
+                              <span style={{ display: 'block', color: MUTED, fontSize: 10.5 }}>{r.nnFt != null ? `${Math.round(r.nnFt)} ft to nearest` : 'only AP'}{r.areaFt2 != null ? ` · serves ${r.areaFt2.toLocaleString()} ft²` : ''} · {r.band} GHz · {r.txDbm} dBm</span>
+                            </span>
+                            <span className="hm-advchip" data-kind={r.status}>{r.status}</span>
+                          </div>
+                        ))}
+                      </>}
+                      <div className="hm-advlabel">Camera &amp; sensor checks</div>
+                      {advice.checks.map((c) => (
+                        <div key={c.label} className="hm-advrow">
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <b>{c.label}</b>
+                            <span style={{ display: 'block', color: MUTED, fontSize: 10.5 }}>{c.detail}</span>
+                          </span>
+                          <span className="hm-advchip" data-kind={c.status === 'warn' ? 'warn' : 'ok'}>{c.status}</span>
+                        </div>
+                      ))}
+                      {cableRuns ? <>
+                        <div className="hm-advlabel">Cable schedule — to the IDF</div>
+                        <div className="hm-advrow">
+                          <span style={{ flex: 1 }}>
+                            <b>{cableRuns.totalFt.toLocaleString()} ft total</b>
+                            <span style={{ display: 'block', color: MUTED, fontSize: 10.5 }}>{cableRuns.runs.length} run{cableRuns.runs.length === 1 ? '' : 's'} from plan geometry · order {cableRuns.orderFt.toLocaleString()} ft (1,000 ft boxes)</span>
+                          </span>
+                          {cableRuns.overCount > 0 && <span className="hm-advchip" data-kind="over">{cableRuns.overCount} &gt;328 ft</span>}
+                        </div>
+                        <div style={{ maxHeight: 110, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {cableRuns.runs.map((r) => (
+                            <div key={r.id} className="hm-advrow" style={{ fontSize: 10.5 }}>
+                              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</span>
+                              <span style={{ color: r.overLimit ? '#FF453A' : DIM, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>{r.lengthFt} ft</span>
+                              <span style={{ color: MUTED, minWidth: 74, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.cable}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 9.5, color: MUTED, lineHeight: 1.4 }}>Run ft = straight plan distance × 1.35 routing + 18 ft drop, rounded up to 5 ft. Runs over 328 ft (100 m copper limit) show red — fiber or a second IDF.</div>
+                      </> : (
+                        <div style={{ fontSize: 10.5, color: MUTED, lineHeight: 1.5 }}>Place an IDF (Devices step) to get the cable schedule — run footage measured from plan geometry.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2462,7 +2750,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
                   </div>
                   <div style={{ color: GOLD, fontWeight: 900, fontSize: 23, fontVariantNumeric: 'tabular-nums' }}>${bom.turnkey.toLocaleString()}</div>
                 </div>
-                <div style={{ marginTop: 8, fontSize: 11, color: MUTED, lineHeight: 1.5 }}>PoE ≈ {bom.poeWatts} W · {bom.cat6Runs} Cat6 runs{bom.recSwitch ? ` · ${bom.recSwitch.model}` : ''}{bom.recNvr ? ` · ${bom.recNvr.model}` : ''}</div>
+                <div style={{ marginTop: 8, fontSize: 11, color: MUTED, lineHeight: 1.5 }}>PoE ≈ {bom.poeWatts} W · {bom.cat6Runs} Cat6 runs{bom.recSwitch ? ` · ${bom.recSwitch.model}` : ''}{bom.recNvr ? ` · ${bom.recNvr.model}` : ''}{cableRuns ? <> · cable <b style={{ color: DIM }}>{cableRuns.totalFt.toLocaleString()} ft</b> from plan geometry (order {cableRuns.orderFt.toLocaleString()} ft)</> : null}</div>
                 <button className="hm-smart" style={{ marginTop: 10 }} onClick={exportReport}><DownloadSimple size={14} weight="regular" style={{ verticalAlign: 'middle', marginRight: 6 }} />Export GC report (plan + BOM)</button>
               </PanelSection>}
 
@@ -2505,9 +2793,9 @@ export default function Designer({ projectId }: { projectId: string | null }) {
                   )}
                   {project.devices.map((d) => (
                     <div key={d.id} className="hm-row" data-on={d.id === selId} onClick={() => setSelId(d.id)} style={{ cursor: 'pointer' }}>
-                      <i style={{ background: DEVICE_REGISTRY[d.typeId].color }} />
+                      <i style={{ background: defOf(d.typeId).color }} />
                       <span style={{ flex: 1 }}>{d.label}{d.channel != null ? ` · ch${d.channel}` : ''}</span>
-                      <span style={{ color: MUTED, fontSize: 10, marginRight: 8 }}>{DEVICE_REGISTRY[d.typeId].short}</span>
+                      <span style={{ color: MUTED, fontSize: 10, marginRight: 8 }}>{defOf(d.typeId).short}</span>
                       <button
                         title="Remove device"
                         onClick={(e) => { e.stopPropagation(); snapshot(); patch({ devices: project.devices.filter((x) => x.id !== d.id) }); if (selId === d.id) setSelId(null); }}
@@ -2693,6 +2981,23 @@ export default function Designer({ projectId }: { projectId: string | null }) {
         .hm-fieldnote { display: flex; align-items: flex-start; gap: 10px; padding: 9px 16px 9px 14px; color: #FCD34D; font-size: 12.5px; font-weight: 600; line-height: 1.5; background: linear-gradient(180deg, rgba(245,158,11,0.11), rgba(245,158,11,0.05)); border-bottom: 1px solid rgba(245,158,11,0.25); box-shadow: inset 3px 0 0 ${GOLD}; }
         .hm-fieldnote-x { background: none; border: none; color: ${MUTED}; font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1; padding: 0 2px; }
         .hm-selcard { position: absolute; right: 14px; bottom: 14px; z-index: 7; background: rgba(13,17,23,0.88); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 11px 14px; display: flex; align-items: center; gap: 11px; backdrop-filter: blur(10px); box-shadow: 0 14px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
+        /* ── Advisor right-rail card + legacy density guard band ── */
+        .hm-advisor { position: absolute; right: 14px; top: 14px; z-index: 7; width: min(320px, calc(100% - 28px)); max-height: calc(100% - 96px); display: flex; flex-direction: column; background: rgba(13,17,23,0.90); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; backdrop-filter: blur(10px); box-shadow: 0 14px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); overflow: hidden; }
+        .hm-advisor-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: none; border: none; color: ${TEXT}; cursor: pointer; padding: 10px 13px; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+        .hm-advisor-head:hover { background: rgba(255,255,255,0.04); }
+        .hm-advdot { width: 8px; height: 8px; border-radius: 50%; background: ${GOLD}; box-shadow: 0 0 8px rgba(245,158,11,0.8); display: inline-block; }
+        .hm-advdot[data-bad="true"] { background: #FF453A; box-shadow: 0 0 8px rgba(255,69,58,0.8); }
+        .hm-advisor-body { overflow-y: auto; padding: 0 13px 13px; display: flex; flex-direction: column; gap: 8px; }
+        .hm-advdict { font-size: 12px; font-weight: 700; line-height: 1.5; border-radius: 9px; padding: 9px 11px; background: rgba(48,209,88,0.10); border: 1px solid rgba(48,209,88,0.35); color: #8CE7A5; font-variant-numeric: tabular-nums; }
+        .hm-advdict[data-bad="true"] { background: rgba(255,69,58,0.10); border-color: rgba(255,69,58,0.4); color: #FCA5A5; }
+        .hm-advlabel { font-size: 9.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: ${MUTED}; margin-top: 2px; }
+        .hm-advrow { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: ${DIM}; }
+        .hm-advrow b { color: ${TEXT}; font-weight: 700; }
+        .hm-advchip { flex-shrink: 0; font-size: 9.5px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+        .hm-advchip[data-kind="ok"] { background: rgba(48,209,88,0.14); color: #30D158; box-shadow: inset 0 0 0 1px rgba(48,209,88,0.35); }
+        .hm-advchip[data-kind="crowded"], .hm-advchip[data-kind="warn"] { background: rgba(245,158,11,0.14); color: ${GOLD}; box-shadow: inset 0 0 0 1px rgba(245,158,11,0.4); }
+        .hm-advchip[data-kind="over"] { background: rgba(255,69,58,0.14); color: #FF453A; box-shadow: inset 0 0 0 1px rgba(255,69,58,0.4); }
+        .hm-guardband { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px; font-size: 13px; font-weight: 700; color: #FECACA; line-height: 1.5; background: linear-gradient(180deg, rgba(255,69,58,0.14), rgba(255,69,58,0.06)); border-bottom: 1px solid rgba(255,69,58,0.35); box-shadow: inset 3px 0 0 #FF453A; }
         @media (max-width: 820px) {
           .hm-body { flex-direction: column; } .hm-panel { width: 100%; border-left: none; border-top: 1px solid ${BORDER}; overflow: visible; } .hm-layout { height: auto; }
           /* the canvas-wrap's children are all absolutely positioned — without this it
@@ -2717,7 +3022,7 @@ export default function Designer({ projectId }: { projectId: string | null }) {
 
 // ── bespoke, recognizable device art (vector, system-colored — never emoji/photos) ──
 function DeviceThumb({ typeId, size = 28 }: { typeId: DeviceTypeId; size?: number }) {
-  const c = DEVICE_REGISTRY[typeId].color;
+  const c = defOf(typeId).color;
   const kind =
     typeId === 'wifi_ap' ? 'ap'
       : typeId === 'camera' ? 'camera'
@@ -2799,13 +3104,13 @@ function identifyDevice(d: Device): { manufacturer: string; model: string; maxTx
     }
     const ap = UNIFI_APS.find((a) => a.model === label || strip(a.model) === label);
     if (ap) return { manufacturer: 'Ubiquiti UniFi', model: ap.model, maxTxDbm: Math.max(...Object.values(ap.txDbm)) };
-    return { manufacturer: label ? '—' : '—', model: label || DEVICE_REGISTRY[d.typeId].label };
+    return { manufacturer: label ? '—' : '—', model: label || defOf(d.typeId).label };
   }
   if (d.typeId === 'camera') {
     const cam = UNIFI_CAMERAS.find((x) => x.model === label || strip(x.model) === label);
     if (cam) return { manufacturer: 'Ubiquiti UniFi', model: cam.model };
   }
-  return { manufacturer: '—', model: label || DEVICE_REGISTRY[d.typeId].label };
+  return { manufacturer: '—', model: label || defOf(d.typeId).label };
 }
 
 // 8-point compass label for a camera/sensor aim (0° = East, CCW+)
@@ -2905,7 +3210,7 @@ function DeviceInspector({ d, project, sched, bom, clientsPerAp, onChange, onDel
   bom: import('@/lib/heatmap/bom').BomResult | null; clientsPerAp: number;
   onChange: (u: Partial<Device>) => void; onDelete: () => void;
 }) {
-  const def = DEVICE_REGISTRY[d.typeId];
+  const def = defOf(d.typeId);
   const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
   const [drill, setDrill] = useState<InspDrill | null>(null);
   useEffect(() => { setDrill(null); }, [d.id]);
@@ -3205,7 +3510,7 @@ function Metric({ label, val, big, color }: { label: string; val: string; big?: 
   );
 }
 function DeviceEditor({ d, onChange, onDelete }: { d: Device; onChange: (u: Partial<Device>) => void; onDelete: () => void }) {
-  const def = DEVICE_REGISTRY[d.typeId];
+  const def = defOf(d.typeId);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <input className="hm-sel" value={d.label || ''} onChange={(e) => onChange({ label: e.target.value })} placeholder="Label" />

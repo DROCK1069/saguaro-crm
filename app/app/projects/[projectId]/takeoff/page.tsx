@@ -5,9 +5,13 @@ import { useParams } from 'next/navigation';
 import { applyMarkupStack } from '@/lib/takeoff/engine';
 import { humanError } from '@/lib/errors';
 import { useToast } from '../../../../../components/Toast';
-import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning, CheckCircle, Ruler, Robot, CircleNotch, Circle, Plus, Sparkle, ShieldCheck, Timer, Buildings, TrendUp, Stack, Target, MagicWand, FileText, Scroll, FolderSimple, SealCheck, Warning, Calculator } from '@phosphor-icons/react';
+import { Blueprint, Table, ArrowRight, DownloadSimple, FileXls, Package, CurrencyDollar, Lightning, CheckCircle, Ruler, Robot, CircleNotch, Circle, Plus, Sparkle, ShieldCheck, Timer, Buildings, TrendUp, Stack, Target, MagicWand, FileText, Scroll, FolderSimple, SealCheck, Warning, Calculator, NotePencil, Trash, X } from '@phosphor-icons/react';
+import { SectionCard } from '@/components/ui/SectionCard';
+import { UiFx } from '@/components/ui/fx';
 
 interface TakeoffItem {
+  /** takeoff_materials.id — present once loaded/hydrated from the DB. Editing requires it. */
+  id?: string;
   csiCode: string;
   csiDivision: string;
   csiName: string;
@@ -113,7 +117,51 @@ const GREEN = '#22C55E';
 const SURFACE = 'rgba(255,255,255,0.02)';
 const BORDER = 'rgba(255,255,255,0.05)';
 
-const ROW_GRID = '100px 1fr 80px 56px 80px 110px 110px';
+const ROW_GRID = '100px 1fr 80px 56px 80px 110px 110px 64px';
+
+// ── Inline line-item editing (GC-owned lines) ─────────────────────────────────
+interface LinePatch { description?: string; quantity?: number; unit?: string; unitCost?: number; notes?: string }
+interface LineDraft { description: string; quantity: number; unit: string; unitCost: number; notes: string }
+
+const UNIT_OPTIONS = ['EA', 'SF', 'LF', 'SY', 'CY', 'LB', 'TON', 'HR', 'LS', 'GAL'];
+
+/** A row is editable once it carries a real DB id (tmp- rows are still syncing). */
+const isSavedRow = (item: TakeoffItem) => !!item.id && !item.id.startsWith('tmp-');
+
+/** DB materials → view items. Shared by the mount loader and post-analysis id hydration. */
+function mapMaterials(mats: Array<Record<string, unknown>>): TakeoffItem[] {
+  return mats
+    .filter((m) => Number(m.quantity) > 0 && Number(m.unit_cost) > 0)
+    .map((m) => ({
+      id:          m.id != null ? String(m.id) : undefined,
+      csiCode:     String(m.csi_code   || ''),
+      csiDivision: String(m.csi_code   || '').slice(0, 2),
+      csiName:     String(m.csi_name   || ''),
+      description: String(m.description || ''),
+      quantity:    Number(m.quantity)  || 0,
+      unit:        String(m.unit       || ''),
+      unitCost:    Number(m.unit_cost) || 0,
+      totalCost:   Number(m.total_cost) || (Number(m.quantity) * Number(m.unit_cost)),
+      laborHours:  Number(m.labor_hours) || 0,
+      notes:       String(m.notes      || ''),
+    }));
+}
+
+/** Client PREVIEW of the server totals math (Σ line costs, labor = hours × $65,
+ *  contingency on top) — the identical formula /api/takeoff/materials/[id] persists,
+ *  so the optimistic ribbon matches the server-confirmed numbers to the dollar. */
+function recomputeResult(prev: TakeoffResult, items: TakeoffItem[]): TakeoffResult {
+  const mat  = items.reduce((s, i) => s + (Number(i.totalCost) || 0), 0);
+  const lab  = items.reduce((s, i) => s + (Number(i.laborHours) || 0) * 65, 0);
+  const cont = Number(prev.contingency) || 0;
+  return {
+    ...prev, items,
+    totalMaterialCost: mat,
+    totalLaborCost:    lab,
+    totalProjectCost:  Math.round((mat + lab) * (1 + cont / 100)),
+    itemCount:         items.length,
+  };
+}
 
 // ── Shared cinematic FX (keyframes + interaction classes) ──────────────────────
 // Rendered once per state via <style>. Every animation is disabled under
@@ -148,6 +196,16 @@ h2.tkH2{font-size:clamp(22px,3vw,30px)!important;font-weight:800!important;line-
 .tkRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid currentColor;box-shadow:0 0 10px currentColor,0 2px 6px rgba(0,0,0,.55);cursor:pointer;transition:transform .12s ease}
 .tkRange::-webkit-slider-thumb:hover{transform:scale(1.18)}
 .tkRange::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid currentColor;box-shadow:0 0 10px currentColor,0 2px 6px rgba(0,0,0,.55);cursor:pointer}
+/* Inline line-item editing */
+.tkEditable{border-radius:6px;padding:2px 6px;margin:-2px -6px;cursor:text;transition:background .15s ease,box-shadow .15s ease}
+.tkEditable:hover{background:rgba(245,158,11,0.10);box-shadow:inset 0 0 0 1px rgba(245,158,11,0.35)}
+.tkCellInput{width:100%;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.5);border-radius:6px;color:#fff;font-size:13px;padding:4px 7px;outline:none;font-family:inherit}
+.tkCellInput:focus{box-shadow:0 0 0 2px rgba(245,158,11,0.25)}
+.tkCellInput::placeholder{color:rgba(255,255,255,0.35)}
+.tkIconBtn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.tkIconBtn:hover{border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.12)}
+.tkIconBtn:disabled{opacity:.35;cursor:default}
+@keyframes tkUndoIn{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (prefers-reduced-motion: reduce){
   .tkRoot, .tkRoot *{animation:none!important;transition:none!important}
   .tkHover:hover,.tkBtn:hover{transform:none!important}
@@ -174,15 +232,209 @@ function Aurora({ soft = false }: { soft?: boolean }) {
   );
 }
 
+/** Click-to-edit cell: renders the formatted value; a click swaps in an input.
+ *  Enter/blur commits (parent validates + PATCHes), Escape cancels. Purely local
+ *  state — keystrokes never touch the parent, so typing stays instant. */
+function EditableCell({ rawValue, display, align, numeric, disabled, cellStyle, onCommit }: {
+  rawValue: string;
+  display: React.ReactNode;
+  align: 'left' | 'right';
+  numeric?: boolean;
+  disabled?: boolean;
+  cellStyle: React.CSSProperties;
+  onCommit: (raw: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  if (editing) {
+    return (
+      <input
+        className="tkCellInput"
+        type={numeric ? 'number' : 'text'}
+        step={numeric ? 'any' : undefined}
+        value={draft}
+        autoFocus
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => { setEditing(false); onCommit(draft); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { setEditing(false); onCommit(draft); }
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        style={{ textAlign: align }}
+      />
+    );
+  }
+  return (
+    <div
+      className={disabled ? undefined : 'tkEditable'}
+      title={disabled ? 'Syncing with server…' : 'Click to edit'}
+      onClick={() => { if (!disabled) { setDraft(rawValue); setEditing(true); } }}
+      style={{ textAlign: align, minWidth: 0, ...cellStyle }}
+    >
+      {display}
+    </div>
+  );
+}
+
+/** One editable takeoff line: inline edit on description / qty / unit / $/unit,
+ *  a note editor (indicator dot when a note exists), and delete-with-undo. */
+const EditableRow = memo(function EditableRow({ item, idx, sellMult, onPatch, onDelete }: {
+  item: TakeoffItem;
+  idx: number;
+  sellMult: number;
+  onPatch: (item: TakeoffItem, patch: LinePatch) => void;
+  onDelete: (item: TakeoffItem) => void;
+}) {
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const editable = isSavedRow(item);
+  const hasNote = !!item.notes && item.notes.trim().length > 0;
+
+  const commitNum = (field: 'quantity' | 'unitCost') => (raw: string) => {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0 || n === item[field]) return; // invalid / unchanged → keep old
+    onPatch(item, { [field]: n });
+  };
+  const commitText = (field: 'description' | 'unit') => (raw: string) => {
+    const v = raw.trim();
+    if (!v || v === item[field]) return;
+    onPatch(item, { [field]: v });
+  };
+
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: ROW_GRID, padding: '8px 16px', borderBottom: `1px solid rgba(255,255,255,0.04)`, fontSize: 13, alignItems: 'center', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
+        <div style={{ color: GOLD, fontFamily: 'monospace', fontSize: 12 }}>{item.csiCode}</div>
+        <EditableCell rawValue={item.description} display={item.description} align="left" disabled={!editable}
+          cellStyle={{ color: 'rgba(255,255,255,0.85)', marginRight: 8 }} onCommit={commitText('description')} />
+        <EditableCell rawValue={String(item.quantity)} display={fmtN(item.quantity)} align="right" numeric disabled={!editable}
+          cellStyle={{ color: 'rgba(255,255,255,0.7)' }} onCommit={commitNum('quantity')} />
+        <EditableCell rawValue={item.unit} display={item.unit} align="right" disabled={!editable}
+          cellStyle={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }} onCommit={commitText('unit')} />
+        <EditableCell rawValue={String(item.unitCost)} display={`$${item.unitCost.toFixed(2)}`} align="right" numeric disabled={!editable}
+          cellStyle={{ color: 'rgba(255,255,255,0.6)' }} onCommit={commitNum('unitCost')} />
+        <div style={{ textAlign: 'right', color: GOLD, fontWeight: 600 }}>{fmt$(item.totalCost)}</div>
+        <div style={{ textAlign: 'right', color: '#22C55E', fontWeight: 600 }}>{fmt$(item.totalCost * sellMult)}</div>
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+          <button className="tkIconBtn" disabled={!editable} title={hasNote ? 'Edit note' : 'Add note'}
+            onClick={() => { setNoteDraft(item.notes || ''); setNoteOpen((o) => !o); }}>
+            <NotePencil size={14} weight="duotone" color={hasNote ? GOLD_HI : 'rgba(255,255,255,0.55)'} />
+            {hasNote && <span aria-hidden style={{ position: 'absolute', top: 2, right: 2, width: 6, height: 6, borderRadius: '50%', background: GOLD, boxShadow: '0 0 6px rgba(245,158,11,0.9)' }} />}
+          </button>
+          <button className="tkIconBtn" disabled={!editable} title="Delete line (6s undo)" onClick={() => onDelete(item)}>
+            <Trash size={14} weight="duotone" color="rgba(248,113,113,0.85)" />
+          </button>
+        </div>
+      </div>
+      {noteOpen && (
+        <div style={{ padding: '8px 16px 12px', borderBottom: `1px solid rgba(255,255,255,0.04)`, background: 'rgba(245,158,11,0.04)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <NotePencil size={15} weight="duotone" color={GOLD_HI} style={{ marginTop: 8, flexShrink: 0 }} />
+          <textarea
+            className="tkCellInput"
+            rows={2}
+            autoFocus
+            placeholder="Note for this line item — saved to the takeoff, rides on exports"
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            style={{ resize: 'vertical', minHeight: 36, lineHeight: 1.45, textAlign: 'left' }}
+          />
+          <button className="tkIconBtn" title="Save note"
+            onClick={() => { setNoteOpen(false); if (noteDraft.trim() !== (item.notes || '').trim()) onPatch(item, { notes: noteDraft.trim() }); }}>
+            <CheckCircle size={15} weight="fill" color={GREEN} />
+          </button>
+          <button className="tkIconBtn" title="Cancel" onClick={() => setNoteOpen(false)}>
+            <X size={14} weight="bold" color="rgba(255,255,255,0.6)" />
+          </button>
+        </div>
+      )}
+    </>
+  );
+});
+
+/** Inline add-line composer for one CSI division — a SectionCard in the flow of the
+ *  table (never a modal). Validates locally; the server recomputes the line total
+ *  and the takeoff totals on save. */
+function DivisionComposer({ div, divName, onAdd, onClose }: {
+  div: string;
+  divName: string;
+  onAdd: (div: string, draft: LineDraft) => Promise<boolean>;
+  onClose: () => void;
+}) {
+  const [description, setDescription] = useState('');
+  const [qty, setQty] = useState('');
+  const [unit, setUnit] = useState('EA');
+  const [unitCost, setUnitCost] = useState('');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+  const q = Number(qty);
+  const uc = Number(unitCost);
+  const valid = description.trim().length > 0 && Number.isFinite(q) && q > 0 && Number.isFinite(uc) && uc > 0;
+  const preview = valid ? q * uc : 0;
+
+  const submit = async () => {
+    if (!valid || busy) return;
+    setBusy(true);
+    const added = await onAdd(div, { description: description.trim(), quantity: q, unit: unit.trim() || 'EA', unitCost: uc, notes: notes.trim() });
+    setBusy(false);
+    if (added) onClose();
+  };
+
+  return (
+    <div style={{ padding: '10px 16px 14px', borderBottom: `1px solid ${BORDER}` }}>
+      <SectionCard
+        title={`Add line — Division ${div}`}
+        subtitle={`${divName} · the server recomputes qty × $/unit and reconfirms the takeoff totals on save`}
+        icon={<Plus size={18} weight="bold" />}
+        accentBar
+        padding={14}
+        actions={<button className="tkIconBtn" title="Close" onClick={onClose}><X size={14} weight="bold" color="rgba(255,255,255,0.6)" /></button>}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px,1fr) 90px 90px 110px', gap: 8 }}>
+          <input className="tkCellInput" placeholder="Description (e.g. 4in slab on grade)" value={description}
+            onChange={(e) => setDescription(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} style={{ textAlign: 'left' }} />
+          <input className="tkCellInput" placeholder="Qty" type="number" step="any" min={0} value={qty}
+            onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} style={{ textAlign: 'right' }} />
+          <input className="tkCellInput" placeholder="Unit" list={`tkUnits-${div}`} value={unit}
+            onChange={(e) => setUnit(e.target.value)} style={{ textAlign: 'right' }} />
+          <input className="tkCellInput" placeholder="$/Unit" type="number" step="any" min={0} value={unitCost}
+            onChange={(e) => setUnitCost(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} style={{ textAlign: 'right' }} />
+        </div>
+        <input className="tkCellInput" placeholder="Note (optional)" value={notes}
+          onChange={(e) => setNotes(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} style={{ marginTop: 8, textAlign: 'left' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
+          <button onClick={submit} disabled={!valid || busy} className="tkBtn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 9, border: 'none', background: valid ? `linear-gradient(135deg, ${GOLD}, ${AMBER})` : 'rgba(255,255,255,0.06)', color: valid ? '#1A1206' : 'rgba(255,255,255,0.35)', fontWeight: 800, fontSize: 12.5, cursor: valid && !busy ? 'pointer' : 'not-allowed' }}>
+            {busy ? <CircleNotch size={14} weight="bold" style={{ animation: 'tkSpin .9s linear infinite' }} /> : <Plus size={14} weight="bold" />} Add line
+          </button>
+          <span style={{ fontSize: 12, fontWeight: 700, color: valid ? GOLD : 'rgba(255,255,255,0.35)' }}>
+            {valid ? `= ${fmt$(preview)} cost` : 'Description, qty > 0 and $/unit > 0 required'}
+          </span>
+        </div>
+        <datalist id={`tkUnits-${div}`}>{UNIT_OPTIONS.map((u) => <option key={u} value={u} />)}</datalist>
+      </SectionCard>
+    </div>
+  );
+}
+
 /**
  * Memoized line-item table. Because `groupedItems` is memoized on the takeoff in the
  * parent, this component's props are reference-stable across markup-slider drags, so
  * React.memo skips re-rendering the (potentially thousands-of-rows) table entirely —
  * killing the freeze. Rows are also capped to ROW_RENDER_CAP with a "show all" toggle
  * so a huge AI extraction can't build thousands of DOM nodes in one synchronous commit.
+ * Every row is inline-editable (qty / unit / $/unit / description / notes / delete),
+ * and each division header carries an add-line composer.
  */
-const LineItemTable = memo(function LineItemTable({ groupedItems, sellMult }: { groupedItems: Record<string, TakeoffItem[]>; sellMult: number }) {
+const LineItemTable = memo(function LineItemTable({ groupedItems, sellMult, onPatch, onAdd, onDelete }: {
+  groupedItems: Record<string, TakeoffItem[]>;
+  sellMult: number;
+  onPatch: (item: TakeoffItem, patch: LinePatch) => void;
+  onAdd: (div: string, draft: LineDraft) => Promise<boolean>;
+  onDelete: (item: TakeoffItem) => void;
+}) {
   const [showAll, setShowAll] = useState(false);
+  const [composerDiv, setComposerDiv] = useState<string | null>(null);
   const entries = useMemo(
     () => Object.entries(groupedItems).sort(([a], [b]) => a.localeCompare(b)),
     [groupedItems],
@@ -201,20 +453,23 @@ const LineItemTable = memo(function LineItemTable({ groupedItems, sellMult }: { 
         const divName = CSI_DIVISION_NAMES[div] || `Division ${div}`;
         return (
           <div key={div}>
-            <div style={{ padding: '8px 16px', background: 'rgba(245, 158, 11,0.06)', borderBottom: `1px solid ${BORDER}`, borderTop: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            <div style={{ padding: '8px 16px', background: 'rgba(245, 158, 11,0.06)', borderBottom: `1px solid ${BORDER}`, borderTop: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               <span>Division {div} — {divName}</span>
-              <span>{fmt$(divTotal)}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  onClick={() => setComposerDiv((d) => (d === div ? null : div))}
+                  title={`Add a line to Division ${div}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 7, border: '1px solid rgba(245,158,11,0.35)', background: composerDiv === div ? 'rgba(245,158,11,0.16)' : 'rgba(245,158,11,0.06)', color: GOLD_HI, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  <Plus size={11} weight="bold" color={GOLD_HI} /> Add line
+                </button>
+                <span>{fmt$(divTotal)}</span>
+              </span>
             </div>
+            {composerDiv === div && (
+              <DivisionComposer div={div} divName={divName} onAdd={onAdd} onClose={() => setComposerDiv(null)} />
+            )}
             {shown.map((item, idx) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: ROW_GRID, padding: '10px 16px', borderBottom: `1px solid rgba(255,255,255,0.04)`, fontSize: 13, alignItems: 'center', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
-                <div style={{ color: GOLD, fontFamily: 'monospace', fontSize: 12 }}>{item.csiCode}</div>
-                <div style={{ color: 'rgba(255,255,255,0.85)', paddingRight: 8 }}>{item.description}</div>
-                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.7)' }}>{fmtN(item.quantity)}</div>
-                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{item.unit}</div>
-                <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.6)' }}>${item.unitCost.toFixed(2)}</div>
-                <div style={{ textAlign: 'right', color: GOLD, fontWeight: 600 }}>{fmt$(item.totalCost)}</div>
-                <div style={{ textAlign: 'right', color: '#22C55E', fontWeight: 600 }}>{fmt$(item.totalCost * sellMult)}</div>
-              </div>
+              <EditableRow key={item.id ?? `${div}-${idx}`} item={item} idx={idx} sellMult={sellMult} onPatch={onPatch} onDelete={onDelete} />
             ))}
           </div>
         );
@@ -308,23 +563,8 @@ export default function TakeoffPage() {
         }
         return;
       }
-      // (hoisted helper used by the loop above)
-      function mapMaterials(mats: Array<Record<string, unknown>>): TakeoffItem[] {
-        return mats
-          .filter((m) => Number(m.quantity) > 0 && Number(m.unit_cost) > 0)
-          .map((m) => ({
-            csiCode:     String(m.csi_code   || ''),
-            csiDivision: String(m.csi_code   || '').slice(0, 2),
-            csiName:     String(m.csi_name   || ''),
-            description: String(m.description || ''),
-            quantity:    Number(m.quantity)  || 0,
-            unit:        String(m.unit       || ''),
-            unitCost:    Number(m.unit_cost) || 0,
-            totalCost:   Number(m.total_cost) || (Number(m.quantity) * Number(m.unit_cost)),
-            laborHours:  Number(m.labor_hours) || 0,
-            notes:       String(m.notes      || ''),
-          }));
-      }
+      // (mapMaterials is module-level — shared with post-analysis id hydration,
+      //  and it now carries each row's DB id so every line is inline-editable)
 
       const materialTotal  = items.reduce((s, i) => s + i.totalCost, 0);
       // Compute labor from hours × $65 if labor_cost not stored
@@ -356,6 +596,212 @@ export default function TakeoffPage() {
     load().catch(() => {});
     return () => { cancelled = true; };
   }, [projectId]);
+
+  // ── Inline line-item editing: optimistic patch / add / delete-with-undo, every
+  //    mutation confirmed by the server's own totals recompute. ─────────────────
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'confirmed' | 'error'>('idle');
+  const [undoDelete, setUndoDelete] = useState<{ item: TakeoffItem; index: number } | null>(null);
+  const pendingSavesRef = useRef(0);
+  const saveFadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undoRef = useRef<{ item: TakeoffItem; index: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const resultRef = useRef<TakeoffResult | null>(null);
+  useEffect(() => { resultRef.current = result; }, [result]);
+
+  const beginSave = useCallback(() => {
+    pendingSavesRef.current += 1;
+    if (saveFadeRef.current) { clearTimeout(saveFadeRef.current); saveFadeRef.current = null; }
+    setSaveState('saving');
+  }, []);
+  const endSave = useCallback((okDone: boolean) => {
+    pendingSavesRef.current = Math.max(0, pendingSavesRef.current - 1);
+    if (pendingSavesRef.current > 0) return;
+    setSaveState(okDone ? 'confirmed' : 'error');
+    if (saveFadeRef.current) clearTimeout(saveFadeRef.current);
+    saveFadeRef.current = setTimeout(() => setSaveState('idle'), 2600);
+  }, []);
+
+  // The server's recompute (Σ costs, hours × $65, contingency) is the source of
+  // truth — overwrite the optimistic preview with whatever it actually persisted.
+  const applyServerTotals = useCallback((totals: Record<string, unknown> | undefined) => {
+    if (!totals) return;
+    setResult((prev) => prev ? {
+      ...prev,
+      totalMaterialCost: Number(totals.materialCost) || 0,
+      totalLaborCost:    Number(totals.laborCost)    || 0,
+      totalProjectCost:  Number(totals.totalCost)    || 0,
+    } : prev);
+  }, []);
+
+  const patchLine = useCallback(async (item: TakeoffItem, patch: LinePatch) => {
+    if (!item.id) return;
+    // Optimistic: apply the patch + preview totals with the same math the server runs
+    setResult((prev) => {
+      if (!prev) return prev;
+      const items = prev.items.map((it) => {
+        if (it.id !== item.id) return it;
+        const qty  = patch.quantity != null ? Number(patch.quantity) : it.quantity;
+        const cost = patch.unitCost != null ? Number(patch.unitCost) : it.unitCost;
+        return {
+          ...it,
+          description: patch.description != null ? patch.description : it.description,
+          unit:        patch.unit        != null ? patch.unit        : it.unit,
+          notes:       patch.notes       != null ? patch.notes       : it.notes,
+          quantity:    qty,
+          unitCost:    cost,
+          totalCost:   qty * cost,
+        };
+      });
+      return recomputeResult(prev, items);
+    });
+    beginSave();
+    try {
+      const res = await fetch(`/api/takeoff/materials/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error || 'Failed to save the edit');
+      applyServerTotals((body as { data?: { totals?: Record<string, unknown> } }).data?.totals);
+      endSave(true);
+    } catch (err: unknown) {
+      // Roll back JUST this row to its pre-patch object (concurrent edits survive)
+      setResult((prev) => prev ? recomputeResult(prev, prev.items.map((it) => (it.id === item.id ? item : it))) : prev);
+      endSave(false);
+      console.error(err);
+      showToast(humanError(err, 'Could not save the edit — the line was restored.'), 'error');
+    }
+  }, [beginSave, endSave, applyServerTotals, showToast]);
+
+  const addLine = useCallback(async (div: string, draft: LineDraft): Promise<boolean> => {
+    const tid = resultRef.current?.takeoffId || takeoffId;
+    if (!tid) { showToast('Takeoff still syncing — try again in a moment.', 'error'); return false; }
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const csiCode = `${div} 00 00`;
+    const csiName = CSI_DIVISION_NAMES[div] || `Division ${div}`;
+    const optimistic: TakeoffItem = {
+      id: tempId, csiCode, csiDivision: div, csiName,
+      description: draft.description, quantity: draft.quantity, unit: draft.unit,
+      unitCost: draft.unitCost, totalCost: draft.quantity * draft.unitCost,
+      laborHours: 0, notes: draft.notes,
+    };
+    setResult((prev) => prev ? recomputeResult(prev, [...prev.items, optimistic]) : prev);
+    beginSave();
+    try {
+      const res = await fetch(`/api/takeoff/materials/${tid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csiCode, csiName, description: draft.description, quantity: draft.quantity, unit: draft.unit, unitCost: draft.unitCost, notes: draft.notes }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error || 'Failed to add the line');
+      const data = (body as { data?: { material?: Record<string, unknown>; totals?: Record<string, unknown> } }).data;
+      setResult((prev) => {
+        if (!prev) return prev;
+        const items = prev.items.map((it) => it.id === tempId
+          ? { ...it, id: data?.material?.id != null ? String(data.material.id) : undefined, totalCost: Number(data?.material?.total_cost) || it.totalCost }
+          : it);
+        return recomputeResult(prev, items);
+      });
+      applyServerTotals(data?.totals);
+      endSave(true);
+      showToast('Line added', 'success');
+      return true;
+    } catch (err: unknown) {
+      setResult((prev) => prev ? recomputeResult(prev, prev.items.filter((it) => it.id !== tempId)) : prev);
+      endSave(false);
+      console.error(err);
+      showToast(humanError(err, 'Could not add the line. Please try again.'), 'error');
+      return false;
+    }
+  }, [takeoffId, beginSave, endSave, applyServerTotals, showToast]);
+
+  const commitDelete = useCallback(async (item: TakeoffItem, index: number) => {
+    beginSave();
+    try {
+      const res = await fetch(`/api/takeoff/materials/${item.id}`, { method: 'DELETE' });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((body as { error?: string }).error || 'Delete failed');
+      applyServerTotals((body as { data?: { totals?: Record<string, unknown> } }).data?.totals);
+      endSave(true);
+    } catch (err: unknown) {
+      // Restore the row where it was
+      setResult((prev) => {
+        if (!prev) return prev;
+        const items = [...prev.items];
+        items.splice(Math.min(index, items.length), 0, item);
+        return recomputeResult(prev, items);
+      });
+      endSave(false);
+      console.error(err);
+      showToast(humanError(err, 'Could not delete the line — it was restored.'), 'error');
+    }
+  }, [beginSave, endSave, applyServerTotals, showToast]);
+
+  // Soft delete: the row leaves the table (and the preview totals) immediately, but
+  // the server DELETE only fires after a 6s undo window. One pending undo at a time —
+  // a second delete commits the first immediately.
+  const deleteLine = useCallback((item: TakeoffItem) => {
+    if (!item.id) return;
+    const cur = resultRef.current;
+    if (!cur) return;
+    const index = cur.items.findIndex((it) => it.id === item.id);
+    if (index < 0) return;
+    const prevPending = undoRef.current;
+    if (prevPending) {
+      clearTimeout(prevPending.timer);
+      undoRef.current = null;
+      void commitDelete(prevPending.item, prevPending.index);
+    }
+    setResult((prev) => prev ? recomputeResult(prev, prev.items.filter((it) => it.id !== item.id)) : prev);
+    const timer = setTimeout(() => {
+      if (undoRef.current?.item.id !== item.id) return;
+      undoRef.current = null;
+      setUndoDelete(null);
+      void commitDelete(item, index);
+    }, 6000);
+    undoRef.current = { item, index, timer };
+    setUndoDelete({ item, index });
+  }, [commitDelete]);
+
+  const undoPendingDelete = useCallback(() => {
+    const pending = undoRef.current;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    undoRef.current = null;
+    setUndoDelete(null);
+    setResult((prev) => {
+      if (!prev) return prev;
+      const items = [...prev.items];
+      items.splice(Math.min(pending.index, items.length), 0, pending.item);
+      return recomputeResult(prev, items);
+    });
+  }, []);
+
+  // Leaving the page with a delete still in its undo window commits it on the way
+  // out (keepalive survives the navigation; no state updates on an unmounted tree).
+  useEffect(() => () => {
+    if (saveFadeRef.current) clearTimeout(saveFadeRef.current);
+    const pending = undoRef.current;
+    if (pending) {
+      clearTimeout(pending.timer);
+      fetch(`/api/takeoff/materials/${pending.item.id}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+    }
+  }, []);
+
+  // After a fresh SSE analysis the streamed items carry no DB ids. Pull the
+  // persisted rows once (same order + filter as the mount loader) so every line
+  // becomes editable — totals stay as analyzed until the first edit.
+  const hydrateIds = useCallback(async (tid: string) => {
+    try {
+      const res = await fetch(`/api/takeoff/${tid}`);
+      if (!res.ok) return;
+      const { data } = await res.json();
+      const mapped = mapMaterials(Array.isArray(data?.materials) ? data.materials : []);
+      if (mapped.length === 0) return;
+      setResult((prev) => (prev && prev.takeoffId === tid ? { ...prev, items: mapped } : prev));
+    } catch { /* non-fatal — rows stay read-only until reload */ }
+  }, []);
 
   const handleFileSelect = useCallback((file: File) => {
     const valid = ['application/pdf', 'image/png', 'image/jpeg', 'image/tiff', 'image/webp'];
@@ -449,6 +895,8 @@ export default function TakeoffPage() {
             eventSource.close();
             setResult(data as TakeoffResult);
             setState('results');
+            // hydrate DB row ids in the background so every line is editable
+            void hydrateIds(String(newTakeoff.id));
             const sheetsMsg = data.sheetsAnalyzed
               ? ` from ${data.sheetsAnalyzed}${data.sheetsTotal && data.sheetsTotal !== data.sheetsAnalyzed ? ` of ${data.sheetsTotal}` : ''} sheet${data.sheetsAnalyzed === 1 ? '' : 's'}`
               : '';
@@ -1213,6 +1661,7 @@ export default function TakeoffPage() {
   return (
     <div className="tkRoot" style={{ position: 'relative', overflow: 'hidden', minHeight: 'calc(100vh - 56px)' }}>
       <style>{FX_KEYFRAMES}</style>
+      <UiFx />
       <Aurora soft />
       <div style={{ position: 'relative', zIndex: 1, padding: '24px', maxWidth: 1180, margin: '0 auto' }}>
 
@@ -1462,17 +1911,31 @@ export default function TakeoffPage() {
         );
       })()}
 
+      {/* Editable-takeoff ribbon — live client preview, server-confirmed after save */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', margin: '0 0 10px', padding: '10px 14px', borderRadius: 12, border: `1px solid ${BORDER}`, background: 'linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.012))' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.6)', fontSize: 12.5 }}>
+          <NotePencil size={15} weight="duotone" color={GOLD_HI} />
+          Click any description, qty, unit or $/unit to edit. Every line takes a note; deletes hold 6s for undo.
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: saveState === 'saving' ? GOLD_HI : saveState === 'confirmed' ? GREEN : saveState === 'error' ? '#F87171' : 'rgba(255,255,255,0.45)' }}>
+          {saveState === 'saving' ? (<><CircleNotch size={14} weight="bold" style={{ animation: 'tkSpin .9s linear infinite' }} /> Saving…</>)
+            : saveState === 'confirmed' ? (<><CheckCircle size={14} weight="fill" color={GREEN} /> Saved — totals server-confirmed</>)
+            : saveState === 'error' ? (<><Warning size={14} weight="fill" color="#F87171" /> Save failed — change rolled back</>)
+            : (<><CheckCircle size={14} weight="regular" /> {fmtN(result?.itemCount || 0)} lines · in sync</>)}
+        </div>
+      </div>
+
       {/* Results table */}
       <div style={{
         background: 'linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: `1px solid ${BORDER}`,
         borderRadius: 14, overflow: 'hidden', marginBottom: 20,
       }}>
        <div style={{ overflowX: 'auto' }}>
-        <div style={{ minWidth: 680 }}>
+        <div style={{ minWidth: 744 }}>
         {/* Table header */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '100px 1fr 80px 56px 80px 110px 110px',
+          gridTemplateColumns: ROW_GRID,
           padding: '11px 16px',
           background: 'rgba(0,0,0,0.34)',
           borderBottom: '2px solid rgba(245, 158, 11,0.2)',
@@ -1488,15 +1951,16 @@ export default function TakeoffPage() {
           <div style={{ textAlign: 'right' }}>$/Unit</div>
           <div style={{ textAlign: 'right' }}>Cost</div>
           <div style={{ textAlign: 'right', color: '#22C55E' }}>Sell</div>
+          <div aria-hidden />
         </div>
 
         {/* Grouped rows — memoized + row-capped so slider drags and huge extractions don't freeze */}
-        <LineItemTable groupedItems={groupedItems} sellMult={sellMult} />
+        <LineItemTable groupedItems={groupedItems} sellMult={sellMult} onPatch={patchLine} onAdd={addLine} onDelete={deleteLine} />
 
         {/* Grand total row */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '100px 1fr 80px 56px 80px 110px 110px',
+          gridTemplateColumns: ROW_GRID,
           padding: '12px 16px',
           background: 'rgba(245, 158, 11,0.08)',
           borderTop: `2px solid rgba(245, 158, 11,0.3)`,
@@ -1511,10 +1975,24 @@ export default function TakeoffPage() {
           <div style={{ textAlign: 'right', color: '#22C55E', fontSize: 16 }}>
             {fmt$((result?.totalProjectCost || 0) * sellMult)}
           </div>
+          <div aria-hidden />
         </div>
         </div>
        </div>
       </div>
+
+      {/* Delete undo bar — the DELETE only fires after this 6s window passes */}
+      {undoDelete && (
+        <div style={{ position: 'fixed', left: '50%', bottom: 26, transform: 'translateX(-50%)', zIndex: 60, display: 'flex', alignItems: 'center', gap: 14, padding: '12px 18px', borderRadius: 14, background: 'rgba(24,18,8,0.94)', border: '1px solid rgba(245,158,11,0.45)', boxShadow: '0 18px 50px -12px rgba(245,158,11,0.35)', animation: 'tkUndoIn .25s ease both', maxWidth: 'min(92vw, 560px)' }}>
+          <Trash size={16} weight="duotone" color="#F87171" style={{ flexShrink: 0 }} />
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            Deleted “{undoDelete.item.description}” — {fmt$(Number(undoDelete.item.totalCost) || 0)}
+          </span>
+          <button onClick={undoPendingDelete} className="tkBtn" style={{ flexShrink: 0, padding: '8px 16px', borderRadius: 9, border: 'none', background: `linear-gradient(135deg, ${GOLD}, ${AMBER})`, color: '#1A1206', fontWeight: 800, fontSize: 12.5, cursor: 'pointer' }}>
+            Undo
+          </button>
+        </div>
+      )}
 
       {/* AI Recommendations */}
       {(result?.recommendations?.length ?? 0) > 0 && (

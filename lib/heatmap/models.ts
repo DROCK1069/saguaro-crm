@@ -226,6 +226,10 @@ export const DEVICE_REGISTRY: Record<DeviceTypeId, DeviceDef> = {
     label: 'Cable Termination', short: 'TERM', modelType: 'radius', wallBlocked: false, color: SYSTEM_COLORS.cabling,
     defaults: { rangeFt: 1, gender: 'F' }, zones: [{ outerFt: 1, color: '#F59E0B', label: 'Term' }],
   },
+  idf: {
+    label: 'IDF / Network Rack', short: 'IDF', modelType: 'radius', wallBlocked: false, color: SYSTEM_COLORS.cabling,
+    defaults: { rangeFt: 1 }, zones: [{ outerFt: 1, color: '#F59E0B', label: 'IDF' }],
+  },
 };
 
 // RF measured-power at 1m for weak-RF devices (beacon/gateway use their own reference).

@@ -8,7 +8,7 @@ const POE_W: Record<DeviceTypeId, number> = {
   wifi_ap: 13, camera: 9, motion_pir_ceiling: 2, motion_pir_wall: 2, smoke_detector_spot: 1,
   heat_detector_spot: 1, access_reader: 4, paging_speaker: 12, ble_beacon: 2, iot_gateway: 8,
   smart_switch: 0, smart_plug: 0, thermostat: 2, door_lock: 4, ev_charger: 0, projector: 0, display: 0,
-  electrical_outlet: 0, data_jack: 0, voice_jack: 0, combo_plate: 0, cable_term: 0,
+  electrical_outlet: 0, data_jack: 0, voice_jack: 0, combo_plate: 0, cable_term: 0, idf: 0,
 };
 // Approximate MSRP (USD) for models the catalog doesn't price directly.
 const AP_PRICE: Record<string, number> = {
@@ -53,7 +53,7 @@ export interface TurnkeyOpts { crewRateUsd?: number; laborPerDropHr?: number; ov
 const INSTALL_HOURS: Record<string, number> = {
   wifi_ap: 1.5, camera: 2.0, door_lock: 3.5, access_reader: 3.0, pir: 0.75, pir_sensor: 0.75,
   smoke: 1.0, smoke_detector: 1.0, iot_gateway: 1.5, data_jack: 0.5, voice_jack: 0.5,
-  combo_plate: 0.75, electrical_outlet: 0.5, cable_term: 1.0,
+  combo_plate: 0.75, electrical_outlet: 0.5, cable_term: 1.0, idf: 0,
 };
 const DEFAULT_INSTALL_HR = 1.0;
 

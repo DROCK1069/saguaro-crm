@@ -35,7 +35,9 @@ export type DeviceTypeId =
   | 'access_reader' | 'paging_speaker' | 'ble_beacon' | 'iot_gateway'
   | 'smart_switch' | 'smart_plug' | 'thermostat' | 'door_lock' | 'ev_charger' | 'projector' | 'display'
   // termination / rough-in markers (no coverage field — annotation only)
-  | 'electrical_outlet' | 'data_jack' | 'voice_jack' | 'combo_plate' | 'cable_term';
+  | 'electrical_outlet' | 'data_jack' | 'voice_jack' | 'combo_plate' | 'cable_term'
+  // network rack / IDF anchor — the cable-run engine's homerun target (annotation)
+  | 'idf';
 
 /** A placed device instance. Per-device numerics seed from the registry default but are editable. */
 export interface Device {

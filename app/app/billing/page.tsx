@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { CheckCircle, Warning, CreditCard, DeviceMobile, Question, Lightning } from '@phosphor-icons/react';
+import { CheckCircle, Warning, CreditCard, DeviceMobile, Question, Lightning, PuzzlePiece } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { ADDONS, type AddonDef } from '@/lib/addons';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -97,6 +98,18 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // ── Plan & Add-ons ─────────────────────────────────────────────────────────
+  // Entitlement rows for this tenant (GET /api/entitlements). A row with
+  // status 'requested' is the persisted enable-request marker — the server
+  // gate (hasEntitlement) fails closed on it, so it never turns anything on.
+  const [ents, setEnts] = useState<{ feature_key: string; status: string; expires_at: string | null }[] | null>(null);
+  const [entError, setEntError] = useState(false);
+  const [requesting, setRequesting] = useState<string | null>(null);
+  // Disable requests are notifications-only (the entitlement row deliberately
+  // stays 'active' until support processes them), so the pending chip state
+  // lives in localStorage — honest copy explains it below.
+  const [disableReqs, setDisableReqs] = useState<Record<string, string>>({});
+
   const loadSubscription = useCallback(async () => {
     setLoading(true);
     setError(false);
@@ -144,9 +157,64 @@ export default function BillingPage() {
     }
   }, []);
 
+  const loadEntitlements = useCallback(async () => {
+    setEntError(false);
+    try {
+      const res = await fetch('/api/entitlements');
+      if (!res.ok) { setEntError(true); setEnts([]); return; }
+      const data = await res.json().catch(() => ({}));
+      setEnts(Array.isArray(data.entitlements) ? data.entitlements : []);
+    } catch {
+      setEntError(true);
+      setEnts([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadSubscription();
-  }, [loadSubscription]);
+    loadEntitlements();
+    try {
+      setDisableReqs(JSON.parse(window.localStorage.getItem('saguaro_addon_disable_requests') || '{}') || {});
+    } catch { /* unreadable localStorage — start clean */ }
+  }, [loadSubscription, loadEntitlements]);
+
+  // Mirror of the server gate (lib/entitlements.ts hasEntitlement) so chips
+  // match what routes will actually allow.
+  const addonState = (key: string): { state: 'active' | 'trial' | 'requested' | 'off'; expiresAt: string | null } => {
+    const row = (ents || []).find(e => e.feature_key === key);
+    if (!row) return { state: 'off', expiresAt: null };
+    const future = row.expires_at ? new Date(row.expires_at).getTime() > Date.now() : null;
+    if (row.status === 'active' && (future === null || future)) return { state: 'active', expiresAt: row.expires_at };
+    if (row.status === 'trial' && future) return { state: 'trial', expiresAt: row.expires_at };
+    if (row.status === 'requested') return { state: 'requested', expiresAt: null };
+    return { state: 'off', expiresAt: null };
+  };
+
+  const requestAddon = async (addon: AddonDef, action: 'enable' | 'disable') => {
+    setActionError(null);
+    setRequesting(addon.key);
+    try {
+      const res = await fetch('/api/billing/addon-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featureKey: addon.key, action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        if (action === 'disable') {
+          const next = { ...disableReqs, [addon.key]: new Date().toISOString() };
+          setDisableReqs(next);
+          try { window.localStorage.setItem('saguaro_addon_disable_requests', JSON.stringify(next)); } catch { /* non-fatal */ }
+        }
+        await loadEntitlements();
+      } else {
+        setActionError(data.error || `Could not submit the ${addon.name} request. Please try again or email support@saguarocontrol.net.`);
+      }
+    } catch {
+      setActionError(`Could not submit the ${addon.name} request. Please check your connection and try again.`);
+    }
+    setRequesting(null);
+  };
 
   const daysLeft = (dateStr: string | null) => {
     if (!dateStr) return null;
@@ -435,6 +503,121 @@ export default function BillingPage() {
                 </div>
               );
             })}
+          </div>
+        </SectionCard>
+
+        {/* Plan & Add-ons — tenant self-service. No fake toggles: every action
+            hits the real request route, and copy says exactly what happens. */}
+        <SectionCard
+          icon={<PuzzlePiece size={17} weight="duotone" color={GOLD} />}
+          title="Plan & Add-ons"
+          subtitle="Optional capabilities for your whole company — nothing is billed without confirmation"
+          style={{ marginBottom: 28 }}
+        >
+          {/* Current plan summary + Change plan via the Stripe billing portal */}
+          <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: DIM, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Current Plan</div>
+              {sub ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 18, fontWeight: 900, color: TEXT }}>{sub.plan_name}</span>
+                  <StatusBadge status={sub.status} />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: GOLD }}>
+                    {priceCents > 0 ? `${fmtC(priceCents)} / ${sub.billing_interval === 'annual' ? 'yr' : 'mo'}` : 'No charge on file'}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 14, color: DIM }}>{loading ? 'Loading your plan...' : 'No active subscription — choose a plan above.'}</div>
+              )}
+              <div style={{ fontSize: 12, color: DIM, marginTop: 6 }}>
+                {sub && (sub.status === 'active' || sub.status === 'past_due')
+                  ? 'Plan up/downgrades run in the secure Stripe billing portal — changes take effect via Stripe.'
+                  : 'Once you subscribe, plan changes run in the secure Stripe billing portal.'}
+              </div>
+            </div>
+            {sub && (sub.status === 'active' || sub.status === 'past_due') && (
+              <button onClick={handlePortal} disabled={portalLoading} style={goldOutlineButtonStyle} className="pmBtn">
+                {portalLoading ? 'Loading...' : 'Change Plan'}
+              </button>
+            )}
+          </div>
+
+          {/* Add-ons grid — ONE typed list (lib/addons.ts), live status from GET /api/entitlements */}
+          {ents === null && !entError ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14 }}>
+              {ADDONS.map(a => (
+                <div key={a.key} style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 18 }}>
+                  <Skeleton width={150} height={14} style={{ marginBottom: 10 }} />
+                  <Skeleton width={90} height={11} style={{ marginBottom: 12 }} />
+                  <Skeleton width="100%" height={10} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14 }}>
+              {ADDONS.map(addon => {
+                const { state, expiresAt } = addonState(addon.key);
+                const trialLeft = state === 'trial' && expiresAt ? daysLeft(expiresAt) : null;
+                const pendingDisable = state === 'active' && !!disableReqs[addon.key];
+                const busy = requesting === addon.key;
+                const chip =
+                  state === 'active' ? { label: pendingDisable ? 'Active · disable requested' : 'Active', bg: 'rgba(34,197,94,0.12)', color: GREEN } :
+                  state === 'trial' ? { label: trialLeft != null ? `Trial · ${trialLeft}d left` : 'Trial', bg: 'rgba(245,158,11,0.12)', color: GOLD } :
+                  state === 'requested' ? { label: 'Requested', bg: 'rgba(245,158,11,0.12)', color: GOLD } :
+                  { label: 'Not enabled', bg: 'rgba(255,255,255,0.06)', color: DIM };
+                return (
+                  <div key={addon.key} style={{ background: RAISED, border: `1px solid ${state === 'active' || state === 'trial' ? 'rgba(34,197,94,0.3)' : BORDER}`, borderRadius: 14, padding: '18px 18px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: TEXT, lineHeight: 1.3 }}>{addon.name}</div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: chip.bg, color: chip.color, whiteSpace: 'nowrap', flexShrink: 0 }}>{chip.label}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: GOLD }}>{addon.price}</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: DIM, letterSpacing: 1, textTransform: 'uppercase', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, padding: '1px 7px', borderRadius: 6 }}>{addon.kind}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: DIM, lineHeight: 1.55, flex: 1 }}>{addon.desc}</div>
+                    {state === 'requested' ? (
+                      <div style={{ fontSize: 12, color: GOLD, fontWeight: 600, lineHeight: 1.5 }}>Requested — we enable it within 1 business day.</div>
+                    ) : pendingDisable ? (
+                      <div style={{ fontSize: 12, color: DIM, fontWeight: 600, lineHeight: 1.5 }}>Disable requested — stays on until our team processes it (within 1 business day).</div>
+                    ) : state === 'active' || state === 'trial' ? (
+                      <button onClick={() => requestAddon(addon, 'disable')} disabled={busy} style={{ ...dangerGhostStyle, padding: '8px 14px', fontSize: 12.5, alignSelf: 'flex-start' }} className="pmBtn">
+                        {busy ? 'Submitting...' : 'Request Disable'}
+                      </button>
+                    ) : (
+                      <button onClick={() => requestAddon(addon, 'enable')} disabled={busy} style={{ ...goldOutlineButtonStyle, padding: '8px 14px', fontSize: 12.5, alignSelf: 'flex-start' }} className="pmBtn">
+                        {busy ? 'Submitting...' : 'Enable'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {entError && (
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: RED, flexWrap: 'wrap' }}>
+              <Warning size={16} weight="fill" color={RED} />
+              <span>Couldn't load add-on status — cards may show "Not enabled" for add-ons you already have.</span>
+              <button onClick={loadEntitlements} style={{ background: 'none', border: 'none', color: GOLD, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>Retry</button>
+            </div>
+          )}
+          <div style={{ marginTop: 14, fontSize: 12, color: DIM, lineHeight: 1.6 }}>
+            Requesting an add-on never charges your card. Our team confirms pricing with you first, then enables it within 1 business day — every account admin is notified either way.
+          </div>
+
+          {/* Downgrade guidance */}
+          <div style={{ marginTop: 16, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 240 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: TEXT, marginBottom: 3 }}>Thinking about downgrading?</div>
+              <div style={{ fontSize: 12.5, color: DIM, lineHeight: 1.6 }}>
+                Downgrades run through the Stripe billing portal and take effect at your next billing cycle — your projects, documents, and history are never deleted.
+              </div>
+            </div>
+            {sub && (sub.status === 'active' || sub.status === 'past_due') && (
+              <button onClick={handlePortal} disabled={portalLoading} style={ghostButtonStyle} className="pmBtn">
+                {portalLoading ? 'Loading...' : 'Open Billing Portal'}
+              </button>
+            )}
           </div>
         </SectionCard>
 

@@ -121,6 +121,7 @@ export default function SharedHeatmap() {
         <Card k="Dead zones" v={s ? `${s.deadZones}` : '0'} />
         <Card k="Dead area" v={s ? `${Math.round(s.deadArea)} ft²` : '0 ft²'} />
       </div>
+      <div style={{ color: '#8b949e', fontSize: 11.5, marginTop: 8, lineHeight: 1.5 }}>Coverage % is a predictive RF model{cal && cal.sampleCount > 0 ? ` — validated ±${cal.rmseAfter.toFixed(1)} dB against ${cal.sampleCount} survey point${cal.sampleCount === 1 ? '' : 's'}` : ''} — confirm with an on-site walk-test.</div>
 
       {bom && bom.rows.length > 0 && <>
         <H>Bill of materials</H>

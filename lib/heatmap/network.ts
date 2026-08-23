@@ -36,14 +36,14 @@ const VLAN_FOR: Record<DeviceTypeId, VlanKey> = {
   paging_speaker: 'av', projector: 'av', display: 'av',
   smart_switch: 'iot', smart_plug: 'iot', thermostat: 'iot', ev_charger: 'iot',
   // rough-in markers — data/voice ride the data VLAN; power/termination are not network endpoints
-  data_jack: 'wifi', voice_jack: 'av', combo_plate: 'wifi', electrical_outlet: 'mgmt', cable_term: 'mgmt',
+  data_jack: 'wifi', voice_jack: 'av', combo_plate: 'wifi', electrical_outlet: 'mgmt', cable_term: 'mgmt', idf: 'mgmt',
 };
 
 const POE_W: Record<DeviceTypeId, number> = {
   wifi_ap: 13, camera: 9, motion_pir_ceiling: 2, motion_pir_wall: 2, smoke_detector_spot: 1,
   heat_detector_spot: 1, access_reader: 4, paging_speaker: 12, ble_beacon: 2, iot_gateway: 8,
   smart_switch: 0, smart_plug: 0, thermostat: 2, door_lock: 4, ev_charger: 0, projector: 0, display: 0,
-  electrical_outlet: 0, data_jack: 0, voice_jack: 0, combo_plate: 0, cable_term: 0,
+  electrical_outlet: 0, data_jack: 0, voice_jack: 0, combo_plate: 0, cable_term: 0, idf: 0,
 };
 
 export interface NetRow { id: string; label: string; typeId: DeviceTypeId; vlan: Vlan; ip: string; port: string; poeW: number }
