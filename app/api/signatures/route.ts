@@ -135,6 +135,7 @@ export async function PATCH(req: NextRequest) {
 
     if (!sigReq) return NextResponse.json({ error: 'Signature request not found' }, { status: 404 });
     if (sigReq.status === 'signed') return NextResponse.json({ error: 'Already signed' }, { status: 400 });
+    if (!sigReq.signature_id) return NextResponse.json({ error: 'Signature record not found' }, { status: 404 });
 
     // doc_type / doc_title are NOT NULL on document_signatures; pull them from
     // the parent signature record (the document being signed) referenced by the request.

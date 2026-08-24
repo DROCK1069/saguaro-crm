@@ -426,6 +426,8 @@ export default function SchedulePage() {
           data={filtered}
           columns={columns}
           loading={loading}
+          tableId="schedule"
+          defaultSort={{ key: 'start_date', dir: 'asc' }}
           searchPlaceholder="Search tasks..."
           emptyMessage="No tasks scheduled yet. Create your first task to start planning."
           onRowClick={(row) => router.push(`/app/schedule/${row.id}`)}

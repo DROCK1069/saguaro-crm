@@ -42,6 +42,12 @@ export async function POST(req: NextRequest) {
   // Upload signature data as a base64 URL (stored directly — in production you'd upload to storage)
   const signatureUrl = signature_data;
 
+  // signature_id is nullable on the request row — a request with no linked
+  // signature record can't be completed.
+  if (!request.signature_id) {
+    return NextResponse.json({ error: 'Signature record not found' }, { status: 404 });
+  }
+
   // Update document_signatures
   const { error: sigErr } = await db
     .from('document_signatures')

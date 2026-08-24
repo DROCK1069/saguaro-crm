@@ -42,6 +42,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const bodyStr = JSON.stringify(payload);
 
     // HMAC-SHA256 signature over the exact request body, using the webhook secret.
+    if (!hook.secret) {
+      return NextResponse.json({ error: 'Webhook has no signing secret — edit it and set one before testing' }, { status: 400 });
+    }
     const signature = createHmac('sha256', hook.secret).update(bodyStr).digest('hex');
 
     let status = 0;

@@ -20,7 +20,13 @@ import { lengthLF, areaSF } from '@/lib/takeoff/geometry';
  * — the API enforces the same list). First use asks their name once
  * (localStorage 'sag_review_name'); committed markups POST to the portal API,
  * render optimistically, and reconcile with the 10s poll by server id.
- * Guests cannot delete anything — their markups are visible to the team.
+ *
+ * Wave-3: guests can edit/remove their OWN markups. A per-token local ledger
+ * (localStorage 'sag_review_mine:<token>') records the ids this browser
+ * created; tapping a ledger row (pan mode) opens a machined chip pair —
+ * 'Edit text' (text markups only, inline input, Enter saves via PATCH) and
+ * 'Remove' (confirm popover, DELETE, optimistic w/ rollback toast). Rows not
+ * in the ledger stay read-only; the server re-verifies ownership regardless.
  *
  * The geometry helpers below are deliberate minimal COPIES of the canonical
  * markup model (components/drawings/markup-model.ts is app-shell code and is
@@ -284,6 +290,11 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 
 const GUEST_COLOR = GOLD; // guests always mark in the house gold
 const NAME_KEY = 'sag_review_name';
+const MINE_KEY_PREFIX = 'sag_review_mine:'; // + token -> JSON array of own row ids
+const MINE_MAX_IDS = 500; // ledger cap — oldest ids fall off first
+/** Grace before pruning a just-created id the poll hasn't echoed yet (a stale
+ *  in-flight poll response can otherwise race the POST and eat the id). */
+const MINE_PRUNE_GRACE_MS = 30000;
 
 type GuestTool = 'freehand' | 'cloud' | 'arrow' | 'rect' | 'text';
 
@@ -334,6 +345,11 @@ export default function DrawingReviewPortalPage() {
   const [textValue, setTextValue] = useState('');
   const [toast, setToast] = useState<{ msg: string; kind: 'ok' | 'err' } | null>(null);
 
+  /* own-markup selection (ledger rows only) */
+  const [selected, setSelected] = useState<{ id: string; sx: number; sy: number } | null>(null);
+  const [selMode, setSelMode] = useState<'chips' | 'edit' | 'confirm'>('chips');
+  const [editValue, setEditValue] = useState('');
+
   const deniedRef = useRef(false);
   const fileStartedRef = useRef(false);
   const sourceRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
@@ -356,6 +372,38 @@ export default function DrawingReviewPortalPage() {
   const draftRef = useRef<Draft | null>(null);
   const pendingRef = useRef<MarkupRow[]>([]); // optimistic rows the server hasn't echoed yet
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* own-markup ledger refs */
+  const mineRef = useRef<Set<string>>(new Set()); // ids this browser created for this token
+  const mineAddedAtRef = useRef<Map<string, number>>(new Map()); // id -> when it entered the ledger
+  const selectedIdRef = useRef(''); // mirror of `selected` for non-React handlers
+
+  const clearSelection = useCallback(() => {
+    selectedIdRef.current = '';
+    setSelected(null);
+    setSelMode('chips');
+    setEditValue('');
+  }, []);
+
+  /** Persist the ledger (best-effort — private mode just means session-only). */
+  const persistMine = useCallback(() => {
+    try {
+      localStorage.setItem(MINE_KEY_PREFIX + token, JSON.stringify(Array.from(mineRef.current).slice(-MINE_MAX_IDS)));
+    } catch { /* storage unavailable */ }
+  }, [token]);
+
+  /* ledger loads once per token */
+  useEffect(() => {
+    if (!token) return;
+    try {
+      const arr = JSON.parse(localStorage.getItem(MINE_KEY_PREFIX + token) || '[]');
+      if (Array.isArray(arr)) {
+        const s = new Set<string>();
+        for (const v of arr) if (typeof v === 'string' && v) s.add(v);
+        mineRef.current = s;
+      }
+    } catch { /* corrupt/unavailable storage — start with an empty ledger */ }
+  }, [token]);
 
   /* ── painting (rAF-coalesced, whole-canvas) ── */
   const paint = useCallback(() => {
@@ -663,6 +711,7 @@ export default function DrawingReviewPortalPage() {
     setBusy('Rendering page…');
     setHoverTip(null);
     setTextDraft(null);
+    clearSelection();
     draftRef.current = null;
     try {
       const r = await renderPdfPage(n);
@@ -677,7 +726,7 @@ export default function DrawingReviewPortalPage() {
       setLoadError("Couldn't render that page.");
     }
     setBusy('');
-  }, [renderPdfPage, fitView]);
+  }, [renderPdfPage, fitView, clearSelection]);
 
   const loadFile = useCallback(async (url: string, fileType: string) => {
     setBusy('Loading sheet…');
@@ -727,6 +776,21 @@ export default function DrawingReviewPortalPage() {
         // keep optimistic guest rows the server hasn't echoed yet (dedupe by id)
         markupsRef.current = server.concat(pendingRef.current.filter((r) => !serverIds.has(r.id)));
         setMarkups(markupsRef.current);
+        // prune ledger ids whose rows are gone (e.g. staff deleted them) —
+        // fresh ids get a grace window so a stale poll can't race the POST
+        let pruned = false;
+        for (const id of Array.from(mineRef.current)) {
+          if (serverIds.has(id)) continue;
+          const added = mineAddedAtRef.current.get(id) || 0;
+          if (Date.now() - added < MINE_PRUNE_GRACE_MS) continue;
+          mineRef.current.delete(id);
+          mineAddedAtRef.current.delete(id);
+          pruned = true;
+        }
+        if (pruned) persistMine();
+        if (selectedIdRef.current && !markupsRef.current.some((r) => r.id === selectedIdRef.current)) {
+          clearSelection(); // the selected row vanished under us
+        }
         setUpdatedAt(new Date(d.generatedAt || Date.now()).toLocaleTimeString());
         setLoading(false);
         if (!fileStartedRef.current && d.drawing?.fileUrl) {
@@ -739,7 +803,7 @@ export default function DrawingReviewPortalPage() {
     load();
     const iv = setInterval(load, 10000);
     return () => { stop = true; clearInterval(iv); };
-  }, [token, loadFile, requestPaint]);
+  }, [token, loadFile, requestPaint, persistMine, clearSelection]);
 
   useEffect(() => {
     if (projectName || drawingLabel) document.title = `${drawingLabel || 'Drawing Review'}${projectName ? ` - ${projectName}` : ''}`;
@@ -782,11 +846,12 @@ export default function DrawingReviewPortalPage() {
       viewRef.current = { scale: s, tx: mx - (mx - v.tx) * k, ty: my - (my - v.ty) * k };
       setHoverTip(null);
       setTextDraft(null); // its screen anchor is stale once the view moves
+      clearSelection(); // ditto for the own-markup chips
       requestPaint();
     };
     cv.addEventListener('wheel', onWheel, { passive: false });
     return () => cv.removeEventListener('wheel', onWheel);
-  }, [requestPaint, loading, denied]);
+  }, [requestPaint, clearSelection, loading, denied]);
 
   /* ── drag pan + hover attribution ── */
   const hitAt = useCallback((mx: number, my: number) => {
@@ -825,6 +890,7 @@ export default function DrawingReviewPortalPage() {
   const selectTool = (t: GuestTool | null) => {
     setHoverTip(null);
     setTextDraft(null);
+    clearSelection();
     draftRef.current = null;
     if (t && !guestNameRef.current) {
       // first use: ask their name once, then arm the tool they picked
@@ -900,6 +966,16 @@ export default function DrawingReviewPortalPage() {
       const d = await res.json().catch(() => ({} as Record<string, unknown>));
       if (!res.ok || !d.ok) throw new Error(String(d?.error || `HTTP ${res.status}`));
       const saved: MarkupRow[] = Array.isArray(d.saved) ? d.saved : [];
+      // ledger: these server ids are OURS — remember them for edit/remove
+      let ledgerGrew = false;
+      for (const r of saved) {
+        if (r && typeof r.id === 'string' && r.id) {
+          mineRef.current.add(r.id);
+          mineAddedAtRef.current.set(r.id, Date.now());
+          ledgerGrew = true;
+        }
+      }
+      if (ledgerGrew) persistMine();
       // reconcile: swap the optimistic row for the server rows (dedupe by id —
       // the 10s poll may already have echoed them)
       pendingRef.current = pendingRef.current.filter((r) => r.id !== temp.id);
@@ -914,7 +990,76 @@ export default function DrawingReviewPortalPage() {
       drop();
       showToast("Couldn't save your markup — check your connection and try again.");
     }
-  }, [token, requestPaint, showToast]);
+  }, [token, requestPaint, showToast, persistMine]);
+
+  /* ── Wave-3: edit / remove OWN markups (ledger rows only) ── */
+
+  const doDelete = useCallback(async (id: string) => {
+    const row = markupsRef.current.find((r) => r.id === id);
+    clearSelection();
+    if (!row || !token) return;
+    // optimistic removal — rolled back on failure
+    markupsRef.current = markupsRef.current.filter((r) => r.id !== id);
+    setMarkups(markupsRef.current);
+    requestPaint();
+    try {
+      const res = await fetch(`/api/portal/drawing-review?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (res.status === 401) { deniedRef.current = true; setDenied(true); return; }
+      const d = await res.json().catch(() => ({} as Record<string, unknown>));
+      if (!res.ok || !(d as any).ok) throw new Error(String((d as any)?.error || `HTTP ${res.status}`));
+      mineRef.current.delete(id);
+      mineAddedAtRef.current.delete(id);
+      persistMine();
+      showToast('Markup removed.', 'ok');
+    } catch (e) {
+      console.error('[drawing-review portal] markup delete failed:', e);
+      if (!markupsRef.current.some((r) => r.id === id)) {
+        markupsRef.current = [...markupsRef.current, row];
+        setMarkups(markupsRef.current);
+        requestPaint();
+      }
+      showToast("Couldn't remove that markup — check your connection and try again.");
+    }
+  }, [token, requestPaint, showToast, persistMine, clearSelection]);
+
+  const doEditSave = useCallback(async (id: string, nextText: string) => {
+    const t = nextText.trim().slice(0, 500);
+    const row = markupsRef.current.find((r) => r.id === id);
+    clearSelection();
+    if (!row || !t || !token) return;
+    // optimistic text swap — rolled back on failure
+    const optimistic: MarkupRow = {
+      ...row,
+      data: row.data && typeof row.data === 'object' && !Array.isArray(row.data)
+        ? { ...(row.data as Record<string, unknown>), text: t }
+        : { text: t },
+    };
+    markupsRef.current = markupsRef.current.map((r) => (r.id === id ? optimistic : r));
+    setMarkups(markupsRef.current);
+    requestPaint();
+    try {
+      const res = await fetch(`/api/portal/drawing-review?token=${encodeURIComponent(token)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, text: t }),
+      });
+      if (res.status === 401) { deniedRef.current = true; setDenied(true); return; }
+      const d = await res.json().catch(() => ({} as Record<string, unknown>));
+      if (!res.ok || !(d as any).ok) throw new Error(String((d as any)?.error || `HTTP ${res.status}`));
+      const serverRow = (d as any).row as MarkupRow | null;
+      if (serverRow && serverRow.id === id) {
+        markupsRef.current = markupsRef.current.map((r) => (r.id === id ? serverRow : r));
+        setMarkups(markupsRef.current);
+        requestPaint();
+      }
+    } catch (e) {
+      console.error('[drawing-review portal] markup edit failed:', e);
+      markupsRef.current = markupsRef.current.map((r) => (r.id === id ? row : r));
+      setMarkups(markupsRef.current);
+      requestPaint();
+      showToast("Couldn't save your edit — check your connection and try again.");
+    }
+  }, [token, requestPaint, showToast, clearSelection]);
 
   const commitText = () => {
     const td = textDraft;
@@ -974,6 +1119,8 @@ export default function DrawingReviewPortalPage() {
     }
     if (dragRef.current) {
       const d = dragRef.current;
+      // a real pan (not a tap wobble) leaves the chip anchor stale — drop it
+      if (selectedIdRef.current && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) clearSelection();
       viewRef.current = { ...viewRef.current, tx: d.tx + (e.clientX - d.x), ty: d.ty + (e.clientY - d.y) };
       requestPaint();
       return;
@@ -994,9 +1141,29 @@ export default function DrawingReviewPortalPage() {
     const cv = canvasRef.current;
     if (cv && cv.hasPointerCapture(e.pointerId)) cv.releasePointerCapture(e.pointerId);
     const draft = draftRef.current;
+    const drag = dragRef.current;
     draftRef.current = null;
     dragRef.current = null;
-    if (!draft) return;
+    if (!draft) {
+      // pan mode: a still tap on one of the guest's OWN rows opens the
+      // edit/remove chips; a tap anywhere else dismisses them
+      if (cv && drag && !toolRef.current && e.type !== 'pointercancel'
+        && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 5) {
+        const rect = cv.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        const m = hitAt(mx, my);
+        if (m && mineRef.current.has(m.id)) {
+          setHoverTip(null);
+          selectedIdRef.current = m.id;
+          setSelected({ id: m.id, sx: mx, sy: my });
+          setSelMode('chips');
+          setEditValue('');
+        } else if (selectedIdRef.current) {
+          clearSelection();
+        }
+      }
+      return;
+    }
     const r2 = (n: number) => Math.round(n * 100) / 100;
     if (draft.kind === 'freehand') {
       if (draft.points.length >= 2) {
@@ -1130,6 +1297,52 @@ export default function DrawingReviewPortalPage() {
             </div>
           )}
 
+          {/* own-markup chips: tap-selected ledger row -> edit/remove */}
+          {selected && (() => {
+            const row = markups.find((r) => r.id === selected.id);
+            if (!row) return null;
+            const isText = row.markup_type === 'text';
+            const left = clamp(selected.sx, 8, Math.max(8, (wrapRef.current?.clientWidth || 400) - 320));
+            const top = clamp(selected.sy + 14, 8, Math.max(8, (wrapRef.current?.clientHeight || 300) - 56));
+            return (
+              <div style={{ position: 'absolute', left, top, zIndex: 7, display: 'flex', gap: 6, alignItems: 'center', background: 'rgba(10,10,10,0.94)', border: `1px solid ${GOLD}66`, borderRadius: 8, padding: 6, boxShadow: '0 6px 18px rgba(0,0,0,0.45)' }}>
+                {selMode === 'edit' ? (
+                  <>
+                    <input
+                      autoFocus
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && editValue.trim()) void doEditSave(selected.id, editValue);
+                        if (e.key === 'Escape') { setSelMode('chips'); setEditValue(''); }
+                      }}
+                      placeholder="Edit your note..."
+                      maxLength={500}
+                      style={{ width: 200, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT, fontSize: 13, padding: '6px 8px', outline: 'none' }}
+                    />
+                    <button onClick={() => { if (editValue.trim()) void doEditSave(selected.id, editValue); }} disabled={!editValue.trim()} style={{ ...toolBtn(true), padding: '6px 10px', opacity: editValue.trim() ? 1 : 0.5 }}>Save</button>
+                    <button onClick={() => { setSelMode('chips'); setEditValue(''); }} style={{ ...toolBtn(false), padding: '6px 10px' }} aria-label="Cancel edit">&#10005;</button>
+                  </>
+                ) : selMode === 'confirm' ? (
+                  <>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT, padding: '0 4px' }}>Remove this markup?</span>
+                    <button onClick={() => void doDelete(selected.id)} style={{ ...toolBtn(false), borderColor: '#EF444488', color: '#EF4444' }}>Remove</button>
+                    <button onClick={() => setSelMode('chips')} style={toolBtn(false)}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: GOLD, textTransform: 'uppercase', padding: '0 4px' }}>Your markup</span>
+                    {isText && (
+                      <button onClick={() => { setEditValue(String((row.data as Record<string, unknown> | null)?.text || '')); setSelMode('edit'); }} style={toolBtn(false)}>Edit text</button>
+                    )}
+                    <button onClick={() => setSelMode('confirm')} style={toolBtn(false)}>Remove</button>
+                    <button onClick={clearSelection} style={{ ...toolBtn(false), padding: '6px 9px' }} aria-label="Dismiss">&#10005;</button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+
           {/* hover attribution */}
           {hoverTip && (
             <div style={{ position: 'absolute', left: Math.min(hoverTip.x + 14, (wrapRef.current?.clientWidth || 400) - 190), top: hoverTip.y + 14, background: 'rgba(10,10,10,0.94)', border: `1px solid ${GOLD}55`, borderRadius: 8, padding: '7px 11px', pointerEvents: 'none', zIndex: 5, maxWidth: 180 }}>
@@ -1168,7 +1381,7 @@ export default function DrawingReviewPortalPage() {
         {/* status strip */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 4px 0', flexWrap: 'wrap' }}>
           <div style={{ fontSize: 11, color: DIM }}>
-            {visibleCount} markup{visibleCount === 1 ? '' : 's'} on this {pageCount > 1 ? 'page' : 'sheet'} &middot; hover a markup for author + time &middot; your markups are visible to the project team
+            {visibleCount} markup{visibleCount === 1 ? '' : 's'} on this {pageCount > 1 ? 'page' : 'sheet'} &middot; hover a markup for author + time &middot; You can edit or remove your own markups.
           </div>
           <div style={{ fontSize: 11, color: DIM }}>
             Refreshes automatically{updatedAt ? <span> &middot; updated {updatedAt}</span> : null}

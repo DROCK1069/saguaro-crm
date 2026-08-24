@@ -34,6 +34,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ valid: false, error: 'Already signed' }, { status: 400 });
   }
 
+  // signature_id is nullable on the request row — no linked record means
+  // there is nothing to verify against.
+  if (!request.signature_id) {
+    return NextResponse.json({ valid: false, error: 'Signature record not found' }, { status: 404 });
+  }
+
   // Get the associated signature record with doc info
   const { data: signature, error: sigErr } = await db
     .from('document_signatures')

@@ -9,10 +9,7 @@ export const dynamic = 'force-dynamic';
 // entity_type for punch is 'punch_item' — legacy 'punch' is normalized on
 // write; readers accept both spellings forever.
 
-type PinInsert = Database['public']['Tables']['drawing_pins']['Insert'] & {
-  // Live column just migrated (065) — not yet in the generated types.
-  page_number?: number | null;
-};
+type PinInsert = Database['public']['Tables']['drawing_pins']['Insert'];
 
 export async function POST(req: NextRequest) {
   const g = await requirePermission(req, 'Documents', 'Edit');

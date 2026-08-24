@@ -25,6 +25,15 @@ export const dynamic = 'force-dynamic';
  * 'Guest · <sanitized name>' (fallback: the link's label). page_number is only
  * stored when the link's file is a PDF.
  *
+ * Wave-3: guests can edit/remove their OWN markups. The link is the trust
+ * boundary — anyone holding the token is a trusted reviewer — but only
+ * guest-authored rows (created_by IS NULL) on exactly this link's
+ * drawing/sheet + tenant are ever touchable. Staff rows are untouchable.
+ *
+ * DELETE ?token=&id=            -> { ok } (hard 403 unless guest-owned + in scope)
+ * PATCH  ?token=  body {id,text} -> { ok, row } — text-only edit for 'text'
+ *   markups (sanitized, <=500 printable chars); 400 for non-text rows.
+ *
  * 401 on invalid / expired / revoked tokens. Service-role client; every query
  * is pinned to the link row's tenant + drawing so nothing else can leak.
  */
@@ -298,6 +307,103 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, saved: saved || [] });
   } catch (e: unknown) {
     console.error('[portal drawing-review POST] failed:', e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/* ── Wave-3: guest own-markup edit / delete ────────────────────────────── */
+
+/**
+ * Load one markup row and verify this LINK may touch it. Body/query ids are
+ * never trusted for scoping — the row is loaded fresh and re-checked against
+ * the link row: guest-authored (created_by IS NULL), same tenant, and on
+ * exactly the drawing/sheet this link exposes. 'link' rows are internal
+ * cross-references guests never see, so they are never touchable either.
+ * Returns the row, or null (callers hard-403 — no existence oracle).
+ */
+async function loadGuestOwnedRow(db: any, link: any, id: string): Promise<any | null> {
+  if (!id || typeof id !== 'string') return null;
+  const { data: row } = await db
+    .from('drawing_markups')
+    .select('*')
+    .eq('id', id)
+    .eq('tenant_id', link.tenant_id)
+    .maybeSingle();
+  if (!row) return null;
+  if (row.created_by !== null && row.created_by !== undefined) return null; // staff rows: untouchable
+  if (row.markup_type === 'link') return null;
+  if (link.drawing_sheet_id) {
+    if (row.drawing_sheet_id !== link.drawing_sheet_id) return null;
+  } else if (!link.drawing_id || row.drawing_id !== link.drawing_id) {
+    return null;
+  }
+  return row;
+}
+
+const NOT_YOURS = () =>
+  NextResponse.json({ error: 'You can only change markups you created from this link' }, { status: 403 });
+
+export async function DELETE(req: NextRequest) {
+  const token = req.nextUrl.searchParams.get('token');
+  const id = req.nextUrl.searchParams.get('id');
+  if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  try {
+    const db = createServerClient() as any;
+    const link = await getActiveLink(db, token);
+    if (!link) return DEAD_LINK();
+    const row = await loadGuestOwnedRow(db, link, id);
+    if (!row) return NOT_YOURS();
+    const { error } = await db
+      .from('drawing_markups')
+      .delete()
+      .eq('id', row.id)
+      .eq('tenant_id', link.tenant_id);
+    if (error) throw error;
+    return NextResponse.json({ ok: true });
+  } catch (e: unknown) {
+    console.error('[portal drawing-review DELETE] failed:', e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  const token = req.nextUrl.searchParams.get('token');
+  if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
+  try {
+    const db = createServerClient() as any;
+    const link = await getActiveLink(db, token);
+    if (!link) return DEAD_LINK();
+
+    const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const id = typeof (body as any).id === 'string' ? (body as any).id : '';
+    if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
+
+    const row = await loadGuestOwnedRow(db, link, id);
+    if (!row) return NOT_YOURS();
+    if (row.markup_type !== 'text') {
+      return NextResponse.json({ error: 'Only text markups can be edited' }, { status: 400 });
+    }
+
+    const rawText = typeof (body as any).text === 'string' ? (body as any).text : '';
+    const text = printable(rawText).trim().slice(0, MAX_TEXT_CHARS);
+    if (!text) return NextResponse.json({ error: 'text is required' }, { status: 400 });
+
+    const data =
+      row.data && typeof row.data === 'object' && !Array.isArray(row.data)
+        ? { ...(row.data as Record<string, unknown>), text }
+        : { text };
+    const { data: updated, error } = await db
+      .from('drawing_markups')
+      .update({ data, updated_at: new Date().toISOString() })
+      .eq('id', row.id)
+      .eq('tenant_id', link.tenant_id)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return NextResponse.json({ ok: true, row: updated || null });
+  } catch (e: unknown) {
+    console.error('[portal drawing-review PATCH] failed:', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

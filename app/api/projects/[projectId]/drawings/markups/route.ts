@@ -23,11 +23,7 @@ const MARKUP_TYPES = new Set([
   'freehand', 'cloud', 'arrow', 'text', 'callout', 'rect', 'circle', 'measure', 'stamp', 'link',
 ]);
 
-type MarkupInsert = Database['public']['Tables']['drawing_markups']['Insert'] & {
-  // Live columns not yet present in the generated types (used by 'link' rows).
-  entity_type?: string | null;
-  entity_id?: string | null;
-};
+type MarkupInsert = Database['public']['Tables']['drawing_markups']['Insert'];
 
 type CommentRow = Database['public']['Tables']['drawing_markup_comments']['Row'];
 

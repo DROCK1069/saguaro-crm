@@ -13,10 +13,7 @@ export const dynamic = 'force-dynamic'
 // 'punch_item'. Legacy writers sent 'punch' — normalize on write, accept both
 // spellings on read forever.
 
-type PinInsert = Database['public']['Tables']['drawing_pins']['Insert'] & {
-  // Live column just migrated (065) — not yet in the generated types.
-  page_number?: number | null
-}
+type PinInsert = Database['public']['Tables']['drawing_pins']['Insert'];
 
 /** 'punch' → 'punch_item'; everything else passes through. */
 function normalizeEntityType(et: unknown): string | null {

@@ -563,6 +563,7 @@ export default function InvoicingPage() {
           data={invoices}
           columns={columns}
           loading={loading}
+          tableId="invoicing"
           searchPlaceholder="Search invoices..."
           emptyMessage="No invoices yet. Create your first invoice to get started."
           onRowClick={(row) => guard.requestLeave(`/app/invoicing/${row.id}`)}

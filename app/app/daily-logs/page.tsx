@@ -410,6 +410,7 @@ export default function DailyLogsPage() {
           data={visibleLogs}
           columns={columns}
           loading={loading}
+          tableId="daily-logs"
           searchPlaceholder="Refine within results..."
           emptyMessage="No daily logs yet. Create your first log to start tracking."
           onRowClick={(row) => guard.requestLeave(`/app/daily-logs/${row.id}`)}

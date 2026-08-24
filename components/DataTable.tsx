@@ -4,7 +4,7 @@
  * Built on TanStack Table with sorting, filtering, pagination.
  * Fully wired — no placeholders.
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,6 +15,7 @@ import {
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
+  type OnChangeFn,
 } from '@tanstack/react-table';
 import { CaretUp, CaretDown, CaretUpDown, MagnifyingGlass, CaretLeft, CaretRight, Export } from '@phosphor-icons/react';
 import { colors, font, radius, shadow } from '../lib/design-tokens';
@@ -31,7 +32,25 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   onExport?: () => void;
   toolbar?: React.ReactNode;
+  /** Initial sort when the user hasn't chosen one. Same {key,dir} shape the premium DataTable uses. */
+  defaultSort?: { key: string; dir: 'asc' | 'desc' };
+  /**
+   * Persist the user's sort as 'sag_sort_' + tableId in localStorage — the exact
+   * contract of the premium-kit DataTable (components/ui/premium.tsx), storing
+   * {key, dir: 'asc'|'desc'} or null when the user cycles back to unsorted, so
+   * the two table primitives stay one system. Omit it and nothing changes.
+   */
+  tableId?: string;
 }
+
+// Shared persisted shape (mirrors SortState in components/ui/premium.tsx).
+type PersistedSort = { key: string; dir: 'asc' | 'desc' } | null;
+
+const toSortingState = (s: PersistedSort): SortingState =>
+  s ? [{ id: s.key, desc: s.dir === 'desc' }] : [];
+
+const toPersistedSort = (s: SortingState): PersistedSort =>
+  s.length > 0 ? { key: s[0].id, dir: s[0].desc ? 'desc' : 'asc' } : null;
 
 export default function DataTable<T extends Record<string, any>>({
   data,
@@ -45,16 +64,52 @@ export default function DataTable<T extends Record<string, any>>({
   onRowClick,
   onExport,
   toolbar,
+  defaultSort,
+  tableId,
 }: DataTableProps<T>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(() => toSortingState(defaultSort ?? null));
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  // Load the persisted choice AFTER mount (not in the initializer) so server
+  // and first client render agree — no hydration mismatch. Matches the premium
+  // DataTable's hydration behavior exactly.
+  useEffect(() => {
+    if (!tableId) return;
+    try {
+      const raw = window.localStorage.getItem('sag_sort_' + tableId);
+      if (raw == null) return;
+      const parsed = JSON.parse(raw) as PersistedSort;
+      if (parsed === null) setSorting([]); // user explicitly cycled back to none
+      else if (parsed && typeof parsed.key === 'string' && (parsed.dir === 'asc' || parsed.dir === 'desc')) {
+        setSorting(toSortingState(parsed));
+      }
+    } catch {
+      /* corrupt entry — keep defaultSort */
+    }
+  }, [tableId]);
+
+  // Persist on user-driven sort changes (TanStack only calls this from header
+  // interactions; the hydration effect above sets state directly and never writes).
+  const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
+    setSorting((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (tableId) {
+        try {
+          window.localStorage.setItem('sag_sort_' + tableId, JSON.stringify(toPersistedSort(next)));
+        } catch {
+          /* storage unavailable — sort still applies for this session */
+        }
+      }
+      return next;
+    });
+  };
 
   const table = useReactTable({
     data,
     columns,
     state: { sorting, globalFilter, columnFilters },
-    onSortingChange: setSorting,
+    onSortingChange: handleSortingChange,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
