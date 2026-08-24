@@ -1,1 +1,6 @@
-out/
+# Anchored to the repo root: this is the Next.js static-export directory.
+# Unanchored, `out/` also excluded app/api/timeclock/out/ from the deployment —
+# the build went green, the deploy went READY, and the clock-out endpoint
+# simply was not there (404 in production while /in and /status were 401).
+# Any route segment legitimately named "out" must ship.
+/out/
