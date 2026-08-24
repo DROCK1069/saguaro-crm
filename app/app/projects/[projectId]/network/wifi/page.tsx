@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { WifiHigh, Broadcast, UsersThree, MapTrifold, Plus, ArrowUpRight } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
-import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
+import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -101,6 +103,23 @@ export default function WifiManagerPage() {
     coverage_radius: 80, channel: 1, power_dbm: 20,
   };
   const [apForm, setApForm] = useState(emptyApForm);
+  /* ── Unsaved-work guard: either composer holds real typing, so leaving this
+   *    module (sidebar, ⌘K, breadcrumb, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDraft = { ssidForm, apForm };
+  const composerDirty = useComposerDirty(showSsidForm || showApForm, composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `network-wifi:${projectId}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => {
+      const v = d as typeof composerDraft;
+      setSsidForm(v.ssidForm ?? emptySsidForm);
+      setApForm(v.apForm ?? emptyApForm);
+      setShowSsidForm(true);
+    },
+    onSave: () => (showApForm ? handleApSubmit() : handleSsidSubmit()),
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -133,8 +152,8 @@ export default function WifiManagerPage() {
     return () => { cancelled = true; };
   }, [projectId]);
 
-  const handleSsidSubmit = async () => {
-    if (!ssidForm.ssid || !networkProjectId) return;
+  const handleSsidSubmit = async (): Promise<boolean> => {
+    if (!ssidForm.ssid || !networkProjectId) return false;
     setSaving(true);
     try {
       const res = await fetch('/api/network/wifi', {
@@ -142,13 +161,21 @@ export default function WifiManagerPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...ssidForm, network_project_id: networkProjectId, enabled: true }),
       });
-      if (res.ok) { setSsidForm(emptySsidForm); setShowSsidForm(false); fetchData(); }
+      if (res.ok) {
+        setSsidForm(emptySsidForm);
+        setShowSsidForm(false);
+        fetchData();
+        guard.clearDraft();
+        setSaving(false);
+        return true;
+      }
     } catch { /* */ }
     setSaving(false);
+    return false;
   };
 
-  const handleApSubmit = async () => {
-    if (!apForm.name || !networkProjectId) return;
+  const handleApSubmit = async (): Promise<boolean> => {
+    if (!apForm.name || !networkProjectId) return false;
     setSaving(true);
     try {
       const res = await fetch('/api/network/access-points', {
@@ -156,9 +183,17 @@ export default function WifiManagerPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...apForm, network_project_id: networkProjectId, status: 'planned' }),
       });
-      if (res.ok) { setApForm(emptyApForm); setShowApForm(false); fetchData(); }
+      if (res.ok) {
+        setApForm(emptyApForm);
+        setShowApForm(false);
+        fetchData();
+        guard.clearDraft();
+        setSaving(false);
+        return true;
+      }
     } catch { /* */ }
     setSaving(false);
+    return false;
   };
 
   const totalClients = networks.reduce((sum, n) => sum + (n.client_count ?? 0), 0);
@@ -461,6 +496,7 @@ export default function WifiManagerPage() {
           />
         )}
       </SectionCard>
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
       const meta = byProject.get(pid)!;
       const base = `/app/projects/${pid}`;
 
-      const [todos, rfis, punchWeb, punchItems, issues, tm, assists] = await Promise.all([
+      const [todos, rfis, punch, issues, tm, assists] = await Promise.all([
         // project_todos.assigned_to/_id is TEXT holding uuid OR email — match both columns against both shapes.
         rows(
           db.from('project_todos')
@@ -150,22 +150,21 @@ export async function GET(req: NextRequest) {
             .is('deleted_at', null)
             .limit(CAP),
         ),
-        // punch lives in TWO tables: web writes punch_list (free-form assigned_to),
-        // mobile writes punch_list_items (uuid assigned_to) — read BOTH.
+        // ONE punch table. punch_list_items was merged into punch_list (its four
+        // rows were copied, ids preserved) — reading both now DOUBLE-COUNTS the
+        // merged rows. assigned_to is legacy TEXT (web fills it with a company
+        // name or an email); assigned_to_id is the person. Match either.
         rows(
           db.from('punch_list')
-            .select('id, description, status, due_date, priority, location')
-            .eq('tenant_id', t).eq('project_id', pid)
-            .in('assigned_to', [uid, email].filter(Boolean))
-            .not('status', 'in', `(${PUNCH_CLOSED.join(',')})`)
-            .limit(CAP),
-        ),
-        rows(
-          db.from('punch_list_items')
             .select('id, title, description, status, due_date, priority, location')
             .eq('tenant_id', t).eq('project_id', pid)
-            .eq('assigned_to', uid)
-            .in('status', PUNCH_ITEM_OPEN)
+            .or(
+              [
+                `assigned_to_id.eq.${uid}`,
+                ...[uid, email].filter(Boolean).map((v) => `assigned_to.eq.${v}`),
+              ].join(','),
+            )
+            .not('status', 'in', `(${PUNCH_CLOSED.join(',')})`)
             .is('deleted_at', null)
             .limit(CAP),
         ),
@@ -215,26 +214,18 @@ export async function GET(req: NextRequest) {
           href: `${base}/rfis`,
           meta: r.rfi_number ?? null,
         })),
-        punch: [
-          ...punchWeb.map((r: any) => ({
-            id: r.id,
-            title: r.description || 'Punch item',
-            status: r.status ?? null,
-            due_date: r.due_date ?? null,
-            module: 'punch' as const,
-            href: `${base}/punch-list`,
-            meta: r.location ?? null,
-          })),
-          ...punchItems.map((r: any) => ({
-            id: r.id,
-            title: r.title || r.description || 'Punch item',
-            status: r.status ?? null,
-            due_date: r.due_date ?? null,
-            module: 'punch' as const,
-            href: `${base}/punch-list`,
-            meta: r.location ?? null,
-          })),
-        ],
+        punch: punch.map((r: any) => ({
+          id: r.id,
+          // title is the modern column; description is what older web-written
+          // rows carry. Prefer title, fall back, never render "Punch item" when
+          // the row actually has text.
+          title: r.title || r.description || 'Punch item',
+          status: r.status ?? null,
+          due_date: r.due_date ?? null,
+          module: 'punch' as const,
+          href: `${base}/punch-list`,
+          meta: r.location ?? null,
+        })),
         issues: issues.map((r: any) => ({
           id: r.id,
           title: r.title || 'Field issue',

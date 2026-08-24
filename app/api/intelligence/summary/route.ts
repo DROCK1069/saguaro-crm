@@ -40,9 +40,10 @@ import { requirePermission } from '@/lib/permissions';
  * Field:
  *   openRfis / oldestRfiDays ← rfis in an open status (not deleted), aged by
  *                              created_at (full timestamps, so Date parse is safe).
- *   openPunch                ← punch_list rows NOT in a closed status PLUS
- *                              punch_list_items rows in an open status (web and
- *                              mobile write different tables — count BOTH).
+ *   openPunch                ← punch_list rows NOT in a closed status. One
+ *                              table: punch_list_items was merged into
+ *                              punch_list (ids preserved) so both surfaces now
+ *                              read and write the same rows.
  *   dailyLogStreak           ← consecutive calendar days with ≥1 daily_log,
  *                              walking back from today within the last 14 days;
  *                              today may be missing without breaking the streak
@@ -201,7 +202,7 @@ export async function GET(req: NextRequest) {
     const logWindowStart = ymdKey(ymdDaysAgo(today, 13)); // last 14 calendar days
 
     /* ── all sources in parallel, each in its own try ── */
-    const [payApps, invoices, changeOrders, rfis, punchWeb, punchItems, dailyLogs] =
+    const [payApps, invoices, changeOrders, rfis, punch, dailyLogs] =
       await Promise.all([
         safeRows(
           'pay_applications',
@@ -241,17 +242,12 @@ export async function GET(req: NextRequest) {
             .is('deleted_at', null),
           degraded,
         ),
-        // punch lives in TWO tables: web writes punch_list, mobile writes
-        // punch_list_items — count BOTH (same split as the My Work hub).
+        // ONE punch table. punch_list_items was merged into punch_list with ids
+        // preserved, so counting both would double-count every merged row.
         safeRows(
           'punch_list',
-          db.from('punch_list').select('project_id, status').eq('tenant_id', t).in('project_id', ids),
-          degraded,
-        ),
-        safeRows(
-          'punch_list_items',
           db
-            .from('punch_list_items')
+            .from('punch_list')
             .select('project_id, status')
             .eq('tenant_id', t)
             .in('project_id', ids)
@@ -286,8 +282,7 @@ export async function GET(req: NextRequest) {
     const invByProj = byProject(invoices);
     const coByProj = byProject(changeOrders);
     const rfiByProj = byProject(rfis);
-    const punchWebByProj = byProject(punchWeb);
-    const punchItemByProj = byProject(punchItems);
+    const punchByProj = byProject(punch);
     const logsByProj = byProject(dailyLogs);
 
     const insights: Insight[] = [];
@@ -369,13 +364,11 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // field — open punch across BOTH tables
+      // field — open punch from the ONE punch table (punch_list_items was
+      // merged in with ids preserved; counting both would double-count).
       let openPunch = 0;
-      for (const row of punchWebByProj.get(pid) ?? []) {
+      for (const row of punchByProj.get(pid) ?? []) {
         if (!PUNCH_CLOSED.has(String(row.status ?? '').toLowerCase())) openPunch++;
-      }
-      for (const row of punchItemByProj.get(pid) ?? []) {
-        if (PUNCH_ITEM_OPEN.has(String(row.status ?? '').toLowerCase())) openPunch++;
       }
 
       // field — daily log streak (consecutive days, last 14; today may be absent)

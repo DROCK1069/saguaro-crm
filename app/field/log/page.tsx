@@ -12,6 +12,8 @@ import SignaturePad from '@/components/SignaturePad';
 import EmailComposer from '@/components/EmailComposer';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -255,6 +257,17 @@ function DailyLogForm() {
     temperature: '', conditions: '', wind: '', precipitation: '', delayHours: 0, impactNotes: '',
   });
   const [visitorEntries, setVisitorEntries] = useState<VisitorEntry[]>([]);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(pageView === 'form' && !saved, { superintendent, weather, tempHigh, tempLow, crewCount, workPerformed, equipment, materialsDelivered, visitors, delays, safetyNotes, notes, manpowerEntries, equipmentEntries, weatherDetail, visitorEntries });
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-daily-log:${projectId || 'none'}`,
+    draftData: { superintendent, weather, tempHigh, tempLow, crewCount, workPerformed, equipment, materialsDelivered, visitors, delays, safetyNotes, notes, manpowerEntries, equipmentEntries, weatherDetail, visitorEntries },
+    restoreDraft: (d) => { const v = d as { superintendent: string; weather: string; tempHigh: string; tempLow: string; crewCount: string; workPerformed: string; equipment: string; materialsDelivered: string; visitors: string; delays: string; safetyNotes: string; notes: string; manpowerEntries: ManpowerEntry[]; equipmentEntries: EquipmentEntry[]; weatherDetail: WeatherDetail; visitorEntries: VisitorEntry[] }; setSuperintendent(v.superintendent ?? ''); setWeather(v.weather ?? 'Sunny'); setTempHigh(v.tempHigh ?? ''); setTempLow(v.tempLow ?? ''); setCrewCount(v.crewCount ?? ''); setWorkPerformed(v.workPerformed ?? ''); setEquipment(v.equipment ?? ''); setMaterialsDelivered(v.materialsDelivered ?? ''); setVisitors(v.visitors ?? ''); setDelays(v.delays ?? ''); setSafetyNotes(v.safetyNotes ?? ''); setNotes(v.notes ?? ''); setManpowerEntries(v.manpowerEntries ?? []); setEquipmentEntries(v.equipmentEntries ?? []); if (v.weatherDetail) setWeatherDetail(v.weatherDetail); setVisitorEntries(v.visitorEntries ?? []); },
+  });
   const [copyingYesterday, setCopyingYesterday] = useState(false);
 
   // Site photos
@@ -515,12 +528,14 @@ function DailyLogForm() {
         throw new Error(body.error || `HTTP ${res.status}`);
       }
       setSaved(true);
+      guard.clearDraft();
       setTimeout(() => router.push('/field'), 1800);
     } catch (err) {
       if (String(err).includes('offline') || !online) {
         try {
           await enqueue({ url: '/api/daily-logs/create', method: 'POST', body: JSON.stringify(payload), contentType: 'application/json', isFormData: false });
           setSaved(true);
+          guard.clearDraft();
           setTimeout(() => router.push('/field'), 1800);
         } catch (q) { setError(String(q) || 'Failed to queue. Please try again.'); }
       } else {
@@ -1290,6 +1305,7 @@ function DailyLogForm() {
           {saving ? 'Submitting...' : online ? 'Submit Daily Log' : 'Save Offline'}
         </button>
       </form>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }
