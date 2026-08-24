@@ -11,6 +11,8 @@ import { enqueue } from '@/lib/field-db';
 import { ShieldCheck, MapPin, Bandaids, Thermometer, Warning, Buildings, Leaf, Car, Fire, Clipboard, Hourglass, Check, X, ArrowRight, ArrowLeft, CheckCircle } from '@phosphor-icons/react';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -196,6 +198,18 @@ function IncidentsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState(blankForm());
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(view === 'create', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-incident:${projectId || 'none'}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as ReturnType<typeof blankForm>); setView('create'); },
+    onSave: () => saveIncident(),
+  });
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
@@ -250,8 +264,8 @@ function IncidentsPage() {
   }, [form.treatment, form.days_away, form.days_restricted, form.severity]);
 
   /* ─── Save Incident ─── */
-  const saveIncident = async () => {
-    if (!form.title.trim() || !projectId) return;
+  const saveIncident = async (): Promise<boolean> => {
+    if (!form.title.trim() || !projectId) return false;
     setSaving(true);
     const payload = { ...form, recordable: form.recordable || isLikelyRecordable };
     try {
@@ -276,6 +290,8 @@ function IncidentsPage() {
       setPhotoFiles([]);
     }
     setSaving(false);
+    guard.clearDraft();
+    return true;
   };
 
   /* ─── Update Incident Status ─── */
@@ -1117,6 +1133,7 @@ function IncidentsPage() {
           </>
         )}
       </div>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

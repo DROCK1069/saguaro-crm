@@ -8,6 +8,8 @@ import { tradeOptions } from '@/lib/taxonomy';
 import { StandardSelect } from '@/components/ui/Select';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { UsersThree, ClipboardText, UserGear, Warning, Gauge, Scales, Plus, DownloadSimple, ArrowsClockwise, FunnelSimple, CurrencyDollar, Clock, TrendDown, UserMinus, CalendarBlank, Buildings } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',BG='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',TEXT='#FFFFFF',DIM='#CBD5E1',GREEN='#22C55E',RED='#EF4444',AMBER='#F59E0B',BLUE='#F59E0B',PURPLE='#8B5CF6';
 
@@ -96,6 +98,18 @@ export default function ResourcePlanningPage() {
   const [filterDateEnd, setFilterDateEnd] = useState('');
   const [filterPerson, setFilterPerson] = useState('');
   const [form, setForm] = useState<Partial<Assignment>>({ status: 'assigned', hours_per_day: 8, days_per_week: 5, hourly_rate: 0, certifications: [], trade: 'General', role: 'Laborer' });
+
+  /* ── Unsaved-work guard: an assignment half-typed is real work, so leaving
+   *    this module (sidebar, ⌘K, breadcrumb, back) confirms first and the
+   *    draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'resource-planning',
+    draftData: editId ? undefined : form,
+    restoreDraft: (d) => { setForm(d as Partial<Assignment>); setEditId(null); setShowForm(true); },
+    onSave: () => saveAssignment(),
+  });
   const [reassignTarget, setReassignTarget] = useState<{ assignment: Assignment; show: boolean } | null>(null);
   const gridScrollRef = useRef<HTMLDivElement>(null);
 
@@ -321,10 +335,10 @@ export default function ResourcePlanningPage() {
   }, [filteredPeople, filtered, projMap]);
 
   /* ---- CRUD handlers ---- */
-  const saveAssignment = async () => {
+  const saveAssignment = async (): Promise<boolean> => {
     if (!form.person_name || !form.project_id || !form.start_date || !form.end_date) {
       setError('Please fill in all required fields: Person Name, Project, Start Date, End Date.');
-      return;
+      return false;
     }
     setSaving(true);
     setError(null);
@@ -339,12 +353,15 @@ export default function ResourcePlanningPage() {
       setEditId(null);
       setForm({ status: 'assigned', hours_per_day: 8, days_per_week: 5, hourly_rate: 0, certifications: [], trade: 'General', role: 'Laborer' });
       await load();
+      guard.clearDraft();
+      return true;
     } catch (err: unknown) {
       console.error(err);
       setError(humanError(err, 'Failed to save the assignment. Please try again.'));
     } finally {
       setSaving(false);
     }
+    return false;
   };
 
   const deleteAssignment = async (id: string) => {
@@ -1013,5 +1030,6 @@ export default function ResourcePlanningPage() {
         </div>
       </div>}
     </div>
+    <UnsavedGuardModal guard={guard} />
   </PremiumSurface>;
 }

@@ -24,6 +24,8 @@ import { Camera, X, PencilSimple, Plus, Images, CalendarBlank, FolderSimple, War
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, InsightRow, AutoChip, IconChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -83,6 +85,18 @@ export default function PhotosPage(){
   const [selected,setSelected]=useState<any>(null);
   const [mode,setMode]=useState<'view'|'edit'|'create'|null>(null);
   const [form,setForm]=useState({...EMPTY_FORM});
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(mode==='create'||mode==='edit', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `photos:${projectId}`,
+    draftData: mode==='create'?form:undefined,
+    restoreDraft: (d) => { setForm({...EMPTY_FORM, ...(d as object)}); setMode('create'); setSelected(null); },
+    onSave: () => save(),
+  });
   const [saving,setSaving]=useState(false);
   const [deleting,setDeleting]=useState(false);
   const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
@@ -168,13 +182,13 @@ export default function PhotosPage(){
     return new Error(humanError(payload,fallback));
   }
 
-  async function save(){
+  async function save(): Promise<boolean> {
     setFormError('');
-    if(!form.title.trim()){setFormError('Give the photo a title first.');showToast('Title is required','error');return;}
+    if(!form.title.trim()){setFormError('Give the photo a title first.');showToast('Title is required','error');return false;}
     if(mode==='create'&&!uploadFile&&!form.url.trim()){
       setFormError('Choose a photo file to upload, or paste an image URL.');
       showToast('No photo attached','error');
-      return;
+      return false;
     }
     setSaving(true);
     try{
@@ -250,6 +264,8 @@ export default function PhotosPage(){
         showToast('Photo updated');
       }
       await load();closePanel();
+      guard.clearDraft();
+      return true;
     }catch(e:any){
       console.error(e);
       const msg=humanError(e,'Save failed. Please try again.');
@@ -257,6 +273,7 @@ export default function PhotosPage(){
       showToast(msg,'error');
     }
     finally{setSaving(false);}
+    return false;
   }
 
   async function deletePhoto(photo:any){
@@ -720,6 +737,7 @@ export default function PhotosPage(){
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
 import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { humanError } from '@/lib/errors';
+import { SignatureCanvas, type SignatureCanvasHandle } from '@/components/SignaturePad';
 import { TRADESPERSON_ROLES } from '@/lib/contractor-trades';
 import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
 import {
@@ -139,99 +140,31 @@ function StatusPill({ status }: { status?: string | null }) {
 
 // ─── Signature pad — the proven canvas dataURL pattern from app/field/tm-tickets ──
 function SignaturePad({ label, value, onChange }: { label: string; value: string; onChange: (dataUrl: string) => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const lastPos = useRef<{ x: number; y: number } | null>(null);
-
-  const getPos = useCallback((e: React.MouseEvent | React.TouchEvent): { x: number; y: number } => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    if ('touches' in e) {
-      const t = e.touches[0];
-      return { x: (t.clientX - rect.left) * scaleX, y: (t.clientY - rect.top) * scaleY };
-    }
-    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
-  }, []);
-
-  const startDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    drawing.current = true;
-    lastPos.current = getPos(e);
-  }, [getPos]);
-
-  const moveDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (!drawing.current || !lastPos.current) return;
-    e.preventDefault();
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    const pos = getPos(e);
-    ctx.strokeStyle = GOLD;
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastPos.current = pos;
-  }, [getPos]);
-
-  const endDraw = useCallback(() => {
-    if (!drawing.current) return;
-    drawing.current = false;
-    lastPos.current = null;
-    const canvas = canvasRef.current;
-    if (canvas) onChange(canvas.toDataURL('image/png'));
-  }, [onChange]);
-
-  const clearSig = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d')!;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    onChange('');
-  }, [onChange]);
-
-  // Redraw a previously-captured signature once on mount (edit / reopen).
-  useEffect(() => {
-    if (value && canvasRef.current) {
-      const img = new Image();
-      img.onload = () => {
-        const ctx = canvasRef.current!.getContext('2d')!;
-        ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = value;
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Thin wrapper over the shared SignatureCanvas — the same pad the field app
+  // uses, so there is one signature implementation instead of three. The copy
+  // that lived here inked in GOLD on a transparent canvas (unreadable on the
+  // white ticket PDF), never re-sized its bitmap, and restored a stored
+  // signature in a mount-only effect, so reopening a loaded ticket showed an
+  // empty pad.
+  const padRef = useRef<SignatureCanvasHandle>(null);
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <label style={{ ...LBL, marginBottom: 0 }}>{label}</label>
-        <button type="button" onClick={clearSig} style={{ background: 'none', border: 'none', color: RED, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Clear</button>
+        <button
+          type="button"
+          onClick={() => padRef.current?.clear()}
+          style={{ background: 'none', border: 'none', color: RED, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+        >
+          Clear
+        </button>
       </div>
-      <div style={{ background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', touchAction: 'none' }}>
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={180}
-          style={{ width: '100%', height: 110, display: 'block', cursor: 'crosshair' }}
-          onMouseDown={startDraw}
-          onMouseMove={moveDraw}
-          onMouseUp={endDraw}
-          onMouseLeave={endDraw}
-          onTouchStart={startDraw}
-          onTouchMove={moveDraw}
-          onTouchEnd={endDraw}
-        />
+      <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <SignatureCanvas ref={padRef} value={value} onChange={onChange} height={110} />
       </div>
       {value
         ? <p style={{ margin: '4px 0 0', fontSize: 11, color: GREEN, fontWeight: 600 }}>Signature captured</p>
-        : <p style={{ margin: '4px 0 0', fontSize: 11, color: DIM }}>Sign above with mouse or finger</p>}
+        : <p style={{ margin: '4px 0 0', fontSize: 11, color: DIM }}>Sign above with mouse, finger or stylus</p>}
     </div>
   );
 }

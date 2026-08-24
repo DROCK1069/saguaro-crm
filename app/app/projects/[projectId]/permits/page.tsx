@@ -7,6 +7,8 @@ import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatSt
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { Clipboard, NotePencil, CheckCircle, CurrencyDollar, Plus, X, Warning, ClockCounterClockwise, ArrowRight } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 interface Permit {
   id: string;
@@ -56,6 +58,18 @@ export default function PermitsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `permits:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -115,10 +129,10 @@ export default function PermitsPage() {
     return [p.permit_number, p.issuing_authority, p.permit_type].some(v => String(v || '').toLowerCase().includes(qP));
   });
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     if (!form.number || !form.authority) {
       setErrorMsg('Permit number and agency are required.');
-      return;
+      return false;
     }
     setSaving(true);
     setErrorMsg('');
@@ -146,8 +160,11 @@ export default function PermitsPage() {
       setForm(EMPTY_FORM);
       setSuccessMsg('Permit added.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setErrorMsg('Could not save the permit. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -405,6 +422,7 @@ export default function PermitsPage() {
           </div>
         )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

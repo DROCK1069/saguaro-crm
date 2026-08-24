@@ -10,6 +10,8 @@ import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/t
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { FileText, CurrencyDollar, Plus, FilePlus, FileArrowUp, Eye, FileDashed, UsersThree, Signature } from '@phosphor-icons/react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -71,6 +73,18 @@ export default function ContractsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `contracts:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -164,10 +178,10 @@ export default function ContractsPage() {
     }
   }, [loading, contracts.length]);
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     if (!form.sub_name || !form.trade || !form.amount) {
       setErrorMsg('Subcontractor name, trade, and amount are required.');
-      return;
+      return false;
     }
     setSaving(true);
     setErrorMsg('');
@@ -202,8 +216,11 @@ export default function ContractsPage() {
       setAuto(a => ({ ret: a.ret, dates: a.dates }));
       setSuccessMsg('Contract created successfully.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch (err: any) {
       console.error(err); setErrorMsg(humanError(err, 'Failed to save the contract. Please try again.'));
+      return false;
     } finally {
       setSaving(false);
     }
@@ -528,6 +545,7 @@ export default function ContractsPage() {
           </div>
         )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

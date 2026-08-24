@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 import { getSupabaseBrowser } from '@/lib/supabase-browser';
 import {
   loadMemoryProfile,
@@ -172,7 +173,7 @@ export default function SaguaroChatWidget({
   userId = null,
   projectList = [],
 }: SaguaroChatWidgetProps) {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);

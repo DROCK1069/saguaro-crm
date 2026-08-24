@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 
 const GOLD   = 'var(--brand-primary)';
 const DARK   = '#0a0a0a';
@@ -71,7 +71,7 @@ export default function CommandPalette({ onScoreBid }: Props) {
   const [recentPages, setRecentPages] = useState<PaletteItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const router = useGuardedRouter();
 
   // Load recent pages from localStorage
   useEffect(() => {

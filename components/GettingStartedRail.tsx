@@ -9,6 +9,12 @@
  * (FlowSteps anatomy — inlined here so every step row can be a <Link>, which
  * FlowSteps' string-only props can't host). Collapsible, persisted in
  * localStorage ('sag_journey_collapsed'); hides entirely once all 8 are done.
+ *
+ * FREE MOVEMENT (owner rule): no step is ever locked or forward-only. The
+ * current step carries the "you are here" band; every other row — completed or
+ * upcoming — stays a live link with an explicit Review / Open affordance, so a
+ * GC sitting on step 3 can walk back to step 1, check it, and come forward.
+ * Mirrors the mobile GettingStartedRail exactly.
  */
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -71,6 +77,8 @@ export default function GettingStartedRail({ projectId }: { projectId?: string }
   ];
   const doneCount = steps.filter(s => s.done).length;
   const next = steps.find(s => !s.done);
+  // "You are here" — the first unfinished step. Marks, never gates.
+  const curIdx = steps.findIndex(s => !s.done);
 
   if (!loaded || !hydrated) return null; // never flash a wrong journey
   if (doneCount === 8) return null;     // journey complete — get out of the way
@@ -123,38 +131,65 @@ export default function GettingStartedRail({ projectId }: { projectId?: string }
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', left: 10, top: 10, bottom: 16, width: 1, background: 'linear-gradient(180deg, rgba(245,158,11,0.45), rgba(255,255,255,0.08))' }} />
               {steps.map((s, i) => {
+                const isCur = i === curIdx;
+                // Every row with an href is reachable — done rows say "Review",
+                // the current one says "Resume", future ones say "Open".
+                const verb = s.done ? 'Review' : isCur ? 'Resume' : 'Open';
+                const base = isCur ? 'rgba(245,158,11,0.07)' : 'transparent';
                 const row = (
                   <div
                     style={{
                       display: 'flex', gap: 12, alignItems: 'flex-start', position: 'relative',
                       padding: '7px 8px', margin: '0 -8px', borderRadius: 10,
+                      background: base,
+                      border: isCur ? '1px solid rgba(245,158,11,0.32)' : '1px solid transparent',
                       transition: 'background .15s ease',
                     }}
-                    onMouseEnter={e => { if (s.href) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    onMouseEnter={e => { if (s.href) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = base; }}
                   >
                     <div style={{
                       width: 21, height: 21, borderRadius: 999, flexShrink: 0, zIndex: 1,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: s.done ? `linear-gradient(180deg,${GOLD_HI},${GOLD})` : '#101011',
-                      border: s.done ? 'none' : '1px solid rgba(245,158,11,0.45)',
+                      border: s.done ? 'none' : `1px solid rgba(245,158,11,${isCur ? 0.85 : 0.45})`,
+                      boxShadow: isCur ? '0 0 12px rgba(245,158,11,0.45)' : undefined,
                       color: s.done ? '#241500' : GOLD_HI, fontSize: 10, fontWeight: 900,
                     }}>
                       {s.done ? <Check size={12} weight="bold" color="#241500" /> : i + 1}
                     </div>
                     <div style={{ minWidth: 0, paddingTop: 1, flex: 1 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 800, color: s.done ? MUTED : TEXT, lineHeight: 1.35 }}>{s.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 800, color: s.done ? MUTED : TEXT, lineHeight: 1.35, minWidth: 0 }}>{s.title}</span>
+                        {isCur && (
+                          <span style={{
+                            padding: '1px 7px', borderRadius: 999, flexShrink: 0,
+                            background: 'rgba(245,158,11,0.16)', border: '1px solid rgba(245,158,11,0.45)',
+                            color: GOLD_HI, fontSize: 9, fontWeight: 900, letterSpacing: '0.08em',
+                          }}>YOU ARE HERE</span>
+                        )}
+                      </div>
                       <div style={{ fontSize: 11.5, color: s.done ? FAINT : MUTED, lineHeight: 1.5, marginTop: 2 }}>{s.desc}</div>
                     </div>
-                    {!s.done && s.href && (
-                      <ArrowRight size={13} weight="bold" color={FAINT} style={{ flexShrink: 0, marginTop: 4 }} />
+                    {s.href && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 2,
+                        color: isCur ? GOLD_HI : FAINT, fontSize: 10.5, fontWeight: 800, whiteSpace: 'nowrap',
+                      }}>
+                        {verb} <ArrowRight size={12} weight="bold" color={isCur ? GOLD_HI : FAINT} />
+                      </span>
                     )}
                   </div>
                 );
                 return s.href
-                  ? <Link key={i} href={s.href} style={{ textDecoration: 'none', display: 'block' }}>{row}</Link>
+                  ? <Link key={i} href={s.href} aria-current={isCur ? 'step' : undefined} aria-label={`${s.title} — ${s.done ? 'completed, open to review' : isCur ? 'current step' : 'upcoming step'}`} style={{ textDecoration: 'none', display: 'block' }}>{row}</Link>
                   : <div key={i}>{row}</div>;
               })}
+            </div>
+
+            {/* Plain-language proof the rail is not one-way. */}
+            <div style={{ fontSize: 10.5, color: FAINT, marginTop: 10 }}>
+              Every step stays open — go back to review what you entered, or jump ahead. Nothing here is locked.
             </div>
 
             {/* Gold CTA on the next incomplete step */}

@@ -25,6 +25,11 @@ import {
 } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
+import RadioEvidence, {
+  RadioEvidenceChip,
+  radioEvidenceFromRecord,
+  stripRadioProvenance,
+} from '@/components/RadioEvidence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -278,6 +283,12 @@ export default function PunchListPage(){
   const crit=items.filter((i:any)=>prKey(i.priority)==='critical'&&i.status!=='completed').length;
   const pct=items.length>0?Math.round((done/items.length)*100):0;
 
+  // Radio provenance on the open item. `selectedNotes` is the DISPLAY copy with
+  // the provenance block lifted out — the evidence card states those facts far
+  // better — while `selected.notes` (and the edit form) keep the stored block.
+  const selectedRadio=selected?radioEvidenceFromRecord(selected):null;
+  const selectedNotes=selectedRadio?stripRadioProvenance(selected?.notes):(selected?.notes||'');
+
   return(
     <>
       <style>{`@keyframes punchDrawerIn{from{transform:translateX(28px);opacity:.5}to{transform:translateX(0);opacity:1}}`}</style>
@@ -389,6 +400,10 @@ export default function PunchListPage(){
               {filtered.map((item:any)=>{
                 const isSel=selected?.id===item.id&&mode==='view';
                 const isDone=item.status==='completed';
+                // Filed from a radio transmission? punch_list has no jsonb
+                // column, so the provenance rides as the readable block in
+                // `notes` — which the list route returns in full.
+                const radio=radioEvidenceFromRecord(item);
                 return(
                   <div key={item.id}
                     style={{background:isSel?'rgba(245, 158, 11,.07)':RAISED,
@@ -415,6 +430,7 @@ export default function PunchListPage(){
                           </span>
                           <Pill label={prLabel(item.priority)} color={PRIORITY_COLORS[prKey(item.priority)]||GOLD}/>
                           <Pill label={STATUS_LABELS[item.status]||item.status} color={STATUS_COLORS[item.status]||DIM}/>
+                          {radio&&<RadioEvidenceChip durationSecs={radio.audio_duration_secs}/>}
                         </div>
                         <div style={{fontSize:12,color:DIM,marginTop:3,display:'flex',gap:12,flexWrap:'wrap'}}>
                           {item.trade&&<span>{item.trade}</span>}
@@ -624,6 +640,9 @@ export default function PunchListPage(){
                   </button>
                 </div>
 
+                {/* The voice behind the item, when it was filed from the radio */}
+                {selectedRadio&&<RadioEvidence source={selectedRadio} title="Voice on the record"/>}
+
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                   {[
                     {l:'Trade',v:selected.trade},
@@ -641,11 +660,11 @@ export default function PunchListPage(){
                   ))}
                 </div>
 
-                {selected.notes&&(
+                {selectedNotes&&(
                   <div style={{background:'#141416',border:`1px solid ${BORDER}`,borderRadius:8,padding:'12px 14px'}}>
                     <div style={{fontSize:10,fontWeight:700,color:DIM,textTransform:'uppercase',
                       letterSpacing:.5,marginBottom:6}}>Notes</div>
-                    <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selected.notes}</div>
+                    <div style={{fontSize:13,color:TEXT,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{selectedNotes}</div>
                   </div>
                 )}
 

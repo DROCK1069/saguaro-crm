@@ -10,6 +10,8 @@ import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -240,6 +242,18 @@ function MeetingsPage() {
 
   // Form state
   const [form, setForm] = useState(emptyMeeting());
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(view === 'create', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-meeting:${projectId || 'none'}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as ReturnType<typeof emptyMeeting>); setView('create'); },
+    onSave: () => handleCreate(),
+  });
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
@@ -423,7 +437,7 @@ function MeetingsPage() {
   const nextMeeting = seriesIdx < seriesMeetings.length - 1 ? seriesMeetings[seriesIdx + 1] : null;
 
   /* ── Handlers ── */
-  const handleCreate = async () => {
+  const handleCreate = async (): Promise<boolean> => {
     setSaving(true); setSaveMsg('');
     const meeting: Meeting = {
       ...form, id: uid(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
@@ -434,16 +448,24 @@ function MeetingsPage() {
         const res = await fetch(`/api/projects/${projectId}/meetings`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meeting),
         });
-        if (res.ok) { setSaveMsg('Meeting created'); await fetchMeetings(); setTimeout(() => setView('list'), 600); }
-        else setSaveMsg('Error creating meeting');
+        if (res.ok) {
+          setSaveMsg('Meeting created'); await fetchMeetings(); setTimeout(() => setView('list'), 600);
+          setSaving(false); guard.clearDraft();
+          return true;
+        }
+        setSaveMsg('Error creating meeting');
       } catch { setSaveMsg('Network error'); }
-    } else {
-      await enqueue({ url: `/api/projects/${projectId}/meetings`, method: 'POST', body: JSON.stringify(meeting), contentType: 'application/json', isFormData: false });
-      setMeetings(prev => [meeting, ...prev]);
-      setSaveMsg('Saved offline — will sync');
-      setTimeout(() => setView('list'), 600);
+      setSaving(false);
+      return false;
     }
+    // Offline: the meeting is queued and shown locally — that counts as saved.
+    await enqueue({ url: `/api/projects/${projectId}/meetings`, method: 'POST', body: JSON.stringify(meeting), contentType: 'application/json', isFormData: false });
+    setMeetings(prev => [meeting, ...prev]);
+    setSaveMsg('Saved offline — will sync');
+    setTimeout(() => setView('list'), 600);
     setSaving(false);
+    guard.clearDraft();
+    return true;
   };
 
   const handleUpdate = async (meeting: Meeting) => {
@@ -1429,6 +1451,7 @@ function MeetingsPage() {
       {view === 'edit' && renderForm(true)}
       {view === 'detail' && renderDetail()}
       {view === 'minutes' && renderMinutes()}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

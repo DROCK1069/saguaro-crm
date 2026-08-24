@@ -11,6 +11,8 @@ import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -118,6 +120,18 @@ function SubmittalsPage() {
   const [newPriority, setNewPriority] = useState<'Normal' | 'Urgent' | 'Critical'>('Normal');
   const [newAttachment, setNewAttachment] = useState<File | null>(null);
   const [newLinkedSpec, setNewLinkedSpec] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { newSpecSection, newTitle, newDescription, newType, newSubcontractor, newDueDate, newPriority, newLinkedSpec };
+  const composerDirty = useComposerDirty(showCreateForm, composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-submittal:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setNewSpecSection(v.newSpecSection ?? ''); setNewTitle(v.newTitle ?? ''); setNewDescription(v.newDescription ?? ''); setNewType(v.newType ?? SUBMITTAL_TYPES[0]); setNewSubcontractor(v.newSubcontractor ?? ''); setNewDueDate(v.newDueDate ?? ''); setNewPriority(v.newPriority ?? 'Normal'); setNewLinkedSpec(v.newLinkedSpec ?? ''); setShowCreateForm(true); },
+  });
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -886,6 +900,7 @@ function SubmittalsPage() {
           })}
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

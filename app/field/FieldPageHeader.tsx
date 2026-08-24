@@ -5,7 +5,7 @@
  * so screens stop hand-rolling divergent headers. Professional weight (600, not 800).
  */
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 
 const TEXT = '#FFFFFF';
 const DIM = '#CBD5E1';
@@ -28,7 +28,7 @@ export default function FieldPageHeader({
   /** optional raw SVG string (e.g. a bespoke field icon) shown in a steel badge */
   icon?: string;
 }) {
-  const router = useRouter();
+  const router = useGuardedRouter();
   return (
     <div className="fld-ph">
       <button

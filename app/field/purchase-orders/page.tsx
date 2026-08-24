@@ -12,6 +12,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { PencilSimple, Percent, Copy, Trash, Check, X } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -136,6 +138,18 @@ function PurchaseOrdersInner() {
   const [formRequiredDate, setFormRequiredDate] = useState('');
   const [formLines, setFormLines] = useState<LineItem[]>([emptyLine()]);
   const [formFileUrl, setFormFileUrl] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formPoNumber, formVendor, formVendorEmail, formDescription, formIssuedDate, formRequiredDate, formLines, formFileUrl };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-po:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormPoNumber(v.formPoNumber ?? ''); setFormVendor(v.formVendor ?? ''); setFormVendorEmail(v.formVendorEmail ?? ''); setFormDescription(v.formDescription ?? ''); setFormIssuedDate(v.formIssuedDate ?? ''); setFormRequiredDate(v.formRequiredDate ?? ''); setFormLines(v.formLines ?? [emptyLine()]); setFormFileUrl(v.formFileUrl ?? ''); setView('create'); },
+  });
   const [saving, setSaving] = useState(false);
 
   /* Receiving */
@@ -1072,6 +1086,7 @@ function PurchaseOrdersInner() {
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

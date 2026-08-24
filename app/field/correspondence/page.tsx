@@ -11,6 +11,8 @@ import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { Envelope, EnvelopeSimple, Package, Warning, FileText, Gear, ArrowUp, ArrowDown, X, Paperclip, Eye, Printer, CheckCircle, Lightning, ListBullets } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -235,6 +237,18 @@ function CorrespondencePage() {
   const [formTransItems, setFormTransItems] = useState<TransmittalItem[]>([{ document_name: '', revision: '', copies: 1 }]);
   const [formTransPurposes, setFormTransPurposes] = useState<TransmittalPurpose[]>([]);
   const [formTransRemarks, setFormTransRemarks] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formType, formSubject, formBody, formPriority, formTo, formCc, formRefLinks, formReadReceipt, formTransItems, formTransPurposes, formTransRemarks };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-correspondence:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormType(v.formType ?? 'Letter'); setFormSubject(v.formSubject ?? ''); setFormBody(v.formBody ?? ''); setFormPriority(v.formPriority ?? 'Normal'); setFormTo(v.formTo ?? [{ name: '', email: '' }]); setFormCc(v.formCc ?? []); setFormRefLinks(v.formRefLinks ?? ''); setFormReadReceipt(v.formReadReceipt ?? false); setFormTransItems(v.formTransItems ?? [{ document_name: '', revision: '', copies: 1 }]); setFormTransPurposes(v.formTransPurposes ?? []); setFormTransRemarks(v.formTransRemarks ?? ''); setView('create'); },
+  });
 
   // Reply / forward
   const [replyBody, setReplyBody] = useState('');
@@ -1502,6 +1516,7 @@ function CorrespondencePage() {
         {view === 'detail' && renderDetail()}
         {view === 'create' && renderCreate()}
       </div>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

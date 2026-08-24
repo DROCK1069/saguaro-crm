@@ -10,6 +10,8 @@ import { SHEET_DISCIPLINES } from '@/lib/construction-intelligence';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030';
@@ -102,6 +104,18 @@ export default function DrawingsPage(){
   const [selected,setSelected]=useState<any>(null);
   const [mode,setMode]=useState<'view'|'edit'|'create'|null>(null);
   const [form,setForm]=useState<Record<string,any>>({...EMPTY_FORM});
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(mode==='create'||mode==='edit', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `drawings:${projectId}`,
+    draftData: mode==='create'?form:undefined,
+    restoreDraft: (d) => { setForm(d as Record<string,any>); setMode('create'); setSelected(null); },
+    onSave: () => save(),
+  });
   const [saving,setSaving]=useState(false);
   const [deleting,setDeleting]=useState(false);
   const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
@@ -171,9 +185,9 @@ export default function DrawingsPage(){
   function viewDrawing(drawing:any){setSelected(drawing);setMode('view');}
   function closePanel(){setSelected(null);setMode(null);}
 
-  async function save(){
+  async function save(): Promise<boolean> {
     if(!form.drawing_number.trim()||!form.title.trim()){
-      showToast('Drawing number and title are required','error');return;
+      showToast('Drawing number and title are required','error');return false;
     }
     setSaving(true);
     try{
@@ -224,8 +238,11 @@ export default function DrawingsPage(){
         showToast('Drawing updated');
       }
       await load();closePanel();
+      guard.clearDraft();
+      return true;
     }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
     finally{setSaving(false);}
+    return false;
   }
 
   async function deleteDrawing(drawing:any){
@@ -694,6 +711,7 @@ export default function DrawingsPage(){
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

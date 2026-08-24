@@ -8,6 +8,8 @@ import { BUILDING_TYPES } from '@/lib/contractor-trades';
 import { PremiumFX, ModuleHero, StatStrip, AutoChip, FlowSteps } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { Funnel } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 /* ─── Palette ─── */
 const GOLD = '#F59E0B', BG = '#1c1c1e', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
@@ -104,6 +106,17 @@ export default function LeadsPage() {
   const [valueMax, setValueMax] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editLead, setEditLead] = useState<Partial<Lead> | null>(null);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showModal && !!editLead, editLead);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'lead-create',
+    draftData: editLead?.id ? undefined : editLead,
+    restoreDraft: (d) => { setEditLead(d as Partial<Lead>); setShowModal(true); },
+  });
   const [saving, setSaving] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -1365,6 +1378,7 @@ export default function LeadsPage() {
           onRecorded={() => { setOutcomeModal(null); fetchLeads(); }}
         />
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

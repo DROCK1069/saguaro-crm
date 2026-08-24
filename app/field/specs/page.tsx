@@ -11,6 +11,8 @@ import { FileText, MagnifyingGlass, Warning, Clock, BookOpen, Printer, Star } fr
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 /* ── Theme constants ── */
 const GOLD   = '#F59E0B';
@@ -150,6 +152,18 @@ function SpecsPageInner() {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newFileUrl, setNewFileUrl] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { newSectionNumber, newTitle, newContent, newFileUrl };
+  const composerDirty = useComposerDirty(showCreateForm, composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-spec:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setNewSectionNumber(v.newSectionNumber ?? ''); setNewTitle(v.newTitle ?? ''); setNewContent(v.newContent ?? ''); setNewFileUrl(v.newFileUrl ?? ''); setShowCreateForm(true); },
+  });
   const [creating, setCreating] = useState(false);
 
   /* ── Online/offline tracking ── */
@@ -862,6 +876,7 @@ function SpecsPageInner() {
           })}
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

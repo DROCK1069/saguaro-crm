@@ -11,6 +11,8 @@ import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { Check, X } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -207,6 +209,17 @@ function CommissioningInner() {
     notes: '', photos: [],
   });
   const [form, setForm] = useState(emptyForm());
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(view === 'new', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-commissioning:${projectId || 'none'}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as ReturnType<typeof emptyForm>); setView('new'); },
+  });
   const setF = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
 
   /* ── Load ── */
@@ -649,6 +662,7 @@ function CommissioningInner() {
         {view === 'new' && renderCreateForm()}
         {view === 'detail' && renderDetail()}
       </div>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

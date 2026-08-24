@@ -14,6 +14,8 @@ import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { Check } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -152,6 +154,18 @@ function CloseoutInner() {
   };
   const [form, setForm] = useState(empty);
 
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(view === 'create', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-closeout:${projectId || 'none'}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof empty); setView('create'); },
+    onSave: () => createItem(),
+  });
+
   /* ── fetch ─────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!projectId) return;
@@ -167,8 +181,8 @@ function CloseoutInner() {
   }, [projectId, base]);
 
   /* ── create / patch ────────────────────────────────────────────── */
-  async function createItem() {
-    if (!form.title.trim()) { setError('Title is required'); return; }
+  async function createItem(): Promise<boolean> {
+    if (!form.title.trim()) { setError('Title is required'); return false; }
     try {
       const res = await api(base, { method: 'POST', body: JSON.stringify(form), headers: { 'Content-Type': 'application/json' } });
       const created = res?.item || res;
@@ -176,7 +190,10 @@ function CloseoutInner() {
       else setItems((p) => [...p, { ...form, id: `tmp-${Date.now()}` } as CloseoutItem]);
       setForm(empty);
       setView('list');
+      guard.clearDraft();
+      return true;
     } catch (e: unknown) { console.error(e); setError(humanError(e, 'Create failed. Please try again.')); }
+    return false;
   }
 
   async function patchItem(id: string, patch: Partial<CloseoutItem>) {
@@ -773,6 +790,7 @@ function CloseoutInner() {
       {!loading && view === 'dashboard' && renderDashboard()}
       {!loading && view === 'checklist' && renderChecklist()}
       {!loading && view === 'trades' && renderTradeView()}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

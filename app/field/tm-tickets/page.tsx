@@ -14,6 +14,9 @@ import { TRADESPERSON_ROLES as TRADES } from '@/lib/contractor-trades';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { CaretDown, CaretRight, CheckCircle, ChartBar, Clipboard, X } from '@phosphor-icons/react';
+import { SignatureCanvas, type SignatureCanvasHandle } from '@/components/SignaturePad';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -100,100 +103,32 @@ function calcGrandTotal(t: { labor: LaborLine[]; materials: MaterialLine[]; equi
 
 // ─── Signature Pad Component ──────────────────────────────────
 function SignaturePad({ label, value, onChange }: { label: string; value: string; onChange: (dataUrl: string) => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const lastPos = useRef<{ x: number; y: number } | null>(null);
-
-  const getPos = useCallback((e: React.MouseEvent | React.TouchEvent): { x: number; y: number } => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    if ('touches' in e) {
-      const t = e.touches[0];
-      return { x: (t.clientX - rect.left) * scaleX, y: (t.clientY - rect.top) * scaleY };
-    }
-    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
-  }, []);
-
-  const startDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    drawing.current = true;
-    lastPos.current = getPos(e);
-  }, [getPos]);
-
-  const moveDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (!drawing.current || !lastPos.current) return;
-    e.preventDefault();
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    const pos = getPos(e);
-    ctx.strokeStyle = GOLD;
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastPos.current = pos;
-  }, [getPos]);
-
-  const endDraw = useCallback(() => {
-    if (!drawing.current) return;
-    drawing.current = false;
-    lastPos.current = null;
-    const canvas = canvasRef.current;
-    if (canvas) onChange(canvas.toDataURL('image/png'));
-  }, [onChange]);
-
-  const clearSig = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d')!;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    onChange('');
-  }, [onChange]);
-
-  // If a saved value exists, draw it back
-  useEffect(() => {
-    if (value && canvasRef.current) {
-      const img = new Image();
-      img.onload = () => {
-        const ctx = canvasRef.current!.getContext('2d')!;
-        ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = value;
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Thin wrapper over the shared SignatureCanvas. The hand-rolled pad that used
+  // to live here drew GOLD ink onto a transparent canvas (illegible once the PNG
+  // lands on a white ticket PDF), sized its bitmap once at a fixed 600x180 that
+  // never matched the CSS box after a resize, and restored a saved signature in a
+  // mount-only effect — so a ticket loaded asynchronously came back with an empty
+  // pad. All three are fixed in the shared component.
+  const padRef = useRef<SignatureCanvasHandle>(null);
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <label style={lbl}>{label}</label>
-        <button type="button" onClick={clearSig} style={{ background: 'none', border: 'none', color: RED, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Clear</button>
+        <button
+          type="button"
+          onClick={() => padRef.current?.clear()}
+          style={{ background: 'none', border: 'none', color: RED, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+        >
+          Clear
+        </button>
       </div>
-      <div style={{ background: '#1c1c1e', border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden', touchAction: 'none' }}>
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={180}
-          style={{ width: '100%', height: 120, display: 'block', cursor: 'crosshair' }}
-          onMouseDown={startDraw}
-          onMouseMove={moveDraw}
-          onMouseUp={endDraw}
-          onMouseLeave={endDraw}
-          onTouchStart={startDraw}
-          onTouchMove={moveDraw}
-          onTouchEnd={endDraw}
-        />
+      <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+        <SignatureCanvas ref={padRef} value={value} onChange={onChange} height={120} />
       </div>
       {value ? (
         <p style={{ margin: '4px 0 0', fontSize: 11, color: GREEN, fontWeight: 600 }}>Signature captured</p>
       ) : (
-        <p style={{ margin: '4px 0 0', fontSize: 11, color: DIM }}>Sign above using finger or mouse</p>
+        <p style={{ margin: '4px 0 0', fontSize: 11, color: DIM }}>Sign above using finger, mouse or stylus</p>
       )}
     </div>
   );
@@ -327,6 +262,19 @@ function TMTicketsPage() {
   const [formTax, setFormTax] = useState(0);
   const [formPhotos, setFormPhotos] = useState<File[]>([]);
   const [formPhotoPreview, setFormPhotoPreview] = useState<string[]>([]);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formDate, formDesc, formRef, formNotes, formLabor, formMaterials, formEquipment, formMarkup, formTax, formPhotoPreview };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-tm-ticket:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormDate(v.formDate ?? new Date().toISOString().slice(0, 10)); setFormDesc(v.formDesc ?? ''); setFormRef(v.formRef ?? ''); setFormNotes(v.formNotes ?? ''); setFormLabor(v.formLabor ?? [{ id: uid(), worker: '', trade: 'General Labor', regHours: 0, otHours: 0, rate: 0 }]); setFormMaterials(v.formMaterials ?? [{ id: uid(), description: '', qty: 0, unit: 'EA', unitCost: 0 }]); setFormEquipment(v.formEquipment ?? [{ id: uid(), description: '', hours: 0, rate: 0 }]); setFormMarkup(v.formMarkup ?? 15); setFormTax(v.formTax ?? 0); setFormPhotoPreview(v.formPhotoPreview ?? []); setView('create'); },
+    onSave: () => handleCreate(),
+  });
   const [contractorSig, setContractorSig] = useState('');
   const [ownerSig, setOwnerSig] = useState('');
 
@@ -410,9 +358,9 @@ function TMTicketsPage() {
     setContractorSig(''); setOwnerSig('');
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formDesc.trim()) return;
+  const handleCreate = async (e?: React.FormEvent): Promise<boolean> => {
+    e?.preventDefault();
+    if (!formDesc.trim()) return false;
     setSaving(true);
 
     const payload = {
@@ -470,9 +418,13 @@ function TMTicketsPage() {
       setTickets((prev) => [newTicket, ...prev]);
     }
 
+    // Both paths persist the ticket — posted, or queued for sync — so the
+    // composer is clean either way.
     resetForm();
     setSaving(false);
     setView('list');
+    guard.clearDraft();
+    return true;
   };
 
   // ─── Status actions ──────────────────────
@@ -1522,6 +1474,7 @@ function TMTicketsPage() {
           </button>
         </div>
       </form>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

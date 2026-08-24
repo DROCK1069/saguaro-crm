@@ -4,6 +4,8 @@ import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { CaretUp, CaretDown, Clipboard, CheckCircle, Asterisk, Stack, MagnifyingGlass, Plus } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 /* ── Color Palette ── */
 const GOLD = '#F59E0B';
@@ -705,6 +707,17 @@ export default function CustomFieldsPage() {
   const [deleteTarget, setDeleteTarget] = useState<CustomField | null>(null);
   const [formData, setFormData] = useState<CustomField>(emptyField(activeModule, 0));
   const [formValidation, setFormValidation] = useState<ValidationRule>(emptyValidation());
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, { formData, formValidation });
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'custom-field-create',
+    draftData: { formData, formValidation },
+    restoreDraft: (d) => { const v = d as { formData: CustomField; formValidation: ValidationRule }; setFormData(v.formData); setFormValidation(v.formValidation); setShowForm(true); },
+  });
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [showPreview, setShowPreview] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1876,6 +1889,7 @@ export default function CustomFieldsPage() {
           </div>
         </div>
       </div>
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

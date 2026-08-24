@@ -26,6 +26,14 @@ import { Question, WarningCircle, Clipboard, FolderOpen, CheckCircle, Clock, Tra
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { moduleAccent } from '@/lib/module-identity';
+import RadioEvidence, {
+  RadioEvidenceChip,
+  hasRadioEvidence,
+  radioProvenanceFromText,
+  radioEvidenceFromRecord,
+  stripRadioProvenance,
+  type RadioEvidenceSource,
+} from '@/components/RadioEvidence';
 
 interface RFI {
   id: string;
@@ -74,6 +82,16 @@ export default function RFIsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
+
+  /* ── Radio evidence: an RFI promoted from a transmission carries the voice
+   *    behind it. The list route returns a narrow column set (no attachments,
+   *    no notes), so the row detects it from the headline the promote appends
+   *    to `question`, and the full structured provenance is pulled from the
+   *    RFI detail only when the user opens the card. ── */
+  const [evidenceId, setEvidenceId] = useState<string | null>(null);
+  const [evidenceSrc, setEvidenceSrc] = useState<RadioEvidenceSource | null>(null);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [evidenceError, setEvidenceError] = useState('');
 
   // Assign / ball-in-court
   const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -343,6 +361,33 @@ export default function RFIsPage() {
     }
   }
 
+  /** Open (or close) the radio-evidence card for one RFI. Read-only — nothing
+   *  is written, and a failed detail read is reported, never faked. */
+  async function openEvidence(rfi: RFI) {
+    if (evidenceId === rfi.id) { setEvidenceId(null); return; }
+    setAnsweringId(null);
+    setAssigningId(null);
+    setEvidenceId(rfi.id);
+    // Paint instantly from the headline the list row already carries…
+    setEvidenceSrc(radioProvenanceFromText(rfi.question));
+    setEvidenceError('');
+    setEvidenceLoading(true);
+    try {
+      // …then upgrade to the structured provenance stored in attachments jsonb,
+      // which is the only place the radio message ID lives.
+      const r = await fetch(`/api/rfis/${rfi.id}`);
+      const d = await r.json();
+      if (!r.ok || d.error) throw new Error(d.error || 'Could not load this RFI record');
+      const full = radioEvidenceFromRecord(d.rfi);
+      if (full) setEvidenceSrc(full);
+      else setEvidenceError('This RFI no longer carries the radio provenance that was filed with it.');
+    } catch (e: unknown) {
+      setEvidenceError((e as Error).message || 'Could not load the radio evidence for this RFI.');
+    } finally {
+      setEvidenceLoading(false);
+    }
+  }
+
   const inp: React.CSSProperties = {
     width: '100%', padding: '8px 12px', background: T.surface,
     border: `1px solid ${T.border}`, borderRadius: 8, color: T.white, fontSize: 13, outline: 'none',
@@ -584,11 +629,26 @@ export default function RFIsPage() {
               rows={filteredRfis.map(rfi => {
                 const displayStatus = rfi.is_overdue ? 'overdue' : (rfi.status || 'open');
                 const bic = ballInCourt(rfi);
+                // Filed from a radio transmission? The promote appends its
+                // headline to `question`, which is in the list payload.
+                const radio = hasRadioEvidence({ question: rfi.question })
+                  ? radioProvenanceFromText(rfi.question)
+                  : null;
+                const questionPreview = stripRadioProvenance(rfi.question);
                 return [
                   <span key="n" style={{ color: T.gold, fontWeight: 700 }}>#{rfi.rfi_number}</span>,
                   <div key="sub">
                     <div style={{ fontWeight: 600 }}>{rfi.subject}</div>
-                    {rfi.question && <div style={{ fontSize: 11, color: T.muted, marginTop: 2, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rfi.question}</div>}
+                    {questionPreview && <div style={{ fontSize: 11, color: T.muted, marginTop: 2, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{questionPreview}</div>}
+                    {radio && (
+                      <div style={{ marginTop: 5 }}>
+                        <RadioEvidenceChip
+                          durationSecs={radio.audio_duration_secs}
+                          active={evidenceId === rfi.id}
+                          onClick={() => openEvidence(rfi)}
+                        />
+                      </div>
+                    )}
                   </div>,
                   <div key="s" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <Badge label={displayStatus} color={STATUS_BADGE[displayStatus] || 'muted'} />
@@ -601,12 +661,12 @@ export default function RFIsPage() {
                   <span key="do" style={{ color: T.muted }}>{daysOpen(rfi)}d</span>,
                   <div key="act" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     {(rfi.status === 'open' || rfi.status === 'pending' || rfi.status === 'draft') && (
-                      <Btn size="sm" onClick={() => { setAnsweringId(answeringId === rfi.id ? null : rfi.id); setAnswerText(''); setAnsweredBy(''); setAssigningId(null); }}>
+                      <Btn size="sm" onClick={() => { setAnsweringId(answeringId === rfi.id ? null : rfi.id); setAnswerText(''); setAnsweredBy(''); setAssigningId(null); setEvidenceId(null); }}>
                         {answeringId === rfi.id ? 'Cancel' : 'Answer'}
                       </Btn>
                     )}
                     {rfi.status === 'answered' && <span style={{ fontSize: 11, color: T.green, fontWeight: 700 }}>Answered</span>}
-                    <Btn size="sm" variant="ghost" onClick={() => { setAssigningId(assigningId === rfi.id ? null : rfi.id); setAssignName(bic); setAssignDue(rfi.due_date || ''); setAnsweringId(null); }}>
+                    <Btn size="sm" variant="ghost" onClick={() => { setAssigningId(assigningId === rfi.id ? null : rfi.id); setAssignName(bic); setAssignDue(rfi.due_date || ''); setAnsweringId(null); setEvidenceId(null); }}>
                       {assigningId === rfi.id ? 'Cancel' : 'Assign'}
                     </Btn>
                     <button onClick={async (e) => {
@@ -622,6 +682,26 @@ export default function RFIsPage() {
                 ];
               })}
             />
+            {/* Inline radio-evidence panel — the voice behind a promoted RFI */}
+            {evidenceId && (
+              <div style={{ padding: '16px 20px', background: T.surface2, borderTop: `1px solid ${T.border}` }}>
+                {evidenceError && (
+                  <div style={{ marginBottom: 10, padding: '10px 14px', background: T.redDim, border: `1px solid rgba(239,68,68,0.4)`, borderRadius: 10, color: T.red, fontSize: 12.5 }}>
+                    {evidenceError}
+                  </div>
+                )}
+                {evidenceSrc ? (
+                  <RadioEvidence source={evidenceSrc} title="Voice on the record" />
+                ) : evidenceLoading ? (
+                  <div style={{ fontSize: 12.5, color: T.faint }}>Loading the radio evidence…</div>
+                ) : !evidenceError ? (
+                  <div style={{ fontSize: 12.5, color: T.muted }}>No radio provenance is stored on this RFI.</div>
+                ) : null}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button onClick={() => setEvidenceId(null)} style={ghostButtonStyle} className="pmBtn">Close</button>
+                </div>
+              </div>
+            )}
             {/* Inline assign / ball-in-court panel */}
             {assigningId && (
               <div style={{ padding: '16px 20px', background: T.surface2, borderTop: `1px solid ${T.border}` }}>

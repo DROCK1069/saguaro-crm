@@ -15,6 +15,8 @@ import {
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 // ---------------------------------------------------------------------------
 // Crews — web parity with the mobile Crews screen (Saguaro-Field app/crews.tsx).
@@ -109,6 +111,18 @@ export default function CrewsPage() {
   const [search, setSearch] = useState('');
   const [panel, setPanel] = useState<Panel>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(panel?.mode==='create'||panel?.mode==='edit', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `crews:${projectId}`,
+    draftData: panel?.mode==='create'?form:undefined,
+    restoreDraft: (d) => { setForm({ ...EMPTY_FORM, ...(d as object) }); setPanel({ mode: 'create' }); },
+    onSave: () => saveCrew(),
+  });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -179,8 +193,8 @@ export default function CrewsPage() {
   function closePanel() { setPanel(null); }
 
   // ── Crew create / edit — optimistic: the card lands instantly, network settles after ──
-  async function saveCrew() {
-    if (!form.name.trim()) { showToast('Crew name is required', 'error'); return; }
+  async function saveCrew(): Promise<boolean> {
+    if (!form.name.trim()) { showToast('Crew name is required', 'error'); return false; }
     const isEdit = panel?.mode === 'edit';
     const editId = isEdit && panel && panel.mode === 'edit' ? panel.crewId : null;
     const snapshot = { ...form };
@@ -205,11 +219,14 @@ export default function CrewsPage() {
           trade: form.trade, status: form.status, notes: form.notes });
       }
       mutate();
+      guard.clearDraft();
+      return true;
     } catch (e: any) {
       showToast(humanError(e, 'Save failed. Please try again.'), 'error');
       mutate(); // rollback to server truth
       setForm(snapshot); setPanel(prevPanel);
     } finally { setSaving(false); }
+    return false;
   }
 
   async function archiveCrew(c: Crew, restore: boolean) {
@@ -532,6 +549,7 @@ export default function CrewsPage() {
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

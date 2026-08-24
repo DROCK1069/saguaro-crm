@@ -8,6 +8,8 @@ import { SUB_TRADES } from '@/lib/construction-intelligence';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -73,6 +75,18 @@ export default function SubsPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [form, setForm] = useState({ name:'', trade:'', contact_name:'', contact_email:'', contact_phone:'', license_number:'', contract_amount:'' });
 
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `subs:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleCreate(),
+  });
+
   // SmartCreate: walk in knowing the roster, awards, and compliance standing.
   const { ctx } = useProjectContext(projectId);
   const [pickId, setPickId] = useState('');
@@ -104,8 +118,8 @@ export default function SubsPage() {
     }
   }, [loading, subs.length]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async (e?: React.FormEvent): Promise<boolean> => {
+    e?.preventDefault();
     try {
       const r = await fetch('/api/subs/create', {
         method: 'POST', headers: {'Content-Type':'application/json'},
@@ -119,7 +133,10 @@ export default function SubsPage() {
       setPickId(''); setAuto({});
       setToast({msg:'Subcontractor added',type:'success'});
       load();
+      guard.clearDraft();
+      return true;
     } catch (err: unknown) { console.error(err); setToast({msg:humanError(err,'Something went wrong. Please try again.'),type:'error'}); }
+    return false;
   };
 
   const handleDelete = async (id: string) => {
@@ -448,6 +465,7 @@ export default function SubsPage() {
           </div>
         </SectionCard>
       )}
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

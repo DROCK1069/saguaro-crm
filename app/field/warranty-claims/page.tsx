@@ -13,6 +13,8 @@ import { enqueue } from '@/lib/field-db';
 import { SUB_TRADES } from '@/lib/construction-intelligence';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const BG     = '#0a0a0a';
@@ -282,6 +284,19 @@ function WarrantyClaimsInner() {
   const [formAssignee, setFormAssignee] = useState('');
   const [formAssigneeEmail, setFormAssigneeEmail] = useState('');
   const [formAssigneePhone, setFormAssigneePhone] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formDesc, formLocation, formCategory, formPriority, formDueDate, formWarrantyExpiry, formAssignee, formAssigneeEmail, formAssigneePhone };
+  const composerDirty = useComposerDirty(view === 'new', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-warranty-claim:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormDesc(v.formDesc ?? ''); setFormLocation(v.formLocation ?? ''); setFormCategory(v.formCategory ?? CATEGORIES[0]); setFormPriority(v.formPriority ?? 'Medium'); setFormDueDate(v.formDueDate ?? ''); setFormWarrantyExpiry(v.formWarrantyExpiry ?? ''); setFormAssignee(v.formAssignee ?? ''); setFormAssigneeEmail(v.formAssigneeEmail ?? ''); setFormAssigneePhone(v.formAssigneePhone ?? ''); setView('new'); },
+    onSave: () => handleCreate(),
+  });
   const [formPhotos, setFormPhotos] = useState<File[]>([]);
 
   /* Detail / resolution */
@@ -359,8 +374,8 @@ function WarrantyClaimsInner() {
   };
 
   /* ─── Create claim ─── */
-  const handleCreate = async () => {
-    if (!formDesc.trim()) return;
+  const handleCreate = async (): Promise<boolean> => {
+    if (!formDesc.trim()) return false;
     setSaving(true);
     try {
       const body = {
@@ -393,11 +408,14 @@ function WarrantyClaimsInner() {
       resetForm();
       setView('list');
       await fetchClaims();
+      guard.clearDraft();
+      return true;
     } catch (e: any) {
       console.error(e); setError(humanError(e, 'Failed to create the claim. Please try again.'));
     } finally {
       setSaving(false);
     }
+    return false;
   };
 
   /* ─── Update status ─── */
@@ -1148,6 +1166,7 @@ function WarrantyClaimsInner() {
           Back to Claims
         </button>
       </div>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

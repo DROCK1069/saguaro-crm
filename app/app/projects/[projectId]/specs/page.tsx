@@ -10,6 +10,8 @@ import {
 import { FileText, NotePencil, Export, CheckCircle, Plus, ClockCounterClockwise } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 interface Spec {
   id: string;
@@ -68,6 +70,18 @@ export default function SpecsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `specs:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -121,8 +135,8 @@ export default function SpecsPage() {
   const uncoveredPkgDivs = [...pkgDivisions].filter(c => !specs.some(s => (divCode(s.division) || divCode(s.section)) === c));
   const openSubmittals = Number(ctx?.counts?.openSubmittals) || 0;
 
-  async function handleSave() {
-    if (!form.section || !form.title) { setErrorMsg('Section number and title are required.'); return; }
+  async function handleSave(): Promise<boolean> {
+    if (!form.section || !form.title) { setErrorMsg('Section number and title are required.'); return false; }
     setSaving(true);
     setErrorMsg('');
     const today = new Date().toISOString().split('T')[0];
@@ -139,8 +153,11 @@ export default function SpecsPage() {
       setForm(EMPTY_FORM);
       setSuccessMsg('Spec section added.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setErrorMsg('Could not add the spec section. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -424,6 +441,7 @@ export default function SpecsPage() {
           />
         )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

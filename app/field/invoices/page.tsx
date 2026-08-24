@@ -8,6 +8,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { PencilSimple, Percent, Copy, Trash, Check, X } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 /* ── Color tokens ─────────────────────────────────────────────── */
 const GOLD   = '#F59E0B';
@@ -130,6 +132,19 @@ function InvoicesPage() {
   const [formDue, setFormDue] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formFileUrl, setFormFileUrl] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formNumber, formVendor, formAmount, formDue, formDesc, formFileUrl };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-invoice:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormNumber(v.formNumber ?? ''); setFormVendor(v.formVendor ?? ''); setFormAmount(v.formAmount ?? ''); setFormDue(v.formDue ?? ''); setFormDesc(v.formDesc ?? ''); setFormFileUrl(v.formFileUrl ?? ''); setView('create'); },
+    onSave: () => handleCreate(),
+  });
   const [submitting, setSubmitting] = useState(false);
 
   /* Money action BottomSheet state */
@@ -237,8 +252,8 @@ function InvoicesPage() {
   useEffect(() => { fetchInvoices(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Create invoice ──────────────────────────────────────────── */
-  const handleCreate = async () => {
-    if (!formNumber || !formVendor || !formAmount || !formDue) return;
+  const handleCreate = async (): Promise<boolean> => {
+    if (!formNumber || !formVendor || !formAmount || !formDue) return false;
     setSubmitting(true);
     const body = JSON.stringify({
       invoice_number: formNumber,
@@ -270,12 +285,15 @@ function InvoicesPage() {
       setFormDue(''); setFormDesc(''); setFormFileUrl('');
       setView('list');
       await fetchInvoices();
+      guard.clearDraft();
+      return true;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to create invoice';
       setError(msg);
     } finally {
       setSubmitting(false);
     }
+    return false;
   };
 
   /* ── Status transitions ─────────────────────────────────────── */
@@ -982,6 +1000,7 @@ function InvoicesPage() {
           <span style={{ display: 'inline-flex' }}><Check size={16} weight="bold" /></span>{fieldToast}
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

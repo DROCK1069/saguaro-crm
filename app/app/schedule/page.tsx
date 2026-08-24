@@ -32,6 +32,8 @@ import { PremiumFX, ModuleHero, StatStrip, AutoChip, IconChip, goldButtonStyle }
 import { moduleAccent } from '@/lib/module-identity';
 import { StandardSelect } from '@/components/ui/Select';
 import { tradeOptions } from '@/lib/taxonomy';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 interface ScheduleTask {
   id: string;
@@ -114,6 +116,18 @@ export default function SchedulePage() {
     name: '', projectId: '', phase: '', trade: '',
     startDate: '', endDate: '', pctComplete: '0',
     status: 'not_started', predecessorId: '',
+  });
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showCreate, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'schedule-create',
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowCreate(true); },
+    onSave: () => handleCreate(),
   });
   // SmartCreate: once a project is chosen, the modal walks in knowing it.
   const { ctx } = useProjectContext(form.projectId || null);
@@ -217,9 +231,9 @@ export default function SchedulePage() {
     setForm(f => ({ ...f, ...patch }));
   }
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.name || !form.projectId) return;
+  async function handleCreate(e?: React.FormEvent): Promise<boolean> {
+    e?.preventDefault();
+    if (!form.name || !form.projectId) return false;
     setCreating(true);
     try {
       const res = await fetch('/api/schedule/create', {
@@ -242,11 +256,14 @@ export default function SchedulePage() {
       setForm({ name: '', projectId: '', phase: '', trade: '', startDate: '', endDate: '', pctComplete: '0', status: 'not_started', predecessorId: '' });
       setDuration(''); setAuto({});
       await fetchTasks();
+      guard.clearDraft();
+      return true;
     } catch (e: any) {
       console.error(e); setError(humanError(e, 'Something went wrong. Please try again.'));
     } finally {
       setCreating(false);
     }
+    return false;
   }
 
   const filtered = useMemo(
@@ -524,6 +541,7 @@ export default function SchedulePage() {
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

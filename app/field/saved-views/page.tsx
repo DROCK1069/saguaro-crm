@@ -8,6 +8,8 @@ import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useRouter } from 'next/navigation';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const BASE = '#0a0a0a';
 const CARD = '#141416';
@@ -77,6 +79,18 @@ export default function SavedViewsPage() {
   const [formDateFrom, setFormDateFrom] = useState('');
   const [formDateTo, setFormDateTo] = useState('');
   const [formAssigned, setFormAssigned] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formName, formModule, formStatuses, formDateFrom, formDateTo, formAssigned };
+  const composerDirty = useComposerDirty(showCreate, composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'field-saved-view',
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormName(v.formName ?? ''); setFormModule(v.formModule ?? 'punch'); setFormStatuses(v.formStatuses ?? []); setFormDateFrom(v.formDateFrom ?? ''); setFormDateTo(v.formDateTo ?? ''); setFormAssigned(v.formAssigned ?? ''); setShowCreate(true); },
+  });
   const [saving, setSaving] = useState(false);
 
   const fetchViews = useCallback(async () => {
@@ -482,6 +496,7 @@ export default function SavedViewsPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

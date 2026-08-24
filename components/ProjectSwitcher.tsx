@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 import { useProjects } from '@/lib/hooks/useProjects';
 
 const GOLD = '#F59E0B';
@@ -63,7 +63,7 @@ function statusColor(status?: string): string {
 }
 
 export default function ProjectSwitcher({ open, onClose }: ProjectSwitcherProps) {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 

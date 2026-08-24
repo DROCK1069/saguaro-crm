@@ -10,6 +10,8 @@ import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatSt
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
 import { SUB_TRADES } from '@/lib/construction-intelligence';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',BLUE='#F59E0B';
@@ -177,6 +179,18 @@ export default function DailyLogsPage(){
   const [selected,setSelected] = useState<any>(null);
   const [mode,setMode]       = useState<'view'|'edit'|'create'|null>(null);
   const [form,setForm]       = useState<Record<string,any>>({...EMPTY});
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(mode==='create'||mode==='edit', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `project-daily-log:${projectId}`,
+    draftData: mode==='create'?form:undefined,
+    restoreDraft: (d) => { setForm(d as Record<string,any>); setMode('create'); setSelected(null); },
+    onSave: () => save(),
+  });
   const [saving,setSaving]   = useState(false);
   const [deleting,setDeleting]=useState(false);
   const [toast,setToast]     = useState<{msg:string;type:'success'|'error'}|null>(null);
@@ -318,7 +332,7 @@ export default function DailyLogsPage(){
   function viewLog(log:any){ setSelected(log); setMode('view'); }
   function closePanel(){ setSelected(null); setMode(null); }
 
-  async function save(){
+  async function save(): Promise<boolean> {
     // Optimistic save (house pattern: budget saveEdit) — the log lands in the
     // list and the panel closes instantly; the network settles in the background.
     const snapshot = {...form};
@@ -374,12 +388,15 @@ export default function DailyLogsPage(){
         if(!r.ok){ setLogs(prev=>prev.map((l:any)=>l.id===prevLog.id?prevLog:l)); throw new Error(await r.text()); }
         revalidate();
       }
+      guard.clearDraft();
+      return true;
     }catch(e:any){
       console.error(e); showToast(humanError(e,'Save failed. Please try again.'),'error');
       // Rollback already applied — reopen the panel with the input intact.
       setForm(snapshot); setMode(prevMode); setSelected(prevSelected);
     }
     finally{setSaving(false);}
+    return false;
   }
 
   async function deleteLog(log:any){
@@ -884,6 +901,7 @@ export default function DailyLogsPage(){
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

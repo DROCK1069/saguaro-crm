@@ -6,7 +6,8 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 import { House, Warning, Bell, Sparkle, CaretRight, CaretDown, Check, X, ArrowsClockwise } from '@phosphor-icons/react';
 import { scopedFieldIcon } from './field-icons';
 import { getQueueCount, getDeadLetterCount, replayQueue, purgeExpired } from '@/lib/field-db';
@@ -85,7 +86,7 @@ const MENU: { group: string; items: { href: string; label: string; iconKey: stri
 
 export default function FieldLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const router = useGuardedRouter();
   const [online, setOnline] = useState(true);
   const [queueCount, setQueueCount] = useState(0);
   const [syncing, setSyncing] = useState(false);

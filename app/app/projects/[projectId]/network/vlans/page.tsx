@@ -9,6 +9,8 @@ import {
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -103,6 +105,18 @@ export default function VlanManagerPage() {
   };
   const [form, setForm] = useState(emptyForm);
 
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `network-vlans:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSubmit(),
+  });
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -127,8 +141,8 @@ export default function VlanManagerPage() {
     }
   }, [form.subnet]);
 
-  const handleSubmit = async () => {
-    if (!form.name || !networkProjectId) return;
+  const handleSubmit = async (): Promise<boolean> => {
+    if (!form.name || !networkProjectId) return false;
     setSaving(true);
     try {
       const res = await fetch('/api/network/vlans', {
@@ -140,9 +154,13 @@ export default function VlanManagerPage() {
         setForm(emptyForm);
         setShowForm(false);
         fetchData();
+        guard.clearDraft();
+        setSaving(false);
+        return true;
       }
     } catch { /* */ }
     setSaving(false);
+    return false;
   };
 
   if (loading) {
@@ -319,6 +337,7 @@ export default function VlanManagerPage() {
       </div>
       )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

@@ -12,6 +12,8 @@ import {
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import { ModuleSkeleton } from '@/components/ui/PageSkeleton';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const BASE = '#1c1c1e';
 const GOLD = '#F59E0B';
@@ -72,6 +74,18 @@ export default function FirewallRulesPage() {
   };
   const [form, setForm] = useState(emptyForm);
 
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `network-firewall:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSubmit(),
+  });
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -98,8 +112,8 @@ export default function FirewallRulesPage() {
     }
   }, [loading, networkProjectId, rules.length]);
 
-  const handleSubmit = async () => {
-    if (!form.name || !networkProjectId) return;
+  const handleSubmit = async (): Promise<boolean> => {
+    if (!form.name || !networkProjectId) return false;
     setSaving(true);
     try {
       const nextRuleNum = rules.length > 0 ? Math.max(...rules.map(r => r.rule_number)) + 10 : 100;
@@ -112,9 +126,13 @@ export default function FirewallRulesPage() {
         setForm(emptyForm);
         setShowForm(false);
         fetchData();
+        guard.clearDraft();
+        setSaving(false);
+        return true;
       }
     } catch { /* */ }
     setSaving(false);
+    return false;
   };
 
   const toggleEnabled = async (rule: FirewallRule) => {
@@ -404,6 +422,7 @@ export default function FirewallRulesPage() {
           })
         )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

@@ -10,6 +10,8 @@ import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { Cube, TreeEvergreen, Nut, Square, SquareHalf, House, Wall, Recycle, Package, Stack, Radioactive, Mountains, Path, Spiral, ClipboardText, CheckCircle, Warning } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -173,6 +175,18 @@ function WasteTrackingPage() {
   const [fManifest, setFManifest] = useState('');
   const [fNotes, setFNotes] = useState('');
   const [fPhotos, setFPhotos] = useState<string[]>([]);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { fTicket, fDate, fType, fMethod, fQty, fUnit, fHauler, fHaulerTicket, fDest, fCost, fRecycled, fDiverted, fManifest, fNotes, fPhotos };
+  const composerDirty = useComposerDirty(view === 'new' || view === 'quick', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-waste:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFTicket(v.fTicket ?? ''); setFDate(v.fDate ?? today()); setFType(v.fType ?? 'concrete'); setFMethod(v.fMethod ?? 'landfill'); setFQty(v.fQty ?? ''); setFUnit(v.fUnit ?? 'tons'); setFHauler(v.fHauler ?? ''); setFHaulerTicket(v.fHaulerTicket ?? ''); setFDest(v.fDest ?? ''); setFCost(v.fCost ?? ''); setFRecycled(v.fRecycled ?? false); setFDiverted(v.fDiverted ?? false); setFManifest(v.fManifest ?? ''); setFNotes(v.fNotes ?? ''); setFPhotos(v.fPhotos ?? []); setView('new'); },
+  });
 
   /* ── Online/offline ─────────────────────────────────── */
   useEffect(() => {
@@ -983,6 +997,7 @@ function WasteTrackingPage() {
           </>
         )}
       </div>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

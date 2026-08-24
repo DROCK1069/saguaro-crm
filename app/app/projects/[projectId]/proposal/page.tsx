@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { FileText, FilePlus, ClockCounterClockwise, SealCheck, Plus } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -54,6 +56,18 @@ export default function ProposalPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `proposal:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -109,8 +123,8 @@ export default function ProposalPage() {
     setErrorMsg('');
   }
 
-  async function handleSave() {
-    if (!form.amount) { setErrorMsg('Amount is required.'); return; }
+  async function handleSave(): Promise<boolean> {
+    if (!form.amount) { setErrorMsg('Amount is required.'); return false; }
     setSaving(true);
     setErrorMsg('');
     try {
@@ -122,8 +136,11 @@ export default function ProposalPage() {
       setForm(EMPTY_FORM);
       setSuccessMsg('Proposal version created.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setErrorMsg('Could not create the proposal. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -351,6 +368,7 @@ export default function ProposalPage() {
           onRecorded={() => fetchProposals()}
         />
       )}
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

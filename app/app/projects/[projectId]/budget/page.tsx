@@ -16,6 +16,8 @@ import {
 import { StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import { moduleAccent } from '@/lib/module-identity';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#c03030';
 const fmt = (n: number | null | undefined) => '$' + (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -48,6 +50,18 @@ export default function BudgetPage() {
   const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<AddLineForm>({ cost_code: '', description: '', original_budget: '' });
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showAddForm, addForm);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `budget:${projectId}`,
+    draftData: addForm,
+    restoreDraft: (d) => { setAddForm(d as typeof addForm); setShowAddForm(true); },
+    onSave: () => addLine(),
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -118,8 +132,8 @@ export default function BudgetPage() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function addLine(e: React.FormEvent) {
-    e.preventDefault();
+  async function addLine(e?: React.FormEvent): Promise<boolean> {
+    e?.preventDefault();
     const budget = parseFloat(addForm.original_budget) || 0;
     try {
       const r = await fetch(`/api/projects/${projectId}/budget`, {
@@ -141,10 +155,13 @@ export default function BudgetPage() {
       setAutoFill({});
       setShowAddForm(false);
       showToast('Budget line added.');
+      guard.clearDraft();
+      return true;
     } catch (e) {
       console.error(e);
       showToast('Failed to add the budget line. Please try again.', false);
     }
+    return false;
   }
 
   async function saveEdit(id: string) {
@@ -660,6 +677,7 @@ export default function BudgetPage() {
       </SectionCard>
       )}
       {menuId && <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={() => setMenuId(null)} />}
+      <UnsavedGuardModal guard={guard} />
     </CinematicPage>
   );
 }

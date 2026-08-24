@@ -3,6 +3,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import { CheckCircle, XCircle, X, ArrowRight, Plus, House, HardHat, Copy, ShareNetwork, ListNumbers } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD = '#F59E0B';
 const DARK = '#1c1c1e';
@@ -83,6 +85,17 @@ export default function PortalsPage() {
 
   // Sub invite form
   const [subForm, setSubForm] = useState({ projectId: '', companyName: '', contactName: '', email: '' });
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showInvite, { clientForm, subForm, inviteTab });
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'portal-invite',
+    draftData: { clientForm, subForm, inviteTab },
+    restoreDraft: (d) => { const v = d as { clientForm: typeof clientForm; subForm: typeof subForm; inviteTab: Tab }; setClientForm(v.clientForm); setSubForm(v.subForm); setInviteTab(v.inviteTab); setShowInvite(true); },
+  });
 
   // True when the project select was prefilled (single-project tenant) — drives the AUTO chip.
   const [autoProj, setAutoProj] = useState(false);
@@ -448,6 +461,7 @@ export default function PortalsPage() {
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

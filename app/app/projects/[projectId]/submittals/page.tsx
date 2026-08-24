@@ -10,6 +10,8 @@ import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatSt
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS, SUB_TRADES } from '@/lib/construction-intelligence';
 import { moduleAccent } from '@/lib/module-identity';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#c07830';
@@ -94,6 +96,18 @@ export default function SubmittalsPage(){
   const [selected,setSelected]=useState<any>(null);
   const [mode,setMode]=useState<'view'|'edit'|'create'|null>(null);
   const [form,setForm]=useState<Record<string,any>>({...EMPTY_FORM});
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(mode==='create'||mode==='edit', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `submittals:${projectId}`,
+    draftData: mode==='create'?form:undefined,
+    restoreDraft: (d) => { setForm(d as Record<string,any>); setMode('create'); setSelected(null); },
+    onSave: () => save(),
+  });
   const [saving,setSaving]=useState(false);
   const [deleting,setDeleting]=useState(false);
   const [rowBusyId,setRowBusyId]=useState<string|null>(null);
@@ -163,8 +177,8 @@ export default function SubmittalsPage(){
   function viewSub(sub:any){setSelected(sub);setMode('view');}
   function closePanel(){setSelected(null);setMode(null);}
 
-  async function save(){
-    if(!form.title.trim()){showToast('Title is required','error');return;}
+  async function save(): Promise<boolean> {
+    if(!form.title.trim()){showToast('Title is required','error');return false;}
     setSaving(true);
     try{
       const h=await getAuthHeaders();
@@ -192,8 +206,11 @@ export default function SubmittalsPage(){
         showToast('Submittal updated');
       }
       await load();closePanel();
+      guard.clearDraft();
+      return true;
     }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
     finally{setSaving(false);}
+    return false;
   }
 
   async function deleteSub(sub:any){
@@ -700,6 +717,7 @@ export default function SubmittalsPage(){
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

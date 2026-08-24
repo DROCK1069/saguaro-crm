@@ -6,7 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 import {
   MagnifyingGlass,
   Bell,
@@ -58,7 +59,7 @@ export default function AppTopBar({
   userInitials: string;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const router = useGuardedRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const sidebarWidth = sidebarCollapsed ? sidebarTokens.widthCollapsed : sidebarTokens.width;
 

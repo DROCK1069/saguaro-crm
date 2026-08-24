@@ -21,6 +21,8 @@ import {
 import { FileText, Clock, Hourglass, CheckCircle, Plus } from '@phosphor-icons/react';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import { moduleAccent } from '@/lib/module-identity';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 interface TimeEntry {
   id: string;
@@ -71,6 +73,18 @@ export default function TimesheetsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `timesheets:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
   const [weekFilter, setWeekFilter] = useState<WeekFilter>('current');
@@ -126,8 +140,8 @@ export default function TimesheetsPage() {
   const pendingCount = filtered.filter(e => e.status === 'pending').length;
   const approvedCount = filtered.filter(e => e.status === 'approved').length;
 
-  async function handleSave() {
-    if (!form.employee) return;
+  async function handleSave(): Promise<boolean> {
+    if (!form.employee) return false;
     setSaving(true);
     try {
       const res = await fetch('/api/timesheets/create', {
@@ -157,9 +171,12 @@ export default function TimesheetsPage() {
       setToast('Timesheet entry added.');
       setTimeout(() => setToast(''), 4000);
       fetchEntries();
+      guard.clearDraft();
+      return true;
     } catch {
       setToast('Could not add the entry. Please try again.');
       setTimeout(() => setToast(''), 4000);
+      return false;
     } finally {
       setSaving(false);
     }
@@ -355,6 +372,7 @@ export default function TimesheetsPage() {
           />
         )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

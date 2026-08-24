@@ -9,6 +9,8 @@ import { SkeletonRow } from '@/components/ui/Skeleton';
 import { Receipt, CurrencyDollar, CheckCircle, WarningCircle, PencilSimple, Percent, Copy, Trash, Plus, CaretDown, ClockCounterClockwise, Calculator } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { moduleAccent } from '@/lib/module-identity';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -61,6 +63,18 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `invoices:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -155,8 +169,8 @@ export default function InvoicesPage() {
       return String(b.created_at || '').localeCompare(String(a.created_at || ''));
     });
 
-  async function handleSave() {
-    if (!form.invoice_number || !form.vendor_name || !form.amount) { setErrorMsg('Invoice number, bill-to, and amount are required.'); return; }
+  async function handleSave(): Promise<boolean> {
+    if (!form.invoice_number || !form.vendor_name || !form.amount) { setErrorMsg('Invoice number, bill-to, and amount are required.'); return false; }
     setSaving(true);
     setErrorMsg('');
     try {
@@ -183,8 +197,11 @@ export default function InvoicesPage() {
       setForm(EMPTY_FORM);
       setSuccessMsg('Invoice created.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setErrorMsg('Could not create the invoice. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -595,6 +612,7 @@ export default function InvoicesPage() {
           </div>
         )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

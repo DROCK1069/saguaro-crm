@@ -11,6 +11,8 @@ import {
   PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, FlowSteps,
   goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle,
 } from '@/components/ui/premium';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 /* ── palette (dark enterprise / Sonoran) ── */
 const GOLD = '#F59E0B';
@@ -184,6 +186,17 @@ export default function ApprovalWorkflowsPage() {
   const [wfName, setWfName] = useState('');
   const [wfModule, setWfModule] = useState<EntityType>('change_order');
   const [wfSteps, setWfSteps] = useState<ApprovalStep[]>([]);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showWizard, { wfName, wfModule, wfSteps });
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'approval-workflow-create',
+    draftData: editing ? undefined : { wfName, wfModule, wfSteps },
+    restoreDraft: (d) => { const v = d as { wfName: string; wfModule: EntityType; wfSteps: ApprovalStep[] }; setWfName(v.wfName ?? ''); setWfModule(v.wfModule ?? 'change_order'); setWfSteps(v.wfSteps ?? []); setEditing(null); setShowWizard(true); },
+  });
 
   /* action modal */
   const [actionItem, setActionItem] = useState<PendingItem | null>(null);
@@ -1084,6 +1097,7 @@ export default function ApprovalWorkflowsPage() {
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </>
   );
 }

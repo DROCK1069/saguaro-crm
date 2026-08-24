@@ -9,6 +9,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD = '#F59E0B';
 const RAISED = '#141416';
@@ -148,6 +150,18 @@ function DirectoryPage() {
 
   // Which type we are creating/editing
   const [formType, setFormType] = useState<ContactType>('company');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formCompanyName, formTrade, formLicense, formCompanyPhone, formCompanyEmail, formAddress, formInsuranceExpiry, formPersonName, formTitle, formPersonCompanyId, formPersonPhone, formPersonEmail, formRoleOnProject, formPermission, formGroupName, formGroupMembers, formType };
+  const composerDirty = useComposerDirty(view === 'create' || view === 'edit', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-directory:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormCompanyName(v.formCompanyName ?? ''); setFormTrade(v.formTrade ?? ''); setFormLicense(v.formLicense ?? ''); setFormCompanyPhone(v.formCompanyPhone ?? ''); setFormCompanyEmail(v.formCompanyEmail ?? ''); setFormAddress(v.formAddress ?? ''); setFormInsuranceExpiry(v.formInsuranceExpiry ?? ''); setFormPersonName(v.formPersonName ?? ''); setFormTitle(v.formTitle ?? ''); setFormPersonCompanyId(v.formPersonCompanyId ?? ''); setFormPersonPhone(v.formPersonPhone ?? ''); setFormPersonEmail(v.formPersonEmail ?? ''); setFormRoleOnProject(v.formRoleOnProject ?? ''); setFormPermission(v.formPermission ?? 'Read-Only'); setFormGroupName(v.formGroupName ?? ''); setFormGroupMembers(v.formGroupMembers ?? []); setFormType(v.formType ?? 'company'); setView('create'); },
+  });
 
   const fetchDirectory = useCallback(async () => {
     if (!projectId) { setLoading(false); return; }
@@ -699,6 +713,7 @@ function DirectoryPage() {
           })}
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

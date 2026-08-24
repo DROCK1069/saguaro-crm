@@ -35,6 +35,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/Toast';
+import { registerNavGuard } from '@/lib/navGuard';
 
 const DRAFT_PREFIX = 'sag_draft:';
 const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // drafts older than 7 days are dropped
@@ -83,6 +84,68 @@ export interface UnsavedGuardApi {
    *  same confirm. Runs the action immediately when clean; on Discard the
    *  draft is cleared first (Cancel means cancel). */
   requestClose: (action: () => void) => void;
+}
+
+/* ── Dirty detection helpers ────────────────────────────────────────────────
+ * Most module pages are "open a composer, type, save". Hand-enumerating every
+ * field in a dirty predicate does not scale to 100+ forms and rots the moment
+ * a field is added, so these compare the live form against the state it had
+ * when the composer opened. Anything the user typed shows up; a composer they
+ * only looked at does not.
+ */
+
+/** Treat '', null, undefined, [], {} and NaN as "nothing typed here". */
+function isBlank(v: unknown): boolean {
+  if (v === null || v === undefined || v === '') return true;
+  if (typeof v === 'number') return Number.isNaN(v);
+  if (Array.isArray(v)) return v.length === 0;
+  if (v instanceof Date) return false;
+  if (typeof v === 'object') return Object.values(v as Record<string, unknown>).every(isBlank);
+  return false;
+}
+
+/** Structural equality that ignores blank-vs-absent differences. */
+export function formValuesEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (isBlank(a) && isBlank(b)) return true;
+  if (a instanceof Date || b instanceof Date) {
+    const at = a instanceof Date ? a.getTime() : a;
+    const bt = b instanceof Date ? b.getTime() : b;
+    return at === bt;
+  }
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((x, i) => formValuesEqual(x, b[i]));
+  }
+  if (typeof a === 'object' && typeof b === 'object' && a && b) {
+    const keys = new Set([...Object.keys(a as object), ...Object.keys(b as object)]);
+    for (const k of keys) {
+      if (!formValuesEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * True once the user has changed anything in an open composer.
+ *
+ * Snapshots `value` on the first render where the composer is open (and, if
+ * given, `ready` — use it to wait out an async record load on edit forms so a
+ * late-arriving record is not mistaken for typing). Resets when it closes.
+ *
+ *   const dirty = useComposerDirty(showCreate, form);
+ *   const dirty = useComposerDirty(!!editing, form, !loadingRecord);
+ */
+export function useComposerDirty<T>(open: boolean, value: T, ready = true): boolean {
+  const baselineRef = useRef<{ open: boolean; snapshot: T } | null>(null);
+  if (!open || !ready) {
+    if (baselineRef.current && !open) baselineRef.current = null;
+  } else if (!baselineRef.current) {
+    baselineRef.current = { open: true, snapshot: value };
+  }
+  if (!open || !ready || !baselineRef.current) return false;
+  return !formValuesEqual(value, baselineRef.current.snapshot);
 }
 
 function draftStorageKey(key: string): string {
@@ -292,6 +355,20 @@ export function useUnsavedGuard<T = unknown>(opts: UnsavedGuardOptions<T>): Unsa
     pendingActionRef.current = action;
     setPendingHref(null);
     setConfirmOpen(true);
+  }, []);
+
+  /* ── Layer 2b: router-driven navigation (buttons, ⌘K, hardware back) ───── */
+  // The field shell and several app-shell controls navigate with router.push()
+  // from a click handler, never through an <a> — the capture-phase listener
+  // above can't see those. Those surfaces call useGuardedRouter() (lib/navGuard),
+  // which asks every mounted dirty form here before it moves.
+  const requestCloseRef = useRef(requestClose);
+  requestCloseRef.current = requestClose;
+  useEffect(() => {
+    return registerNavGuard({
+      isDirty: () => dirtyRef.current,
+      intercept: (proceed) => requestCloseRef.current(proceed),
+    });
   }, []);
 
   return {

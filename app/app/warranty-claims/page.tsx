@@ -9,6 +9,8 @@ import {
   CurrencyDollar, ShieldSlash, ChartBar, Tag, Wrench, PlusCircle, Buildings,
 } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 /* ───── PALETTE ───── */
 const GOLD = '#F59E0B', BG = '#0a0a0a', RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)',
@@ -129,6 +131,18 @@ export default function WarrantyClaimsPage() {
   const [activeTab, setActiveTab] = useState<'dashboard'|'claims'|'create'>('dashboard');
   const [detailClaim, setDetailClaim] = useState<WarrantyClaim | null>(null);
   const [form, setForm] = useState<Omit<WarrantyClaim, 'id'>>(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(activeTab === 'create', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'warranty-claim-create',
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setActiveTab('create'); },
+    onSave: () => handleCreate(),
+  });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'ok' | 'err' } | null>(null);
 
@@ -257,9 +271,9 @@ export default function WarrantyClaimsPage() {
 
   /* create claim — claim_number is allocated by the server, never guessed here,
    * and nothing lands in the list unless the DB actually returned a row. */
-  async function handleCreate() {
-    if (!form.title) { flash('Title is required.', 'err'); return; }
-    if (!selectedProject) { flash('Select a project first.', 'err'); return; }
+  async function handleCreate(): Promise<boolean> {
+    if (!form.title) { flash('Title is required.', 'err'); return false; }
+    if (!selectedProject) { flash('Select a project first.', 'err'); return false; }
     setSaving(true);
     try {
       const res = await fetch(`/api/projects/${selectedProject}/warranty-claims`, {
@@ -273,8 +287,11 @@ export default function WarrantyClaimsPage() {
       setForm(EMPTY_FORM);
       setActiveTab('claims');
       flash(`Warranty claim ${(j.claim as WarrantyClaim).claim_number} created.`);
+      guard.clearDraft();
+      return true;
     } catch (e) { flash(e instanceof Error ? e.message : 'Failed to create claim.', 'err'); }
     finally { setSaving(false); }
+    return false;
   }
 
   /* update status */
@@ -983,6 +1000,7 @@ export default function WarrantyClaimsPage() {
           </SectionCard>
         );
       })()}
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

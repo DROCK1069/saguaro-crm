@@ -98,6 +98,26 @@ import {
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { useUnsavedGuard } from '@/lib/useUnsavedGuard';
 import UnsavedGuardModal from '@/components/UnsavedGuardModal';
+/* "Make a record" — radio → tracked project record. Separate import block so
+ * the two above stay byte-stable for parallel workstreams. */
+import {
+  Question,
+  ListChecks,
+  WarningOctagon,
+  Notebook,
+  NotePencil,
+  ArrowSquareOut,
+} from '@phosphor-icons/react';
+import { moduleAccent } from '@/lib/module-identity';
+import { SUB_TRADES } from '@/lib/construction-intelligence';
+import {
+  PROMOTE_RECORD_TYPES,
+  DAILY_LOG_SECTIONS,
+  TRANSCRIPT_PENDING_NOTE,
+  localLogDate,
+  titleFrom,
+  type PromoteRecordType,
+} from '@/lib/radio-promote';
 
 /* ── Palette (dark shell: white/gold alphas only) ─────────────────────── */
 const WHITE = '#FFFFFF';
@@ -681,6 +701,23 @@ function Dropdown({
   );
 }
 
+/** One labelled control in the "Make a record" form. Two-column grid; `wide`
+ * takes the whole row. Kit geometry only — no bespoke field chrome. */
+function PromoteField({ label, hint, wide, children }: {
+  label: string;
+  hint?: string;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label style={{ display: 'block', minWidth: 0, gridColumn: wide ? '1 / -1' : undefined }}>
+      <span style={{ ...eyebrowStyle, display: 'block', marginBottom: 5 }}>{label}</span>
+      {children}
+      {hint && <span style={{ display: 'block', fontSize: 10.5, color: FAINT, marginTop: 4, lineHeight: 1.4 }}>{hint}</span>}
+    </label>
+  );
+}
+
 /* Tone signaling — labels, colors, and distinct WebAudio beep frequencies. */
 const TONES: Record<string, { label: string; color: string; border: string; soft: string; freq: number; hold: number }> = {
   ack: { label: 'ACK', color: GREEN, border: GREEN_BORDER, soft: GREEN_SOFT, freq: 880, hold: 0.22 },
@@ -695,6 +732,80 @@ const PRESENCE: Record<string, { label: string; color: string }> = {
   on_route: { label: 'On route', color: GOLD_HI },
   off: { label: 'Off', color: FAINT },
 };
+
+/* ── Radio → tracked record ("Make a record") ──────────────────────────────
+ * THE WEDGE. A transmission is promotable, in one tap, into an RFI, a punch
+ * item, a field issue, or a daily-log entry — with the ORIGINAL AUDIO attached
+ * as evidence. A super says "the footing depth is wrong on grid line C" and it
+ * becomes a real RFI carrying his actual voice.
+ *
+ * The server (lib/radio-promote + /api/radio/promote) owns numbering,
+ * provenance shaping, the audio storage PATH (never a signed URL) and the
+ * duplicate guard. This console owns the picking, the typing, and the honesty.
+ *
+ * HONESTY, held here: transcription is env-gated on OPENAI_API_KEY, which is
+ * not configured — every voice message in production has transcript NULL. So
+ * nothing in this flow depends on a transcript. When one exists it seeds the
+ * summary; when it does not, the box starts empty on purpose, the dispatcher
+ * types what was said, and the clip is the evidence. An absent transcript is
+ * never drawn as a failed read. */
+interface PromoteLink {
+  id: string;
+  recordType: PromoteRecordType;
+  recordId: string;
+  recordLabel: string;
+  createdAt?: string | null;
+  createdByName?: string | null;
+  href?: string | null;
+}
+/** The four targets, each wearing its own module's accent (lib/module-identity). */
+const PROMOTE_META: Record<PromoteRecordType, { label: string; blurb: string; accentKey: string; icon: React.ReactNode }> = {
+  rfi:         { label: 'RFI',         blurb: 'Ask the architect',   accentKey: 'rfis',        icon: <Question size={16} weight="bold" /> },
+  punch:       { label: 'Punch item',  blurb: 'Something to fix',    accentKey: 'punch',       icon: <ListChecks size={16} weight="bold" /> },
+  field_issue: { label: 'Field issue', blurb: 'Problem on site',     accentKey: 'fieldissues', icon: <WarningOctagon size={16} weight="bold" /> },
+  daily_log:   { label: 'Daily log',   blurb: 'Log it for the day',  accentKey: 'daily',       icon: <Notebook size={16} weight="bold" /> },
+};
+const promoteAccent = (t: PromoteRecordType) => moduleAccent(PROMOTE_META[t].accentKey);
+/** Daily-log columns the server will accept, in its own order. */
+const DAILY_LOG_SECTION_LABELS: Record<string, string> = {
+  work_performed: 'Work performed',
+  delays: 'Delays',
+  safety_notes: 'Safety notes',
+  visitors: 'Visitors',
+  materials_delivered: 'Materials delivered',
+  quality_issues: 'Quality issues',
+  notes: 'Notes',
+};
+/** Stored lowercase, displayed capitalized — the platform-wide convention. */
+const PROMOTE_PRIORITIES = [
+  { value: 'critical', label: 'Critical' },
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+];
+const PROMOTE_TRADE_DEFAULT = 'General Contractor';
+interface PromoteForm {
+  title: string;
+  summary: string;
+  priority: string;
+  due: string;
+  location: string;
+  trade: string;
+  section: string;
+  logDate: string;
+}
+const emptyPromoteForm = (): PromoteForm => ({
+  title: '', summary: '', priority: 'medium', due: '',
+  location: '', trade: PROMOTE_TRADE_DEFAULT, section: 'work_performed', logDate: '',
+});
+/** How many of the newest transmissions hydrate their record chips on load.
+ * GET /api/radio/promote is per-message by contract, so the console does NOT
+ * fire one request per row of a 100-row feed: it hydrates the newest slice
+ * (what the feed actually shows — the list arrives oldest→newest), three at a
+ * time, cached for the session, and hydrates any older row on demand the
+ * moment its menu or its record modal opens. */
+const PROMOTE_HYDRATE_RECENT = 24;
+const PROMOTE_HYDRATE_PARALLEL = 3;
 
 /* Age of an assistance request, live against a ticking now. */
 const ageLabel = (iso: string, nowMs: number) => {
@@ -1949,6 +2060,204 @@ export default function RadioDispatchPage() {
     setFilingId(null);
   };
 
+  /* ── Make a record — radio → RFI / punch / field issue / daily log ─────
+   * One tap from a transmission to a tracked record, with the clip attached
+   * as evidence. Chips on the row show what a transmission has already
+   * become, and they survive a reload because they are read back from the
+   * server, not remembered in the browser. */
+  const [links, setLinks] = useState<Record<string, PromoteLink[]>>({});
+  const linksSeenRef = useRef<Set<string>>(new Set());
+  const linksQueueRef = useRef<string[]>([]);
+  const linksActiveRef = useRef(0);
+  const pumpLinksRef = useRef<() => void>(() => {});
+
+  /** Read the links already on a transmission. A 403/404 leaves the row with
+   * no chip — it never invents one, and it never claims a failure it cannot
+   * prove. Real errors surface in the modal, where the user is watching. */
+  const fetchLinks = useCallback(async (id: string) => {
+    try {
+      const r = await fetch(`/api/radio/promote?messageId=${encodeURIComponent(id)}`);
+      if (!r.ok) return;
+      const j = await r.json().catch(() => null);
+      const rows: PromoteLink[] = Array.isArray(j?.links) ? j.links : [];
+      setLinks((prev) => (rows.length === 0 && !prev[id] ? prev : { ...prev, [id]: rows }));
+    } catch { /* offline — chips fill in on the next visit, nothing is faked */ }
+  }, []);
+
+  pumpLinksRef.current = () => {
+    while (linksActiveRef.current < PROMOTE_HYDRATE_PARALLEL && linksQueueRef.current.length > 0) {
+      const id = linksQueueRef.current.shift() as string;
+      linksActiveRef.current += 1;
+      /* fetchLinks already swallows its own failures; the extra catch keeps a
+       * surprise rejection from stranding the in-flight counter forever. */
+      void fetchLinks(id).catch(() => { /* counted below either way */ }).then(() => {
+        linksActiveRef.current -= 1;
+        pumpLinksRef.current();
+      });
+    }
+  };
+  const queueLinks = useCallback((ids: string[]) => {
+    let added = false;
+    for (const id of ids) {
+      if (!id || linksSeenRef.current.has(id)) continue;
+      linksSeenRef.current.add(id);
+      linksQueueRef.current.push(id);
+      added = true;
+    }
+    if (added) pumpLinksRef.current();
+  }, []);
+  /* The newest slice of the feed is what the dispatcher is looking at. Keyed
+   * on the SWR payload (not the derived array) so this runs once per real
+   * fetch; queueLinks de-dupes across every later pass anyway. */
+  useEffect(() => {
+    const list = messagesRef.current;
+    if (!activeId || list.length === 0) return;
+    queueLinks(list.slice(-PROMOTE_HYDRATE_RECENT).map((m) => m.id));
+  }, [activeId, msgData, queueLinks]);
+  /** Force a re-read for one transmission (after opening its modal). */
+  const refreshLinks = useCallback((id: string) => {
+    linksSeenRef.current.add(id);
+    void fetchLinks(id);
+  }, [fetchLinks]);
+
+  /* Row overflow menu — ALWAYS present, so the action is never hover-only.
+   * Fixed-positioned off the button's rect so the feed's scroll region can
+   * never clip it. */
+  const [rowMenu, setRowMenu] = useState<{ id: string; top: number; right: number } | null>(null);
+  const openRowMenu = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setRowMenu((cur) => (cur && cur.id === id
+      ? null
+      : { id, top: Math.round(r.bottom + 6), right: Math.round(Math.max(10, window.innerWidth - r.right)) }));
+    queueLinks([id]);
+  };
+  useEffect(() => {
+    if (!rowMenu) return;
+    const close = () => setRowMenu(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setRowMenu(null); };
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [rowMenu]);
+
+  /* The modal */
+  const [promoteFor, setPromoteFor] = useState<string | null>(null);
+  const [promoteType, setPromoteType] = useState<PromoteRecordType>('rfi');
+  const [promoteBusy, setPromoteBusy] = useState(false);
+  const [promoteError, setPromoteError] = useState<string | null>(null);
+  const [pf, setPf] = useState<PromoteForm>(emptyPromoteForm);
+  const [pfTitleTouched, setPfTitleTouched] = useState(false);
+  const promoteMsg = promoteFor ? messages.find((m) => m.id === promoteFor) || null : null;
+  const rowMenuMsg = rowMenu ? messages.find((m) => m.id === rowMenu.id) || null : null;
+
+  const openPromote = useCallback((m: RadioMessage) => {
+    setRowMenu(null);
+    setPromoteFor(m.id);
+    setPromoteType('rfi');
+    setPromoteBusy(false);
+    setPromoteError(null);
+    setPfTitleTouched(false);
+    /* Seed from the transcript when there is one, else the typed body. When
+     * there is neither — the normal case for voice today — the box stays
+     * empty and says so. We never put words in the field's mouth. */
+    const seed = (m.transcript || m.body || '').trim();
+    setPf({
+      ...emptyPromoteForm(),
+      summary: seed,
+      title: seed ? titleFrom(seed) : '',
+      logDate: localLogDate(m.created_at),
+    });
+    refreshLinks(m.id);
+  }, [refreshLinks]);
+
+  const setSummary = (text: string) => {
+    setPf((f) => ({ ...f, summary: text, title: pfTitleTouched ? f.title : (text.trim() ? titleFrom(text) : '') }));
+  };
+
+  const linkFor = (messageId: string | null, t: PromoteRecordType) =>
+    (messageId ? links[messageId] || [] : []).find((l) => l.recordType === t) || null;
+  const promoteExisting = linkFor(promoteFor, promoteType);
+
+  const submitPromote = async () => {
+    const m = promoteMsg;
+    if (!m || promoteBusy) return;
+    const summary = pf.summary.trim();
+    if (summary.length < 3) {
+      setPromoteError(m.kind === 'voice'
+        ? 'Type what was said — your summary becomes the record, and the clip rides along as the evidence.'
+        : 'Type the summary that should become the record.');
+      return;
+    }
+    setPromoteBusy(true);
+    setPromoteError(null);
+    const fields: Record<string, unknown> = { summary };
+    const title = pf.title.trim();
+    if (title && promoteType !== 'daily_log') fields.title = title;
+    if (promoteType === 'rfi') {
+      fields.priority = pf.priority;
+      if (pf.due) fields.dueDate = pf.due;
+    } else if (promoteType === 'punch') {
+      fields.priority = pf.priority;
+      fields.trade = pf.trade;
+      if (pf.location.trim()) fields.location = pf.location.trim();
+      if (pf.due) fields.dueDate = pf.due;
+    } else if (promoteType === 'field_issue') {
+      fields.priority = pf.priority;
+      if (pf.location.trim()) fields.location = pf.location.trim();
+    } else {
+      fields.section = pf.section;
+      if (pf.logDate) fields.logDate = pf.logDate;
+    }
+    try {
+      const r = await fetch('/api/radio/promote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: m.id, recordType: promoteType, fields }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j || j.ok !== true) {
+        /* supabase-js does not throw and neither does the route — the error
+         * text it hands back is the real reason. Show it verbatim. */
+        setPromoteError(
+          (j && typeof j.error === 'string' && j.error)
+          || `The record was not created (${r.status}). Nothing was written.`,
+        );
+        setPromoteBusy(false);
+        return;
+      }
+      const created: PromoteLink = {
+        id: String(j.recordId || `${m.id}:${promoteType}`),
+        recordType: promoteType,
+        recordId: String(j.recordId || ''),
+        recordLabel: String(j.recordLabel || PROMOTE_META[promoteType].label),
+        createdAt: new Date().toISOString(),
+        createdByName: null,
+        href: typeof j.href === 'string' ? j.href : null,
+      };
+      setLinks((prev) => ({
+        ...prev,
+        [m.id]: [...(prev[m.id] || []).filter((l) => l.recordType !== promoteType), created],
+      }));
+      pushToast(
+        j.alreadyPromoted
+          ? `${created.recordLabel} already carries this transmission — nothing was duplicated.`
+          /* The server reports what it actually attached; the chip claims no more than that. */
+          : `${created.recordLabel} created${j.evidence && j.evidence.audioPath ? ' with the clip attached as evidence' : ''}.`,
+        'ok',
+      );
+      setPromoteBusy(false);
+      setPromoteFor(null);
+    } catch {
+      setPromoteError('Could not reach the server, so nothing was created. Check your connection and try again.');
+      setPromoteBusy(false);
+    }
+  };
+
   /* ── Share channel (guest links via /api/radio/guest) ───────────────── */
   /* Header popover: list + revoke the channel's live links, mint new ones
    * (label, talk toggle, expiry), copy the absolute guest URL one-click. */
@@ -2687,8 +2996,16 @@ export default function RadioDispatchPage() {
             <span style={{ fontSize: 11, color: FAINT, marginLeft: 'auto', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
               {timeOf(m.created_at)}
             </span>
-            {/* Hover actions — file this transmission to the project daily log */}
+            {/* Hover actions — quick reach for the two filing verbs. Neither is
+              * hover-ONLY: both also live in the always-present overflow menu. */}
             <span className="sagRowActions" style={{ display: 'inline-flex', gap: 6, flexShrink: 0 }}>
+              <button
+                onClick={() => openPromote(m)}
+                title="Turn this transmission into a tracked record — the audio goes with it as evidence"
+                style={{ ...rowActionStyle, color: GOLD_HI, borderColor: AMBER_BORDER, background: AMBER_SOFT }}
+              >
+                <NotePencil size={11} weight="bold" /> Make a record
+              </button>
               {filedIds.has(m.id) ? (
                 <span style={{ ...rowActionStyle, cursor: 'default', color: GREEN, borderColor: GREEN_BORDER, background: GREEN_SOFT }}>
                   <Check size={11} weight="bold" /> Filed
@@ -2704,6 +3021,21 @@ export default function RadioDispatchPage() {
                 </button>
               )}
             </span>
+            {/* Always present — a touch device and a keyboard both get here. */}
+            <button
+              onClick={(e) => openRowMenu(e, m.id)}
+              aria-label={`Actions for ${senderShort(m.sender_name)}'s transmission`}
+              title="Actions"
+              style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: 7, padding: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: rowMenu?.id === m.id ? 'rgba(245,158,11,0.14)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${rowMenu?.id === m.id ? AMBER_BORDER : BORDER}`,
+                color: rowMenu?.id === m.id ? GOLD_HI : FAINT, cursor: 'pointer',
+              }}
+            >
+              <DotsThree size={14} weight="bold" />
+            </button>
           </div>
 
           {tone && (
@@ -2775,6 +3107,30 @@ export default function RadioDispatchPage() {
             >
               <MapPin size={13} weight="fill" /> Open location in Google Maps
             </a>
+          )}
+
+          {/* What this transmission became. Read back from the server, so the
+            * chips are still here tomorrow — and each one opens the record. */}
+          {(links[m.id] || []).length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              {(links[m.id] || []).map((l) => {
+                const a = promoteAccent(l.recordType);
+                const chip: React.CSSProperties = {
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '3px 9px', borderRadius: 999, textDecoration: 'none',
+                  background: a.soft, border: `1px solid ${a.ring}`, color: a.hex,
+                  fontSize: 10.5, fontWeight: 800, whiteSpace: 'nowrap',
+                };
+                const label = <>→ {l.recordLabel}</>;
+                return l.href ? (
+                  <a key={l.id} href={l.href} title={`Open ${l.recordLabel}`} style={chip}>
+                    {label}<ArrowSquareOut size={10} weight="bold" />
+                  </a>
+                ) : (
+                  <span key={l.id} title={l.recordLabel} style={{ ...chip, cursor: 'default' }}>{label}</span>
+                );
+              })}
+            </div>
           )}
 
           {showSeen && (
@@ -4410,6 +4766,357 @@ export default function RadioDispatchPage() {
             ? `Unlock "${lockConfirm?.name}"? It becomes visible to the whole team again and teammates join on their next visit.`
             : `Lock "${lockConfirm?.name}"? Only current members keep access — the channel disappears from everyone else's console until a dispatcher adds them from the roster.`}
         </div>
+      </Dialog>
+
+      {/* ── Row overflow menu — the filing verbs, always reachable ───────
+        * Fixed off the button's rect so the feed's scroll region cannot clip
+        * it, and dismissed by an outside press, Escape, scroll or resize. */}
+      {rowMenu && rowMenuMsg && (
+        <>
+          <div
+            onPointerDown={() => setRowMenu(null)}
+            style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+          />
+          <div
+            role="menu"
+            style={{
+              position: 'fixed', top: rowMenu.top, right: rowMenu.right, zIndex: 101,
+              width: 218, padding: 6,
+              background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
+              borderRadius: 12, boxShadow: '0 22px 48px rgba(12,12,16,0.65)', textAlign: 'left',
+            }}
+          >
+            <button role="menuitem" onClick={() => openPromote(rowMenuMsg)} style={menuItemStyle(true)}>
+              <NotePencil size={14} weight="bold" color={GOLD_HI} /> Make a record
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => { setRowMenu(null); if (!filedIds.has(rowMenuMsg.id)) void fileToLog(rowMenuMsg); }}
+              disabled={filedIds.has(rowMenuMsg.id) || filingId === rowMenuMsg.id}
+              style={menuItemStyle(!filedIds.has(rowMenuMsg.id) && filingId !== rowMenuMsg.id)}
+            >
+              {filedIds.has(rowMenuMsg.id)
+                ? <><Check size={14} weight="bold" color={GREEN} /> Filed to the daily log</>
+                : <><ClipboardText size={14} weight="bold" color={FAINT} /> {filingId === rowMenuMsg.id ? 'Filing…' : 'File to log'}</>}
+            </button>
+            {(links[rowMenuMsg.id] || []).length > 0 && (
+              <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: 6, paddingTop: 6 }}>
+                <div style={{ ...eyebrowStyle, padding: '0 10px 5px' }}>ALREADY FILED AS</div>
+                {(links[rowMenuMsg.id] || []).map((l) => {
+                  const a = promoteAccent(l.recordType);
+                  return l.href ? (
+                    <a key={l.id} href={l.href} role="menuitem" style={{ ...menuItemStyle(true), color: a.hex, textDecoration: 'none' }}>
+                      <ArrowSquareOut size={13} weight="bold" /> {l.recordLabel}
+                    </a>
+                  ) : (
+                    <span key={l.id} style={{ ...menuItemStyle(false), color: a.hex }}>{l.recordLabel}</span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── Make a record — the transmission becomes a tracked record ─────
+        * The audio is the evidence. The server attaches the storage PATH (not
+        * a signed URL) and re-signs on every read, so the clip on a record
+        * written today still plays a year from now. */}
+      <Dialog
+        open={!!promoteMsg}
+        onClose={() => { if (!promoteBusy) setPromoteFor(null); }}
+        title="MAKE A RECORD"
+        icon={<NotePencil size={15} weight="bold" color={GOLD_HI} />}
+        width={640}
+        footer={promoteMsg ? (
+          <>
+            <button
+              onClick={submitPromote}
+              disabled={promoteBusy || !!promoteExisting}
+              className="pmBtn"
+              style={{
+                ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5,
+                opacity: promoteBusy || promoteExisting ? 0.55 : 1,
+                cursor: promoteBusy || promoteExisting ? 'default' : 'pointer',
+              }}
+            >
+              <NotePencil size={13} weight="bold" />
+              {promoteBusy ? 'Creating…' : `Create ${PROMOTE_META[promoteType].label.toLowerCase()}`}
+            </button>
+            <button
+              onClick={() => { if (!promoteBusy) setPromoteFor(null); }}
+              style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            {promoteExisting ? (
+              <span style={{ fontSize: 10.5, color: MUTED, lineHeight: 1.45, minWidth: 0 }}>
+                Already filed as <strong style={{ color: promoteAccent(promoteType).hex }}>{promoteExisting.recordLabel}</strong>
+                {promoteExisting.href ? <> — <a href={promoteExisting.href} style={{ color: GOLD_HI, fontWeight: 800 }}>open it</a>.</> : '.'} Pick another target to file it somewhere else too.
+              </span>
+            ) : (
+              <span style={{ fontSize: 10.5, color: FAINT, lineHeight: 1.45, minWidth: 0 }}>
+                {promoteMsg.kind === 'voice'
+                  ? 'The clip stays in the private file store. The record carries its path and re-signs the audio each time someone opens it.'
+                  : 'The record carries this transmission’s text, sender, channel and timestamp as its provenance.'}
+              </span>
+            )}
+          </>
+        ) : undefined}
+      >
+        {promoteMsg && (
+          <>
+            {/* ── The evidence, playable while you type ───────────────── */}
+            <div style={{ borderRadius: 12, border: `1px solid ${AMBER_BORDER}`, background: NEST, padding: 12, marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                <span style={eyebrowStyle}>EVIDENCE</span>
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: WHITE }}>{senderShort(promoteMsg.sender_name)}</span>
+                <span style={{ fontSize: 11, color: FAINT, fontVariantNumeric: 'tabular-nums' }}>
+                  {isToday(promoteMsg.created_at)
+                    ? timeOf(promoteMsg.created_at)
+                    : `${whenLabel(promoteMsg.created_at)} ${timeOf(promoteMsg.created_at)}`}
+                  {active?.name ? ` · ${active.name}` : ''}
+                  {promoteMsg.audio_duration_secs != null ? ` · ${secsLabel(promoteMsg.audio_duration_secs)}` : ''}
+                </span>
+              </div>
+
+              {promoteMsg.audio_url ? renderVoicePlayer(promoteMsg) : promoteMsg.kind === 'voice' ? (
+                /* A voice row whose clip could not be signed for playback. The
+                 * audio is still stored — say exactly that, never "no audio". */
+                <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, marginTop: 6 }}>
+                  This clip is not playable in the console right now. It is still in the private file store, and the record will carry its path.
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, marginTop: 6, overflowWrap: 'anywhere' }}>
+                  {promoteMsg.body || 'This transmission carries no text.'}
+                </div>
+              )}
+
+              {promoteMsg.transcript ? (
+                <div style={{ marginTop: 10 }}>
+                  <span style={eyebrowStyle}>TRANSCRIPT</span>
+                  <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, marginTop: 4, overflowWrap: 'anywhere' }}>
+                    {promoteMsg.transcript}
+                  </div>
+                </div>
+              ) : promoteMsg.kind === 'voice' ? (
+                <div
+                  style={{
+                    display: 'flex', gap: 8, marginTop: 10, padding: '8px 10px', borderRadius: 10,
+                    background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}`,
+                  }}
+                >
+                  <WaveformSlash size={14} weight="bold" color={FAINT} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 11, color: MUTED, lineHeight: 1.45 }}>
+                    No transcript on file — nothing failed to read. {TRANSCRIPT_PENDING_NOTE} Play the clip and write the summary below; the audio goes on the record either way.
+                  </span>
+                </div>
+              ) : null}
+
+              {promoteMsg.location && typeof promoteMsg.location.lat === 'number' && (
+                <a
+                  href={`https://maps.google.com/?q=${promoteMsg.location.lat},${promoteMsg.location.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 10,
+                    fontSize: 11, fontWeight: 800, color: GOLD_HI, textDecoration: 'none',
+                  }}
+                >
+                  <MapPin size={12} weight="fill" /> GPS fix travels with the record
+                </a>
+              )}
+            </div>
+
+            {!active?.project_id && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14, padding: '9px 11px', borderRadius: 10, background: AMBER_SOFT, border: `1px solid ${AMBER_BORDER}` }}>
+                <Warning size={14} weight="fill" color={GOLD_HI} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: 11.5, color: GOLD_HI, fontWeight: 700, lineHeight: 1.45 }}>
+                  This talkgroup is not tied to a project. A transmission files into the job it was sent on — if this one carries no project, the server will say so and write nothing.
+                </span>
+              </div>
+            )}
+
+            {/* ── The four targets, each in its own module's accent ────── */}
+            <div style={{ ...eyebrowStyle, marginBottom: 7 }}>FILE IT AS</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginBottom: 16 }}>
+              {PROMOTE_RECORD_TYPES.map((t) => {
+                const meta = PROMOTE_META[t];
+                const a = promoteAccent(t);
+                const on = promoteType === t;
+                const done = linkFor(promoteFor, t);
+                return (
+                  <button
+                    key={t}
+                    onClick={() => { setPromoteType(t); setPromoteError(null); }}
+                    aria-pressed={on}
+                    title={done ? `Already filed as ${done.recordLabel}` : `File this transmission as ${meta.label.toLowerCase()}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 9, minWidth: 0,
+                      padding: '9px 10px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+                      background: on ? a.soft : FIELD_BG,
+                      border: on ? `1px solid ${a.ring}` : FIELD_BORDER,
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        flexShrink: 0, width: 28, height: 28, borderRadius: 9,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        background: a.soft, border: `1px solid ${a.ring}`, color: a.hex,
+                      }}
+                    >
+                      {meta.icon}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: 12.5, fontWeight: 800, color: on ? WHITE : MUTED }}>
+                        {meta.label}
+                      </span>
+                      <span
+                        style={{
+                          display: 'block', fontSize: 10.5, fontWeight: 700, marginTop: 1,
+                          color: done ? a.hex : FAINT,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {done ? `✓ ${done.recordLabel}` : meta.blurb}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {promoteError && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14, padding: '9px 11px', borderRadius: 10, background: RED_SOFT, border: `1px solid ${RED_BORDER}` }}>
+                <Warning size={14} weight="fill" color={RED} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: 11.5, color: '#FCA5A5', fontWeight: 700, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                  {promoteError}
+                </span>
+              </div>
+            )}
+
+            {/* ── The compact form ────────────────────────────────────── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
+              <PromoteField
+                wide
+                label={promoteType === 'rfi' ? 'QUESTION' : promoteType === 'daily_log' ? 'LOG ENTRY' : 'DESCRIPTION'}
+                hint={promoteMsg.transcript
+                  ? 'Seeded from the transcript — edit it into the words you want on the record.'
+                  : promoteMsg.kind === 'voice'
+                    ? 'Say it in writing: this text is what the record says. The clip is attached as the proof.'
+                    : undefined}
+              >
+                <textarea
+                  value={pf.summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  autoFocus
+                  rows={4}
+                  placeholder={promoteType === 'rfi'
+                    ? 'What needs answering? e.g. "Footing depth at grid line C reads 30″ on S-201 but the field crew was told 36″ — which governs?"'
+                    : promoteType === 'daily_log'
+                      ? 'What happened on site?'
+                      : 'What is wrong, and where?'}
+                  style={{ ...fieldStyle, resize: 'vertical', minHeight: 84, lineHeight: 1.5, fontFamily: 'inherit' }}
+                />
+              </PromoteField>
+
+              {promoteType !== 'daily_log' && (
+                <PromoteField
+                  wide
+                  label={promoteType === 'rfi' ? 'SUBJECT' : 'TITLE'}
+                  hint="Follows your summary until you edit it."
+                >
+                  <input
+                    value={pf.title}
+                    onChange={(e) => { setPfTitleTouched(true); setPf((f) => ({ ...f, title: e.target.value })); }}
+                    placeholder="Derived from the first line of the summary"
+                    style={fieldStyle}
+                  />
+                </PromoteField>
+              )}
+
+              {promoteType !== 'daily_log' && (
+                <PromoteField label="PRIORITY">
+                  <select
+                    value={pf.priority}
+                    onChange={(e) => setPf((f) => ({ ...f, priority: e.target.value }))}
+                    style={{ ...fieldStyle, padding: '9px 11px' }}
+                  >
+                    {PROMOTE_PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </PromoteField>
+              )}
+
+              {(promoteType === 'rfi' || promoteType === 'punch') && (
+                <PromoteField label="DUE DATE">
+                  <SaguaroDatePicker
+                    value={pf.due}
+                    onChange={(v: string) => setPf((f) => ({ ...f, due: v }))}
+                    placeholder="Optional"
+                  />
+                </PromoteField>
+              )}
+
+              {promoteType === 'field_issue' && (
+                <PromoteField label="LOCATION">
+                  <input
+                    value={pf.location}
+                    onChange={(e) => setPf((f) => ({ ...f, location: e.target.value }))}
+                    placeholder="Grid line, room, area…"
+                    style={fieldStyle}
+                  />
+                </PromoteField>
+              )}
+
+              {promoteType === 'punch' && (
+                <>
+                  <PromoteField label="TRADE">
+                    <select
+                      value={pf.trade}
+                      onChange={(e) => setPf((f) => ({ ...f, trade: e.target.value }))}
+                      style={{ ...fieldStyle, padding: '9px 11px' }}
+                    >
+                      {!SUB_TRADES.includes(pf.trade) && <option value={pf.trade}>{pf.trade}</option>}
+                      {SUB_TRADES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </PromoteField>
+                  <PromoteField label="LOCATION">
+                    <input
+                      value={pf.location}
+                      onChange={(e) => setPf((f) => ({ ...f, location: e.target.value }))}
+                      placeholder="Grid line, room, area…"
+                      style={fieldStyle}
+                    />
+                  </PromoteField>
+                </>
+              )}
+
+              {promoteType === 'daily_log' && (
+                <>
+                  <PromoteField label="SECTION">
+                    <select
+                      value={pf.section}
+                      onChange={(e) => setPf((f) => ({ ...f, section: e.target.value }))}
+                      style={{ ...fieldStyle, padding: '9px 11px' }}
+                    >
+                      {DAILY_LOG_SECTIONS.map((s) => (
+                        <option key={s} value={s}>{DAILY_LOG_SECTION_LABELS[s] || s}</option>
+                      ))}
+                    </select>
+                  </PromoteField>
+                  <PromoteField label="LOG DATE" hint="Appends to that day's log — it never opens a second one.">
+                    <SaguaroDatePicker
+                      value={pf.logDate}
+                      onChange={(v: string) => setPf((f) => ({ ...f, logDate: v }))}
+                      placeholder="Day of the transmission"
+                    />
+                  </PromoteField>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </Dialog>
 
       {/* ── R14: Save / Discard / Stay confirm for the create-group modal ─ */}

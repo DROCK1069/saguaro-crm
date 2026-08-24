@@ -25,6 +25,8 @@ import {
   CalendarBlank,
   CalendarPlus,
 } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD = '#F59E0B';
 const GREEN = '#34C759';
@@ -116,6 +118,26 @@ export default function LienDeadlinePage() {
   const [formCompletion, setFormCompletion] = useState('');
   const [formLastWork, setFormLastWork] = useState('');
 
+  /* ── Unsaved-work guard: a half-entered lien deadline is real compliance
+   *    work, so leaving this module (sidebar, ⌘K, breadcrumb, back) confirms
+   *    first and the draft is kept on this device either way. ── */
+  const deadlineDraft = { formProject, formState, formType, formDueDate, formDesc, formFirstWork, formCompletion, formLastWork };
+  const composerDirty = useComposerDirty(showAdd, deadlineDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: 'lien-deadline-create',
+    draftData: deadlineDraft,
+    restoreDraft: (d) => {
+      const v = d as typeof deadlineDraft;
+      setFormProject(v.formProject ?? ''); setFormState(v.formState ?? 'AZ');
+      setFormType(v.formType ?? 'preliminary_notice'); setFormDueDate(v.formDueDate ?? '');
+      setFormDesc(v.formDesc ?? ''); setFormFirstWork(v.formFirstWork ?? '');
+      setFormCompletion(v.formCompletion ?? ''); setFormLastWork(v.formLastWork ?? '');
+      setShowAdd(true);
+    },
+    onSave: () => createDeadline(),
+  });
+
   // AZ auto-calculation
   const azCalc = {
     preliminary: formFirstWork ? addDays(formFirstWork, 20) : '',
@@ -157,8 +179,8 @@ export default function LienDeadlinePage() {
     })();
   }, []);
 
-  const createDeadline = async () => {
-    if (!formProject.trim() || !formDueDate) return;
+  const createDeadline = async (): Promise<boolean> => {
+    if (!formProject.trim() || !formDueDate) return false;
     setSaving(true);
     try {
       const res = await fetch('/api/compliance/lien-deadlines', {
@@ -184,12 +206,16 @@ export default function LienDeadlinePage() {
         setFormFirstWork('');
         setFormCompletion('');
         setFormLastWork('');
+        guard.clearDraft();
+        setSaving(false);
+        return true;
       }
     } catch {
       // silent
     } finally {
       setSaving(false);
     }
+    return false;
   };
 
   // Sort by date
@@ -483,6 +509,7 @@ export default function LienDeadlinePage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

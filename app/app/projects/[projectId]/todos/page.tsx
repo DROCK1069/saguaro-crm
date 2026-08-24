@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/premium';
 import { Clipboard, Circle, CheckCircle, Warning, Check, Plus, ClockCounterClockwise } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 interface TodoItem {
   id: string;
@@ -60,6 +62,18 @@ export default function TodosPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `todos:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleAdd(),
+  });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
   const [filter, setFilter] = useState<FilterTab>('all');
@@ -131,8 +145,8 @@ export default function TodosPage() {
   const busiest = Object.entries(assigneeLoads).sort((a, b) => b[1] - a[1])[0] || null;
   const nextDue = todos.filter(t => !t.complete && t.due_date && t.due_date >= today).sort((a, b) => a.due_date.localeCompare(b.due_date))[0] || null;
 
-  async function handleAdd() {
-    if (!form.title) return;
+  async function handleAdd(): Promise<boolean> {
+    if (!form.title) return false;
     setSaving(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/todos`, {
@@ -156,9 +170,12 @@ export default function TodosPage() {
       setForm(EMPTY_FORM);
       setToast('Task added.');
       setTimeout(() => setToast(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setToast('Could not add the task. Please try again.');
       setTimeout(() => setToast(''), 4000);
+      return false;
     } finally {
       setSaving(false);
     }
@@ -338,6 +355,7 @@ export default function TodosPage() {
           </div>
         )}
       </SectionCard>
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

@@ -10,6 +10,8 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -149,6 +151,19 @@ function PermitsPageInner() {
   const [formFee, setFormFee] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [formRenewalOf, setFormRenewalOf] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formType, formNumber, formStatus, formApplied, formIssued, formExpires, formAuthority, formAuthorityPhone, formAuthorityEmail, formInspector, formInspectorPhone, formFee, formNotes, formRenewalOf };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-permits:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormType(v.formType ?? 'Building'); setFormNumber(v.formNumber ?? ''); setFormStatus(v.formStatus ?? 'Applied'); setFormApplied(v.formApplied ?? ''); setFormIssued(v.formIssued ?? ''); setFormExpires(v.formExpires ?? ''); setFormAuthority(v.formAuthority ?? ''); setFormAuthorityPhone(v.formAuthorityPhone ?? ''); setFormAuthorityEmail(v.formAuthorityEmail ?? ''); setFormInspector(v.formInspector ?? ''); setFormInspectorPhone(v.formInspectorPhone ?? ''); setFormFee(v.formFee ?? ''); setFormNotes(v.formNotes ?? ''); setFormRenewalOf(v.formRenewalOf ?? ''); setView('create'); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
 
   /* calendar */
@@ -259,8 +274,8 @@ function PermitsPageInner() {
   }, [permits, calMonth, calYear]);
 
   /* ─── Save / Renew ─── */
-  const handleSave = async () => {
-    if (!formNumber.trim()) return;
+  const handleSave = async (): Promise<boolean> => {
+    if (!formNumber.trim()) return false;
     setSaving(true);
     const body: Record<string, unknown> = {
       permit_type: formType,
@@ -303,6 +318,8 @@ function PermitsPageInner() {
     } finally {
       setSaving(false);
     }
+    guard.clearDraft();
+    return true;
   };
 
   const handleRenew = async (permit: Permit) => {
@@ -982,6 +999,7 @@ function PermitsPageInner() {
           })
         )}
       </div>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

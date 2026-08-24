@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 
 const GOLD = '#F59E0B', DARK = '#141416', RAISED = '#1c1c1e', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF';
 const RED = '#c03030', AMBER = '#f59e0b';
@@ -92,7 +92,7 @@ export default function NotificationCenter() {
   const [snoozeOpenId, setSnoozeOpenId] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const router = useGuardedRouter();
 
   // Load focus mode preference from localStorage
   useEffect(() => {

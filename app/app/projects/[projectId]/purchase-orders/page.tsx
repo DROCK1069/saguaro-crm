@@ -13,6 +13,8 @@ import { CurrencyDollar, PencilSimple, Export, Package, Plus, X, Wallet, Copy } 
 import { getLastUsed, setLastUsed, postLearningEvent } from '@/lib/last-used';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 interface LineItem {
   description: string;
@@ -66,6 +68,18 @@ export default function PurchaseOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `purchase-orders:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -186,8 +200,8 @@ export default function PurchaseOrdersPage() {
   const costAuto = !!lastPrefill.cost_code && form.cost_code === lastPrefill.cost_code;
   const taxAuto = typeof lastPrefill.tax_pct === 'number' && Number(form.tax_pct) === lastPrefill.tax_pct;
 
-  async function handleSave() {
-    if (!form.vendor || !form.description) { setErrorMsg('Vendor and description are required.'); return; }
+  async function handleSave(): Promise<boolean> {
+    if (!form.vendor || !form.description) { setErrorMsg('Vendor and description are required.'); return false; }
     setSaving(true);
     setErrorMsg('');
     const num = form.po_num || nextPoStr;
@@ -226,8 +240,11 @@ export default function PurchaseOrdersPage() {
       setForm(EMPTY_FORM);
       setSuccessMsg('Purchase order created.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setErrorMsg('Could not create the purchase order. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -609,6 +626,7 @@ export default function PurchaseOrdersPage() {
           />
         )}
       </SectionCard>
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

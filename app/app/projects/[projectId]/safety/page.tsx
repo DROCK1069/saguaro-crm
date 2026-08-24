@@ -15,6 +15,8 @@ import {
 } from '@phosphor-icons/react';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 // Semantic accents — tuned to match the dashboard's Sonoran palette.
 const GOLD = '#F59E0B';
@@ -131,6 +133,18 @@ export default function SafetyPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `safety-incident:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -318,8 +332,8 @@ export default function SafetyPage() {
     }
   }
 
-  async function handleSave() {
-    if (!form.description || !form.date) { setErrorMsg('Date and description are required.'); return; }
+  async function handleSave(): Promise<boolean> {
+    if (!form.description || !form.date) { setErrorMsg('Date and description are required.'); return false; }
     setSaving(true);
     setErrorMsg('');
     try {
@@ -358,11 +372,14 @@ export default function SafetyPage() {
       setForm(EMPTY_FORM);
       setSuccessMsg('Incident reported.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setErrorMsg('Could not report the incident. Please try again.');
     } finally {
       setSaving(false);
     }
+    return false;
   }
 
   async function handleCreateCA() {
@@ -817,6 +834,7 @@ export default function SafetyPage() {
           )}
         </SectionCard>
       </div>
+      <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

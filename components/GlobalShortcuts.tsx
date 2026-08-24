@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 
 const GOLD = '#F59E0B';
 const DARK = '#0a0a0a';
@@ -30,7 +30,7 @@ const SHORTCUT_LIST: ShortcutDef[] = [
 ];
 
 export default function GlobalShortcuts({ onProjectSwitch }: GlobalShortcutsProps) {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const [showHelp, setShowHelp] = useState(false);
 
   const handleKeyDown = useCallback(

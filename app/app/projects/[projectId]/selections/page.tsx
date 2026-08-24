@@ -9,6 +9,8 @@ import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intellige
 import { Palette, X, Plus, Package, Hourglass, SealCheck, Scales, ChartBar, ListChecks, WarningCircle } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -67,6 +69,18 @@ export default function SelectionsPage(){
   const [selected,setSelected]=useState<any>(null);
   const [mode,setMode]=useState<'view'|'edit'|'create'|null>(null);
   const [form,setForm]=useState<Record<string,any>>({...EMPTY});
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(mode==='create'||mode==='edit', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `selections:${projectId}`,
+    draftData: mode==='create'?form:undefined,
+    restoreDraft: (d) => { setForm(d as Record<string,any>); setMode('create'); setSelected(null); },
+    onSave: () => save(),
+  });
   const [saving,setSaving]=useState(false);
   const [deleting,setDeleting]=useState(false);
   const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
@@ -133,8 +147,8 @@ export default function SelectionsPage(){
   function viewItem(item:any){setSelected(item);setMode('view');}
   function closePanel(){setSelected(null);setMode(null);}
 
-  async function save(){
-    if(!form.item.trim()){showToast('Item name is required','error');return;}
+  async function save(): Promise<boolean> {
+    if(!form.item.trim()){showToast('Item name is required','error');return false;}
     setSaving(true);
     try{
       const h=await getAuthHeaders();
@@ -155,8 +169,11 @@ export default function SelectionsPage(){
         showToast('Selection updated');
       }
       await load();closePanel();
+      guard.clearDraft();
+      return true;
     }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
     finally{setSaving(false);}
+    return false;
   }
 
   async function approve(item:any){
@@ -606,6 +623,7 @@ export default function SelectionsPage(){
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

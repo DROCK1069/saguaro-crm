@@ -10,6 +10,8 @@ import { WarningCircle, CalendarBlank, X, Plus, TrendUp, CheckCircle, Clock, Lis
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, AutoChip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 import { moduleAccent } from '@/lib/module-identity';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
@@ -176,6 +178,18 @@ export default function SchedulePage(){
   const [selected,setSelected]=useState<any>(null);
   const [mode,setMode]=useState<'view'|'edit'|'create'|null>(null);
   const [form,setForm]=useState<Record<string,any>>({...EMPTY});
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDirty = useComposerDirty(mode==='create'||mode==='edit', form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `schedule:${projectId}`,
+    draftData: mode==='create'?form:undefined,
+    restoreDraft: (d) => { setForm(d as Record<string,any>); setMode('create'); setSelected(null); },
+    onSave: () => save(),
+  });
   const [saving,setSaving]=useState(false);
   const [deleting,setDeleting]=useState(false);
   const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
@@ -276,8 +290,8 @@ export default function SchedulePage(){
     setForm(f=>({...f,...patch}));
   }
 
-  async function save(){
-    if(!form.name.trim()){showToast('Task name is required','error');return;}
+  async function save(): Promise<boolean> {
+    if(!form.name.trim()){showToast('Task name is required','error');return false;}
     // Optimistic save (house pattern: budget saveEdit) — tasks patch and the
     // panel closes instantly; the network settles in the background.
     const snapshot={...form,pct_complete:Number(form.pct_complete)||0};
@@ -312,12 +326,15 @@ export default function SchedulePage(){
         if(!r.ok){setTasks(prev=>prev.map((t:any)=>t.id===prevTask.id?prevTask:t));throw new Error(await r.text());}
         revalidate();
       }
+      guard.clearDraft();
+      return true;
     }catch(e:any){
       console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');
       // Rollback already applied — reopen the panel with the input intact.
       setForm(snapshot);setMode(prevMode);setSelected(prevSelected);
     }
     finally{setSaving(false);}
+    return false;
   }
 
   async function deleteTask(task:any){
@@ -833,6 +850,7 @@ export default function SchedulePage(){
           </div>
         </div>
       )}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

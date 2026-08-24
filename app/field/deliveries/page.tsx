@@ -10,6 +10,8 @@ import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { Truck, Alarm, CheckCircle, Warning, Package, Phone } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD = '#F59E0B';
 const CARD = '#141416';
@@ -88,6 +90,18 @@ function DeliveriesPage() {
   const [formEta, setFormEta] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formNotes, setFormNotes] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formDesc, formCarrier, formTracking, formEta, formPhone, formNotes };
+  const composerDirty = useComposerDirty(view === 'add', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-deliveries:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormDesc(v.formDesc ?? ''); setFormCarrier(v.formCarrier ?? ''); setFormTracking(v.formTracking ?? ''); setFormEta(v.formEta ?? ''); setFormPhone(v.formPhone ?? ''); setFormNotes(v.formNotes ?? ''); setView('add'); },
+  });
 
   // Pull to refresh
   const [touchStart, setTouchStart] = useState(0);
@@ -436,6 +450,7 @@ function DeliveriesPage() {
           50% { opacity: 0.5; }
         }
       `}</style>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

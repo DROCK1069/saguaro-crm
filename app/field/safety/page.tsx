@@ -10,6 +10,8 @@ import { enqueue } from '@/lib/field-db';
 import EmailComposer from '@/components/EmailComposer';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -263,6 +265,18 @@ function SafetyPage() {
   const [newLocation, setNewLocation] = useState('');
   const [newSeverity, setNewSeverity] = useState(1);
   const [newCA, setNewCA] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { newDate, newType, newDesc, newLocation, newSeverity, newCA };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-safety:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setNewDate(v.newDate ?? new Date().toISOString().slice(0, 10)); setNewType(v.newType ?? 'near_miss'); setNewDesc(v.newDesc ?? ''); setNewLocation(v.newLocation ?? ''); setNewSeverity(v.newSeverity ?? 1); setNewCA(v.newCA ?? ''); setView('create'); },
+  });
 
   // Photo attachment
   const photoRef = useRef<HTMLInputElement>(null);
@@ -1446,6 +1460,7 @@ function SafetyPage() {
           </button>
         </div>
       </form>
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

@@ -10,6 +10,8 @@ import { useSearchParams } from 'next/navigation';
 import { enqueue } from '@/lib/field-db';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const BG     = '#0a0a0a';
@@ -204,6 +206,18 @@ function SelectionsInner() {
   const [formAllowance, setFormAllowance] = useState('');
   const [formDueDate, setFormDueDate] = useState('');
   const [formNotes, setFormNotes] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { formCategory, formDesc, formRoom, formAllowance, formDueDate, formNotes };
+  const composerDirty = useComposerDirty(view === 'new', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-selections:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFormCategory(v.formCategory ?? 'Flooring'); setFormDesc(v.formDesc ?? ''); setFormRoom(v.formRoom ?? 'Kitchen'); setFormAllowance(v.formAllowance ?? ''); setFormDueDate(v.formDueDate ?? ''); setFormNotes(v.formNotes ?? ''); setView('new'); },
+  });
   const [formOptions, setFormOptions] = useState<SelectionOption[]>([
     { id: uid(), name: '', vendor: '', vendorContact: '', cost: 0, leadTime: '', photoUrl: '', notes: '' },
     { id: uid(), name: '', vendor: '', vendorContact: '', cost: 0, leadTime: '', photoUrl: '', notes: '' },
@@ -818,6 +832,7 @@ function SelectionsInner() {
       </div>
 
       {toast && <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: GREEN, color: '#000', padding: '10px 24px', borderRadius: 999, fontSize: 13, fontWeight: 700, zIndex: 9999 }}>{toast}</div>}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

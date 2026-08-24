@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#c03030';
 
@@ -44,7 +44,7 @@ export default function NotificationBell() {
   const [loadingList, setLoadingList] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const router = useGuardedRouter();
 
   // Fetch count on mount + every 60s
   useEffect(() => {

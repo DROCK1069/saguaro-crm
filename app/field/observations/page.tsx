@@ -13,6 +13,8 @@ import { CONTRACTOR_TRADES as TRADES } from '@/lib/contractor-trades';
 import { MagnifyingGlass, ClipboardText, MapPin, Wrench, Camera, Clock, CheckCircle, XCircle, Warning, Broom, HardHat, Anchor, Buildings, Lightning, Shovel, Fire, Door, Crane, FolderOpen, CalendarBlank, MinusCircle, X, Plus } from '@phosphor-icons/react';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -421,6 +423,18 @@ function ObservationsPage() {
   const [newCAAssignee, setNewCAAssignee] = useState('');
   const [newCADue, setNewCADue] = useState('');
   const [newCADesc, setNewCADesc] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { newType, newTemplate, newLocation, newLat, newLng, newTrade, newPriority, newDescription, newChecklist, newPhotosPreviews, newCorrectiveReq, newCAAssignee, newCADue, newCADesc };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-observations:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setNewType(v.newType ?? 'positive'); setNewTemplate(v.newTemplate ?? ''); setNewLocation(v.newLocation ?? ''); setNewLat(v.newLat ?? null); setNewLng(v.newLng ?? null); setNewTrade(v.newTrade ?? ''); setNewPriority(v.newPriority ?? 'low'); setNewDescription(v.newDescription ?? ''); setNewChecklist(v.newChecklist ?? []); setNewPhotosPreviews(v.newPhotosPreviews ?? []); setNewCorrectiveReq(v.newCorrectiveReq ?? false); setNewCAAssignee(v.newCAAssignee ?? ''); setNewCADue(v.newCADue ?? ''); setNewCADesc(v.newCADesc ?? ''); setView('create'); },
+  });
   const [customCheckItem, setCustomCheckItem] = useState('');
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
@@ -1527,6 +1541,7 @@ function ObservationsPage() {
       {view === 'list' && renderList()}
       {view === 'create' && renderCreate()}
       {view === 'detail' && renderDetail()}
+      <UnsavedGuardModal guard={guard} />
     </div>
   );
 }

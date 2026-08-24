@@ -15,7 +15,7 @@
  * freehand rows render read-only, best-effort, never crash.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter } from '@/lib/navGuard';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { enqueue } from '@/lib/field-db';
 import { HAS_SUPABASE, getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
@@ -175,7 +175,7 @@ const inp: React.CSSProperties = { width: '100%', background: '#1c1c1e', border:
 const panelStyle: React.CSSProperties = { background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14, marginTop: 10 };
 
 export default function DrawingViewer({ projectId, drawing, me, online, initialPin }: Props) {
-  const router = useRouter();
+  const router = useGuardedRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 

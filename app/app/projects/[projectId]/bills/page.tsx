@@ -9,6 +9,8 @@ import { Receipt, Plus, FilePlus, CurrencyDollar, Wallet } from '@phosphor-icons
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -50,6 +52,18 @@ export default function BillsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving the
+   *    page (sidebar, field nav, ⌘K, back) confirms first and the draft is
+   *    kept on this device either way. ── */
+  const composerDirty = useComposerDirty(showForm, form);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `bills:${projectId}`,
+    draftData: form,
+    restoreDraft: (d) => { setForm(d as typeof form); setShowForm(true); },
+    onSave: () => handleSave(),
+  });
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -94,10 +108,10 @@ export default function BillsPage() {
     }
   }, [loading, bills.length]);
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     if (!form.vendor || !form.invoice_num || !form.amount) {
       setErrorMsg('Vendor, invoice number, and amount are required.');
-      return;
+      return false;
     }
     setSaving(true);
     setErrorMsg('');
@@ -131,8 +145,11 @@ export default function BillsPage() {
       setForm(EMPTY_FORM);
       setSuccessMsg('Bill added successfully.');
       setTimeout(() => setSuccessMsg(''), 4000);
+      guard.clearDraft();
+      return true;
     } catch {
       setErrorMsg('Could not save the bill. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -585,6 +602,7 @@ export default function BillsPage() {
       )}
 
       {menuId && <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={() => setMenuId(null)} />}
+    <UnsavedGuardModal guard={guard} />
     </PremiumSurface>
   );
 }

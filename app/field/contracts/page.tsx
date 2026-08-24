@@ -12,6 +12,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
 import { PencilSimple, Percent, Copy, Trash, Check, X } from '@phosphor-icons/react';
+import { useUnsavedGuard, useComposerDirty } from '@/lib/useUnsavedGuard';
+import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 
 const GOLD   = '#F59E0B';
 const RAISED = '#141416';
@@ -194,6 +196,18 @@ function ContractsPage() {
   const [fInsuranceReq, setFInsuranceReq] = useState(false);
   const [fBondingReq, setFBondingReq] = useState(false);
   const [fNotes, setFNotes] = useState('');
+
+  /* ── Unsaved-work guard: the composer holds real typing, so leaving this
+   *    module (sidebar, field nav, ⌘K, breadcrumb, back) confirms first, and
+   *    the draft is kept on this device either way. ── */
+  const composerDraft = { fContractNumber, fTitle, fType, fVendorName, fVendorEmail, fDescription, fOriginalAmount, fRetainagePct, fStartDate, fEndDate, fScopeOfWork, fInsuranceReq, fBondingReq, fNotes };
+  const composerDirty = useComposerDirty(view === 'create', composerDraft);
+  const guard = useUnsavedGuard({
+    dirty: composerDirty,
+    draftKey: `field-contracts:${projectId || 'none'}`,
+    draftData: composerDraft,
+    restoreDraft: (d) => { const v = d as typeof composerDraft; setFContractNumber(v.fContractNumber ?? ''); setFTitle(v.fTitle ?? ''); setFType(v.fType ?? 'subcontract'); setFVendorName(v.fVendorName ?? ''); setFVendorEmail(v.fVendorEmail ?? ''); setFDescription(v.fDescription ?? ''); setFOriginalAmount(v.fOriginalAmount ?? ''); setFRetainagePct(v.fRetainagePct ?? '10'); setFStartDate(v.fStartDate ?? ''); setFEndDate(v.fEndDate ?? ''); setFScopeOfWork(v.fScopeOfWork ?? ''); setFInsuranceReq(v.fInsuranceReq ?? false); setFBondingReq(v.fBondingReq ?? false); setFNotes(v.fNotes ?? ''); setView('create'); },
+  });
 
   /* ── Data Fetch ──────────────────────────────────────── */
 
@@ -1073,6 +1087,7 @@ function ContractsPage() {
             </div>
           )}
         </div>
+        <UnsavedGuardModal guard={guard} />
       </BottomSheet>
     );
   }
