@@ -70,9 +70,7 @@ import {
 import {
   PremiumSurface,
   ModuleHero,
-  SectionCard,
   PremiumEmpty,
-  StatStrip,
   goldButtonStyle,
   goldOutlineButtonStyle,
 } from '@/components/ui/premium';
@@ -91,7 +89,6 @@ import {
   ClockCounterClockwise,
   MagnifyingGlass,
   PencilSimple,
-  CaretUp,
   DotsThree,
   Megaphone,
   Lock,
@@ -227,6 +224,88 @@ const personKey = (p: DirectoryPerson) => {
 };
 const personName = (p: DirectoryPerson) =>
   String(p.name || p.display_name || p.email || 'Team member').trim() || 'Team member';
+/* ── Transmit outbox ───────────────────────────────────────────────────────
+ * A recorded clip is the user's words. It is never held only in memory and it
+ * is never dropped on a failed POST: it is written to IndexedDB the instant
+ * the key is released, retried with backoff, replayed on reconnect and on the
+ * next page load, and surfaced as a feed row with RETRY / DISCARD if delivery
+ * keeps failing. Degrades to memory-only where IndexedDB is unavailable. */
+type TxState = 'sending' | 'queued' | 'failed';
+interface OutboxClip {
+  localId: string;
+  channelId: string;
+  channelName: string;
+  secs: number;
+  mime: string;
+  ext: string;
+  bytes: number;
+  createdAt: number;
+  blob: Blob;
+}
+interface PendingTx extends OutboxClip {
+  status: TxState;
+  attempts: number;
+  error?: string | null;
+}
+/** One key-down to key-up recording. Self-contained on purpose: a fast
+ *  press-release-press must never let take #2 overwrite take #1's buffer or
+ *  start stamp while take #1's async onstop is still in flight. */
+interface Take {
+  rec: MediaRecorder;
+  chunks: BlobPart[];
+  startedAt: number;
+  channelId: string;
+  channelName: string;
+}
+const OUTBOX_DB = 'sag_radio_outbox';
+const OUTBOX_STORE = 'clips';
+function outboxOpen(): Promise<IDBDatabase | null> {
+  return new Promise((resolve) => {
+    try {
+      if (typeof indexedDB === 'undefined') { resolve(null); return; }
+      const req = indexedDB.open(OUTBOX_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(OUTBOX_STORE)) db.createObjectStore(OUTBOX_STORE, { keyPath: 'localId' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+      req.onblocked = () => resolve(null);
+    } catch { resolve(null); }
+  });
+}
+async function outboxPut(rec: OutboxClip) {
+  const db = await outboxOpen();
+  if (!db) return;
+  try { db.transaction(OUTBOX_STORE, 'readwrite').objectStore(OUTBOX_STORE).put(rec); } catch { /* memory-only */ }
+}
+async function outboxDelete(localId: string) {
+  const db = await outboxOpen();
+  if (!db) return;
+  try { db.transaction(OUTBOX_STORE, 'readwrite').objectStore(OUTBOX_STORE).delete(localId); } catch { /* memory-only */ }
+}
+function outboxAll(): Promise<OutboxClip[]> {
+  return outboxOpen().then((db) => new Promise<OutboxClip[]>((resolve) => {
+    if (!db) { resolve([]); return; }
+    try {
+      const req = db.transaction(OUTBOX_STORE, 'readonly').objectStore(OUTBOX_STORE).getAll();
+      req.onsuccess = () => {
+        const rows = (req.result || []) as OutboxClip[];
+        resolve(rows.filter((r) => r && r.blob instanceof Blob && r.blob.size > 0));
+      };
+      req.onerror = () => resolve([]);
+    } catch { resolve([]); }
+  }));
+}
+/** Turn a getUserMedia rejection into something a dispatcher can act on. */
+function micErrorText(e: unknown): string {
+  const name = e && typeof e === 'object' && 'name' in e ? String((e as { name?: string }).name || '') : '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') return 'Mic blocked — allow microphone access for this site, then key again.';
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'No microphone found — connect one, then key again.';
+  if (name === 'NotReadableError' || name === 'AbortError') return 'Mic busy — another tab or app is holding it. Close it, then key again.';
+  return 'Mic did not open — press the key again to retry.';
+}
+
 /** Live channel patch (rides the channels GET as `patches`). */
 interface ActivePatch {
   id: string;
@@ -441,7 +520,10 @@ const rowActionStyle: React.CSSProperties = {
  * mismatched pills: buttons stand alone or fuse into segmented groups with
  * hairline dividers, tertiary actions live behind the overflow menu, and
  * primary actions keep the gold pmBtn tier. */
-const TOOL_H = 32;
+/* ONE header-control height. The channel selector, the roster selector, the
+ * patch/broadcast group and the overflow button all sit on this line — no
+ * mismatched pills, no control that reads as an afterthought. */
+const TOOL_H = 40;
 const toolBtnStyle = (on: boolean, enabled: boolean): React.CSSProperties => ({
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
   height: TOOL_H, padding: '0 12px', borderRadius: 9, boxSizing: 'border-box',
@@ -450,6 +532,19 @@ const toolBtnStyle = (on: boolean, enabled: boolean): React.CSSProperties => ({
   color: on ? GOLD_HI : MUTED, fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap',
   cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.45,
 });
+/** The one 26px icon-toggle geometry (channel row controls, row affordances). */
+const miniBtnStyle = (on: boolean): React.CSSProperties => ({
+  flexShrink: 0, width: 26, height: 26, borderRadius: 8, padding: 0,
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  background: on ? 'rgba(245,158,11,0.14)' : 'rgba(255,255,255,0.04)',
+  border: on ? '1px solid rgba(245,158,11,0.40)' : `1px solid ${BORDER}`,
+  color: on ? GOLD_HI : FAINT, cursor: 'pointer',
+});
+/** Close/dismiss glyph button — same everywhere, no bespoke variants. */
+const closeBtnStyle: React.CSSProperties = {
+  background: 'none', border: 'none', color: FAINT, cursor: 'pointer',
+  padding: 2, display: 'inline-flex', flexShrink: 0,
+};
 const toolGroupStyle: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'stretch', height: TOOL_H, borderRadius: 9,
   border: FIELD_BORDER, background: FIELD_BG, overflow: 'hidden',
@@ -475,15 +570,6 @@ const menuItemStyle = (enabled: boolean): React.CSSProperties => ({
   color: enabled ? WHITE : FAINT, fontSize: 12.5, fontWeight: 700, textAlign: 'left',
   cursor: enabled ? 'pointer' : 'default', whiteSpace: 'nowrap',
 });
-const modalShellStyle: React.CSSProperties = {
-  position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(12,12,16,0.72)',
-  display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-  padding: '8vh 16px 16px', overflowY: 'auto',
-};
-const modalCardStyle = (width: number): React.CSSProperties => ({
-  width: `min(${width}px, 100%)`, borderRadius: 16, background: 'rgba(24,24,27,0.98)',
-  border: `1px solid ${AMBER_BORDER}`, boxShadow: '0 22px 48px rgba(12,12,16,0.65)', padding: 16,
-});
 const fieldStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box', padding: '9px 12px',
   background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10,
@@ -492,6 +578,108 @@ const fieldStyle: React.CSSProperties = {
 const eyebrowStyle: React.CSSProperties = {
   fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', color: FAINT,
 };
+
+/* ── Dialog ────────────────────────────────────────────────────────────────
+ * Every secondary surface in this console is one of these: a fixed-height
+ * card with a pinned header, a pinned footer, and EXACTLY ONE scroll region
+ * between them. No capped 150px portholes, no popover inside a popover, no
+ * list that scrolls inside a panel that scrolls inside a page that scrolls. */
+function Dialog({
+  open, onClose, title, icon, width = 520, footer, className, children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  icon?: React.ReactNode;
+  width?: number;
+  footer?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div
+      className={className}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 90, overflow: 'hidden',
+        background: 'rgba(10,10,14,0.74)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5vh 16px',
+      }}
+    >
+      <div
+        style={{
+          width: `min(${width}px, 100%)`, maxHeight: '90vh', overflow: 'hidden',
+          display: 'flex', flexDirection: 'column',
+          borderRadius: 16, background: 'rgba(20,20,23,0.99)',
+          border: `1px solid ${AMBER_BORDER}`, boxShadow: '0 28px 64px rgba(8,8,12,0.72)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '13px 16px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+          {icon}
+          <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {title}
+          </span>
+          <button onClick={onClose} aria-label="Close" style={closeBtnStyle}><X size={15} weight="bold" /></button>
+        </div>
+        {/* ── the one scroll region ── */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16 }}>{children}</div>
+        {footer && (
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderTop: `1px solid ${BORDER}`, flexWrap: 'wrap' }}>
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Dropdown ──────────────────────────────────────────────────────────────
+ * The channel and roster selectors. Anchored, capped by viewport height, with
+ * a pinned head and ONE scroll region — a real select, not a rail. */
+function Dropdown({
+  open, onClose, anchorRef, width, children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  anchorRef: React.RefObject<HTMLDivElement | null>;
+  width: number;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey); };
+  }, [open, onClose, anchorRef]);
+  if (!open) return null;
+  return (
+    <div
+      style={{
+        position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 60,
+        width: `min(${width}px, calc(100vw - 48px))`, maxHeight: 'min(62vh, 560px)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        background: 'rgba(20,20,23,0.99)', border: `1px solid ${AMBER_BORDER}`,
+        borderRadius: 14, boxShadow: '0 24px 52px rgba(8,8,12,0.7)', textAlign: 'left',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 /* Tone signaling — labels, colors, and distinct WebAudio beep frequencies. */
 const TONES: Record<string, { label: string; color: string; border: string; soft: string; freq: number; hold: number }> = {
@@ -530,6 +718,17 @@ export default function RadioDispatchPage() {
     setReady(true);
   }, []);
 
+  /* ── Toasts — honest, transient result reporting (kit-styled, no library).
+   * Declared FIRST so every engine below (transmit, outbox, tones) can report
+   * failures without a temporal-dead-zone dance. */
+  const [toasts, setToasts] = useState<{ id: number; text: string; tone: 'ok' | 'err' }[]>([]);
+  const toastSeqRef = useRef(1);
+  const pushToast = useCallback((text: string, tone: 'ok' | 'err') => {
+    const id = toastSeqRef.current++;
+    setToasts((prev) => [...prev.slice(-3), { id, text, tone }]);
+    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 5200);
+  }, []);
+
   /* Who am I (for own-alert "Seen" + skipping own clips in catch-up). */
   const [myUserId, setMyUserId] = useState<string | null>(null);
   useEffect(() => {
@@ -553,6 +752,16 @@ export default function RadioDispatchPage() {
     { refreshInterval: 20_000, revalidateOnFocus: true, keepPreviousData: true },
   );
   const channels = chData?.channels ?? [];
+  /* Channel numbering — a CB has channel numbers, so this console does too.
+   * Stable for the life of a channels payload, and used by the selector, the
+   * standby band, the patch board and the broadcast picker alike. */
+  const channelNo = useMemo(() => {
+    const m = new Map<string, string>();
+    channels.forEach((c, i) => m.set(c.id, `CH ${String(i + 1).padStart(2, '0')}`));
+    return m;
+  }, [channels]);
+  const channelNoRef = useRef(channelNo);
+  channelNoRef.current = channelNo;
 
   const [activeId, setActiveId] = useState<string | null>(null);
   useEffect(() => {
@@ -721,6 +930,11 @@ export default function RadioDispatchPage() {
     (id: string) => channels.find((c) => c.id === id)?.name || 'Channel',
     [channels],
   );
+  /* Read-through ref so the transmit engine can name a channel without taking
+   * `channels` as a dependency (a re-keyed callback mid-transmission would be
+   * a bug factory). */
+  const channelNameRef = useRef(channelName);
+  channelNameRef.current = channelName;
   const postPatch = async (a: string, b: string, release: boolean) => {
     if (!a || !b || a === b || patchBusy) return;
     setPatchBusy(true);
@@ -768,12 +982,11 @@ export default function RadioDispatchPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   useEffect(() => { setRosterOpen(false); setEditingProfile(false); }, [activeId]);
   useEffect(() => {
-    if (!rosterOpen) return;
-    const onDown = (e: PointerEvent) => {
-      if (rosterRef.current && !rosterRef.current.contains(e.target as Node)) setRosterOpen(false);
-    };
-    window.addEventListener('pointerdown', onDown);
-    return () => window.removeEventListener('pointerdown', onDown);
+    /* Dismissal is owned by <Dropdown> (outside-pointerdown + Escape); this
+     * effect only tidies the add-member sub-state when the panel closes. */
+    if (rosterOpen) return;
+    setRosterAddOpen(false);
+    setRemoveArm(null);
   }, [rosterOpen]);
   const startEditProfile = (me: RosterMember) => {
     setCallSignDraft(me.call_sign || '');
@@ -853,11 +1066,10 @@ export default function RadioDispatchPage() {
   mutateMessagesRef.current = mutateMessages;
   rtBumpRef.current = () => { void mutateMessagesRef.current(); };
 
+  /* The feed is the ONE scroll region on this screen. The ride-to-bottom
+   * effect lives further down, next to the transmit engine, so it can follow
+   * optimistic transmission rows as well as server traffic. */
   const feedRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const el = feedRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length, activeId]);
 
   /* ── Language (EN/ES) — persisted under 'sag_lang' ──────────────────── */
   const [lang, setLang] = useState<'en' | 'es'>('en');
@@ -1247,17 +1459,63 @@ export default function RadioDispatchPage() {
     takeFile(e.dataTransfer.files?.[0]);
   };
 
-  /* ── Browser PTT (MediaRecorder, feature-detected) ──────────────────── */
-  const [pttSupported, setPttSupported] = useState(false);
-  const [recording, setRecording] = useState(false);
-  /* TX immediacy: set synchronously on key-down — BEFORE the getUserMedia
-   * await — so the needle and ON AIR band slam the instant the key lands.
-   * Cleared on stop and on every abort path. */
-  const [keying, setKeying] = useState(false);
-  const [uploadingVoice, setUploadingVoice] = useState(false);
+  /* ══ TRANSMIT ENGINE ════════════════════════════════════════════════════
+   * Saguaro Radio is STORE-AND-FORWARD: a key-down records, a release uploads,
+   * and every other member's console plays it. It is NOT live full-duplex
+   * audio — see `streamStatus` below for where that would live and why it is
+   * not on yet. This engine's whole job is to make store-and-forward feel
+   * instant and to never, ever lie about what happened:
+   *
+   *  · KEYED (thumb down — synchronous) is a DIFFERENT state from MIC OPEN
+   *    (MediaRecorder actually running). The deck shows OPENING… during the
+   *    device gap and only says ON AIR once audio is truly being captured, so
+   *    the first word of a transmission is never lost to an optimistic label.
+   *  · Duration is wall-clock from the instant record() returns — the one
+   *    honest clock. Nothing is derived from polled React state.
+   *  · A runtime mic failure NEVER hides the talk key. It prints the reason on
+   *    the bar and the next press retries.
+   *  · The mic device is held warm between transmissions (released after 45s
+   *    idle) so a second key-down doesn't pay device-open latency again.
+   *  · A release NEVER gates the next key-down. Uploads run in the background.
+   *  · Every clip over the floor lands in a persisted outbox (IndexedDB) and
+   *    paints a feed row immediately. Nothing is ever silently discarded.
+   *  · 60-second time-out timer hard-stops a stuck key, like a real CB. */
+  const MAX_TX_MS = 60_000;
+  const TX_WARN_MS = 50_000;
+  const TX_FLOOR_MS = 350;
+  const MIC_IDLE_MS = 45_000;
+
+  /* null = not yet checked (server render + first paint). Never render the
+   * "this browser can't record" message on a guess — a false negative for a
+   * frame reads exactly like the bug we are here to kill. */
+  const [pttSupported, setPttSupported] = useState<boolean | null>(null);
+  const [keyed, setKeyed] = useState(false);      // thumb is down (synchronous)
+  const [micOpen, setMicOpen] = useState(false);  // recorder is genuinely running
+  const [txSecs, setTxSecs] = useState(0);
+  const [micError, setMicError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingTx[]>([]);
+
+  const keyedRef = useRef(false);
+  const keySeqRef = useRef(0);
   const recRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
-  const recStartRef = useRef(0);
+  /* txStartRef drives the on-screen elapsed readout ONLY. Each recording owns
+   * its own chunk array and its own start stamp (captured in pttStart), so a
+   * fast press-release-press can never let the second take clobber the first
+   * take's audio or duration while its onstop is still in flight. */
+  const txStartRef = useRef(0);
+  const totRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const txTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const warmStreamRef = useRef<MediaStream | null>(null);
+  const warmIdleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pttStopRef = useRef<() => void>(() => {});
+  const deliverRef = useRef<(item: PendingTx, auto: boolean) => void>(() => {});
+  const finishTxRef = useRef<(take: Take) => void>(() => {});
+  const pendingRef = useRef<PendingTx[]>(pending);
+  pendingRef.current = pending;
+  const activeIdRef = useRef<string | null>(activeId);
+  activeIdRef.current = activeId;
+
+  /* Feature detection ONLY — this is the single thing allowed to hide the key. */
   useEffect(() => {
     setPttSupported(
       typeof window !== 'undefined' &&
@@ -1266,105 +1524,288 @@ export default function RadioDispatchPage() {
     );
   }, []);
 
-  /* Mic pre-flight: the first hover over the talk key warms the mic path —
-   * permission prompt + device spin-up happen BEFORE the first real key-down.
-   * Once-only per page load; errors are swallowed (the real pttStart still
-   * handles denial honestly). */
-  const micPreflightRef = useRef(false);
-  const preflightMic = () => {
-    if (micPreflightRef.current || !pttSupported || !navigator.mediaDevices?.getUserMedia) return;
-    micPreflightRef.current = true;
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then((stream) => stream.getTracks().forEach((tr) => tr.stop()))
-      .catch(() => { /* denial surfaces on the real key-down */ });
-  };
+  /* ── Warm mic device (a real pre-warm: the stream is HELD, not discarded) */
+  const releaseWarmMic = useCallback(() => {
+    if (warmIdleRef.current) { clearTimeout(warmIdleRef.current); warmIdleRef.current = null; }
+    try { micSourceRef.current?.disconnect(); } catch { /* graph already gone */ }
+    micSourceRef.current = null;
+    micAnalyserRef.current = null;
+    const s = warmStreamRef.current;
+    warmStreamRef.current = null;
+    if (s) s.getTracks().forEach((tr) => { try { tr.stop(); } catch { /* already stopped */ } });
+  }, []);
+  const holdWarmMic = useCallback(() => {
+    if (warmIdleRef.current) clearTimeout(warmIdleRef.current);
+    warmIdleRef.current = setTimeout(() => releaseWarmMic(), MIC_IDLE_MS);
+  }, [releaseWarmMic]);
+  const acquireMic = useCallback(async () => {
+    const s = warmStreamRef.current;
+    if (s && s.getAudioTracks().some((t) => t.readyState === 'live')) {
+      if (warmIdleRef.current) { clearTimeout(warmIdleRef.current); warmIdleRef.current = null; }
+      return s;
+    }
+    releaseWarmMic();
+    const ns = await navigator.mediaDevices.getUserMedia({ audio: true });
+    warmStreamRef.current = ns;
+    return ns;
+  }, [releaseWarmMic]);
+  /* Tap the live mic for the S/RF meter — once per warm stream. */
+  const tapMic = useCallback((stream: MediaStream) => {
+    if (micAnalyserRef.current) return;
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state !== 'running') void ctx.resume().catch(() => { /* meter falls back */ });
+      const src = ctx.createMediaStreamSource(stream);
+      const an = ctx.createAnalyser();
+      an.fftSize = 512;
+      src.connect(an); // analysis only — never wired to destination (no sidetone)
+      micSourceRef.current = src;
+      micAnalyserRef.current = an;
+    } catch { /* meter falls back to the synthesized envelope */ }
+  }, [getAudioCtx]);
+  /* Hover / focus on the talk key opens the device ahead of the press. */
+  const preflightMic = useCallback(() => {
+    if (pttSupported === false || keyedRef.current || !navigator.mediaDevices?.getUserMedia) return;
+    if (warmStreamRef.current) { holdWarmMic(); return; }
+    acquireMic().then(() => holdWarmMic()).catch(() => { /* denial surfaces on the real key-down */ });
+  }, [pttSupported, acquireMic, holdWarmMic]);
 
-  const pttStart = async () => {
-    if (!pttSupported || recording || !activeId) return;
-    setKeying(true); // synchronous — the console keys up before the mic resolves
+  /* ── Outbox delivery — retry with backoff, then hand the row to the user */
+  const deliverClip = useCallback(async (item: PendingTx, auto: boolean) => {
+    setPending((prev) => prev.map((x) => (x.localId === item.localId ? { ...x, status: 'sending', error: null } : x)));
+    const fd = new FormData();
+    fd.append('channelId', item.channelId);
+    fd.append('durationSecs', item.secs.toFixed(1));
+    fd.append('file', new File([item.blob], `ptt.${item.ext}`, { type: item.mime || 'audio/webm' }));
+    let ok = false;
+    let why = '';
+    try {
+      const r = await fetch('/api/radio/voice', { method: 'POST', body: fd });
+      ok = r.ok;
+      if (!ok) {
+        const j = await r.json().catch(() => null);
+        why = (j && typeof j.error === 'string' && j.error) || `server said ${r.status}`;
+      }
+    } catch { why = 'no connection'; }
+    if (ok) {
+      void outboxDelete(item.localId);
+      setPending((prev) => prev.filter((x) => x.localId !== item.localId));
+      if (item.channelId === activeIdRef.current) void mutateMessagesRef.current();
+      void mutateChannelsRef.current();
+      return;
+    }
+    const attempts = item.attempts + 1;
+    /* "QUEUED — RETRYING" is only allowed to appear when something really is
+     * retrying. A one-shot manual retry that fails lands straight on HELD. */
+    const willRetry = auto && attempts < 3;
+    const next: PendingTx = { ...item, attempts, status: willRetry ? 'queued' : 'failed', error: why || null };
+    setPending((prev) => prev.map((x) => (x.localId === item.localId ? next : x)));
+    if (willRetry) {
+      setTimeout(() => deliverRef.current(next, true), attempts === 1 ? 1500 : 5000);
+    } else {
+      pushToast(`Clip held on ${item.channelName} — ${why || 'delivery failed'}. Hit RETRY on the row.`, 'err');
+    }
+  }, [pushToast]);
+  deliverRef.current = deliverClip;
+
+  /* Anything stranded by a crash, a reload, or a dead link comes back. */
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const rows = await outboxAll();
+      if (!alive || !rows.length) return;
+      const items: PendingTx[] = rows.map((r) => ({ ...r, status: 'queued' as TxState, attempts: 0, error: null }));
+      setPending((prev) => [...prev, ...items.filter((i) => !prev.some((p) => p.localId === i.localId))]);
+      pushToast(`${items.length} held transmission${items.length === 1 ? '' : 's'} from your last session — sending now`, 'err');
+      items.forEach((it) => deliverRef.current(it, true));
+    })();
+    const onOnline = () => {
+      pendingRef.current.filter((p) => p.status !== 'sending').forEach((p) => deliverRef.current({ ...p, attempts: 0 }, true));
+    };
+    window.addEventListener('online', onOnline);
+    return () => { alive = false; window.removeEventListener('online', onOnline); };
+  }, [pushToast]);
+
+  /* ── Release: measure honestly, queue, paint the row ─────────────────── */
+  const finishTx = useCallback((take: Take) => {
+    const secs = (Date.now() - take.startedAt) / 1000;
+    const blob = new Blob(take.chunks, { type: take.rec.mimeType || 'audio/webm' });
+    take.chunks.length = 0;
+    holdWarmMic(); // keep the device open for the next key — CB cadence is press-release-press
+    if (secs * 1000 < TX_FLOOR_MS || blob.size === 0) {
+      pushToast('Too short — hold the key down while you talk, then release.', 'err');
+      return;
+    }
+    const { channelId: chId, channelName: chName } = take;
+    const mt = take.rec.mimeType || '';
+    const ext = mt.includes('mp4') ? 'mp4' : mt.includes('ogg') ? 'ogg' : mt.includes('wav') ? 'wav' : 'webm';
+    const clip: OutboxClip = {
+      localId: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      channelId: chId,
+      channelName: chName,
+      secs: Math.round(secs * 10) / 10,
+      mime: blob.type || 'audio/webm',
+      ext,
+      bytes: blob.size,
+      createdAt: Date.now(),
+      blob,
+    };
+    const item: PendingTx = { ...clip, status: 'sending', attempts: 0, error: null };
+    setPending((prev) => [...prev, item]);
+    void outboxPut(clip); // persisted BEFORE the first attempt — a crash cannot eat it
+    deliverRef.current(item, true);
+  }, [holdWarmMic, pushToast]);
+  finishTxRef.current = finishTx;
+
+  /* ── Key down ────────────────────────────────────────────────────────── */
+  const pttStart = useCallback(async () => {
+    if (pttSupported === false || keyedRef.current) return;
+    const chId = activeIdRef.current;
+    if (!chId) { pushToast('Tune to a channel before you key up', 'err'); return; }
+    const chName = channelNameRef.current(chId);
+    keyedRef.current = true;                 // synchronous guard — never React state
+    const mySeq = ++keySeqRef.current;
+    setKeyed(true);
+    setMicError(null);
+    setTxSecs(0);
     stopPlayback(); // never transmit over receive
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await acquireMic();
+      /* The key may have been released during the await (fast press, or the
+       * permission prompt stealing focus). Bail instead of leaving a runaway
+       * recorder holding a hot mic. */
+      if (!keyedRef.current || keySeqRef.current !== mySeq) { holdWarmMic(); return; }
       const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(
         (m) => (window as any).MediaRecorder?.isTypeSupported?.(m),
       );
       const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      chunksRef.current = [];
-      rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
-      rec.onstop = async () => {
-        stream.getTracks().forEach((tr) => tr.stop());
-        /* Release the meter's mic tap with the stream. */
-        try { micSourceRef.current?.disconnect(); } catch { /* graph already gone */ }
-        micSourceRef.current = null;
-        micAnalyserRef.current = null;
-        const durationSecs = (Date.now() - recStartRef.current) / 1000;
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
-        chunksRef.current = [];
-        if (durationSecs < 0.5 || blob.size === 0 || !activeId) return;
-        const mt = rec.mimeType || '';
-        const ext = mt.includes('mp4') ? 'mp4' : mt.includes('ogg') ? 'ogg' : mt.includes('wav') ? 'wav' : 'webm';
-        const fd = new FormData();
-        fd.append('channelId', activeId);
-        fd.append('durationSecs', String(Math.round(durationSecs * 10) / 10));
-        fd.append('file', new File([blob], `ptt.${ext}`, { type: blob.type }));
-        setUploadingVoice(true);
-        const post = async () => {
-          try {
-            const r = await fetch('/api/radio/voice', { method: 'POST', body: fd });
-            return r.ok;
-          } catch { return false; }
-        };
-        /* One automatic retry after ~1.5s, then an honest toast — the clip is
-         * never dropped silently. */
-        let ok = await post();
-        if (!ok) {
-          await new Promise((res) => setTimeout(res, 1500));
-          ok = await post();
-        }
-        if (ok) await mutateMessages();
-        else pushToast('Transmission failed — clip not delivered', 'err');
-        setUploadingVoice(false);
-      };
+      /* One take = one recorder + its own buffer + its own start stamp. */
+      const take: Take = { rec, chunks: [], startedAt: 0, channelId: chId, channelName: chName };
+      rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) take.chunks.push(e.data); };
+      rec.onstop = () => finishTxRef.current(take);
       recRef.current = rec;
-      recStartRef.current = Date.now();
       rec.start();
-      setRecording(true);
-      /* Tap the live mic stream for the S/RF meter (feature-detected; the
-       * meter falls back to a synthesized envelope without Web Audio). */
-      try {
-        const ctx = getAudioCtx();
-        if (ctx) {
-          if (ctx.state !== 'running') void ctx.resume().catch(() => { /* meter falls back */ });
-          const src = ctx.createMediaStreamSource(stream);
-          const an = ctx.createAnalyser();
-          an.fftSize = 512;
-          src.connect(an); // analysis only — never wired to destination (no sidetone)
-          micSourceRef.current = src;
-          micAnalyserRef.current = an;
-        }
-      } catch { /* meter falls back to the synthesized envelope */ }
-    } catch {
-      // Mic denied or unavailable — hide the key gracefully.
-      setKeying(false);
-      setPttSupported(false);
+      take.startedAt = Date.now();           // ← the ONLY honest transmission clock
+      txStartRef.current = take.startedAt;   // (the elapsed readout mirrors it)
+      setMicOpen(true);
+      tapMic(stream);
+      if (txTickRef.current) clearInterval(txTickRef.current);
+      txTickRef.current = setInterval(() => setTxSecs((Date.now() - txStartRef.current) / 1000), 100);
+      if (totRef.current) clearTimeout(totRef.current);
+      totRef.current = setTimeout(() => {
+        if (!keyedRef.current) return;
+        pushToast('60-second limit — the key released and the clip was sent.', 'err');
+        pttStopRef.current();
+      }, MAX_TX_MS);
+    } catch (err) {
+      /* A runtime failure is NEVER allowed to hide the talk key (that is how
+       * "I can't push the PTT" happens). Print the reason; the next press
+       * retries from scratch. */
+      keyedRef.current = false;
+      setKeyed(false);
+      setMicOpen(false);
+      releaseWarmMic();
+      const text = micErrorText(err);
+      setMicError(text);
+      pushToast(text, 'err');
     }
-  };
-  const pttStop = () => {
-    if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop();
+  }, [pttSupported, acquireMic, holdWarmMic, tapMic, releaseWarmMic, stopPlayback, pushToast]);
+
+  /* ── Key up ──────────────────────────────────────────────────────────── */
+  const pttStop = useCallback(() => {
+    if (!keyedRef.current) return;
+    keyedRef.current = false;
+    keySeqRef.current += 1;                  // invalidates any start still awaiting
+    setKeyed(false);
+    setMicOpen(false);
+    setTxSecs(0);
+    if (totRef.current) { clearTimeout(totRef.current); totRef.current = null; }
+    if (txTickRef.current) { clearInterval(txTickRef.current); txTickRef.current = null; }
+    const rec = recRef.current;
     recRef.current = null;
-    setRecording(false);
-    setKeying(false);
+    if (rec && rec.state !== 'inactive') {
+      try { rec.stop(); } catch { holdWarmMic(); }
+    } else {
+      holdWarmMic();
+    }
+  }, [holdWarmMic]);
+  pttStopRef.current = pttStop;
+
+  /* Ride the feed to the bottom on new traffic and on every new optimistic
+   * transmission row — a release must always show you your own clip landing. */
+  useEffect(() => {
+    const el = feedRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length, activeId, pending.length]);
+
+  /* Stuck-key safety: if the window loses focus or the tab is hidden while the
+   * key is down (alt-tab, a call, a lock screen), stop and SEND rather than
+   * orphaning a live recorder on a hot mic. */
+  useEffect(() => {
+    const bail = () => { if (keyedRef.current) pttStopRef.current(); };
+    const onVis = () => { if (document.visibilityState === 'hidden') bail(); };
+    window.addEventListener('blur', bail);
+    window.addEventListener('pagehide', bail);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('blur', bail);
+      window.removeEventListener('pagehide', bail);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
+  const retryClip = (item: PendingTx) => { if (item.status !== 'sending') deliverRef.current({ ...item, attempts: 0 }, false); };
+  const discardClip = (item: PendingTx) => {
+    void outboxDelete(item.localId);
+    setPending((prev) => prev.filter((x) => x.localId !== item.localId));
   };
-  useEffect(() => () => { if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop(); }, []);
+
+  useEffect(() => () => {
+    if (totRef.current) clearTimeout(totRef.current);
+    if (txTickRef.current) clearInterval(txTickRef.current);
+    if (warmIdleRef.current) clearTimeout(warmIdleRef.current);
+    const rec = recRef.current;
+    if (rec && rec.state !== 'inactive') { try { rec.stop(); } catch { /* gone */ } }
+    const s = warmStreamRef.current;
+    if (s) s.getTracks().forEach((tr) => { try { tr.stop(); } catch { /* gone */ } });
+  }, []);
+
+  /* ── Live full-duplex capability probe — honesty, not a feature ───────
+   * /api/radio/stream-token's GET is a capability probe that mints nothing.
+   * The console renders ONE quiet line from it and builds no LiveKit UI: the
+   * transport here is push-to-talk clips until credentials exist. */
+  const [streamProbe, setStreamProbe] = useState<{ available: boolean; reason?: string } | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    fetch('/api/radio/stream-token')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!alive) return;
+        setStreamProbe(j && typeof j.available === 'boolean'
+          ? { available: !!j.available, reason: j.reason }
+          : { available: false, reason: 'unknown' });
+      })
+      .catch(() => { if (alive) setStreamProbe({ available: false, reason: 'unknown' }); });
+    return () => { alive = false; };
+  }, [ready]);
+  const streamStatus = !streamProbe
+    ? 'Live full-duplex: checking…'
+    : streamProbe.available
+      ? 'Live full-duplex is licensed for this workspace but is not wired into this console — traffic still goes out as push-to-talk clips.'
+      : streamProbe.reason === 'upsell'
+        ? 'Live full-duplex streaming is a paid add-on and is not on for this workspace. Push-to-talk clips are the transport.'
+        : streamProbe.reason === 'not_configured'
+          ? 'Live full-duplex is not configured — it needs LiveKit credentials. Push-to-talk clips are the transport.'
+          : 'Live full-duplex: the capability probe did not answer. Push-to-talk clips are the transport either way.';
 
   /* ── Hold-SPACEBAR PTT (dispatcher muscle memory) ───────────────────── */
   /* Keydown keys up, keyup transmits. Ignored while typing in any field. */
   const [spaceKeyed, setSpaceKeyed] = useState(false);
   const spaceDownRef = useRef(false);
   const pttStartRef = useRef<() => void>(() => {});
-  const pttStopRef = useRef<() => void>(() => {});
   pttStartRef.current = () => { void pttStart(); };
-  pttStopRef.current = pttStop;
   useEffect(() => {
     const isTyping = (t: EventTarget | null) => {
       const el = t as HTMLElement | null;
@@ -1432,7 +1873,7 @@ export default function RadioDispatchPage() {
   };
   tapPlayerRef.current = tapPlayer;
 
-  const meterMode: 'idle' | 'rx' | 'tx' = recording || keying ? 'tx' : playingId ? 'rx' : 'idle';
+  const meterMode: 'idle' | 'rx' | 'tx' = micOpen || keyed ? 'tx' : playingId ? 'rx' : 'idle';
   const playingIdRef = useRef<string | null>(null);
   playingIdRef.current = playingId;
   useEffect(() => {
@@ -1512,7 +1953,6 @@ export default function RadioDispatchPage() {
   /* Header popover: list + revoke the channel's live links, mint new ones
    * (label, talk toggle, expiry), copy the absolute guest URL one-click. */
   const [shareOpen, setShareOpen] = useState(false);
-  const shareRef = useRef<HTMLDivElement | null>(null);
   const [shareLabel, setShareLabel] = useState('');
   const [shareTalk, setShareTalk] = useState(true);
   const [shareDays, setShareDays] = useState<'7' | '30' | '90' | 'never'>('30');
@@ -1535,14 +1975,6 @@ export default function RadioDispatchPage() {
     setShareError(null);
   }, []);
   useEffect(() => { closeShare(); setShareLabel(''); }, [activeId, closeShare]);
-  useEffect(() => {
-    if (!shareOpen) return;
-    const onDown = (e: PointerEvent) => {
-      if (shareRef.current && !shareRef.current.contains(e.target as Node)) closeShare();
-    };
-    window.addEventListener('pointerdown', onDown);
-    return () => window.removeEventListener('pointerdown', onDown);
-  }, [shareOpen, closeShare]);
 
   const guestAbsUrl = (token: string) => `${window.location.origin}/portals/radio/${token}`;
   const copyShare = async (key: string, text: string) => {
@@ -1606,38 +2038,26 @@ export default function RadioDispatchPage() {
     setRevokingId(null);
   };
 
-  /* ── Toasts — honest, transient result reporting (kit-styled, no library) */
-  const [toasts, setToasts] = useState<{ id: number; text: string; tone: 'ok' | 'err' }[]>([]);
-  const toastSeqRef = useRef(1);
-  const pushToast = useCallback((text: string, tone: 'ok' | 'err') => {
-    const id = toastSeqRef.current++;
-    setToasts((prev) => [...prev.slice(-3), { id, text, tone }]);
-    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 5200);
-  }, []);
-
-  /* ── Toolbar panels — one open at a time so the header reads as one kit ─ */
+  /* ── Dialog surfaces — every secondary panel is a real dialog with exactly
+   * ONE scroll region of its own. No popover-inside-popover, no 150px
+   * portholes nested inside a page that also scrolls. */
   const [patchOpen, setPatchOpen] = useState(false);
   const [bcOpen, setBcOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const patchBcRef = useRef<HTMLDivElement | null>(null);
-  const openPanel = useCallback((which: 'share' | 'roster' | 'patch' | 'broadcast' | 'menu' | null) => {
-    setShareOpen(which === 'share');
-    if (which !== 'share') { setCreatedUrl(null); setShareError(null); }
-    setRosterOpen(which === 'roster');
-    setPatchOpen(which === 'patch');
-    setBcOpen(which === 'broadcast');
-    setMenuOpen(which === 'menu');
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const closeAllDialogs = useCallback(() => {
+    setShareOpen(false); setCreatedUrl(null); setShareError(null);
+    setPatchOpen(false); setBcOpen(false); setMenuOpen(false);
   }, []);
   useEffect(() => {
-    if (!patchOpen && !bcOpen && !menuOpen) return;
+    if (!menuOpen) return;
     const onDown = (e: PointerEvent) => {
-      if (patchBcRef.current?.contains(e.target as Node)) return;
-      if (shareRef.current?.contains(e.target as Node)) return; // overflow menu shares this wrapper
-      setPatchOpen(false); setBcOpen(false); setMenuOpen(false);
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setMenuOpen(false);
     };
     window.addEventListener('pointerdown', onDown);
     return () => window.removeEventListener('pointerdown', onDown);
-  }, [patchOpen, bcOpen, menuOpen]);
+  }, [menuOpen]);
 
   /* ── Broadcast — one message onto up to 8 channels at once ───────────── */
   const [bcSel, setBcSel] = useState<Set<string>>(new Set());
@@ -1811,7 +2231,18 @@ export default function RadioDispatchPage() {
     setLockBusy(false);
   };
 
-  /* ── Rail grouping — projects first, then Organization, Direct last ──── */
+  /* ── Channel selector state — the ONE way you pick a channel ────────── */
+  const [chanOpen, setChanOpen] = useState(false);
+  const [chanQuery, setChanQuery] = useState('');
+  const chanRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { if (!chanOpen) setChanQuery(''); }, [chanOpen]);
+  const tuneTo = useCallback((id: string) => {
+    setActiveId(id);
+    setChanOpen(false);
+    setChanQuery('');
+  }, []);
+
+  /* ── Channel grouping — projects first, then Organization, Direct last ─ */
   const railGroups = useMemo(() => {
     const order: string[] = [];
     const map = new Map<string, { key: string; label: string; rows: RadioChannel[] }>();
@@ -1827,6 +2258,26 @@ export default function RadioDispatchPage() {
       .sort((a, b) => rank(a.k) - rank(b.k) || a.i - b.i)
       .map(({ k }) => map.get(k)!);
   }, [channels]);
+  /* Search filter over those groups — empty groups drop out entirely. */
+  const chanGroups = useMemo(() => {
+    const q = chanQuery.trim().toLowerCase();
+    if (!q) return railGroups;
+    return railGroups
+      .map((g) => ({
+        ...g,
+        rows: g.rows.filter((c) =>
+          c.name.toLowerCase().includes(q) ||
+          String(c.project_name || '').toLowerCase().includes(q) ||
+          String(channelNoRef.current.get(c.id) || '').toLowerCase().includes(q)),
+      }))
+      .filter((g) => g.rows.length > 0);
+  }, [railGroups, chanQuery]);
+  /* Unread waiting on every channel EXCEPT the one you are tuned to — the
+   * badge on the selector, so a closed dropdown never hides live traffic. */
+  const unreadElsewhere = useMemo(
+    () => channels.reduce((n, c) => (c.id === activeId ? n : n + (Number(c.unread) || 0)), 0),
+    [channels, activeId],
+  );
   const projectOptions = useMemo(() => {
     const seen = new Map<string, string>();
     for (const c of channels) if (c.project_id && !seen.has(c.project_id)) seen.set(c.project_id, c.project_name || 'Project');
@@ -2022,7 +2473,51 @@ export default function RadioDispatchPage() {
 
   const firstLoad = !chData && !chError;
   const playingMsg = playingId ? messages.find((m) => m.id === playingId) || null : null;
-  const onAir = recording || keying || !!playingId;
+  const onAir = micOpen || keyed || !!playingId;
+
+  /* ── The zero-listener truth ─────────────────────────────────────────
+   * The single most dishonest thing a radio can do is let you transmit into
+   * an empty channel while the screen reads "1 member". The deck says it out
+   * loud, on the sending console, before the key goes down. */
+  const otherMembers = active ? Math.max(0, (Number(active.members) || 0) - 1) : 0;
+  const activeLive = active && typeof active.onChannel === 'number' && active.onChannel > 0 ? active.onChannel : 0;
+  const listenerTruth: { tone: 'none' | 'idle' | 'live'; text: string } | null = !active
+    ? null
+    : otherMembers === 0
+      ? { tone: 'none', text: 'Nobody else is on this channel — a transmission has no listeners until you add someone.' }
+      : activeLive <= 1
+        ? { tone: 'idle', text: `Nobody is live on this channel right now — your ${otherMembers === 1 ? 'teammate hears' : `${otherMembers} teammates hear`} it when the radio is next open.` }
+        : { tone: 'live', text: `${activeLive} on channel now of ${otherMembers + 1} on the roster.` };
+
+  /* ── SENT → DELIVERED → HEARD BY, on the SENDING console ─────────────
+   * Receipts already ride the feed GET; the sender should never have to hover
+   * a row to learn whether anyone actually heard them. */
+  const pendingHere = useMemo(() => pending.filter((p) => p.channelId === activeId), [pending, activeId]);
+  const myLastVoice = useMemo(() => {
+    if (!myUserId) return null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.kind === 'voice' && m.sender_user_id === myUserId) return m;
+    }
+    return null;
+  }, [messages, myUserId]);
+  const txReceipt = useMemo((): { tone: 'work' | 'ok' | 'warn' | 'bad'; text: string } | null => {
+    const sending = pendingHere.filter((p) => p.status === 'sending').length;
+    const held = pendingHere.filter((p) => p.status !== 'sending').length;
+    if (sending) return { tone: 'work', text: `SENT — delivering ${sending} clip${sending === 1 ? '' : 's'}…` };
+    if (held) return { tone: 'bad', text: `HELD — ${held} clip${held === 1 ? '' : 's'} not delivered. Retry from the row below.` };
+    if (!myLastVoice) return null;
+    const played = (myLastVoice.receipts || []).filter((r) => r && r.action !== 'seen' && (!myUserId || r.user_id !== myUserId));
+    const present = Array.isArray(myLastVoice.present_at_send)
+      ? myLastVoice.present_at_send.filter((p) => p && (!myUserId || p.user_id !== myUserId)).length
+      : 0;
+    const stamp = `DELIVERED ${timeOf(myLastVoice.created_at)}`;
+    if (played.length > 0) {
+      return { tone: 'ok', text: `${stamp} · HEARD BY ${played.length}${present ? ` of ${present} on channel` : ''} — ${played.map((r) => r.display_name || 'Member').join(', ')}` };
+    }
+    if (present > 0) return { tone: 'warn', text: `${stamp} · ${present} on channel, nobody has played it yet` };
+    return { tone: 'warn', text: `${stamp} · nobody was on the channel to hear it` };
+  }, [pendingHere, myLastVoice, myUserId]);
 
   /* ── Standby (radio-face panel when the feed is quiet) ──────────────── */
   /* Most recent traffic anywhere on the band — the rail data already has it. */
@@ -2036,8 +2531,11 @@ export default function RadioDispatchPage() {
     return best;
   }, [channels]);
   /* The feed region never renders as a void: with no channel selected, or a
-   * selected channel showing two or fewer rows, the standby panel fills it. */
-  const standbyOn = !firstLoad && !msgError && (active ? !!msgData && messages.length <= 2 : !chError);
+   * selected channel showing two or fewer rows, the standby panel fills it.
+   * With NO channels at all the zero-state owns the region instead — the two
+   * must never stack. */
+  const standbyOn = !firstLoad && !msgError && channels.length > 0
+    && (active ? !!msgData && messages.length <= 2 : !chError);
 
   /* ── Render helpers ─────────────────────────────────────────────────── */
   const renderTranscript = (m: RadioMessage) => {
@@ -2300,64 +2798,63 @@ export default function RadioDispatchPage() {
     );
   };
 
-  const railRow = (c: RadioChannel) => {
+  /* ── One line in the CHANNEL dropdown ────────────────────────────────
+   * Everything the old rail buried — priority, lock, monitor — is a visible
+   * control at the one icon geometry the console uses everywhere. */
+  const chanRow = (c: RadioChannel) => {
     const isActive = c.id === activeId;
     const mon = isMonitored(c);
     const lm = c.lastMessage;
     const unread = typeof c.unread === 'number' && c.unread > 0 ? c.unread : 0;
     const onCh = typeof c.onChannel === 'number' && c.onChannel > 0 ? c.onChannel : 0;
-    const preview = lm
-      ? lm.kind === 'voice' ? `PTT ${secsLabel(lm.secs)}`
-        : lm.kind === 'panic' ? 'PANIC ALARM'
-        : lm.kind === 'image' ? 'Photo'
-        : (lm.body || '').slice(0, 46)
-      : 'No traffic yet';
+    const preview = lm ? trafficPreview(lm) : 'No traffic yet';
     return (
       <div
         key={c.id}
-        onClick={() => setActiveId(c.id)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') setActiveId(c.id); }}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-          borderRadius: 12, cursor: 'pointer', marginBottom: 4,
-          background: isActive ? 'linear-gradient(180deg, rgba(245,158,11,0.16), rgba(245,158,11,0.06))' : 'transparent',
+          display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px',
+          borderRadius: 11, marginBottom: 3,
+          background: isActive ? 'linear-gradient(180deg, rgba(245,158,11,0.16), rgba(245,158,11,0.05))' : 'transparent',
           border: isActive ? `1px solid ${AMBER_BORDER}` : '1px solid transparent',
         }}
       >
-        <span
-          aria-hidden
+        <button
+          onClick={() => tuneTo(c.id)}
+          title={`Tune to ${c.name}`}
           style={{
-            flexShrink: 0, width: 30, height: 30, borderRadius: 9,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            background: isActive ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.05)',
-            border: isActive ? '1px solid rgba(245,158,11,0.35)' : `1px solid ${BORDER}`,
-            color: isActive ? GOLD_HI : MUTED,
+            display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0,
+            background: 'none', border: 'none', padding: 0, textAlign: 'left',
+            cursor: 'pointer', color: WHITE,
           }}
         >
-          {c.kind === 'direct' ? <ChatCircleText size={14} weight="bold" /> : <Hash size={14} weight="bold" />}
-        </span>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: isActive ? GOLD_HI : WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {c.name}
-            </span>
-            {c.locked && <Lock size={11} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
-            {c.priority && <Star size={11} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
-            {lm?.kind === 'panic' && <Siren size={12} weight="fill" color={RED} style={{ flexShrink: 0 }} />}
-          </div>
-          <div style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>
-            <UsersThree size={11} weight="bold" style={{ verticalAlign: '-1px', marginRight: 4 }} />
-            {c.members}
-            {onCh > 0 && (
-              <span style={{ color: GREEN, fontWeight: 800 }}>
-                {' '}<span aria-hidden style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 999, background: GREEN, verticalAlign: '1px' }} /> {onCh} on
+          <span
+            style={{
+              flexShrink: 0, fontSize: 10, fontWeight: 900, letterSpacing: '0.06em',
+              fontVariantNumeric: 'tabular-nums', color: isActive ? GOLD_HI : FAINT,
+              border: `1px solid ${isActive ? AMBER_BORDER : BORDER}`, borderRadius: 7, padding: '4px 7px',
+            }}
+          >
+            {channelNo.get(c.id) || 'CH'}
+          </span>
+          <span style={{ minWidth: 0, flex: 1 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              {c.kind === 'direct'
+                ? <ChatCircleText size={12} weight="bold" color={FAINT} style={{ flexShrink: 0 }} />
+                : <Hash size={12} weight="bold" color={FAINT} style={{ flexShrink: 0 }} />}
+              <span style={{ fontSize: 13, fontWeight: 800, color: isActive ? GOLD_HI : WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {c.name}
               </span>
-            )}
-            {' '}· {preview}
-          </div>
-        </div>
+              {c.locked && <Lock size={11} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
+              {c.priority && <Star size={11} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
+              {lm?.kind === 'panic' && <Siren size={12} weight="fill" color={RED} style={{ flexShrink: 0 }} />}
+            </span>
+            <span style={{ display: 'block', fontSize: 10.5, color: FAINT, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {c.members} on roster
+              {onCh > 0 && <span style={{ color: GREEN, fontWeight: 800 }}>{` · ${onCh} live`}</span>}
+              {` · ${preview}`}
+            </span>
+          </span>
+        </button>
         {unread > 0 && !isActive && (
           <span
             title={`${unread} unread transmission${unread === 1 ? '' : 's'}`}
@@ -2373,47 +2870,28 @@ export default function RadioDispatchPage() {
         )}
         {c.kind !== 'direct' && (
           <button
-            onClick={(e) => { e.stopPropagation(); setLockConfirm(c); }}
+            onClick={() => setLockConfirm(c)}
             title={c.locked ? 'Locked — dispatcher invite only. Click to unlock.' : 'Lock this channel — invite only, invisible to non-members'}
             aria-label={c.locked ? `Unlock ${c.name}` : `Lock ${c.name}`}
-            style={{
-              flexShrink: 0, width: 26, height: 26, borderRadius: 8, padding: 0,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: c.locked ? 'rgba(245,158,11,0.14)' : 'transparent',
-              border: c.locked ? '1px solid rgba(245,158,11,0.40)' : '1px solid transparent',
-              color: c.locked ? GOLD_HI : FAINT, cursor: 'pointer',
-            }}
+            style={miniBtnStyle(!!c.locked)}
           >
             {c.locked ? <Lock size={13} weight="fill" /> : <LockOpen size={13} weight="bold" />}
           </button>
         )}
         <button
-          onClick={(e) => { e.stopPropagation(); togglePriority(c); }}
+          onClick={() => togglePriority(c)}
           disabled={prioBusy === c.id}
           title={c.priority ? 'Priority channel — click to clear' : 'Make this a priority channel (interrupts scanning first)'}
           aria-label={c.priority ? `Clear priority on ${c.name}` : `Make ${c.name} a priority channel`}
-          style={{
-            flexShrink: 0, width: 26, height: 26, borderRadius: 8, padding: 0,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            background: c.priority ? 'rgba(245,158,11,0.14)' : 'transparent',
-            border: c.priority ? '1px solid rgba(245,158,11,0.40)' : '1px solid transparent',
-            color: c.priority ? GOLD_HI : FAINT, cursor: 'pointer',
-            opacity: prioBusy === c.id ? 0.5 : 1,
-          }}
+          style={{ ...miniBtnStyle(!!c.priority), opacity: prioBusy === c.id ? 0.5 : 1 }}
         >
           <Star size={13} weight={c.priority ? 'fill' : 'bold'} />
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); toggleMonitor(c); }}
+          onClick={() => toggleMonitor(c)}
           title={mon ? 'Monitoring — click to mute on this board' : 'Muted on this board — click to monitor'}
           aria-label={mon ? `Stop monitoring ${c.name}` : `Monitor ${c.name}`}
-          style={{
-            flexShrink: 0, width: 26, height: 26, borderRadius: 8, padding: 0,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            background: mon ? 'rgba(245,158,11,0.14)' : 'rgba(255,255,255,0.04)',
-            border: mon ? '1px solid rgba(245,158,11,0.40)' : `1px solid ${BORDER}`,
-            color: mon ? GOLD_HI : FAINT, cursor: 'pointer',
-          }}
+          style={miniBtnStyle(mon)}
         >
           {mon ? <Waveform size={13} weight="bold" /> : <WaveformSlash size={13} weight="bold" />}
         </button>
@@ -2421,10 +2899,79 @@ export default function RadioDispatchPage() {
     );
   };
 
-  /* ── Page ───────────────────────────────────────────────────────────── */
-  const activeOn = active && typeof active.onChannel === 'number' && active.onChannel > 0 ? active.onChannel : 0;
+  /* ── Optimistic transmission row ─────────────────────────────────────
+   * A released key paints a row IMMEDIATELY, before the upload resolves, and
+   * that row tells the whole truth: delivering, queued for retry, or held
+   * with the reason and a one-click RETRY. Audio is never lost silently. */
+  const renderPendingRow = (p: PendingTx) => {
+    const working = p.status === 'sending';
+    const held = p.status === 'failed';
+    return (
+      <div
+        key={p.localId}
+        style={{
+          display: 'flex', gap: 12, padding: '12px 14px', borderRadius: 12, marginBottom: 8,
+          background: held ? RED_SOFT : AMBER_SOFT,
+          border: `1px solid ${held ? RED_BORDER : AMBER_BORDER}`,
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            flexShrink: 0, width: 34, height: 34, borderRadius: 10,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            background: held ? RED_SOFT : 'rgba(245,158,11,0.12)',
+            border: `1px solid ${held ? RED_BORDER : 'rgba(245,158,11,0.30)'}`,
+            color: held ? RED : GOLD_HI,
+          }}
+        >
+          {held ? <Warning size={16} weight="fill" /> : <SpeakerHigh size={15} weight="fill" />}
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12.5, fontWeight: 800, color: WHITE }}>You</span>
+            <span style={{ fontSize: 11, color: FAINT, fontVariantNumeric: 'tabular-nums' }}>{p.secs.toFixed(1)}s · {sizeLabel(p.bytes)}</span>
+            <span
+              style={{
+                fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', borderRadius: 999, padding: '1px 8px',
+                color: held ? RED : GOLD_HI, border: `1px solid ${held ? RED_BORDER : AMBER_BORDER}`,
+              }}
+            >
+              {working ? 'SENDING' : held ? 'HELD — NOT DELIVERED' : 'QUEUED — RETRYING'}
+            </span>
+            {working && <EqBars size={12} />}
+            <span style={{ fontSize: 11, color: FAINT, marginLeft: 'auto', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+              {timeOf(new Date(p.createdAt).toISOString())}
+            </span>
+          </div>
+          <div style={{ fontSize: 11.5, color: held ? '#FCA5A5' : MUTED, marginTop: 5, lineHeight: 1.45 }}>
+            {working
+              ? `Delivering to ${p.channelName}…`
+              : held
+                ? `Saved on this device${p.error ? ` — ${p.error}` : ''}. It survives a reload; retry when you have signal.`
+                : `Retrying delivery to ${p.channelName}${p.error ? ` — ${p.error}` : ''}`}
+          </div>
+          {!working && (
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <button onClick={() => retryClip(p)} style={{ ...rowActionStyle, color: GOLD_HI, borderColor: AMBER_BORDER, background: 'rgba(245,158,11,0.14)' }}>
+                <PaperPlaneRight size={11} weight="bold" /> Retry
+              </button>
+              <button onClick={() => discardClip(p)} title="Delete this recording for good" style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT }}>
+                <Trash size={11} weight="bold" /> Discard
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Page ─────────────────────────────────────────────────────────────
+   * Tightened page padding: this screen is a console, not a document. The
+   * hero and the console plate are sized to fit one viewport so the feed
+   * inside the plate stays the only thing that scrolls. */
   return (
-    <PremiumSurface maxWidth={1500}>
+    <PremiumSurface maxWidth={1500} pad="26px 24px 26px">
       <style>{`
         @keyframes sagRadioEq { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
         .sagRadioRow .sagRowActions { opacity: 0; pointer-events: none; transition: opacity .15s ease; }
@@ -2439,8 +2986,22 @@ export default function RadioDispatchPage() {
             box-shadow: none !important;
           }
           #sagRadioLogPrint { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; }
-          .sagRadioLogOverlay { position: static !important; overflow: visible !important; background: none !important; }
+          /* The log dialog is a fixed flex card with its own scroll region —
+           * flatten the whole chain so the record prints in full, not clipped
+           * to one screenful. */
+          .sagRadioLogOverlay,
+          .sagRadioLogOverlay div {
+            position: static !important;
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            background: none !important;
+            box-shadow: none !important;
+          }
+          .sagLogControls { display: none !important; }
         }
+        /* Instrument readouts appear once the header has room for them. */
+        @media (min-width: 1200px) { .sagReadout { display: flex !important; } }
       `}</style>
       <ModuleHero
         eyebrow="Dispatch Console"
@@ -2456,7 +3017,7 @@ export default function RadioDispatchPage() {
           </>
         }
         accent="Radio"
-        subtitle="Live talkgroups across the field — push-to-talk traffic, transcripts in English and Spanish, alerts, and a panic fan-out that reaches every member in seconds."
+        subtitle="Push-to-talk across the field. Key down, talk, release — the clip lands on every member's radio in about a second, with transcripts in English and Spanish, alerts, tones, and a panic fan-out."
         actions={
           <>
             {/* Assistance queue toggle — badge counts the live queue */}
@@ -2486,23 +3047,8 @@ export default function RadioDispatchPage() {
                 </span>
               )}
             </button>
-            {/* EN/ES transcript language toggle */}
-            <div style={{ display: 'inline-flex', borderRadius: 10, overflow: 'hidden', border: FIELD_BORDER }}>
-              {(['en', 'es'] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => pickLang(l)}
-                  style={{
-                    padding: '8px 14px', border: 'none', cursor: 'pointer',
-                    fontSize: 12, fontWeight: 800, letterSpacing: '0.06em',
-                    background: lang === l ? 'linear-gradient(180deg, rgba(245,158,11,0.30), rgba(245,158,11,0.14))' : FIELD_BG,
-                    color: lang === l ? GOLD_HI : MUTED,
-                  }}
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
-            </div>
+            {/* EN/ES lives in the console overflow menu — a transcript
+              * preference does not earn permanent chrome. */}
             {/* PANIC — hold to confirm */}
             <button
               onPointerDown={panicDown}
@@ -2539,1368 +3085,1332 @@ export default function RadioDispatchPage() {
         }
       />
 
-      {/* StatStrip — what the console already knows */}
-      {firstLoad ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 }}>
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={64} borderRadius={14} />)}
-        </div>
-      ) : (
-        <StatStrip
-          items={[
-            { label: 'Talkgroups', value: stats.channels, icon: <Broadcast size={12} weight="bold" /> },
-            { label: 'Members reachable', value: stats.reachable, sub: 'widest talkgroup', icon: <UsersThree size={12} weight="bold" /> },
-            { label: 'Traffic today', value: stats.trafficToday, sub: active ? active.name : undefined, icon: <ChatCircleText size={12} weight="bold" /> },
-            { label: 'Monitoring', value: `${stats.monitored}/${stats.channels}`, accent: stats.monitored > 0 ? GOLD_HI : undefined, icon: <Waveform size={12} weight="bold" /> },
-          ]}
-        />
-      )}
-
-      {/* Site Map — live crew pins + human heatmap (collapsible) */}
-      <SectionCard
-        title="Site Map"
-        subtitle={mapOpen ? 'Live crew positions and a human heatmap of where the work happened.' : undefined}
-        icon={<MapTrifold size={16} weight="bold" color="#F8FAFC" />}
-        action={
-          <button
-            onClick={() => setMapOpen((v) => !v)}
-            aria-expanded={mapOpen}
-            style={{ ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12 }}
-          >
-            <CaretDown
-              size={13}
-              weight="bold"
-              style={{ transform: mapOpen ? 'rotate(180deg)' : 'none', transition: 'transform .18s ease' }}
-            />
-            {mapOpen ? 'Hide map' : 'Show map'}
-          </button>
-        }
-        style={{ marginBottom: 16 }}
-        flush
+      {/* ══════════════════════════════════════════════════════════════════
+        * DISPATCH CONSOLE
+        * One plate, fixed height. Instrument header on top, ONE scrolling
+        * feed in the middle, a fixed transmit deck at the bottom. Channel and
+        * roster are dropdowns, not rails. Every other surface is a dialog.
+        * ═════════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          position: 'relative', display: 'flex', flexDirection: 'column',
+          height: 'min(900px, calc(100vh - 300px))', minHeight: 520,
+          borderRadius: 16, background: 'rgba(16,16,18,0.82)', border: `1px solid ${BORDER}`,
+          boxShadow: '0 24px 48px -32px rgba(245,158,11,0.22), inset 0 1px 0 rgba(255,255,255,0.06)',
+        }}
       >
-        {mapOpen ? (
-          <CrewMap
-            crew={crewData?.crew ?? []}
-            bins={heatData?.bins ?? []}
-            samples={heatData?.samples ?? 0}
-            hours={mapHours}
-            onHoursChange={setMapHours}
-            panics={panicPins}
-            hasProject={!!projectId}
-            projects={projectOptions}
-            onPickProject={(id) => {
-              setProjectId(id);
-              try {
-                const u = new URL(window.location.href);
-                u.searchParams.set('projectId', id);
-                window.history.replaceState(null, '', u.toString());
-              } catch { /* URL sync is cosmetic */ }
-            }}
-            loading={mapLoading}
-          />
-        ) : (
-          <div style={{ padding: '10px 20px 14px', fontSize: 12, color: FAINT }}>
-            Live crew pins over a shift heatmap — positions appear when crews clock in with the Field app.
-          </div>
-        )}
-      </SectionCard>
-
-      {/* ── Assistance queue — collapsible dispatcher triage board ─────── */}
-      {assistShown && (
-        <div style={{ marginBottom: 20 }}>
-          <SectionCard
-            title="Assistance queue"
-            subtitle={assistQueue.length ? `${assistOpenCount} waiting · ${assistQueue.length - assistOpenCount} acknowledged` : undefined}
-            icon={<Lifebuoy size={16} weight="bold" color={assistOpenCount > 0 ? RED : '#F8FAFC'} />}
-            action={
-              <button
-                onClick={() => setAssistShown(false)}
-                aria-label="Collapse the assistance queue"
-                style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}
+        {/* ── Instrument header ──────────────────────────────────────── */}
+        <div
+          style={{
+            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+            padding: '11px 12px', borderBottom: `1px solid ${BORDER}`,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.035), transparent)',
+            borderRadius: '16px 16px 0 0',
+          }}
+        >
+          {/* CHANNEL — the primary act of a CB is one always-visible selector */}
+          <div ref={chanRef} style={{ position: 'relative', flex: '1 1 260px', minWidth: 210, maxWidth: 430 }}>
+            <button
+              onClick={() => { setChanOpen((v) => !v); setRosterOpen(false); setMenuOpen(false); }}
+              aria-expanded={chanOpen}
+              aria-label="Choose channel"
+              title="Choose a channel"
+              disabled={firstLoad}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%', boxSizing: 'border-box',
+                height: TOOL_H, padding: '0 10px', borderRadius: 10, textAlign: 'left',
+                background: chanOpen
+                  ? 'linear-gradient(180deg, rgba(245,158,11,0.26), rgba(245,158,11,0.10))'
+                  : 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025))',
+                border: chanOpen ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
+                color: WHITE, cursor: firstLoad ? 'default' : 'pointer', opacity: firstLoad ? 0.5 : 1,
+              }}
+            >
+              <span
+                style={{
+                  flexShrink: 0, fontSize: 10, fontWeight: 900, letterSpacing: '0.06em',
+                  fontVariantNumeric: 'tabular-nums', color: GOLD_HI,
+                  border: `1px solid ${AMBER_BORDER}`, borderRadius: 7, padding: '3px 7px',
+                }}
               >
-                <CaretUp size={14} weight="bold" />
-              </button>
-            }
-          >
-            {assistQueue.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: FAINT, padding: '2px 2px' }}>
-                Queue is clear — no field requests waiting on dispatch.
+                {active ? (channelNo.get(active.id) || 'CH') : 'CH —'}
+              </span>
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 13, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>
+                  {active ? active.name : firstLoad ? 'Loading channels…' : 'No channel tuned'}
+                </span>
+                <span style={{ display: 'block', fontSize: 10, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>
+                  {active
+                    ? `${active.project_name ? `${active.project_name} · ` : active.kind === 'direct' ? 'Direct · ' : 'Organization · '}${active.members} on roster${active.locked ? ' · locked' : ''}${active.priority ? ' · priority' : ''}`
+                    : 'Pick one to start'}
+                </span>
+              </span>
+              {unreadElsewhere > 0 && (
+                <span
+                  title={`${unreadElsewhere} unread on other channels`}
+                  style={{
+                    flexShrink: 0, minWidth: 20, height: 20, padding: '0 6px', borderRadius: 999,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})`, color: '#241500',
+                    fontSize: 10.5, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {unreadElsewhere > 99 ? '99+' : unreadElsewhere}
+                </span>
+              )}
+              <CaretDown size={13} weight="bold" color={FAINT} style={{ flexShrink: 0, transform: chanOpen ? 'rotate(180deg)' : 'none', transition: 'transform .16s ease' }} />
+            </button>
+
+            <Dropdown open={chanOpen} onClose={() => setChanOpen(false)} anchorRef={chanRef} width={470}>
+              <div style={{ flexShrink: 0, padding: 10, borderBottom: `1px solid ${BORDER}` }}>
+                <div style={{ position: 'relative' }}>
+                  <MagnifyingGlass size={13} weight="bold" color={FAINT} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    value={chanQuery}
+                    onChange={(e) => setChanQuery(e.target.value)}
+                    placeholder="Search channels…"
+                    autoFocus
+                    style={{ ...fieldStyle, padding: '8px 12px 8px 30px' }}
+                  />
+                </div>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {assistQueue.map((a) => {
-                  const acked = a.status === 'acknowledged';
-                  return (
-                    <div
-                      key={a.id}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-                        padding: '10px 12px', borderRadius: 12,
-                        background: acked ? NEST : AMBER_SOFT,
-                        border: `1px solid ${acked ? BORDER : AMBER_BORDER}`,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', borderRadius: 999, padding: '2px 8px',
-                          color: acked ? GREEN : RED,
-                          border: `1px solid ${acked ? GREEN_BORDER : RED_BORDER}`,
-                          background: acked ? GREEN_SOFT : RED_SOFT, whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {acked ? 'ACK' : 'OPEN'}
+              {/* ── the one scroll region of this dropdown ── */}
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 8 }}>
+                {chanGroups.length === 0 && (
+                  <div style={{ fontSize: 12, color: FAINT, padding: '10px 6px' }}>
+                    {chanQuery.trim() ? 'No channel matches that search.' : 'No channels yet — start one below.'}
+                  </div>
+                )}
+                {chanGroups.map((grp) => (
+                  <div key={grp.key} style={{ marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 6px 5px', minWidth: 0 }}>
+                      <span style={{ ...eyebrowStyle, letterSpacing: '0.14em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                        {grp.label}
                       </span>
-                      <div style={{ flex: 1, minWidth: 180 }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: WHITE }}>{senderShort(a.requester_name)}</span>
-                        {a.note && <span style={{ fontSize: 12.5, color: MUTED }}> — {a.note}</span>}
-                        {acked && a.acknowledged_by && (
-                          <div style={{ fontSize: 10.5, color: FAINT, marginTop: 2 }}>
-                            Acknowledged by {senderShort(a.acknowledged_by)}{a.acknowledged_at ? ` · ${timeOf(a.acknowledged_at)}` : ''}
-                          </div>
+                      <span aria-hidden style={{ flex: 1, height: 1, background: BORDER }} />
+                      <span style={{ fontSize: 9.5, fontWeight: 800, color: FAINT, fontVariantNumeric: 'tabular-nums' }}>{grp.rows.length}</span>
+                    </div>
+                    {grp.rows.map(chanRow)}
+                  </div>
+                ))}
+              </div>
+              <div style={{ flexShrink: 0, display: 'flex', gap: 8, padding: 10, borderTop: `1px solid ${BORDER}` }}>
+                <button onClick={() => { setChanOpen(false); setShowNew(true); }} style={{ ...toolBtnStyle(false, true), flex: 1 }}>
+                  <Plus size={13} weight="bold" /> New talkgroup
+                </button>
+                <button onClick={() => { setChanOpen(false); setDirectOpen(true); }} style={{ ...toolBtnStyle(false, true), flex: 1 }}>
+                  <ChatCircleText size={13} weight="bold" /> Direct message
+                </button>
+              </div>
+            </Dropdown>
+          </div>
+
+          {/* ON CHANNEL — the roster, promoted out of a buried popover */}
+          <div ref={rosterRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => { pendingSelfEditRef.current = false; setRosterOpen((v) => !v); setChanOpen(false); setMenuOpen(false); }}
+              disabled={!active}
+              aria-expanded={rosterOpen}
+              title="Who is on this channel — presence, call signs, add and remove members"
+              style={{
+                ...toolBtnStyle(rosterOpen, !!active),
+                borderColor: listenerTruth?.tone === 'none' ? RED_BORDER : undefined,
+                color: rosterOpen ? GOLD_HI : listenerTruth?.tone === 'none' ? '#FCA5A5' : listenerTruth?.tone === 'live' ? GREEN : MUTED,
+              }}
+            >
+              <UsersThree size={13} weight="bold" />
+              {!active ? 'On channel'
+                : otherMembers === 0 ? 'Nobody else'
+                  : activeLive > 1 ? `${activeLive} live · ${otherMembers + 1}`
+                    : `${otherMembers + 1} on roster`}
+              <CaretDown size={11} weight="bold" style={{ transform: rosterOpen ? 'rotate(180deg)' : 'none', transition: 'transform .16s ease' }} />
+            </button>
+
+            <Dropdown open={rosterOpen && !!active} onClose={() => setRosterOpen(false)} anchorRef={rosterRef} width={380}>
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', borderBottom: `1px solid ${BORDER}` }}>
+                <UsersThree size={14} weight="bold" color={GOLD_HI} />
+                <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>ON CHANNEL</span>
+                <span style={{ fontSize: 11, color: FAINT, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{active?.name}</span>
+                <button onClick={() => setRosterOpen(false)} aria-label="Close the roster" style={closeBtnStyle}><X size={14} weight="bold" /></button>
+              </div>
+              {/* ── the one scroll region of this dropdown ── */}
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 12 }}>
+                {listenerTruth && (
+                  <div
+                    style={{
+                      padding: '8px 10px', borderRadius: 10, marginBottom: 10, fontSize: 11.5, lineHeight: 1.45,
+                      background: listenerTruth.tone === 'none' ? RED_SOFT : listenerTruth.tone === 'idle' ? AMBER_SOFT : GREEN_SOFT,
+                      border: `1px solid ${listenerTruth.tone === 'none' ? RED_BORDER : listenerTruth.tone === 'idle' ? AMBER_BORDER : GREEN_BORDER}`,
+                      color: listenerTruth.tone === 'none' ? '#FCA5A5' : listenerTruth.tone === 'idle' ? GOLD_HI : GREEN,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {listenerTruth.text}
+                  </div>
+                )}
+                <div style={{ marginBottom: 10 }}>
+                  {!rosterAddOpen ? (
+                    <button onClick={() => { setRosterAddOpen(true); setRosterAddQuery(''); }} style={{ ...toolBtnStyle(false, true), width: '100%' }}>
+                      <UserPlus size={13} weight="bold" /> Add member
+                    </button>
+                  ) : (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <input
+                          value={rosterAddQuery}
+                          onChange={(e) => setRosterAddQuery(e.target.value)}
+                          placeholder="Search staff and subs…"
+                          autoFocus
+                          style={{ ...fieldStyle, flex: 1, padding: '7px 10px', fontSize: 12 }}
+                        />
+                        <button onClick={() => setRosterAddOpen(false)} aria-label="Close the member picker" style={closeBtnStyle}><X size={13} weight="bold" /></button>
+                      </div>
+                      {/* Results flow in the panel's own scroll — never a nested porthole */}
+                      <div style={{ marginBottom: 10 }}>
+                        {renderDirectory({
+                          query: rosterAddQuery,
+                          mode: 'pick',
+                          excludeUsers: rosterUserIds,
+                          excludeSubs: rosterSubIds,
+                          busyKey: memberBusy,
+                          onRow: addMember,
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {rosterKey && !rosterData && !rosterError && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={40} borderRadius={10} />)}
+                  </div>
+                )}
+                {rosterError && <div style={{ fontSize: 11.5, color: RED }}>Could not load the roster. Close and reopen to retry.</div>}
+                {rosterData && rosterMembers.length === 0 && (
+                  <div style={{ fontSize: 11.5, color: FAINT }}>No members on this channel yet.</div>
+                )}
+                {rosterMembers.map((mem, idx) => {
+                  const self = !!myUserId && mem.user_id === myUserId;
+                  const pres = mem.presence_status ? PRESENCE[mem.presence_status] || null : null;
+                  const onNow = !!mem.last_seen_at && Date.now() - new Date(mem.last_seen_at).getTime() <= 90_000;
+                  return (
+                    <div key={mem.user_id || idx} style={{ padding: '8px 10px', borderRadius: 10, background: self ? AMBER_SOFT : NEST, border: `1px solid ${self ? AMBER_BORDER : BORDER}`, marginBottom: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span
+                          aria-hidden
+                          title={pres ? pres.label : 'No status set'}
+                          style={{ flexShrink: 0, width: 9, height: 9, borderRadius: 999, background: pres ? pres.color : 'rgba(255,255,255,0.18)', boxShadow: onNow && pres ? `0 0 6px ${pres.color}` : undefined }}
+                        />
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {senderShort(mem.display_name)}{self ? ' (you)' : ''}
+                        </span>
+                        {mem.call_sign && (
+                          <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 900, letterSpacing: '0.08em', color: GOLD_HI, border: `1px solid ${AMBER_BORDER}`, borderRadius: 999, padding: '1px 7px' }}>
+                            {mem.call_sign}
+                          </span>
+                        )}
+                        {!self && !!mem.id && (removeArm === String(mem.id) ? (
+                          <button
+                            onClick={() => removeMember(mem)}
+                            disabled={memberBusy === String(mem.id)}
+                            title="Confirm — remove this member from the channel"
+                            style={{ ...rowActionStyle, flexShrink: 0, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: memberBusy === String(mem.id) ? 0.6 : 1 }}
+                          >
+                            {memberBusy === String(mem.id) ? 'Removing…' : 'Remove?'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setRemoveArm(String(mem.id))}
+                            title={`Remove ${senderShort(mem.display_name)} from this channel`}
+                            aria-label={`Remove ${senderShort(mem.display_name)} from this channel`}
+                            style={closeBtnStyle}
+                          >
+                            <X size={12} weight="bold" />
+                          </button>
+                        ))}
+                        {self && !editingProfile && (
+                          <button
+                            onClick={() => startEditProfile(mem)}
+                            title="Edit your call sign and status"
+                            aria-label="Edit your call sign and status"
+                            style={{ ...closeBtnStyle, color: MUTED }}
+                          >
+                            <PencilSimple size={12} weight="bold" />
+                          </button>
                         )}
                       </div>
-                      <span
-                        title={new Date(a.created_at).toLocaleString()}
-                        style={{ fontSize: 11, color: acked ? FAINT : GOLD_HI, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
-                      >
-                        {ageLabel(a.created_at, assistNow)} ago
-                      </span>
-                      {a.location && typeof a.location.lat === 'number' && (
-                        <a
-                          href={`https://maps.google.com/?q=${a.location.lat},${a.location.lng}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Open the requester's location in Google Maps"
-                          style={{ ...rowActionStyle, textDecoration: 'none' }}
-                        >
-                          <MapPin size={11} weight="fill" /> Location
-                        </a>
+                      <div style={{ fontSize: 10, color: FAINT, marginTop: 3, paddingLeft: 17 }}>
+                        {pres ? pres.label : 'No status'}
+                        {mem.role === 'dispatcher' ? ' · dispatcher' : ''}
+                        {onNow ? ' · on channel now' : mem.last_seen_at ? ` · seen ${timeOf(mem.last_seen_at)}` : ''}
+                      </div>
+                      {self && editingProfile && (
+                        <div style={{ marginTop: 9 }}>
+                          <input
+                            value={callSignDraft}
+                            onChange={(e) => setCallSignDraft(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveProfile(); }}
+                            placeholder="Call sign (e.g. UNIT 7)"
+                            maxLength={24}
+                            style={{ ...fieldStyle, padding: '7px 10px', fontSize: 12, marginBottom: 8 }}
+                          />
+                          {/* Four options is a dropdown, not four chips in a scroller */}
+                          <select
+                            value={statusDraft}
+                            onChange={(e) => setStatusDraft(e.target.value as 'available' | 'busy' | 'on_route' | 'off')}
+                            aria-label="Your presence status"
+                            style={{ ...fieldStyle, padding: '7px 10px', fontSize: 12, marginBottom: 9 }}
+                          >
+                            {(['available', 'busy', 'on_route', 'off'] as const).map((s) => (
+                              <option key={s} value={s}>{PRESENCE[s].label}</option>
+                            ))}
+                          </select>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <button onClick={saveProfile} disabled={savingProfile} className="pmBtn" style={{ ...goldButtonStyle, padding: '7px 12px', fontSize: 11.5, opacity: savingProfile ? 0.6 : 1 }}>
+                              {savingProfile ? 'Saving…' : 'Save'}
+                            </button>
+                            <button onClick={() => setEditingProfile(false)} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      {!acked && (
-                        <button
-                          onClick={() => triageAssist(a.id, 'ack')}
-                          disabled={assistBusy === a.id}
-                          title="Acknowledge — tells the requester dispatch is on it"
-                          style={{ ...rowActionStyle, color: GOLD_HI, borderColor: AMBER_BORDER, background: 'rgba(245,158,11,0.14)', opacity: assistBusy === a.id ? 0.6 : 1 }}
-                        >
-                          <Check size={11} weight="bold" /> Ack
-                        </button>
-                      )}
-                      <button
-                        onClick={() => triageAssist(a.id, 'resolve')}
-                        disabled={assistBusy === a.id}
-                        title="Resolve — closes the request and notifies the requester"
-                        style={{ ...rowActionStyle, color: GREEN, borderColor: GREEN_BORDER, background: GREEN_SOFT, opacity: assistBusy === a.id ? 0.6 : 1 }}
-                      >
-                        <Check size={11} weight="bold" /> Resolve
-                      </button>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </SectionCard>
-        </div>
-      )}
+              <div style={{ flexShrink: 0, padding: 10, borderTop: `1px solid ${BORDER}` }}>
+                <button
+                  onClick={() => { pendingSelfEditRef.current = true; if (myRosterRow) startEditProfile(myRosterRow); }}
+                  style={{ ...toolBtnStyle(false, true), width: '100%' }}
+                >
+                  <PencilSimple size={13} weight="bold" /> {myRosterRow?.call_sign ? `Your handle: ${myRosterRow.call_sign}` : 'Set your handle'}
+                </button>
+              </div>
+            </Dropdown>
+          </div>
 
-      {/* Rail + feed */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 300px) 1fr', gap: 16, alignItems: 'start' }}>
-        {/* ── Channel rail + patch board ───────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-        <SectionCard
-          title="Channels"
-          icon={<Broadcast size={16} weight="bold" color="#F8FAFC" />}
-          action={
-            <div style={{ display: 'inline-flex', gap: 8 }}>
-              <button
-                onClick={() => setDirectOpen(true)}
-                title="Message someone — a private 1:1 channel"
-                style={toolBtnStyle(directOpen, true)}
-              >
-                <ChatCircleText size={13} weight="bold" /> Direct
-              </button>
-              <button
-                onClick={() => setShowNew(true)}
-                title="Create a talkgroup — name, project, and members"
-                style={toolBtnStyle(showNew, true)}
-              >
-                <Plus size={13} weight="bold" /> New group
-              </button>
-            </div>
-          }
-          flush
-        >
-          <div style={{ padding: 10 }}>
-            {firstLoad && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 4 }}>
-                {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={44} borderRadius={12} />)}
-              </div>
+          <span style={{ flex: 1 }} />
+
+          {/* Instrument readouts — what the console already knows, inline */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, paddingRight: 2 }}>
+            {rtLive && (
+              <span title="Live — transmissions arrive instantly over the realtime socket" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9.5, fontWeight: 900, letterSpacing: '0.1em', color: GREEN }}>
+                <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: GREEN, boxShadow: '0 0 8px rgba(69,179,125,0.8)' }} />
+                LIVE
+              </span>
             )}
-            {!firstLoad && chError && !channels.length && (
-              <PremiumEmpty compact tone="error" icon={<Warning size={26} color={RED} weight="fill" />} title="Radio unreachable" description="Could not load your talkgroups. Check your connection and try again." />
-            )}
-            {!firstLoad && !chError && channels.length === 0 && (
-              <PremiumEmpty compact icon={<Broadcast size={26} color={GOLD_HI} weight="fill" />} title="No channels yet" description={projectId ? 'Open a project to auto-create its All Hands talkgroup, or start a custom channel.' : 'Start a custom channel, or open Radio from a project to spin up its All Hands talkgroup.'} />
-            )}
-            {railGroups.map((grp) => (
-              <div key={grp.key} style={{ marginBottom: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px 4px', minWidth: 0 }}>
-                  <span style={{ ...eyebrowStyle, letterSpacing: '0.14em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
-                    {grp.label}
-                  </span>
-                  <span aria-hidden style={{ flex: 1, height: 1, background: BORDER }} />
-                  <span style={{ fontSize: 9.5, fontWeight: 800, color: FAINT, fontVariantNumeric: 'tabular-nums' }}>{grp.rows.length}</span>
-                </div>
-                <div style={{ paddingLeft: 6 }}>{grp.rows.map(railRow)}</div>
-              </div>
+            {[
+              { label: 'TRAFFIC TODAY', value: String(stats.trafficToday) },
+              { label: 'MONITORING', value: `${stats.monitored}/${stats.channels}` },
+            ].map((r) => (
+              <span key={r.label} style={{ display: 'none', flexDirection: 'column', lineHeight: 1.15 }} className="sagReadout">
+                <span style={{ fontSize: 8.5, fontWeight: 900, letterSpacing: '0.12em', color: FAINT }}>{r.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: WHITE, fontVariantNumeric: 'tabular-nums' }}>{r.value}</span>
+              </span>
             ))}
           </div>
-        </SectionCard>
 
-        </div>
-
-        {/* ── Feed ─────────────────────────────────────────────────────── */}
-        <SectionCard
-          title={active ? active.name : 'Channel'}
-          subtitle={active ? `${active.project_name ? `${active.project_name} · ` : ''}${active.members} member${active.members === 1 ? '' : 's'}${activeOn ? ` · ${activeOn} on channel now` : ''}${active.locked ? ' · LOCKED' : ''}${active.priority ? ' · PRIORITY' : ''}${active.allow_subs ? ' · subs allowed' : ''}${active.kind === 'project' ? ' · project talkgroup' : active.kind === 'direct' ? ' · direct channel' : ''}` : undefined}
-          icon={<Hash size={16} weight="bold" color="#F8FAFC" />}
-          action={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              {rtLive && (
-                <span
-                  title="Live — transmissions arrive instantly over the realtime socket"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, order: 0 }}
-                >
-                  <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: GREEN, boxShadow: '0 0 8px rgba(69,179,125,0.8)' }} />
-                  LIVE
-                </span>
-              )}
-              {catchingUp && (
-                <button onClick={stopPlayback} title="Stop the catch-up playback" style={{ ...toolBtnStyle(true, true), order: 1 }}>
-                  <Pause size={13} weight="fill" /> Stop catch-up
-                </button>
-              )}
-              {/* Overflow — tertiary actions behind one machined control */}
-              <div ref={shareRef} style={{ position: 'relative', display: 'inline-flex', order: 4 }}>
-                <button
-                  onClick={() => openPanel(menuOpen || shareOpen ? null : 'menu')}
-                  disabled={!active}
-                  title="More — share channel, recording log, catch me up"
-                  aria-label="More channel actions"
-                  aria-expanded={menuOpen}
-                  style={{ ...toolBtnStyle(menuOpen || shareOpen, !!active), padding: '0 9px' }}
-                >
-                  <DotsThree size={17} weight="bold" />
-                  {unheardVoice.length > 0 && (
-                    <span
-                      title={`${unheardVoice.length} unheard voice clip${unheardVoice.length === 1 ? '' : 's'}`}
-                      style={{
-                        minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})`, color: '#241500',
-                        fontSize: 9.5, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
-                      }}
-                    >
-                      {unheardVoice.length}
-                    </span>
-                  )}
-                </button>
-                {menuOpen && active && (
-                  <div style={{ ...popoverStyle(236), padding: 8 }}>
-                    <button onClick={() => openPanel('share')} style={menuItemStyle(true)}>
-                      <ShareNetwork size={14} weight="bold" color={GOLD_HI} /> Share channel
-                    </button>
-                    <button onClick={() => { openPanel(null); setLogOpen(true); }} style={menuItemStyle(true)}>
-                      <ClockCounterClockwise size={14} weight="bold" color={GOLD_HI} /> Recording log
-                    </button>
-                    <button
-                      onClick={() => { if (unheardVoice.length) { openPanel(null); startCatchUp(); } }}
-                      disabled={unheardVoice.length === 0}
-                      title="Play every unheard voice clip in order, oldest first"
-                      style={menuItemStyle(unheardVoice.length > 0)}
-                    >
-                      <FastForward size={14} weight="fill" color={unheardVoice.length ? GOLD_HI : FAINT} />
-                      Catch me up{unheardVoice.length ? ` (${unheardVoice.length})` : ''}
-                    </button>
-                  </div>
-                )}
-                {shareOpen && active && (
-                  <div
-                    style={{
-                      position: 'absolute', right: 0, top: 'calc(100% + 10px)', width: 350, zIndex: 50,
-                      background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
-                      borderRadius: 14, boxShadow: '0 22px 48px rgba(12,12,16,0.65)',
-                      padding: 14, textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <ShareNetwork size={14} weight="bold" color={GOLD_HI} />
-                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>GUEST ACCESS</span>
-                      <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>{active.name}</span>
-                      <button onClick={closeShare} aria-label="Close share panel" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                        <X size={14} weight="bold" />
-                      </button>
-                    </div>
-
-                    {createdUrl && (
-                      <div style={{ padding: 10, borderRadius: 10, background: GREEN_SOFT, border: `1px solid ${GREEN_BORDER}`, marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, marginBottom: 5 }}>LINK READY — SEND IT TO YOUR GUEST</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: WHITE, overflowWrap: 'anywhere', lineHeight: 1.4 }}>{createdUrl}</span>
-                          <button
-                            onClick={() => copyShare('created', createdUrl)}
-                            style={{ ...rowActionStyle, flexShrink: 0, color: copiedKey === 'created' ? GREEN : MUTED, borderColor: copiedKey === 'created' ? GREEN_BORDER : BORDER }}
-                          >
-                            {copiedKey === 'created' ? <Check size={11} weight="bold" /> : <Copy size={11} weight="bold" />} {copiedKey === 'created' ? 'Copied' : 'Copy'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    <input
-                      value={shareLabel}
-                      onChange={(e) => setShareLabel(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') createGuestLink(); }}
-                      placeholder="Label (e.g. Inspector Diaz)"
-                      style={{
-                        width: '100%', boxSizing: 'border-box', padding: '8px 11px',
-                        background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10,
-                        color: WHITE, fontSize: 12.5, outline: 'none', marginBottom: 8,
-                      }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: MUTED, cursor: 'pointer', flex: 1, minWidth: 0, whiteSpace: 'nowrap' }}>
-                        <input type="checkbox" checked={shareTalk} onChange={(e) => setShareTalk(e.target.checked)} style={{ accentColor: GOLD }} />
-                        Guest can talk
-                      </label>
-                      <select
-                        value={shareDays}
-                        onChange={(e) => setShareDays(e.target.value as '7' | '30' | '90' | 'never')}
-                        aria-label="Link expiry"
-                        style={{ flexShrink: 0, padding: '6px 8px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 9, color: WHITE, fontSize: 11.5, outline: 'none' }}
-                      >
-                        <option value="7">Expires in 7 days</option>
-                        <option value="30">Expires in 30 days</option>
-                        <option value="90">Expires in 90 days</option>
-                        <option value="never">No expiry</option>
-                      </select>
-                    </div>
-                    <button
-                      onClick={createGuestLink}
-                      disabled={creatingLink}
-                      className="pmBtn"
-                      style={{ ...goldButtonStyle, width: '100%', padding: '9px 14px', fontSize: 12.5, opacity: creatingLink ? 0.6 : 1 }}
-                    >
-                      {creatingLink ? 'Creating…' : 'Create guest link'}
-                    </button>
-                    {shareError && <div style={{ fontSize: 11, color: RED, marginTop: 8 }}>{shareError}</div>}
-
-                    <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: 12, paddingTop: 10 }}>
-                      <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', color: FAINT, marginBottom: 8 }}>ACTIVE LINKS</div>
-                      <div style={{ maxHeight: 190, overflowY: 'auto' }}>
-                        {linksKey && !linkData && !linkError && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} height={34} borderRadius={10} />)}
-                          </div>
-                        )}
-                        {linkError && <div style={{ fontSize: 11.5, color: RED }}>Could not load guest links. Close and reopen to retry.</div>}
-                        {linkData && guestLinks.length === 0 && (
-                          <div style={{ fontSize: 11.5, color: FAINT }}>No guest links yet — create one above.</div>
-                        )}
-                        {guestLinks.map((l) => {
-                          const expired = !!l.expires_at && new Date(l.expires_at).getTime() < Date.now();
-                          return (
-                            <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', borderRadius: 10, background: NEST, border: `1px solid ${BORDER}`, marginBottom: 6 }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {l.label || 'Guest link'}
-                                </div>
-                                <div style={{ fontSize: 10, color: expired ? RED : FAINT, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {l.can_talk === false ? 'Listen-only' : 'Talk + listen'}
-                                  {' · '}
-                                  {expired ? 'EXPIRED' : l.expires_at ? `expires ${new Date(l.expires_at).toLocaleDateString()}` : 'no expiry'}
-                                </div>
-                              </div>
-                              {!expired && (
-                                <button
-                                  onClick={() => copyShare(l.id, guestAbsUrl(l.token))}
-                                  title="Copy the guest link"
-                                  style={{ ...rowActionStyle, color: copiedKey === l.id ? GREEN : MUTED, borderColor: copiedKey === l.id ? GREEN_BORDER : BORDER }}
-                                >
-                                  {copiedKey === l.id ? <Check size={11} weight="bold" /> : <Copy size={11} weight="bold" />} {copiedKey === l.id ? 'Copied' : 'Copy'}
-                                </button>
-                              )}
-                              <button
-                                onClick={() => revokeGuestLink(l.id)}
-                                disabled={revokingId === l.id}
-                                title="Revoke this link — the guest loses access immediately"
-                                style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: revokingId === l.id ? 0.6 : 1 }}
-                              >
-                                <Trash size={11} weight="bold" /> {revokingId === l.id ? 'Revoking…' : 'Revoke'}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* People group — [Roster · Set handle] fused segments */}
-              <div ref={rosterRef} style={{ position: 'relative', display: 'inline-flex', order: 2 }}>
-                <div style={toolGroupStyle}>
-                  <button
-                    onClick={() => { pendingSelfEditRef.current = false; openPanel(rosterOpen ? null : 'roster'); }}
-                    disabled={!active}
-                    title="Channel roster — presence, call signs, add and remove members"
-                    aria-expanded={rosterOpen}
-                    style={toolSegStyle(rosterOpen, !!active, false)}
-                  >
-                    <UsersThree size={13} weight="bold" /> Roster
-                  </button>
-                  <button
-                    onClick={() => { pendingSelfEditRef.current = true; openPanel('roster'); }}
-                    disabled={!active}
-                    title="Set your handle (call sign)"
-                    style={toolSegStyle(false, !!active, true)}
-                  >
-                    <PencilSimple size={13} weight="bold" /> {myRosterRow?.call_sign ? `Handle: ${myRosterRow.call_sign}` : 'Set handle'}
-                  </button>
-                </div>
-                {rosterOpen && active && (
-                  <div
-                    style={{
-                      position: 'absolute', right: 0, top: 'calc(100% + 10px)', width: 330, zIndex: 50,
-                      background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
-                      borderRadius: 14, boxShadow: '0 22px 48px rgba(12,12,16,0.65)',
-                      padding: 14, textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <UsersThree size={14} weight="bold" color={GOLD_HI} />
-                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>ROSTER</span>
-                      <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>{active.name}</span>
-                      <button onClick={() => setRosterOpen(false)} aria-label="Close the roster" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                        <X size={14} weight="bold" />
-                      </button>
-                    </div>
-                    {/* Add member — mini directory picker (staff + subs) */}
-                    <div style={{ marginBottom: 10 }}>
-                      {!rosterAddOpen ? (
-                        <button
-                          onClick={() => { setRosterAddOpen(true); setRosterAddQuery(''); }}
-                          style={{ ...toolBtnStyle(false, true), width: '100%' }}
-                        >
-                          <UserPlus size={13} weight="bold" /> Add member
-                        </button>
-                      ) : (
-                        <div style={{ padding: 8, borderRadius: 10, background: NEST, border: `1px solid ${BORDER}` }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                            <input
-                              value={rosterAddQuery}
-                              onChange={(e) => setRosterAddQuery(e.target.value)}
-                              placeholder="Search staff and subs…"
-                              autoFocus
-                              style={{ ...fieldStyle, flex: 1, padding: '7px 10px', fontSize: 12 }}
-                            />
-                            <button onClick={() => setRosterAddOpen(false)} aria-label="Close the member picker" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex', flexShrink: 0 }}>
-                              <X size={13} weight="bold" />
-                            </button>
-                          </div>
-                          <div style={{ maxHeight: 150, overflowY: 'auto' }}>
-                            {renderDirectory({
-                              query: rosterAddQuery,
-                              mode: 'pick',
-                              excludeUsers: rosterUserIds,
-                              excludeSubs: rosterSubIds,
-                              busyKey: memberBusy,
-                              onRow: addMember,
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ maxHeight: 290, overflowY: 'auto' }}>
-                      {rosterKey && !rosterData && !rosterError && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={40} borderRadius={10} />)}
-                        </div>
-                      )}
-                      {rosterError && <div style={{ fontSize: 11.5, color: RED }}>Could not load the roster. Close and reopen to retry.</div>}
-                      {rosterData && rosterMembers.length === 0 && (
-                        <div style={{ fontSize: 11.5, color: FAINT }}>No members on this channel yet.</div>
-                      )}
-                      {rosterMembers.map((mem, idx) => {
-                        const self = !!myUserId && mem.user_id === myUserId;
-                        const pres = mem.presence_status ? PRESENCE[mem.presence_status] || null : null;
-                        const onNow = !!mem.last_seen_at && Date.now() - new Date(mem.last_seen_at).getTime() <= 90_000;
-                        return (
-                          <div key={mem.user_id || idx} style={{ padding: '7px 9px', borderRadius: 10, background: self ? AMBER_SOFT : NEST, border: `1px solid ${self ? AMBER_BORDER : BORDER}`, marginBottom: 6 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span
-                                aria-hidden
-                                title={pres ? pres.label : 'No status set'}
-                                style={{ flexShrink: 0, width: 9, height: 9, borderRadius: 999, background: pres ? pres.color : 'rgba(255,255,255,0.18)', boxShadow: onNow && pres ? `0 0 6px ${pres.color}` : undefined }}
-                              />
-                              <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {senderShort(mem.display_name)}{self ? ' (you)' : ''}
-                              </span>
-                              {mem.call_sign && (
-                                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 900, letterSpacing: '0.08em', color: GOLD_HI, border: `1px solid ${AMBER_BORDER}`, borderRadius: 999, padding: '1px 7px' }}>
-                                  {mem.call_sign}
-                                </span>
-                              )}
-                              {!self && !!mem.id && (removeArm === String(mem.id) ? (
-                                <button
-                                  onClick={() => removeMember(mem)}
-                                  disabled={memberBusy === String(mem.id)}
-                                  title="Confirm — remove this member from the channel"
-                                  style={{ ...rowActionStyle, flexShrink: 0, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: memberBusy === String(mem.id) ? 0.6 : 1 }}
-                                >
-                                  {memberBusy === String(mem.id) ? 'Removing…' : 'Remove?'}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setRemoveArm(String(mem.id))}
-                                  title={`Remove ${senderShort(mem.display_name)} from this channel`}
-                                  aria-label={`Remove ${senderShort(mem.display_name)} from this channel`}
-                                  style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex', flexShrink: 0 }}
-                                >
-                                  <X size={12} weight="bold" />
-                                </button>
-                              ))}
-                              {self && !editingProfile && (
-                                <button
-                                  onClick={() => startEditProfile(mem)}
-                                  title="Edit your call sign and status"
-                                  aria-label="Edit your call sign and status"
-                                  style={{ background: 'none', border: 'none', color: MUTED, cursor: 'pointer', padding: 2, display: 'inline-flex', flexShrink: 0 }}
-                                >
-                                  <PencilSimple size={12} weight="bold" />
-                                </button>
-                              )}
-                            </div>
-                            <div style={{ fontSize: 10, color: FAINT, marginTop: 2, paddingLeft: 17 }}>
-                              {pres ? pres.label : 'No status'}
-                              {mem.role === 'dispatcher' ? ' · dispatcher' : ''}
-                              {onNow ? ' · on channel now' : mem.last_seen_at ? ` · seen ${timeOf(mem.last_seen_at)}` : ''}
-                            </div>
-                            {self && editingProfile && (
-                              <div style={{ marginTop: 8 }}>
-                                <input
-                                  value={callSignDraft}
-                                  onChange={(e) => setCallSignDraft(e.target.value)}
-                                  onKeyDown={(e) => { if (e.key === 'Enter') saveProfile(); }}
-                                  placeholder="Call sign (e.g. UNIT 7)"
-                                  maxLength={24}
-                                  style={{ width: '100%', boxSizing: 'border-box', padding: '7px 10px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 9, color: WHITE, fontSize: 12, outline: 'none', marginBottom: 7 }}
-                                />
-                                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
-                                  {(['available', 'busy', 'on_route', 'off'] as const).map((s) => (
-                                    <button
-                                      key={s}
-                                      onClick={() => setStatusDraft(s)}
-                                      style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 999, cursor: 'pointer',
-                                        background: statusDraft === s ? AMBER_SOFT : FIELD_BG,
-                                        border: statusDraft === s ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
-                                        color: statusDraft === s ? GOLD_HI : MUTED, fontSize: 10.5, fontWeight: 800,
-                                      }}
-                                    >
-                                      <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: PRESENCE[s].color }} />
-                                      {PRESENCE[s].label}
-                                    </button>
-                                  ))}
-                                </div>
-                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                  <button
-                                    onClick={saveProfile}
-                                    disabled={savingProfile}
-                                    className="pmBtn"
-                                    style={{ ...goldButtonStyle, padding: '7px 12px', fontSize: 11.5, opacity: savingProfile ? 0.6 : 1 }}
-                                  >
-                                    {savingProfile ? 'Saving…' : 'Save'}
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingProfile(false)}
-                                    style={{ background: 'none', border: 'none', color: FAINT, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* Channel-bridging group — [Patch · Broadcast] fused segments */}
-              <div ref={patchBcRef} style={{ position: 'relative', display: 'inline-flex', order: 3 }}>
-                <div style={toolGroupStyle}>
-                  <button
-                    onClick={() => openPanel(patchOpen ? null : 'patch')}
-                    title="Patch board — bridge two talkgroups until released"
-                    aria-expanded={patchOpen}
-                    style={toolSegStyle(patchOpen || patches.length > 0, true, false)}
-                  >
-                    <PlugsConnected size={13} weight="bold" /> Patch{patches.length ? ` (${patches.length})` : ''}
-                  </button>
-                  <button
-                    onClick={() => openPanel(bcOpen ? null : 'broadcast')}
-                    title="Broadcast — one message onto up to eight channels"
-                    aria-expanded={bcOpen}
-                    style={toolSegStyle(bcOpen, true, true)}
-                  >
-                    <Megaphone size={13} weight="bold" /> Broadcast
-                  </button>
-                </div>
-                {patchOpen && (
-                  <div style={popoverStyle(300)}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <PlugsConnected size={14} weight="bold" color={GOLD_HI} />
-                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>PATCH BOARD</span>
-                      <button onClick={() => setPatchOpen(false)} aria-label="Close the patch board" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                        <X size={14} weight="bold" />
-                      </button>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <select
-                        value={patchA}
-                        onChange={(e) => setPatchA(e.target.value)}
-                        aria-label="First channel to patch"
-                        style={{ ...fieldStyle, padding: '8px 10px', color: patchA ? WHITE : FAINT }}
-                      >
-                        <option value="">First channel…</option>
-                        {channels.filter((c) => c.id !== patchB).map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}{c.project_name ? ` — ${c.project_name}` : ''}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={patchB}
-                        onChange={(e) => setPatchB(e.target.value)}
-                        aria-label="Second channel to patch"
-                        style={{ ...fieldStyle, padding: '8px 10px', color: patchB ? WHITE : FAINT }}
-                      >
-                        <option value="">Second channel…</option>
-                        {channels.filter((c) => c.id !== patchA).map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}{c.project_name ? ` — ${c.project_name}` : ''}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => postPatch(patchA, patchB, false)}
-                        disabled={!patchA || !patchB || patchBusy}
-                        className="pmBtn"
-                        style={{ ...goldButtonStyle, padding: '9px 14px', fontSize: 12.5, opacity: !patchA || !patchB || patchBusy ? 0.55 : 1 }}
-                      >
-                        <PlugsConnected size={13} weight="bold" /> {patchBusy ? 'Working…' : 'Patch channels'}
-                      </button>
-                      {patches.length > 0 ? (
-                        <div style={{ marginTop: 2 }}>
-                          <div style={{ ...eyebrowStyle, marginBottom: 6 }}>ACTIVE PATCHES</div>
-                          {patches.map((p) => (
-                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', borderRadius: 10, background: NEST, border: `1px solid ${AMBER_BORDER}`, marginBottom: 6 }}>
-                              <PlugsConnected size={13} weight="bold" color={GOLD_HI} style={{ flexShrink: 0 }} />
-                              <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {channelName(p.channel_a)} + {channelName(p.channel_b)}
-                              </span>
-                              <button
-                                onClick={() => postPatch(p.channel_a, p.channel_b, true)}
-                                disabled={patchBusy}
-                                title="Release this patch — the channels stop mirroring"
-                                style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: patchBusy ? 0.6 : 1 }}
-                              >
-                                Release
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 11, color: FAINT }}>
-                          Patch two talkgroups and their traffic mirrors both ways until released.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {bcOpen && (
-                  <div style={popoverStyle(340)}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <Megaphone size={14} weight="bold" color={GOLD_HI} />
-                      <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>BROADCAST</span>
-                      <span style={{ fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: bcSel.size ? GOLD_HI : FAINT, border: `1px solid ${bcSel.size ? AMBER_BORDER : BORDER}`, borderRadius: 999, padding: '1px 8px' }}>
-                        {bcSel.size}/8
-                      </span>
-                      <button onClick={() => setBcOpen(false)} aria-label="Close the broadcast composer" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                        <X size={14} weight="bold" />
-                      </button>
-                    </div>
-                    {bcSent && (
-                      <div style={{ padding: '8px 10px', borderRadius: 10, background: GREEN_SOFT, border: `1px solid ${GREEN_BORDER}`, marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, marginBottom: 3 }}>
-                          SENT TO {bcSent.length} CHANNEL{bcSent.length === 1 ? '' : 'S'}
-                        </div>
-                        <div style={{ fontSize: 11.5, color: WHITE, lineHeight: 1.5 }}>{bcSent.join(' · ')}</div>
-                      </div>
-                    )}
-                    <div style={{ maxHeight: 176, overflowY: 'auto', marginBottom: 10, border: `1px solid ${BORDER}`, borderRadius: 10, padding: 6 }}>
-                      {channels.map((c) => {
-                        const on = bcSel.has(c.id);
-                        const full = !on && bcSel.size >= 8;
-                        return (
-                          <button
-                            key={c.id}
-                            onClick={() => toggleBcChannel(c.id)}
-                            disabled={full}
-                            title={full ? 'Eight channels max per broadcast' : undefined}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 8, width: '100%', boxSizing: 'border-box',
-                              padding: '5px 7px', borderRadius: 8, marginBottom: 2, textAlign: 'left',
-                              background: on ? AMBER_SOFT : 'transparent',
-                              border: on ? `1px solid ${AMBER_BORDER}` : '1px solid transparent',
-                              color: WHITE, cursor: full ? 'default' : 'pointer', opacity: full ? 0.45 : 1,
-                            }}
-                          >
-                            <span
-                              aria-hidden
-                              style={{
-                                flexShrink: 0, width: 15, height: 15, borderRadius: 5,
-                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                background: on ? `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})` : FIELD_BG,
-                                border: on ? 'none' : FIELD_BORDER, color: '#241500',
-                              }}
-                            >
-                              {on && <Check size={10} weight="bold" />}
-                            </span>
-                            <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
-                            <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 800, color: FAINT, whiteSpace: 'nowrap', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {c.kind === 'direct' ? 'Direct' : c.project_name || (c.project_id ? 'Project' : 'Organization')}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <input
-                      value={bcText}
-                      onChange={(e) => setBcText(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') sendBroadcast(); }}
-                      placeholder="One message for every selected channel"
-                      style={{ ...fieldStyle, marginBottom: 8 }}
-                    />
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5, color: MUTED, cursor: 'pointer', marginBottom: 10 }}>
-                      <input type="checkbox" checked={bcAlert} onChange={(e) => setBcAlert(e.target.checked)} style={{ accentColor: GOLD }} />
-                      Send as high-visibility alert
-                    </label>
-                    <button
-                      onClick={sendBroadcast}
-                      disabled={bcSel.size < 2 || !bcText.trim() || bcBusy}
-                      className="pmBtn"
-                      style={{ ...goldButtonStyle, width: '100%', padding: '9px 14px', fontSize: 12.5, opacity: bcSel.size < 2 || !bcText.trim() || bcBusy ? 0.55 : 1 }}
-                    >
-                      <Megaphone size={13} weight="bold" /> {bcBusy ? 'Sending…' : bcSel.size >= 2 ? `Send to ${bcSel.size} channels` : 'Send broadcast'}
-                    </button>
-                    <div style={{ fontSize: 10.5, color: FAINT, marginTop: 8 }}>
-                      Pick two to eight channels — the message lands on all of them at once.
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          }
-          flush
-        >
-          <div
-            onDragEnter={onFeedDragEnter}
-            onDragOver={onFeedDragOver}
-            onDragLeave={onFeedDragLeave}
-            onDrop={onFeedDrop}
-            style={{ display: 'flex', flexDirection: 'column', height: 'min(680px, calc(100vh - 330px))', minHeight: 440, position: 'relative' }}
-          >
-            {/* Drag-drop target — pointer-events none so the drop lands on the container */}
-            {dragOver && (
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute', inset: 8, zIndex: 30, pointerEvents: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  borderRadius: 14, border: `2px dashed ${AMBER_BORDER}`,
-                  background: 'rgba(245,158,11,0.10)',
-                  color: GOLD_HI, fontSize: 13, fontWeight: 800,
-                }}
-              >
-                <Paperclip size={18} weight="bold" /> Drop to share on {active?.name || 'this channel'}
-              </div>
-            )}
-            {/* Feed header — analog S/RF meter beside NOW TRANSMITTING / NOW PLAYING */}
-            <div
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px',
-                background: onAir
-                  ? 'linear-gradient(90deg, rgba(245,158,11,0.24), rgba(245,158,11,0.07))'
-                  : 'rgba(255,255,255,0.02)',
-                borderBottom: `1px solid ${onAir ? AMBER_BORDER : BORDER}`,
-              }}
+          {/* Channel-bridging group — [Patch · Broadcast], one geometry */}
+          <div style={toolGroupStyle}>
+            <button
+              onClick={() => { closeAllDialogs(); setPatchOpen(true); }}
+              title="Patch board — bridge two talkgroups until released"
+              style={toolSegStyle(patches.length > 0, true, false)}
             >
-              <SMeter mode={meterMode} level={meterLevel} width={116} />
-              {onAir ? (
-                <>
-                  <EqBars color={recording ? RED : GOLD_HI} size={15} />
-                  <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.14em', color: recording ? RED : GOLD_HI, whiteSpace: 'nowrap' }}>
-                    {recording ? 'NOW TRANSMITTING' : 'NOW PLAYING'}
-                  </span>
-                  <span style={{ fontSize: 12, color: MUTED, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
-                    {recording
-                      ? `You are keyed up on ${active?.name || 'this channel'} — release to send`
-                      : `${senderShort(playingMsg?.sender_name ?? null)}${catchingUp ? ' · catch-up' : ''}${playingMsg?.audio_duration_secs ? ` · ${secsLabel(playingMsg.audio_duration_secs)}` : ''}`}
-                  </span>
-                  <span aria-hidden style={{ marginLeft: 'auto', flexShrink: 0 }}>
-                    <EqBars color={recording ? RED : GOLD_HI} size={15} />
-                  </span>
-                </>
-              ) : (
-                <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.14em', color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
-                  {active ? `STANDING BY — ${active.name.toUpperCase()}` : 'STANDING BY'}
-                </span>
-              )}
-            </div>
+              <PlugsConnected size={13} weight="bold" /> Patch{patches.length ? ` (${patches.length})` : ''}
+            </button>
+            <button
+              onClick={() => { closeAllDialogs(); setBcOpen(true); }}
+              title="Broadcast — one message onto up to eight channels"
+              style={toolSegStyle(false, true, true)}
+            >
+              <Megaphone size={13} weight="bold" /> Broadcast
+            </button>
+          </div>
 
-            {/* Traffic */}
-            <div ref={feedRef} style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 6px', display: 'flex', flexDirection: 'column' }}>
-              {!active && firstLoad && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={58} borderRadius={12} />)}
-                </div>
-              )}
-              {active && !msgData && !msgError && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={58} borderRadius={12} />)}
-                </div>
-              )}
-              {active && msgError && (
-                <PremiumEmpty tone="error" icon={<Warning size={30} color={RED} weight="fill" />} title="Feed unavailable" description="Could not load this channel's traffic. The console retries automatically every few seconds." />
-              )}
-              {messages.map(renderRow)}
-              {/* ── Standby radio face — the feed is never a black void ──── */}
-              {standbyOn && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 300, maxWidth: 640, width: '100%', margin: '0 auto', paddingTop: messages.length ? 14 : 4, paddingBottom: 8 }}>
-                  {/* Lockup */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 14 }}>
-                    <VividGoldChip icon={<Broadcast size={20} weight="fill" />} size={40} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 900, color: WHITE, letterSpacing: '-0.01em' }}>
-                        Saguaro Radio — standing by
-                      </div>
-                      <div style={{ fontSize: 11.5, color: MUTED, marginTop: 1 }}>
-                        {channels.length
-                          ? `Monitoring ${stats.monitored} of ${stats.channels} talkgroup${stats.channels === 1 ? '' : 's'} — traffic appears here the moment anyone keys up.`
-                          : 'No talkgroups yet — create your first channel and the band comes alive.'}
-                      </div>
-                    </div>
-                  </div>
-                  <FrequencyDial seed={activeId || 'saguaro'} />
-                  {/* Last traffic across the band */}
-                  {lastTraffic?.lastMessage && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 12px', marginTop: 12, borderRadius: 10, background: NEST, border: `1px solid ${BORDER}` }}>
-                      <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>LAST TRAFFIC</span>
-                      <span style={{ fontSize: 12, color: WHITE, fontWeight: 700, minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {senderShort(lastTraffic.lastMessage.sender)} — {trafficPreview(lastTraffic.lastMessage)}
-                      </span>
-                      <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                        {lastTraffic.name} · {whenLabel(lastTraffic.lastMessage.at)}
-                      </span>
-                    </div>
-                  )}
-                  {/* Channel guide — everything the rail knows, tappable */}
-                  {channels.length > 0 && (
-                    <div style={{ marginTop: 14 }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-                        <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.14em', color: FAINT }}>CHANNEL GUIDE</span>
-                        <span style={{ fontSize: 10.5, color: FAINT }}>tap a channel to tune in</span>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 }}>
-                        {channels.slice(0, 8).map((c, i) => {
-                          const cur = c.id === activeId;
-                          const unread = typeof c.unread === 'number' && c.unread > 0 ? c.unread : 0;
-                          return (
-                            <button
-                              key={c.id}
-                              onClick={() => setActiveId(c.id)}
-                              title={`Tune to ${c.name}`}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px',
-                                borderRadius: 11, cursor: 'pointer', textAlign: 'left',
-                                background: cur ? 'linear-gradient(180deg, rgba(245,158,11,0.16), rgba(245,158,11,0.06))' : FIELD_BG,
-                                border: cur ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
-                              }}
-                            >
-                              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 900, letterSpacing: '0.08em', color: cur ? GOLD_HI : FAINT, fontVariantNumeric: 'tabular-nums', border: `1px solid ${cur ? AMBER_BORDER : BORDER}`, borderRadius: 7, padding: '3px 6px' }}>
-                                CH {String(i + 1).padStart(2, '0')}
-                              </span>
-                              <span style={{ minWidth: 0, flex: 1 }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                  <span style={{ fontSize: 12.5, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
-                                  {c.priority && <Star size={10} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />}
-                                </span>
-                                <span style={{ display: 'block', fontSize: 10.5, color: FAINT, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {c.members} member{c.members === 1 ? '' : 's'}
-                                  {c.lastMessage?.at ? ` · last ${whenLabel(c.lastMessage.at)}` : ' · no traffic yet'}
-                                </span>
-                              </span>
-                              {unread > 0 && (
-                                <span style={{ flexShrink: 0, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})`, color: '#241500', fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
-                                  {unread > 99 ? '99+' : unread}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {channels.length > 8 && (
-                        <div style={{ fontSize: 10.5, color: FAINT, marginTop: 6 }}>+{channels.length - 8} more in the channel rail</div>
-                      )}
-                    </div>
-                  )}
-                  {/* Quick actions */}
-                  <div style={{ marginTop: 'auto', paddingTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button
-                      onClick={() => { pendingSelfEditRef.current = true; setRosterOpen(true); }}
-                      disabled={!active}
-                      title="Set your handle (call sign)"
-                      style={{ ...goldOutlineButtonStyle, padding: '7px 14px', fontSize: 12, opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default' }}
-                    >
-                      <PencilSimple size={12} weight="bold" /> Set handle
-                    </button>
-                    <button
-                      onClick={() => setShowNew(true)}
-                      title="Start a new talkgroup"
-                      style={{ ...goldOutlineButtonStyle, padding: '7px 14px', fontSize: 12 }}
-                    >
-                      <Plus size={12} weight="bold" /> New group
-                    </button>
-                    <button
-                      onClick={() => setShareOpen(true)}
-                      disabled={!active}
-                      title="Share this channel with a guest — listen or talk, no account needed"
-                      style={{ ...goldOutlineButtonStyle, padding: '7px 14px', fontSize: 12, opacity: active ? 1 : 0.45, cursor: active ? 'pointer' : 'default' }}
-                    >
-                      <ShareNetwork size={12} weight="bold" /> Share channel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Pending attachment — inline caption prompt before it transmits */}
-            {(pendingFile || attachError) && (
-              <div style={{ borderTop: `1px solid ${BORDER}`, padding: '10px 12px', background: NEST }}>
-                {attachError && (
-                  <div style={{ fontSize: 11.5, color: RED, marginBottom: pendingFile ? 8 : 0 }}>{attachError}</div>
-                )}
-                {pendingFile && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 240,
-                        padding: '6px 10px', borderRadius: 10, background: AMBER_SOFT,
-                        border: `1px solid ${AMBER_BORDER}`, color: GOLD_HI, fontSize: 11.5, fontWeight: 800,
-                      }}
-                    >
-                      <Paperclip size={12} weight="bold" style={{ flexShrink: 0 }} />
-                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pendingFile.name}</span>
-                      <span style={{ color: FAINT, fontWeight: 700, flexShrink: 0 }}>{sizeLabel(pendingFile.size)}</span>
-                    </span>
-                    <input
-                      value={mediaCaption}
-                      onChange={(e) => setMediaCaption(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') sendMedia(); }}
-                      placeholder="Add a caption (optional)"
-                      autoFocus
-                      style={{
-                        flex: 1, minWidth: 160, boxSizing: 'border-box', padding: '8px 12px',
-                        background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10,
-                        color: WHITE, fontSize: 12.5, outline: 'none',
-                      }}
-                    />
-                    <button
-                      onClick={sendMedia}
-                      disabled={uploadingMedia}
-                      className="pmBtn"
-                      style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 12.5, opacity: uploadingMedia ? 0.6 : 1 }}
-                    >
-                      {uploadingMedia ? 'Sending…' : 'Send'}
-                    </button>
-                    <button
-                      onClick={clearAttach}
-                      disabled={uploadingMedia}
-                      aria-label="Cancel attachment"
-                      style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Composer */}
-            <div style={{ borderTop: `1px solid ${BORDER}`, padding: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-              {pttSupported && (
-                <button
-                  onPointerEnter={preflightMic}
-                  onPointerDown={pttStart}
-                  onPointerUp={pttStop}
-                  onPointerLeave={pttStop}
-                  onPointerCancel={pttStop}
-                  disabled={!active || uploadingVoice}
-                  title="Hold to talk — release to transmit (or hold SPACE anywhere)"
-                  aria-label="Hold to talk"
+          {/* ONE overflow menu — every tertiary action lives here */}
+          <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => { setMenuOpen((v) => !v); setChanOpen(false); setRosterOpen(false); }}
+              title="More — share, log, map, assist, catch up"
+              aria-label="More console actions"
+              aria-expanded={menuOpen}
+              style={{ ...toolBtnStyle(menuOpen, true), padding: '0 10px' }}
+            >
+              <DotsThree size={17} weight="bold" />
+              {(unheardVoice.length > 0 || assistOpenCount > 0) && (
+                <span
                   style={{
-                    flexShrink: 0, width: 56, height: 42, borderRadius: 12, padding: 0,
-                    display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
-                    cursor: active ? 'pointer' : 'not-allowed',
-                    background: recording
-                      ? `linear-gradient(180deg, ${RED}, #B91C1C)`
-                      : `linear-gradient(180deg, ${GOLD_HI}, ${GOLD} 60%, var(--brand-primary-hover))`,
-                    border: 'none', color: recording ? WHITE : '#241500',
-                    boxShadow: recording ? '0 0 0 4px rgba(239,68,68,0.25)' : '0 4px 14px var(--brand-primary-25)',
-                    userSelect: 'none', touchAction: 'none',
-                    opacity: !active || uploadingVoice ? 0.55 : 1,
+                    minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    background: assistOpenCount > 0 ? RED : `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})`,
+                    color: assistOpenCount > 0 ? WHITE : '#241500',
+                    fontSize: 9.5, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {uploadingVoice ? <Waveform size={17} weight="bold" /> : <Microphone size={17} weight="fill" />}
-                  <span style={{ fontSize: 7.5, fontWeight: 900, letterSpacing: '0.16em', opacity: spaceKeyed || recording ? 1 : 0.65, lineHeight: 1 }}>
-                    SPACE
-                  </span>
-                </button>
+                  {unheardVoice.length + assistOpenCount}
+                </span>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={MEDIA_ACCEPT}
-                style={{ display: 'none' }}
-                onChange={(e) => { const el = e.currentTarget; takeFile(el.files?.[0]); el.value = ''; }}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!active || uploadingMedia}
-                title="Attach a photo, PDF, or video to this channel"
-                aria-label="Attach a file"
-                style={{
-                  flexShrink: 0, width: 42, height: 42, borderRadius: 12, padding: 0,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: pendingFile ? AMBER_SOFT : FIELD_BG,
-                  border: pendingFile ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
-                  color: pendingFile ? GOLD_HI : MUTED, cursor: active ? 'pointer' : 'not-allowed',
-                  opacity: !active || uploadingMedia ? 0.55 : 1,
-                }}
-              >
-                <Paperclip size={16} weight="bold" />
-              </button>
-              <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText('text'); } }}
-                placeholder={recording ? 'Transmitting… release to send' : active ? `Message ${active.name}` : 'Select a channel'}
-                disabled={!active || sending}
-                style={{
-                  flex: 1, minWidth: 0, boxSizing: 'border-box', padding: '11px 14px',
-                  background: FIELD_BG, border: FIELD_BORDER, borderRadius: 12,
-                  color: WHITE, fontSize: 13.5, outline: 'none',
-                }}
-              />
-              {/* Tone signaling — quick ACK / NEG / COME IN beeps */}
-              <span style={{ flexShrink: 0, display: 'inline-flex', gap: 4 }}>
-                {(['ack', 'negative', 'comein'] as const).map((tn) => (
-                  <button
-                    key={tn}
-                    onClick={() => sendTone(tn)}
-                    disabled={!active || toneSending !== null}
-                    title={tn === 'ack' ? 'Send an ACK tone (affirmative)' : tn === 'negative' ? 'Send a NEGATIVE tone (denied / no)' : 'Send a COME IN tone (calling any unit)'}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
-                      background: TONES[tn].soft, border: `1px solid ${TONES[tn].border}`,
-                      color: TONES[tn].color, fontWeight: 900, fontSize: 9.5, letterSpacing: '0.08em',
-                      whiteSpace: 'nowrap',
-                      opacity: !active || toneSending !== null ? 0.5 : 1,
-                    }}
-                  >
-                    {tn === 'ack' ? 'ACK' : tn === 'negative' ? 'NEG' : 'COME IN'}
-                  </button>
-                ))}
-              </span>
-              <button
-                onClick={() => sendText('alert')}
-                disabled={!active || !draft.trim() || sending}
-                title="Broadcast as a high-visibility alert (notifies every member)"
-                style={{
-                  flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
-                  background: AMBER_SOFT, border: `1px solid ${AMBER_BORDER}`,
-                  color: GOLD_HI, fontWeight: 800, fontSize: 12.5,
-                  opacity: !active || !draft.trim() || sending ? 0.5 : 1,
-                }}
-              >
-                <Warning size={14} weight="fill" /> Alert
-              </button>
-              <button
-                onClick={() => sendText('text')}
-                disabled={!active || !draft.trim() || sending}
-                className="pmBtn"
-                aria-label="Send message"
-                style={{ ...goldButtonStyle, padding: '10px 16px', opacity: !active || !draft.trim() || sending ? 0.5 : 1 }}
-              >
-                <PaperPlaneRight size={15} weight="fill" />
-              </button>
-            </div>
+            </button>
+            {menuOpen && (
+              <div style={{ ...popoverStyle(288), padding: 8 }}>
+                <button
+                  onClick={() => { if (unheardVoice.length) { setMenuOpen(false); startCatchUp(); } }}
+                  disabled={unheardVoice.length === 0}
+                  title="Play every unheard voice clip in order, oldest first"
+                  style={menuItemStyle(unheardVoice.length > 0)}
+                >
+                  <FastForward size={14} weight="fill" color={unheardVoice.length ? GOLD_HI : FAINT} />
+                  Catch me up{unheardVoice.length ? ` (${unheardVoice.length})` : ''}
+                </button>
+                <button onClick={() => { setMenuOpen(false); setAssistShown(true); }} style={menuItemStyle(true)}>
+                  <Lifebuoy size={14} weight="bold" color={assistOpenCount > 0 ? RED : GOLD_HI} />
+                  Assistance queue{assistQueue.length ? ` (${assistQueue.length})` : ''}
+                </button>
+                <button onClick={() => { setMenuOpen(false); setShareOpen(true); }} disabled={!active} style={menuItemStyle(!!active)}>
+                  <ShareNetwork size={14} weight="bold" color={active ? GOLD_HI : FAINT} /> Share channel
+                </button>
+                <button onClick={() => { setMenuOpen(false); setLogOpen(true); }} disabled={!active} style={menuItemStyle(!!active)}>
+                  <ClockCounterClockwise size={14} weight="bold" color={active ? GOLD_HI : FAINT} /> Recording log
+                </button>
+                <button onClick={() => { setMenuOpen(false); setMapOpen(true); }} style={menuItemStyle(true)}>
+                  <MapTrifold size={14} weight="bold" color={GOLD_HI} /> Site map
+                </button>
+                <div aria-hidden style={{ height: 1, background: BORDER, margin: '6px 4px' }} />
+                <button onClick={() => { setMenuOpen(false); setShowNew(true); }} style={menuItemStyle(true)}>
+                  <Plus size={14} weight="bold" color={GOLD_HI} /> New talkgroup
+                </button>
+                <button onClick={() => { setMenuOpen(false); setDirectOpen(true); }} style={menuItemStyle(true)}>
+                  <ChatCircleText size={14} weight="bold" color={GOLD_HI} /> Direct message
+                </button>
+                <div aria-hidden style={{ height: 1, background: BORDER, margin: '6px 4px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px 8px' }}>
+                  <span style={{ ...eyebrowStyle, flex: 1 }}>TRANSCRIPTS</span>
+                  <div style={{ display: 'inline-flex', borderRadius: 8, overflow: 'hidden', border: FIELD_BORDER }}>
+                    {(['en', 'es'] as const).map((l) => (
+                      <button
+                        key={l}
+                        onClick={() => pickLang(l)}
+                        style={{
+                          padding: '5px 12px', border: 'none', cursor: 'pointer',
+                          fontSize: 11, fontWeight: 900, letterSpacing: '0.06em',
+                          background: lang === l ? 'linear-gradient(180deg, rgba(245,158,11,0.30), rgba(245,158,11,0.14))' : FIELD_BG,
+                          color: lang === l ? GOLD_HI : MUTED,
+                        }}
+                      >
+                        {l.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ fontSize: 10.5, color: FAINT, lineHeight: 1.45, padding: '6px 10px 2px', borderTop: `1px solid ${BORDER}`, marginTop: 4 }}>
+                  {streamStatus}
+                </div>
+              </div>
+            )}
           </div>
-        </SectionCard>
-      </div>
+        </div>
 
-      {/* ── Recording console — date range + search + print-ready record ─ */}
-      {logOpen && active && (
+        {/* ── Status band — S/RF meter and exactly what is happening ──── */}
         <div
-          className="sagRadioLogOverlay"
-          onPointerDown={(e) => { if (e.target === e.currentTarget) setLogOpen(false); }}
           style={{
-            position: 'fixed', inset: 0, zIndex: 90,
-            background: 'rgba(12,12,16,0.72)',
-            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-            padding: '6vh 16px 16px', overflowY: 'auto',
+            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px',
+            background: micOpen
+              ? 'linear-gradient(90deg, rgba(239,68,68,0.22), rgba(239,68,68,0.05))'
+              : onAir
+                ? 'linear-gradient(90deg, rgba(245,158,11,0.24), rgba(245,158,11,0.07))'
+                : 'rgba(255,255,255,0.02)',
+            borderBottom: `1px solid ${micOpen ? RED_BORDER : onAir ? AMBER_BORDER : BORDER}`,
           }}
         >
-          <div
-            style={{
-              width: 'min(860px, 100%)', borderRadius: 16,
-              background: 'rgba(24,24,27,0.98)', border: `1px solid ${AMBER_BORDER}`,
-              boxShadow: '0 22px 48px rgba(12,12,16,0.65)', padding: 16,
-            }}
-          >
-            {/* Controls — hidden when printing */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-              <ClockCounterClockwise size={16} weight="bold" color={GOLD_HI} />
-              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>CHANNEL LOG</span>
-              <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>{active.name}</span>
-              <button
-                onClick={() => window.print()}
-                title="Print or save this record as a PDF"
-                style={{ ...goldOutlineButtonStyle, padding: '6px 12px', fontSize: 12 }}
-              >
-                <Printer size={12} weight="bold" /> Print / Export
-              </button>
-              <button onClick={() => setLogOpen(false)} aria-label="Close the channel log" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                <X size={15} weight="bold" />
-              </button>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-              <div style={{ width: 150 }}>
-                <SaguaroDatePicker value={logFrom} onChange={setLogFrom} placeholder="From date" />
-              </div>
-              <div style={{ width: 150 }}>
-                <SaguaroDatePicker value={logTo} onChange={setLogTo} placeholder="To date" />
-              </div>
-              <div style={{ flex: 1, minWidth: 180, position: 'relative' }}>
-                <MagnifyingGlass size={13} weight="bold" color={FAINT} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  value={logSearch}
-                  onChange={(e) => setLogSearch(e.target.value)}
-                  placeholder="Search text, transcripts, senders…"
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px 9px 30px', background: FIELD_BG, border: FIELD_BORDER, borderRadius: 10, color: WHITE, fontSize: 12.5, outline: 'none' }}
-                />
-              </div>
-            </div>
-
-            {/* Print target — @media print lifts this to black-on-white */}
-            <div id="sagRadioLogPrint">
-              <div style={{ borderBottom: `1px solid ${BORDER}`, paddingBottom: 8, marginBottom: 8 }}>
-                <div style={{ fontSize: 14, fontWeight: 900, color: WHITE }}>Saguaro Radio — channel record: {active.name}</div>
-                <div style={{ fontSize: 11, color: MUTED, marginTop: 3 }}>
-                  {logFrom || logTo ? `Range ${logFrom || 'start'} to ${logTo || 'now'}` : 'Most recent traffic'}
-                  {logSearch.trim() ? ` · filter \"${logSearch.trim()}\"` : ''}
-                  {` · ${logRows.length} transmission${logRows.length === 1 ? '' : 's'}`}
-                  {` · generated ${new Date().toLocaleString()}`}
-                </div>
-              </div>
-              {logKey && !logData && !logError && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={30} borderRadius={8} />)}
-                </div>
-              )}
-              {logError && <div style={{ fontSize: 12, color: RED }}>Could not load the record. Adjust the range and try again.</div>}
-              {logData && logRows.length === 0 && (
-                <div style={{ fontSize: 12, color: FAINT }}>No transmissions match this range and filter.</div>
-              )}
-              {logRows.map((m) => (
-                <div key={m.id} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '6px 2px', borderBottom: `1px solid ${BORDER}` }}>
-                  <span style={{ flexShrink: 0, width: 148, fontSize: 11, color: MUTED, fontVariantNumeric: 'tabular-nums' }}>
-                    {new Date(m.created_at).toLocaleString()}
-                  </span>
-                  <span style={{ flexShrink: 0, width: 120, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {senderShort(m.sender_name)}
-                  </span>
-                  <span style={{ flexShrink: 0, width: 52, fontSize: 9.5, fontWeight: 900, letterSpacing: '0.08em', color: m.kind === 'panic' ? RED : m.kind === 'alert' ? GOLD_HI : FAINT }}>
-                    {m.kind.toUpperCase()}
-                  </span>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: WHITE, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
-                    {logText(m)}
-                    {m.patched_from ? ` (via ${channelName(m.patched_from)})` : ''}
-                  </span>
-                </div>
-              ))}
-              <div style={{ fontSize: 10, color: FAINT, marginTop: 8 }}>
-                Newest 100 transmissions in range shown, oldest first. End of record.
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* ── Create group — name + project + member picker ────────────────── */}
-      {showNew && (
-        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) closeNewModal(); }}>
-          <div style={modalCardStyle(470)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <Plus size={15} weight="bold" color={GOLD_HI} />
-              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>NEW TALKGROUP</span>
-              <button onClick={closeNewModal} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                <X size={15} weight="bold" />
-              </button>
-            </div>
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Channel name (e.g. Concrete crew)"
-              autoFocus
-              style={{ ...fieldStyle, fontSize: 13, marginBottom: 8 }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <select
-                value={newProject}
-                onChange={(e) => setNewProject(e.target.value)}
-                aria-label="Project for this talkgroup"
-                style={{ ...fieldStyle, flex: 1, padding: '8px 10px' }}
-              >
-                <option value="">Organization-wide</option>
-                {projectOptions.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: MUTED, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                <input type="checkbox" checked={newAllowSubs} onChange={(e) => setNewAllowSubs(e.target.checked)} style={{ accentColor: GOLD }} />
-                Subs can join
-              </label>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={eyebrowStyle}>MEMBERS</span>
-              <span style={{ fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: newSel.length ? GOLD_HI : FAINT, border: `1px solid ${newSel.length ? AMBER_BORDER : BORDER}`, borderRadius: 999, padding: '1px 8px' }}>
-                {newSel.length} selected
+          <SMeter mode={meterMode} level={meterLevel} width={116} />
+          {micOpen ? (
+            <>
+              <EqBars color={RED} size={15} />
+              <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.14em', color: RED, whiteSpace: 'nowrap' }}>ON AIR</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: WHITE, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                {txSecs.toFixed(1)}s
               </span>
-              <span style={{ fontSize: 10.5, color: FAINT, flex: 1, textAlign: 'right' }}>You join automatically as dispatcher</span>
+              <span style={{ fontSize: 12, color: MUTED, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                {`Keyed up on ${active?.name || 'this channel'} — release to send`}
+              </span>
+              {txSecs * 1000 > TX_WARN_MS && (
+                <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.1em', color: RED, whiteSpace: 'nowrap' }}>
+                  {Math.max(0, Math.ceil((MAX_TX_MS - txSecs * 1000) / 1000))}s TO CUT-OFF
+                </span>
+              )}
+              <span aria-hidden style={{ marginLeft: 'auto', flexShrink: 0 }}><EqBars color={RED} size={15} /></span>
+            </>
+          ) : keyed ? (
+            <>
+              <EqBars color={GOLD_HI} size={15} />
+              <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.14em', color: GOLD_HI, whiteSpace: 'nowrap' }}>OPENING MIC…</span>
+              <span style={{ fontSize: 12, color: MUTED, fontWeight: 700 }}>Hold the key — start talking when it turns red</span>
+            </>
+          ) : playingId ? (
+            <>
+              <EqBars color={GOLD_HI} size={15} />
+              <span style={{ fontSize: 10.5, fontWeight: 900, letterSpacing: '0.14em', color: GOLD_HI, whiteSpace: 'nowrap' }}>NOW PLAYING</span>
+              <span style={{ fontSize: 12, color: MUTED, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                {`${senderShort(playingMsg?.sender_name ?? null)}${catchingUp ? ' · catch-up' : ''}${playingMsg?.audio_duration_secs ? ` · ${secsLabel(playingMsg.audio_duration_secs)}` : ''}`}
+              </span>
+              {catchingUp && (
+                <button onClick={stopPlayback} title="Stop the catch-up playback" style={{ ...rowActionStyle, marginLeft: 'auto', color: GOLD_HI, borderColor: AMBER_BORDER, background: 'rgba(245,158,11,0.14)' }}>
+                  <Pause size={11} weight="fill" /> Stop catch-up
+                </button>
+              )}
+            </>
+          ) : (
+            <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.14em', color: FAINT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+              {active ? `STANDING BY — ${(channelNo.get(active.id) || '')} ${active.name.toUpperCase()}` : 'STANDING BY'}
+            </span>
+          )}
+        </div>
+
+        {/* ── Traffic — THE ONLY SCROLL REGION ON THIS SCREEN ─────────── */}
+        <div
+          ref={feedRef}
+          onDragEnter={onFeedDragEnter}
+          onDragOver={onFeedDragOver}
+          onDragLeave={onFeedDragLeave}
+          onDrop={onFeedDrop}
+          style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 14px 6px', display: 'flex', flexDirection: 'column', position: 'relative' }}
+        >
+          {dragOver && (
+            <div
+              aria-hidden
+              style={{
+                position: 'sticky', top: 0, zIndex: 30, pointerEvents: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, height: 88,
+                borderRadius: 14, border: `2px dashed ${AMBER_BORDER}`, background: 'rgba(245,158,11,0.10)',
+                color: GOLD_HI, fontSize: 13, fontWeight: 800, marginBottom: 10,
+              }}
+            >
+              <Paperclip size={18} weight="bold" /> Drop to share on {active?.name || 'this channel'}
             </div>
-            <input
-              value={newQuery}
-              onChange={(e) => setNewQuery(e.target.value)}
-              placeholder="Search staff and subs…"
-              style={{ ...fieldStyle, padding: '7px 10px', fontSize: 12, marginBottom: 6 }}
+          )}
+          {!active && firstLoad && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={58} borderRadius={12} />)}
+            </div>
+          )}
+          {!firstLoad && chError && !channels.length && (
+            <PremiumEmpty tone="error" icon={<Warning size={30} color={RED} weight="fill" />} title="Radio unreachable" description="Could not load your talkgroups. Check your connection — the console retries on its own." />
+          )}
+          {!firstLoad && !chError && channels.length === 0 && (
+            <PremiumEmpty
+              icon={<Broadcast size={30} color={GOLD_HI} weight="fill" />}
+              title="No channels yet"
+              description={projectId ? 'Open a project to auto-create its All Hands talkgroup, or start a custom channel.' : 'Start a custom channel, or open Radio from a project to spin up its All Hands talkgroup.'}
+              action={<button onClick={() => setShowNew(true)} className="pmBtn" style={goldButtonStyle}><Plus size={14} weight="bold" /> New talkgroup</button>}
             />
-            <div style={{ maxHeight: 210, overflowY: 'auto', border: `1px solid ${BORDER}`, borderRadius: 10, padding: 6, marginBottom: 12 }}>
-              {renderDirectory({
-                query: newQuery,
-                mode: 'check',
-                selectedKeys: new Set(newSel.map(personKey)),
-                onRow: toggleNewPerson,
-              })}
+          )}
+          {active && !msgData && !msgError && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={58} borderRadius={12} />)}
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <button
-                onClick={createChannel}
-                disabled={!newName.trim() || creating}
-                className="pmBtn"
-                style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: !newName.trim() || creating ? 0.6 : 1 }}
-              >
-                {creating ? 'Creating…' : newSel.length ? `Create + add ${newSel.length} member${newSel.length === 1 ? '' : 's'}` : 'Create channel'}
-              </button>
-              <button onClick={closeNewModal} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                Cancel
+          )}
+          {active && msgError && (
+            <PremiumEmpty tone="error" icon={<Warning size={30} color={RED} weight="fill" />} title="Feed unavailable" description="Could not load this channel's traffic. The console retries automatically every few seconds." />
+          )}
+          {messages.map(renderRow)}
+          {pendingHere.map(renderPendingRow)}
+
+          {/* Standby radio face — the feed is never a black void. No duplicate
+            * channel list here: the channel dropdown above owns that job. */}
+          {standbyOn && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 240, maxWidth: 640, width: '100%', margin: '0 auto', paddingTop: messages.length || pendingHere.length ? 18 : 4, paddingBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 14 }}>
+                <VividGoldChip icon={<Broadcast size={20} weight="fill" />} size={40} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: WHITE, letterSpacing: '-0.01em' }}>Saguaro Radio — standing by</div>
+                  <div style={{ fontSize: 11.5, color: MUTED, marginTop: 1 }}>
+                    {channels.length
+                      ? `Monitoring ${stats.monitored} of ${stats.channels} talkgroup${stats.channels === 1 ? '' : 's'} — traffic appears here the moment anyone keys up.`
+                      : 'No talkgroups yet — create your first channel and the band comes alive.'}
+                  </div>
+                </div>
+              </div>
+              <FrequencyDial seed={activeId || 'saguaro'} />
+              {lastTraffic?.lastMessage && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 12px', marginTop: 12, borderRadius: 10, background: NEST, border: `1px solid ${BORDER}` }}>
+                  <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, whiteSpace: 'nowrap' }}>LAST TRAFFIC</span>
+                  <span style={{ fontSize: 12, color: WHITE, fontWeight: 700, minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {senderShort(lastTraffic.lastMessage.sender)} — {trafficPreview(lastTraffic.lastMessage)}
+                  </span>
+                  <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                    {lastTraffic.name} · {whenLabel(lastTraffic.lastMessage.at)}
+                  </span>
+                </div>
+              )}
+              {active && otherMembers === 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '10px 12px', marginTop: 10, borderRadius: 10, background: RED_SOFT, border: `1px solid ${RED_BORDER}` }}>
+                  <Warning size={15} weight="fill" color={RED} style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, minWidth: 180, fontSize: 12, color: '#FCA5A5', fontWeight: 700, lineHeight: 1.45 }}>
+                    You are the only member of {active.name}. Anything you transmit has nobody to hear it.
+                  </span>
+                  <button
+                    onClick={() => { setRosterOpen(true); setRosterAddOpen(true); setRosterAddQuery(''); }}
+                    style={{ ...goldOutlineButtonStyle, padding: '7px 14px', fontSize: 12, flexShrink: 0 }}
+                  >
+                    <UserPlus size={12} weight="bold" /> Add someone
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Pending attachment tray ─────────────────────────────────── */}
+        {(pendingFile || attachError) && (
+          <div style={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, padding: '10px 12px', background: NEST }}>
+            {attachError && <div style={{ fontSize: 11.5, color: RED, marginBottom: pendingFile ? 8 : 0 }}>{attachError}</div>}
+            {pendingFile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 240, padding: '6px 10px', borderRadius: 10, background: AMBER_SOFT, border: `1px solid ${AMBER_BORDER}`, color: GOLD_HI, fontSize: 11.5, fontWeight: 800 }}>
+                  <Paperclip size={12} weight="bold" style={{ flexShrink: 0 }} />
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pendingFile.name}</span>
+                  <span style={{ color: FAINT, fontWeight: 700, flexShrink: 0 }}>{sizeLabel(pendingFile.size)}</span>
+                </span>
+                <input
+                  value={mediaCaption}
+                  onChange={(e) => setMediaCaption(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') sendMedia(); }}
+                  placeholder="Add a caption (optional)"
+                  autoFocus
+                  style={{ ...fieldStyle, flex: 1, minWidth: 160, padding: '8px 12px' }}
+                />
+                <button onClick={sendMedia} disabled={uploadingMedia} className="pmBtn" style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 12.5, opacity: uploadingMedia ? 0.6 : 1 }}>
+                  {uploadingMedia ? 'Sending…' : 'Send'}
+                </button>
+                <button onClick={clearAttach} disabled={uploadingMedia} aria-label="Cancel attachment" style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ TRANSMIT DECK — fixed, never scrolls away ══════════════════ */}
+        <div style={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, padding: 12, background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.05))', borderRadius: '0 0 16px 16px' }}>
+          {/* The talk key: the biggest control on the screen, and it NEVER
+            * disappears and is NEVER gated by the previous upload. */}
+          {pttSupported !== false ? (
+            <button
+              onPointerEnter={preflightMic}
+              onFocus={preflightMic}
+              onPointerDown={(e) => {
+                /* Pointer capture, NOT pointerleave: a few pixels of drift while
+                 * you are talking must never cut the transmission. */
+                try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* capture unsupported — fine */ }
+                void pttStart();
+              }}
+              onPointerUp={(e) => {
+                try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* already released */ }
+                pttStop();
+              }}
+              onPointerCancel={pttStop}
+              onLostPointerCapture={pttStop}
+              onContextMenu={(e) => e.preventDefault()}
+              disabled={!active}
+              title={active ? 'Hold to talk — release to transmit (or hold SPACE anywhere on the page)' : 'Tune to a channel first'}
+              aria-label="Hold to talk"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                width: '100%', height: 62, borderRadius: 14, border: 'none', padding: '0 18px',
+                cursor: active ? 'pointer' : 'not-allowed', userSelect: 'none', touchAction: 'none',
+                background: micOpen
+                  ? `linear-gradient(180deg, ${RED}, #991B1B)`
+                  : keyed
+                    ? 'linear-gradient(180deg, #FDE68A, #F59E0B)'
+                    : micError
+                      ? `linear-gradient(180deg, rgba(239,68,68,0.22), rgba(239,68,68,0.10))`
+                      : `linear-gradient(180deg, ${GOLD_HI}, ${GOLD} 60%, var(--brand-primary-hover))`,
+                color: micOpen ? WHITE : micError && !keyed ? '#FCA5A5' : '#241500',
+                boxShadow: micOpen
+                  ? '0 0 0 5px rgba(239,68,68,0.22), 0 8px 26px -10px rgba(239,68,68,0.8)'
+                  : micError ? 'none' : '0 6px 20px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)',
+                outline: micError && !keyed ? `1px solid ${RED_BORDER}` : 'none',
+                opacity: active ? 1 : 0.5,
+                transition: 'background .12s ease, box-shadow .12s ease',
+              }}
+            >
+              {micOpen ? <Waveform size={24} weight="bold" /> : <Microphone size={24} weight="fill" />}
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.2, minWidth: 0, maxWidth: '100%' }}>
+                <span style={{ fontSize: 15, fontWeight: 900, letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+                  {!active ? 'TUNE TO A CHANNEL'
+                    : micOpen ? `ON AIR — ${txSecs.toFixed(1)}s`
+                      : keyed ? 'OPENING MIC…'
+                        : micError ? 'MIC PROBLEM — PRESS TO RETRY'
+                          : 'HOLD TO TALK'}
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', opacity: 0.78, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {micOpen ? 'RELEASE TO SEND'
+                    : keyed ? 'WAIT FOR RED BEFORE YOU SPEAK'
+                      : micError ? micError.toUpperCase()
+                        : `OR HOLD ${spaceKeyed ? '[SPACE]' : 'SPACE'} ANYWHERE`}
+                </span>
+              </span>
+              {micOpen && <span style={{ marginLeft: 'auto' }}><EqBars color={WHITE} size={20} /></span>}
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 62, padding: '0 18px', borderRadius: 14, background: FIELD_BG, border: FIELD_BORDER, color: MUTED, fontSize: 12.5, fontWeight: 700 }}>
+              <Warning size={18} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />
+              This browser cannot record audio (no MediaRecorder). Text, alerts, tones and attachments still work — use Chrome, Edge, or Safari 14.6+ to key up.
+            </div>
+          )}
+
+          {/* Transmission truth line: what happened to your last clip, and
+            * whether anybody was there to hear it. */}
+          {(txReceipt || listenerTruth) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 9 }}>
+              {txReceipt && (
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0,
+                    fontSize: 11, fontWeight: 800, letterSpacing: '0.02em',
+                    color: txReceipt.tone === 'ok' ? GREEN : txReceipt.tone === 'bad' ? '#FCA5A5' : txReceipt.tone === 'warn' ? MUTED : GOLD_HI,
+                  }}
+                >
+                  {txReceipt.tone === 'ok' ? <Check size={12} weight="bold" />
+                    : txReceipt.tone === 'bad' ? <Warning size={12} weight="fill" />
+                      : txReceipt.tone === 'work' ? <EqBars size={11} /> : <Check size={12} weight="bold" />}
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{txReceipt.text}</span>
+                </span>
+              )}
+              {listenerTruth && listenerTruth.tone !== 'live' && (
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0, marginLeft: 'auto',
+                    fontSize: 11, fontWeight: 800,
+                    color: listenerTruth.tone === 'none' ? '#FCA5A5' : GOLD_HI,
+                  }}
+                >
+                  <Warning size={12} weight="fill" style={{ flexShrink: 0 }} />
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{listenerTruth.text}</span>
+                  {listenerTruth.tone === 'none' && (
+                    <button
+                      onClick={() => { setRosterOpen(true); setRosterAddOpen(true); setRosterAddQuery(''); }}
+                      style={{ ...rowActionStyle, color: GOLD_HI, borderColor: AMBER_BORDER, background: 'rgba(245,158,11,0.14)' }}
+                    >
+                      <UserPlus size={11} weight="bold" /> Add someone
+                    </button>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Composer row — attach · message · tones · alert · send */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10, flexWrap: 'wrap' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={MEDIA_ACCEPT}
+              style={{ display: 'none' }}
+              onChange={(e) => { const el = e.currentTarget; takeFile(el.files?.[0]); el.value = ''; }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!active || uploadingMedia}
+              title="Attach a photo, PDF, or video to this channel"
+              aria-label="Attach a file"
+              style={{
+                flexShrink: 0, width: 42, height: 42, borderRadius: 11, padding: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: pendingFile ? AMBER_SOFT : FIELD_BG,
+                border: pendingFile ? `1px solid ${AMBER_BORDER}` : FIELD_BORDER,
+                color: pendingFile ? GOLD_HI : MUTED, cursor: active ? 'pointer' : 'not-allowed',
+                opacity: !active || uploadingMedia ? 0.55 : 1,
+              }}
+            >
+              <Paperclip size={16} weight="bold" />
+            </button>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText('text'); } }}
+              placeholder={micOpen ? 'Transmitting… release the key to send' : active ? `Message ${active.name}` : 'Tune to a channel'}
+              disabled={!active || sending}
+              style={{ ...fieldStyle, flex: '1 1 220px', minWidth: 160, height: 42, padding: '0 14px', fontSize: 13.5, borderRadius: 11 }}
+            />
+            <span style={{ flexShrink: 0, display: 'inline-flex', gap: 4 }}>
+              {(['ack', 'negative', 'comein'] as const).map((tn) => (
+                <button
+                  key={tn}
+                  onClick={() => sendTone(tn)}
+                  disabled={!active || toneSending !== null}
+                  title={tn === 'ack' ? 'Send an ACK tone (affirmative)' : tn === 'negative' ? 'Send a NEGATIVE tone (denied / no)' : 'Send a COME IN tone (calling any unit)'}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    height: 42, padding: '0 10px', borderRadius: 11, cursor: 'pointer',
+                    background: TONES[tn].soft, border: `1px solid ${TONES[tn].border}`,
+                    color: TONES[tn].color, fontWeight: 900, fontSize: 9.5, letterSpacing: '0.08em',
+                    whiteSpace: 'nowrap', opacity: !active || toneSending !== null ? 0.5 : 1,
+                  }}
+                >
+                  {tn === 'ack' ? 'ACK' : tn === 'negative' ? 'NEG' : 'COME IN'}
+                </button>
+              ))}
+            </span>
+            <button
+              onClick={() => sendText('alert')}
+              disabled={!active || !draft.trim() || sending}
+              title="Broadcast as a high-visibility alert (notifies every member)"
+              style={{
+                flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                height: 42, padding: '0 14px', borderRadius: 11, cursor: 'pointer',
+                background: AMBER_SOFT, border: `1px solid ${AMBER_BORDER}`,
+                color: GOLD_HI, fontWeight: 800, fontSize: 12.5,
+                opacity: !active || !draft.trim() || sending ? 0.5 : 1,
+              }}
+            >
+              <Warning size={14} weight="fill" /> Alert
+            </button>
+            <button
+              onClick={() => sendText('text')}
+              disabled={!active || !draft.trim() || sending}
+              className="pmBtn"
+              aria-label="Send message"
+              style={{ ...goldButtonStyle, flexShrink: 0, height: 42, padding: '0 18px', borderRadius: 11, opacity: !active || !draft.trim() || sending ? 0.5 : 1 }}
+            >
+              <PaperPlaneRight size={15} weight="fill" />
+            </button>
+          </div>
+
+          {/* The honest line about what this transport actually is. */}
+          <div style={{ fontSize: 10.5, color: FAINT, marginTop: 9, lineHeight: 1.45 }}>
+            Push-to-talk clips: your key-down records, your release delivers, and every member&apos;s console plays it back — typically in about a second. {streamStatus}
+          </div>
+        </div>
+      </div>
+
+      {/* ══ DIALOGS — each one has exactly one scroll region ═════════════ */}
+
+      {/* Site map — live crew pins + human heatmap */}
+      <Dialog open={mapOpen} onClose={() => setMapOpen(false)} title="SITE MAP" icon={<MapTrifold size={15} weight="bold" color={GOLD_HI} />} width={980}>
+        <CrewMap
+          crew={crewData?.crew ?? []}
+          bins={heatData?.bins ?? []}
+          samples={heatData?.samples ?? 0}
+          hours={mapHours}
+          onHoursChange={setMapHours}
+          panics={panicPins}
+          hasProject={!!projectId}
+          projects={projectOptions}
+          onPickProject={(id) => {
+            setProjectId(id);
+            try {
+              const u = new URL(window.location.href);
+              u.searchParams.set('projectId', id);
+              window.history.replaceState(null, '', u.toString());
+            } catch { /* URL sync is cosmetic */ }
+          }}
+          loading={mapLoading}
+        />
+        <div style={{ fontSize: 11, color: FAINT, marginTop: 12 }}>
+          Live crew pins over a shift heatmap — positions appear when crews clock in with the Field app.
+        </div>
+      </Dialog>
+
+      {/* Assistance queue */}
+      <Dialog
+        open={assistShown}
+        onClose={() => setAssistShown(false)}
+        title={`ASSISTANCE QUEUE${assistQueue.length ? ` — ${assistOpenCount} WAITING` : ''}`}
+        icon={<Lifebuoy size={15} weight="bold" color={assistOpenCount > 0 ? RED : GOLD_HI} />}
+        width={720}
+      >
+        {assistQueue.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: FAINT }}>Queue is clear — no field requests waiting on dispatch.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {assistQueue.map((a) => {
+              const acked = a.status === 'acknowledged';
+              return (
+                <div
+                  key={a.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                    padding: '10px 12px', borderRadius: 12,
+                    background: acked ? NEST : AMBER_SOFT,
+                    border: `1px solid ${acked ? BORDER : AMBER_BORDER}`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 9.5, fontWeight: 900, letterSpacing: '0.12em', borderRadius: 999, padding: '2px 8px',
+                      color: acked ? GREEN : RED,
+                      border: `1px solid ${acked ? GREEN_BORDER : RED_BORDER}`,
+                      background: acked ? GREEN_SOFT : RED_SOFT, whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {acked ? 'ACK' : 'OPEN'}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 180 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: WHITE }}>{senderShort(a.requester_name)}</span>
+                    {a.note && <span style={{ fontSize: 12.5, color: MUTED }}> — {a.note}</span>}
+                    {acked && a.acknowledged_by && (
+                      <div style={{ fontSize: 10.5, color: FAINT, marginTop: 2 }}>
+                        Acknowledged by {senderShort(a.acknowledged_by)}{a.acknowledged_at ? ` · ${timeOf(a.acknowledged_at)}` : ''}
+                      </div>
+                    )}
+                  </div>
+                  <span title={new Date(a.created_at).toLocaleString()} style={{ fontSize: 11, color: acked ? FAINT : GOLD_HI, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                    {ageLabel(a.created_at, assistNow)} ago
+                  </span>
+                  {a.location && typeof a.location.lat === 'number' && (
+                    <a href={`https://maps.google.com/?q=${a.location.lat},${a.location.lng}`} target="_blank" rel="noreferrer" title="Open the requester's location in Google Maps" style={{ ...rowActionStyle, textDecoration: 'none' }}>
+                      <MapPin size={11} weight="fill" /> Location
+                    </a>
+                  )}
+                  {!acked && (
+                    <button onClick={() => triageAssist(a.id, 'ack')} disabled={assistBusy === a.id} title="Acknowledge — tells the requester dispatch is on it" style={{ ...rowActionStyle, color: GOLD_HI, borderColor: AMBER_BORDER, background: 'rgba(245,158,11,0.14)', opacity: assistBusy === a.id ? 0.6 : 1 }}>
+                      <Check size={11} weight="bold" /> Ack
+                    </button>
+                  )}
+                  <button onClick={() => triageAssist(a.id, 'resolve')} disabled={assistBusy === a.id} title="Resolve — closes the request and notifies the requester" style={{ ...rowActionStyle, color: GREEN, borderColor: GREEN_BORDER, background: GREEN_SOFT, opacity: assistBusy === a.id ? 0.6 : 1 }}>
+                    <Check size={11} weight="bold" /> Resolve
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Dialog>
+
+      {/* Guest access — share this channel */}
+      <Dialog
+        open={shareOpen && !!active}
+        onClose={closeShare}
+        title={`GUEST ACCESS — ${active?.name || ''}`}
+        icon={<ShareNetwork size={15} weight="bold" color={GOLD_HI} />}
+        width={520}
+        footer={
+          <>
+            <button onClick={createGuestLink} disabled={creatingLink} className="pmBtn" style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: creatingLink ? 0.6 : 1 }}>
+              <ShareNetwork size={13} weight="bold" /> {creatingLink ? 'Creating…' : 'Create guest link'}
+            </button>
+            <span style={{ fontSize: 10.5, color: FAINT, flex: 1, minWidth: 140 }}>Guests join in a browser — no account, no app.</span>
+          </>
+        }
+      >
+        {createdUrl && (
+          <div style={{ padding: 10, borderRadius: 10, background: GREEN_SOFT, border: `1px solid ${GREEN_BORDER}`, marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, marginBottom: 5 }}>LINK READY — SEND IT TO YOUR GUEST</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, color: WHITE, overflowWrap: 'anywhere', lineHeight: 1.4 }}>{createdUrl}</span>
+              <button onClick={() => copyShare('created', createdUrl)} style={{ ...rowActionStyle, flexShrink: 0, color: copiedKey === 'created' ? GREEN : MUTED, borderColor: copiedKey === 'created' ? GREEN_BORDER : BORDER }}>
+                {copiedKey === 'created' ? <Check size={11} weight="bold" /> : <Copy size={11} weight="bold" />} {copiedKey === 'created' ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
+        )}
+        <input
+          value={shareLabel}
+          onChange={(e) => setShareLabel(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') createGuestLink(); }}
+          placeholder="Label (e.g. Inspector Diaz)"
+          style={{ ...fieldStyle, marginBottom: 10 }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: MUTED, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <input type="checkbox" checked={shareTalk} onChange={(e) => setShareTalk(e.target.checked)} style={{ accentColor: GOLD }} />
+            Guest can talk
+          </label>
+          <select
+            value={shareDays}
+            onChange={(e) => setShareDays(e.target.value as '7' | '30' | '90' | 'never')}
+            aria-label="Link expiry"
+            style={{ ...fieldStyle, flex: 1, minWidth: 160, padding: '8px 10px' }}
+          >
+            <option value="7">Expires in 7 days</option>
+            <option value="30">Expires in 30 days</option>
+            <option value="90">Expires in 90 days</option>
+            <option value="never">No expiry</option>
+          </select>
         </div>
-      )}
+        {shareError && <div style={{ fontSize: 11.5, color: RED, marginBottom: 10 }}>{shareError}</div>}
+        <div style={{ ...eyebrowStyle, marginBottom: 8 }}>ACTIVE LINKS</div>
+        {linksKey && !linkData && !linkError && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} height={38} borderRadius={10} />)}
+          </div>
+        )}
+        {linkError && <div style={{ fontSize: 11.5, color: RED }}>Could not load guest links. Close and reopen to retry.</div>}
+        {linkData && guestLinks.length === 0 && <div style={{ fontSize: 11.5, color: FAINT }}>No guest links yet — create one below.</div>}
+        {guestLinks.map((l) => {
+          const expired = !!l.expires_at && new Date(l.expires_at).getTime() < Date.now();
+          return (
+            <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, background: NEST, border: `1px solid ${BORDER}`, marginBottom: 6 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.label || 'Guest link'}</div>
+                <div style={{ fontSize: 10, color: expired ? RED : FAINT, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {l.can_talk === false ? 'Listen-only' : 'Talk + listen'}
+                  {' · '}
+                  {expired ? 'EXPIRED' : l.expires_at ? `expires ${new Date(l.expires_at).toLocaleDateString()}` : 'no expiry'}
+                </div>
+              </div>
+              {!expired && (
+                <button onClick={() => copyShare(l.id, guestAbsUrl(l.token))} title="Copy the guest link" style={{ ...rowActionStyle, color: copiedKey === l.id ? GREEN : MUTED, borderColor: copiedKey === l.id ? GREEN_BORDER : BORDER }}>
+                  {copiedKey === l.id ? <Check size={11} weight="bold" /> : <Copy size={11} weight="bold" />} {copiedKey === l.id ? 'Copied' : 'Copy'}
+                </button>
+              )}
+              <button onClick={() => revokeGuestLink(l.id)} disabled={revokingId === l.id} title="Revoke this link — the guest loses access immediately" style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: revokingId === l.id ? 0.6 : 1 }}>
+                <Trash size={11} weight="bold" /> {revokingId === l.id ? 'Revoking…' : 'Revoke'}
+              </button>
+            </div>
+          );
+        })}
+      </Dialog>
+
+      {/* Patch board */}
+      <Dialog
+        open={patchOpen}
+        onClose={() => setPatchOpen(false)}
+        title="PATCH BOARD"
+        icon={<PlugsConnected size={15} weight="bold" color={GOLD_HI} />}
+        width={480}
+        footer={
+          <button
+            onClick={() => postPatch(patchA, patchB, false)}
+            disabled={!patchA || !patchB || patchBusy}
+            className="pmBtn"
+            style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: !patchA || !patchB || patchBusy ? 0.55 : 1 }}
+          >
+            <PlugsConnected size={13} weight="bold" /> {patchBusy ? 'Working…' : 'Patch channels'}
+          </button>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+          <select value={patchA} onChange={(e) => setPatchA(e.target.value)} aria-label="First channel to patch" style={{ ...fieldStyle, padding: '9px 11px', color: patchA ? WHITE : FAINT }}>
+            <option value="">First channel…</option>
+            {channels.filter((c) => c.id !== patchB).map((c) => (
+              <option key={c.id} value={c.id}>{channelNo.get(c.id)} · {c.name}{c.project_name ? ` — ${c.project_name}` : ''}</option>
+            ))}
+          </select>
+          <select value={patchB} onChange={(e) => setPatchB(e.target.value)} aria-label="Second channel to patch" style={{ ...fieldStyle, padding: '9px 11px', color: patchB ? WHITE : FAINT }}>
+            <option value="">Second channel…</option>
+            {channels.filter((c) => c.id !== patchA).map((c) => (
+              <option key={c.id} value={c.id}>{channelNo.get(c.id)} · {c.name}{c.project_name ? ` — ${c.project_name}` : ''}</option>
+            ))}
+          </select>
+        </div>
+        {patches.length > 0 ? (
+          <>
+            <div style={{ ...eyebrowStyle, marginBottom: 8 }}>ACTIVE PATCHES</div>
+            {patches.map((p) => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, background: NEST, border: `1px solid ${AMBER_BORDER}`, marginBottom: 6 }}>
+                <PlugsConnected size={13} weight="bold" color={GOLD_HI} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {channelName(p.channel_a)} + {channelName(p.channel_b)}
+                </span>
+                <button onClick={() => postPatch(p.channel_a, p.channel_b, true)} disabled={patchBusy} title="Release this patch — the channels stop mirroring" style={{ ...rowActionStyle, color: '#FCA5A5', borderColor: RED_BORDER, background: RED_SOFT, opacity: patchBusy ? 0.6 : 1 }}>
+                  Release
+                </button>
+              </div>
+            ))}
+          </>
+        ) : (
+          <div style={{ fontSize: 11.5, color: FAINT, lineHeight: 1.5 }}>
+            Patch two talkgroups and their traffic mirrors both ways until you release it. Mirrored rows are tagged &ldquo;via &lt;channel&gt;&rdquo; in the feed.
+          </div>
+        )}
+      </Dialog>
+
+      {/* Broadcast — one message onto up to eight channels */}
+      <Dialog
+        open={bcOpen}
+        onClose={() => setBcOpen(false)}
+        title={`BROADCAST — ${bcSel.size}/8 CHANNELS`}
+        icon={<Megaphone size={15} weight="bold" color={GOLD_HI} />}
+        width={560}
+        footer={
+          <>
+            <button
+              onClick={sendBroadcast}
+              disabled={bcSel.size < 2 || !bcText.trim() || bcBusy}
+              className="pmBtn"
+              style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: bcSel.size < 2 || !bcText.trim() || bcBusy ? 0.55 : 1 }}
+            >
+              <Megaphone size={13} weight="bold" /> {bcBusy ? 'Sending…' : bcSel.size >= 2 ? `Send to ${bcSel.size} channels` : 'Send broadcast'}
+            </button>
+            <span style={{ fontSize: 10.5, color: FAINT, flex: 1, minWidth: 150 }}>Pick two to eight channels — one message lands on all of them at once.</span>
+          </>
+        }
+      >
+        {bcSent && (
+          <div style={{ padding: '9px 11px', borderRadius: 10, background: GREEN_SOFT, border: `1px solid ${GREEN_BORDER}`, marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: GREEN, marginBottom: 3 }}>
+              SENT TO {bcSent.length} CHANNEL{bcSent.length === 1 ? '' : 'S'}
+            </div>
+            <div style={{ fontSize: 11.5, color: WHITE, lineHeight: 1.5 }}>{bcSent.join(' · ')}</div>
+          </div>
+        )}
+        <input
+          value={bcText}
+          onChange={(e) => setBcText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') sendBroadcast(); }}
+          placeholder="One message for every selected channel"
+          style={{ ...fieldStyle, marginBottom: 10 }}
+        />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: MUTED, cursor: 'pointer', marginBottom: 14 }}>
+          <input type="checkbox" checked={bcAlert} onChange={(e) => setBcAlert(e.target.checked)} style={{ accentColor: GOLD }} />
+          Send as a high-visibility alert
+        </label>
+        <div style={{ ...eyebrowStyle, marginBottom: 8 }}>CHANNELS</div>
+        {channels.map((c) => {
+          const on = bcSel.has(c.id);
+          const full = !on && bcSel.size >= 8;
+          return (
+            <button
+              key={c.id}
+              onClick={() => toggleBcChannel(c.id)}
+              disabled={full}
+              title={full ? 'Eight channels max per broadcast' : undefined}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 9, width: '100%', boxSizing: 'border-box',
+                padding: '7px 9px', borderRadius: 9, marginBottom: 3, textAlign: 'left',
+                background: on ? AMBER_SOFT : 'transparent',
+                border: on ? `1px solid ${AMBER_BORDER}` : '1px solid transparent',
+                color: WHITE, cursor: full ? 'default' : 'pointer', opacity: full ? 0.45 : 1,
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  flexShrink: 0, width: 15, height: 15, borderRadius: 5,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  background: on ? `linear-gradient(180deg, ${GOLD_HI}, ${GOLD})` : FIELD_BG,
+                  border: on ? 'none' : FIELD_BORDER, color: '#241500',
+                }}
+              >
+                {on && <Check size={10} weight="bold" />}
+              </span>
+              <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 900, color: FAINT, fontVariantNumeric: 'tabular-nums' }}>{channelNo.get(c.id)}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+              <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 800, color: FAINT, whiteSpace: 'nowrap', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {c.kind === 'direct' ? 'Direct' : c.project_name || (c.project_id ? 'Project' : 'Organization')}
+              </span>
+            </button>
+          );
+        })}
+      </Dialog>
+
+      {/* ── Recording console — date range + search + print-ready record ─ */}
+      <Dialog
+        open={logOpen && !!active}
+        onClose={() => setLogOpen(false)}
+        title={`CHANNEL LOG — ${active?.name || ''}`}
+        icon={<ClockCounterClockwise size={15} weight="bold" color={GOLD_HI} />}
+        width={880}
+        className="sagRadioLogOverlay"
+        footer={
+          <>
+            <button onClick={() => window.print()} title="Print or save this record as a PDF" style={{ ...goldOutlineButtonStyle, padding: '8px 14px', fontSize: 12 }}>
+              <Printer size={12} weight="bold" /> Print / Export
+            </button>
+            <span style={{ fontSize: 10.5, color: FAINT, flex: 1, minWidth: 150 }}>
+              Newest 100 transmissions in range, oldest first.
+            </span>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }} className="sagLogControls">
+          <div style={{ width: 150 }}>
+            <SaguaroDatePicker value={logFrom} onChange={setLogFrom} placeholder="From date" />
+          </div>
+          <div style={{ width: 150 }}>
+            <SaguaroDatePicker value={logTo} onChange={setLogTo} placeholder="To date" />
+          </div>
+          <div style={{ flex: 1, minWidth: 180, position: 'relative' }}>
+            <MagnifyingGlass size={13} weight="bold" color={FAINT} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              value={logSearch}
+              onChange={(e) => setLogSearch(e.target.value)}
+              placeholder="Search text, transcripts, senders…"
+              style={{ ...fieldStyle, padding: '9px 12px 9px 30px' }}
+            />
+          </div>
+        </div>
+
+        {/* Print target — @media print lifts this to black-on-white */}
+        <div id="sagRadioLogPrint">
+          <div style={{ borderBottom: `1px solid ${BORDER}`, paddingBottom: 8, marginBottom: 8 }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: WHITE }}>Saguaro Radio — channel record: {active?.name}</div>
+            <div style={{ fontSize: 11, color: MUTED, marginTop: 3 }}>
+              {logFrom || logTo ? `Range ${logFrom || 'start'} to ${logTo || 'now'}` : 'Most recent traffic'}
+              {logSearch.trim() ? ` · filter "${logSearch.trim()}"` : ''}
+              {` · ${logRows.length} transmission${logRows.length === 1 ? '' : 's'}`}
+              {` · generated ${new Date().toLocaleString()}`}
+            </div>
+          </div>
+          {logKey && !logData && !logError && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={30} borderRadius={8} />)}
+            </div>
+          )}
+          {logError && <div style={{ fontSize: 12, color: RED }}>Could not load the record. Adjust the range and try again.</div>}
+          {logData && logRows.length === 0 && (
+            <div style={{ fontSize: 12, color: FAINT }}>No transmissions match this range and filter.</div>
+          )}
+          {logRows.map((m) => (
+            <div key={m.id} style={{ display: 'flex', gap: 10, alignItems: 'baseline', padding: '6px 2px', borderBottom: `1px solid ${BORDER}` }}>
+              <span style={{ flexShrink: 0, width: 148, fontSize: 11, color: MUTED, fontVariantNumeric: 'tabular-nums' }}>
+                {new Date(m.created_at).toLocaleString()}
+              </span>
+              <span style={{ flexShrink: 0, width: 120, fontSize: 11.5, fontWeight: 800, color: WHITE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {senderShort(m.sender_name)}
+              </span>
+              <span style={{ flexShrink: 0, width: 52, fontSize: 9.5, fontWeight: 900, letterSpacing: '0.08em', color: m.kind === 'panic' ? RED : m.kind === 'alert' ? GOLD_HI : FAINT }}>
+                {m.kind.toUpperCase()}
+              </span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: WHITE, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                {logText(m)}
+                {m.patched_from ? ` (via ${channelName(m.patched_from)})` : ''}
+              </span>
+            </div>
+          ))}
+          <div style={{ fontSize: 10, color: FAINT, marginTop: 8 }}>End of record.</div>
+        </div>
+      </Dialog>
+
+      {/* ── Create group — name + project + member picker ────────────────── */}
+      <Dialog
+        open={showNew}
+        onClose={closeNewModal}
+        title="NEW TALKGROUP"
+        icon={<Plus size={15} weight="bold" color={GOLD_HI} />}
+        width={520}
+        footer={
+          <>
+            <button
+              onClick={createChannel}
+              disabled={!newName.trim() || creating}
+              className="pmBtn"
+              style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: !newName.trim() || creating ? 0.6 : 1 }}
+            >
+              {creating ? 'Creating…' : newSel.length ? `Create + add ${newSel.length} member${newSel.length === 1 ? '' : 's'}` : 'Create channel'}
+            </button>
+            <button onClick={closeNewModal} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              Cancel
+            </button>
+          </>
+        }
+      >
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Channel name (e.g. Concrete crew)"
+          autoFocus
+          style={{ ...fieldStyle, fontSize: 13, marginBottom: 10 }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+          <select
+            value={newProject}
+            onChange={(e) => setNewProject(e.target.value)}
+            aria-label="Project for this talkgroup"
+            style={{ ...fieldStyle, flex: 1, minWidth: 180, padding: '9px 11px' }}
+          >
+            <option value="">Organization-wide</option>
+            {projectOptions.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: MUTED, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <input type="checkbox" checked={newAllowSubs} onChange={(e) => setNewAllowSubs(e.target.checked)} style={{ accentColor: GOLD }} />
+            Subs can join
+          </label>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={eyebrowStyle}>MEMBERS</span>
+          <span style={{ fontSize: 10, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: newSel.length ? GOLD_HI : FAINT, border: `1px solid ${newSel.length ? AMBER_BORDER : BORDER}`, borderRadius: 999, padding: '1px 8px' }}>
+            {newSel.length} selected
+          </span>
+          <span style={{ fontSize: 10.5, color: FAINT, flex: 1, textAlign: 'right' }}>You join automatically as dispatcher</span>
+        </div>
+        <input
+          value={newQuery}
+          onChange={(e) => setNewQuery(e.target.value)}
+          placeholder="Search staff and subs…"
+          style={{ ...fieldStyle, padding: '8px 11px', fontSize: 12, marginBottom: 10 }}
+        />
+        {/* Picker results flow in the dialog's own scroll — no nested porthole */}
+        {renderDirectory({
+          query: newQuery,
+          mode: 'check',
+          selectedKeys: new Set(newSel.map(personKey)),
+          onRow: toggleNewPerson,
+        })}
+        {newSel.length === 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, padding: '8px 10px', borderRadius: 10, background: AMBER_SOFT, border: `1px solid ${AMBER_BORDER}` }}>
+            <Warning size={13} weight="fill" color={GOLD_HI} style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 11.5, color: GOLD_HI, fontWeight: 700, lineHeight: 1.45 }}>
+              With nobody picked you will be the only member — transmissions on this channel will have no listeners.
+            </span>
+          </div>
+        )}
+      </Dialog>
 
       {/* ── Direct 1:1 — staff picker ───────────────────────────────────── */}
-      {directOpen && (
-        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) setDirectOpen(false); }}>
-          <div style={modalCardStyle(420)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <ChatCircleText size={15} weight="bold" color={GOLD_HI} />
-              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>MESSAGE SOMEONE</span>
-              <button onClick={() => setDirectOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                <X size={15} weight="bold" />
-              </button>
-            </div>
-            <div style={{ fontSize: 11.5, color: MUTED, marginBottom: 10 }}>
-              Pick a teammate — a private 1:1 channel opens (or re-opens) and the console tunes to it.
-            </div>
-            <input
-              value={directQuery}
-              onChange={(e) => setDirectQuery(e.target.value)}
-              placeholder="Search staff…"
-              autoFocus
-              style={{ ...fieldStyle, marginBottom: 8 }}
-            />
-            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-              {renderDirectory({
-                query: directQuery,
-                mode: 'pick',
-                staffOnly: true,
-                busyKey: directBusy,
-                pickIcon: <ChatCircleText size={13} weight="bold" />,
-                onRow: startDirect,
-              })}
-            </div>
-            <div style={{ fontSize: 10.5, color: FAINT, marginTop: 10 }}>
-              Direct channels are staff-to-staff. Reach subs through their project talkgroups.
-            </div>
-          </div>
+      <Dialog
+        open={directOpen}
+        onClose={() => setDirectOpen(false)}
+        title="MESSAGE SOMEONE"
+        icon={<ChatCircleText size={15} weight="bold" color={GOLD_HI} />}
+        width={460}
+        footer={<span style={{ fontSize: 10.5, color: FAINT }}>Direct channels are staff-to-staff. Reach subs through their project talkgroups.</span>}
+      >
+        <div style={{ fontSize: 11.5, color: MUTED, marginBottom: 12 }}>
+          Pick a teammate — a private 1:1 channel opens (or re-opens) and the console tunes to it.
         </div>
-      )}
+        <input
+          value={directQuery}
+          onChange={(e) => setDirectQuery(e.target.value)}
+          placeholder="Search staff…"
+          autoFocus
+          style={{ ...fieldStyle, marginBottom: 10 }}
+        />
+        {renderDirectory({
+          query: directQuery,
+          mode: 'pick',
+          staffOnly: true,
+          busyKey: directBusy,
+          pickIcon: <ChatCircleText size={13} weight="bold" />,
+          onRow: startDirect,
+        })}
+      </Dialog>
 
       {/* ── Lock / unlock confirm — dispatcher intent gate ──────────────── */}
-      {lockConfirm && (
-        <div style={modalShellStyle} onPointerDown={(e) => { if (e.target === e.currentTarget) setLockConfirm(null); }}>
-          <div style={modalCardStyle(400)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              {lockConfirm.locked ? <LockOpen size={15} weight="bold" color={GOLD_HI} /> : <Lock size={15} weight="fill" color={GOLD_HI} />}
-              <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: GOLD_HI, flex: 1 }}>
-                {lockConfirm.locked ? 'UNLOCK CHANNEL' : 'LOCK CHANNEL'}
-              </span>
-              <button onClick={() => setLockConfirm(null)} aria-label="Close" style={{ background: 'none', border: 'none', color: FAINT, cursor: 'pointer', padding: 2, display: 'inline-flex' }}>
-                <X size={15} weight="bold" />
-              </button>
-            </div>
-            <div style={{ fontSize: 12.5, color: WHITE, lineHeight: 1.55, marginBottom: 14 }}>
-              {lockConfirm.locked
-                ? `Unlock "${lockConfirm.name}"? It becomes visible to the whole team again and teammates join on their next visit.`
-                : `Lock "${lockConfirm.name}"? Only current members keep access — the channel disappears from everyone else's console until a dispatcher adds them from the roster.`}
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <button
-                onClick={applyLock}
-                disabled={lockBusy}
-                className="pmBtn"
-                style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: lockBusy ? 0.6 : 1 }}
-              >
-                {lockConfirm.locked ? <LockOpen size={13} weight="bold" /> : <Lock size={13} weight="fill" />}
-                {lockBusy ? 'Working…' : lockConfirm.locked ? 'Unlock channel' : 'Lock channel'}
-              </button>
-              <button onClick={() => setLockConfirm(null)} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                Cancel
-              </button>
-            </div>
-          </div>
+      <Dialog
+        open={!!lockConfirm}
+        onClose={() => setLockConfirm(null)}
+        title={lockConfirm?.locked ? 'UNLOCK CHANNEL' : 'LOCK CHANNEL'}
+        icon={lockConfirm?.locked ? <LockOpen size={15} weight="bold" color={GOLD_HI} /> : <Lock size={15} weight="fill" color={GOLD_HI} />}
+        width={440}
+        footer={
+          <>
+            <button
+              onClick={applyLock}
+              disabled={lockBusy}
+              className="pmBtn"
+              style={{ ...goldButtonStyle, padding: '10px 18px', fontSize: 12.5, opacity: lockBusy ? 0.6 : 1 }}
+            >
+              {lockConfirm?.locked ? <LockOpen size={13} weight="bold" /> : <Lock size={13} weight="fill" />}
+              {lockBusy ? 'Working…' : lockConfirm?.locked ? 'Unlock channel' : 'Lock channel'}
+            </button>
+            <button onClick={() => setLockConfirm(null)} style={{ background: 'none', border: 'none', color: FAINT, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              Cancel
+            </button>
+          </>
+        }
+      >
+        <div style={{ fontSize: 12.5, color: WHITE, lineHeight: 1.55 }}>
+          {lockConfirm?.locked
+            ? `Unlock "${lockConfirm?.name}"? It becomes visible to the whole team again and teammates join on their next visit.`
+            : `Lock "${lockConfirm?.name}"? Only current members keep access — the channel disappears from everyone else's console until a dispatcher adds them from the roster.`}
         </div>
-      )}
+      </Dialog>
 
       {/* ── R14: Save / Discard / Stay confirm for the create-group modal ─ */}
       <UnsavedGuardModal guard={newGroupGuard} />
