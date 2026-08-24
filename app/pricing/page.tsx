@@ -93,16 +93,16 @@ export default function PricingPage() {
       <MarketingNav />
       <div style={{ height: 58 }} />
 
-      <div style={{ paddingTop: 64 }}>
+      <div style={{ paddingTop: 0 }}>
 
-        {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '120px 24px 72px', background: 'transparent' }}>
+        {/* Hero — capped so headline + toggle + first cards fit a 1366x768 viewport */}
+        <section style={{ textAlign: 'center', padding: 'clamp(48px, 8vh, 80px) 24px 56px', background: 'transparent' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 12, fontWeight: 500, color: C.dim, letterSpacing: 0.3, marginBottom: 28 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.gold, display: 'inline-block' }} />
             Free migration included on all plans
           </div>
 
-          <h1 style={{ fontSize: 'clamp(30px, 4.6vw, 44px)', fontWeight: 800, lineHeight: 1.12, margin: '0 0 18px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, lineHeight: 1.12, margin: '0 0 16px', letterSpacing: '-0.02em' }}>
             One platform.{' '}
             <span style={{ background: 'linear-gradient(100deg, #F59E0B 6%, #F5B84D 38%, #FDE68A 56%, #F59E0B 92%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>
               Your whole team.
@@ -113,7 +113,7 @@ export default function PricingPage() {
           </p>
 
           {/* Competitor savings callout */}
-          <div style={{ display: 'inline-flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'inline-flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 32 }}>
             {['Flat rate — never per-seat', 'Base Saguaro Radio free on every plan', 'Free migration from any platform'].map(item => (
               <div key={item} style={{ padding: '6px 14px', background: 'transparent', border: `1px solid ${C.hairline}`, borderRadius: 999, fontSize: 12, color: C.dim, fontWeight: 500 }}>
                 {item}
@@ -137,7 +137,7 @@ export default function PricingPage() {
         </section>
 
         {/* Pricing Cards */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 1160, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 72px', maxWidth: 1160, margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'start' }}>
             {PLANS.map((plan) => (
               <div key={plan.name} style={{
@@ -215,7 +215,7 @@ export default function PricingPage() {
         </section>
 
         {/* Decision helper */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 760, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 72px', maxWidth: 760, margin: '0 auto' }}>
           <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, padding: '28px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>Not sure? Every plan starts with a free trial — switch anytime.</div>
             <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, maxWidth: 560 }}>
@@ -226,7 +226,7 @@ export default function PricingPage() {
         </section>
 
         {/* Migration Banner */}
-        <section style={{ padding: '0 24px 96px', maxWidth: 900, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 72px', maxWidth: 900, margin: '0 auto' }}>
           <div style={{ background: C.cardBg, border: `1px solid ${C.hairline}`, borderRadius: 14, padding: '40px 48px', display: 'flex', gap: 48, alignItems: 'center', flexWrap: 'wrap', boxShadow: 'none' }}>
             <div style={{ flex: 1, minWidth: 280 }}>
               <div style={{ fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Free migration — every plan</div>
@@ -254,7 +254,7 @@ export default function PricingPage() {
         </section>
 
         {/* Add-ons */}
-        <section style={{ padding: '0 24px 112px', maxWidth: 1100, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Add-Ons & Upgrades
@@ -290,7 +290,7 @@ export default function PricingPage() {
         </section>
 
         {/* One-Time Services */}
-        <section style={{ padding: '0 24px 112px', maxWidth: 1100, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               One-Time Services
@@ -324,7 +324,7 @@ export default function PricingPage() {
         </section>
 
         {/* Competitor Price Comparison */}
-        <section style={{ padding: '0 24px 112px', maxWidth: 900, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 80px', maxWidth: 900, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               How We Stack Up
@@ -374,7 +374,7 @@ export default function PricingPage() {
         </section>
 
         {/* Feature Comparison Table */}
-        <section style={{ padding: '0 24px 112px', maxWidth: 1000, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 80px', maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>
               Full Comparison
@@ -414,7 +414,7 @@ export default function PricingPage() {
         </section>
 
         {/* FAQ */}
-        <section style={{ padding: '0 24px 112px', maxWidth: 760, margin: '0 auto' }}>
+        <section style={{ padding: '0 24px 80px', maxWidth: 760, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <div style={{ display: 'inline-block', padding: '5px 14px', background: 'transparent', border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 999, fontSize: 11, fontWeight: 500, color: C.dim, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>FAQ</div>
             <h2 style={{ fontSize: 'clamp(20px, 3vw, 22px)', fontWeight: 600, margin: 0, letterSpacing: -0.3 }}>Frequently asked questions</h2>
@@ -440,7 +440,7 @@ export default function PricingPage() {
         <IntegrationStrip />
 
         {/* Final CTA */}
-        <section style={{ padding: '112px 24px', background: 'transparent', borderTop: `1px solid ${C.hairline}`, textAlign: 'center' }}>
+        <section style={{ padding: '72px 24px 80px', background: 'transparent', borderTop: `1px solid ${C.hairline}`, textAlign: 'center' }}>
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(22px, 3vw, 26px)', fontWeight: 600, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: -0.4 }}>
               Ready to stop paying{' '}

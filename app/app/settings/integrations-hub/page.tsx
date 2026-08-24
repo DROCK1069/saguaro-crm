@@ -5,30 +5,47 @@
  * outbound webhooks (signed delivery, per-event subscriptions, live test).
  * All secrets live only in the DB — the API key's full value is shown exactly
  * once at creation and never returned again.
+ *
+ * Command-center anatomy: ModuleHero, live StatStrip (keys/webhooks from the
+ * API), SectionCards, skeletons, honest empty states. Every marketplace card
+ * goes somewhere real — QuickBooks and Cloud Storage connect in-product,
+ * Zapier and Procore open a request line to support. Nothing dead ships here.
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
 import Link from 'next/link';
-import { PageWrap, SectionHeader, Btn, Card, CardHeader, CardBody, Badge, T } from '@/components/ui/shell';
+import {
+  PremiumSurface, ModuleHero, SectionCard, StatStrip, IconChip, Pill,
+  goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle,
+} from '@/components/ui/premium';
 import {
   Plugs, Key, Plus, Copy, Check, Trash, Broadcast, ArrowSquareOut,
-  Warning, LinkSimple, X,
+  Warning, LinkSimple, X, BookOpen,
 } from '@phosphor-icons/react';
 import { WEBHOOK_EVENT_NAMES } from '@/lib/webhook-events';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-type MarketState = 'connect' | 'request' | 'soon';
-type Market = { key: string; name: string; desc: string; state: MarketState; href?: string };
+const GOLD = 'var(--brand-primary)';
+const GOLD_HI = 'var(--brand-primary-strong)';
+const WHITE = '#FFFFFF';
+const MUTED = 'rgba(255,255,255,0.62)';
+const FAINT = 'rgba(255,255,255,0.42)';
+const BORDER = 'rgba(255,255,255,0.08)';
+const GREEN = '#22C55E';
+const RED = '#EF4444';
 
+type MarketState = 'connect' | 'request';
+type Market = { key: string; name: string; desc: string; state: MarketState; href: string };
+
+// Every entry here is LIVE: 'connect' links to a working in-product flow,
+// 'request' opens a real support line. Integrations without a backend
+// (Slack, Teams, Autodesk) are intentionally absent — no dead cards.
 const MARKETPLACE: Market[] = [
   { key: 'quickbooks', name: 'QuickBooks Online', desc: 'Sync invoices, bills, vendors, and customers with QuickBooks.', state: 'connect', href: '/app/integrations/quickbooks' },
   { key: 'storage', name: 'Cloud Storage', desc: 'Connect S3, OneDrive, SharePoint, Egnyte, Dropbox, Google Drive, or Box.', state: 'connect', href: '/app/settings/storage' },
   { key: 'zapier', name: 'Zapier', desc: 'Automate 6,000+ apps with Saguaro triggers and actions.', state: 'request', href: 'mailto:support@saguarocontrol.net?subject=Zapier%20Integration%20Access' },
-  { key: 'slack', name: 'Slack', desc: 'Post project events and approvals to your Slack channels.', state: 'soon' },
-  { key: 'teams', name: 'Microsoft Teams', desc: 'Route notifications and approvals into Teams channels.', state: 'soon' },
   { key: 'procore', name: 'Procore Import', desc: 'Migrate projects, contacts, and documents from Procore.', state: 'request', href: 'mailto:support@saguarocontrol.net?subject=Procore%20Import' },
-  { key: 'autodesk', name: 'Autodesk Construction Cloud', desc: 'Sync drawings and models with Autodesk BIM 360 / ACC.', state: 'soon' },
 ];
 
 // Subscribe only to events Saguaro actually emits (single source of truth:
@@ -39,15 +56,23 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '9px 12px',
   borderRadius: 10,
-  background: T.surface,
-  border: `1px solid ${T.border}`,
-  color: T.white,
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+  border: `1px solid ${BORDER}`,
+  color: WHITE,
   fontSize: 13,
   fontFamily: 'inherit',
   outline: 'none',
   boxSizing: 'border-box',
 };
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: T.muted, marginBottom: 6 };
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.08em',
+  textTransform: 'uppercase', color: MUTED, marginBottom: 6,
+};
+
+/** Pulsing skeleton row (pmSkeleton keyframes ship with PremiumSurface). */
+function SkeletonRow({ h = 52 }: { h?: number }) {
+  return <div className="pmSkeleton" style={{ height: h, borderRadius: 10, background: 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))' }} />;
+}
 
 export default function IntegrationsHubPage() {
   const [keys, setKeys] = useState<any[]>([]);
@@ -186,255 +211,273 @@ export default function IntegrationsHubPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const statusColor = (s: number | null): 'green' | 'red' | 'muted' => {
-    if (s == null) return 'muted';
+  const statusTone = (s: number | null): 'green' | 'red' | 'neutral' => {
+    if (s == null) return 'neutral';
     if (s >= 200 && s < 300) return 'green';
     return 'red';
   };
 
+  const liveKeys = keys.filter((k) => !k.revoked_at);
+  const activeHooks = hooks.filter((h) => h.active);
+
+  const compactGhost: React.CSSProperties = { ...ghostButtonStyle, padding: '7px 12px', fontSize: 12 };
+  const compactDanger: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    padding: '7px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+    background: 'rgba(239,68,68,0.12)', color: RED, border: '1px solid rgba(239,68,68,0.35)',
+  };
+
   return (
-    <PageWrap>
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px 80px' }}>
-        <SectionHeader
-          title="Integration Hub"
-          sub="Connect Saguaro to the tools you already use, or build your own with API keys and webhooks."
-        />
+    <PremiumSurface maxWidth={1100}>
+      <ModuleHero
+        eyebrow="Workspace"
+        eyebrowIcon={<Plugs size={13} weight="fill" color={GOLD} />}
+        title="Integration"
+        accent="Hub"
+        subtitle="Connect Saguaro to the tools you already use, or build your own with API keys and webhooks."
+        actions={
+          <Link href="/app/integrations/api-docs" style={goldOutlineButtonStyle} className="pmBtn">
+            <BookOpen size={15} weight="bold" /> API Docs
+          </Link>
+        }
+      />
 
-        {/* Marketplace */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: 16,
-            marginBottom: 40,
-          }}
-        >
-          {MARKETPLACE.map((m) => (
-            <Card key={m.key} style={{ display: 'flex', flexDirection: 'column' }}>
-              <CardBody style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: T.goldDim, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Plugs size={22} color={T.gold} weight="duotone" />
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: T.white }}>{m.name}</div>
-                </div>
-                <p style={{ margin: 0, fontSize: 13, color: T.muted, lineHeight: 1.5, flex: 1 }}>{m.desc}</p>
-                <div style={{ marginTop: 6 }}>
-                  {m.state === 'connect' && m.href && (
-                    <Link href={m.href} style={{ textDecoration: 'none' }}>
-                      <Btn size="sm" variant="primary" style={{ width: '100%' }}>
-                        <LinkSimple size={14} weight="bold" /> Connect
-                      </Btn>
-                    </Link>
-                  )}
-                  {m.state === 'request' && m.href && (
-                    <a href={m.href} style={{ textDecoration: 'none' }}>
-                      <Btn size="sm" variant="ghost" style={{ width: '100%' }}>
-                        <ArrowSquareOut size={14} weight="bold" /> Request access
-                      </Btn>
-                    </a>
-                  )}
-                  {m.state === 'soon' && (
-                    <div style={{ textAlign: 'center' }}>
-                      <Badge label="Coming soon" color="muted" />
-                    </div>
-                  )}
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
+      {/* Live figures — keys and webhooks come straight from the API. */}
+      {!loading && (
+        <StatStrip items={[
+          { label: 'Marketplace', value: String(MARKETPLACE.length), sub: 'live integrations' },
+          { label: 'Active API Keys', value: String(liveKeys.length), sub: keys.length > liveKeys.length ? `${keys.length - liveKeys.length} revoked` : 'none revoked' },
+          { label: 'Webhooks', value: String(hooks.length), sub: hooks.length ? `${activeHooks.length} active` : 'none configured' },
+          { label: 'Events Emitted', value: String(WEBHOOK_EVENTS.length), sub: 'subscribable event types' },
+        ]} />
+      )}
 
-        {/* API Keys */}
-        <Card style={{ marginBottom: 32 }}>
-          <CardHeader>
-            <Key size={20} color={T.gold} weight="duotone" />
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.white }}>API Keys</div>
-          </CardHeader>
-          <CardBody style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <p style={{ margin: 0, fontSize: 13, color: T.muted }}>
-              Personal keys for the Saguaro REST API. The full key is shown once at creation — store it securely; it cannot be retrieved again.
-            </p>
+      {/* Marketplace */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: 16,
+          marginBottom: 28,
+        }}
+      >
+        {MARKETPLACE.map((m) => (
+          <SectionCard key={m.key} bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <IconChip size={40}><Plugs size={20} color={GOLD} weight="duotone" /></IconChip>
+              <div style={{ fontSize: 15, fontWeight: 700, color: WHITE }}>{m.name}</div>
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.5, flex: 1 }}>{m.desc}</p>
+            <div style={{ marginTop: 6 }}>
+              {m.state === 'connect' ? (
+                <Link href={m.href} style={{ ...goldButtonStyle, width: '100%', padding: '9px 16px', fontSize: 12.5, boxSizing: 'border-box' }} className="pmBtn">
+                  <LinkSimple size={14} weight="bold" /> Connect
+                </Link>
+              ) : (
+                <a href={m.href} style={{ ...ghostButtonStyle, width: '100%', padding: '9px 16px', fontSize: 12.5, boxSizing: 'border-box' }} className="pmBtn">
+                  <ArrowSquareOut size={14} weight="bold" /> Request access
+                </a>
+              )}
+            </div>
+          </SectionCard>
+        ))}
+      </div>
 
-            {/* One-time reveal */}
-            {revealed && (
-              <div style={{ border: `1px solid ${T.borderGold}`, background: T.goldDim, borderRadius: 12, padding: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <Warning size={16} color={T.gold} weight="fill" />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: T.gold }}>Copy this key now — you won&apos;t see it again</span>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <code style={{ flex: 1, fontFamily: 'monospace', fontSize: 13, color: T.white, background: T.surface, padding: '10px 12px', borderRadius: 8, wordBreak: 'break-all' }}>
-                    {revealed}
-                  </code>
-                  <Btn size="sm" variant="ghost" onClick={copyKey}>
-                    {copied ? <><Check size={14} weight="bold" /> Copied</> : <><Copy size={14} weight="bold" /> Copy</>}
-                  </Btn>
-                  <Btn size="sm" variant="ghost" onClick={() => setRevealed(null)}><X size={14} weight="bold" /></Btn>
-                </div>
+      {/* API Keys */}
+      <SectionCard
+        title="API Keys"
+        subtitle="Personal keys for the Saguaro REST API — the full key is shown once at creation and can never be retrieved again."
+        icon={<Key size={17} color={GOLD} weight="duotone" />}
+        style={{ marginBottom: 24 }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* One-time reveal */}
+          {revealed && (
+            <div style={{ border: '1px solid var(--brand-primary-35)', background: 'var(--brand-primary-12)', borderRadius: 12, padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <Warning size={16} color={GOLD} weight="fill" />
+                <span style={{ fontSize: 13, fontWeight: 700, color: GOLD_HI }}>Copy this key now — you won&apos;t see it again</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <code style={{ flex: 1, minWidth: 200, fontFamily: 'monospace', fontSize: 13, color: WHITE, background: 'rgba(255,255,255,0.05)', padding: '10px 12px', borderRadius: 8, wordBreak: 'break-all' }}>
+                  {revealed}
+                </code>
+                <button onClick={copyKey} style={compactGhost} className="pmBtn">
+                  {copied ? <><Check size={14} weight="bold" /> Copied</> : <><Copy size={14} weight="bold" /> Copy</>}
+                </button>
+                <button onClick={() => setRevealed(null)} style={compactGhost} className="pmBtn"><X size={14} weight="bold" /></button>
+              </div>
+            </div>
+          )}
+
+          {/* Create form */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))', borderRadius: 12, border: `1px solid ${BORDER}` }}>
+            <div>
+              <label style={labelStyle}>Key name</label>
+              <input style={inputStyle} placeholder="e.g. Reporting pipeline" value={keyName} onChange={(e) => setKeyName(e.target.value)} />
+            </div>
+            <div>
+              <label style={labelStyle}>Scopes</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['read', 'write', 'admin'].map((s) => {
+                  const on = keyScopes.includes(s);
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => toggleScope(s)}
+                      className="pmTile"
+                      style={{
+                        padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                        border: `1px solid ${on ? 'var(--brand-primary-35)' : BORDER}`,
+                        background: on ? 'var(--brand-primary-12)' : 'rgba(255,255,255,0.04)',
+                        color: on ? GOLD_HI : MUTED,
+                        textTransform: 'uppercase', letterSpacing: '0.04em',
+                      }}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <button onClick={createKey} disabled={creatingKey} className="pmBtn" style={{ ...goldButtonStyle, padding: '9px 16px', fontSize: 12.5, cursor: creatingKey ? 'not-allowed' : 'pointer', opacity: creatingKey ? 0.6 : 1 }}>
+                <Plus size={14} weight="bold" /> {creatingKey ? 'Creating…' : 'Create API key'}
+              </button>
+            </div>
+          </div>
+
+          {/* List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {loading && <><SkeletonRow /><SkeletonRow /></>}
+            {!loading && keys.length === 0 && (
+              <div style={{ fontSize: 13, color: FAINT, lineHeight: 1.5 }}>
+                No API keys yet. Create one above to call the Saguaro REST API — see the API Docs for endpoints and auth.
               </div>
             )}
+            {!loading && keys.map((k) => (
+              <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))', borderRadius: 10, border: `1px solid ${BORDER}`, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: WHITE }}>{k.name}</div>
+                  <div style={{ fontSize: 12, color: FAINT, fontFamily: 'monospace', marginTop: 2 }}>{k.key_prefix}••••••••</div>
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {(k.scopes ?? []).map((s: string) => <Pill key={s} tone="neutral" caps>{s}</Pill>)}
+                </div>
+                {k.revoked_at
+                  ? <Pill tone="red" caps>Revoked</Pill>
+                  : <button onClick={() => revokeKey(k.id)} style={compactDanger} className="pmBtn"><Trash size={14} weight="bold" /> Revoke</button>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
 
-            {/* Create form */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, background: T.surface, borderRadius: 12, border: `1px solid ${T.border}` }}>
+      {/* Outbound Webhooks */}
+      <SectionCard
+        title="Outbound Webhooks"
+        subtitle={<>Saguaro POSTs a JSON event to your URL with an <code style={{ fontFamily: 'monospace', color: WHITE }}>X-Saguaro-Signature</code> HMAC-SHA256 header you can verify with the endpoint&apos;s secret.</>}
+        icon={<Broadcast size={17} color={GOLD} weight="duotone" />}
+        action={
+          <button onClick={() => setShowHookForm((v) => !v)} style={compactGhost} className="pmBtn">
+            <Plus size={14} weight="bold" /> Add endpoint
+          </button>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {showHookForm && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))', borderRadius: 12, border: `1px solid ${BORDER}` }}>
               <div>
-                <label style={labelStyle}>Key name</label>
-                <input style={inputStyle} placeholder="e.g. Reporting pipeline" value={keyName} onChange={(e) => setKeyName(e.target.value)} />
+                <label style={labelStyle}>Name</label>
+                <input style={inputStyle} placeholder="e.g. Ops notifier" value={hookName} onChange={(e) => setHookName(e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Scopes</label>
+                <label style={labelStyle}>Endpoint URL</label>
+                <input style={inputStyle} placeholder="https://example.com/webhooks/saguaro" value={hookUrl} onChange={(e) => setHookUrl(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Events</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {['read', 'write', 'admin'].map((s) => {
-                    const on = keyScopes.includes(s);
+                  {WEBHOOK_EVENTS.map((e) => {
+                    const on = hookEvents.includes(e);
                     return (
                       <button
-                        key={s}
-                        onClick={() => toggleScope(s)}
+                        key={e}
+                        onClick={() => toggleEvent(e)}
+                        className="pmTile"
                         style={{
-                          padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                          border: `1px solid ${on ? T.borderGold : T.border}`,
-                          background: on ? T.goldDim : T.surface2,
-                          color: on ? T.gold : T.muted,
-                          textTransform: 'uppercase', letterSpacing: '0.04em',
+                          padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                          border: `1px solid ${on ? 'var(--brand-primary-35)' : BORDER}`,
+                          background: on ? 'var(--brand-primary-12)' : 'rgba(255,255,255,0.04)',
+                          color: on ? GOLD_HI : MUTED, fontFamily: 'monospace',
                         }}
                       >
-                        {s}
+                        {e}
                       </button>
                     );
                   })}
                 </div>
               </div>
-              <div>
-                <Btn variant="primary" size="sm" onClick={createKey} disabled={creatingKey}>
-                  <Plus size={14} weight="bold" /> {creatingKey ? 'Creating…' : 'Create API key'}
-                </Btn>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={createHook} disabled={savingHook} className="pmBtn" style={{ ...goldButtonStyle, padding: '9px 16px', fontSize: 12.5, cursor: savingHook ? 'not-allowed' : 'pointer', opacity: savingHook ? 0.6 : 1 }}>
+                  {savingHook ? 'Saving…' : 'Add webhook'}
+                </button>
+                <button onClick={() => setShowHookForm(false)} style={compactGhost} className="pmBtn">Cancel</button>
               </div>
             </div>
+          )}
 
-            {/* List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {loading && <div style={{ fontSize: 13, color: T.muted }}>Loading…</div>}
-              {!loading && keys.length === 0 && <div style={{ fontSize: 13, color: T.faint }}>No API keys yet.</div>}
-              {keys.map((k) => (
-                <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: T.surface, borderRadius: 10, border: `1px solid ${T.border}` }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: T.white }}>{k.name}</div>
-                    <div style={{ fontSize: 12, color: T.faint, fontFamily: 'monospace', marginTop: 2 }}>{k.key_prefix}••••••••</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {(k.scopes ?? []).map((s: string) => <Badge key={s} label={s} color="blue" />)}
-                  </div>
-                  {k.revoked_at
-                    ? <Badge label="Revoked" color="red" />
-                    : <Btn size="sm" variant="danger" onClick={() => revokeKey(k.id)}><Trash size={14} weight="bold" /> Revoke</Btn>}
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Outbound Webhooks */}
-        <Card>
-          <CardHeader>
-            <Broadcast size={20} color={T.gold} weight="duotone" />
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.white, flex: 1 }}>Outbound Webhooks</div>
-            <Btn size="sm" variant="ghost" onClick={() => setShowHookForm((v) => !v)}>
-              <Plus size={14} weight="bold" /> Add endpoint
-            </Btn>
-          </CardHeader>
-          <CardBody style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <p style={{ margin: 0, fontSize: 13, color: T.muted }}>
-              Saguaro POSTs a JSON event to your URL with an <code style={{ fontFamily: 'monospace', color: T.white }}>X-Saguaro-Signature</code> HMAC-SHA256 header you can verify with the endpoint&apos;s secret.
-            </p>
-
-            {showHookForm && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16, background: T.surface, borderRadius: 12, border: `1px solid ${T.border}` }}>
-                <div>
-                  <label style={labelStyle}>Name</label>
-                  <input style={inputStyle} placeholder="e.g. Ops notifier" value={hookName} onChange={(e) => setHookName(e.target.value)} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Endpoint URL</label>
-                  <input style={inputStyle} placeholder="https://example.com/webhooks/saguaro" value={hookUrl} onChange={(e) => setHookUrl(e.target.value)} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Events</label>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {WEBHOOK_EVENTS.map((e) => {
-                      const on = hookEvents.includes(e);
-                      return (
-                        <button
-                          key={e}
-                          onClick={() => toggleEvent(e)}
-                          style={{
-                            padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                            border: `1px solid ${on ? T.borderGold : T.border}`,
-                            background: on ? T.goldDim : T.surface2,
-                            color: on ? T.gold : T.muted, fontFamily: 'monospace',
-                          }}
-                        >
-                          {e}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Btn variant="primary" size="sm" onClick={createHook} disabled={savingHook}>
-                    {savingHook ? 'Saving…' : 'Add webhook'}
-                  </Btn>
-                  <Btn variant="ghost" size="sm" onClick={() => setShowHookForm(false)}>Cancel</Btn>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {loading && <><SkeletonRow h={84} /><SkeletonRow h={84} /></>}
+            {!loading && hooks.length === 0 && (
+              <div style={{ fontSize: 13, color: FAINT, lineHeight: 1.5 }}>
+                No webhooks configured. Add an endpoint above and Saguaro will start delivering signed events the moment they happen.
               </div>
             )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {loading && <div style={{ fontSize: 13, color: T.muted }}>Loading…</div>}
-              {!loading && hooks.length === 0 && <div style={{ fontSize: 13, color: T.faint }}>No webhooks configured.</div>}
-              {hooks.map((h) => (
-                <div key={h.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px', background: T.surface, borderRadius: 10, border: `1px solid ${T.border}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: T.white }}>{h.name}</div>
-                      <div style={{ fontSize: 12, color: T.faint, wordBreak: 'break-all', marginTop: 2 }}>{h.url}</div>
-                    </div>
-                    <Badge label={h.active ? 'Active' : 'Paused'} color={h.active ? 'green' : 'muted'} />
+            {!loading && hooks.map((h) => (
+              <div key={h.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 14, background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))', borderRadius: 10, border: `1px solid ${BORDER}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: WHITE }}>{h.name}</div>
+                    <div style={{ fontSize: 12, color: FAINT, wordBreak: 'break-all', marginTop: 2 }}>{h.url}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {(h.events ?? []).map((e: string) => (
-                      <span key={e} style={{ fontSize: 11, fontFamily: 'monospace', color: T.muted, background: T.surface2, padding: '2px 8px', borderRadius: 6, border: `1px solid ${T.border}` }}>{e}</span>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {h.last_status != null
-                      ? <Badge label={`Last: HTTP ${h.last_status}`} color={statusColor(h.last_status)} />
-                      : <span style={{ fontSize: 12, color: T.faint }}>Never fired</span>}
-                    {h.last_fired_at && <span style={{ fontSize: 12, color: T.faint }}>{new Date(h.last_fired_at).toLocaleString()}</span>}
-                    <div style={{ flex: 1 }} />
-                    <Btn size="sm" variant="ghost" onClick={() => testHook(h.id)} disabled={testing === h.id}>
-                      {testing === h.id ? 'Testing…' : 'Test'}
-                    </Btn>
-                    <Btn size="sm" variant="ghost" onClick={() => toggleHookActive(h)}>
-                      {h.active ? 'Pause' : 'Activate'}
-                    </Btn>
-                    <Btn size="sm" variant="danger" onClick={() => deleteHook(h.id)}><Trash size={14} weight="bold" /></Btn>
-                  </div>
+                  <Pill tone={h.active ? 'green' : 'neutral'} caps>{h.active ? 'Active' : 'Paused'}</Pill>
                 </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {(h.events ?? []).map((e: string) => (
+                    <span key={e} style={{ fontSize: 11, fontFamily: 'monospace', color: MUTED, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 6, border: `1px solid ${BORDER}` }}>{e}</span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {h.last_status != null
+                    ? <Pill tone={statusTone(h.last_status)} caps>Last: HTTP {h.last_status}</Pill>
+                    : <span style={{ fontSize: 12, color: FAINT }}>Never fired</span>}
+                  {h.last_fired_at && <span style={{ fontSize: 12, color: FAINT }}>{new Date(h.last_fired_at).toLocaleString()}</span>}
+                  <div style={{ flex: 1 }} />
+                  <button onClick={() => testHook(h.id)} disabled={testing === h.id} style={{ ...compactGhost, opacity: testing === h.id ? 0.6 : 1 }} className="pmBtn">
+                    {testing === h.id ? 'Testing…' : 'Test'}
+                  </button>
+                  <button onClick={() => toggleHookActive(h)} style={compactGhost} className="pmBtn">
+                    {h.active ? 'Pause' : 'Activate'}
+                  </button>
+                  <button onClick={() => deleteHook(h.id)} style={compactDanger} className="pmBtn"><Trash size={14} weight="bold" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
 
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: toast.ok ? T.green : T.red, color: '#fff', padding: '12px 20px',
-          borderRadius: 10, fontSize: 14, fontWeight: 600, boxShadow: T.shadowLg, zIndex: 1000,
+          background: toast.ok ? GREEN : RED, color: '#0B0B0C', padding: '12px 20px',
+          borderRadius: 10, fontSize: 14, fontWeight: 700, zIndex: 1000,
+          border: '1px solid rgba(255,255,255,0.25)',
         }}>
           {toast.m}
         </div>
       )}
-    </PageWrap>
+    </PremiumSurface>
   );
 }

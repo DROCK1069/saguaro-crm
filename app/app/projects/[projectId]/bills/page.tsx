@@ -8,6 +8,7 @@ import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatSt
 import { Receipt, Plus, FilePlus, CurrencyDollar, Wallet } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 
 const GOLD='#F59E0B', DARK='#0a0a0a', RAISED='#141416', BORDER='rgba(255,255,255,0.12)', DIM='#CBD5E1', TEXT='#FFFFFF', GREEN='#3dd68c', RED='#ef4444';
 
@@ -237,6 +238,22 @@ export default function BillsPage() {
       if (sortBy === 'vendor') return String(a.vendor_name || '').localeCompare(String(b2.vendor_name || ''));
       return String(a.due_date || '9999').localeCompare(String(b2.due_date || '9999'));
     });
+
+  // Column-header sorting (R11 sweep) — when active it overrides the toolbar's
+  // sortBy ordering; cycling back to "none" restores it. Amount sorts numeric,
+  // due date as ISO, status on the effective (overdue-aware) label.
+  const { sort: colSort, cycleSort } = usePersistedSort('project-bills');
+  const sortedBills = useSortedRows(filteredBills, colSort, (b, key) => {
+    switch (key) {
+      case 'invoice': return b.bill_number || null;
+      case 'vendor':  return b.vendor_name || null;
+      case 'desc':    return b.description || null;
+      case 'amount':  return Number(b.amount) || 0;
+      case 'due':     return b.due_date || null;
+      case 'status':  return isOverdue(b.due_date, b.status) && b.status !== 'Paid' ? 'Overdue' : b.status;
+      default:        return (b as unknown as Record<string, unknown>)[key];
+    }
+  });
   const pendingTotal = toDollars(sumCents(bills.filter(b => b.status === 'Pending' || b.status === 'Approved').map(b => toCents(b.amount || 0))));
   const paidCount = bills.filter(b => b.status === 'Paid').length;
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#1c1c1e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
@@ -463,14 +480,17 @@ export default function BillsPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: 'rgba(0,0,0,0.25)' }}>
-                  {['Invoice #','Vendor','Description','Amount','Due Date','Status','Actions'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: DIM, borderBottom: '1px solid ' + BORDER, whiteSpace: 'nowrap' }}>{h}</th>
+                <tr>
+                  {([
+                    ['Invoice #','invoice'],['Vendor','vendor'],['Description','desc'],
+                    ['Amount','amount'],['Due Date','due'],['Status','status'],['Actions',undefined],
+                  ] as [string, string|undefined][]).map(([h,k]) => (
+                    <SortableTh key={h} label={h} sortKey={k} sort={colSort} onSort={cycleSort} />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredBills.map(b => {
+                {sortedBills.map(b => {
                   const overdue = isOverdue(b.due_date, b.status);
                   return (
                     <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,.06)', background: overdue ? 'rgba(239,68,68,.05)' : 'transparent' }}>

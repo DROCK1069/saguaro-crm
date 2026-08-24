@@ -72,6 +72,14 @@ export const PREMIUM_FX = `
 .pmTile:hover{transform:translateY(-1px)}
 .pmShine{background-size:200% 100%;animation:pmShimmer 3.6s linear infinite}
 .pmSkeleton{animation:pmSkeleton 1.4s ease-in-out infinite}
+/* Machined sortable table headers (premium DataTable). Color states live here so
+   hover/active read as one material: dim chrome -> white on hover -> brand on sort. */
+.pmSortTh{cursor:pointer;transition:color .15s ease}
+.pmSortTh:hover{color:rgba(255,255,255,0.92)}
+.pmSortTh .pmSortGlyph{font-size:10px;line-height:1;opacity:.35;transition:opacity .15s ease}
+.pmSortTh:hover .pmSortGlyph{opacity:.8}
+.pmSortTh[aria-sort="ascending"],.pmSortTh[aria-sort="descending"]{color:var(--brand-primary-strong)}
+.pmSortTh[aria-sort="ascending"] .pmSortGlyph,.pmSortTh[aria-sort="descending"] .pmSortGlyph{opacity:1}
 /* Beat the global h1 !important size cap (globals.css) with higher specificity */
 h1.pmH1{font-size:clamp(28px,4.4vw,46px)!important;font-weight:900!important;line-height:1.04!important;letter-spacing:-0.03em!important;margin:0!important}
 @media (prefers-reduced-motion: reduce){
@@ -112,7 +120,7 @@ export function PremiumSurface({
   children,
   maxWidth = 1600,
   soft = true,
-  pad = '40px 32px 72px',
+  pad = '32px 24px 56px',
 }: {
   children: React.ReactNode;
   maxWidth?: number;
@@ -167,9 +175,9 @@ export function ModuleHero({
         alignItems: centered ? 'center' : 'flex-end',
         flexDirection: centered ? 'column' : 'row',
         justifyContent: 'space-between',
-        gap: 18,
+        gap: 16,
         flexWrap: 'wrap',
-        marginBottom: 30,
+        marginBottom: 24,
         paddingLeft: ac && !centered ? 18 : undefined,
         textAlign: centered ? 'center' : 'left',
         ...style,
@@ -303,7 +311,7 @@ export function StatCard({
       style={{
         position: 'relative', overflow: 'hidden',
         background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16,
-        padding: '18px 20px',
+        padding: '14px 16px',
         // milled plate: drop + top light + full-perimeter inset ring (mobile cardShadow)
         boxShadow: `0 14px 34px -24px ${A30}, inset 0 1px 0 rgba(255,255,255,0.06), inset 0 0 0 1px rgba(255,255,255,0.03)`,
         cursor: interactive ? 'pointer' : 'default',
@@ -313,12 +321,12 @@ export function StatCard({
     >
       {/* left accent bar */}
       <div aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg, ${numberColor}, transparent)`, opacity: 0.85 }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 14 }}>
-        <IconChip size={38}>{icon}</IconChip>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <IconChip size={34}>{icon}</IconChip>
         <span style={{ fontSize: 11, color: MUTED, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</span>
       </div>
-      <div style={{ fontSize: 30, fontWeight: 800, color: numberColor, letterSpacing: '-0.02em', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub != null && <div style={{ fontSize: 12.5, color: FAINT, marginTop: 6 }}>{sub}</div>}
+      <div style={{ fontSize: 26, fontWeight: 800, color: numberColor, letterSpacing: '-0.02em', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      {sub != null && <div style={{ fontSize: 12.5, color: FAINT, marginTop: 4 }}>{sub}</div>}
     </div>
   );
   if (href) {
@@ -362,8 +370,8 @@ export function SectionCard({
       }}
     >
       {(title || icon || action) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
-          {icon && <IconChip size={34}>{icon}</IconChip>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+          {icon && <IconChip size={32}>{icon}</IconChip>}
           <div style={{ minWidth: 0, flex: 1 }}>
             {title && <div style={{ fontWeight: 800, fontSize: 15.5, color: WHITE, letterSpacing: '-0.01em', lineHeight: 1.25 }}>{title}</div>}
             {subtitle && <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>{subtitle}</div>}
@@ -371,7 +379,7 @@ export function SectionCard({
           {action && <div style={{ flex: '0 0 auto' }}>{action}</div>}
         </div>
       )}
-      <div style={{ padding: flush ? 0 : 20, ...bodyStyle }}>{children}</div>
+      <div style={{ padding: flush ? 0 : 16, ...bodyStyle }}>{children}</div>
       {/* top accent hairline */}
       <div aria-hidden style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 1, background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, opacity: 0.35 }} />
     </div>
@@ -643,6 +651,290 @@ export function FlowStrip({ steps, style }: {
           </span>
         </React.Fragment>
       ))}
+    </div>
+  );
+}
+
+// ─── Sortable DataTable (shared primitive) ───────────────────────────────────
+// Lightweight machined table for module screens: milled .pmTable plate, chrome
+// header band, brand-08 row hover — with tri-state column sorting built in.
+// Zero deps (the TanStack table at components/DataTable.tsx is untouched; this
+// is the premium-kit primitive hand-rolled tables migrate to). Sorting is
+// numeric-aware (TEXT-money columns like "$1,234.56" compare as numbers),
+// ISO-date-aware, and stable. Pass `tableId` to persist the user's chosen sort
+// in localStorage under 'sag_sort_' + tableId.
+
+export type SortDir = 'asc' | 'desc';
+export type SortState = { key: string; dir: SortDir } | null;
+
+export type DataTableColumn<T> = {
+  /** Unique column id — also the row property read when no accessor is given. */
+  key: string;
+  header: React.ReactNode;
+  /** Raw value used for sorting (and default rendering). Defaults to row[key]. */
+  accessor?: (row: T) => unknown;
+  /** Custom cell renderer. Sorting still uses accessor/row[key]. */
+  render?: (row: T, index: number) => React.ReactNode;
+  /** Default: true when the column's values are string/number/Date/boolean. */
+  sortable?: boolean;
+  align?: 'left' | 'center' | 'right';
+  width?: number | string;
+};
+
+// Numeric parse that survives the TEXT-typed money columns: strips currency
+// symbols, thousands commas and a trailing %, then trusts Number().
+function numericOf(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v === 'boolean') return v ? 1 : 0;
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (!s) return null;
+  const cleaned = s.replace(/[$€£,\s]/g, '').replace(/%$/, '');
+  if (!cleaned || cleaned === '-') return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+// ISO-ish date strings ("2026-08-23", "2026-08-23T10:00:00Z", "2026-08") → ms.
+const ISOISH_DATE = /^\d{4}-\d{2}(-\d{2})?([T ].*)?$/;
+function dateMsOf(v: unknown): number | null {
+  if (v instanceof Date) {
+    const t = v.getTime();
+    return Number.isNaN(t) ? null : t;
+  }
+  if (typeof v !== 'string' || !ISOISH_DATE.test(v.trim())) return null;
+  const t = Date.parse(v.trim());
+  return Number.isNaN(t) ? null : t;
+}
+
+/** Ascending compare for two non-empty cell values: numbers when both parse
+ *  (money strings included), then ISO-ish dates, then locale text. */
+export function compareSortValues(a: unknown, b: unknown): number {
+  const an = numericOf(a);
+  const bn = numericOf(b);
+  if (an != null && bn != null) return an === bn ? 0 : an < bn ? -1 : 1;
+  const ad = dateMsOf(a);
+  const bd = dateMsOf(b);
+  if (ad != null && bd != null) return ad === bd ? 0 : ad < bd ? -1 : 1;
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+}
+
+/** Stable sort of rows by a SortState. Empty values (null/undefined/'') always
+ *  sink to the bottom regardless of direction; ties keep source order. For
+ *  hand-rolled tables: `const sorted = useSortedRows(rows, sort);`. */
+export function useSortedRows<T>(
+  rows: T[],
+  sort: SortState,
+  getValue?: (row: T, key: string) => unknown,
+): T[] {
+  return React.useMemo(() => {
+    if (!sort || !Array.isArray(rows) || rows.length < 2) return rows;
+    const get = getValue ?? ((row: T, key: string) => (row as Record<string, unknown> | null | undefined)?.[key]);
+    const dir = sort.dir === 'desc' ? -1 : 1;
+    return rows
+      .map((row, i) => ({ row, i }))
+      .sort((a, b) => {
+        const av = get(a.row, sort.key);
+        const bv = get(b.row, sort.key);
+        const ae = av == null || av === '';
+        const be = bv == null || bv === '';
+        if (ae !== be) return ae ? 1 : -1; // empties last, both directions
+        const c = ae ? 0 : compareSortValues(av, bv);
+        return c !== 0 ? c * dir : a.i - b.i; // explicit stability
+      })
+      .map((x) => x.row);
+  }, [rows, sort, getValue]);
+}
+
+const colValue = <T,>(col: DataTableColumn<T>, row: T): unknown =>
+  col.accessor ? col.accessor(row) : (row as Record<string, unknown> | null | undefined)?.[col.key];
+
+// sortable default: true when the first non-empty value is a primitive we can
+// order (string/number/Date/boolean); an empty table stays sortable-ready.
+function isColSortable<T>(col: DataTableColumn<T>, rows: T[]): boolean {
+  if (col.sortable != null) return col.sortable;
+  for (const row of rows) {
+    const v = colValue(col, row);
+    if (v == null || v === '') continue;
+    return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v instanceof Date;
+  }
+  return true;
+}
+
+function defaultCell(v: unknown): React.ReactNode {
+  if (v == null) return '';
+  if (typeof v === 'string' || typeof v === 'number') return v;
+  if (v instanceof Date) return v.toLocaleDateString();
+  return String(v);
+}
+
+export function DataTable<T>({
+  columns,
+  rows,
+  rowKey,
+  onRowClick,
+  emptyMessage = 'No records',
+  defaultSort,
+  tableId,
+  style,
+}: {
+  columns: DataTableColumn<T>[];
+  rows: T[];
+  rowKey?: (row: T, index: number) => string | number;
+  onRowClick?: (row: T) => void;
+  emptyMessage?: React.ReactNode;
+  /** Initial sort when the user hasn't chosen one (or no tableId is given). */
+  defaultSort?: { key: string; dir: SortDir };
+  /** Persist the user's sort as 'sag_sort_' + tableId in localStorage. */
+  tableId?: string;
+  style?: React.CSSProperties;
+}) {
+  const [sort, setSort] = React.useState<SortState>(defaultSort ?? null);
+
+  // Load the persisted choice after mount (not in the initializer) so server
+  // and first client render agree — no hydration mismatch.
+  React.useEffect(() => {
+    if (!tableId) return;
+    try {
+      const raw = window.localStorage.getItem('sag_sort_' + tableId);
+      if (raw == null) return;
+      const parsed = JSON.parse(raw) as SortState;
+      if (parsed === null) setSort(null); // user explicitly cycled back to none
+      else if (parsed && typeof parsed.key === 'string' && (parsed.dir === 'asc' || parsed.dir === 'desc')) setSort(parsed);
+    } catch {
+      /* corrupt entry — keep defaultSort */
+    }
+  }, [tableId]);
+
+  const cycleSort = (key: string) => {
+    setSort((prev) => {
+      const next: SortState =
+        !prev || prev.key !== key ? { key, dir: 'asc' } : prev.dir === 'asc' ? { key, dir: 'desc' } : null;
+      if (tableId) {
+        try {
+          window.localStorage.setItem('sag_sort_' + tableId, JSON.stringify(next));
+        } catch {
+          /* storage unavailable — sort still applies for this session */
+        }
+      }
+      return next;
+    });
+  };
+
+  const byKey = React.useMemo(() => new Map(columns.map((c) => [c.key, c])), [columns]);
+  const getValue = React.useCallback(
+    (row: T, key: string) => {
+      const col = byKey.get(key);
+      return col ? colValue(col, row) : (row as Record<string, unknown> | null | undefined)?.[key];
+    },
+    [byKey],
+  );
+  const sorted = useSortedRows(rows, sort, getValue);
+
+  return (
+    <div className="pmTable" style={style}>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              {columns.map((col, i) => {
+                const sortable = isColSortable(col, rows);
+                const active = sortable && sort?.key === col.key ? sort.dir : null;
+                return (
+                  <th
+                    key={col.key}
+                    className={sortable ? 'pmSortTh' : undefined}
+                    aria-sort={sortable ? (active === 'asc' ? 'ascending' : active === 'desc' ? 'descending' : 'none') : undefined}
+                    onClick={sortable ? () => cycleSort(col.key) : undefined}
+                    style={{
+                      padding: `9px ${i === columns.length - 1 ? 16 : 12}px 9px ${i === 0 ? 16 : 12}px`,
+                      background: 'linear-gradient(180deg, #17181b 0%, #101114 100%)',
+                      borderBottom: `1px solid ${BORDER}`,
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+                      textAlign: col.align || 'left',
+                      fontSize: 10.5,
+                      fontWeight: 800,
+                      color: FAINT,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.09em',
+                      userSelect: 'none',
+                      whiteSpace: 'nowrap',
+                      width: col.width,
+                    }}
+                  >
+                    {sortable ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          cycleSort(col.key);
+                        }}
+                        style={{
+                          all: 'unset',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          cursor: 'pointer',
+                          font: 'inherit',
+                          color: 'inherit',
+                          letterSpacing: 'inherit',
+                          textTransform: 'inherit',
+                        }}
+                      >
+                        {col.header}
+                        <span className="pmSortGlyph" aria-hidden>
+                          {active === 'asc' ? '▲' : active === 'desc' ? '▼' : '↕'}
+                        </span>
+                      </button>
+                    ) : (
+                      col.header
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} style={{ padding: '32px 16px', textAlign: 'center', color: MUTED, fontSize: 13 }}>
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              sorted.map((row, rowIndex) => {
+                const isLast = rowIndex === sorted.length - 1;
+                return (
+                  <tr
+                    key={rowKey ? rowKey(row, rowIndex) : rowIndex}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    style={{ cursor: onRowClick ? 'pointer' : 'default', background: 'transparent', transition: 'background .12s' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--brand-primary-08)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {columns.map((col, cIdx) => (
+                      <td
+                        key={col.key}
+                        style={{
+                          padding: `9px ${cIdx === columns.length - 1 ? 16 : 12}px 9px ${cIdx === 0 ? 16 : 12}px`,
+                          borderBottom: isLast ? 'none' : `1px solid rgba(255,255,255,0.05)`,
+                          fontSize: 13,
+                          color: 'rgba(255,255,255,0.88)',
+                          whiteSpace: 'nowrap',
+                          fontVariantNumeric: 'tabular-nums',
+                          textAlign: col.align || 'left',
+                        }}
+                      >
+                        {col.render ? col.render(row, rowIndex) : defaultCell(colValue(col, row))}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

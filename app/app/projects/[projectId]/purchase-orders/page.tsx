@@ -9,7 +9,8 @@ import {
   goldButtonStyle, ghostButtonStyle,
 } from '@/components/ui/premium';
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
-import { CurrencyDollar, PencilSimple, Export, Package, Plus, X, Wallet } from '@phosphor-icons/react';
+import { CurrencyDollar, PencilSimple, Export, Package, Plus, X, Wallet, Copy } from '@phosphor-icons/react';
+import { getLastUsed, setLastUsed, postLearningEvent } from '@/lib/last-used';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 
@@ -68,6 +69,13 @@ export default function PurchaseOrdersPage() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  // Raw DB rows by id — duplicates copy the full server row (cost code, tax,
+  // shipping, vendor contact), not just the display projection.
+  const [rawById, setRawById] = useState<Record<string, Record<string, unknown>>>({});
+  const [dupId, setDupId] = useState<string | null>(null);
+  // Last-used memory (per user, per project): what was prefilled this open,
+  // so AUTO chips show only while the value still matches the memory.
+  const [lastPrefill, setLastPrefill] = useState<{ vendor?: string; cost_code?: string; tax_pct?: number }>({});
   // SmartCreate: the project-context snapshot — vendors, cost codes, budget, next PO number.
   const { ctx } = useProjectContext(projectId);
   const [autoDate, setAutoDate] = useState(false);
@@ -81,7 +89,9 @@ export default function PurchaseOrdersPage() {
     try {
       const res = await fetch(`/api/projects/${projectId}/purchase-orders`);
       const json = await res.json();
-      setPos((json.purchase_orders || []).map(normalizePo));
+      const rows: Record<string, unknown>[] = json.purchase_orders || [];
+      setPos(rows.map(normalizePo));
+      setRawById(Object.fromEntries(rows.filter(r => r.id).map(r => [String(r.id), r])));
     } catch {
       setPos([]);
     } finally {
@@ -148,10 +158,33 @@ export default function PurchaseOrdersPage() {
     setErrorMsg('');
     setShowForm(open);
     if (open) {
-      setForm(f => f.delivery_date ? f : { ...f, delivery_date: plus30() });
+      // Last-used memory: prefill vendor / cost code / tax from the last PO
+      // this user saved on this project — marked AUTO, one keystroke to change.
+      const last = getLastUsed<{ vendor?: string; cost_code?: string; tax_pct?: number }>(`po:${projectId}`) || {};
+      const useVendor = !!last.vendor && !form.vendor;
+      const useCost = !!last.cost_code && !form.cost_code;
+      const useTax = typeof last.tax_pct === 'number' && last.tax_pct > 0 && !form.tax_pct;
+      setForm(f => ({
+        ...f,
+        delivery_date: f.delivery_date || plus30(),
+        vendor: useVendor ? (last.vendor as string) : f.vendor,
+        cost_code: useCost ? (last.cost_code as string) : f.cost_code,
+        tax_pct: useTax ? (last.tax_pct as number) : f.tax_pct,
+      }));
+      setLastPrefill({
+        vendor: useVendor ? last.vendor : undefined,
+        cost_code: useCost ? last.cost_code : undefined,
+        tax_pct: useTax ? last.tax_pct : undefined,
+      });
       setAutoDate(true);
     }
   }
+
+  // AUTO chips live only while the field still equals the remembered value —
+  // the moment the user edits, the chip drops and the accept is not counted.
+  const vendorAuto = !!lastPrefill.vendor && form.vendor === lastPrefill.vendor;
+  const costAuto = !!lastPrefill.cost_code && form.cost_code === lastPrefill.cost_code;
+  const taxAuto = typeof lastPrefill.tax_pct === 'number' && Number(form.tax_pct) === lastPrefill.tax_pct;
 
   async function handleSave() {
     if (!form.vendor || !form.description) { setErrorMsg('Vendor and description are required.'); return; }
@@ -180,6 +213,15 @@ export default function PurchaseOrdersPage() {
       const json = await res.json();
       if (!res.ok || !json.purchaseOrder) throw new Error(json.error || 'Create failed');
       setPos(prev => [...prev, normalizePo(json.purchaseOrder)]);
+      if (json.purchaseOrder?.id) setRawById(prev => ({ ...prev, [String(json.purchaseOrder.id)]: json.purchaseOrder }));
+      // Remember what was actually saved for next time, and receipt any
+      // prefill the user accepted unchanged.
+      setLastUsed(`po:${projectId}`, { vendor: form.vendor, cost_code: form.cost_code, tax_pct: poTaxPct });
+      const accepted = [vendorAuto && 'vendor', costAuto && 'cost_code', taxAuto && 'tax_pct'].filter(Boolean) as string[];
+      if (accepted.length > 0) {
+        postLearningEvent('last_used_prefill', { projectId, meta: { scope: 'po', fields: accepted } });
+      }
+      setLastPrefill({});
       setShowForm(false);
       setForm(EMPTY_FORM);
       setSuccessMsg('Purchase order created.');
@@ -188,6 +230,53 @@ export default function PurchaseOrdersPage() {
       setErrorMsg('Could not create the purchase order. Please try again.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** One-click repeat: copies the full server row of an existing PO into a new
+   *  draft — vendor, contact, description, lines, cost code, tax, shipping —
+   *  while the number, delivery date, and status regenerate. */
+  async function handleDuplicate(po: PurchaseOrder) {
+    if (dupId) return;
+    setDupId(po.id);
+    setErrorMsg('');
+    const src = rawById[po.id] || {};
+    const num = nextPoStr;
+    try {
+      const res = await fetch('/api/purchase-orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId,
+          vendor_name: (src.vendor_name as string) || po.vendor,
+          po_number: num,                    // regenerates — next in sequence
+          vendor_email: src.vendor_email || null,
+          vendor_phone: src.vendor_phone || null,
+          vendor_address: src.vendor_address || null,
+          description: (src.description as string) || po.description || null,
+          line_items: src.line_items || po.line_items || null,
+          subtotal: src.subtotal != null ? Number(src.subtotal) : null,
+          tax: src.tax != null ? Number(src.tax) : null,
+          shipping: src.shipping != null ? Number(src.shipping) : null,
+          total: src.total != null ? Number(src.total) : po.amount || null,
+          status: 'draft',                   // regenerates — always starts draft
+          delivery_date: plus30(),           // regenerates — fresh 30-day lead
+          cost_code: src.cost_code || null,
+          notes: src.notes || null,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.purchaseOrder) throw new Error(json.error || 'Duplicate failed');
+      setPos(prev => [...prev, normalizePo(json.purchaseOrder)]);
+      if (json.purchaseOrder?.id) setRawById(prev => ({ ...prev, [String(json.purchaseOrder.id)]: json.purchaseOrder }));
+      postLearningEvent('po_duplicated', { projectId, meta: { fromPoId: po.id, newPoNumber: num } });
+      setSuccessMsg(`Duplicated ${po.po_num || 'PO'} as ${num} (draft) — new delivery date set 30 days out.`);
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch {
+      setErrorMsg('Could not duplicate the purchase order. Please try again.');
+      setTimeout(() => setErrorMsg(''), 4000);
+    } finally {
+      setDupId(null);
     }
   }
 
@@ -328,12 +417,12 @@ export default function PurchaseOrdersPage() {
                 <div style={hint}>Next in sequence — {pos.length} PO{pos.length === 1 ? '' : 's'} on this project so far.</div>
               </div>
               <div>
-                <label style={lbl}>Vendor *</label>
+                <label style={lbl}>Vendor *{vendorAuto && <AutoChip />}</label>
                 <input list="sg-po-vendors" value={form.vendor} onChange={e => setForm(p => ({ ...p, vendor: e.target.value }))} style={inp} />
-                <div style={hint}>{vendors.length > 0 ? `${vendors.length} known vendor${vendors.length === 1 ? '' : 's'} on this project — start typing.` : 'New vendors are remembered for next time.'}</div>
+                <div style={hint}>{vendorAuto ? 'Your last PO here used this vendor — type to change.' : vendors.length > 0 ? `${vendors.length} known vendor${vendors.length === 1 ? '' : 's'} on this project — start typing.` : 'New vendors are remembered for next time.'}</div>
               </div>
               <div>
-                <label style={lbl}>Cost Code</label>
+                <label style={lbl}>Cost Code{costAuto && <AutoChip />}</label>
                 {costCodeOptions.length > 0 ? (
                   <select value={form.cost_code} onChange={e => setForm(p => ({ ...p, cost_code: e.target.value }))} style={inp}>
                     <option value="">— Select cost code —</option>
@@ -357,9 +446,9 @@ export default function PurchaseOrdersPage() {
                 <div style={hint}>{"Defaulted 30 days out — match the vendor's quoted lead time."}</div>
               </div>
               <div>
-                <label style={lbl}>Tax %</label>
+                <label style={lbl}>Tax %{taxAuto && <AutoChip />}</label>
                 <input type="number" value={form.tax_pct} onChange={e => setForm(p => ({ ...p, tax_pct: Number(e.target.value) }))} style={inp} />
-                <div style={hint}>Applied to the line-item subtotal below.</div>
+                <div style={hint}>{taxAuto ? 'Same rate as your last PO on this project.' : 'Applied to the line-item subtotal below.'}</div>
               </div>
               <div>
                 <label style={lbl}>Shipping ($)</label>
@@ -497,6 +586,15 @@ export default function PurchaseOrdersPage() {
               <span key="dt" style={{ color: T.muted }}>{p.issued_date}</span>,
               <div key="act" style={{ display: 'flex', gap: 6 }}>
                 <button className="pmBtn" onClick={() => handleGeneratePdf(p)} style={smallGhost}>PDF</button>
+                <button
+                  className="pmBtn"
+                  onClick={() => handleDuplicate(p)}
+                  disabled={dupId === p.id}
+                  title="Create a new draft PO with the same vendor, lines, and cost code — number and dates regenerate"
+                  style={{ ...smallGhost, ...(dupId === p.id ? { opacity: 0.55, cursor: 'not-allowed' } : {}) }}
+                >
+                  <Copy size={13} weight="bold" /> {dupId === p.id ? 'Duplicating…' : 'Duplicate'}
+                </button>
                 {p.status === 'draft' && (
                   <button className="pmBtn" onClick={() => handleStatusChange(p.id, 'sent')} style={smallGold}>Send</button>
                 )}

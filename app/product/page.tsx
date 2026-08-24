@@ -112,7 +112,7 @@ export default function ProductPage() {
           transition: border-color .2s ease, transform .2s ease;
         }
         .prodCard:hover { border-color: rgba(255,255,255,0.16); transform: translateY(-2px); }
-        .prodSection { max-width: 1100px; margin: 0 auto; padding: 64px 32px; }
+        .prodSection { max-width: 1100px; margin: 0 auto; padding: 56px 32px; }
         .prodFootLinks { display: flex; gap: 24px; flex-wrap: wrap; }
         @media (max-width: 1024px) { .prodGrid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 640px) {
@@ -124,7 +124,7 @@ export default function ProductPage() {
       <MarketingNav />
 
       {/* ── HERO ── */}
-      <section className="prodSection" style={{ paddingTop: 72, paddingBottom: 40, textAlign: 'center' }}>
+      <section className="prodSection" style={{ paddingTop: 'clamp(48px, 7vh, 64px)', paddingBottom: 36, textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 100, padding: '6px 14px', marginBottom: 24, fontSize: 10.5, fontWeight: 500, color: '#CBD5E1', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
           The full module lineup
         </div>

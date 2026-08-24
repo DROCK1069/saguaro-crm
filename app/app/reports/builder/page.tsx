@@ -1,15 +1,38 @@
 'use client';
+/**
+ * Custom Report Builder — the ONE canonical builder (/app/reports-builder
+ * permanently redirects here). Runs real tenant data through /api/reports/run,
+ * exports tenant-branded PDF / Excel / CSV through /api/reports/export, and
+ * persists configurations in saved_reports via /api/reports/saved.
+ * Command-center anatomy: ModuleHero, live StatStrip, SectionCards, machined
+ * selects, skeleton loading, honest empty states.
+ */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { humanError } from '@/lib/errors';
-import { PageWrap, SectionHeader, Card, CardHeader, CardBody, Btn, Badge, T } from '@/components/ui/shell';
+import {
+  PremiumSurface, ModuleHero, SectionCard, StatStrip, IconChip, Pill,
+  goldButtonStyle, ghostButtonStyle,
+} from '@/components/ui/premium';
 import { PdfIcon, XlsIcon, CsvIcon, FileButton } from '@/components/ui/FileTypeIcon';
+import {
+  ChartBar, Funnel, Columns, FloppyDisk, Play, Printer, Trash, Plus, Table,
+} from '@phosphor-icons/react';
 import {
   REPORT_ENTITIES,
   ENTITY_MAP,
   FILTER_OPS,
   type ColType,
 } from '@/lib/report-entities';
+
+// ── Surface tokens (white-label safe — gold rides the brand CSS vars) ──
+const GOLD = 'var(--brand-primary)';
+const GOLD_HI = 'var(--brand-primary-strong)';
+const WHITE = '#FFFFFF';
+const MUTED = 'rgba(255,255,255,0.62)';
+const FAINT = 'rgba(255,255,255,0.42)';
+const BORDER = 'rgba(255,255,255,0.08)';
+const RED = '#EF4444';
 
 // ── Local types ────────────────────────────────────────────────
 interface FilterRow {
@@ -88,42 +111,48 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-const badgeColorFor = (v: string): 'gold' | 'green' | 'red' | 'amber' | 'blue' | 'muted' => {
+const badgeToneFor = (v: string): 'gold' | 'green' | 'red' | 'amber' | 'neutral' => {
   const s = v.toLowerCase();
   if (/(approved|complete|closed|answered|resolved|done|paid|certified)/.test(s)) return 'green';
-  if (/(open|pending|draft|new|submitted|in.?progress|review)/.test(s)) return 'blue';
+  if (/(open|pending|draft|new|submitted|in.?progress|review)/.test(s)) return 'gold';
   if (/(overdue|rejected|void|failed|expired|disputed)/.test(s)) return 'red';
   if (/(urgent|high|hold|revise)/.test(s)) return 'amber';
-  return 'muted';
+  return 'neutral';
 };
 
-// ── Small styled form inputs (consistent with shell tokens) ─────
+// ── Machined form parts (glass ground, brand focus ring by default) ────
 const inputStyle: React.CSSProperties = {
-  background: T.bg,
-  color: T.white,
-  border: `1px solid ${T.border}`,
-  borderRadius: 8,
-  padding: '8px 10px',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
+  color: WHITE,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 10,
+  padding: '9px 11px',
   fontSize: 13,
   fontFamily: 'inherit',
   outline: 'none',
 };
 const labelStyle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: '0.06em',
+  fontSize: 10.5,
+  fontWeight: 800,
+  letterSpacing: '0.08em',
   textTransform: 'uppercase',
-  color: T.muted,
+  color: MUTED,
   marginBottom: 6,
   display: 'block',
 };
 
+/** Machined select — same milled-glass part as the inputs, pointer cursor. */
 function Sel({ value, onChange, children, style }: { value: string; onChange: (v: string) => void; children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} style={{ ...inputStyle, cursor: 'pointer', ...style }}>
       {children}
     </select>
   );
+}
+
+/** Pulsing skeleton bar (pmSkeleton keyframes come with PremiumSurface). */
+function SkeletonBar({ w = '100%', h = 36 }: { w?: number | string; h?: number }) {
+  return <div className="pmSkeleton" style={{ width: w, height: h, borderRadius: 10, background: 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))' }} />;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -143,6 +172,7 @@ export default function ReportBuilderPage() {
   const [result, setResult] = useState<RunResult | null>(null);
 
   const [saved, setSaved] = useState<SavedReport[]>([]);
+  const [savedLoading, setSavedLoading] = useState(true);
   const [reportName, setReportName] = useState('');
   const [loadedId, setLoadedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -174,6 +204,8 @@ export default function ReportBuilderPage() {
       setSaved(Array.isArray(j.reports) ? j.reports : []);
     } catch {
       /* ignore */
+    } finally {
+      setSavedLoading(false);
     }
   }, []);
   useEffect(() => { loadSaved(); }, [loadSaved]);
@@ -323,7 +355,7 @@ export default function ReportBuilderPage() {
   };
 
   return (
-    <PageWrap>
+    <PremiumSurface maxWidth={1500}>
       <style>{`
         @media print {
           body { background: #fff !important; }
@@ -335,278 +367,343 @@ export default function ReportBuilderPage() {
         }
       `}</style>
 
-      <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
-        <div className="rb-noprint">
-          <SectionHeader
-            title="Custom Report Builder"
-            sub="Build an ad-hoc report over your project data — pick a source, choose columns, filter, group, sort, then run, export or save."
-          />
-        </div>
+      <div className="rb-noprint">
+        <ModuleHero
+          eyebrow="Analytics"
+          eyebrowIcon={<ChartBar size={13} weight="fill" color={GOLD} />}
+          title="Custom Report"
+          accent="Builder"
+          subtitle="Build an ad-hoc report over your live project data — pick a source, choose columns, filter, group, sort, then run, export or save."
+          actions={
+            <a href="/app/reports" style={ghostButtonStyle} className="pmBtn">
+              <ChartBar size={15} weight="bold" /> Report Library
+            </a>
+          }
+        />
 
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {/* ── Left: builder controls ── */}
-          <div className="rb-noprint" style={{ flex: '1 1 380px', minWidth: 320, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Source + options */}
-            <Card>
-              <CardHeader><span style={{ fontWeight: 700, color: T.white }}>1 · Source</span></CardHeader>
-              <CardBody style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div>
-                  <label style={labelStyle}>Entity</label>
-                  <Sel value={entityKey} onChange={onEntityChange} style={{ width: '100%' }}>
-                    {REPORT_ENTITIES.map((e) => <option key={e.key} value={e.key}>{e.label}</option>)}
+        {/* Live figures — every number on this strip is real page state. */}
+        <StatStrip items={[
+          { label: 'Data Sources', value: String(REPORT_ENTITIES.length), sub: 'live entities to report over' },
+          { label: 'Columns', value: `${selectedCols.length}/${entity.columns.length}`, sub: `selected on ${entity.label}` },
+          { label: 'Filters', value: String(filters.length), sub: filters.length ? 'narrowing this run' : 'all rows for your tenant' },
+          { label: 'Saved Reports', value: savedLoading ? '…' : String(saved.length), sub: savedLoading ? 'loading' : saved.length ? 'reusable configurations' : 'nothing saved yet' },
+          { label: 'Last Run', value: result ? String(result.rowCount) : '—', accent: result ? GOLD_HI : undefined, sub: result ? `row${result.rowCount === 1 ? '' : 's'} returned` : 'not run yet' },
+        ]} />
+      </div>
+
+      {error && (
+        <div className="rb-noprint" style={{ padding: '12px 16px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 10, color: RED, fontSize: 13, marginBottom: 16 }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {/* ── Left: builder controls ── */}
+        <div className="rb-noprint" style={{ flex: '1 1 380px', minWidth: 320, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Source + options */}
+          <SectionCard
+            title="1 · Source"
+            subtitle="Which records, in what order"
+            icon={<Table size={16} weight="duotone" color={GOLD} />}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={labelStyle}>Entity</label>
+                <Sel value={entityKey} onChange={onEntityChange} style={{ width: '100%' }}>
+                  {REPORT_ENTITIES.map((e) => <option key={e.key} value={e.key}>{e.label}</option>)}
+                </Sel>
+              </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 130 }}>
+                  <label style={labelStyle}>Sort by</label>
+                  <Sel value={sortField} onChange={setSortField} style={{ width: '100%' }}>
+                    {entity.columns.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
                   </Sel>
                 </div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: 130 }}>
-                    <label style={labelStyle}>Sort by</label>
-                    <Sel value={sortField} onChange={setSortField} style={{ width: '100%' }}>
-                      {entity.columns.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-                    </Sel>
-                  </div>
-                  <div style={{ width: 110 }}>
-                    <label style={labelStyle}>Direction</label>
-                    <Sel value={sortDir} onChange={(v) => setSortDir(v as 'asc' | 'desc')} style={{ width: '100%' }}>
-                      <option value="desc">Desc</option>
-                      <option value="asc">Asc</option>
-                    </Sel>
-                  </div>
+                <div style={{ width: 110 }}>
+                  <label style={labelStyle}>Direction</label>
+                  <Sel value={sortDir} onChange={(v) => setSortDir(v as 'asc' | 'desc')} style={{ width: '100%' }}>
+                    <option value="desc">Desc</option>
+                    <option value="asc">Asc</option>
+                  </Sel>
                 </div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: 130 }}>
-                    <label style={labelStyle}>Group by</label>
-                    <Sel value={groupBy} onChange={setGroupBy} style={{ width: '100%' }}>
-                      <option value="">(none)</option>
-                      {entity.columns.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-                    </Sel>
-                  </div>
-                  <div style={{ width: 110 }}>
-                    <label style={labelStyle}>Row limit</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={1000}
-                      value={limit}
-                      onChange={(e) => setLimit(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
-                      style={{ ...inputStyle, width: '100%' }}
-                    />
-                  </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 130 }}>
+                  <label style={labelStyle}>Group by</label>
+                  <Sel value={groupBy} onChange={setGroupBy} style={{ width: '100%' }}>
+                    <option value="">(none)</option>
+                    {entity.columns.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                  </Sel>
                 </div>
-              </CardBody>
-            </Card>
-
-            {/* Columns */}
-            <Card>
-              <CardHeader style={{ justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700, color: T.white }}>2 · Columns</span>
-                <span style={{ fontSize: 12, color: T.faint }}>{selectedCols.length} selected</span>
-              </CardHeader>
-              <CardBody style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
-                {entity.columns.map((c) => {
-                  const on = selectedCols.includes(c.key);
-                  return (
-                    <label
-                      key={c.key}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                        padding: '7px 10px', borderRadius: 8,
-                        border: `1px solid ${on ? T.borderGold : T.border}`,
-                        background: on ? T.goldDim : 'transparent',
-                        fontSize: 13, color: T.white,
-                      }}
-                    >
-                      <input type="checkbox" checked={on} onChange={() => toggleCol(c.key)} style={{ accentColor: T.gold }} />
-                      {c.label}
-                    </label>
-                  );
-                })}
-              </CardBody>
-            </Card>
-
-            {/* Filters */}
-            <Card>
-              <CardHeader style={{ justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700, color: T.white }}>3 · Filters</span>
-                <Btn size="sm" variant="ghost" onClick={addFilter}>+ Add filter</Btn>
-              </CardHeader>
-              <CardBody style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {filters.length === 0 && <div style={{ fontSize: 13, color: T.faint }}>No filters — all rows for your tenant.</div>}
-                {filters.map((f, i) => {
-                  const noVal = NO_VALUE_OPS.has(f.op);
-                  return (
-                    <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <Sel value={f.field} onChange={(v) => updateFilter(i, { field: v })} style={{ flex: '1 1 120px', minWidth: 110 }}>
-                        {entity.columns.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-                      </Sel>
-                      <Sel value={f.op} onChange={(v) => updateFilter(i, { op: v })} style={{ flex: '0 1 140px' }}>
-                        {FILTER_OPS.map((o) => <option key={o.op} value={o.op}>{o.label}</option>)}
-                      </Sel>
-                      {!noVal && (
-                        <input
-                          value={f.value}
-                          onChange={(e) => updateFilter(i, { value: e.target.value })}
-                          placeholder="value"
-                          style={{ ...inputStyle, flex: '1 1 100px', minWidth: 80 }}
-                        />
-                      )}
-                      <button
-                        onClick={() => removeFilter(i)}
-                        title="Remove"
-                        style={{ background: T.redDim, color: T.red, border: `1px solid rgba(255,59,48,0.3)`, borderRadius: 8, width: 30, height: 32, cursor: 'pointer', fontSize: 15, flexShrink: 0 }}
-                      >×</button>
-                    </div>
-                  );
-                })}
-              </CardBody>
-            </Card>
-
-            {/* Run */}
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <Btn onClick={run} disabled={running} style={{ flex: 1 }}>{running ? 'Running…' : 'Run Report'}</Btn>
-            </div>
-            {error && <div style={{ color: T.red, fontSize: 13 }}>{error}</div>}
-
-            {/* Save / Load */}
-            <Card>
-              <CardHeader><span style={{ fontWeight: 700, color: T.white }}>Saved Reports</span></CardHeader>
-              <CardBody style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div style={{ width: 110 }}>
+                  <label style={labelStyle}>Row limit</label>
                   <input
-                    value={reportName}
-                    onChange={(e) => setReportName(e.target.value)}
-                    placeholder="Report name"
-                    style={{ ...inputStyle, flex: 1 }}
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={limit}
+                    onChange={(e) => setLimit(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
+                    style={{ ...inputStyle, width: '100%' }}
                   />
-                  <Btn size="sm" onClick={saveReport} disabled={saving}>{saving ? 'Saving…' : loadedId ? 'Update' : 'Save'}</Btn>
                 </div>
-                {loadedId && <div style={{ fontSize: 11, color: T.faint }}>Editing a saved report — Update overwrites it.</div>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {saved.length === 0 && <div style={{ fontSize: 13, color: T.faint }}>Nothing saved yet.</div>}
-                  {saved.map((rep) => (
-                    <div
-                      key={rep.id}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8,
-                        border: `1px solid ${loadedId === rep.id ? T.borderGold : T.border}`,
-                        background: loadedId === rep.id ? T.goldDim : 'transparent',
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: T.white, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rep.name}</div>
-                        <div style={{ fontSize: 11, color: T.faint }}>{ENTITY_MAP[rep.entity]?.label || rep.entity}</div>
-                      </div>
-                      <Btn size="sm" variant="ghost" onClick={() => loadReport(rep)}>Load</Btn>
-                      <button
-                        onClick={() => deleteReport(rep.id)}
-                        title="Delete"
-                        style={{ background: 'transparent', color: T.faint, border: `1px solid ${T.border}`, borderRadius: 8, width: 30, height: 30, cursor: 'pointer', fontSize: 14, flexShrink: 0 }}
-                      >×</button>
-                    </div>
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
-          </div>
+              </div>
+            </div>
+          </SectionCard>
 
-          {/* ── Right: results ── */}
-          <div style={{ flex: '2 1 560px', minWidth: 340 }}>
-            <Card>
-              <CardHeader style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <div>
-                  <span style={{ fontWeight: 700, color: T.white }}>{reportName || `${entity.label} Report`}</span>
-                  {result && <span style={{ marginLeft: 10, fontSize: 12, color: T.faint }}>{result.rowCount} row{result.rowCount === 1 ? '' : 's'}</span>}
-                </div>
-                <div className="rb-noprint" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <FileButton icon={<PdfIcon size={16} />} label={exporting === 'pdf' ? 'Building…' : 'PDF'} onClick={() => exportAs('pdf')} disabled={!result || result.rowCount === 0 || !!exporting} title="Branded corporate PDF — letterhead, KPI band, totals" />
-                  <FileButton icon={<XlsIcon size={16} />} label={exporting === 'xlsx' ? 'Building…' : 'Excel'} onClick={() => exportAs('xlsx')} disabled={!result || result.rowCount === 0 || !!exporting} title="Excel workbook (.xlsx) with typed money columns and totals" />
-                  <FileButton icon={<CsvIcon size={16} />} label={exporting === 'csv' ? 'Building…' : 'CSV'} onClick={() => exportAs('csv')} disabled={!result || result.rowCount === 0 || !!exporting} title="Plain CSV (.csv) for any spreadsheet tool" />
-                  <Btn size="sm" variant="ghost" onClick={() => window.print()} disabled={!result}>Print</Btn>
-                </div>
-              </CardHeader>
-              <CardBody style={{ padding: 0 }}>
-                <div className="rb-print-area" style={{ overflowX: 'auto', maxHeight: 640, overflowY: 'auto' }}>
-                  {!result && (
-                    <div style={{ padding: '56px 20px', textAlign: 'center', color: T.faint, fontSize: 14 }}>
-                      Configure your report on the left, then press <strong style={{ color: T.muted }}>Run Report</strong>.
+          {/* Columns */}
+          <SectionCard
+            title="2 · Columns"
+            subtitle={`${selectedCols.length} of ${entity.columns.length} selected`}
+            icon={<Columns size={16} weight="duotone" color={GOLD} />}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+              {entity.columns.map((c) => {
+                const on = selectedCols.includes(c.key);
+                return (
+                  <label
+                    key={c.key}
+                    className="pmTile"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                      padding: '7px 10px', borderRadius: 8,
+                      border: `1px solid ${on ? 'var(--brand-primary-35)' : BORDER}`,
+                      background: on ? 'var(--brand-primary-12)' : 'transparent',
+                      fontSize: 13, color: WHITE,
+                    }}
+                  >
+                    <input type="checkbox" checked={on} onChange={() => toggleCol(c.key)} style={{ accentColor: GOLD as string }} />
+                    {c.label}
+                  </label>
+                );
+              })}
+            </div>
+          </SectionCard>
+
+          {/* Filters */}
+          <SectionCard
+            title="3 · Filters"
+            subtitle={filters.length ? `${filters.length} active` : 'optional'}
+            icon={<Funnel size={16} weight="duotone" color={GOLD} />}
+            action={
+              <button onClick={addFilter} style={{ ...ghostButtonStyle, padding: '7px 12px', fontSize: 12 }} className="pmBtn">
+                <Plus size={13} weight="bold" /> Add filter
+              </button>
+            }
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filters.length === 0 && <div style={{ fontSize: 13, color: FAINT }}>No filters — all rows for your tenant.</div>}
+              {filters.map((f, i) => {
+                const noVal = NO_VALUE_OPS.has(f.op);
+                return (
+                  <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Sel value={f.field} onChange={(v) => updateFilter(i, { field: v })} style={{ flex: '1 1 120px', minWidth: 110 }}>
+                      {entity.columns.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                    </Sel>
+                    <Sel value={f.op} onChange={(v) => updateFilter(i, { op: v })} style={{ flex: '0 1 140px' }}>
+                      {FILTER_OPS.map((o) => <option key={o.op} value={o.op}>{o.label}</option>)}
+                    </Sel>
+                    {!noVal && (
+                      <input
+                        value={f.value}
+                        onChange={(e) => updateFilter(i, { value: e.target.value })}
+                        placeholder="value"
+                        style={{ ...inputStyle, flex: '1 1 100px', minWidth: 80 }}
+                      />
+                    )}
+                    <button
+                      onClick={() => removeFilter(i)}
+                      title="Remove"
+                      className="pmBtn"
+                      style={{ background: 'rgba(239,68,68,0.12)', color: RED, border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, width: 30, height: 32, cursor: 'pointer', fontSize: 15, flexShrink: 0 }}
+                    >×</button>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+
+          {/* Run */}
+          <button onClick={run} disabled={running} className="pmBtn" style={{ ...goldButtonStyle, width: '100%', cursor: running ? 'not-allowed' : 'pointer', opacity: running ? 0.6 : 1 }}>
+            <Play size={15} weight="fill" /> {running ? 'Running…' : 'Run Report'}
+          </button>
+
+          {/* Save / Load */}
+          <SectionCard
+            title="Saved Reports"
+            subtitle="Reusable configurations, shared with your team"
+            icon={<FloppyDisk size={16} weight="duotone" color={GOLD} />}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input
+                  value={reportName}
+                  onChange={(e) => setReportName(e.target.value)}
+                  placeholder="Report name"
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+                <button onClick={saveReport} disabled={saving} className="pmBtn" style={{ ...goldButtonStyle, padding: '9px 14px', fontSize: 12.5, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                  {saving ? 'Saving…' : loadedId ? 'Update' : 'Save'}
+                </button>
+              </div>
+              {loadedId && <div style={{ fontSize: 11, color: FAINT }}>Editing a saved report — Update overwrites it.</div>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {savedLoading && (
+                  <>
+                    <SkeletonBar h={46} />
+                    <SkeletonBar h={46} />
+                  </>
+                )}
+                {!savedLoading && saved.length === 0 && (
+                  <div style={{ fontSize: 13, color: FAINT, lineHeight: 1.5 }}>
+                    Nothing saved yet. Configure a report above, name it, and Save — it lands here for one-click reruns.
+                  </div>
+                )}
+                {saved.map((rep) => (
+                  <div
+                    key={rep.id}
+                    className="pmTile"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10,
+                      border: `1px solid ${loadedId === rep.id ? 'var(--brand-primary-35)' : BORDER}`,
+                      background: loadedId === rep.id ? 'var(--brand-primary-12)' : 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rep.name}</div>
+                      <div style={{ fontSize: 11, color: FAINT }}>{ENTITY_MAP[rep.entity]?.label || rep.entity}</div>
                     </div>
-                  )}
-                  {result && (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                      <thead>
-                        <tr>
-                          {result.columns.map((c) => (
-                            <th key={c.key} style={{
-                              padding: '10px 12px', textAlign: c.type === 'currency' || c.type === 'number' || c.type === 'percent' ? 'right' : 'left',
-                              color: T.muted, fontWeight: 600, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
-                              borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap', position: 'sticky', top: 0, background: T.surface2,
-                            }}>{c.label}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(grouped || []).map((g) => (
-                          <React.Fragment key={g.key || '_all'}>
-                            {result.groupBy && (
-                              <tr>
-                                <td colSpan={result.columns.length} style={{ padding: '8px 12px', background: T.goldDim, color: T.gold, fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', borderBottom: `1px solid ${T.border}` }}>
-                                  {ENTITY_MAP[entityKey]?.columns.find((c) => c.key === result.groupBy)?.label || result.groupBy}: {g.key} · {g.rows.length}
-                                </td>
-                              </tr>
-                            )}
-                            {g.rows.map((row, ri) => (
-                              <tr key={(row.id as string) || ri} style={{ borderBottom: `1px solid ${T.borderSubtle}` }}>
-                                {result.columns.map((c) => (
-                                  <td key={c.key} style={{
-                                    padding: '9px 12px', color: T.white, verticalAlign: 'middle',
-                                    textAlign: c.type === 'currency' || c.type === 'number' || c.type === 'percent' ? 'right' : 'left',
-                                    fontVariantNumeric: c.type === 'currency' || c.type === 'number' ? 'tabular-nums' : undefined,
-                                  }}>
-                                    {c.type === 'badge' && row[c.key]
-                                      ? <Badge label={String(row[c.key])} color={badgeColorFor(String(row[c.key]))} />
-                                      : fmtCell(row[c.key], c.type)}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                            {result.groupBy && currencyCols.length > 0 && (
-                              <tr style={{ borderBottom: `1px solid ${T.border}` }}>
-                                {result.columns.map((c, ci) => {
-                                  if (ci === 0) return <td key={c.key} style={{ padding: '8px 12px', color: T.faint, fontSize: 11, fontWeight: 700 }}>Subtotal</td>;
-                                  if (c.type === 'currency') {
-                                    const sum = g.rows.reduce((acc, r) => acc + (Number(r[c.key]) || 0), 0);
-                                    return <td key={c.key} style={{ padding: '8px 12px', textAlign: 'right', color: T.gold, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtCell(sum, 'currency')}</td>;
-                                  }
-                                  return <td key={c.key} />;
-                                })}
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        ))}
-                        {result.rowCount === 0 && (
-                          <tr><td colSpan={result.columns.length} style={{ padding: '40px 12px', textAlign: 'center', color: T.faint }}>No rows match.</td></tr>
+                    <button onClick={() => loadReport(rep)} className="pmBtn" style={{ ...ghostButtonStyle, padding: '6px 12px', fontSize: 12 }}>Load</button>
+                    <button
+                      onClick={() => deleteReport(rep.id)}
+                      title="Delete"
+                      className="pmBtn"
+                      style={{ background: 'transparent', color: FAINT, border: `1px solid ${BORDER}`, borderRadius: 8, width: 30, height: 30, cursor: 'pointer', fontSize: 14, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    ><Trash size={13} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* ── Right: results ── */}
+        <div style={{ flex: '2 1 560px', minWidth: 340 }}>
+          <SectionCard
+            flush
+            title={reportName || `${entity.label} Report`}
+            subtitle={result ? `${result.rowCount} row${result.rowCount === 1 ? '' : 's'} · live tenant data` : 'results land here'}
+            icon={<ChartBar size={16} weight="duotone" color={GOLD} />}
+            action={
+              <div className="rb-noprint" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <FileButton icon={<PdfIcon size={16} />} label={exporting === 'pdf' ? 'Building…' : 'PDF'} onClick={() => exportAs('pdf')} disabled={!result || result.rowCount === 0 || !!exporting} title="Branded corporate PDF — letterhead, KPI band, totals" />
+                <FileButton icon={<XlsIcon size={16} />} label={exporting === 'xlsx' ? 'Building…' : 'Excel'} onClick={() => exportAs('xlsx')} disabled={!result || result.rowCount === 0 || !!exporting} title="Excel workbook (.xlsx) with typed money columns and totals" />
+                <FileButton icon={<CsvIcon size={16} />} label={exporting === 'csv' ? 'Building…' : 'CSV'} onClick={() => exportAs('csv')} disabled={!result || result.rowCount === 0 || !!exporting} title="Plain CSV (.csv) for any spreadsheet tool" />
+                <button onClick={() => window.print()} disabled={!result} className="pmBtn" style={{ ...ghostButtonStyle, padding: '7px 12px', fontSize: 12, opacity: result ? 1 : 0.5, cursor: result ? 'pointer' : 'not-allowed' }}>
+                  <Printer size={14} /> Print
+                </button>
+              </div>
+            }
+          >
+            <div className="rb-print-area" style={{ overflowX: 'auto', maxHeight: 640, overflowY: 'auto' }}>
+              {running && (
+                <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <SkeletonBar h={30} />
+                  <SkeletonBar h={22} />
+                  <SkeletonBar h={22} />
+                  <SkeletonBar h={22} />
+                  <SkeletonBar h={22} />
+                  <SkeletonBar h={22} />
+                </div>
+              )}
+              {!running && !result && (
+                <div style={{ padding: '52px 24px', textAlign: 'center' }}>
+                  <div style={{ display: 'inline-flex', marginBottom: 16 }}>
+                    <IconChip size={56}><ChartBar size={26} weight="duotone" color={GOLD} /></IconChip>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: WHITE, marginBottom: 6 }}>No report run yet</div>
+                  <div style={{ fontSize: 13.5, color: MUTED, lineHeight: 1.55, maxWidth: 380, margin: '0 auto' }}>
+                    Configure your report on the left, then press <strong style={{ color: WHITE }}>Run Report</strong>. Results come straight from your live project data.
+                  </div>
+                </div>
+              )}
+              {!running && result && (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      {result.columns.map((c) => (
+                        <th key={c.key} style={{
+                          padding: '10px 14px', textAlign: c.type === 'currency' || c.type === 'number' || c.type === 'percent' ? 'right' : 'left',
+                          color: MUTED, fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
+                          borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap', position: 'sticky', top: 0, zIndex: 1,
+                          background: '#101011',
+                        }}>{c.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(grouped || []).map((g) => (
+                      <React.Fragment key={g.key || '_all'}>
+                        {result.groupBy && (
+                          <tr>
+                            <td colSpan={result.columns.length} style={{ padding: '8px 14px', background: 'var(--brand-primary-12)', color: GOLD_HI, fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', borderBottom: `1px solid ${BORDER}` }}>
+                              {ENTITY_MAP[entityKey]?.columns.find((c) => c.key === result.groupBy)?.label || result.groupBy}: {g.key} · {g.rows.length}
+                            </td>
+                          </tr>
                         )}
-                      </tbody>
-                      {currencyCols.length > 0 && result.rowCount > 0 && (
-                        <tfoot>
-                          <tr style={{ borderTop: `2px solid ${T.border}` }}>
+                        {g.rows.map((row, ri) => (
+                          <tr key={(row.id as string) || ri} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            {result.columns.map((c) => (
+                              <td key={c.key} style={{
+                                padding: '9px 14px', color: WHITE, verticalAlign: 'middle',
+                                textAlign: c.type === 'currency' || c.type === 'number' || c.type === 'percent' ? 'right' : 'left',
+                                fontVariantNumeric: c.type === 'currency' || c.type === 'number' ? 'tabular-nums' : undefined,
+                              }}>
+                                {c.type === 'badge' && row[c.key]
+                                  ? <Pill tone={badgeToneFor(String(row[c.key]))}>{String(row[c.key])}</Pill>
+                                  : fmtCell(row[c.key], c.type)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                        {result.groupBy && currencyCols.length > 0 && (
+                          <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
                             {result.columns.map((c, ci) => {
-                              if (ci === 0) return <td key={c.key} style={{ padding: '10px 12px', color: T.white, fontWeight: 700 }}>Total</td>;
+                              if (ci === 0) return <td key={c.key} style={{ padding: '8px 14px', color: FAINT, fontSize: 11, fontWeight: 700 }}>Subtotal</td>;
                               if (c.type === 'currency') {
-                                const sum = result.rows.reduce((acc, r) => acc + (Number(r[c.key]) || 0), 0);
-                                return <td key={c.key} style={{ padding: '10px 12px', textAlign: 'right', color: T.gold, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{fmtCell(sum, 'currency')}</td>;
+                                const sum = g.rows.reduce((acc, r) => acc + (Number(r[c.key]) || 0), 0);
+                                return <td key={c.key} style={{ padding: '8px 14px', textAlign: 'right', color: GOLD_HI, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtCell(sum, 'currency')}</td>;
                               }
                               return <td key={c.key} />;
                             })}
                           </tr>
-                        </tfoot>
-                      )}
-                    </table>
+                        )}
+                      </React.Fragment>
+                    ))}
+                    {result.rowCount === 0 && (
+                      <tr><td colSpan={result.columns.length} style={{ padding: '40px 14px', textAlign: 'center', color: FAINT }}>No rows match this configuration. Loosen a filter and run again.</td></tr>
+                    )}
+                  </tbody>
+                  {currencyCols.length > 0 && result.rowCount > 0 && (
+                    <tfoot>
+                      <tr style={{ borderTop: `2px solid ${BORDER}` }}>
+                        {result.columns.map((c, ci) => {
+                          if (ci === 0) return <td key={c.key} style={{ padding: '10px 14px', color: WHITE, fontWeight: 700 }}>Total</td>;
+                          if (c.type === 'currency') {
+                            const sum = result.rows.reduce((acc, r) => acc + (Number(r[c.key]) || 0), 0);
+                            return <td key={c.key} style={{ padding: '10px 14px', textAlign: 'right', color: GOLD_HI, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{fmtCell(sum, 'currency')}</td>;
+                          }
+                          return <td key={c.key} />;
+                        })}
+                      </tr>
+                    </tfoot>
                   )}
-                </div>
-              </CardBody>
-            </Card>
-          </div>
+                </table>
+              )}
+            </div>
+          </SectionCard>
         </div>
       </div>
-    </PageWrap>
+    </PremiumSurface>
   );
 }

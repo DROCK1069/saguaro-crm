@@ -154,7 +154,7 @@ export default function LandingPage() {
       })()}
 
       {/* ══════════ 3. HERO ══════════ */}
-      <section style={{ maxWidth: 1160, margin: '0 auto', padding: '68px 24px 56px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 64, alignItems: 'center', position: 'relative' as const }} className="hero-grid">
+      <section style={{ maxWidth: 1160, margin: '0 auto', padding: 'clamp(40px, 6vh, 64px) 24px 48px', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 'clamp(32px, 4vw, 56px)', alignItems: 'center', position: 'relative' as const }} className="hero-grid">
         {/* very subtle ambient warmth — minimal, no stock photo */}
         <div style={{ position: 'absolute' as const, top: -120, right: -40, width: 460, height: 460, background: 'radial-gradient(circle, rgba(245,158,11,0.05) 0%, transparent 68%)', zIndex: 0, pointerEvents: 'none' as const }} />
         {/* left */}
@@ -220,14 +220,14 @@ export default function LandingPage() {
 
       {/* Integration logos — real vendor marks (react-icons), only for shipped integrations */}
       {/* ══════════ 2. SONORAN — the origin story, front and center ══════════ */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '88px 24px 84px', textAlign: 'center' as const, borderTop: '1px solid rgba(245,158,11,0.14)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(56px, 8vh, 72px) 24px clamp(52px, 8vh, 68px)', textAlign: 'center' as const, borderTop: '1px solid rgba(245,158,11,0.14)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         {/* desert-heat backdrop: horizon glow, no images */}
         <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(90% 70% at 50% 115%, rgba(224,100,78,0.16) 0%, rgba(245,158,11,0.09) 38%, rgba(0,0,0,0) 72%)' }} />
         <div style={{ position: 'relative', maxWidth: 980, margin: '0 auto' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 999, border: '1px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.08)', color: '#F5B84D', fontSize: 11.5, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' as const, marginBottom: 22 }}>
             <Thermometer size={13} weight="fill" /> Field-proven at 115°
           </span>
-          <h2 style={{ fontSize: 'clamp(34px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.08, margin: '0 0 18px' }}>
+          <h2 style={{ fontSize: 'clamp(30px, 4.2vw, 44px)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.08, margin: '0 0 16px' }}>
             Born on <span style={{ background: 'linear-gradient(100deg, #E0644E 4%, #F59E0B 42%, #FDE68A 60%, #E0644E 96%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>Sonoran</span> jobsites.
           </h2>
           <p style={{ color: '#E4E4E7', fontSize: 'clamp(15px, 1.8vw, 18px)', lineHeight: 1.65, maxWidth: 660, margin: '0 auto 30px' }}>
@@ -388,7 +388,7 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════ 9. CTA SECTION ══════════ */}
-      <section style={{ maxWidth: 640, margin: '0 auto', padding: '88px 24px 96px', textAlign: 'center' as const }}>
+      <section style={{ maxWidth: 640, margin: '0 auto', padding: 'clamp(56px, 8vh, 72px) 24px clamp(64px, 9vh, 80px)', textAlign: 'center' as const }}>
         <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 12 }}>Ready to build smarter?</h2>
         <p style={{ color: DIM, fontSize: 14, marginBottom: 28 }}>Every module unlocked for {TRIAL_DAYS} days. Run a real job on it and judge for yourself.</p>
         <Link href="/signup" style={{ background: GOLD, color: '#0a0a0a', textDecoration: 'none', fontWeight: 600, fontSize: 14, padding: '12px 30px', borderRadius: 8, display: 'inline-block' }}>Start your free trial</Link>

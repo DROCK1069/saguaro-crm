@@ -31,7 +31,14 @@ const NAV_ITEMS: Omit<PaletteItem, 'section'>[] = [
   { id: 'nav-bids',       icon: '📝', label: 'Bids',           description: 'Bid management & scoring',        href: '/app/bids' },
   { id: 'nav-reports',    icon: '📊', label: 'Reports',         description: 'Financial and project reports',   href: '/app/reports' },
   { id: 'nav-autopilot',  icon: '🤖', label: 'Autopilot',      description: 'Automated CRM alerts & actions',  href: '/app/autopilot' },
-  { id: 'nav-intel',      icon: '🧠', label: 'Intelligence',   description: 'Market intelligence & analytics', href: '/app/intelligence' },
+  { id: 'nav-intel',      icon: '🧠', label: 'Intelligence',   description: 'Market intelligence, analytics & suggestions', href: '/app/intelligence' },
+  { id: 'nav-my-work',    icon: '✅', label: 'My Work',        description: 'Everything assigned to you, in one queue', href: '/app/my-work' },
+  { id: 'nav-radio',      icon: '📻', label: 'Radio',          description: 'Push-to-talk field radio',        href: '/app/radio' },
+  { id: 'nav-catalog',    icon: '🏷️', label: 'Catalog',        description: 'Materials catalog & best prices', href: '/app/catalog' },
+  { id: 'nav-daily-logs', icon: '📋', label: 'Daily Logs',     description: 'Field reports across all projects', href: '/app/daily-logs' },
+  { id: 'nav-command',    icon: '🎛️', label: 'Command Center', description: 'Portfolio pulse across every project', href: '/app/command-center' },
+  { id: 'nav-schedule',   icon: '📅', label: 'Schedule',       description: 'Cross-project schedule',          href: '/app/schedule' },
+  { id: 'nav-invoicing',  icon: '🧾', label: 'Invoicing',      description: 'Invoices & payments',             href: '/app/invoicing' },
 ];
 
 // ─── Quick Actions ────────────────────────────────────────────────────────────
@@ -44,6 +51,8 @@ const ACTION_ITEMS: Omit<PaletteItem, 'section'>[] = [
   { id: 'act-create-bid',   icon: '📦', label: 'Create Bid Package', description: 'Select a project to start bid pkg', shortcut: 'B', href: '/app/projects' },
   { id: 'act-gen-doc',      icon: '📄', label: 'Generate Document', description: 'AI-powered document generation',      shortcut: 'D', href: '/app/documents' },
   { id: 'act-invite-sub',   icon: '🤝', label: 'Invite Subcontractor', description: 'Send a sub portal invite',         shortcut: 'I', href: '/app/subs/invite' },
+  { id: 'act-new-log',      icon: '📋', label: 'New Daily Log',   description: "Open today's field log composer",      shortcut: 'L', href: '/app/daily-logs?new=1' },
+  { id: 'act-new-punch',    icon: '🔨', label: 'New Punch Item',  description: 'Select a project to add a punch item', href: '/app/projects' },
 ];
 
 const RECENT_PAGES_KEY = 'cmd_palette_recent';

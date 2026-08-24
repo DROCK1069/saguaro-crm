@@ -7,6 +7,7 @@ import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { ShieldCheck, Plus, X, CheckCircle, Warning, WarningCircle, Users } from '@phosphor-icons/react';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -160,6 +161,22 @@ export default function InsurancePage() {
     if(certTypeFilter!=='all'&&String(c.policy_type||c.policyType||'')!==certTypeFilter) return false;
     if(!qIns) return true;
     return [c.sub_name||c.subName||c.vendor_name,c.carrier,c.policy_number||c.policyNo].some(v=>String(v||'').toLowerCase().includes(qIns));
+  });
+
+  // Sortable columns (R11 sweep) — expiry sorts on the raw ISO date (soonest
+  // lapse first by default), coverage on the coerced number, status on urgency.
+  const { sort, cycleSort } = usePersistedSort('project-insurance', { key: 'expiry', dir: 'asc' });
+  const sortedCerts = useSortedRows(filteredCerts, sort, (c:any, key:string) => {
+    switch (key) {
+      case 'sub':      return c.sub_name||c.subName||c.vendor_name||null;
+      case 'type':     return c.policy_type||c.policyType||null;
+      case 'carrier':  return c.carrier||null;
+      case 'policy':   return c.policy_number||c.policyNo||null;
+      case 'coverage': return Number(c.coverage_amount||c.coverageAmount)||0;
+      case 'expiry':   return c.expiry_date||c.expiryDate||null;
+      case 'status':   return daysUntilExpiry(c.expiry_date||c.expiryDate);
+      default:         return c[key];
+    }
   });
 
   return (
@@ -401,16 +418,17 @@ export default function InsurancePage() {
             <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
                 <thead>
-                  <tr style={{background:'rgba(255,255,255,0.03)'}}>
-                    {['Sub Name','Policy Type','Carrier','Policy #','Coverage','Expiry Date','Status','Actions'].map(h=>(
-                      <th key={h} style={{padding:'10px 16px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.5,color:DIM,borderBottom:`1px solid rgba(255,255,255,0.08)`,whiteSpace:'nowrap' as const}}>
-                        {h}
-                      </th>
+                  <tr>
+                    {([
+                      ['Sub Name','sub'],['Policy Type','type'],['Carrier','carrier'],['Policy #','policy'],
+                      ['Coverage','coverage'],['Expiry Date','expiry'],['Status','status'],['Actions',undefined],
+                    ] as [string, string|undefined][]).map(([h,k])=>(
+                      <SortableTh key={h} label={h} sortKey={k} sort={sort} onSort={cycleSort} style={{padding:'10px 16px'}} />
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCerts.map((c:any,idx:number)=>{
+                  {sortedCerts.map((c:any,idx:number)=>{
                     const expDate  = c.expiry_date||c.expiryDate||'';
                     const days     = daysUntilExpiry(expDate);
                     const st       = certStatus(expDate);

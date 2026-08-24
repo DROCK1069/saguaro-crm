@@ -43,6 +43,7 @@ import {
   ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 import { moduleAccent } from '@/lib/module-identity';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#3dd68c', AMBER = '#FBBF24', RED = '#c03030';
@@ -255,6 +256,27 @@ export default function CatalogPage() {
     for (const it of filtered) for (const p of it.prices) present.add(p.vendor);
     return Array.from(present).sort((a, b) => a.localeCompare(b));
   }, [filtered]);
+
+  // Column-header sorting (R11 sweep) — layered over the toolbar sort: an
+  // active column sort overrides it (and pauses category group headers);
+  // cycling back to "none" restores the toolbar ordering. Prices sort numeric,
+  // unpriced items sink to the bottom via null.
+  const { sort: colSort, cycleSort } = usePersistedSort('catalog-grid');
+  const sortedItems = useSortedRows(filtered, colSort, (it, key) => {
+    if (key.startsWith('vendor:')) {
+      const offer = it.prices.find((p) => p.vendor === key.slice(7));
+      return offer ? Number(offer.price) || 0 : null;
+    }
+    switch (key) {
+      case 'item': return it.name;
+      case 'unit': return it.unit;
+      case 'best': {
+        const n = Number(it.prices.find((p) => p.bestPrice)?.price ?? it.prices[0]?.price);
+        return Number.isFinite(n) ? n : null;
+      }
+      default: return (it as unknown as Record<string, unknown>)[key];
+    }
+  });
 
   const stats = useMemo(() => {
     const vendorsQuoting = new Set<string>();
@@ -542,22 +564,22 @@ export default function CatalogPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: 12, minWidth: 780 + vendorCols.length * 130 }}>
               <thead>
                 <tr>
-                  <th style={{ ...TH, minWidth: 132 }}>Add to Order</th>
-                  <th style={{ ...TH, minWidth: 220 }}>Item</th>
-                  <th style={{ ...TH, minWidth: 60 }}>Unit</th>
-                  <th style={{ ...TH, minWidth: 150 }}>Best Offer</th>
+                  <SortableTh label="Add to Order" sort={colSort} onSort={cycleSort} style={{ padding: '9px 12px', minWidth: 132 }} />
+                  <SortableTh label="Item" sortKey="item" sort={colSort} onSort={cycleSort} style={{ padding: '9px 12px', minWidth: 220 }} />
+                  <SortableTh label="Unit" sortKey="unit" sort={colSort} onSort={cycleSort} style={{ padding: '9px 12px', minWidth: 60 }} />
+                  <SortableTh label="Best Offer" sortKey="best" sort={colSort} onSort={cycleSort} style={{ padding: '9px 12px', minWidth: 150 }} />
                   {vendorCols.map((v) => (
-                    <th key={v} style={{ ...TH, minWidth: 130, textAlign: 'right' as const }}>{v}</th>
+                    <SortableTh key={v} label={v} sortKey={`vendor:${v}`} sort={colSort} onSort={cycleSort} align="right" style={{ padding: '9px 12px', minWidth: 130 }} />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((it, idx) => {
+                {sortedItems.map((it, idx) => {
                   const best = it.prices.find((p) => p.bestPrice);
                   const byVendor = new Map<string, Offer>();
                   for (const p of it.prices) if (!byVendor.has(p.vendor)) byVendor.set(p.vendor, p);
-                  const prevCat = idx > 0 ? filtered[idx - 1].category : null;
-                  const showCat = sort === 'category' && ((it.category || '') !== (prevCat || '') || idx === 0);
+                  const prevCat = idx > 0 ? sortedItems[idx - 1].category : null;
+                  const showCat = sort === 'category' && !colSort && ((it.category || '') !== (prevCat || '') || idx === 0);
                   const qty = cart[it.id] || 0;
                   return (
                     <React.Fragment key={it.id}>

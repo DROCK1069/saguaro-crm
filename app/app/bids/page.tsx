@@ -9,6 +9,7 @@ import UnsavedGuardModal from '@/components/UnsavedGuardModal';
 import { Skeleton, SkeletonKPI } from '@/components/ui/Skeleton';
 import MarkOutcomeModal from '@/components/bids/MarkOutcomeModal';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, goldButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
+import { postLearningEvent } from '@/lib/last-used';
 import { SUB_TRADES, SUB_TRADES_BY_DIVISION } from '@/lib/construction-intelligence';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',RED='#ef4444',GREEN='#3dd68c';
@@ -202,6 +203,63 @@ function BidsPageInner() {
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [pipelineLoading, setPipelineLoading] = useState(true);
   const [pipelineError, setPipelineError] = useState(false);
+  const [dupPkgId, setDupPkgId] = useState<string|null>(null);
+
+  /** One-click repeat: copies a package's real server data — scope, trade,
+   *  instructions, CSI codes, line items — into a new draft. Dates and status
+   *  regenerate (draft, no due date) so the copy is a fresh solicitation. */
+  async function handleDuplicatePackage(op: any) {
+    if (dupPkgId) return;
+    setDupPkgId(op.id);
+    try {
+      const r = await fetch(`/api/bid-packages/${op.id}`);
+      if (!r.ok) throw new Error('detail failed');
+      const d = await r.json();
+      const src = d.bidPackage || {};
+      const items: any[] = d.items || [];
+      const cr = await fetch('/api/bid-packages/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: src.project_id,
+          name: `${src.name || 'Bid Package'} (copy)`,
+          trade: src.trade || null,
+          description: src.description || null,
+          scope_of_work: src.scope_of_work || null,
+          scope_summary: src.scope_summary || null,
+          scope_narrative: src.scope_narrative || null,
+          status: 'draft',        // regenerates — open it when it's ready to bid
+          due_date: null,         // regenerates — set a fresh bid due date
+          pre_bid_date: null,     // regenerates
+          budget_estimate: src.budget_estimate != null ? Number(src.budget_estimate) : null,
+          notes: src.notes || null,
+          bid_instructions: src.bid_instructions || null,
+          csi_codes: Array.isArray(src.csi_codes) ? src.csi_codes : [],
+          is_public_project: !!src.is_public_project,
+          requires_bond: !!src.requires_bond,
+          insurance_requirements: src.insurance_requirements || null,
+          lineItems: items.map(it => ({
+            description: it.description,
+            quantity: it.quantity,
+            unit: it.unit,
+            unit_price: it.unit_price,
+            total_amount: it.total_amount,
+            csi_code: it.csi_code,
+            notes: it.notes,
+          })),
+        }),
+      });
+      const cd = await cr.json().catch(() => ({}));
+      if (!cr.ok || !cd.bidPackage) throw new Error(cd.error || 'create failed');
+      postLearningEvent('bid_package_duplicated', { projectId: src.project_id, meta: { fromPackageId: op.id } });
+      showToast(`Duplicated as draft — "${cd.bidPackage.name}". Set a due date, then open it for bids.`);
+      fetchPackages();
+    } catch {
+      showToast('Could not duplicate the package');
+    } finally {
+      setDupPkgId(null);
+    }
+  }
 
   async function fetchPackages() {
     setPipelineLoading(true);
@@ -537,8 +595,14 @@ function BidsPageInner() {
                   <td style={{padding:'12px 14px',color:DIM}}><span style={{display:'inline-flex',alignItems:'center',gap:5}}><Users size={13} weight="regular" color={DIM} /><span style={{color:TEXT,fontVariantNumeric:'tabular-nums'}}>{invited}</span> / <span style={{color:responded>0?GREEN:DIM,fontVariantNumeric:'tabular-nums'}}>{responded}</span></span></td>
                   <td style={{padding:'12px 14px',color:op.low_bid_amount?TEXT:DIM,fontVariantNumeric:'tabular-nums'}}>{op.low_bid_amount ? (<span style={{display:'inline-flex',alignItems:'center',gap:4}}><CurrencyDollar size={13} weight="regular" color={GREEN} />{fmt(Number(op.low_bid_amount)||0)}{op.low_bid_company?<span style={{color:DIM,fontSize:11}}> · {op.low_bid_company}</span>:null}</span>) : '—'}</td>
                   <td style={{padding:'12px 14px',fontVariantNumeric:'tabular-nums'}}>{op.spread_pct!=null&&Number.isFinite(Number(op.spread_pct)) ? (<span style={{fontWeight:700,color:spreadColor(Number(op.spread_pct))}}>{Math.round(Number(op.spread_pct))}%<span style={{color:DIM,fontWeight:500,fontSize:11}}> {Number(op.spread_pct)<=10?'tight':Number(op.spread_pct)<=25?'level it':'wide'}</span></span>) : (<span style={{color:DIM,fontSize:11}}>{(Number(responded)||0)===1?'needs 2 bids':'—'}</span>)}</td>
-                  <td style={{padding:'12px 14px'}}>
+                  <td style={{padding:'12px 14px',whiteSpace:'nowrap' as const}}>
                     <Link href={`/app/projects/${op.project_id}/bid-packages/${op.id}`} style={{display:'inline-block',textDecoration:'none',background:'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',border:'none',borderRadius:'var(--radius-sm)',color:'#1C1C1E',fontSize:11,padding:'5px 12px',fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px var(--brand-primary-25), inset 0 1px 0 rgba(255,255,255,0.35)'}}><span style={{display:'inline-flex',alignItems:'center',gap:4}}>View <ArrowRight size={11} weight="regular" /></span></Link>
+                    <button
+                      onClick={()=>handleDuplicatePackage(op)}
+                      disabled={dupPkgId===op.id}
+                      title="Copy scope, trade, instructions, and line items into a new draft — dates and status regenerate"
+                      style={{marginLeft:6,background:'transparent',border:`1px solid ${BORDER}`,borderRadius:'var(--radius-sm)',color:dupPkgId===op.id?DIM:TEXT,fontSize:11,padding:'5px 10px',fontWeight:700,cursor:dupPkgId===op.id?'wait':'pointer',opacity:dupPkgId===op.id?0.6:1}}
+                    >{dupPkgId===op.id?'Duplicating…':'Duplicate'}</button>
                   </td>
                 </tr>
               );

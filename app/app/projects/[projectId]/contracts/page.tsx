@@ -6,6 +6,7 @@ import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { toCents, toDollars, sumCents } from '@/lib/calc';
 import { SUB_TRADES } from '@/lib/construction-intelligence';
 import { PremiumSurface, ModuleHero, SectionCard, StatCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { FileText, CurrencyDollar, Plus, FilePlus, FileArrowUp, Eye, FileDashed, UsersThree, Signature } from '@phosphor-icons/react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
@@ -243,6 +244,19 @@ export default function ContractsPage() {
     if (filterTrade !== 'all' && c.trade !== filterTrade) return false;
     return true;
   });
+
+  // Sortable columns (R11 sweep) — amount sorts numerically, execution date as ISO.
+  const { sort, cycleSort } = usePersistedSort('project-contracts', { key: 'sub', dir: 'asc' });
+  const sortedContracts = useSortedRows(filteredContracts, sort, (c, key) => {
+    switch (key) {
+      case 'sub':    return c.sub_name || null;
+      case 'trade':  return c.trade || null;
+      case 'amount': return Number(c.amount) || 0;
+      case 'status': return c.status || 'Draft';
+      case 'exec':   return c.execution_date || null;
+      default:       return (c as unknown as Record<string, unknown>)[key];
+    }
+  });
   const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', background: '#1c1c1e', border: '1px solid ' + BORDER, borderRadius: 6, color: TEXT, fontSize: 13 };
   const label: React.CSSProperties = { fontSize: 12, color: DIM, marginBottom: 4, display: 'block' };
   const hint: React.CSSProperties = { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 5, lineHeight: 1.45 };
@@ -479,16 +493,19 @@ export default function ContractsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
-                  {['Sub / Vendor','Trade','Contract Amount','Status','Execution Date','Actions'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: DIM, borderBottom: '1px solid ' + BORDER, whiteSpace: 'nowrap' }}>{h}</th>
+                  {([
+                    ['Sub / Vendor','sub'],['Trade','trade'],['Contract Amount','amount'],
+                    ['Status','status'],['Execution Date','exec'],['Actions',undefined],
+                  ] as [string, string|undefined][]).map(([h,k]) => (
+                    <SortableTh key={h} label={h} sortKey={k} sort={sort} onSort={cycleSort} />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredContracts.length === 0 && (
+                {sortedContracts.length === 0 && (
                   <tr><td colSpan={6} style={{ padding: '26px 14px', textAlign: 'center', color: DIM, fontSize: 13 }}>No contracts match your search or filters.</td></tr>
                 )}
-                {filteredContracts.map(c => (
+                {sortedContracts.map(c => (
                   <tr key={c.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                     <td style={{ padding: '10px 14px', color: TEXT, fontWeight: 600 }}>{c.sub_name}</td>
                     <td style={{ padding: '10px 14px', color: DIM }}>{c.trade}</td>

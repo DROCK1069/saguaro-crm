@@ -298,6 +298,8 @@ export default function InvoicingPage() {
     }),
     columnHelper.accessor('amount', {
       header: 'Amount',
+      // DB money columns round-trip as TEXT — sort on the coerced number, not the string.
+      sortingFn: (a, b) => (Number(a.original.amount) || 0) - (Number(b.original.amount) || 0),
       cell: (info) => {
         const v = info.getValue();
         return v != null ? `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
@@ -305,6 +307,8 @@ export default function InvoicingPage() {
     }),
     columnHelper.accessor('total', {
       header: 'Total',
+      // Sort on the same effective total the cell renders (raw `total` can be null/stale).
+      sortingFn: (a, b) => effectiveTotal(a.original) - effectiveTotal(b.original),
       cell: (info) => {
         const v = effectiveTotal(info.row.original);
         return <span style={{ fontWeight: font.weight.bold, color: colors.gold, fontVariantNumeric: 'tabular-nums' }}>${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>;

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/premium';
 import { moduleAccent } from '@/lib/module-identity';
 import { PdfIcon } from '@/components/ui/FileTypeIcon';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 
 const GOLD = '#F59E0B';
 const BORDER = 'rgba(255,255,255,0.12)';
@@ -147,14 +148,6 @@ const BOND_ROUTES: Record<string, { path: string; body: (projectId: string) => R
   'G704':   { path: '/api/documents/g704', body: (projectId) => ({ projectId }) },
   'G706':   { path: '/api/documents/g706', body: (projectId) => ({ projectId }) },
   'G707':   { path: '/api/documents/g707', body: (projectId) => ({ projectId }) },
-};
-
-// Shared table header cell style — matches the premium glass surface.
-const thStyle: React.CSSProperties = {
-  padding: '10px 16px', textAlign: 'left',
-  fontSize: 11, fontWeight: 700,
-  textTransform: 'uppercase', letterSpacing: 0.5,
-  color: DIM, borderBottom: `1px solid ${BORDER}`,
 };
 
 export default function DocumentsPage() {
@@ -341,6 +334,51 @@ export default function DocumentsPage() {
   const visLienWaivers = lienWaivers.filter(lw => rowMatch(lw.subName ?? lw.sub_name, lw.type, lw.amount, lw.throughDate ?? lw.through_date, lw.status));
   const visPayroll = payroll.filter(pr => rowMatch(pr.weekEnding ?? pr.week_ending, pr.employees, pr.totalGross ?? pr.total_gross, pr.status));
   const visCloseout = closeoutItems.filter(i => rowMatch(i.title, i.item_type, i.trade, i.responsible_party, i.status));
+  const visLib = libDocs.filter(d => (!libTypeFilter || d.doc_type === libTypeFilter) && (!query || `${docTypeLabel(d.doc_type)} ${d.projectName ?? ''}`.toLowerCase().includes(query.toLowerCase())));
+
+  // Sortable columns per tab (R11 sweep) — money on Number()-coerced values,
+  // dates on the raw ISO strings. Each table persists its own sort.
+  const { sort: libSort, cycleSort: libCycle } = usePersistedSort('documents-library', { key: 'generated', dir: 'desc' });
+  const sortedLib = useSortedRows(visLib, libSort, (d: any, key: string) => {
+    switch (key) {
+      case 'doc':       return docTypeLabel(d.doc_type);
+      case 'project':   return d.projectName ?? null;
+      case 'generated': return d.created_at ?? null;
+      case 'status':    return d.status || 'generated';
+      default:          return d[key];
+    }
+  });
+  const { sort: paSort, cycleSort: paCycle } = usePersistedSort('documents-payapps', { key: 'app', dir: 'desc' });
+  const sortedPayApps = useSortedRows(visPayApps, paSort, (pa: any, key: string) => {
+    switch (key) {
+      case 'app':    return Number(pa.app_number ?? pa.application_number) || 0;
+      case 'period': return pa.period_from ?? pa.period_to ?? null;
+      case 'amount': return Number(pa.current_payment_due ?? pa.net_payment_due) || 0;
+      case 'status': return pa.status ?? null;
+      default:       return pa[key];
+    }
+  });
+  const { sort: lwSort, cycleSort: lwCycle } = usePersistedSort('documents-lienwaivers', { key: 'through', dir: 'desc' });
+  const sortedLienWaivers = useSortedRows(visLienWaivers, lwSort, (lw: any, key: string) => {
+    switch (key) {
+      case 'sub':     return lw.subName ?? lw.sub_name ?? null;
+      case 'type':    return lw.type ?? null;
+      case 'amount':  return Number(lw.amount) || 0;
+      case 'through': return lw.throughDate ?? lw.through_date ?? null;
+      case 'status':  return lw.status ?? null;
+      default:        return lw[key];
+    }
+  });
+  const { sort: prSort, cycleSort: prCycle } = usePersistedSort('documents-payroll', { key: 'week', dir: 'desc' });
+  const sortedPayroll = useSortedRows(visPayroll, prSort, (pr: any, key: string) => {
+    switch (key) {
+      case 'week':      return pr.weekEnding ?? pr.week_ending ?? null;
+      case 'employees': return Number(pr.employees) || 0;
+      case 'gross':     return Number(pr.totalGross ?? pr.total_gross) || 0;
+      case 'status':    return pr.status ?? null;
+      default:          return pr[key];
+    }
+  });
 
   return (
     <PremiumSurface maxWidth={1600}>
@@ -441,11 +479,17 @@ export default function DocumentsPage() {
             </div>
             <div className="pmTable" style={{ margin: '12px 20px 18px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr><th>Document</th><th>Project</th><th>Generated</th><th>Status</th><th style={{ textAlign: 'right' }}>Open</th></tr></thead>
+                <thead><tr>
+                  <SortableTh label="Document" sortKey="doc" sort={libSort} onSort={libCycle} style={{ padding: '10px 16px' }} />
+                  <SortableTh label="Project" sortKey="project" sort={libSort} onSort={libCycle} style={{ padding: '10px 16px' }} />
+                  <SortableTh label="Generated" sortKey="generated" sort={libSort} onSort={libCycle} style={{ padding: '10px 16px' }} />
+                  <SortableTh label="Status" sortKey="status" sort={libSort} onSort={libCycle} style={{ padding: '10px 16px' }} />
+                  <SortableTh label="Open" sort={libSort} onSort={libCycle} align="right" style={{ padding: '10px 16px' }} />
+                </tr></thead>
                 <tbody>
                   {loadingLib && <SkeletonRows rows={5} cols={5} />}
                   {errorLib && !loadingLib && <ErrorRow colSpan={5} message="Couldn't load the library." onRetry={loadLibrary} />}
-                  {!loadingLib && !errorLib && libDocs.filter(d => (!libTypeFilter || d.doc_type === libTypeFilter) && (!query || `${docTypeLabel(d.doc_type)} ${d.projectName ?? ''}`.toLowerCase().includes(query.toLowerCase()))).map(doc => (
+                  {!loadingLib && !errorLib && sortedLib.map(doc => (
                     <tr key={doc.id}>
                       <td style={{ padding: '12px 16px', fontWeight: 700 }}>{docTypeLabel(doc.doc_type)}</td>
                       <td style={{ padding: '12px 16px', color: '#9CA3AF' }}>{doc.projectName ?? '—'}</td>
@@ -483,9 +527,11 @@ export default function DocumentsPage() {
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    {['Application #', 'Period', 'Amount Due', 'Status', 'Download'].map(h => (
-                      <th key={h} style={thStyle}>{h}</th>
+                  <tr>
+                    {([
+                      ['Application #','app'],['Period','period'],['Amount Due','amount'],['Status','status'],['Download',undefined],
+                    ] as [string, string|undefined][]).map(([h,k]) => (
+                      <SortableTh key={h} label={h} sortKey={k} sort={paSort} onSort={paCycle} style={{ padding: '10px 16px' }} />
                     ))}
                   </tr>
                 </thead>
@@ -504,7 +550,7 @@ export default function DocumentsPage() {
                         action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate New</Link>}
                       />
                     </td></tr>
-                  ) : visPayApps.map(pa => {
+                  ) : sortedPayApps.map(pa => {
                     const sc = statusConfig[pa.status] || statusConfig.draft;
                     return (
                       <tr key={pa.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
@@ -554,9 +600,11 @@ export default function DocumentsPage() {
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    {['Sub Name', 'Type', 'Amount', 'Through Date', 'Status', 'Download'].map(h => (
-                      <th key={h} style={thStyle}>{h}</th>
+                  <tr>
+                    {([
+                      ['Sub Name','sub'],['Type','type'],['Amount','amount'],['Through Date','through'],['Status','status'],['Download',undefined],
+                    ] as [string, string|undefined][]).map(([h,k]) => (
+                      <SortableTh key={h} label={h} sortKey={k} sort={lwSort} onSort={lwCycle} style={{ padding: '10px 16px' }} />
                     ))}
                   </tr>
                 </thead>
@@ -575,7 +623,7 @@ export default function DocumentsPage() {
                         action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate New</Link>}
                       />
                     </td></tr>
-                  ) : visLienWaivers.map(lw => {
+                  ) : sortedLienWaivers.map(lw => {
                     const sc = statusConfig[lw.status] || statusConfig.pending;
                     return (
                       <tr key={lw.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
@@ -700,9 +748,11 @@ export default function DocumentsPage() {
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    {['Week Ending', '# Employees', 'Total Gross', 'Status', 'Download'].map(h => (
-                      <th key={h} style={thStyle}>{h}</th>
+                  <tr>
+                    {([
+                      ['Week Ending','week'],['# Employees','employees'],['Total Gross','gross'],['Status','status'],['Download',undefined],
+                    ] as [string, string|undefined][]).map(([h,k]) => (
+                      <SortableTh key={h} label={h} sortKey={k} sort={prSort} onSort={prCycle} style={{ padding: '10px 16px' }} />
                     ))}
                   </tr>
                 </thead>
@@ -721,7 +771,7 @@ export default function DocumentsPage() {
                         action={<Link href="/app/projects" style={goldButtonStyle} className="pmBtn"><Plus size={15} weight="bold" /> Generate WH-347</Link>}
                       />
                     </td></tr>
-                  ) : visPayroll.map(pr => {
+                  ) : sortedPayroll.map(pr => {
                     const sc = statusConfig[pr.status] || statusConfig.draft;
                     return (
                       <tr key={pr.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>

@@ -7,6 +7,7 @@ import { CheckCircle, Hourglass, Lightning, FileText, DownloadSimple, Receipt } 
 import SaguaroDatePicker from '../../../../../components/SaguaroDatePicker';
 import { PremiumSurface, ModuleHero, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle, goldOutlineButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF',GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -191,6 +192,22 @@ export default function LienWaiversPage() {
   const lastApp = ctx?.money?.lastPayApp||null;
   const appNoById:Record<string,number> = {};
   for(const pa of payApps){ if(pa?.id) appNoById[pa.id] = Number(pa.app_number)||0; }
+
+  // Sortable columns on the All Waivers table (R11 sweep) — money sorts on the
+  // coerced number, through-date on the raw ISO date, claimant on what renders.
+  const { sort: wSort, cycleSort: wCycleSort } = usePersistedSort('lien-waivers-all', { key: 'through', dir: 'desc' });
+  const sortedWaivers = useSortedRows(filteredWaivers, wSort, (w:any, key:string) => {
+    switch (key) {
+      case 'claimant': return w.claimant_name||(w.subcontractors as any)?.company_name||(w.subcontractors as any)?.name||null;
+      case 'type':     return typeLabel(w.waiver_type);
+      case 'app':      return w.pay_application_id ? (appNoById[w.pay_application_id]||null) : null;
+      case 'state':    return w.state||null;
+      case 'amount':   return Number(w.amount)||0;
+      case 'through':  return w.through_date?String(w.through_date).slice(0,10):null;
+      case 'status':   return w.status==='sent'?'pending':(w.status||'pending');
+      default:         return w[key];
+    }
+  });
   const selSub = subs.find(s=>s.id===fSubId);
   const selPa  = payApps.find(p=>p.id===fPayAppId);
   const rosterTotal = subs.reduce((t,s)=>t+(Number(s.contractAmount)||0),0);
@@ -434,16 +451,17 @@ export default function LienWaiversPage() {
               <div style={{overflowX:'auto'}}>
                 <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
                   <thead>
-                    <tr style={{background:DARK}}>
-                      {['Claimant','Type','Pay App','State','Amount','Through Date','Status','Download'].map(h=>(
-                        <th key={h} style={{padding:'9px 14px',textAlign:'left' as const,fontSize:10,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.5,color:DIM,borderBottom:`1px solid ${BORDER}`}}>
-                          {h}
-                        </th>
+                    <tr>
+                      {([
+                        ['Claimant','claimant'],['Type','type'],['Pay App','app'],['State','state'],
+                        ['Amount','amount'],['Through Date','through'],['Status','status'],['Download',undefined],
+                      ] as [string, string|undefined][]).map(([h,k])=>(
+                        <SortableTh key={h} label={h} sortKey={k} sort={wSort} onSort={wCycleSort} />
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredWaivers.map((w:any)=>{
+                    {sortedWaivers.map((w:any)=>{
                       const wBlocks = (w.status==='pending'||w.status==='sent')&&w.blocks_payment!==false&&w.pay_application_id;
                       const appNo = w.pay_application_id?appNoById[w.pay_application_id]:undefined;
                       return (

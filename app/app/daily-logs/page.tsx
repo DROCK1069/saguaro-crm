@@ -14,6 +14,7 @@ import { Plus, Sun, CloudRain, Thermometer, UsersThree, Warning, ClipboardText }
 import DataTable from '../../../components/DataTable';
 import { colors, font, radius } from '../../../lib/design-tokens';
 import { PremiumFX, ModuleHero, StatStrip, InsightRow, AutoChip, IconChip, goldButtonStyle } from '@/components/ui/premium';
+import { getLastUsed, setLastUsed, postLearningEvent } from '@/lib/last-used';
 import { moduleAccent } from '@/lib/module-identity';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import NudgeRing from '@/components/intelligence/NudgeRing';
@@ -60,6 +61,11 @@ export default function DailyLogsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [autoCrew, setAutoCrew] = useState(false);
+  // "Same as yesterday" — true once the prior log's structure was carried in.
+  const [carryUsed, setCarryUsed] = useState(false);
+  const [carrying, setCarrying] = useState(false);
+  // Last-used memory: what this open prefilled, so AUTO chips track edits.
+  const [lastApplied, setLastApplied] = useState<{ projectId?: string; superintendent?: string }>({});
   // ListToolbar state — filters + sort persist per module via sag_flt_daily-logs.
   const [logSearch, setLogSearch] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
@@ -113,7 +119,67 @@ export default function DailyLogsPage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setProjects(Array.isArray(d) ? d : d.projects ?? []); })
       .catch(() => {});
+    // Deep link from the command palette: /app/daily-logs?new=1 opens the composer.
+    try {
+      if (new URLSearchParams(window.location.search).get('new') === '1') openCreate();
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchLogs]);
+
+  /** Open the composer with last-used memory applied: the project and
+   *  superintendent this user logged last time prefill with AUTO chips. */
+  function openCreate() {
+    const last = getLastUsed<{ projectId?: string; superintendent?: string }>('daily-log') || {};
+    const applied: { projectId?: string; superintendent?: string } = {};
+    const next = { ...form };
+    if (!next.projectId && last.projectId && projects.some(p => p.id === last.projectId)) {
+      next.projectId = last.projectId;
+      applied.projectId = last.projectId;
+      const prev = prevLogFor(last.projectId);
+      if (prev?.crew_count) { next.crewCount = String(prev.crew_count); setAutoCrew(true); }
+    }
+    if (!next.superintendent && last.superintendent) {
+      next.superintendent = last.superintendent;
+      applied.superintendent = last.superintendent;
+    }
+    setForm(next);
+    setLastApplied(applied);
+    setCarryUsed(false);
+    setShowCreate(true);
+  }
+
+  /** "Same as yesterday" — carries the prior log's structure (crew, super,
+   *  phase, equipment) via the server /prefill carry-forward, falling back to
+   *  the last log already loaded client-side. Today's narrative stays blank. */
+  async function sameAsYesterday() {
+    const pid = form.projectId;
+    if (!pid || carrying) return;
+    setCarrying(true);
+    try {
+      let carry: Record<string, any> | null = null;
+      let clockCrew = 0;
+      try {
+        const r = await fetch(`/api/projects/${pid}/daily-logs/prefill?date=${form.logDate}`);
+        if (r.ok) {
+          const d = await r.json();
+          carry = d.carryForward || null;
+          clockCrew = Number(d.crewCount) || 0;
+        }
+      } catch { /* prefill unavailable — fall back to the loaded log list */ }
+      const prev = prevLogFor(pid);
+      setForm(f => ({
+        ...f,
+        crewCount: clockCrew > 0 ? String(clockCrew) : (prev?.crew_count ? String(prev.crew_count) : f.crewCount),
+        superintendent: f.superintendent || (carry?.superintendent as string) || prev?.superintendent || '',
+        phaseOfWork: f.phaseOfWork || (carry?.phase_of_work as string) || '',
+        equipment: f.equipment || (carry?.equipment as string) || '',
+      }));
+      setAutoCrew(true);
+      setCarryUsed(true);
+    } finally {
+      setCarrying(false);
+    }
+  }
 
   /* ── Unsaved-work protection (R14): dirty once anything beyond the default
    *    date is filled in; draft autosaves to this device and restores on
@@ -173,6 +239,20 @@ export default function DailyLogsPage() {
         }),
       });
       if (!res.ok) throw new Error('Failed to create daily log');
+      // Remember what was saved for next time, and receipt what was accepted.
+      setLastUsed('daily-log', { projectId: form.projectId, superintendent: form.superintendent });
+      const acceptedLast = [
+        lastApplied.projectId && form.projectId === lastApplied.projectId && 'projectId',
+        lastApplied.superintendent && form.superintendent === lastApplied.superintendent && 'superintendent',
+      ].filter(Boolean) as string[];
+      if (acceptedLast.length > 0) {
+        postLearningEvent('last_used_prefill', { projectId: form.projectId, meta: { scope: 'daily-log', fields: acceptedLast } });
+      }
+      if (carryUsed) {
+        postLearningEvent('daily_log_carry_forward', { projectId: form.projectId, meta: { logDate: form.logDate } });
+      }
+      setLastApplied({});
+      setCarryUsed(false);
       setShowCreate(false);
       setForm({ projectId: '', logDate: new Date().toISOString().slice(0, 10), weather: '', temperatureHigh: '', temperatureLow: '', crewCount: '', workPerformed: '', delays: '', safetyNotes: '', materialsDelivered: '', visitors: '', notes: '', superintendent: '', precipitation: '', windConditions: '', phaseOfWork: '', equipment: '' });
       setAutoCrew(false);
@@ -206,10 +286,14 @@ export default function DailyLogsPage() {
     columnHelper.accessor((row) => `${row.temperature_high ?? '—'}° / ${row.temperature_low ?? '—'}°`, {
       id: 'temp',
       header: 'Temp',
+      // The cell renders "72° / 55°" — sort on the numeric high, not the string.
+      sortingFn: (a, b) => (Number(a.original.temperature_high) || 0) - (Number(b.original.temperature_high) || 0),
       cell: (info) => <span style={{ color: colors.textMuted }}>{info.getValue()}</span>,
     }),
     columnHelper.accessor('crew_count', {
       header: 'Crew',
+      // crew_count can round-trip as TEXT — numeric sort, not lexicographic.
+      sortingFn: (a, b) => (Number(a.original.crew_count) || 0) - (Number(b.original.crew_count) || 0),
       cell: (info) => (
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <UsersThree size={14} style={{ color: colors.textDim }} />
@@ -267,7 +351,7 @@ export default function DailyLogsPage() {
         accent="Logs"
         subtitle="Track daily field activity, weather, crew, and work progress."
         actions={
-          <button onClick={() => setShowCreate(true)} className="pmBtn" style={goldButtonStyle}>
+          <button onClick={openCreate} className="pmBtn" style={goldButtonStyle}>
             <Plus size={16} weight="bold" /> New Log
           </button>
         }
@@ -359,12 +443,27 @@ export default function DailyLogsPage() {
                       <InsightRow label="Open items" value={`${ctx.counts?.openRfis ?? 0} RFIs · ${ctx.counts?.openSubmittals ?? 0} submittals · ${ctx.counts?.openPunch ?? 0} punch`} />
                       {prev ? <InsightRow label="Prev log" value={`${prev.crew_count || 0} crew${prev.weather ? ` · ${prev.weather}` : ''}${prev.superintendent ? ` · ${prev.superintendent}` : ''}`} /> : null}
                     </div>
+                    {(prev || lastLog) && !carryUsed ? (
+                      <button
+                        type="button"
+                        onClick={sameAsYesterday}
+                        disabled={carrying}
+                        title="Carry the last log's crew count, superintendent, phase, and equipment into today — work performed stays blank"
+                        style={{ marginTop: 10, padding: '7px 14px', background: 'var(--brand-primary-18, rgba(255,255,255,0.06))', border: '1px solid var(--brand-primary-35, rgba(255,255,255,0.2))', borderRadius: radius.md, color: 'var(--brand-primary)', fontSize: font.size.sm, fontWeight: font.weight.bold, cursor: carrying ? 'wait' : 'pointer', opacity: carrying ? 0.6 : 1 }}
+                      >
+                        {carrying ? 'Carrying forward…' : 'Same as yesterday — carry crew, super, phase & equipment'}
+                      </button>
+                    ) : carryUsed ? (
+                      <div style={{ marginTop: 8, fontSize: font.size.sm, color: colors.textDim }}>
+                        Carried from the last log — crew, superintendent, phase, and equipment are prefilled. Today&apos;s work still needs your words.
+                      </div>
+                    ) : null}
                   </div>
                 );
               })() : null}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={labelStyle}>Project *</label>
+                  <label style={labelStyle}>Project *{lastApplied.projectId && form.projectId === lastApplied.projectId ? <AutoChip /> : null}</label>
                   <select value={form.projectId} onChange={(e) => {
                     const pid = e.target.value;
                     // The moment a project is chosen the form walks in knowing it:
@@ -383,12 +482,12 @@ export default function DailyLogsPage() {
                   <div style={{ fontSize: font.size.sm, color: colors.textDim, marginTop: 4 }}>Defaulted to today — backfill any missed day.</div>
                 </div>
                 <div>
-                  <label style={labelStyle}>Superintendent</label>
+                  <label style={labelStyle}>Superintendent{form.superintendent && ((lastApplied.superintendent && form.superintendent === lastApplied.superintendent) || carryUsed) ? <AutoChip /> : null}</label>
                   <input value={form.superintendent} onChange={(e) => setForm({ ...form, superintendent: e.target.value })} style={inputStyle} placeholder="Who ran the site" />
                   {(() => { const prev = prevLogFor(form.projectId); return prev?.superintendent ? <div style={{ fontSize: font.size.sm, color: colors.textDim, marginTop: 4 }}>Last log: {prev.superintendent}.</div> : null; })()}
                 </div>
                 <div>
-                  <label style={labelStyle}>Phase of Work</label>
+                  <label style={labelStyle}>Phase of Work{carryUsed && form.phaseOfWork ? <AutoChip /> : null}</label>
                   <input value={form.phaseOfWork} onChange={(e) => setForm({ ...form, phaseOfWork: e.target.value })} style={inputStyle} placeholder="e.g. Rough-in, Framing" />
                 </div>
                 <div>
@@ -421,7 +520,7 @@ export default function DailyLogsPage() {
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Equipment On Site</label>
+                <label style={labelStyle}>Equipment On Site{carryUsed && form.equipment ? <AutoChip /> : null}</label>
                 <textarea value={form.equipment} onChange={(e) => setForm({ ...form, equipment: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Equipment on site..." />
               </div>
               <div>

@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import DragHandle, { useDragReorder } from '../../../../../components/DragHandle';
 import { Clipboard, ClipboardText, CheckCircle, FileText, CaretDown, PencilSimple, Copy, Trash, Receipt, Plus, Hourglass } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, InsightRow, goldButtonStyle } from '@/components/ui/premium';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 import { SkeletonRow } from '@/components/ui/Skeleton';
 import { moduleAccent } from '@/lib/module-identity';
 import NudgeRing from '@/components/intelligence/NudgeRing';
@@ -244,6 +245,23 @@ export default function PayAppsPage() {
   const waiverTotals = Object.values(waiversByApp).reduce((a,w)=>({total:a.total+w.total,signed:a.signed+w.signed}),{total:0,signed:0});
   const pendingApproval = payApps.filter((p:any)=>p.status==='submitted').length;
 
+  // Sortable columns (R11 sweep). Default = no sort so the persisted
+  // drag-reorder (sort_order) stays the source of truth; while a column sort
+  // is active the drag handles pause (reordering a sorted view is meaningless).
+  const { sort, cycleSort } = usePersistedSort('project-pay-apps');
+  const sortedApps = useSortedRows(payApps, sort, (pa:any, key:string) => {
+    switch (key) {
+      case 'app':       return Number(pa.app_number ?? pa.application_number)||0;
+      case 'period':    return pa.period_from || pa.period_to || null;
+      case 'lifecycle': return STAGE_RANK[pa.status||'draft'] ?? 0;
+      case 'completed': return Number(pa.total_completed_stored ?? pa.total_completed)||0;
+      case 'thisPeriod':return Number(pa.this_period)||0;
+      case 'retainage': return Number(pa.total_retainage ?? pa.retainage_amount)||0;
+      case 'due':       return Number(pa.current_payment_due)||0;
+      default:          return pa[key];
+    }
+  });
+
   return (
     <PremiumSurface maxWidth={1600}>
       {toast && (
@@ -383,32 +401,35 @@ export default function PayAppsPage() {
             )}
             <table style={{width:'100%',borderCollapse:'collapse' as const,fontSize:13}}>
               <thead>
-                <tr style={{background:DARK}}>
-                  <th style={{padding:'10px 8px',width:28,borderBottom:`1px solid ${BORDER}`}}/>
-                  <th style={{padding:'10px 8px',width:28,borderBottom:`1px solid ${BORDER}`}}>
-                    <input type="checkbox" checked={bulkSelected.size === payApps.length && payApps.length > 0} onChange={() => { if (bulkSelected.size === payApps.length) setBulkSelected(new Set()); else setBulkSelected(new Set(payApps.map((p:any) => p.id))); }} style={{accentColor:GOLD,cursor:'pointer'}} />
-                  </th>
-                  {['App #','Period','Lifecycle','Completed to Date','This Period','Retainage','Payment Due','G702 PDF'].map(h=>(
-                    <th key={h} style={{padding:'10px 14px',textAlign:'left' as const,fontSize:11,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:.5,color:DIM,borderBottom:`1px solid ${BORDER}`}}>
-                      {h}
-                    </th>
+                <tr>
+                  <SortableTh label="" sort={sort} onSort={cycleSort} style={{padding:'10px 8px',width:28}} />
+                  <SortableTh
+                    label={<input type="checkbox" checked={bulkSelected.size === payApps.length && payApps.length > 0} onChange={() => { if (bulkSelected.size === payApps.length) setBulkSelected(new Set()); else setBulkSelected(new Set(payApps.map((p:any) => p.id))); }} style={{accentColor:GOLD,cursor:'pointer'}} />}
+                    sort={sort} onSort={cycleSort} style={{padding:'10px 8px',width:28}}
+                  />
+                  {([
+                    ['App #','app'],['Period','period'],['Lifecycle','lifecycle'],['Completed to Date','completed'],
+                    ['This Period','thisPeriod'],['Retainage','retainage'],['Payment Due','due'],['G702 PDF',undefined],
+                  ] as [string, string|undefined][]).map(([h,k])=>(
+                    <SortableTh key={h} label={h} sortKey={k} sort={sort} onSort={cycleSort} />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {payApps.map((pa:any,idx:number)=>{
-                  const handlers = dragHandlers(idx);
+                {sortedApps.map((pa:any,idx:number)=>{
+                  // Drag-reorder only makes sense in the persisted (unsorted) order.
+                  const handlers = sort ? null : dragHandlers(idx);
                   return (
                   <tr
                     key={pa.id}
                     onClick={()=>router.push(`/app/projects/${projectId}/pay-apps/${pa.id}`)}
-                    style={{borderBottom:`1px solid rgba(229,229,234,.5)`,cursor:'pointer',transition:'background .15s',opacity:draggingIndex===idx?0.5:1}}
+                    style={{borderBottom:`1px solid rgba(229,229,234,.5)`,cursor:'pointer',transition:'background .15s',opacity:!sort&&draggingIndex===idx?0.5:1}}
                     onMouseEnter={e=>(e.currentTarget.style.background='rgba(245, 158, 11,.06)')}
                     onMouseLeave={e=>(e.currentTarget.style.background='')}
-                    {...handlers}
+                    {...(handlers||{})}
                   >
                     <td style={{padding:'4px 4px'}} onClick={e=>e.stopPropagation()}>
-                      <DragHandle {...handlers} index={idx} isDragging={draggingIndex===idx} />
+                      {handlers && <DragHandle {...handlers} index={idx} isDragging={draggingIndex===idx} />}
                     </td>
                     <td style={{padding:'4px 8px'}} onClick={e=>e.stopPropagation()}>
                       <input type="checkbox" checked={bulkSelected.has(pa.id)} onChange={()=>toggleBulk(pa.id)} style={{accentColor:GOLD,cursor:'pointer'}} />

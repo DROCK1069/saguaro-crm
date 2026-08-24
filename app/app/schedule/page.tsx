@@ -313,6 +313,8 @@ export default function SchedulePage() {
     }),
     columnHelper.accessor('pct_complete', {
       header: 'Progress',
+      // pct_complete can round-trip as TEXT — numeric sort, not lexicographic.
+      sortingFn: (a, b) => (Number(a.original.pct_complete) || 0) - (Number(b.original.pct_complete) || 0),
       cell: (info) => (
         <PctEditor
           task={info.row.original}

@@ -32,6 +32,7 @@ import {
 import { moduleAccent } from '@/lib/module-identity';
 import { ListToolbar } from '@/components/ui/ListToolbar';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 import {
   Receipt, Plus, X, CheckCircle, XCircle, PaperPlaneTilt, ArrowsClockwise, Lightning,
   FileCsv, FileXls, FilePdf, HardHat, Package, Wrench, Signature, CurrencyCircleDollar,
@@ -553,6 +554,23 @@ export default function TmTicketsPage() {
     return [t.description, t.notes, ticketLabel(t), t.approved_by].some(v => String(v || '').toLowerCase().includes(q));
   });
 
+  // Sortable columns (R11 sweep) — money columns sort on their Number()-coerced
+  // values (several round-trip from the DB as TEXT), dates on the raw ISO date.
+  const { sort, cycleSort } = usePersistedSort('project-tm-tickets', { key: 'date', dir: 'desc' });
+  const sortedTickets = useSortedRows(filtered, sort, (t, key) => {
+    switch (key) {
+      case 'ticket':    return num(t.ticket_number);
+      case 'date':      return String(t.work_date || t.created_at || '').slice(0, 10) || null;
+      case 'desc':      return t.description || null;
+      case 'labor':     return num(t.labor_total);
+      case 'materials': return num(t.materials_total);
+      case 'equipment': return num(t.equipment_total);
+      case 'total':     return num(t.total);
+      case 'status':    return displayStatus(t.status);
+      default:          return (t as unknown as Record<string, unknown>)[key];
+    }
+  });
+
   const selected = selectedId ? tickets.find(t => t.id === selectedId) || null : null;
 
   // Drawer line rows — tolerate both surfaces' jsonb shapes; fall back to the
@@ -948,20 +966,20 @@ export default function TmTicketsPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: DARK }}>
-                      <th style={TH}>Ticket</th>
-                      <th style={TH}>Work Date</th>
-                      <th style={TH}>Description</th>
-                      <th style={{ ...TH, textAlign: 'right' }}>Labor</th>
-                      <th style={{ ...TH, textAlign: 'right' }}>Materials</th>
-                      <th style={{ ...TH, textAlign: 'right' }}>Equipment</th>
-                      <th style={{ ...TH, textAlign: 'right' }}>Total</th>
-                      <th style={TH}>Status</th>
-                      <th style={TH}>Actions</th>
+                    <tr>
+                      <SortableTh label="Ticket" sortKey="ticket" sort={sort} onSort={cycleSort} />
+                      <SortableTh label="Work Date" sortKey="date" sort={sort} onSort={cycleSort} />
+                      <SortableTh label="Description" sortKey="desc" sort={sort} onSort={cycleSort} />
+                      <SortableTh label="Labor" sortKey="labor" sort={sort} onSort={cycleSort} align="right" />
+                      <SortableTh label="Materials" sortKey="materials" sort={sort} onSort={cycleSort} align="right" />
+                      <SortableTh label="Equipment" sortKey="equipment" sort={sort} onSort={cycleSort} align="right" />
+                      <SortableTh label="Total" sortKey="total" sort={sort} onSort={cycleSort} align="right" />
+                      <SortableTh label="Status" sortKey="status" sort={sort} onSort={cycleSort} />
+                      <SortableTh label="Actions" sort={sort} onSort={cycleSort} />
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(t => (
+                    {sortedTickets.map(t => (
                       <tr key={t.id}
                         onClick={() => setSelectedId(t.id)}
                         style={{ borderBottom: `1px solid rgba(255,255,255,0.07)`, cursor: 'pointer' }}

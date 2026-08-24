@@ -207,10 +207,10 @@ button {
   letter-spacing: 0.01em;
 }
 
-/* Tables: tight professional rows */
+/* Tables: tight professional rows (R10 density: one notch tighter row rhythm) */
 table { font-size: 13px; border-collapse: collapse; }
-th { font-size: 10.5px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 0.06em; }
-td { font-size: 13px !important; padding: 8px 12px; }
+th { font-size: 10.5px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 0.06em; padding: 7px 12px; }
+td { font-size: 13px !important; padding: 6px 12px; }
 
 /* Cards: reduce padding bloat */
 [style*="borderRadius"][style*="padding"] {
@@ -586,8 +586,8 @@ input:-webkit-autofill:focus {
 :where(table) td { border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; }
 :where(table) tbody tr { transition: background .12s ease; }
 :where(table) tbody tr:hover { background: var(--brand-primary-08); }
-:where(table) th:first-child, :where(table) td:first-child { padding-left: 18px; }
-:where(table) th:last-child, :where(table) td:last-child { padding-right: 18px; }
+:where(table) th:first-child, :where(table) td:first-child { padding-left: 16px; }
+:where(table) th:last-child, :where(table) td:last-child { padding-right: 16px; }
 :where(table) td.num, :where(table) td[data-num] { text-align: right; font-variant-numeric: tabular-nums; }
 /* .pmTable — milled-plate wrapper: put it on the element wrapping a table (or
    the table's own container) and the whole thing becomes a machined panel:

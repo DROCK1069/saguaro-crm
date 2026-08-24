@@ -22,7 +22,11 @@ export type LearningKind =
   | 'ai_extract'           // voice/AI extraction filled a form
   | 'catalog_best_price'   // best-price PO issued from the catalog
   | 'suggestion_accepted'  // suggestion-feed deep link followed (engine found it first)
-  | 'suggestion_dismissed';// suggestion dismissed — suppressed on recompute for 30 days
+  | 'suggestion_dismissed' // suggestion dismissed — suppressed on recompute for 30 days
+  | 'last_used_prefill'    // last-used field memory accepted in a create flow
+  | 'po_duplicated'        // one-click PO repeat (copied minus number/date/status)
+  | 'bid_package_duplicated' // one-click bid-package repeat (copied minus dates/status)
+  | 'daily_log_carry_forward'; // "same as yesterday" carried the prior log's structure
 
 /** Conservative manual-effort estimates (seconds) per automation. */
 export const SAVED_SECONDS: Record<LearningKind, number> = {
@@ -35,6 +39,10 @@ export const SAVED_SECONDS: Record<LearningKind, number> = {
   catalog_best_price: 300, // calling vendors for pricing
   suggestion_accepted: 120, // combing the module to spot the same issue yourself
   suggestion_dismissed: 0,  // no time saved — recorded so the feed stops re-surfacing it
+  last_used_prefill: 30,    // retyping the same vendor / cost code / super again
+  po_duplicated: 420,       // rebuilding a PO's lines, codes, and vendor by hand
+  bid_package_duplicated: 600, // retyping scope, instructions, and line items
+  daily_log_carry_forward: 240, // reconstructing yesterday's manpower/structure
 };
 
 export async function recordLearning(

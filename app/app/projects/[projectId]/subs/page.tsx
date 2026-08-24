@@ -7,6 +7,7 @@ import { Handshake, Trash, Users, CurrencyDollar, HandCoins, Heartbeat, Plus, Sh
 import { SUB_TRADES } from '@/lib/construction-intelligence';
 import { PremiumSurface, ModuleHero, StatCard, SectionCard, PremiumEmpty, StatStrip, FlowSteps, FlowStrip, InsightRow, AutoChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { ListToolbar } from '@/components/ui/ListToolbar';
+import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 
 const GOLD='#F59E0B',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const fmt = (n:number) => '$'+((n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}));
@@ -195,6 +196,19 @@ export default function SubsPage() {
     return true;
   });
 
+  // Sortable columns (R11 sweep) — money columns sort on the same coerced
+  // numbers the cells render (contract falls back to the roster commitment).
+  const { sort, cycleSort } = usePersistedSort('project-subs', { key: 'name', dir: 'asc' });
+  const sortedSubs = useSortedRows(filteredSubs, sort, (s, key) => {
+    switch (key) {
+      case 'contract': return s.contract_amount || Number(roster.find(r => r.id === s.id)?.contractAmount || 0);
+      case 'paid': return s.paid_amount;
+      case 'score': return s.health_score || 0;
+      case 'status': return s.status || 'active';
+      default: return (s as unknown as Record<string, unknown>)[key];
+    }
+  });
+
   return (
     <PremiumSurface maxWidth={1600}>
       {toast && <div style={{position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',zIndex:99999,padding:'12px 20px',borderRadius:8,background:toast.type==='success'?'rgba(34,197,94,0.9)':'rgba(239,68,68,0.9)',color:'#fff',fontWeight:600,fontSize:14}}>{toast.msg}</div>}
@@ -380,17 +394,21 @@ export default function SubsPage() {
           <div style={{overflowX:'auto'}}>
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
               <thead>
-                <tr style={{background:'#1c1c1e'}}>
-                  {['Company','Trade','Contact','Phone','License','W-9 / COI','Contract','Paid','Score','Status',''].map(h=>(
-                    <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px',color:DIM,borderBottom:`1px solid ${BORDER}`}}>{h}</th>
+                <tr>
+                  {([
+                    ['Company','name'],['Trade','trade'],['Contact','contact_name'],['Phone','contact_phone'],
+                    ['License','license_number'],['W-9 / COI',undefined],['Contract','contract'],['Paid','paid'],
+                    ['Score','score'],['Status','status'],['',undefined],
+                  ] as [string, string|undefined][]).map(([h,k],i)=>(
+                    <SortableTh key={h||`th-${i}`} label={h} sortKey={k} sort={sort} onSort={cycleSort} />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredSubs.length === 0 && (
+                {sortedSubs.length === 0 && (
                   <tr><td colSpan={11} style={{padding:'26px 14px',textAlign:'center',color:DIM,fontSize:13}}>No subcontractors match your search or filters.</td></tr>
                 )}
-                {filteredSubs.map(sub=>(
+                {sortedSubs.map(sub=>(
                   <tr key={sub.id} style={{borderBottom:`1px solid rgba(255,255,255,0.08)`}} onMouseEnter={e=>(e.currentTarget.style.background='rgba(245, 158, 11,.04)')} onMouseLeave={e=>(e.currentTarget.style.background='')}>
                     <td style={{padding:'12px 14px'}}>
                       <div style={{color:TEXT,fontWeight:700}}>{sub.name}</div>
