@@ -6,14 +6,21 @@ import { lengthLF, areaSF } from '@/lib/takeoff/geometry';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * Drawing review — public portal page (B4). Token-gated, no auth, READ-ONLY.
+ * Drawing review — public portal page (B4 + Wave-2 guest markups).
+ * Token-gated, no auth.
  *
  * An owner/architect opens /portals/drawing-review/<token> from a text or
  * email link. The page renders the sheet (pdf.js for PDFs — house pattern:
  * dynamic import + '/pdf.worker.min.mjs'; plain raster for images), overlays
  * every visual markup, offers wheel+drag pan/zoom and a page picker for
  * multi-page PDFs, shows author + time on hover, and polls the portal API
- * every 10s so new markups appear. Guests cannot create anything this wave.
+ * every 10s so new markups appear.
+ *
+ * Wave-2: guests can add comment markups (freehand, cloud, arrow, rect, text
+ * — the API enforces the same list). First use asks their name once
+ * (localStorage 'sag_review_name'); committed markups POST to the portal API,
+ * render optimistically, and reconcile with the 10s poll by server id.
+ * Guests cannot delete anything — their markups are visible to the team.
  *
  * The geometry helpers below are deliberate minimal COPIES of the canonical
  * markup model (components/drawings/markup-model.ts is app-shell code and is
@@ -273,6 +280,32 @@ function relTime(iso: string): string {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+/* ── Wave-2 guest markup creation ───────────────────────────────────────── */
+
+const GUEST_COLOR = GOLD; // guests always mark in the house gold
+const NAME_KEY = 'sag_review_name';
+
+type GuestTool = 'freehand' | 'cloud' | 'arrow' | 'rect' | 'text';
+
+const GUEST_TOOLS: { id: GuestTool; label: string; hint: string }[] = [
+  { id: 'freehand', label: 'Draw', hint: 'Drag to sketch freehand' },
+  { id: 'cloud', label: 'Cloud', hint: 'Drag a revision cloud' },
+  { id: 'arrow', label: 'Arrow', hint: 'Drag from tail to tip' },
+  { id: 'rect', label: 'Box', hint: 'Drag a rectangle' },
+  { id: 'text', label: 'Text', hint: 'Tap where the note goes' },
+];
+
+type Draft =
+  | { kind: 'freehand'; points: Pt[] }
+  | { kind: 'cloud' | 'rect' | 'arrow'; x0: number; y0: number; x1: number; y1: number };
+
+const toolBtn = (active: boolean): React.CSSProperties => ({
+  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+  border: `1px solid ${active ? GOLD : BORDER}`,
+  background: active ? GOLD + '22' : RAISED,
+  color: active ? GOLD : TEXT,
+});
+
 /* ── the page ───────────────────────────────────────────────────────────── */
 
 export default function DrawingReviewPortalPage() {
@@ -292,6 +325,15 @@ export default function DrawingReviewPortalPage() {
   const [busy, setBusy] = useState('');
   const [hoverTip, setHoverTip] = useState<{ x: number; y: number; who: string; when: string; kind: string } | null>(null);
 
+  /* guest markup state */
+  const [tool, setTool] = useState<GuestTool | null>(null);
+  const [guestName, setGuestName] = useState('');
+  const [namePrompt, setNamePrompt] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [textDraft, setTextDraft] = useState<{ ix: number; iy: number; sx: number; sy: number } | null>(null);
+  const [textValue, setTextValue] = useState('');
+  const [toast, setToast] = useState<{ msg: string; kind: 'ok' | 'err' } | null>(null);
+
   const deniedRef = useRef(false);
   const fileStartedRef = useRef(false);
   const sourceRef = useRef<HTMLCanvasElement | HTMLImageElement | null>(null);
@@ -306,6 +348,14 @@ export default function DrawingReviewPortalPage() {
   const pageCountRef = useRef(1);
   const rafRef = useRef(0);
   const dragRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
+
+  /* guest markup refs */
+  const toolRef = useRef<GuestTool | null>(null);
+  const guestNameRef = useRef('');
+  const pendingToolRef = useRef<GuestTool | null>(null);
+  const draftRef = useRef<Draft | null>(null);
+  const pendingRef = useRef<MarkupRow[]>([]); // optimistic rows the server hasn't echoed yet
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── painting (rAF-coalesced, whole-canvas) ── */
   const paint = useCallback(() => {
@@ -518,6 +568,38 @@ export default function DrawingReviewPortalPage() {
       } catch { /* legacy tolerance: never crash the paint */ }
       ctx.restore();
     }
+
+    // in-progress guest draft (image-pixel coords of the LIVE page, so k = 1)
+    const draft = draftRef.current;
+    if (draft) {
+      ctx.save();
+      ctx.globalAlpha = 0.95;
+      ctx.strokeStyle = GUEST_COLOR;
+      ctx.lineWidth = Math.max(1.5, 3 * scale);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      try {
+        if (draft.kind === 'freehand') {
+          if (draft.points.length >= 2) {
+            ctx.beginPath();
+            const p0 = sc(draft.points[0]);
+            ctx.moveTo(p0.x, p0.y);
+            for (let i = 1; i < draft.points.length; i++) { const q = sc(draft.points[i]); ctx.lineTo(q.x, q.y); }
+            ctx.stroke();
+          }
+        } else {
+          const a = sc({ x: draft.x0, y: draft.y0 }), b = sc({ x: draft.x1, y: draft.y1 });
+          if (draft.kind === 'arrow') {
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            drawArrowHead(ctx, a.x, a.y, b.x, b.y, Math.max(9, ctx.lineWidth * 3.4));
+          } else if (draft.kind === 'cloud') {
+            drawCloudRect(ctx, a.x, a.y, b.x - a.x, b.y - a.y);
+          } else {
+            ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+          }
+        }
+      } catch { /* draft never crashes the paint */ }
+      ctx.restore();
+    }
   }, []);
 
   const requestPaint = useCallback(() => {
@@ -580,6 +662,8 @@ export default function DrawingReviewPortalPage() {
     if (n < 1 || n > pageCountRef.current || n === pageRef.current) return;
     setBusy('Rendering page…');
     setHoverTip(null);
+    setTextDraft(null);
+    draftRef.current = null;
     try {
       const r = await renderPdfPage(n);
       if (r) {
@@ -638,7 +722,10 @@ export default function DrawingReviewPortalPage() {
         setDrawingLabel(d.drawing?.label || '');
         setProjectName(d.projectName || '');
         setLinkLabel(d.linkLabel || '');
-        markupsRef.current = Array.isArray(d.markups) ? d.markups : [];
+        const server: MarkupRow[] = Array.isArray(d.markups) ? d.markups : [];
+        const serverIds = new Set(server.map((r) => r.id));
+        // keep optimistic guest rows the server hasn't echoed yet (dedupe by id)
+        markupsRef.current = server.concat(pendingRef.current.filter((r) => !serverIds.has(r.id)));
         setMarkups(markupsRef.current);
         setUpdatedAt(new Date(d.generatedAt || Date.now()).toLocaleTimeString());
         setLoading(false);
@@ -658,6 +745,14 @@ export default function DrawingReviewPortalPage() {
     if (projectName || drawingLabel) document.title = `${drawingLabel || 'Drawing Review'}${projectName ? ` - ${projectName}` : ''}`;
   }, [projectName, drawingLabel]);
 
+  /* guest name persists across visits (asked once, on first tool use) */
+  useEffect(() => {
+    try {
+      const n = (localStorage.getItem(NAME_KEY) || '').trim().slice(0, 40);
+      if (n) { setGuestName(n); guestNameRef.current = n; }
+    } catch { /* storage unavailable — we'll ask when they pick a tool */ }
+  }, []);
+
   /* ── resize → repaint ── */
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -667,7 +762,10 @@ export default function DrawingReviewPortalPage() {
     return () => ro.disconnect();
   }, [requestPaint, loading, denied]);
 
-  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
+  useEffect(() => () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  }, []);
 
   /* ── wheel zoom (non-passive so preventDefault works) ── */
   useEffect(() => {
@@ -683,6 +781,7 @@ export default function DrawingReviewPortalPage() {
       const k = s / v.scale;
       viewRef.current = { scale: s, tx: mx - (mx - v.tx) * k, ty: my - (my - v.ty) * k };
       setHoverTip(null);
+      setTextDraft(null); // its screen anchor is stale once the view moves
       requestPaint();
     };
     cv.addEventListener('wheel', onWheel, { passive: false });
@@ -716,25 +815,170 @@ export default function DrawingReviewPortalPage() {
     return null;
   }, []);
 
+  /* ── guest markup creation ── */
+  const showToast = useCallback((msg: string, kind: 'ok' | 'err' = 'err') => {
+    setToast({ msg, kind });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 4200);
+  }, []);
+
+  const selectTool = (t: GuestTool | null) => {
+    setHoverTip(null);
+    setTextDraft(null);
+    draftRef.current = null;
+    if (t && !guestNameRef.current) {
+      // first use: ask their name once, then arm the tool they picked
+      pendingToolRef.current = t;
+      setNameInput('');
+      setNamePrompt(true);
+      return;
+    }
+    toolRef.current = t;
+    setTool(t);
+  };
+
+  const saveGuestName = () => {
+    const n = nameInput.replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (!n) return;
+    guestNameRef.current = n;
+    setGuestName(n);
+    try { localStorage.setItem(NAME_KEY, n); } catch { /* private mode: session-only */ }
+    setNamePrompt(false);
+    const t = pendingToolRef.current;
+    pendingToolRef.current = null;
+    if (t) { toolRef.current = t; setTool(t); }
+  };
+
+  /** Screen px -> image px of the current page, clamped to the sheet. */
+  const toImage = (mx: number, my: number): Pt => {
+    const { scale, tx, ty } = viewRef.current;
+    const dims = dimsRef.current;
+    return { x: clamp((mx - tx) / scale, 0, dims.w || 0), y: clamp((my - ty) / scale, 0, dims.h || 0) };
+  };
+
+  const commitMarkup = useCallback(async (markupType: string, geometry: Record<string, unknown>, extras?: { text?: string; fontSize?: number }) => {
+    const dims = dimsRef.current;
+    if (!dims.w || !dims.h || !token) return;
+    const data: Record<string, unknown> = {
+      space: 'image', w: Math.round(dims.w), h: Math.round(dims.h),
+      geometry,
+      style: { color: GUEST_COLOR, width: 3 },
+      ...(extras?.text !== undefined ? { text: extras.text } : {}),
+      ...(extras?.fontSize !== undefined ? { fontSize: extras.fontSize } : {}),
+    };
+    // page_number only means something for PDFs (the API stores it only then)
+    const pageNumber = pdfDocRef.current ? pageRef.current : undefined;
+    const temp: MarkupRow = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      markup_type: markupType,
+      data,
+      page_number: pageNumber ?? null,
+      color: GUEST_COLOR,
+      created_by_name: `Guest · ${guestNameRef.current || 'You'}`,
+      created_at: new Date().toISOString(),
+    };
+    pendingRef.current = [...pendingRef.current, temp];
+    markupsRef.current = [...markupsRef.current, temp];
+    setMarkups(markupsRef.current);
+    requestPaint();
+    const drop = () => {
+      pendingRef.current = pendingRef.current.filter((r) => r.id !== temp.id);
+      markupsRef.current = markupsRef.current.filter((r) => r.id !== temp.id);
+      setMarkups(markupsRef.current);
+      requestPaint();
+    };
+    try {
+      const res = await fetch(`/api/portal/drawing-review?token=${encodeURIComponent(token)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guestName: guestNameRef.current,
+          markups: [{ markup_type: markupType, data, ...(pageNumber ? { page_number: pageNumber } : {}) }],
+        }),
+      });
+      if (res.status === 401) { drop(); deniedRef.current = true; setDenied(true); return; }
+      const d = await res.json().catch(() => ({} as Record<string, unknown>));
+      if (!res.ok || !d.ok) throw new Error(String(d?.error || `HTTP ${res.status}`));
+      const saved: MarkupRow[] = Array.isArray(d.saved) ? d.saved : [];
+      // reconcile: swap the optimistic row for the server rows (dedupe by id —
+      // the 10s poll may already have echoed them)
+      pendingRef.current = pendingRef.current.filter((r) => r.id !== temp.id);
+      const have = new Set(markupsRef.current.map((r) => r.id));
+      markupsRef.current = markupsRef.current
+        .filter((r) => r.id !== temp.id)
+        .concat(saved.filter((r) => !have.has(r.id)));
+      setMarkups(markupsRef.current);
+      requestPaint();
+    } catch (e) {
+      console.error('[drawing-review portal] markup save failed:', e);
+      drop();
+      showToast("Couldn't save your markup — check your connection and try again.");
+    }
+  }, [token, requestPaint, showToast]);
+
+  const commitText = () => {
+    const td = textDraft;
+    const t = textValue.trim();
+    setTextDraft(null);
+    setTextValue('');
+    if (!td || !t) return;
+    const dims = dimsRef.current;
+    const fontSize = Math.round(clamp((dims.w || 2000) / 80, 16, 64));
+    void commitMarkup('text', { x: Math.round(td.ix), y: Math.round(td.iy) }, { text: t.slice(0, 500), fontSize });
+  };
+
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const cv = canvasRef.current;
     if (!cv) return;
     cv.setPointerCapture(e.pointerId);
+    setHoverTip(null);
+    const t = toolRef.current;
+    if (t && imgReady && dimsRef.current.w) {
+      if (textDraft) { setTextDraft(null); setTextValue(''); }
+      const rect = cv.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const p = toImage(mx, my);
+      if (t === 'text') {
+        setTextDraft({ ix: p.x, iy: p.y, sx: mx, sy: my });
+        setTextValue('');
+        return;
+      }
+      draftRef.current = t === 'freehand'
+        ? { kind: 'freehand', points: [p] }
+        : { kind: t, x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+      requestPaint();
+      return;
+    }
     const v = viewRef.current;
     dragRef.current = { x: e.clientX, y: e.clientY, tx: v.tx, ty: v.ty };
-    setHoverTip(null);
   };
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const cv = canvasRef.current;
     if (!cv) return;
     const rect = cv.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const draft = draftRef.current;
+    if (draft) {
+      const p = toImage(mx, my);
+      if (draft.kind === 'freehand') {
+        const last = draft.points[draft.points.length - 1];
+        const minStep = 1.5 / Math.max(0.0001, viewRef.current.scale);
+        if (draft.points.length < 4000 && (Math.abs(p.x - last.x) > minStep || Math.abs(p.y - last.y) > minStep)) {
+          draft.points.push(p);
+        }
+      } else {
+        draft.x1 = p.x; draft.y1 = p.y;
+      }
+      requestPaint();
+      return;
+    }
     if (dragRef.current) {
       const d = dragRef.current;
       viewRef.current = { ...viewRef.current, tx: d.tx + (e.clientX - d.x), ty: d.ty + (e.clientY - d.y) };
       requestPaint();
       return;
     }
+    if (toolRef.current) return; // no hover attribution while a tool is armed
     if (e.pointerType !== 'mouse') return;
     const m = hitAt(mx, my);
     if (m) {
@@ -749,7 +993,32 @@ export default function DrawingReviewPortalPage() {
   const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const cv = canvasRef.current;
     if (cv && cv.hasPointerCapture(e.pointerId)) cv.releasePointerCapture(e.pointerId);
+    const draft = draftRef.current;
+    draftRef.current = null;
     dragRef.current = null;
+    if (!draft) return;
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+    if (draft.kind === 'freehand') {
+      if (draft.points.length >= 2) {
+        void commitMarkup('freehand', { points: draft.points.map((p) => ({ x: r2(p.x), y: r2(p.y) })) });
+      }
+      requestPaint();
+      return;
+    }
+    const { x0, y0, x1, y1 } = draft;
+    if (draft.kind === 'arrow') {
+      // tail at pointer-down, head at release — matches the renderer's (x2,y2) head
+      if (Math.hypot(x1 - x0, y1 - y0) >= 3) {
+        void commitMarkup('arrow', { x1: r2(x0), y1: r2(y0), x2: r2(x1), y2: r2(y1) });
+      }
+      requestPaint();
+      return;
+    }
+    const rx = Math.min(x0, x1), ry = Math.min(y0, y1), rw = Math.abs(x1 - x0), rh = Math.abs(y1 - y0);
+    if (rw >= 3 && rh >= 3) {
+      void commitMarkup(draft.kind, { x: r2(rx), y: r2(ry), w: r2(rw), h: r2(rh) });
+    }
+    requestPaint();
   };
 
   const zoomBy = (factor: number) => {
@@ -811,13 +1080,25 @@ export default function DrawingReviewPortalPage() {
                 <button onClick={() => goPage(page + 1)} disabled={page >= pageCount} style={{ ...zoomBtn, width: 28, height: 28, opacity: page >= pageCount ? 0.35 : 1 }} aria-label="Next page">&rsaquo;</button>
               </div>
             )}
-            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: GOLD, background: GOLD + '14', border: `1px solid ${GOLD}44`, borderRadius: 20, padding: '5px 12px' }}>READ-ONLY REVIEW</span>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: GOLD, background: GOLD + '14', border: `1px solid ${GOLD}44`, borderRadius: 20, padding: '5px 12px' }}>REVIEW &middot; MARKUPS ENABLED</span>
           </div>
         </div>
       </header>
 
       {/* ── Sheet ── */}
       <main style={{ flex: 1, minHeight: 0, padding: 12, display: 'flex', flexDirection: 'column', maxWidth: 1200, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+        {/* ── Guest markup toolbar ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, color: DIM, textTransform: 'uppercase', marginRight: 4 }}>Add comment markup</span>
+          <button onClick={() => selectTool(null)} style={toolBtn(tool === null)} title="Pan and zoom the sheet">Pan</button>
+          {GUEST_TOOLS.map((t) => (
+            <button key={t.id} onClick={() => selectTool(tool === t.id ? null : t.id)} title={t.hint} style={toolBtn(tool === t.id)}>{t.label}</button>
+          ))}
+          {guestName && (
+            <span style={{ fontSize: 11, color: DIM, marginLeft: 4 }}>as <span style={{ color: GOLD, fontWeight: 700 }}>{guestName}</span></span>
+          )}
+        </div>
+
         <div ref={wrapRef} style={{ ...card(), flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
           <canvas
             ref={canvasRef}
@@ -826,8 +1107,28 @@ export default function DrawingReviewPortalPage() {
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             onPointerLeave={() => { if (!dragRef.current) setHoverTip(null); }}
-            style={{ position: 'absolute', inset: 0, touchAction: 'none', cursor: 'grab', display: 'block' }}
+            style={{ position: 'absolute', inset: 0, touchAction: 'none', cursor: tool ? 'crosshair' : 'grab', display: 'block' }}
           />
+
+          {/* text markup input (anchored where the guest tapped) */}
+          {textDraft && (
+            <div style={{ position: 'absolute', left: clamp(textDraft.sx, 8, Math.max(8, (wrapRef.current?.clientWidth || 400) - 280)), top: clamp(textDraft.sy, 8, Math.max(8, (wrapRef.current?.clientHeight || 300) - 56)), zIndex: 6, display: 'flex', gap: 6, alignItems: 'center', background: 'rgba(10,10,10,0.94)', border: `1px solid ${GOLD}66`, borderRadius: 8, padding: 6 }}>
+              <input
+                autoFocus
+                value={textValue}
+                onChange={(e) => setTextValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitText();
+                  if (e.key === 'Escape') { setTextDraft(null); setTextValue(''); }
+                }}
+                placeholder="Type a note..."
+                maxLength={500}
+                style={{ width: 180, background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT, fontSize: 13, padding: '6px 8px', outline: 'none' }}
+              />
+              <button onClick={commitText} disabled={!textValue.trim()} style={{ ...toolBtn(true), padding: '6px 10px', opacity: textValue.trim() ? 1 : 0.5 }}>Add</button>
+              <button onClick={() => { setTextDraft(null); setTextValue(''); }} style={{ ...toolBtn(false), padding: '6px 10px' }} aria-label="Cancel note">&#10005;</button>
+            </div>
+          )}
 
           {/* hover attribution */}
           {hoverTip && (
@@ -867,7 +1168,7 @@ export default function DrawingReviewPortalPage() {
         {/* status strip */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 4px 0', flexWrap: 'wrap' }}>
           <div style={{ fontSize: 11, color: DIM }}>
-            {visibleCount} markup{visibleCount === 1 ? '' : 's'} on this {pageCount > 1 ? 'page' : 'sheet'} &middot; hover a markup for author + time
+            {visibleCount} markup{visibleCount === 1 ? '' : 's'} on this {pageCount > 1 ? 'page' : 'sheet'} &middot; hover a markup for author + time &middot; your markups are visible to the project team
           </div>
           <div style={{ fontSize: 11, color: DIM }}>
             Refreshes automatically{updatedAt ? <span> &middot; updated {updatedAt}</span> : null}
@@ -879,6 +1180,39 @@ export default function DrawingReviewPortalPage() {
       <footer style={{ textAlign: 'center', padding: '4px 16px 12px', flexShrink: 0 }}>
         <div style={{ fontSize: 11, color: DIM }}>Powered by <strong style={{ color: GOLD }}>Saguaro Control Systems</strong></div>
       </footer>
+
+      {/* ── honest failure / status toast ── */}
+      {toast && (
+        <div style={{ position: 'fixed', left: '50%', bottom: 24, transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(10,10,10,0.96)', border: `1px solid ${toast.kind === 'err' ? '#EF444488' : GOLD + '88'}`, borderRadius: 10, padding: '10px 16px', color: TEXT, fontSize: 13, fontWeight: 600, maxWidth: '90vw', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* ── first-use name prompt (stored once in localStorage) ── */}
+      {namePrompt && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40, padding: 24 }}>
+          <div style={{ ...card(), padding: 22, maxWidth: 360, width: '100%' }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: TEXT }}>Who&#39;s marking up?</div>
+            <div style={{ fontSize: 13, color: DIM, marginTop: 6, lineHeight: 1.5 }}>Your name shows next to every markup you add, so the project team knows who said what.</div>
+            <input
+              autoFocus
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveGuestName();
+                if (e.key === 'Escape') { setNamePrompt(false); pendingToolRef.current = null; }
+              }}
+              placeholder="Your name"
+              maxLength={40}
+              style={{ width: '100%', boxSizing: 'border-box', marginTop: 14, background: DARK, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 14, padding: '9px 11px', outline: 'none' }}
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setNamePrompt(false); pendingToolRef.current = null; }} style={toolBtn(false)}>Cancel</button>
+              <button onClick={saveGuestName} disabled={!nameInput.trim()} style={{ ...toolBtn(true), opacity: nameInput.trim() ? 1 : 0.5 }}>Start marking up</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
