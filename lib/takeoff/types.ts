@@ -28,6 +28,8 @@ export interface Condition {
   /** traceability — which sheet + the traced geometry (for audit + re-render) */
   sheet?: string;
   points?: Pt[];
+  /** value provenance — 'traced' set from plan geometry, 'manual' typed by the estimator. Metadata only; pricing never reads it. */
+  measured?: 'traced' | 'manual';
 
   // --- v2 optional measurement modifiers (omit all → v1 behavior) ---
   /** total SF of door/window openings on this wall run (single-face) — netted from face-area components */

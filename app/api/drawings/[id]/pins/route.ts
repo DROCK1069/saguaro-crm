@@ -8,6 +8,21 @@ export const dynamic = 'force-dynamic'
 // Record-linked pins on a drawing. Keyed by drawing_id (= drawings.id).
 // A pin may link to an RFI or Punch item (entity_type/entity_id, plus the
 // dedicated rfi_id / punch_item_id columns) or stand alone as a note.
+//
+// ENTITY VOCABULARY (B1 contract): canonical entity_type for punch is
+// 'punch_item'. Legacy writers sent 'punch' — normalize on write, accept both
+// spellings on read forever.
+
+type PinInsert = Database['public']['Tables']['drawing_pins']['Insert'] & {
+  // Live column just migrated (065) — not yet in the generated types.
+  page_number?: number | null
+}
+
+/** 'punch' → 'punch_item'; everything else passes through. */
+function normalizeEntityType(et: unknown): string | null {
+  if (!et || typeof et !== 'string') return null
+  return et === 'punch' ? 'punch_item' : et
+}
 
 // GET /api/drawings/{id}/pins
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ pins: data || [] })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
+    console.error('[drawing pins GET] failed:', msg)
     return NextResponse.json({ error: msg, pins: [] }, { status: 500 })
   }
 }
@@ -35,13 +51,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const g = await requirePermission(req, 'Documents', 'Edit');
   if (!g.ok) return g.res;
+  const user = g.user;
   const { id } = await params
-  const user = await getUser(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const body = await req.json()
-    const { x_pct, y_pct, entity_type, entity_id, title, description, color, priority } = body
+    const { x_pct, y_pct, entity_type, entity_id, title, description, color, priority, page_number } = body
     if (x_pct === undefined || y_pct === undefined) {
       return NextResponse.json({ error: 'x_pct and y_pct required' }, { status: 400 })
     }
@@ -53,24 +68,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
       .single()
-    if (!drawing) return NextResponse.json({ error: 'Drawing not found' }, { status: 404 })
+    if (!drawing || !drawing.project_id) {
+      return NextResponse.json({ error: 'Drawing not found' }, { status: 404 })
+    }
 
     const x = Number(x_pct) || 0
     const y = Number(y_pct) || 0
-    const et = entity_type || null
+    const et = normalizeEntityType(entity_type)
+    const page = Number(page_number)
+    const isPunch = et === 'punch_item'
 
-    const row: Record<string, unknown> = {
+    const row: PinInsert = {
       tenant_id: user.tenantId,
       project_id: drawing.project_id,
       drawing_id: id,
       x, y, // legacy NOT NULL columns — mirror the normalized values
       x_pct: x,
       y_pct: y,
-      pin_type: et || 'note',
+      page_number: Number.isFinite(page) && page >= 1 ? Math.floor(page) : null,
+      // Canonical pin_type for punch pins is 'punch' (entity_type stays 'punch_item').
+      pin_type: isPunch ? 'punch' : (et || 'note'),
       entity_type: et,
       entity_id: entity_id || null,
       rfi_id: et === 'rfi' ? entity_id : null,
-      punch_item_id: et === 'punch' ? entity_id : null,
+      punch_item_id: isPunch ? entity_id : null,
       title: title || null,
       description: description || null,
       color: color || '#d4a017',
@@ -79,11 +100,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       created_by: user.id,
     }
 
-    const { data, error } = await db.from('drawing_pins').insert(row as Database['public']['Tables']['drawing_pins']['Insert']).select().single()
+    const { data, error } = await db.from('drawing_pins').insert(row).select().single()
     if (error) throw error
     return NextResponse.json({ pin: data })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
+    console.error('[drawing pins POST] failed:', msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
@@ -92,9 +114,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const g = await requirePermission(req, 'Documents', 'Full');
   if (!g.ok) return g.res;
+  const user = g.user;
   const { id } = await params
-  const user = await getUser(req)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const pinId = new URL(req.url).searchParams.get('pinId')
@@ -111,6 +132,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ success: true })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
+    console.error('[drawing pins DELETE] failed:', msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

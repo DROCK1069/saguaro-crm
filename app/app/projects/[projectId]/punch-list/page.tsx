@@ -29,10 +29,20 @@ import { moduleAccent } from '@/lib/module-identity';
 const GOLD='#F59E0B',DARK='#0a0a0a',RAISED='#141416',BORDER='rgba(255,255,255,0.12)',DIM='#CBD5E1',TEXT='#FFFFFF';
 const GREEN='#1a8a4a',RED='#c03030',ORANGE='#B85C2A',BLUE='#F59E0B';
 
-const PRIORITIES=['Critical','High','Medium','Low'];
+// Priorities are STORED lowercase ('low'|'medium'|'high'|'critical') and
+// DISPLAYED capitalized. Legacy rows may carry capitalized values — every
+// read goes through prKey() so both spellings work forever.
+const PRIORITIES=[
+  {value:'critical',label:'Critical'},
+  {value:'high',label:'High'},
+  {value:'medium',label:'Medium'},
+  {value:'low',label:'Low'},
+];
+const prKey=(p:unknown)=>String(p||'medium').toLowerCase();
+const prLabel=(p:unknown)=>{const k=prKey(p);return k.charAt(0).toUpperCase()+k.slice(1).replace('_',' ');};
 const STATUSES=['open','in_progress','completed','voided'];
 const TRADES=SUB_TRADES; // canonical taxonomy — do not hardcode partial trade lists
-const PRIORITY_COLORS:Record<string,string>={Critical:RED,High:ORANGE,Medium:GOLD,Low:GREEN};
+const PRIORITY_COLORS:Record<string,string>={critical:RED,high:ORANGE,medium:GOLD,low:GREEN};
 const STATUS_COLORS:Record<string,string>={open:'#FBBF24',in_progress:GOLD,completed:GREEN,voided:DIM};
 const STATUS_LABELS:Record<string,string>={open:'Open',in_progress:'In Progress',completed:'Completed',voided:'Voided'};
 
@@ -42,8 +52,8 @@ const inp:React.CSSProperties={
   fontSize:13,outline:'none',boxSizing:'border-box',
 };
 const EMPTY:Record<string,any>={
-  description:'',location:'',trade:'General Contractor',
-  priority:'Medium',status:'open',due_date:'',assigned_to:'',notes:'',
+  title:'',description:'',location:'',trade:'General Contractor',
+  priority:'medium',status:'open',due_date:'',assigned_to:'',notes:'',
 };
 
 function Pill({label,color}:{label:string;color:string}){
@@ -126,8 +136,8 @@ export default function PunchListPage(){
   }
   function openEdit(item:any){
     setAutoDue(false);setAutoAssign(false);setAssignOther(false);
-    setForm({description:item.description||'',location:item.location||'',
-      trade:item.trade||'General Contractor',priority:item.priority||'Medium',
+    setForm({title:item.title||'',description:item.description||'',location:item.location||'',
+      trade:item.trade||'General Contractor',priority:prKey(item.priority),
       status:item.status||'open',due_date:item.due_date||'',
       assigned_to:item.assigned_to||'',notes:item.notes||''});
     setSelected(item);setMode('edit');
@@ -139,10 +149,11 @@ export default function PunchListPage(){
    *    dirty once any field differs from a fresh item's defaults (the +7-day
    *    auto due date and the roster auto-assignee never count on their own). ── */
   const createDirty = mode==='create' && (
+    !!String(form.title||'').trim() ||
     !!String(form.description||'').trim() || !!String(form.location||'').trim() ||
     !!String(form.notes||'').trim() ||
     (!autoAssign && !!String(form.assigned_to||'').trim()) ||
-    form.trade!=='General Contractor' || form.priority!=='Medium' ||
+    form.trade!=='General Contractor' || prKey(form.priority)!=='medium' ||
     form.status!=='open' || !autoDue
   );
   const guard = useUnsavedGuard({
@@ -163,7 +174,7 @@ export default function PunchListPage(){
   /** Create/update the item — shared by the drawer button and the guard's
    *  "Save & leave". Returns true on success (optimistic close, then network). */
   async function save(): Promise<boolean>{
-    if(!form.description.trim()){showToast('Description is required','error');return false;}
+    if(!String(form.title||'').trim()){showToast('Title is required','error');return false;}
     // Optimistic save (house pattern: budget saveEdit) — the list updates and
     // the panel closes instantly; the network settles in the background.
     const snapshot={...form};
@@ -233,7 +244,7 @@ export default function PunchListPage(){
   }
 
   async function deleteItem(item:any){
-    if(!confirm(`Delete "${item.description}"?`)) return;
+    if(!confirm(`Delete "${item.title||item.description}"?`)) return;
     // Optimistic remove — the row leaves and the panel closes instantly;
     // rollback restores the exact list on failure.
     const prevItems=items;
@@ -251,10 +262,12 @@ export default function PunchListPage(){
 
   const trades=Array.from(new Set(items.map((i:any)=>i.trade).filter(Boolean)));
   const filtered=items.filter((i:any)=>{
-    const ms=!search||(i.description||'').toLowerCase().includes(search.toLowerCase())
+    const ms=!search||(i.title||'').toLowerCase().includes(search.toLowerCase())
+      ||(i.description||'').toLowerCase().includes(search.toLowerCase())
       ||(i.location||'').toLowerCase().includes(search.toLowerCase());
     const mst=filterStatus==='all'||i.status===filterStatus;
-    const mp=filterPriority==='all'||i.priority===filterPriority;
+    // Case-insensitive — legacy rows may carry capitalized priorities.
+    const mp=filterPriority==='all'||prKey(i.priority)===prKey(filterPriority);
     const mt=filterTrade==='all'||i.trade===filterTrade;
     return ms&&mst&&mp&&mt;
   });
@@ -262,7 +275,7 @@ export default function PunchListPage(){
   const openCount=items.filter((i:any)=>i.status==='open').length;
   const inProg=items.filter((i:any)=>i.status==='in_progress').length;
   const done=items.filter((i:any)=>i.status==='completed').length;
-  const crit=items.filter((i:any)=>i.priority==='Critical'&&i.status!=='completed').length;
+  const crit=items.filter((i:any)=>prKey(i.priority)==='critical'&&i.status!=='completed').length;
   const pct=items.length>0?Math.round((done/items.length)*100):0;
 
   return(
@@ -329,7 +342,7 @@ export default function PunchListPage(){
             {key:'status',label:'Status',value:filterStatus,onChange:setFilterStatus,allLabel:'All Statuses',
               options:STATUSES.map(s=>({value:s,label:STATUS_LABELS[s]}))},
             {key:'priority',label:'Priority',value:filterPriority,onChange:setFilterPriority,allLabel:'All Priorities',
-              options:PRIORITIES},
+              options:PRIORITIES.map(p=>({value:p.value,label:p.label}))},
             {key:'trade',label:'Trade',value:filterTrade,onChange:setFilterTrade,allLabel:'All Trades',
               options:trades as string[]},
           ]}
@@ -398,9 +411,9 @@ export default function PunchListPage(){
                         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                           <span style={{fontWeight:700,fontSize:14,color:isDone?DIM:TEXT,
                             textDecoration:isDone?'line-through':'none'}}>
-                            {item.description}
+                            {item.title||item.description}
                           </span>
-                          <Pill label={item.priority||'Medium'} color={PRIORITY_COLORS[item.priority]||GOLD}/>
+                          <Pill label={prLabel(item.priority)} color={PRIORITY_COLORS[prKey(item.priority)]||GOLD}/>
                           <Pill label={STATUS_LABELS[item.status]||item.status} color={STATUS_COLORS[item.status]||DIM}/>
                         </div>
                         <div style={{fontSize:12,color:DIM,marginTop:3,display:'flex',gap:12,flexWrap:'wrap'}}>
@@ -469,7 +482,12 @@ export default function PunchListPage(){
                     ]}/>
                   </div>
                 )}
-                <Field label="Description *">
+                <Field label="Title *">
+                  <input value={form.title}
+                    onChange={e=>setForm(f=>({...f,title:e.target.value}))}
+                    style={inp} placeholder="Short name — e.g. Patch drywall at Rm 204 door…"/>
+                </Field>
+                <Field label="Description">
                   <textarea value={form.description}
                     onChange={e=>setForm(f=>({...f,description:e.target.value}))}
                     rows={3} style={{...inp,resize:'vertical',lineHeight:1.5}}
@@ -480,7 +498,7 @@ export default function PunchListPage(){
                     <select value={form.priority}
                       onChange={e=>setForm(f=>({...f,priority:e.target.value}))}
                       style={{...inp,padding:'9px 10px'}}>
-                      {PRIORITIES.map(p=><option key={p} value={p}>{p}</option>)}
+                      {PRIORITIES.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}
                     </select>
                   </Field>
                   <Field label="Status">
@@ -582,10 +600,15 @@ export default function PunchListPage(){
               <div style={{display:'flex',flexDirection:'column',gap:14}}>
                 <div style={{background:RAISED,border:`1px solid ${BORDER}`,borderRadius:10,padding:16}}>
                   <div style={{fontSize:16,fontWeight:800,color:TEXT,marginBottom:10}}>
-                    {selected.description}
+                    {selected.title||selected.description}
                   </div>
+                  {selected.title&&selected.description&&(
+                    <div style={{fontSize:13,color:DIM,lineHeight:1.55,marginBottom:10,whiteSpace:'pre-wrap'}}>
+                      {selected.description}
+                    </div>
+                  )}
                   <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
-                    <Pill label={selected.priority||'Medium'} color={PRIORITY_COLORS[selected.priority]||GOLD}/>
+                    <Pill label={prLabel(selected.priority)} color={PRIORITY_COLORS[prKey(selected.priority)]||GOLD}/>
                     <Pill label={STATUS_LABELS[selected.status]||selected.status} color={STATUS_COLORS[selected.status]||DIM}/>
                   </div>
                   <button onClick={()=>toggleComplete(selected)}

@@ -4,6 +4,10 @@
  * permanently redirects here). Runs real tenant data through /api/reports/run,
  * exports tenant-branded PDF / Excel / CSV through /api/reports/export, and
  * persists configurations in saved_reports via /api/reports/saved.
+ * Also the home of Scheduled Deliveries (#schedules): the email schedules that
+ * live on report_templates.template_data.schedule and fire via
+ * /api/cron/report-schedules — ported from the retired /app/reports-builder,
+ * managed through /api/reports/[id]/schedule.
  * Command-center anatomy: ModuleHero, live StatStrip, SectionCards, machined
  * selects, skeleton loading, honest empty states.
  */
@@ -16,7 +20,7 @@ import {
 } from '@/components/ui/premium';
 import { PdfIcon, XlsIcon, CsvIcon, FileButton } from '@/components/ui/FileTypeIcon';
 import {
-  ChartBar, Funnel, Columns, FloppyDisk, Play, Printer, Trash, Plus, Table,
+  ChartBar, Funnel, Columns, FloppyDisk, Play, Printer, Trash, Plus, Table, Clock,
 } from '@phosphor-icons/react';
 import {
   REPORT_ENTITIES,
@@ -64,6 +68,67 @@ interface RunResult {
   rows: Record<string, unknown>[];
   groupBy: string | null;
   rowCount: number;
+}
+
+// ── Scheduled deliveries (report_templates email schedules) ─────
+// A different model from saved_reports: these live on
+// report_templates.template_data.schedule, are delivered by
+// /api/cron/report-schedules, and are edited through
+// /api/reports/[id]/schedule. The page that created them retired, so this
+// builder is now the one place to manage them.
+type ScheduleFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+interface TemplateSchedule {
+  enabled: boolean;
+  frequency: ScheduleFrequency;
+  recipients: string[];
+  nextRun?: string;
+  lastRunAt?: string;
+  lastStatus?: string;
+}
+interface ScheduledTemplate {
+  id: string;
+  name: string;
+  schedule: TemplateSchedule;
+}
+
+const FREQUENCIES: { value: ScheduleFrequency; label: string }[] = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Every 2 weeks' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
+/** Pull the templates with an active email schedule out of raw /api/reports rows. */
+function parseScheduledTemplates(raw: unknown): ScheduledTemplate[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ScheduledTemplate[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as { id?: unknown; name?: unknown; template_data?: unknown };
+    const td = (row.template_data && typeof row.template_data === 'object') ? row.template_data as Record<string, unknown> : {};
+    const s = (td.schedule && typeof td.schedule === 'object') ? td.schedule as Record<string, unknown> : null;
+    if (!s || s.enabled !== true || typeof row.id !== 'string') continue;
+    out.push({
+      id: row.id,
+      name: typeof row.name === 'string' && row.name ? row.name : 'Untitled report',
+      schedule: {
+        enabled: true,
+        frequency: FREQUENCIES.some((f) => f.value === s.frequency) ? s.frequency as ScheduleFrequency : 'weekly',
+        recipients: Array.isArray(s.recipients) ? s.recipients.filter((r): r is string => typeof r === 'string') : [],
+        nextRun: typeof s.nextRun === 'string' ? s.nextRun : undefined,
+        lastRunAt: typeof s.lastRunAt === 'string' ? s.lastRunAt : undefined,
+        lastStatus: typeof s.lastStatus === 'string' ? s.lastStatus : undefined,
+      },
+    });
+  }
+  return out;
+}
+
+function fmtWhen(iso?: string): string {
+  if (!iso) return 'next cron pass';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 // ── Value-less operators (no value input) ──────────────────────
@@ -194,6 +259,66 @@ export default function ReportBuilderPage() {
     setLoadedId(null);
     setReportName('');
     applyEntityDefaults(key);
+  };
+
+  // ── Scheduled deliveries state ──
+  const [schedules, setSchedules] = useState<ScheduledTemplate[]>([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(true);
+  const [schedSavingId, setSchedSavingId] = useState<string | null>(null);
+  const [schedError, setSchedError] = useState('');
+  const [recipientDrafts, setRecipientDrafts] = useState<Record<string, string>>({});
+
+  const loadSchedules = useCallback(async () => {
+    try {
+      const r = await fetch('/api/reports');
+      const j = await r.json();
+      setSchedules(parseScheduledTemplates(j.reports));
+    } catch {
+      /* section shows its honest empty state */
+    } finally {
+      setSchedulesLoading(false);
+    }
+  }, []);
+  useEffect(() => { loadSchedules(); }, [loadSchedules]);
+
+  // Every mutation (cadence, recipients, cancel, re-enable) goes through the
+  // existing PUT /api/reports/[id]/schedule and only lands in local state when
+  // the server confirms it.
+  const saveSchedule = useCallback(async (id: string, next: TemplateSchedule) => {
+    setSchedSavingId(id);
+    setSchedError('');
+    try {
+      const r = await fetch(`/api/reports/${id}/schedule`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled: next.enabled,
+          frequency: next.frequency,
+          recipients: next.recipients,
+          ...(next.nextRun ? { nextRun: next.nextRun } : {}),
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Schedule update failed');
+      setSchedules((prev) => prev.map((s) => (s.id === id ? { ...s, schedule: next } : s)));
+    } catch (e: unknown) {
+      console.error(e);
+      setSchedError(humanError(e, 'Schedule update failed. Please try again.'));
+    } finally {
+      setSchedSavingId(null);
+    }
+  }, []);
+
+  const addRecipient = (tpl: ScheduledTemplate) => {
+    const email = (recipientDrafts[tpl.id] || '').trim();
+    if (!email) return;
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setSchedError(`"${email}" doesn't look like an email address.`);
+      return;
+    }
+    setRecipientDrafts((d) => ({ ...d, [tpl.id]: '' }));
+    if (tpl.schedule.recipients.some((r) => r.toLowerCase() === email.toLowerCase())) return;
+    saveSchedule(tpl.id, { ...tpl.schedule, recipients: [...tpl.schedule.recipients, email] });
   };
 
   // ── Load saved reports ──
@@ -388,6 +513,7 @@ export default function ReportBuilderPage() {
           { label: 'Filters', value: String(filters.length), sub: filters.length ? 'narrowing this run' : 'all rows for your tenant' },
           { label: 'Saved Reports', value: savedLoading ? '…' : String(saved.length), sub: savedLoading ? 'loading' : saved.length ? 'reusable configurations' : 'nothing saved yet' },
           { label: 'Last Run', value: result ? String(result.rowCount) : '—', accent: result ? GOLD_HI : undefined, sub: result ? `row${result.rowCount === 1 ? '' : 's'} returned` : 'not run yet' },
+          { label: 'Email Schedules', value: schedulesLoading ? '…' : String(schedules.filter((s) => s.schedule.enabled).length), sub: schedulesLoading ? 'loading' : 'recurring deliveries' },
         ]} />
       </div>
 
@@ -703,6 +829,122 @@ export default function ReportBuilderPage() {
             </div>
           </SectionCard>
         </div>
+      </div>
+
+      {/* ── Scheduled deliveries — email schedules living on report templates.
+             Old scheduled-report emails deep-link here via #schedules. ── */}
+      <div className="rb-noprint" id="schedules" style={{ marginTop: 20 }}>
+        <SectionCard
+          title="Scheduled Deliveries"
+          subtitle="Recurring email reports — each schedule below runs automatically and emails recipients a summary with the full CSV attached"
+          icon={<Clock size={16} weight="duotone" color={GOLD} />}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {schedError && (
+              <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 10, color: RED, fontSize: 13 }}>
+                {schedError}
+              </div>
+            )}
+
+            {schedulesLoading && (
+              <>
+                <SkeletonBar h={72} />
+                <SkeletonBar h={72} />
+              </>
+            )}
+
+            {!schedulesLoading && schedules.length === 0 && (
+              <div style={{ fontSize: 13, color: FAINT, lineHeight: 1.55 }}>
+                No recurring email deliveries are set up for your team. Active schedules appear here so you can adjust their cadence and recipients, or cancel them.
+              </div>
+            )}
+
+            {schedules.map((tpl) => {
+              const s = tpl.schedule;
+              const savingThis = schedSavingId === tpl.id;
+              return (
+                <div
+                  key={tpl.id}
+                  className="pmTile"
+                  style={{
+                    display: 'flex', flexDirection: 'column', gap: 10, padding: '12px 14px', borderRadius: 12,
+                    border: `1px solid ${s.enabled ? 'var(--brand-primary-35)' : BORDER}`,
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 160, fontSize: 13.5, fontWeight: 700, color: WHITE, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tpl.name}</div>
+                    {savingThis && <span style={{ fontSize: 11, color: FAINT }}>Saving…</span>}
+                    <Pill tone={s.enabled ? 'green' : 'neutral'}>{s.enabled ? 'Active' : 'Canceled'}</Pill>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 11.5, color: FAINT }}>
+                    {s.enabled && <span>Next run: <span style={{ color: MUTED }}>{fmtWhen(s.nextRun)}</span></span>}
+                    {s.lastRunAt && <span>Last ran {fmtWhen(s.lastRunAt)}{s.lastStatus ? ` · ${s.lastStatus}` : ''}</span>}
+                  </div>
+
+                  {s.enabled ? (
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <div>
+                        <label style={labelStyle}>Cadence</label>
+                        <Sel value={s.frequency} onChange={(v) => saveSchedule(tpl.id, { ...s, frequency: v as ScheduleFrequency })} style={{ width: 150 }}>
+                          {FREQUENCIES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                        </Sel>
+                      </div>
+                      <div style={{ flex: '1 1 280px', minWidth: 240 }}>
+                        <label style={labelStyle}>Recipients</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                          {s.recipients.map((r) => (
+                            <span key={r} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, fontSize: 12, color: WHITE, border: `1px solid ${BORDER}`, background: 'rgba(255,255,255,0.05)' }}>
+                              {r}
+                              <button
+                                onClick={() => saveSchedule(tpl.id, { ...s, recipients: s.recipients.filter((x) => x !== r) })}
+                                disabled={savingThis}
+                                title={`Remove ${r}`}
+                                style={{ background: 'transparent', border: 'none', color: FAINT, cursor: 'pointer', fontSize: 13, padding: 0, lineHeight: 1 }}
+                              >×</button>
+                            </span>
+                          ))}
+                          {s.recipients.length === 0 && (
+                            <span style={{ fontSize: 12, color: FAINT }}>No recipients — runs are skipped until you add one.</span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input
+                            value={recipientDrafts[tpl.id] || ''}
+                            onChange={(e) => setRecipientDrafts((d) => ({ ...d, [tpl.id]: e.target.value }))}
+                            onKeyDown={(e) => { if (e.key === 'Enter') addRecipient(tpl); }}
+                            placeholder="name@company.com"
+                            type="email"
+                            style={{ ...inputStyle, flex: 1, minWidth: 170 }}
+                          />
+                          <button onClick={() => addRecipient(tpl)} disabled={savingThis} className="pmBtn" style={{ ...ghostButtonStyle, padding: '8px 13px', fontSize: 12 }}>
+                            <Plus size={13} weight="bold" /> Add
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => saveSchedule(tpl.id, { ...s, enabled: false })}
+                        disabled={savingThis}
+                        className="pmBtn"
+                        style={{ background: 'rgba(239,68,68,0.12)', color: RED, border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '9px 14px', fontSize: 12, fontWeight: 700, cursor: savingThis ? 'not-allowed' : 'pointer' }}
+                      >
+                        Cancel schedule
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12.5, color: MUTED }}>Canceled — no more emails will be sent. Re-enable to resume with the same cadence and recipients.</span>
+                      <button onClick={() => saveSchedule(tpl.id, { ...s, enabled: true })} disabled={savingThis} className="pmBtn" style={{ ...goldButtonStyle, padding: '8px 14px', fontSize: 12 }}>
+                        Re-enable
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
       </div>
     </PremiumSurface>
   );
