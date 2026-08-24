@@ -15,7 +15,7 @@ import { calibrationSanity } from '@/lib/takeoff/measure';
 import { scopedFieldIcon } from '@/app/field/field-icons';
 import { Buildings, Warehouse, Storefront, ForkKnife, Tooth, HouseLine, Hammer, FileDashed, Question, Ruler, FilePdf, Receipt, CheckCircle, ArrowRight, ArrowLeft, Stack, PencilSimpleLine, FileCsv, Cube, Table, WarningCircle, MagicWand, Polygon, FileArrowUp, ClipboardText, ArrowSquareOut, XCircle, SealCheck, Sparkle, GitDiff, Note, Package, Path, Lightning, CircleNotch, TrendUp, TrendDown, Printer, X as IconX, type Icon } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
-import type { TracerCondition } from './PlanTracer';
+import type { TracerCondition, PersistedSheet } from './PlanTracer';
 import { diffTakeoffs, type RevisionDiff, type RevisionLine } from '@/lib/takeoff/revision-diff';
 import { importCsv, rowsToImport, type ImportedItem } from '@/lib/takeoff/import-quantities';
 import { parseDxf, dxfLinearFeet, insUnitsToFeet } from '@/lib/takeoff/dxf';
@@ -185,6 +185,41 @@ function MeasuredTakeoffInner() {
   useEffect(() => { try { if (!localStorage.getItem('saguaro_takeoff_wizard_v1')) { setWizStep(0); setWizardOpen(true); } } catch { /* SSR / privacy mode */ } }, []);
   const closeWizard = () => { setWizardOpen(false); try { localStorage.setItem('saguaro_takeoff_wizard_v1', '1'); } catch { /* */ } };
   const openWizard = () => { setWizStep(0); setWizardOpen(true); };
+
+  // ── Drawings → Takeoff promotion handoff (B2) ──
+  // The drawings viewer writes {projectId, source:'drawings', conditions:[…]} to this
+  // sessionStorage key and routes here. Read + CLEAR on mount (single-use payload; the
+  // read-then-remove also makes StrictMode's double-invoke a no-op), re-id every condition
+  // so promoted rows never collide with existing ids, and land the user on the
+  // conditions/pricing card so Unassigned rows are visibly awaiting an assembly.
+  const promotedCardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let raw: string | null = null;
+    try { raw = sessionStorage.getItem('saguaro_promote_takeoff_v1'); if (raw != null) sessionStorage.removeItem('saguaro_promote_takeoff_v1'); } catch { return; }
+    if (!raw) return;
+    try {
+      const p = JSON.parse(raw) as { projectId?: string; source?: string; conditions?: TracerCondition[] };
+      const incoming = Array.isArray(p.conditions)
+        ? p.conditions.filter((c) => c && typeof c === 'object' && (c.kind === 'area' || c.kind === 'linear' || c.kind === 'count') && Number.isFinite(Number(c.value)) && Number(c.value) >= 0)
+        : [];
+      if (!incoming.length) return;
+      // Project handshake: a hard mismatch with a URL-pinned project is ignored; otherwise
+      // adopt the payload's project when the page hasn't settled on one yet.
+      const pid = typeof p.projectId === 'string' ? p.projectId : '';
+      if (pid && urlProjectId && pid !== urlProjectId) return;
+      if (pid) setProjectId((prev) => prev || pid);
+      setConditions((cs) => [...cs, ...incoming.map((c) => ({ ...c, id: uid() }))]);
+      setWizardOpen(false);   // never cover freshly promoted rows with the first-visit wizard
+      setMsg(`${incoming.length} measurement${incoming.length === 1 ? '' : 's'} promoted from Drawings`);
+      setTimeout(() => promotedCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
+    } catch { /* malformed payload — already cleared, ignore */ }
+    // mount-only by design: the key is single-use and cleared on first read
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Multi-sheet register persistence (gap 3): PlanTracer lifts its sheet metadata here on
+  // every change so closing/reopening the tracer within the page session keeps the register.
+  const [tracerSheets, setTracerSheets] = useState<PersistedSheet[]>([]);
 
   // Fixed bottom estimate bar: position:sticky dies inside PremiumSurface's overflow:hidden, so the
   // bar is position:fixed, aligned to the content column (sidebar-aware) by measuring the page div.
@@ -643,7 +678,11 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
     setSaving(true); setMsg('');
     let savedId: string | null = null;
     try {
-      const res = await fetch('/api/takeoff/measured', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId, name, conditions, opts, pxPerFt: ppf || undefined, imgW: dims.w || undefined, imgH: dims.h || undefined }) });
+      // Gap 2: per-sheet scales ride along so the server verifies each condition against ITS
+      // sheet's calibration (route.ts already resolves condition.ppf ?? sheetScales[sheetId]).
+      const sheetScales: Record<string, number> = {};
+      for (const c of conditions) if (c.sheetId && typeof c.ppf === 'number' && c.ppf > 0) sheetScales[c.sheetId] = c.ppf;
+      const res = await fetch('/api/takeoff/measured', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId, name, conditions, opts, pxPerFt: ppf || undefined, imgW: dims.w || undefined, imgH: dims.h || undefined, ...(Object.keys(sheetScales).length ? { sheetScales } : {}) }) });
       const d = await res.json();
       if (d.error) setMsg(`Error: ${d.error}`);
       else {
@@ -1285,6 +1324,7 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
 
         {/* conditions list */}
         {conditions.length > 0 && (
+          <div ref={promotedCardRef}>
           <SectionCard title="Conditions" icon={<Stack size={17} weight="duotone" color={GOLD} />} style={{ marginTop: 18 }}>
             {conditions.map((c) => {
               const lines = r.lines.filter((l) => l.conditionId === c.id);
@@ -1303,6 +1343,16 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
                       : <><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: GOLD, background: 'rgba(245,158,11,0.12)', border: `1px solid rgba(245,158,11,0.35)`, borderRadius: 20, padding: '2px 8px' }}><Ruler size={12} weight="bold" />needs measurement</span><span>{ASSEMBLIES[c.assemblyId]?.name}</span></>}</div></div>
                     {/* inline qty editor + targeted Trace — a template/library condition is never a dead end */}
                     <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, marginRight: 12, flexShrink: 0 }}>
+                      {/* Unassigned row (e.g. promoted from Drawings without an assembly) — pick one to
+                          price it; the row is never silently $0 without this gold picker in view */}
+                      {!ASSEMBLIES[c.assemblyId] && (
+                        <select value="" title="No assembly yet — pick one to price this measurement"
+                          onChange={(e) => { const v = e.target.value; if (!v) return; setConditions((cs) => cs.map((x) => (x.id === c.id ? { ...x, assemblyId: v } : x))); }}
+                          style={{ ...inp, width: 168, padding: '7px 9px', fontSize: 12, fontWeight: 700, color: GOLD, border: '1px solid rgba(245,158,11,0.5)' }}>
+                          <option value="">Assembly…</option>
+                          {asmList(c.kind).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
+                      )}
                       <input inputMode="decimal" placeholder="qty" value={qtyDraft[c.id] ?? (c.value > 0 ? String(c.value) : '')} onChange={(e) => setCondQty(c.id, e.target.value)} onBlur={() => commitQtyDraft(c.id)}
                         title={`Quantity in ${unit} — type it, or hit Trace to measure it on the plan`}
                         style={{ ...inp, width: 84, padding: '7px 9px', fontSize: 13, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }} />
@@ -1324,6 +1374,7 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
               <button onClick={save} disabled={saving} style={{ ...btn, opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save measured takeoff'}</button>
             </div>
           </SectionCard>
+          </div>
         )}
       </div>
       </PremiumSurface>
@@ -1689,6 +1740,8 @@ td{padding:8px 10px;border-bottom:1px solid #eee}td.v{font-weight:700;color:#444
           opts={opts}
           targetConditionId={targetConditionId || undefined}
           onSetConditionValue={onSetConditionValue}
+          initialSheets={tracerSheets.length ? tracerSheets : undefined}
+          onSheetsChange={setTracerSheets}
           onClose={() => { setTracing(false); setTargetConditionId(''); }}
         />
       )}

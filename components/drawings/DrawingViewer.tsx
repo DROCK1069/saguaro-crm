@@ -16,12 +16,20 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { enqueue } from '@/lib/field-db';
+import { HAS_SUPABASE, getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
 import {
   STAMPS, type StampName, type MarkupRow, type MarkupComment, type ParsedMarkup, type Pt,
+  type MeasureMarkupKind,
   parseMarkup, geomPoints, geomRect, geomLine, geomEllipse, geomPoint,
   drawArrowHead, drawCloudRect, hitTestMarkup, measureLabel, relTime,
+  measureKindOf, measureGeomPoints, traceMeasurePath, traceCountTick,
+  polylineMeasureLabel, areaMeasureLabel, countMeasureLabel,
 } from './markup-model';
+// Canonical takeoff engine — READ-ONLY imports (web mirror == mobile canonical; never edited here).
+import { measureCondition } from '@/lib/takeoff/measure';
+import { ASSEMBLY_MENU } from '@/lib/takeoff/assemblies';
 
 /* ── palette (machined dark; brand accent rides the white-label token) ──── */
 const RAISED = '#141416', BORDER = 'rgba(255,255,255,0.12)', TEXT = '#FFFFFF', DIM = '#CBD5E1';
@@ -68,7 +76,9 @@ const GLYPHS = {
   close: 'M6 6l12 12M18 6L6 18',
   calib: 'M3 8h18v8H3zM6.5 8v4M9.5 8v3M12.5 8v4M15.5 8v3M18 8v4',
   eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  send: 'M3 11.5L21 3l-6.5 18-3.2-7.3zM21 3L11.3 13.7',
   eyeOff: 'M4 4l16 16M9.9 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A16 16 0 0 0 2 12s3.5 7 10 7c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 0 0 4.2 4.2',
+  share: 'M9.5 13.5a4 4 0 0 0 6 .4l3-3a4 4 0 0 0-5.7-5.7l-1.6 1.6M14.5 10.5a4 4 0 0 0-6-.4l-3 3a4 4 0 0 0 5.7 5.7l1.6-1.6',
 } as const;
 type Glyph = keyof typeof GLYPHS;
 function G({ g, s = 18, w = 1.7 }: { g: Glyph; s?: number; w?: number }) {
@@ -97,6 +107,48 @@ interface Props {
 
 type Tool = 'select' | 'pen' | 'cloud' | 'arrow' | 'text' | 'callout' | 'rect' | 'circle' | 'measure' | 'eraser' | 'stamp' | 'pin' | 'calibrate';
 
+/* ── SEND TO TAKEOFF (B2 contract) ──────────────────────────────────────── */
+
+/** Rides POST /api/takeoff/measured verbatim in conditions jsonb. NEVER carries waste_factor_pct. */
+interface PromotedCondition {
+  id: string;
+  name: string;
+  kind: MeasureMarkupKind;
+  value: number;
+  assemblyId: string;
+  measured: 'traced';
+  points: Pt[];
+  ppf: number;
+  sheetId: string;
+  sheet: string;
+  note: string;
+}
+
+const PROMOTE_KEY = 'saguaro_promote_takeoff_v1';
+
+/** One measure markup on the current sheet, resolved for the promote modal. */
+interface PromotableMeasure {
+  markupId: string;
+  kind: MeasureMarkupKind;
+  points: Pt[];
+  /** effective px/ft (row's own ppf, else the sheet calibration); null = uncalibrated */
+  ppf: number | null;
+  value: number;
+  unit: string;
+  label: string;
+}
+interface PromoteRow extends PromotableMeasure {
+  include: boolean;
+  name: string;
+  assemblyId: string;
+}
+
+const MEASURE_MODES: { m: MeasureMarkupKind; label: string; hint: string }[] = [
+  { m: 'linear', label: 'Linear', hint: 'Click points along the run (drag for a quick two-point). Double-click or Enter finishes.' },
+  { m: 'area',   label: 'Area',   hint: 'Click the polygon corners — live SF as you go. Click the first corner or press Enter to close.' },
+  { m: 'count',  label: 'Count',  hint: 'Each click drops a tick. Enter or Esc commits the cluster as one count.' },
+];
+
 const TOOLS: { t: Tool; g: Glyph; label: string; key?: string; hint: string }[] = [
   { t: 'select',  g: 'select',  label: 'Select', key: 'V', hint: 'Click a markup to inspect it. Drag empty plan to pan; hold Space with any tool to pan.' },
   { t: 'pen',     g: 'pen',     label: 'Pen',    key: 'P', hint: 'Draw freehand. Saves when you lift the pen.' },
@@ -106,7 +158,7 @@ const TOOLS: { t: Tool; g: Glyph; label: string; key?: string; hint: string }[] 
   { t: 'callout', g: 'callout', label: 'Callout', hint: 'Drag from the thing you’re calling out to where the text sits.' },
   { t: 'rect',    g: 'rect',    label: 'Rect',   key: 'R', hint: 'Drag a rectangle.' },
   { t: 'circle',  g: 'circle',  label: 'Circle', hint: 'Drag an ellipse.' },
-  { t: 'measure', g: 'measure', label: 'Measure', key: 'M', hint: 'Click two points (or drag). Calibrate the sheet for real feet.' },
+  { t: 'measure', g: 'measure', label: 'Measure', key: 'M', hint: 'Pick Linear, Area, or Count, then click points. Calibrate the sheet for real feet.' },
   { t: 'stamp',   g: 'stamp',   label: 'Stamp',  hint: 'Pick a stamp, then click to place it. PUNCH creates a punch item + pin.' },
   { t: 'pin',     g: 'pin',     label: 'Pin',    hint: 'Click to drop a categorized field pin.' },
   { t: 'eraser',  g: 'eraser',  label: 'Erase',  hint: 'Click one of YOUR markups to delete it.' },
@@ -170,7 +222,12 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
   const [penTick, setPenTick] = useState(0);                    // repaint pulse while inking
   const dragShapeRef = useRef<{ a: Pt; b: Pt } | null>(null);
   const [dragShape, setDragShape] = useState<{ a: Pt; b: Pt } | null>(null);
-  const [measureStart, setMeasureStart] = useState<Pt | null>(null);
+  const [measureMode, setMeasureMode] = useState<MeasureMarkupKind>('linear');
+  const [measurePts, setMeasurePts] = useState<Pt[]>([]);   // vertices being collected (polyline/area/count)
+  const measurePtsRef = useRef<Pt[]>([]);
+  useEffect(() => { measurePtsRef.current = measurePts; }, [measurePts]);
+  const lastMeasureTapRef = useRef(0);                     // pinch guard: pops a vertex the first pinch finger just dropped
+  const measureCommitAtRef = useRef(0);                    // dbl-click guard: ignore the stray press right after a commit
   const [calibPts, setCalibPts] = useState<Pt[]>([]);
   const [cursor, setCursor] = useState<Pt | null>(null);
 
@@ -178,6 +235,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
   const [textModal, setTextModal] = useState<{ at: Pt; from?: Pt; value: string } | null>(null);
   const [punchModal, setPunchModal] = useState<{ at: Pt; title: string; saving: boolean } | null>(null);
   const [calibModal, setCalibModal] = useState<{ a: Pt; b: Pt; ft: string } | null>(null);
+  const [promoteModal, setPromoteModal] = useState<PromoteRow[] | null>(null);
   const [toast, setToast] = useState<{ text: string; href?: string; label?: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((text: string, href?: string, label?: string) => {
@@ -278,7 +336,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
 
   const goPage = useCallback(async (n: number) => {
     if (n < 1 || n > pageCount) return;
-    setSelId(null); setHover(null); setMeasureStart(null); setCalibPts([]); setPendingPin(null); setSelectedPin(null);
+    setSelId(null); setHover(null); setMeasurePts([]); setCalibPts([]); setPendingPin(null); setSelectedPin(null); setPromoteModal(null);
     penRef.current = []; dragShapeRef.current = null; setDragShape(null);
     setImgReady(false); setBusy('Rendering page…');
     try {
@@ -401,6 +459,197 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
     setSelectedPin(initialPin);
   }, [initialPin, imgReady, cssSize, dims, page, isMultiPage, goPage, applyView]);
 
+  /* ── B4 LIVE: realtime markup sync (radio pattern — LED, no toasts) ──── */
+  /* drawing_markups is in the supabase_realtime publication; the browser anon
+   * client is hydrated from the server's httpOnly cookies so RLS sees the
+   * caller. While the socket reports SUBSCRIBED, remote inserts/deletes land
+   * instantly; any other state falls back to a quiet 15s re-fetch. */
+  const [rtLive, setRtLive] = useState(false);
+  const loadMarkupsRef = useRef(loadMarkups);
+  useEffect(() => { loadMarkupsRef.current = loadMarkups; }, [loadMarkups]);
+
+  /** Merge one remote INSERT row: tolerant parse, dedupe by server id, never crash. */
+  const mergeRemoteInsert = useCallback((raw: unknown) => {
+    try {
+      if (!raw || typeof raw !== 'object') return;
+      const row = raw as Record<string, unknown>;
+      if (typeof row.id !== 'string' || row.drawing_id !== drawing.id) return;
+      const m: MarkupRow = { ...(row as unknown as MarkupRow), comments: [] };
+      parseMarkup(m); // foreign shapes go through the tolerant parser — throw = drop, never crash
+      setMarkups((ms) => (ms.some((x) => x.id === m.id) ? ms : [...ms, m]));
+      // a teammate's fresh calibration takes effect live on this sheet
+      if (m.markup_type === 'measure') {
+        const p = parseMarkup(m);
+        if (p.mode === 'canonical' && p.data.ppf && p.data.ppf > 0) {
+          const v = p.data.ppf;
+          setPpfBySheet((prev) => ({ ...prev, [`${drawing.id}:${m.page_number || 1}`]: v }));
+        }
+      }
+    } catch { /* foreign shape — ignore */ }
+  }, [drawing.id]);
+
+  /** Remove one remote DELETE row by id (removing an unknown id is a no-op). */
+  const removeRemote = useCallback((id: unknown) => {
+    if (typeof id !== 'string' || !id) return;
+    setMarkups((ms) => (ms.some((m) => m.id === id) ? ms.filter((m) => m.id !== id) : ms));
+    setSelId((s) => (s === id ? null : s));
+  }, []);
+
+  useEffect(() => {
+    if (!HAS_SUPABASE) { setRtLive(false); return; }
+    let cancelled = false;
+    let channel: RealtimeChannel | null = null;
+    (async () => {
+      await ensureBrowserSession(); // best-effort auth so RLS lets rows through
+      if (cancelled) return;
+      const sb = getSupabaseBrowser();
+      channel = sb
+        .channel(`drawings:markups:${drawing.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'drawing_markups', filter: `drawing_id=eq.${drawing.id}` },
+          (payload: { new?: unknown }) => { mergeRemoteInsert(payload.new); },
+        )
+        .on(
+          // DELETE payloads only carry the old PK (default replica identity), so a
+          // drawing_id filter would silently drop every event — filter client-side by id.
+          'postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'drawing_markups' },
+          (payload: { old?: { id?: unknown } }) => { removeRemote(payload.old?.id); },
+        )
+        .subscribe((status) => { if (!cancelled) setRtLive(status === 'SUBSCRIBED'); });
+    })();
+    return () => {
+      cancelled = true;
+      setRtLive(false);
+      if (channel) { try { getSupabaseBrowser().removeChannel(channel); } catch { /* socket already gone */ } }
+    };
+  }, [drawing.id, mergeRemoteInsert, removeRemote]);
+
+  /* dropped socket → quiet 15s re-fetch until resubscribed */
+  useEffect(() => {
+    if (rtLive) return;
+    const t = setInterval(() => { loadMarkupsRef.current(); }, 15_000);
+    return () => clearInterval(t);
+  }, [rtLive]);
+
+  /* ── B4 PRESENCE: who's on this sheet (channel presence — no tables) ─── */
+  const [viewers, setViewers] = useState<string[]>([]);
+  useEffect(() => {
+    if (!HAS_SUPABASE) { setViewers([]); return; }
+    let cancelled = false;
+    let channel: RealtimeChannel | null = null;
+    (async () => {
+      await ensureBrowserSession();
+      if (cancelled) return;
+      const sb = getSupabaseBrowser();
+      channel = sb.channel(`sheet:${drawing.id}:${page}`, { config: { presence: { key: me.id } } });
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          if (cancelled || !channel) return;
+          const state = channel.presenceState<{ name?: string }>();
+          const names: string[] = [];
+          for (const key of Object.keys(state)) {
+            if (key === me.id) continue; // own chip excluded
+            const meta = state[key]?.[0];
+            const nm = typeof meta?.name === 'string' && meta.name.trim() ? meta.name.trim() : 'Someone';
+            names.push(nm);
+          }
+          setViewers(names);
+        })
+        .subscribe((status) => {
+          if (cancelled || !channel) return;
+          if (status === 'SUBSCRIBED') { void channel.track({ name: me.name }).catch(() => { /* presence is best-effort */ }); }
+        });
+    })();
+    return () => {
+      cancelled = true;
+      setViewers([]);
+      if (channel) { try { getSupabaseBrowser().removeChannel(channel); } catch { /* socket already gone */ } }
+    };
+  }, [drawing.id, page, me.id, me.name]);
+
+  const initialsOf = (n: string) =>
+    n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '?';
+
+  /* ── B4 SHARE FOR REVIEW: tenant-scoped read-only guest links ────────── */
+  interface ReviewLink {
+    id: string;
+    label?: string | null;
+    token?: string;
+    url?: string;
+    created_at?: string;
+    expires_at?: string | null;
+  }
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareLabel, setShareLabel] = useState('');
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareLinks, setShareLinks] = useState<ReviewLink[]>([]);
+  const [shareCreated, setShareCreated] = useState<{ url: string } | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  /** Public URL for a listed link row (POST returns url; list rows may carry token only). */
+  const reviewUrl = (l: ReviewLink) =>
+    l.url || (l.token ? `${window.location.origin}/api/portal/drawing-review?token=${l.token}` : '');
+
+  const loadShareLinks = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/drawings/review-link?drawingId=${encodeURIComponent(drawing.id)}`);
+      const d = await r.json().catch(() => ({}));
+      const rows: unknown[] = Array.isArray(d?.links) ? d.links : [];
+      setShareLinks(rows.filter((l): l is ReviewLink => !!l && typeof l === 'object' && typeof (l as ReviewLink).id === 'string'));
+    } catch { /* offline — list stays as-is */ }
+  }, [drawing.id]);
+
+  const openShare = useCallback(() => {
+    if (!online) return; // honest offline disable — the button is already disabled
+    setShareOpen(true); setShareCreated(null); setShareLabel(''); setCopiedKey(null);
+    loadShareLinks();
+  }, [online, loadShareLinks]);
+
+  const createShareLink = useCallback(async () => {
+    if (shareBusy) return;
+    setShareBusy(true);
+    try {
+      const r = await fetch('/api/drawings/review-link', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drawingId: drawing.id, ...(shareLabel.trim() ? { label: shareLabel.trim() } : {}) }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d?.ok || typeof d?.url !== 'string') throw new Error(d?.error || 'link failed');
+      setShareCreated({ url: d.url });
+      setShareLabel('');
+      await loadShareLinks();
+    } catch {
+      showToast('Could not create the review link — check your connection and try again.');
+    }
+    setShareBusy(false);
+  }, [shareBusy, drawing.id, shareLabel, loadShareLinks, showToast]);
+
+  const revokeShareLink = useCallback(async (id: string) => {
+    if (revokingId) return;
+    setRevokingId(id);
+    try {
+      const r = await fetch(`/api/drawings/review-link?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error('revoke failed');
+      setShareLinks((ls) => ls.filter((l) => l.id !== id));
+    } catch {
+      showToast('Could not revoke that link — check your connection and try again.');
+    }
+    setRevokingId(null);
+  }, [revokingId, showToast]);
+
+  const copyText = useCallback(async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((c) => (c === key ? null : c)), 2000);
+    } catch {
+      showToast('Copy failed — select the URL and copy it manually.');
+    }
+  }, [showToast]);
+
   /* ── markup helpers ──────────────────────────────────────────────────── */
   const parsed = useCallback((m: MarkupRow): ParsedMarkup => {
     const key = `${m.id}:${m.updated_at || ''}`;
@@ -449,7 +698,11 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
         fetch(`${apiBase}/${saved.id}`, { method: 'DELETE' }).catch(() => {});
         return;
       }
-      setMarkups((ms) => ms.map((m) => (m.id === localId ? { ...saved } : m)));
+      setMarkups((ms) => {
+        // the realtime INSERT may have merged the server row already — never leave two copies
+        if (ms.some((m) => m.id === saved.id)) return ms.filter((m) => m.id !== localId);
+        return ms.map((m) => (m.id === localId ? { ...saved } : m));
+      });
       setSelId((s) => (s === localId ? saved.id : s));
     } catch {
       // offline (or the server rejected) → queue for replay; row stays optimistic
@@ -600,11 +853,40 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
     } else if (tool === 'arrow') {
       createMarkup('arrow', buildData({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }), ink);
     } else if (tool === 'measure') {
-      createMarkup('measure', buildData({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }, { ppf: ppf > 0 ? ppf : null }), ink);
+      createMarkup('measure', buildData({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }, { ppf: ppf > 0 ? ppf : null, mkind: 'linear' }), ink);
     } else if (tool === 'callout') {
       setTextModal({ at: b, from: a, value: '' });
     }
   }, [tool, createMarkup, buildData, ink, ppf]);
+
+  /* ── multi-point measure commits (B2: polyline / area / count) ───────── */
+  const rp = (p: Pt) => ({ x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100 });
+
+  /** Commit the in-progress vertex cluster as ONE measure markup per the contract geometry. */
+  const commitMeasurePts = useCallback(() => {
+    const pts = measurePtsRef.current;
+    if (!pts.length) return;
+    measureCommitAtRef.current = Date.now();
+    const extras = { ppf: ppf > 0 ? ppf : null, mkind: measureMode };
+    if (measureMode === 'linear') {
+      // drop double-click duplicate vertices
+      const clean = pts.filter((p, i) => i === 0 || Math.hypot(p.x - pts[i - 1].x, p.y - pts[i - 1].y) > 1);
+      if (clean.length < 2) { setMeasurePts([]); setMsg('A linear measure needs at least two points.'); return; }
+      setMeasurePts([]);
+      if (clean.length === 2) {
+        createMarkup('measure', buildData({ x1: clean[0].x, y1: clean[0].y, x2: clean[1].x, y2: clean[1].y }, extras), ink);
+      } else {
+        createMarkup('measure', buildData({ points: clean.map(rp) }, extras), ink);
+      }
+    } else if (measureMode === 'area') {
+      if (pts.length < 3) { setMsg('An area needs at least three corners.'); return; }
+      setMeasurePts([]);
+      createMarkup('measure', buildData({ points: pts.map((p) => [Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100]), closed: true }, extras), ink);
+    } else {
+      setMeasurePts([]);
+      createMarkup('measure', buildData({ points: pts.map((p) => [Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100]) }, extras), ink);
+    }
+  }, [measureMode, ppf, createMarkup, buildData, ink]);
 
   const confirmText = useCallback(() => {
     if (!textModal) return;
@@ -700,6 +982,82 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
     setMsg(`Scale set — ${newPpf.toFixed(2)} px/ft on this sheet. Measurements now read in feet.`);
   }, [calibModal, sheetKey, createMarkup, buildData, ink]);
 
+  /* ── SEND TO TAKEOFF (B2): promote measure markups → measured takeoff ── */
+  const sheetLabel = useMemo(() => {
+    const base = drawing.sheet || drawing.name || 'Sheet';
+    return isMultiPage ? `${base} p${page}` : base;
+  }, [drawing.sheet, drawing.name, isMultiPage, page]);
+
+  /** Every non-calibration measure markup on the current sheet, valued by the canonical engine. */
+  const promotables = useMemo<PromotableMeasure[]>(() => {
+    const out: PromotableMeasure[] = [];
+    for (const m of pageMarkups) {
+      if (m.markup_type !== 'measure') continue;
+      const p = parsed(m);
+      if (p.mode !== 'canonical' || p.data.calibration) continue;
+      const kind = measureKindOf(p.data);
+      const points = measureGeomPoints(p.data.geometry);
+      if (!points.length) continue;
+      if (kind === 'linear' && points.length < 2) continue;
+      if (kind === 'area' && points.length < 3) continue;
+      // effective per-sheet calibration: the row's own ppf, else the sheet's current one
+      const effPpf = p.data.ppf && p.data.ppf > 0 ? p.data.ppf : (ppf > 0 ? ppf : null);
+      const mc = measureCondition(kind, { points, ppf: effPpf || 0, count: points.length });
+      const label = effPpf
+        ? `${mc.value.toLocaleString('en-US')} ${mc.unit}`
+        : kind === 'area' ? areaMeasureLabel(points, null)
+        : kind === 'count' ? countMeasureLabel(points.length)
+        : polylineMeasureLabel(points, null);
+      out.push({ markupId: m.id, kind, points, ppf: effPpf, value: mc.value, unit: mc.unit, label });
+    }
+    return out;
+  }, [pageMarkups, parsed, ppf]);
+
+  const promotableReady = promotables.some((r) => r.ppf !== null);
+
+  const openPromote = useCallback(() => {
+    if (!online) { showToast('Offline — sending to takeoff needs the takeoff page. Reconnect first.'); return; }
+    if (!promotableReady) return;
+    const counters: Record<MeasureMarkupKind, number> = { linear: 0, area: 0, count: 0 };
+    const nameFor = (k: MeasureMarkupKind) => {
+      counters[k] += 1;
+      return `${k === 'linear' ? 'Linear' : k === 'area' ? 'Area' : 'Count'} ${counters[k]}`;
+    };
+    setPromoteModal(promotables.map((r) => ({
+      ...r,
+      include: r.ppf !== null,
+      name: nameFor(r.kind),
+      assemblyId: '',       // 'Unassigned' — lands priceable; the takeoff page shows its per-row picker
+    })));
+  }, [online, promotableReady, promotables, showToast]);
+
+  const confirmPromote = useCallback(() => {
+    if (!promoteModal) return;
+    const picked = promoteModal.filter((r) => r.include && r.ppf !== null);
+    if (!picked.length) return;
+    const conditions: PromotedCondition[] = picked.map((r) => ({
+      id: uid(),
+      name: `${sheetLabel} · ${r.name.trim() || r.kind}`,
+      kind: r.kind,
+      value: r.value,
+      assemblyId: r.assemblyId,
+      measured: 'traced',
+      points: r.points.map((p) => ({ x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100 })),
+      ppf: r.ppf as number,
+      sheetId: `${drawing.id}:${page || 1}`,
+      sheet: sheetLabel,
+      note: `Promoted from drawings markup ${resolveId(r.markupId)}`,
+    }));
+    try {
+      sessionStorage.setItem(PROMOTE_KEY, JSON.stringify({ projectId, source: 'drawings', conditions }));
+    } catch {
+      showToast('Could not stage the takeoff handoff (storage unavailable).');
+      return;
+    }
+    setPromoteModal(null);
+    router.push(`/app/takeoff/measured?projectId=${projectId}&from=drawings`);
+  }, [promoteModal, sheetLabel, drawing.id, page, resolveId, projectId, router, showToast]);
+
   /* ── hit testing over rendered markups (topmost = latest) ────────────── */
   const hitMarkupAt = useCallback((img: Pt): MarkupRow | null => {
     const tolScreen = 8;
@@ -732,6 +1090,10 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
       const { scale, tx, ty } = viewRef.current;
       pinchRef.current = { d0: Math.hypot(p2.x - p1.x, p2.y - p1.y), scale0: scale, cx, cy, ix: (cx - tx) / scale, iy: (cy - ty) / scale };
       penRef.current = []; dragShapeRef.current = null; setDragShape(null); setPenTick((t) => t + 1);
+      // the first pinch finger just dropped a measure vertex — take it back
+      if (tool === 'measure' && measurePtsRef.current.length && Date.now() - lastMeasureTapRef.current < 600) {
+        setMeasurePts((pts) => pts.slice(0, -1));
+      }
       dragRef.current = { mode: 'none', sx: 0, sy: 0, tx: 0, ty: 0 };
       return;
     }
@@ -762,7 +1124,32 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
         return;
       }
       case 'measure': {
-        if (measureStart) { finishShape(measureStart, img); setMeasureStart(null); return; }
+        if (Date.now() - measureCommitAtRef.current < 350) return; // trailing dbl-click press after a commit
+        if (measureMode === 'count') {
+          lastMeasureTapRef.current = Date.now();
+          setMeasurePts((pts) => [...pts, img]);
+          setCursor(img);
+          return;
+        }
+        if (measureMode === 'area') {
+          const pts = measurePtsRef.current;
+          // auto-close on first-vertex click
+          if (pts.length >= 3 && Math.hypot(img.x - pts[0].x, img.y - pts[0].y) * viewRef.current.scale <= 12) {
+            commitMeasurePts();
+            return;
+          }
+          lastMeasureTapRef.current = Date.now();
+          setMeasurePts((prev) => [...prev, img]);
+          setCursor(img);
+          return;
+        }
+        // linear: polyline once started; first press may still be a quick two-point drag
+        if (measurePtsRef.current.length > 0) {
+          lastMeasureTapRef.current = Date.now();
+          setMeasurePts((pts) => [...pts, img]);
+          setCursor(img);
+          return;
+        }
         dragShapeRef.current = { a: img, b: img };
         setDragShape({ a: img, b: img });
         dragRef.current = { mode: 'draw', sx, sy, tx: 0, ty: 0 };
@@ -795,7 +1182,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
         return;
       }
     }
-  }, [imgReady, tool, toImg, hitMarkupAt, measureStart, finishShape, calibPts, stampChoice, placeStamp, me.id, parsed, deleteMarkup, showToast]);
+  }, [imgReady, tool, toImg, hitMarkupAt, measureMode, commitMeasurePts, calibPts, stampChoice, placeStamp, me.id, parsed, deleteMarkup, showToast]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (pointersRef.current.has(e.pointerId)) pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -823,8 +1210,8 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
       return;
     }
 
-    // hover: measure rubber-band, author chip
-    if (tool === 'measure' && measureStart) { setCursor(img); return; }
+    // hover: measure rubber-band (live cursor readout), author chip
+    if (tool === 'measure' && measurePts.length) { setCursor(img); return; }
     if (tool === 'calibrate' && calibPts.length === 1) { setCursor(img); return; }
     if (tool === 'select' || tool === 'eraser') {
       const hit = hitMarkupAt(img);
@@ -836,7 +1223,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
       return;
     }
     setCursor(null);
-  }, [applyView, toImg, tool, measureStart, calibPts.length, hitMarkupAt, scheduleDraw]);
+  }, [applyView, toImg, tool, measurePts.length, calibPts.length, hitMarkupAt, scheduleDraw]);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     pointersRef.current.delete(e.pointerId);
@@ -852,12 +1239,21 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
     if (!ds) return;
     const movedPx = Math.hypot(img.x - ds.a.x, img.y - ds.a.y) * viewRef.current.scale;
     if (tool === 'measure') {
-      if (movedPx < 6) { setMeasureStart(ds.a); setMsg(ppf > 0 ? 'Click the second point.' : 'Click the second point. (Uncalibrated — result reads in px until you calibrate.)'); }
-      else { finishShape(ds.a, img); }
+      if (movedPx < 6) {
+        setMeasurePts([ds.a]);
+        setMsg(ppf > 0
+          ? 'Click the next point. Double-click or Enter finishes the run.'
+          : 'Click the next point. (Uncalibrated — reads in px until you calibrate.)');
+      } else { finishShape(ds.a, img); }
       return;
     }
     finishShape(ds.a, img);
   }, [toImg, tool, finishPen, finishShape, ppf]);
+
+  /* double-click closes a linear polyline (the duplicate double-click vertex is deduped on commit) */
+  const onDoubleClick = useCallback(() => {
+    if (tool === 'measure' && measureMode === 'linear' && measurePtsRef.current.length >= 2) commitMeasurePts();
+  }, [tool, measureMode, commitMeasurePts]);
 
   const onPointerCancel = useCallback((e: React.PointerEvent) => {
     pointersRef.current.delete(e.pointerId);
@@ -885,14 +1281,20 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key.toLowerCase();
       if (k === 'escape') {
-        if (textModal || punchModal || calibModal) { setTextModal(null); setPunchModal(null); setCalibModal(null); setCalibPts([]); return; }
+        if (textModal || punchModal || calibModal || promoteModal || shareOpen) { setTextModal(null); setPunchModal(null); setCalibModal(null); setPromoteModal(null); setShareOpen(false); setCalibPts([]); return; }
         if (pendingPin) { setPendingPin(null); return; }
-        if (measureStart || calibPts.length || penRef.current.length || dragShapeRef.current) {
-          setMeasureStart(null); setCalibPts([]); penRef.current = []; dragShapeRef.current = null; setDragShape(null); setPenTick((t) => t + 1);
+        // count clusters COMMIT on Esc (contract) — everything else cancels
+        if (tool === 'measure' && measureMode === 'count' && measurePtsRef.current.length) { commitMeasurePts(); return; }
+        if (measurePtsRef.current.length || calibPts.length || penRef.current.length || dragShapeRef.current) {
+          setMeasurePts([]); setCalibPts([]); penRef.current = []; dragShapeRef.current = null; setDragShape(null); setPenTick((t) => t + 1);
           setMsg('Cancelled.');
           return;
         }
         setSelId(null); setSelectedPin(null);
+        return;
+      }
+      if (k === 'enter') {
+        if (tool === 'measure' && measurePtsRef.current.length) { e.preventDefault(); commitMeasurePts(); }
         return;
       }
       if (k === 'v') setTool('select');
@@ -909,7 +1311,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
     const ku = (e: KeyboardEvent) => { if (e.key === ' ') spaceRef.current = false; };
     window.addEventListener('keydown', kd); window.addEventListener('keyup', ku);
     return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); };
-  }, [undo, redo, fit, zoomAt, textModal, punchModal, calibModal, pendingPin, measureStart, calibPts.length]);
+  }, [undo, redo, fit, zoomAt, textModal, punchModal, calibModal, promoteModal, shareOpen, pendingPin, tool, measureMode, commitMeasurePts, calibPts.length]);
 
   /* ── canvas paint ────────────────────────────────────────────────────── */
   const draw = useCallback(() => {
@@ -1035,17 +1437,47 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
               break;
             }
             case 'measure': {
-              const l = geomLine(g); const a = S({ x: l.x1, y: l.y1 }), b = S({ x: l.x2, y: l.y2 });
+              const mk = measureKindOf(p.data);
+              const raw = measureGeomPoints(g);
+              if (!raw.length) break;
+              const spts = raw.map(S);
+              const fontPx = clamp(12 * Math.sqrt(scale * k), 10, 18);
+              if (mk === 'count') {
+                const tickR = Math.max(4, lw * 1.8);
+                for (const q of spts) { traceCountTick(ctx, q, tickR); ctx.stroke(); }
+                const cx = spts.reduce((s, q) => s + q.x, 0) / spts.length;
+                const cy = spts.reduce((s, q) => s + q.y, 0) / spts.length;
+                chip(countMeasureLabel(raw.length), cx, cy - Math.max(14, tickR * 3), col, fontPx);
+                break;
+              }
+              if (mk === 'area' && raw.length >= 3) {
+                ctx.setLineDash([7, 5]);
+                traceMeasurePath(ctx, spts, true);
+                ctx.save(); ctx.globalAlpha = 0.12; ctx.fill(); ctx.restore();
+                ctx.stroke();
+                ctx.setLineDash([]);
+                const cx = spts.reduce((s, q) => s + q.x, 0) / spts.length;
+                const cy = spts.reduce((s, q) => s + q.y, 0) / spts.length;
+                chip(areaMeasureLabel(raw, p.data.ppf), cx, cy, col, fontPx);
+                break;
+              }
+              // linear — legacy two-point (dimension ticks) or polyline
               ctx.setLineDash([7, 5]);
-              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-              ctx.setLineDash([]);
-              const ang = Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2, tick = Math.max(5, lw * 2.5);
-              ctx.beginPath();
-              ctx.moveTo(a.x - tick * Math.cos(ang), a.y - tick * Math.sin(ang)); ctx.lineTo(a.x + tick * Math.cos(ang), a.y + tick * Math.sin(ang));
-              ctx.moveTo(b.x - tick * Math.cos(ang), b.y - tick * Math.sin(ang)); ctx.lineTo(b.x + tick * Math.cos(ang), b.y + tick * Math.sin(ang));
+              traceMeasurePath(ctx, spts, false);
               ctx.stroke();
-              const label = measureLabel(l.x1, l.y1, l.x2, l.y2, p.data.ppf);
-              chip(label, (a.x + b.x) / 2, (a.y + b.y) / 2 - Math.max(12, lw * 4), col, clamp(12 * Math.sqrt(scale * k), 10, 18));
+              ctx.setLineDash([]);
+              if (raw.length === 2) {
+                const [a, b] = spts;
+                const ang = Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2, tick = Math.max(5, lw * 2.5);
+                ctx.beginPath();
+                ctx.moveTo(a.x - tick * Math.cos(ang), a.y - tick * Math.sin(ang)); ctx.lineTo(a.x + tick * Math.cos(ang), a.y + tick * Math.sin(ang));
+                ctx.moveTo(b.x - tick * Math.cos(ang), b.y - tick * Math.sin(ang)); ctx.lineTo(b.x + tick * Math.cos(ang), b.y + tick * Math.sin(ang));
+                ctx.stroke();
+              } else {
+                for (const q of spts) { ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(2.5, lw), 0, Math.PI * 2); ctx.fill(); }
+              }
+              const mid = spts[Math.floor((spts.length - 1) / 2)], mid2 = spts[Math.ceil(spts.length / 2)] || mid;
+              chip(polylineMeasureLabel(raw, p.data.ppf), (mid.x + mid2.x) / 2, (mid.y + mid2.y) / 2 - Math.max(12, lw * 4), col, fontPx);
               break;
             }
             case 'text': {
@@ -1124,10 +1556,34 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
         chip(measureLabel(dragShape.a.x, dragShape.a.y, dragShape.b.x, dragShape.b.y, ppf > 0 ? ppf : null), (a.x + b.x) / 2, (a.y + b.y) / 2 - 16, ink, 12);
       }
     }
-    if (measureStart && cursor) {
-      const a = sc(measureStart), b = sc(cursor);
-      ctx.setLineDash([7, 5]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
-      chip(measureLabel(measureStart.x, measureStart.y, cursor.x, cursor.y, ppf > 0 ? ppf : null), (a.x + b.x) / 2, (a.y + b.y) / 2 - 16, ink, 12);
+    if (tool === 'measure' && measurePts.length) {
+      const livePpf = ppf > 0 ? ppf : null;
+      const withCursor = cursor ? [...measurePts, cursor] : measurePts;
+      const spts = withCursor.map(sc);
+      const anchor = spts[spts.length - 1];
+      if (measureMode === 'count') {
+        const tickR = Math.max(4, liveW * 1.8);
+        for (let i = 0; i < measurePts.length; i++) { const q = sc(measurePts[i]); traceCountTick(ctx, q, tickR); ctx.stroke(); }
+        chip(countMeasureLabel(measurePts.length), anchor.x + 26, anchor.y - 20, ink, 12);
+      } else if (measureMode === 'area') {
+        ctx.setLineDash([7, 5]);
+        traceMeasurePath(ctx, spts, spts.length >= 3);
+        if (spts.length >= 3) { ctx.save(); ctx.globalAlpha = 0.1; ctx.fillStyle = ink; ctx.fill(); ctx.restore(); }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // first-vertex close handle
+        ctx.beginPath(); ctx.arc(spts[0].x, spts[0].y, 6, 0, Math.PI * 2); ctx.stroke();
+        const label = withCursor.length >= 3 ? areaMeasureLabel(withCursor, livePpf) : polylineMeasureLabel(withCursor, livePpf);
+        if (label) chip(label, anchor.x + 30, anchor.y - 22, ink, 12);
+      } else {
+        ctx.setLineDash([7, 5]);
+        traceMeasurePath(ctx, spts, false);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        for (let i = 0; i < measurePts.length; i++) { const q = sc(measurePts[i]); ctx.save(); ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(2.5, liveW), 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        const label = polylineMeasureLabel(withCursor, livePpf);
+        if (label) chip(label, anchor.x + 30, anchor.y - 22, ink, 12);
+      }
     }
     if (calibPts.length) {
       ctx.strokeStyle = gold; ctx.lineWidth = 2.4;
@@ -1139,7 +1595,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
       for (const q of cp) { ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, Math.PI * 2); ctx.fillStyle = gold; ctx.fill(); }
     }
     ctx.restore();
-  }, [cssSize, view, dims, imgReady, pageMarkups, parsed, selId, hover, ink, inkWidth, dragShape, tool, measureStart, cursor, calibPts, ppf, penTick]);
+  }, [cssSize, view, dims, imgReady, pageMarkups, parsed, selId, hover, ink, inkWidth, dragShape, tool, measureMode, measurePts, cursor, calibPts, ppf, penTick]);
 
   drawRef.current = draw;
   useEffect(() => { scheduleDraw(); }, [draw, scheduleDraw]);
@@ -1237,7 +1693,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
           {TOOLS.map((t) => (
             <button
               key={t.t}
-              onClick={() => { setTool(t.t); setMeasureStart(null); setCalibPts([]); setPendingPin(null); }}
+              onClick={() => { setTool(t.t); setMeasurePts([]); setCalibPts([]); setPendingPin(null); }}
               style={toolBtn(tool === t.t)}
               title={t.key ? `${t.label} (${t.key})` : t.label}
             >
@@ -1246,11 +1702,67 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
             </button>
           ))}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* live-session LED (radio pattern — quiet, no toasts) */}
+            <span
+              title={rtLive ? 'Live — teammate markups land instantly.' : 'Live sync offline — refreshing every 15s.'}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 800, letterSpacing: 0.8, color: rtLive ? GREEN : 'rgba(255,255,255,0.35)', padding: '0 4px' }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: rtLive ? GREEN : 'rgba(255,255,255,0.25)', boxShadow: rtLive ? '0 0 6px rgba(34,197,94,0.8)' : 'none' }} />
+              {rtLive ? 'LIVE' : 'OFFLINE'}
+            </span>
+            {/* presence chips — who else is on this sheet */}
+            {viewers.slice(0, 4).map((n, i) => (
+              <span
+                key={`${n}:${i}`}
+                title={`${n} is viewing this sheet`}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(11,14,19,0.6)', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '3px 9px', fontSize: 10, fontWeight: 700, color: DIM, whiteSpace: 'nowrap' }}
+              >
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: GREEN }} />
+                {initialsOf(n)} · viewing
+              </span>
+            ))}
+            {viewers.length > 4 && (
+              <span title={viewers.slice(4).join(', ')} style={{ fontSize: 10, fontWeight: 800, color: DIM, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '3px 8px' }}>
+                +{viewers.length - 4}
+              </span>
+            )}
             <button onClick={undo} disabled={!histLen.p} style={{ ...iconBtn, color: histLen.p ? TEXT : 'rgba(255,255,255,0.25)' }} title="Undo (Ctrl+Z)"><G g="undo" /></button>
             <button onClick={redo} disabled={!histLen.f} style={{ ...iconBtn, color: histLen.f ? TEXT : 'rgba(255,255,255,0.25)' }} title="Redo (Ctrl+Shift+Z)"><G g="redo" /></button>
             <button onClick={() => { const b = canvasRef.current?.getBoundingClientRect(); if (b) zoomAt(1.25, b.left + b.width / 2, b.top + b.height / 2); }} style={iconBtn} title="Zoom in (+)"><G g="zoomIn" /></button>
             <button onClick={() => { const b = canvasRef.current?.getBoundingClientRect(); if (b) zoomAt(1 / 1.25, b.left + b.width / 2, b.top + b.height / 2); }} style={iconBtn} title="Zoom out (−)"><G g="zoomOut" /></button>
             <button onClick={fit} style={iconBtn} title="Fit sheet (F)"><G g="fit" /></button>
+            <button
+              onClick={openPromote}
+              disabled={!online || !promotableReady}
+              title={!online
+                ? 'Offline — promotion needs the takeoff page. Reconnect first.'
+                : !promotableReady
+                  ? 'Draw a measure markup on a calibrated sheet first.'
+                  : 'Promote this sheet’s measurements into the measured takeoff.'}
+              style={{
+                ...iconBtn, gap: 6, display: 'flex', fontSize: 11, fontWeight: 700,
+                color: online && promotableReady ? ACCENT : 'rgba(255,255,255,0.25)',
+                borderColor: online && promotableReady ? ACCENT_25 : BORDER,
+                cursor: online && promotableReady ? 'pointer' : 'default',
+              }}
+            >
+              <G g="send" s={14} /> Send to Takeoff
+            </button>
+            <button
+              onClick={openShare}
+              disabled={!online}
+              title={online
+                ? 'Create a read-only review link for outside reviewers.'
+                : 'Offline — review links need a connection.'}
+              style={{
+                ...iconBtn, gap: 6, display: 'flex', fontSize: 11, fontWeight: 700,
+                color: online ? ACCENT : 'rgba(255,255,255,0.25)',
+                borderColor: online ? ACCENT_25 : BORDER,
+                cursor: online ? 'pointer' : 'default',
+              }}
+            >
+              <G g="share" s={14} /> Share
+            </button>
           </div>
         </div>
 
@@ -1293,6 +1805,28 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
             ))}
             <span style={{ fontSize: 11, color: DIM, marginLeft: 6 }}>Width</span>
             <input type="range" min={1} max={10} value={inkWidth} onChange={(e) => setInkWidth(Number(e.target.value))} style={{ width: 80, accentColor: 'var(--brand-primary, #F59E0B)' }} />
+            {tool === 'measure' && (
+              <div style={{ display: 'inline-flex', border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden', marginLeft: 10 }}>
+                {MEASURE_MODES.map((mm, i) => (
+                  <button
+                    key={mm.m}
+                    onClick={() => { setMeasureMode(mm.m); setMeasurePts([]); setMsg(mm.hint); }}
+                    title={mm.hint}
+                    style={{
+                      background: measureMode === mm.m ? ACCENT_25 : 'transparent',
+                      border: 'none',
+                      borderLeft: i > 0 ? `1px solid ${BORDER}` : 'none',
+                      padding: '6px 12px',
+                      color: measureMode === mm.m ? ACCENT : DIM,
+                      fontSize: 11, fontWeight: measureMode === mm.m ? 800 : 500, letterSpacing: 0.3,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {mm.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {tool === 'measure' && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto' }}>
                 {ppf > 0 ? (
@@ -1341,6 +1875,7 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerCancel}
+          onDoubleClick={onDoubleClick}
           onPointerLeave={() => { setHover(null); setCursor(null); }}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', touchAction: 'none', cursor: drawingCursor }}
         />
@@ -1616,6 +2151,164 @@ export default function DrawingViewer({ projectId, drawing, me, online, initialP
         </div>
       )}
 
+      {/* SEND TO TAKEOFF modal (machined) */}
+      {promoteModal && (
+        <div style={{ ...panelStyle, borderColor: ACCENT_25 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <G g="send" s={16} />
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: TEXT }}>Send to Takeoff — {sheetLabel}</p>
+          </div>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: DIM }}>
+            Each checked measurement lands as a traced condition on the measured takeoff. Unassigned rows stay priceable there — you pick their assembly on that page.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {promoteModal.map((r, idx) => {
+              const calibrated = r.ppf !== null;
+              const options = ASSEMBLY_MENU.filter((a) => a.kind === r.kind);
+              return (
+                <div
+                  key={r.markupId}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                    background: 'rgba(11,14,19,0.55)', border: `1px solid ${calibrated && r.include ? ACCENT_25 : BORDER}`,
+                    borderRadius: 10, padding: '8px 10px', opacity: calibrated ? 1 : 0.55,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={r.include && calibrated}
+                    disabled={!calibrated}
+                    onChange={(e) => setPromoteModal((rows) => rows ? rows.map((x, i) => (i === idx ? { ...x, include: e.target.checked } : x)) : rows)}
+                    style={{ accentColor: 'var(--brand-primary, #F59E0B)', width: 16, height: 16, flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, textTransform: 'uppercase', color: DIM, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '2px 7px', flexShrink: 0 }}>
+                    {r.kind}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: calibrated ? GREEN : AMBER, whiteSpace: 'nowrap', flexShrink: 0, minWidth: 76 }}>
+                    {r.label}
+                  </span>
+                  {calibrated ? (
+                    <>
+                      <input
+                        value={r.name}
+                        onChange={(e) => setPromoteModal((rows) => rows ? rows.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)) : rows)}
+                        placeholder="Condition name"
+                        style={{ ...inp, flex: 1, minWidth: 140, fontSize: 12, padding: '7px 10px' }}
+                      />
+                      <select
+                        value={r.assemblyId}
+                        onChange={(e) => setPromoteModal((rows) => rows ? rows.map((x, i) => (i === idx ? { ...x, assemblyId: e.target.value } : x)) : rows)}
+                        style={{ ...inp, width: 220, fontSize: 12, padding: '7px 10px', cursor: 'pointer' }}
+                      >
+                        <option value="">Unassigned</option>
+                        {options.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: AMBER }}>calibrate first</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button onClick={() => setPromoteModal(null)} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '10px', color: DIM, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+            {(() => {
+              const n = promoteModal.filter((r) => r.include && r.ppf !== null).length;
+              return (
+                <button
+                  onClick={confirmPromote}
+                  disabled={!n}
+                  style={{ flex: 2, background: n ? 'var(--brand-primary, #F59E0B)' : 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, padding: '10px', color: n ? '#241500' : DIM, fontSize: 13, fontWeight: 800, cursor: n ? 'pointer' : 'default' }}
+                >
+                  {n ? `Send ${n} to Takeoff` : 'Nothing selected'}
+                </button>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* SHARE FOR REVIEW modal (machined) */}
+      {shareOpen && (
+        <div style={{ ...panelStyle, borderColor: ACCENT_25, position: 'relative' }}>
+          <button onClick={() => setShareOpen(false)} style={{ ...iconBtn, position: 'absolute', top: 10, right: 10, border: 'none' }} title="Close"><G g="close" s={15} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, paddingRight: 32 }}>
+            <G g="share" s={16} />
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: TEXT }}>Share for review — {drawing.sheet || drawing.name || 'this drawing'}</p>
+          </div>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: DIM }}>
+            Anyone with a link sees this drawing and its markups, read-only — no sign-in, no editing. Revoke a link to cut off access instantly.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              value={shareLabel}
+              onChange={(e) => setShareLabel(e.target.value)}
+              placeholder="Label (optional) — e.g. Owner review"
+              style={{ ...inp, flex: 1, minWidth: 180, fontSize: 12, padding: '8px 10px' }}
+              onKeyDown={(e) => { if (e.key === 'Enter') createShareLink(); }}
+            />
+            <button
+              onClick={createShareLink}
+              disabled={shareBusy}
+              style={{ background: shareBusy ? 'rgba(255,255,255,0.08)' : 'var(--brand-primary, #F59E0B)', border: 'none', borderRadius: 10, padding: '8px 14px', color: shareBusy ? DIM : '#241500', fontSize: 12, fontWeight: 800, cursor: shareBusy ? 'wait' : 'pointer', flexShrink: 0 }}
+            >
+              {shareBusy ? 'Creating…' : 'Create link'}
+            </button>
+          </div>
+          {shareCreated && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10, background: 'rgba(11,14,19,0.55)', border: `1px solid ${ACCENT_25}`, borderRadius: 10, padding: '8px 10px' }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: TEXT, fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={shareCreated.url}>
+                {shareCreated.url}
+              </span>
+              <button
+                onClick={() => copyText(shareCreated.url, 'created')}
+                style={{ background: ACCENT_12, border: `1px solid ${ACCENT_25}`, borderRadius: 8, padding: '5px 11px', color: copiedKey === 'created' ? GREEN : ACCENT, fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+              >
+                {copiedKey === 'created' ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          )}
+          {shareLinks.length > 0 && (
+            <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${BORDER}` }}>
+              <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 }}>Active links</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {shareLinks.map((l) => {
+                  const url = reviewUrl(l);
+                  return (
+                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(11,14,19,0.55)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '7px 10px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {l.label || 'Review link'}
+                        </p>
+                        <p style={{ margin: '1px 0 0', fontSize: 11, color: DIM, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {l.created_at ? `created ${relTime(l.created_at)}` : 'active'}{l.expires_at ? ` · expires ${relTime(l.expires_at)}` : ''}
+                        </p>
+                      </div>
+                      {url && (
+                        <button
+                          onClick={() => copyText(url, l.id)}
+                          style={{ background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '5px 11px', color: copiedKey === l.id ? GREEN : DIM, fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+                        >
+                          {copiedKey === l.id ? 'Copied' : 'Copy'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => revokeShareLink(l.id)}
+                        disabled={revokingId === l.id}
+                        style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 8, padding: '5px 11px', color: RED, fontSize: 11, fontWeight: 700, cursor: revokingId === l.id ? 'wait' : 'pointer', flexShrink: 0 }}
+                      >
+                        {revokingId === l.id ? '…' : 'Revoke'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* toast */}
       {toast && (
         <div style={{
@@ -1659,7 +2352,8 @@ function bboxOf(p: ParsedMarkup, curW: number): { x0: number; y0: number; x1: nu
         case 'freehand': pts = geomPoints(g); break;
         case 'rect': case 'cloud': { const r = geomRect(g); pts = [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y + r.h }]; break; }
         case 'circle': { const e = geomEllipse(g); pts = [{ x: e.cx - e.rx, y: e.cy - e.ry }, { x: e.cx + e.rx, y: e.cy + e.ry }]; break; }
-        case 'arrow': case 'measure': case 'callout': { const l = geomLine(g); pts = [{ x: l.x1, y: l.y1 }, { x: l.x2, y: l.y2 }]; break; }
+        case 'arrow': case 'callout': { const l = geomLine(g); pts = [{ x: l.x1, y: l.y1 }, { x: l.x2, y: l.y2 }]; break; }
+        case 'measure': pts = measureGeomPoints(g); break;
         case 'text': { const q = geomPoint(g); const fs = p.data.fontSize || 24; pts = [{ x: q.x, y: q.y - fs }, { x: q.x + fs * Math.max(3, (p.data.text?.length || 4) * 0.6), y: q.y + fs }]; break; }
         case 'stamp': { const q = geomPoint(g); const half = Math.max(40, (p.data.w || 2000) * 0.045); pts = [{ x: q.x - half, y: q.y - half * 0.45 }, { x: q.x + half, y: q.y + half * 0.45 }]; break; }
         default: return null;

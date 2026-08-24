@@ -10,6 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import { getAuthHeaders, getSupabaseBrowser } from '@/lib/supabase-browser';
 import { StandardSelect } from '@/components/ui/Select';
+import RevisionCompare, { overlaySupported } from '@/components/drawings/RevisionCompare';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 
 // ─── Color Palette ────────────────────────────────────────────────
@@ -137,6 +138,11 @@ export default function DocumentVersionsPage() {
   const [accessEmail, setAccessEmail] = useState('');
   const [accessRole, setAccessRole] = useState<'viewer' | 'editor' | 'admin'>('viewer');
 
+  // revision overlay (Bluebeam-style slip-sheet compare)
+  const [overlay, setOverlay] = useState<{ doc: Document; aId: string; bId: string } | null>(null);
+  const [overlayUrls, setOverlayUrls] = useState<{ a: string; b: string } | null>(null);
+  const [overlayErr, setOverlayErr] = useState('');
+
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
@@ -221,6 +227,55 @@ export default function DocumentVersionsPage() {
     if (view === 'access') { setAccessEmail(''); setAccessRole('viewer'); }
   };
   const closeModal = () => { setModalView('none'); setSelectedDoc(null); setUploadFile(null); setBulkFiles([]); };
+
+  // ─ Revision overlay control ─
+  const canOverlayVersion = (v: DocVersion) => overlaySupported(v.fileName, v.fileType);
+
+  /** Open the slip-sheet overlay for `targetId`, defaulting the other side to the previous version. */
+  const openOverlay = (doc: Document, targetId: string) => {
+    const idx = doc.versions.findIndex((v) => v.id === targetId);
+    if (idx < 0 || !canOverlayVersion(doc.versions[idx])) return;
+    const prev = [...doc.versions.slice(0, idx)].reverse().find(canOverlayVersion);
+    const other = prev || doc.versions.slice(idx + 1).find(canOverlayVersion);
+    if (!other) return;
+    const target = doc.versions[idx];
+    // A (red) = older revision, B (blue) = newer — deletions read red, additions blue
+    const [va, vb] = target.version < other.version ? [target, other] : [other, target];
+    setOverlay({ doc, aId: va.id, bId: vb.id });
+  };
+
+  // Resolve short-lived signed download URLs for the two revisions under compare.
+  useEffect(() => {
+    if (!overlay) { setOverlayUrls(null); setOverlayErr(''); return; }
+    let dead = false;
+    setOverlayUrls(null); setOverlayErr('');
+    (async () => {
+      try {
+        const h = await getAuthHeaders();
+        const sign = async (versionId: string): Promise<string> => {
+          const r = await fetch('/api/documents/versions/download', {
+            method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ versionId }),
+          });
+          if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || 'Could not get a file link');
+          return (await r.json()).url as string;
+        };
+        const [ua, ub] = await Promise.all([sign(overlay.aId), sign(overlay.bId)]);
+        if (!dead) setOverlayUrls({ a: ua, b: ub });
+      } catch (e: any) {
+        if (!dead) setOverlayErr(humanError(e, 'Could not load the revision files for comparison.'));
+      }
+    })();
+    return () => { dead = true; };
+  }, [overlay]);
+
+  // Esc closes the overlay.
+  useEffect(() => {
+    if (!overlay) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOverlay(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [overlay]);
 
   // ─ Core: upload a File to the private bucket via a signed upload URL ─
   async function uploadToBucket(file: File, documentId?: string) {
@@ -587,6 +642,25 @@ export default function DocumentVersionsPage() {
                         )}
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        {(() => {
+                          const supported = canOverlayVersion(ver);
+                          const hasOther = selectedDoc.versions.some((v) => v.id !== ver.id && canOverlayVersion(v));
+                          const can = supported && hasOther;
+                          return (
+                            <button
+                              style={{ ...sBtn(C.PURPLE, true), opacity: can ? 1 : 0.4, cursor: can ? 'pointer' : 'not-allowed' }}
+                              disabled={!can}
+                              title={can
+                                ? 'Overlay this revision against another (previous revision by default) — red = removed, blue = added'
+                                : supported
+                                  ? 'No other PDF or image revision to compare this one against'
+                                  : 'Visual compare supports PDF, PNG, JPG and WebP files only'}
+                              onClick={() => openOverlay(selectedDoc, ver.id)}
+                            >
+                              <ArrowsLeftRight size={13} weight="bold" /> Compare
+                            </button>
+                          );
+                        })()}
                         <button style={sBtn(C.BLUE, true)} onClick={() => download(ver)}><DownloadSimple size={13} weight="bold" /> Download</button>
                         {ver.status === 'Draft' && <button style={sBtn(C.AMBER, true)} onClick={() => doWorkflow(selectedDoc.id, ver.id, 'submit')}><PaperPlaneTilt size={13} weight="bold" /> Submit</button>}
                         {ver.status === 'Under Review' && <button style={sBtn(C.GREEN, true)} onClick={() => doWorkflow(selectedDoc.id, ver.id, 'approve')}><CheckCircle size={13} weight="bold" /> Approve</button>}
@@ -658,7 +732,27 @@ export default function DocumentVersionsPage() {
                       );
                     })}
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    {(() => {
+                      const can = canOverlayVersion(vA) && canOverlayVersion(vB) && vA.id !== vB.id;
+                      return (
+                        <button
+                          style={{ ...sBtn(C.PURPLE, false), marginRight: 'auto', opacity: can ? 1 : 0.4, cursor: can ? 'pointer' : 'not-allowed' }}
+                          disabled={!can}
+                          title={can
+                            ? 'Slip-sheet overlay — old linework red, new blue, unchanged dark'
+                            : vA.id === vB.id
+                              ? 'Pick two different versions to overlay'
+                              : 'Visual compare supports PDF, PNG, JPG and WebP files only'}
+                          onClick={() => {
+                            const [oa, ob] = vA.version <= vB.version ? [vA, vB] : [vB, vA];
+                            setOverlay({ doc: selectedDoc, aId: oa.id, bId: ob.id });
+                          }}
+                        >
+                          <ArrowsLeftRight size={14} weight="bold" /> Visual Overlay
+                        </button>
+                      );
+                    })()}
                     <button style={sBtn(C.BLUE, false)} onClick={() => download(vA)}><DownloadSimple size={14} weight="bold" /> {vA.versionLabel}</button>
                     <button style={sBtn(C.GREEN, false)} onClick={() => download(vB)}><DownloadSimple size={14} weight="bold" /> {vB.versionLabel}</button>
                   </div>
@@ -855,6 +949,65 @@ export default function DocumentVersionsPage() {
           </div>
         </div>
       )}
+
+      {/* ── Revision Overlay — full-screen slip-sheet compare ── */}
+      {overlay && (() => {
+        const va = overlay.doc.versions.find((v) => v.id === overlay.aId);
+        const vb = overlay.doc.versions.find((v) => v.id === overlay.bId);
+        if (!va || !vb) return null;
+        const pickable = overlay.doc.versions.filter(canOverlayVersion);
+        const opts = (excludeId: string) =>
+          pickable.filter((v) => v.id !== excludeId).map((v) => ({ value: v.id, label: `${v.versionLabel} (${v.revisionCode})` }));
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: C.BG, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px', background: C.RAISED, borderBottom: `1px solid ${C.BORDER}`, flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.GOLD, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ArrowsLeftRight size={16} weight="bold" /> Revision Overlay
+                </div>
+                <div style={{ fontSize: 11.5, color: C.DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{overlay.doc.title}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.RED, textTransform: 'uppercase', letterSpacing: 0.5 }}>Rev A · red</span>
+                <StandardSelect value={overlay.aId} onChange={(v) => setOverlay({ ...overlay, aId: v })} ariaLabel="Revision A (red)" width={190} options={opts(overlay.bId)} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: 0.5 }}>Rev B · blue</span>
+                <StandardSelect value={overlay.bId} onChange={(v) => setOverlay({ ...overlay, bId: v })} ariaLabel="Revision B (blue)" width={190} options={opts(overlay.aId)} />
+                <button
+                  style={sBtn('#334155', true)}
+                  title="Swap A and B"
+                  onClick={() => setOverlay({ ...overlay, aId: overlay.bId, bId: overlay.aId })}
+                ><ArrowsLeftRight size={13} weight="bold" /> Swap</button>
+                <button onClick={() => setOverlay(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: C.DIM, padding: 6, display: 'flex' }} aria-label="Close overlay">
+                  <X size={20} weight="bold" />
+                </button>
+              </div>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+              {overlayErr ? (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ ...sCard, borderLeft: `3px solid ${C.RED}`, display: 'flex', alignItems: 'center', gap: 10, maxWidth: 460 }}>
+                    <WarningCircle size={18} weight="fill" color={C.RED} />
+                    <span style={{ color: C.DIM, fontSize: 13 }}>{overlayErr}</span>
+                  </div>
+                </div>
+              ) : !overlayUrls ? (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ width: 32, height: 32, border: `3px solid ${C.BORDER}`, borderTopColor: C.GOLD, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+                    <div style={{ color: C.DIM, fontSize: 13 }}>Fetching revision files…</div>
+                  </div>
+                </div>
+              ) : (
+                <RevisionCompare
+                  key={`${overlay.aId}:${overlay.bId}`}
+                  a={{ url: overlayUrls.a, fileName: va.fileName, fileType: va.fileType, label: `${va.versionLabel} (${va.revisionCode})` }}
+                  b={{ url: overlayUrls.b, fileName: vb.fileName, fileType: vb.fileType, label: `${vb.versionLabel} (${vb.revisionCode})` }}
+                />
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </PremiumSurface>
   );
 }

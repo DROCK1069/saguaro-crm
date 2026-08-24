@@ -4,6 +4,13 @@
  * CANONICAL MODEL (one row per markup in drawing_markups):
  *   markup_type: 'freehand'|'cloud'|'arrow'|'text'|'callout'|'rect'|'circle'|'measure'|'stamp'|'link'
  *   data jsonb : { space:'image', w, h, geometry, style:{color,width}, ...kind extras }
+ *
+ * MEASURE payload (B2 contract): data adds { ppf: number|null, mkind?: 'linear'|
+ * 'area'|'count', calibration?: true }. Geometry by mkind — linear (legacy + new)
+ * {x1,y1,x2,y2} OR {points:[...]} polyline; area {points:[[x,y],...], closed:true};
+ * count {points:[[x,y],...]} (each point = one tick). Readers tolerate legacy rows:
+ * no mkind + x1/y1 present ⇒ linear. Values come from the canonical takeoff engine
+ * (lib/takeoff — READ-ONLY import; never edited here).
  *   geometry lives in IMAGE-PIXEL coordinates of the source page render;
  *   data.w/h record the reference image size so ANY viewport rescales exactly.
  *   page_number: 1-based for multi-page PDFs, null for single images.
@@ -14,7 +21,12 @@
  * best-effort and NEVER crash. Legacy rows are read-only in the editor.
  */
 
+import { areaSF, lengthLF } from '@/lib/takeoff/geometry';
+
 export type Pt = { x: number; y: number };
+
+/** Measure sub-kind (B2). Legacy rows (no mkind, x1/y1 present) read as 'linear'. */
+export type MeasureMarkupKind = 'linear' | 'area' | 'count';
 
 export type MarkupKind =
   | 'freehand' | 'cloud' | 'arrow' | 'text' | 'callout'
@@ -45,6 +57,10 @@ export interface CanonicalData {
   stamp?: StampName;
   /** measure: px-per-foot at capture time (per-sheet calibration lives here); null/absent = uncalibrated */
   ppf?: number | null;
+  /** measure: sub-kind — absent on legacy rows (x1/y1 present ⇒ linear) */
+  mkind?: MeasureMarkupKind;
+  /** measure: true on the row that stored a sheet calibration (a scale reference, not a takeoff quantity) */
+  calibration?: true;
   /** stamp PUNCH: the linked punch item + pin, for tooltips/deep links */
   punch_item_id?: string;
   pin_id?: string;
@@ -148,6 +164,8 @@ export function parseMarkup(row: MarkupRow): ParsedMarkup {
           fontSize: num(o.fontSize) || undefined,
           stamp: typeof o.stamp === 'string' ? (o.stamp as StampName) : undefined,
           ppf: typeof o.ppf === 'number' && o.ppf > 0 ? o.ppf : null,
+          mkind: o.mkind === 'linear' || o.mkind === 'area' || o.mkind === 'count' ? o.mkind : undefined,
+          calibration: o.calibration === true ? true : undefined,
           punch_item_id: typeof o.punch_item_id === 'string' ? o.punch_item_id : undefined,
           pin_id: typeof o.pin_id === 'string' ? o.pin_id : undefined,
         },
@@ -188,6 +206,61 @@ export function geomEllipse(g: Record<string, unknown>): { cx: number; cy: numbe
 }
 export function geomPoint(g: Record<string, unknown>): Pt {
   return { x: num(g.x), y: num(g.y) };
+}
+
+/* ── measure readers (B2 contract, legacy-tolerant) ─────────────────────── */
+
+/** Point from either canonical {x,y} or contract pair [x,y]. */
+function ptFrom(v: unknown): Pt | null {
+  if (Array.isArray(v) && v.length >= 2) {
+    const x = Number(v[0]), y = Number(v[1]);
+    if (Number.isFinite(x) && Number.isFinite(y)) return { x, y };
+    return null;
+  }
+  return toPt(v);
+}
+
+/** Effective measure sub-kind: mkind when present, else legacy x1/y1 ⇒ linear. */
+export function measureKindOf(data: Pick<CanonicalData, 'mkind' | 'geometry'>): MeasureMarkupKind {
+  if (data.mkind === 'area' || data.mkind === 'count' || data.mkind === 'linear') return data.mkind;
+  return 'linear';
+}
+
+/**
+ * Measure geometry → ordered points, tolerating every contract shape:
+ * {points:[{x,y},...]}, {points:[[x,y],...]}, or legacy line {x1,y1,x2,y2}.
+ */
+export function measureGeomPoints(g: Record<string, unknown>): Pt[] {
+  if (Array.isArray(g.points)) {
+    const pts = (g.points as unknown[]).map(ptFrom).filter((p): p is Pt => !!p);
+    if (pts.length) return pts;
+  }
+  if (g.x1 !== undefined || g.y1 !== undefined || g.x2 !== undefined) {
+    const l = geomLine(g);
+    return [{ x: l.x1, y: l.y1 }, { x: l.x2, y: l.y2 }];
+  }
+  return [];
+}
+
+/* ── measure path builders (SCREEN-space, like the other draw helpers) ──── */
+
+/** Polyline / polygon path builder: begins a path through pts; closes for areas. */
+export function traceMeasurePath(ctx: CanvasRenderingContext2D, pts: Pt[], close: boolean) {
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  if (close) ctx.closePath();
+}
+
+/** Count tick: a machined crosshair dot at a screen point. */
+export function traceCountTick(ctx: CanvasRenderingContext2D, p: Pt, r: number) {
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.moveTo(p.x - r * 1.7, p.y); ctx.lineTo(p.x - r * 0.6, p.y);
+  ctx.moveTo(p.x + r * 0.6, p.y); ctx.lineTo(p.x + r * 1.7, p.y);
+  ctx.moveTo(p.x, p.y - r * 1.7); ctx.lineTo(p.x, p.y - r * 0.6);
+  ctx.moveTo(p.x, p.y + r * 0.6); ctx.lineTo(p.x, p.y + r * 1.7);
 }
 
 /* ── drawing helpers (all take SCREEN-space coords) ─────────────────────── */
@@ -282,10 +355,23 @@ export function hitTestMarkup(parsed: ParsedMarkup, p: Pt, tol: number): boolean
         const v = Math.hypot((p.x - e.cx) / e.rx, (p.y - e.cy) / e.ry);
         return Math.abs(v - 1) * Math.min(e.rx, e.ry) <= tol;
       }
-      case 'arrow': case 'measure': case 'callout': {
+      case 'arrow': case 'callout': {
         const l = geomLine(g);
         if (distToSeg(p, { x: l.x1, y: l.y1 }, { x: l.x2, y: l.y2 }) <= tol) return true;
         if (parsed.kind === 'callout') return Math.hypot(p.x - l.x2, p.y - l.y2) <= tol * 3;
+        return false;
+      }
+      case 'measure': {
+        const mk = measureKindOf(parsed.data);
+        const pts = measureGeomPoints(g);
+        if (!pts.length) return false;
+        if (mk === 'count') {
+          for (const q of pts) if (Math.hypot(p.x - q.x, p.y - q.y) <= tol * 2) return true;
+          return false;
+        }
+        // linear polyline (incl. legacy two-point) + area ring edges (auto-closed)
+        const ring = mk === 'area' && pts.length >= 3 ? [...pts, pts[0]] : pts;
+        for (let i = 0; i < ring.length - 1; i++) if (distToSeg(p, ring[i], ring[i + 1]) <= tol) return true;
         return false;
       }
       case 'text': {
@@ -308,17 +394,41 @@ export function hitTestMarkup(parsed: ParsedMarkup, p: Pt, tol: number): boolean
 
 /* ── labels ─────────────────────────────────────────────────────────────── */
 
+/** Feet → honest ft-in display (12″ carry). */
+function ftIn(ft: number): string {
+  const whole = Math.floor(ft);
+  const inches = Math.round((ft - whole) * 12);
+  if (inches >= 12) return `${whole + 1}′-0″`;
+  return `${whole}′-${inches}″`;
+}
+
 /** Honest measurement label: feet when calibrated, px + 'uncalibrated' otherwise. */
 export function measureLabel(x1: number, y1: number, x2: number, y2: number, ppf: number | null | undefined): string {
   const px = Math.hypot(x2 - x1, y2 - y1);
-  if (ppf && ppf > 0) {
-    const ft = px / ppf;
-    const whole = Math.floor(ft);
-    const inches = Math.round((ft - whole) * 12);
-    if (inches >= 12) return `${whole + 1}′-0″`;
-    return `${whole}′-${inches}″`;
-  }
+  if (ppf && ppf > 0) return ftIn(px / ppf);
   return `${Math.round(px)} px · uncalibrated`;
+}
+
+/** Polyline label — chained length via the canonical engine (lib/takeoff lengthLF). */
+export function polylineMeasureLabel(points: Pt[], ppf: number | null | undefined): string {
+  if (points.length < 2) return '';
+  if (ppf && ppf > 0) return ftIn(lengthLF(points, ppf));
+  return `${Math.round(lengthLF(points, 1))} px · uncalibrated`;
+}
+
+/** Area label via the canonical engine (lib/takeoff areaSF): 'N,NNN SF' or honest px². */
+export function areaMeasureLabel(points: Pt[], ppf: number | null | undefined): string {
+  if (points.length < 3) return '';
+  if (ppf && ppf > 0) {
+    const sf = areaSF(points, ppf);
+    return `${sf.toLocaleString('en-US', { maximumFractionDigits: sf < 100 ? 1 : 0 })} SF`;
+  }
+  return `${Math.round(areaSF(points, 1)).toLocaleString('en-US')} px² · uncalibrated`;
+}
+
+/** Count label — one tick per point. */
+export function countMeasureLabel(n: number): string {
+  return `${n} EA`;
 }
 
 export function relTime(iso: string): string {
