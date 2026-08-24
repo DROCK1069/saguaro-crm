@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission, hasPermission } from '@/lib/permissions';
+import { hasLiveStock } from './stock';
 
 /** GET ?vertical=&q= — Materials Catalog price-comparison snapshot.
  *
  *  Returns catalog items (optionally filtered by vertical and/or a search
- *  term) with every vendor offer embedded, sorted cheapest-first, and the
- *  cheapest IN-STOCK offer flagged bestPrice. Also returns the distinct
- *  vertical list and the full vendor roster so the page can build its pill
- *  tabs and comparison columns without extra round-trips.
+ *  term) with every vendor offer embedded, sorted cheapest-first. Also
+ *  returns the distinct vertical list and the full vendor roster so the page
+ *  can build its pill tabs and comparison columns without extra round-trips.
  *
  *  Pricing is REFERENCE data (seeded snapshots, `as_of` stamped) — live
  *  vendor API feeds connect here when accounts are linked.
+ *
+ *  AVAILABILITY HONESTY: stock_status / qty_in_stock are still returned (a
+ *  real feed will populate them), but every offer also carries `source`,
+ *  `asOf`, and a server-computed `liveStock` flag from the shared
+ *  `hasLiveStock` rule. Reference rows have no inventory behind them, so
+ *  bestPrice is the cheapest quote and only a REAL feed may break a tie on
+ *  stock. Clients must gate every badge/quantity on `liveStock`.
  */
 export async function GET(req: NextRequest) {
   const g = await requirePermission(req, 'Projects', 'View');
@@ -52,7 +59,7 @@ export async function GET(req: NextRequest) {
     if (ids.length > 0) {
       const { data, error: priceErr } = await db
         .from('catalog_vendor_prices')
-        .select('item_id, price, unit, qty_in_stock, stock_status, lead_time_days, source, as_of, catalog_vendors(name, kind)')
+        .select('item_id, price, unit, qty_in_stock, stock_status, lead_time_days, source, as_of, catalog_vendors(name, kind, website)')
         .in('item_id', ids);
       if (priceErr) throw priceErr;
       priceRows = (data as any[]) || [];
@@ -71,14 +78,22 @@ export async function GET(req: NextRequest) {
     // Group offers per item. Prices can round-trip as strings — Number() first.
     const byItem = new Map<string, any[]>();
     let asOfMax: string | null = null;
+    // True only once a real vendor feed is wired up — drives the page's
+    // "no inventory feed connected" language.
+    let anyLiveStock = false;
     for (const r of priceRows) {
       if (r.as_of) {
         const s = String(r.as_of);
         if (!asOfMax || s > asOfMax) asOfMax = s; // ISO strings compare lexicographically
       }
+      // Stock fields stay in the payload for the day a feed populates them,
+      // but `liveStock` is the only thing a client may render a badge on.
+      const liveStock = hasLiveStock(r);
+      if (liveStock) anyLiveStock = true;
       const offer = {
         vendor: r.catalog_vendors?.name || 'Unknown vendor',
         vendorKind: r.catalog_vendors?.kind || null,
+        vendorWebsite: r.catalog_vendors?.website || null,
         price: Number(r.price) || 0,
         unit: r.unit || null,
         stockStatus: r.stock_status || null,
@@ -86,6 +101,7 @@ export async function GET(req: NextRequest) {
         leadTimeDays: r.lead_time_days != null ? Number(r.lead_time_days) || 0 : null,
         source: r.source || null,
         asOf: r.as_of || null,
+        liveStock,
         bestPrice: false,
       };
       const list = byItem.get(r.item_id) || [];
@@ -95,9 +111,10 @@ export async function GET(req: NextRequest) {
 
     const outItems = ((items as any[]) || []).map((it) => {
       const prices = (byItem.get(it.id) || []).sort((a, b) => a.price - b.price);
-      // BEST PRICE = cheapest in-stock offer; if nothing is in stock, the
-      // cheapest quote still gets the flag so the page always has an anchor.
-      const best = prices.find((p) => p.stockStatus === 'in_stock') || prices[0];
+      // BEST PRICE = the cheapest quote. A stock preference may ONLY break the
+      // tie when a real feed says so (hasLiveStock); seeded 'reference' stock
+      // is not inventory and must never reorder what the buyer sees.
+      const best = prices.find((p) => p.liveStock && p.stockStatus === 'in_stock') || prices[0];
       if (best) best.bestPrice = true;
       return {
         id: it.id,
@@ -124,6 +141,9 @@ export async function GET(req: NextRequest) {
         isNational: !!v.is_national,
       })),
       asOfMax,
+      // False until a real vendor inventory feed is connected — the page says
+      // so out loud instead of implying stock it cannot source.
+      hasLiveStockFeed: anyLiveStock,
       // Drives the Add-photo affordance client-side; the image route enforces
       // the same Projects/Full gate server-side regardless.
       canManageImages: hasPermission(g.perms, 'Projects', 'Full'),

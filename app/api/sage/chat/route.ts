@@ -7,6 +7,7 @@ import {
   buildSuggestionChips,
 } from '@/lib/sage-intelligence-v6';
 import { buildSageSystemPromptV6 } from '@/lib/sage-prompts-v6';
+import { hasLiveStock } from '@/app/api/catalog/stock';
 import type { ProjectContextData } from '@/lib/sage-prompts-v6';
 import {
   buildSageBrainSections,
@@ -148,20 +149,26 @@ async function executeSageChatTool(
           byItem.set(r.item_id, list);
         }
         const out = itemRows.map((it) => {
-          // Prices can round-trip as strings — Number() first. BEST PRICE =
-          // cheapest in-stock offer, else the cheapest quote (same rule as the
-          // Catalog page).
+          // Prices can round-trip as strings — Number() first.
+          // AVAILABILITY HONESTY (same rule as the Catalog page, shared helper):
+          // stock is only real when the row came from a live vendor feed. Every
+          // row today is source='reference' — seeded reference data — so no
+          // stockStatus is handed to the model at all. Sage must never tell a
+          // GC something is in stock because a seed script said so.
           const offers = (byItem.get(it.id) ?? [])
             .map((r) => ({
               vendor: r.catalog_vendors?.name || 'Unknown vendor',
               price: Number(r.price) || 0,
               unit: r.unit || it.unit || null,
-              stockStatus: r.stock_status || null,
+              ...(hasLiveStock(r) ? { stockStatus: r.stock_status || null } : {}),
+              availability: hasLiveStock(r) ? 'live vendor feed' : 'not tracked — verify with the vendor',
               source: r.source || null,
               asOf: r.as_of || null,
             }))
             .sort((a, b) => a.price - b.price);
-          const best = offers.find((o) => o.stockStatus === 'in_stock') || offers[0] || null;
+          // BEST PRICE = cheapest quote. A stock preference may only break the
+          // tie when a real feed backs it; today that never fires.
+          const best = offers.find((o) => hasLiveStock({ source: o.source, stock_status: (o as { stockStatus?: string }).stockStatus }) && (o as { stockStatus?: string }).stockStatus === 'in_stock') || offers[0] || null;
           return {
             name: it.name,
             category: it.category,

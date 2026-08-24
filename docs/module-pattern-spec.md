@@ -1,0 +1,119 @@
+# THE MODULE PATTERN — the law every module screen follows
+
+*Owner directive, 2026-08-24: "MATCH MIRROR THE STYLE U DID FOR MOBILE RFI WITH DESIGN.
+I WANT THAT SAME PATTERN DESIGN STRUCTURE ON ALL MODULES FOR THE PLATFORM
+ESPECIALLY MOBILE BUT THE WEB AND MOBILE MUST MATCH."*
+
+**The reference implementation is `app/rfis.tsx` in the mobile repo.** When this
+document and that file disagree, that file wins — read it before building.
+
+**Why this exists:** of 95 mobile module screens, exactly **2** (`rfis.tsx`,
+`punch.tsx`) carried the full kit. The other 93 are why a GC opens the app and
+says it looks like a stubbed knock-off. This spec closes that gap.
+
+---
+
+## THE SIX LAYERS
+
+Every module screen has all six. A module missing one is not done.
+
+### 1. Header with identity
+Module accent color · title · **live count** of the number that matters
+(open RFIs, overdue items, unbilled dollars) · primary create action in the header.
+- Mobile: `<ScreenHeader title count onAdd accent={moduleAccent('x').hex} />`
+- Web: `<ModuleHero accentColor eyebrow title />` with the primary action in the hero.
+
+### 2. Control row
+**Filter chips carrying live counts per status**, then **sort chips** beneath.
+- Render filters only when there is more than one row; sort only when > 1 row.
+- Mobile: `<FilterChips options={[{value,label,count}]} />` then `<SortChips>` +
+  `useSortState(screenKey)` so the choice persists per screen.
+- Web: `ListToolbar` filters + the sortable `DataTable` (`tableId` persists the sort).
+- Filter/sort state persists per user per screen. Never resets on navigation.
+
+### 3. Insight band — ONE genuinely computed metric
+RFIs show **open-RFI aging** (days outstanding, warmer = older). Every module gets
+the equivalent: a real number computed from that module's real rows.
+
+**HONESTY RULE — the hard one.** The insight must be derived from actual data.
+If a module has no meaningful metric, render the **status/count breakdown** instead.
+**Never** invent a chart, a trend line, a benchmark, or a percentage the data cannot
+support. A truthful count beats a decorative graph. If fewer than 3 rows exist,
+skip the band entirely rather than charting noise.
+
+Suggested honest metrics by module family (derive, do not fabricate):
+- **Aging / turnaround** (RFIs, submittals, punch, change orders, approvals):
+  days outstanding per open item.
+- **Money** (invoices, pay apps, budget, commitments, direct costs, contracts):
+  billed vs. remaining, retainage held, overdue dollars — all `Number()`-coerced
+  because money columns are TEXT in this schema.
+- **Schedule** (schedule, milestones, deliveries, look-ahead): items due this week
+  vs. overdue.
+- **Compliance** (insurance, lien waivers, W-9, certified payroll, safety):
+  current vs. expiring vs. expired counts.
+- **Volume/activity** (daily logs, photos, meetings, time): entries per day over
+  the last 14 days.
+
+### 4. The row card anatomy
+In this order, every module:
+1. **Identifier** (`#12`) + **status pills** (status, plus Urgent / Overdue when true)
+   + **row menu** (edit / archive / restore).
+2. **Title**, clamped to 2 lines.
+3. **Body preview**, truncated.
+4. **Derived highlight box** when the module has a "resolution" concept — the RFI
+   Answer box, with **author and timestamp**. (Punch: the fix. CO: the approval.)
+5. **Attribution line** — ball-in-court / assignee / vendor.
+6. **Footer** — the date that matters + badges (attachments, photos).
+7. **"Syncing" pill** whenever the row is a pending offline write.
+
+Web renders the same information as table columns + an expandable row or detail
+panel; the *information and its order* must match, not the pixels.
+
+### 5. Three crafted empty states — never one generic void
+- **First-run**: accented medallion icon · headline · a subtitle that TEACHES what
+  the module is for · primary action button · **tappable starter chips that
+  pre-fill the create form** (RFIs: common questions). Starters must be real and
+  module-appropriate.
+- **Filtered-empty**: different icon, "Try a different filter."
+- **Archived-empty**: its own copy.
+- **Loading** is a skeleton, never a blank screen.
+- **Error** is inline with a Retry, never a silent blank.
+- **No-project** is a *picker*, never a wall telling the user to go elsewhere.
+
+### 6. The create sheet teaches while you type
+In this order:
+1. **FormHeader** — accent, icon, module eyebrow, one-line subtitle saying what
+   this record does.
+2. **SmartCreate StatStrip — what the system ALREADY KNOWS.** The next number and
+   what it follows, the current open/overdue load, the default assignee. Real
+   values from real rows.
+3. **AUTO chip + FieldHint** on every pre-filled value, in plain English, saying
+   *why*: "Response due in 7 days — the standard turnaround. Tap the date to
+   change it." The chip flips to EDITED the moment the user overrides it.
+4. **FieldGroups** — labeled, icon'd sections (Request / Routing), never a flat
+   wall of inputs.
+5. **FormKit primitives** — `KitInput` / `KitSelect` / `PrioritySegments` /
+   `DateField` with required markers, real placeholders, helper text.
+6. **Voice dictation** on every long-form text field.
+7. **Unsaved-work guard** (`useUnsavedGuard`) + draft autosave on every create flow.
+
+---
+
+## MODULE IDENTITY
+One accent per module from `lib/module-identity.ts` (mirrored byte-identical on
+both repos), threaded through header, medallion, chips, field groups, and pills.
+Accents live on chips/badges/eyebrows — never on body text or large fills.
+
+## WEB ↔ MOBILE PARITY
+"Match" means **same anatomy, same information, same order, same accent, same
+counts, same auto-fill explanations, same starter actions** — expressed through
+each platform's kit (`components/ui/premium.tsx` on web, `components/FormKit` +
+`SmartCreate` + `FilterChips` + `SortChips` on mobile). A GC moving from laptop to
+phone must recognize one product. Pixel-identical is not the goal; recognizable
+sameness is.
+
+## WHAT "DONE" MEANS FOR A MODULE
+All six layers present · every save reports honestly (never a fake success) ·
+every record lands on the ACTIVE project · offline writes show a Syncing pill ·
+`tsc` clean · `npm run audit` 0 new · and the insight band is computed from real
+rows or absent. Anything less is not done, and must be reported as not done.

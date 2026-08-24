@@ -1,12 +1,18 @@
 'use client';
 /**
- * Materials Catalog — cross-vendor price + stock comparison per vertical,
- * with a Procore-style ordering flow: search + logical sort, select products
- * with quantities, pick a project, and issue vendor-grouped purchase orders
- * in one action (each PO commits into the CSI budget automatically).
+ * Materials Catalog — cross-vendor price comparison per vertical, with a
+ * Procore-style ordering flow: search + logical sort, select products with
+ * quantities, pick a project, and issue vendor-grouped purchase orders in one
+ * action (each PO commits into the CSI budget automatically).
  *
  * Pricing is HONESTLY labeled as reference data — live vendor API feeds
  * connect here when accounts are linked.
+ *
+ * AVAILABILITY HONESTY: this page shows a stock badge or quantity ONLY when
+ * the offer came from a real vendor feed (`hasLiveStock`). Every row today is
+ * a seeded 'reference' snapshot with no store, branch, account, or feed behind
+ * it, so it renders "Availability not tracked" plus the real path to act —
+ * check availability with the vendor, draft the PO, vendor confirms.
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useProjects } from '@/lib/hooks/useProjects';
@@ -41,10 +47,18 @@ import {
   X,
   Info,
   ArrowSquareOut,
+  Globe,
+  MagnifyingGlassPlus,
 } from '@phosphor-icons/react';
 import { PremiumSurface, ModuleHero, SectionCard, StatStrip, PremiumEmpty, IconChip, goldButtonStyle, ghostButtonStyle } from '@/components/ui/premium';
 import { SortableTh, usePersistedSort, useSortedRows } from '@/app/app/_shared/table-sort';
 import { moduleAccent } from '@/lib/module-identity';
+import {
+  hasLiveStock,
+  AVAILABILITY_UNTRACKED_LABEL,
+  AVAILABILITY_UNTRACKED_LINE,
+  ORDER_PATH_SENTENCE,
+} from '@/app/api/catalog/stock';
 
 const GOLD = '#F59E0B', DARK = '#0a0a0a', BORDER = 'rgba(255,255,255,0.12)', DIM = '#CBD5E1', TEXT = '#FFFFFF', GREEN = '#3dd68c', AMBER = '#FBBF24', RED = '#c03030';
 
@@ -62,6 +76,8 @@ const titleCase = (s: string) => s.replace(/[_-]+/g, ' ').replace(/\w\S*/g, (w) 
 interface Offer {
   vendor: string;
   vendorKind: string | null;
+  /** catalog_vendors.website — the real place to price and order this. */
+  vendorWebsite: string | null;
   price: number;
   unit: string | null;
   stockStatus: string | null;
@@ -69,6 +85,8 @@ interface Offer {
   leadTimeDays: number | null;
   source: string | null;
   asOf: string | null;
+  /** Server-computed via hasLiveStock — the ONLY gate for showing stock. */
+  liveStock: boolean;
   bestPrice: boolean;
 }
 interface CatalogItem {
@@ -86,8 +104,10 @@ interface CatalogItem {
 interface CatalogData {
   items: CatalogItem[];
   verticals: string[];
-  vendors: { id: string; name: string; kind: string | null; isNational: boolean }[];
+  vendors: { id: string; name: string; kind: string | null; website: string | null; isNational: boolean }[];
   asOfMax: string | null;
+  /** False until a real vendor inventory feed is connected — today, always false. */
+  hasLiveStockFeed?: boolean;
   /** True when the caller holds Projects/Full — server-computed, drives the Add-photo affordance. */
   canManageImages?: boolean;
 }
@@ -105,27 +125,103 @@ function RefChip() {
   );
 }
 
-/** Hover/tap provenance popover body for one offer — capture date + source. */
-function ProvPop({ offer }: { offer: Offer }) {
+/** Web search that checks TODAY's price and availability for a real SKU at a
+ *  real vendor — the existing "Verify" action, now named for what it does. */
+const checkAvailabilityUrl = (item: CatalogItem, vendor: string) =>
+  `https://www.google.com/search?q=${encodeURIComponent(`${item.skuHint || item.name} ${vendor} price availability`)}`;
+
+/** Normalize catalog_vendors.website into an href, or null when unset. */
+const vendorSiteHref = (website: string | null | undefined) => {
+  const s = String(website || '').trim();
+  if (!s) return null;
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+};
+
+/**
+ * Availability for one offer.
+ *
+ * A stock badge or quantity renders ONLY when hasLiveStock(offer) is true —
+ * i.e. the price row came from a real vendor feed, in which case it is stamped
+ * with the vendor and the feed's as-of date. Reference rows (all of them
+ * today) get the honest muted line instead: no color, no number, no claim.
+ */
+function Availability({ offer, compact = false }: { offer: Offer; compact?: boolean }) {
+  if (!hasLiveStock(offer)) {
+    return (
+      <span
+        title={`${AVAILABILITY_UNTRACKED_LINE}. No inventory feed is connected for ${offer.vendor}.`}
+        style={{ display: 'inline-flex', alignItems: 'center', fontSize: compact ? 9.5 : 10, fontWeight: 600, color: 'rgba(255,255,255,0.42)', whiteSpace: 'nowrap' }}
+      >
+        {compact ? AVAILABILITY_UNTRACKED_LABEL : AVAILABILITY_UNTRACKED_LINE}
+      </span>
+    );
+  }
+  const s = String(offer.stockStatus || '').toLowerCase();
+  const [label, color, bg] =
+    s === 'in_stock' ? ['In stock', GREEN, 'rgba(34,197,94,0.12)'] :
+    s === 'limited' ? ['Limited', AMBER, 'rgba(245,158,11,0.14)'] :
+    s === 'out_of_stock' ? ['Out of stock', RED, 'rgba(192,48,48,0.14)'] :
+    ['Special order', 'rgba(255,255,255,0.55)', 'rgba(255,255,255,0.06)'];
+  const qty = offer.qtyInStock != null ? `${offer.qtyInStock.toLocaleString('en-US')} ` : '';
   return (
-    <span className="catProvPop" role="tooltip">
-      <span style={{ display: 'block', fontSize: 10, fontWeight: 900, letterSpacing: 0.6, color: AMBER, textTransform: 'uppercase' as const, marginBottom: 3 }}>Reference price</span>
-      <span style={{ display: 'block', fontSize: 11, color: DIM, lineHeight: 1.45 }}>
-        Captured {fmtDate(offer.asOf)}{offer.source ? ` · ${offer.source}` : ''} — verify with the vendor before ordering.
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '1px 7px', borderRadius: 999, background: bg, color, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.04 }}>
+        {qty}{label}
+      </span>
+      {/* A live number is only honest when it says whose feed and when. */}
+      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.42)' }}>
+        {offer.vendor} · {fmtDate(offer.asOf)}
       </span>
     </span>
   );
 }
 
-function StockBadge({ status }: { status: string | null }) {
-  const s = String(status || '').toLowerCase();
-  const [label, color, bg] =
-    s === 'in_stock' ? ['In stock', GREEN, 'rgba(34,197,94,0.12)'] :
-    s === 'limited' ? ['Limited', AMBER, 'rgba(245,158,11,0.14)'] :
-    s ? ['Order', 'rgba(255,255,255,0.55)', 'rgba(255,255,255,0.06)'] :
-    ['—', 'rgba(255,255,255,0.35)', 'transparent'];
+/**
+ * Hover/tap popover for one offer — the point-of-decision panel. Carries the
+ * price provenance, the honest availability state, and the REAL path to act:
+ * check availability with the vendor, then draft the PO with the Add button.
+ */
+function ProvPop({ offer, item }: { offer: Offer; item: CatalogItem }) {
+  const site = vendorSiteHref(offer.vendorWebsite);
+  const live = hasLiveStock(offer);
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '1px 7px', borderRadius: 999, background: bg, color, fontSize: 9.5, fontWeight: 800, letterSpacing: 0.04, whiteSpace: 'nowrap' }}>{label}</span>
+    <span className="catProvPop" role="tooltip">
+      <span style={{ display: 'block', fontSize: 11.5, fontWeight: 800, color: TEXT, marginBottom: 2 }}>{offer.vendor}</span>
+      <span style={{ display: 'block', fontSize: 10, fontWeight: 900, letterSpacing: 0.6, color: AMBER, textTransform: 'uppercase' as const, marginBottom: 3 }}>Reference price</span>
+      <span style={{ display: 'block', fontSize: 11, color: DIM, lineHeight: 1.45 }}>
+        Captured {fmtDate(offer.asOf)}{offer.source ? ` · ${offer.source}` : ''} — not a live quote.
+      </span>
+      <span style={{ display: 'block', fontSize: 11, color: live ? DIM : 'rgba(255,255,255,0.5)', lineHeight: 1.45, marginTop: 4 }}>
+        {live
+          ? `Availability from the ${offer.source} feed as of ${fmtDate(offer.asOf)}.`
+          : `${AVAILABILITY_UNTRACKED_LINE} — no store, branch, or inventory feed is connected.`}
+      </span>
+      <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginTop: 8 }}>
+        <a
+          href={checkAvailabilityUrl(item, offer.vendor)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pmBtn"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: AMBER, textDecoration: 'none', border: '1px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.10)', borderRadius: 6, padding: '3px 8px' }}
+        >
+          <MagnifyingGlassPlus size={11} weight="bold" /> Check availability
+        </a>
+        {site && (
+          <a
+            href={site}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pmBtn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: DIM, textDecoration: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '3px 8px' }}
+          >
+            <Globe size={11} weight="bold" /> Vendor site
+          </a>
+        )}
+      </span>
+      <span style={{ display: 'block', fontSize: 9.5, color: 'rgba(255,255,255,0.4)', lineHeight: 1.45, marginTop: 7 }}>
+        {ORDER_PATH_SENTENCE}
+      </span>
+    </span>
   );
 }
 
@@ -256,6 +352,27 @@ export default function CatalogPage() {
     for (const it of filtered) for (const p of it.prices) present.add(p.vendor);
     return Array.from(present).sort((a, b) => a.localeCompare(b));
   }, [filtered]);
+
+  /** Real, clickable vendor sites for the vendors quoting in this view — the
+   *  order path that exists, surfaced where a Buy button would otherwise sit.
+   *  Vendors with no website on file are simply omitted (never faked). */
+  const vendorLinks = useMemo(() => {
+    const siteByName = new Map<string, string>();
+    for (const v of data?.vendors || []) {
+      const href = vendorSiteHref(v.website);
+      if (href) siteByName.set(v.name, href);
+    }
+    for (const it of filtered) {
+      for (const p of it.prices) {
+        if (siteByName.has(p.vendor)) continue;
+        const href = vendorSiteHref(p.vendorWebsite);
+        if (href) siteByName.set(p.vendor, href);
+      }
+    }
+    return vendorCols
+      .map((name) => ({ name, href: siteByName.get(name) || null }))
+      .filter((v): v is { name: string; href: string } => !!v.href);
+  }, [data, filtered, vendorCols]);
 
   // Column-header sorting (R11 sweep) — layered over the toolbar sort: an
   // active column sort overrides it (and pauses category group headers);
@@ -404,7 +521,7 @@ export default function CatalogPage() {
             project_id: projectId, vendor_name: vendor, status: 'draft',
             description: `Materials Catalog order — ${rows.length} item${rows.length === 1 ? '' : 's'} at best reference pricing`,
             line_items, subtotal, total: subtotal, cost_code,
-            notes: `Created from the Materials Catalog. Prices are reference pricing captured ${fmtDate(data?.asOfMax)} — confirm with vendor before issuing.`,
+            notes: `Created from the Materials Catalog. Prices are reference pricing captured ${fmtDate(data?.asOfMax)}; availability is not tracked (no vendor inventory feed connected). Confirm price and stock with ${vendor} before issuing.`,
           }),
         });
         const d = await r.json();
@@ -432,7 +549,7 @@ export default function CatalogPage() {
         .catStep:active{background:rgba(245,158,11,0.28)!important}
         @media (prefers-reduced-motion: reduce){.catAdd:active,.catPill:active{transform:none!important}}
         .catProv{position:relative;display:inline-block;outline:none}
-        .catProv .catProvPop{display:none;position:absolute;right:0;bottom:calc(100% + 6px);z-index:60;width:232px;padding:9px 11px;border-radius:9px;background:#141416;border:1px solid rgba(245,158,11,0.35);box-shadow:0 8px 24px rgba(245,158,11,0.10),inset 0 1px 0 rgba(255,255,255,0.06);text-align:left;white-space:normal;cursor:default}
+        .catProv .catProvPop{display:none;position:absolute;right:0;bottom:calc(100% + 6px);z-index:60;width:264px;padding:10px 12px;border-radius:9px;background:#141416;border:1px solid rgba(245,158,11,0.35);box-shadow:0 8px 24px rgba(245,158,11,0.10),inset 0 1px 0 rgba(255,255,255,0.06);text-align:left;white-space:normal;cursor:default}
         .catProv:hover .catProvPop,.catProv:focus-within .catProvPop{display:block}
         .catImgBtn{opacity:0;transition:opacity .15s ease}
         tr:hover .catImgBtn,.catImgBtn:focus-visible{opacity:1}
@@ -466,12 +583,13 @@ export default function CatalogPage() {
               </button>
               {pricingInfo && (
                 <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 80, width: 304, background: '#141416', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 12, padding: '14px 16px', boxShadow: '0 12px 32px rgba(245,158,11,0.10), inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left' }}>
-                  <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: 0.8, color: AMBER, textTransform: 'uppercase' as const, marginBottom: 8 }}>How pricing works</div>
+                  <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: 0.8, color: AMBER, textTransform: 'uppercase' as const, marginBottom: 8 }}>How pricing and ordering work</div>
                   {[
                     ['1. Reference snapshot', 'Every price is seeded reference data stamped with its capture date — never a live quote.'],
-                    ['2. Verify', 'The Verify link on any row runs a live web search for that SKU and vendor, so you check today\'s price yourself.'],
-                    ['3. PO draft', 'Ordering creates draft POs grouped by vendor, with the reference-pricing note written onto each PO.'],
-                    ['4. Your vendor confirms', 'Final pricing is confirmed by your vendor before the PO is issued. Vendor API feeds connect here when accounts are linked.'],
+                    ['2. No stock claims', 'Availability is not tracked. A stock badge appears only on rows fed by a connected vendor feed, stamped with that vendor and date.'],
+                    ['3. Check availability', 'The Check availability link on any offer searches that exact SKU and vendor, so you confirm today\'s price and stock yourself.'],
+                    ['4. Draft the PO', 'Adding items creates draft POs grouped by vendor, with the reference-pricing note written onto each PO.'],
+                    ['5. Your vendor confirms', 'The vendor confirms price and stock before the PO is issued. Vendor API feeds connect here when accounts are linked.'],
                   ].map(([h, b]) => (
                     <div key={h} style={{ marginBottom: 8 }}>
                       <div style={{ fontSize: 11.5, fontWeight: 800, color: TEXT }}>{h}</div>
@@ -541,10 +659,45 @@ export default function CatalogPage() {
 
       <SectionCard
         title={vertical === 'all' ? 'Price Comparison — All Verticals' : `Price Comparison — ${titleCase(vertical)}`}
-        subtitle={`Reference pricing · as of ${fmtDate(data?.asOfMax)} · vendor API feeds connect here when accounts are linked`}
+        subtitle={`Reference pricing · as of ${fmtDate(data?.asOfMax)} · availability not tracked — vendor feeds connect here when accounts are linked`}
         icon={<Package size={17} weight="duotone" color={GOLD} />}
         flush
       >
+        {/* ── Honest availability + ordering explainer. Sits with the pricing
+             provenance so a seeded snapshot is never read as live, orderable
+             inventory, and so the real path to act is on screen. ── */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '11px 16px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(245,158,11,0.05)' }}>
+          <Info size={14} weight="bold" color={AMBER} style={{ flex: 'none', marginTop: 2 }} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11.5, color: TEXT, fontWeight: 700, lineHeight: 1.45 }}>
+              {data?.hasLiveStockFeed
+                ? 'Stock shows only on rows backed by a connected vendor feed — every other row is availability-not-tracked.'
+                : 'No vendor inventory feed is connected, so availability is not tracked and no stock is shown.'}
+            </div>
+            <div style={{ fontSize: 11, color: DIM, lineHeight: 1.5, marginTop: 2 }}>
+              Prices are reference snapshots captured {fmtDate(data?.asOfMax)}, not live quotes. {ORDER_PATH_SENTENCE}
+            </div>
+            {vendorLinks.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, alignItems: 'center', marginTop: 8 }}>
+                <span style={{ fontSize: 9.5, fontWeight: 900, letterSpacing: 0.6, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const }}>Vendor sites</span>
+                {vendorLinks.map((v) => (
+                  <a
+                    key={v.name}
+                    href={v.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pmBtn"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, color: DIM, textDecoration: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '3px 8px', whiteSpace: 'nowrap' as const }}
+                    title={`Open ${v.name}'s website to price and order`}
+                  >
+                    <Globe size={11} weight="bold" /> {v.name}
+                    <ArrowSquareOut size={9} weight="bold" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         {loading ? (
           <div style={{ padding: 20 }}>
             {[0, 1, 2, 3, 4].map((i) => (
@@ -687,26 +840,42 @@ export default function CatalogPage() {
                               <span className="catProv" tabIndex={0}>
                                 <span style={{ fontWeight: 800, color: GOLD, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(best.price)}</span>
                                 <RefChip />
-                                <ProvPop offer={best} />
+                                <ProvPop offer={best} item={it} />
                               </span>
                               <span style={{ fontSize: 10.5, color: DIM, marginLeft: 6 }}>{best.vendor}</span>
-                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <StockBadge status={best.stockStatus} />
-                                {best.leadTimeDays != null && best.leadTimeDays > 0 && (
+                              {/* Availability, then the real order path — no Buy button exists,
+                                  because nothing here can be bought without the vendor. */}
+                              <div style={{ marginTop: 3 }}><Availability offer={best} /></div>
+                              <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+                                {/* Lead time comes off the same seeded row as stock — only a real feed may show it. */}
+                                {hasLiveStock(best) && best.leadTimeDays != null && best.leadTimeDays > 0 && (
                                   <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                                     <Truck size={10} color="rgba(255,255,255,0.45)" />{best.leadTimeDays}d lead
                                   </span>
                                 )}
                                 <a
-                                  href={`https://www.google.com/search?q=${encodeURIComponent(`${it.skuHint || it.name} ${best.vendor}`)}`}
+                                  href={checkAvailabilityUrl(it, best.vendor)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="pmBtn"
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9.5, fontWeight: 800, color: DIM, textDecoration: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '2px 7px', whiteSpace: 'nowrap' as const }}
-                                  title="Search the live price for this SKU and vendor on the web"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9.5, fontWeight: 800, color: AMBER, textDecoration: 'none', border: '1px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.10)', borderRadius: 6, padding: '2px 7px', whiteSpace: 'nowrap' as const }}
+                                  title={`Search today's price and availability for this SKU at ${best.vendor}`}
                                 >
-                                  <ArrowSquareOut size={10} weight="bold" /> Verify
+                                  <MagnifyingGlassPlus size={10} weight="bold" /> Check availability
                                 </a>
+                                {vendorSiteHref(best.vendorWebsite) && (
+                                  <a
+                                    href={vendorSiteHref(best.vendorWebsite) as string}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="pmBtn"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9.5, fontWeight: 800, color: DIM, textDecoration: 'none', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '2px 7px', whiteSpace: 'nowrap' as const }}
+                                    title={`Open ${best.vendor}'s website`}
+                                  >
+                                    <Globe size={10} weight="bold" /> {best.vendor}
+                                    <ArrowSquareOut size={9} weight="bold" />
+                                  </a>
+                                )}
                               </div>
                             </div>
                           ) : (
@@ -720,7 +889,7 @@ export default function CatalogPage() {
                           return (
                             <td key={v} style={{ padding: '6px 8px', textAlign: 'right' as const, verticalAlign: 'top' }}>
                               <span className="catProv" tabIndex={0}>
-                              <ProvPop offer={o} />
+                              <ProvPop offer={o} item={it} />
                               <div style={{
                                 display: 'inline-block', textAlign: 'right', padding: '4px 8px', borderRadius: 8,
                                 background: isBest ? 'linear-gradient(160deg, rgba(245,158,11,0.16), rgba(245,158,11,0.06))' : 'transparent',
@@ -732,8 +901,8 @@ export default function CatalogPage() {
                                   {isBest && <span style={{ marginLeft: 5, fontSize: 8.5, fontWeight: 900, letterSpacing: 0.06, color: '#FBBF24' }}>BEST</span>}
                                 </div>
                                 <div style={{ marginTop: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5 }}>
-                                  <StockBadge status={o.stockStatus} />
-                                  {o.leadTimeDays != null && o.leadTimeDays > 0 && (
+                                  <Availability offer={o} compact />
+                                  {hasLiveStock(o) && o.leadTimeDays != null && o.leadTimeDays > 0 && (
                                     <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' as const }}>{o.leadTimeDays}d</span>
                                   )}
                                 </div>
@@ -767,7 +936,7 @@ export default function CatalogPage() {
             <ShoppingCartSimple size={20} weight="fill" color={GOLD} />
             <div>
               <div style={{ fontWeight: 800, color: TEXT, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>{cartCount} item{cartCount === 1 ? '' : 's'} · {fmtMoney(cartTotal)}</div>
-              <div style={{ fontSize: 11, color: DIM }}>Best reference offer per item · POs grouped by vendor · your vendor confirms pricing before issue</div>
+              <div style={{ fontSize: 11, color: DIM }}>Best reference offer per item · availability not tracked · POs grouped by vendor · your vendor confirms price and stock before issue</div>
             </div>
           </div>
           <div style={{ flex: 1 }} />
