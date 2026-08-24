@@ -1,11 +1,18 @@
 'use client';
 /**
- * Time Clock (web) — real clock in/out wired to time_entries (timezone + GPS),
- * a weekly timesheet from the shared deterministic lib/timeclock engine (same as
- * iOS), PTO/sick logging, and manual add/edit. Resolves the signed-in user's
- * employees row by email. RLS-scoped browser client.
+ * Time Clock (web) — clock in/out goes through the canonical timeclock API
+ * (/api/timeclock/status|in|out) so this screen and the field screen agree on one
+ * server-side truth: open-shift detection, idempotent clock-in, honest failures,
+ * and the clock_punches audit trail all live on the server. This page no longer
+ * writes clock events directly (that path had no dupe guard — two tabs or a
+ * double-click opened two shifts).
+ *
+ * Everything else is unchanged: the weekly timesheet still comes from the shared
+ * deterministic lib/timeclock engine (same as iOS) reading time_entries through the
+ * RLS-scoped browser client, and manual add/edit + PTO/sick logging still write
+ * directly (they are not clock events).
  */
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
 import { getSupabaseBrowser, ensureBrowserSession } from '@/lib/supabase-browser';
@@ -29,6 +36,35 @@ async function geo(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((res) => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { timeout: 6000 }); });
 }
 
+/** The canonical shift shape returned by /api/timeclock/* — the server's truth. */
+type Shift = {
+  id: string;
+  projectId: string | null;
+  workDate: string;
+  clockIn: string;
+  clockOut: string | null;
+  status: string;
+  timezone: string | null;
+  costCodeId: string | null;
+  csiDivision: string | null;
+  hoursWorked: number | null;
+  mealBreakMins: number | null;
+};
+
+/** POST to the timeclock API. Never throws on a non-2xx — the caller decides what each status means. */
+async function postClock(path: string, body: Record<string, unknown>): Promise<{ status: number; json: any }> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    cache: 'no-store',
+    body: JSON.stringify(body),
+  });
+  let json: any = null;
+  try { json = await res.json(); } catch { /* non-JSON body — handled as an unknown failure below */ }
+  return { status: res.status, json };
+}
+
 export default function TimeClockPage() {
   const sb = getSupabaseBrowser();
   const [emp, setEmp] = useState<any>(null);
@@ -39,14 +75,37 @@ export default function TimeClockPage() {
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [msg, setMsg] = useState('');
+  const [msgTone, setMsgTone] = useState<'ok' | 'err'>('ok');
   const [manual, setManual] = useState<any | null>(null);
   const [leave, setLeave] = useState<any | null>(null);
   const [csiDiv, setCsiDiv] = useState('');
+  // Server truth for the clock. `statusLoaded` stays false until /status answers once,
+  // so an unreachable API falls back to the read path instead of faking "clocked out".
+  const [shift, setShift] = useState<Shift | null>(null);
+  const [statusLoaded, setStatusLoaded] = useState(false);
+  const inflight = useRef(false); // double-tap guard that beats a React re-render
+
+  const say = useCallback((text: string, tone: 'ok' | 'err' = 'ok') => { setMsg(text); setMsgTone(tone); }, []);
 
   const loadEntries = useCallback(async (empId: string) => {
     const { data } = await sb.from('time_entries').select('id, project_id, work_date, clock_in, clock_out, hours_worked, regular_hours, overtime_hours, total_hours, status, timezone, entry_type, meal_break_mins, csi_division, cost_code_description').eq('employee_id', empId).order('work_date', { ascending: false }).order('clock_in', { ascending: false }).limit(80);
     setEntries(data ?? []);
   }, [sb]);
+
+  /** Ask the server whether we are on the clock. Returns the payload, or null if it could not be reached. */
+  const syncStatus = useCallback(async (): Promise<any | null> => {
+    try {
+      const res = await fetch('/api/timeclock/status', { credentials: 'same-origin', cache: 'no-store' });
+      if (!res.ok) return null;
+      const j = await res.json();
+      setShift((j?.shift ?? null) as Shift | null);
+      setStatusLoaded(true);
+      return j;
+    } catch (e) {
+      console.error(e);
+      return null; // leave statusLoaded alone — never invent a clock state we could not verify
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -59,15 +118,55 @@ export default function TimeClockPage() {
       const { data: prof } = await sb.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle();
       const tid = (prof as any)?.tenant_id ?? user.id;
       setTenantId(tid);
-      let { data: e } = await sb.from('employees').select('id, regular_rate, overtime_rate, full_name, first_name').eq('email', user.email).maybeSingle();
-      if (!e) { const ins = await sb.from('employees').insert({ tenant_id: tid, email: user.email, first_name: user.email.split('@')[0], last_name: '—', is_active: true }).select('id, regular_rate, overtime_rate, full_name, first_name').maybeSingle(); e = ins.data; }
+      // The API resolves the caller to an employees row server-side; prefer its answer so this page
+      // reads the SAME employee the clock writes against (and so we never create a rival row).
+      const st = await syncStatus();
+      const empCols = 'id, regular_rate, overtime_rate, full_name, first_name';
+      let e: any = null;
+      if (st?.employee?.id) {
+        const { data } = await sb.from('employees').select(empCols).eq('id', st.employee.id).maybeSingle();
+        e = data ?? { id: st.employee.id, full_name: st.employee.name ?? null, first_name: null, regular_rate: null, overtime_rate: null };
+      }
+      if (!e) {
+        const byEmail = await sb.from('employees').select(empCols).eq('email', user.email).maybeSingle();
+        e = byEmail.data;
+        if (!e) { const ins = await sb.from('employees').insert({ tenant_id: tid, email: user.email, first_name: user.email.split('@')[0], last_name: '—', is_active: true }).select(empCols).maybeSingle(); e = ins.data; }
+      }
       if (e) { setEmp(e); loadEntries(e.id); }
     })();
-  }, [sb, loadEntries]);
+  }, [sb, loadEntries, syncStatus]);
 
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
-  const openShift = useMemo(() => entries.find((e) => e.status === 'clocked_in') ?? null, [entries]);
+  // Re-check the server when the tab comes back or once a minute, so a clock-out on the phone
+  // (or in another tab) is reflected here instead of two surfaces disagreeing.
+  useEffect(() => {
+    const onFocus = () => { if (document.visibilityState !== 'hidden') void syncStatus(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    const t = setInterval(onFocus, 60000);
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus); clearInterval(t); };
+  }, [syncStatus]);
+
+  // The open shift is whatever the SERVER says is open. Before /status has answered once we fall
+  // back to the entries read path so the screen is never blank-but-wrong.
+  const openShift = useMemo(() => {
+    if (!statusLoaded) return entries.find((e) => e.status === 'clocked_in') ?? null;
+    if (!shift || shift.clockOut) return null;
+    const local = entries.find((e) => e.id === shift.id);
+    return {
+      id: shift.id,
+      project_id: shift.projectId,
+      work_date: shift.workDate,
+      clock_in: shift.clockIn,
+      clock_out: null,
+      status: 'clocked_in',
+      timezone: shift.timezone,
+      csi_division: shift.csiDivision,
+      cost_code_description: local?.cost_code_description ?? null,
+      meal_break_mins: shift.mealBreakMins,
+    } as any;
+  }, [statusLoaded, shift, entries]);
   const rates = () => { const reg = Number(emp?.regular_rate ?? 0) || 0; return { regular_rate_used: reg, overtime_rate_used: Number(emp?.overtime_rate ?? 0) || round2(reg * 1.5), doubletime_rate_used: round2(reg * 2) }; };
 
   // Map rows → engine entries → this week's timesheet.
@@ -93,24 +192,61 @@ export default function TimeClockPage() {
   const pendingCount = entries.filter((e) => e.status === 'pending').length;
   const fmtMoney = (n: number) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Clock in / out go through the canonical API. The server owns open-shift detection, the
+  // dupe guard, the hours math, and the clock_punches audit row — this screen only reports it.
   const clockIn = async () => {
-    if (!emp || !projectId || busy) return; setBusy(true); setMsg('');
+    if (busy || inflight.current) return;
+    if (!projectId && projects.length > 0) { say('Pick a project before clocking in.', 'err'); return; }
+    inflight.current = true; setBusy(true); setMsg('');
     try {
-      const nowISO = new Date().toISOString(); const g = await geo();
-      await sb.from('time_entries').insert({ tenant_id: tenantId, employee_id: emp.id, project_id: projectId, work_date: localDay(), clock_in: nowISO, status: 'clocked_in', timezone: TZ, entry_type: 'regular', ...(csiDiv ? { csi_division: csiDiv, cost_code_description: CSI_DIVISIONS[csiDiv]?.name || null } : {}), ...(g ? { gps_clock_in: g } : {}) });
-      await loadEntries(emp.id); setMsg('Clocked in');
-    } catch (e: any) { console.error(e); setMsg(humanError(e, 'Something went wrong. Please try again.')); } setBusy(false);
+      const g = await geo();
+      const { status, json } = await postClock('/api/timeclock/in', {
+        ...(projectId ? { projectId } : {}),
+        ...(csiDiv ? { csiDivision: csiDiv } : {}),
+        ...(g ? { lat: g.lat, lng: g.lng } : {}),
+        clientTime: new Date().toISOString(),
+      });
+      if (status >= 200 && status < 300 && json?.ok && json?.shift) {
+        setShift(json.shift as Shift); setStatusLoaded(true);
+        // alreadyOpen means the server refused to open a second shift — adopt the one it returned.
+        say(json.alreadyOpen ? 'You were already on the clock — showing your open shift.' : 'Clocked in');
+        if (emp) await loadEntries(emp.id);
+      } else {
+        say(humanError(json, "Couldn't clock you in. Please try again."), 'err');
+        await syncStatus(); // never leave the UI showing a state the server did not confirm
+      }
+    } catch (e: any) { console.error(e); say(humanError(e, "Couldn't reach the clock. Check your connection and try again."), 'err'); }
+    inflight.current = false; setBusy(false);
   };
+
   const clockOut = async () => {
-    if (!openShift || busy) return; setBusy(true);
+    if (busy || inflight.current) return;
+    if (!openShift) { say('You are not on the clock.', 'err'); return; }
+    inflight.current = true; setBusy(true); setMsg('');
     try {
-      const nowISO = new Date().toISOString(); const g = await geo();
+      const g = await geo();
       const meal = Number(openShift.meal_break_mins ?? 30) || 0;
-      const gross = Math.max(0, (Date.parse(nowISO) - Date.parse(openShift.clock_in)) / 3600000);
-      const hrs = round2(Math.max(0, gross - meal / 60)); const { regular, overtime } = splitOT(hrs);
-      await sb.from('time_entries').update({ clock_out: nowISO, hours_worked: hrs, regular_hours: round2(regular), overtime_hours: round2(overtime), meal_break_mins: meal, status: 'pending', ...rates(), ...(g ? { gps_clock_out: g } : {}) }).eq('id', openShift.id);
-      await loadEntries(emp.id); setMsg(`Clocked out — ${hrs.toFixed(2)} h`);
-    } catch (e: any) { console.error(e); setMsg(humanError(e, 'Something went wrong. Please try again.')); } setBusy(false);
+      const { status, json } = await postClock('/api/timeclock/out', {
+        shiftId: openShift.id,
+        breakMinutes: meal,
+        ...(g ? { lat: g.lat, lng: g.lng } : {}),
+        clientTime: new Date().toISOString(),
+      });
+      if (status >= 200 && status < 300 && json?.ok) {
+        setShift(null); setStatusLoaded(true);
+        const worked = Number(json?.hours?.worked ?? json?.shift?.hoursWorked ?? 0) || 0;
+        say(`Clocked out — ${worked.toFixed(2)} h`);
+        if (emp) await loadEntries(emp.id);
+      } else if (status === 409) {
+        await syncStatus();
+        say(humanError(json, 'You are not on the clock.'), 'err');
+        if (emp) await loadEntries(emp.id);
+      } else {
+        say(humanError(json, "Couldn't clock you out. Please try again."), 'err');
+        await syncStatus();
+      }
+    } catch (e: any) { console.error(e); say(humanError(e, "Couldn't reach the clock. Check your connection and try again."), 'err'); }
+    inflight.current = false; setBusy(false);
   };
 
   const saveManual = async () => {
@@ -124,16 +260,16 @@ export default function TimeClockPage() {
       if (manual.id) await sb.from('time_entries').update({ work_date: manual.date, clock_in: inISO, clock_out: outISO, hours_worked: hrs, regular_hours: round2(regular), overtime_hours: round2(overtime), meal_break_mins: meal, csi_division: manual.csi || null, cost_code_description: manual.csi ? (CSI_DIVISIONS[manual.csi]?.name || null) : null, ...rates() }).eq('id', manual.id);
       else await sb.from('time_entries').insert({ tenant_id: tenantId, employee_id: emp.id, project_id: projectId, work_date: manual.date, clock_in: inISO, clock_out: outISO, hours_worked: hrs, regular_hours: round2(regular), overtime_hours: round2(overtime), meal_break_mins: meal, status: 'pending', timezone: TZ, entry_type: 'regular', ...(manual.csi ? { csi_division: manual.csi, cost_code_description: CSI_DIVISIONS[manual.csi]?.name || null } : {}), ...rates() });
       setManual(null); await loadEntries(emp.id);
-    } catch (e: any) { console.error(e); setMsg(humanError(e, 'Something went wrong. Please try again.')); }
+    } catch (e: any) { console.error(e); say(humanError(e, "Couldn't save that time entry."), 'err'); }
   };
   const saveLeave = async () => {
     if (!emp || !leave) return;
-    try { await sb.from('time_entries').insert({ tenant_id: tenantId, employee_id: emp.id, work_date: leave.date, entry_type: leave.type, hours_worked: parseFloat(leave.hours) || 8, total_hours: parseFloat(leave.hours) || 8, status: 'pending', timezone: TZ }); setLeave(null); await loadEntries(emp.id); setMsg('Logged'); } catch (e: any) { console.error(e); setMsg(humanError(e, 'Something went wrong. Please try again.')); }
+    try { await sb.from('time_entries').insert({ tenant_id: tenantId, employee_id: emp.id, work_date: leave.date, entry_type: leave.type, hours_worked: parseFloat(leave.hours) || 8, total_hours: parseFloat(leave.hours) || 8, status: 'pending', timezone: TZ }); setLeave(null); await loadEntries(emp.id); say('Logged'); } catch (e: any) { console.error(e); say(humanError(e, "Couldn't log that leave."), 'err'); }
   };
   const del = async (id: string) => { await sb.from('time_entries').delete().eq('id', id); if (emp) loadEntries(emp.id); };
   const submitWeek = async () => {
     if (!week || !emp) return;
-    try { await sb.from('timesheets').insert({ tenant_id: tenantId, employee_id: emp.id, employee_name: emp.full_name || emp.first_name, week_ending: localDay(new Date(new Date(thisWeekKey + 'T12:00').getTime() + 6 * 86400000)), hours_regular: week.regularHours, hours_overtime: week.overtimeHours, status: 'submitted', submitted_at: new Date().toISOString() }); setMsg('Week submitted for approval'); } catch (e: any) { console.error(e); setMsg(humanError(e, 'Something went wrong. Please try again.')); }
+    try { await sb.from('timesheets').insert({ tenant_id: tenantId, employee_id: emp.id, employee_name: emp.full_name || emp.first_name, week_ending: localDay(new Date(new Date(thisWeekKey + 'T12:00').getTime() + 6 * 86400000)), hours_regular: week.regularHours, hours_overtime: week.overtimeHours, status: 'submitted', submitted_at: new Date().toISOString() }); say('Week submitted for approval'); } catch (e: any) { console.error(e); say(humanError(e, "Couldn't submit the week for approval."), 'err'); }
   };
 
   const inp: React.CSSProperties = { background: DARK, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, padding: '9px 11px', fontSize: 14, width: '100%' };
@@ -187,7 +323,7 @@ export default function TimeClockPage() {
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><MapPin size={13} color={GOLD} />GPS stamps in &amp; out</span>
             </div>
             <button onClick={clockedIn ? clockOut : clockIn} disabled={busy || !emp} className="pmBtn" style={{ ...btn, marginTop: 16, background: clockedIn ? RED : GREEN, color: '#fff', fontSize: 16, padding: '13px 26px', display: 'inline-flex', alignItems: 'center', gap: 8, opacity: busy || !emp ? 0.6 : 1, borderRadius: 12 }}>{clockedIn ? <Stop size={20} weight="fill" /> : <Play size={20} weight="fill" />}{clockedIn ? 'Clock out' : 'Clock in'}</button>
-            {msg && <div style={{ color: msg.includes('submitted') || msg.includes('Clocked') || msg === 'Logged' ? GREEN : DIM, fontSize: 13, marginTop: 10 }}>{msg}</div>}
+            {msg && <div style={{ color: msgTone === 'err' ? RED : GREEN, fontSize: 13, marginTop: 10 }}>{msg}</div>}
           </SectionCard>
 
           {week && (

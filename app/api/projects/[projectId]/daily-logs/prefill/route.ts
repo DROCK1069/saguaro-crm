@@ -6,9 +6,9 @@ import { requirePermission } from '@/lib/permissions';
  * Daily-log prefill — assembles the one-tap draft the auto-first composer
  * opens with. The GC should only type what the system cannot already know:
  *
- *   crewCount           distinct people clocked in on the date, read from BOTH
- *                       clock systems (web timesheet_entries clock events AND
- *                       mobile time_entries rows — two disjoint tables)
+ *   crewCount           distinct people clocked in on the date: time_entries
+ *                       shifts (every surface writes there) plus clock_punches
+ *                       audit rows, de-duplicated by identity
  *   manpowerByTrade     active crews joined with their rosters, grouped by trade
  *   subcontractorsOnSite distinct companies on the project team
  *   deliveriesToday     deliveries logged for the date (table probed in a try)
@@ -44,38 +44,36 @@ export async function GET(
     weatherNote: 'stamped automatically on save',
   };
 
-  // ── Headcount from the clocks — BOTH systems, disjoint populations ──
+  // ── Headcount from the clock — one canonical shift table plus the punch
+  // audit trail. time_entries is where every surface records a shift; a punch
+  // in clock_punches can exist without one (geofence auto-punches), so both
+  // are counted and de-duplicated by identity.
   const people = new Set<string>();
   try {
-    // Web clock: timesheet_entries rows are clock events with a JSON note.
-    const { data } = await db
-      .from('timesheet_entries')
-      .select('employee_name, notes')
-      .eq('tenant_id', user.tenantId)
-      .eq('project_id', projectId)
-      .eq('work_date', date);
-    for (const r of (data ?? []) as any[]) {
-      let isClock = true;
-      try {
-        const n = JSON.parse(r.notes ?? '');
-        isClock = n?.type === 'clock_in' || n?.type === 'clock_out';
-      } catch { /* non-JSON note — still a person on the date */ }
-      if (isClock && r.employee_name) people.add(`w:${String(r.employee_name).trim().toLowerCase()}`);
-    }
-  } catch { /* web clock unavailable — mobile still counts */ }
-  try {
-    // Mobile clock: time_entries keyed by employee_id.
     const { data } = await db
       .from('time_entries')
-      .select('employee_id, employee_name')
+      .select('employee_id')
       .eq('tenant_id', user.tenantId)
       .eq('project_id', projectId)
       .eq('work_date', date);
     for (const r of (data ?? []) as any[]) {
-      const key = r.employee_id ?? r.employee_name;
-      if (key) people.add(`m:${String(key).trim().toLowerCase()}`);
+      if (r.employee_id) people.add(`e:${String(r.employee_id).trim().toLowerCase()}`);
     }
-  } catch { /* mobile clock unavailable */ }
+  } catch { /* shift table unavailable — punches still count */ }
+  try {
+    // Punch audit trail: keyed by name (its only identity column), counted on
+    // the punch's local date.
+    const { data } = await db
+      .from('clock_punches')
+      .select('employee_name, punched_at')
+      .eq('tenant_id', user.tenantId)
+      .eq('project_id', projectId)
+      .gte('punched_at', `${date}T00:00:00`)
+      .lte('punched_at', `${date}T23:59:59.999`);
+    for (const r of (data ?? []) as any[]) {
+      if (r.employee_name) people.add(`n:${String(r.employee_name).trim().toLowerCase()}`);
+    }
+  } catch { /* punch trail unavailable */ }
   out.crewCount = people.size;
 
   // ── Manpower by trade — active crews joined with their rosters ──

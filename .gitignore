@@ -1,6 +1,10 @@
 node_modules/
 .next/
-out/
+# Anchored to the repo root: this is the Next.js static-export directory.
+# Unanchored, `out/` silently swallowed app/api/timeclock/out/ — an API route
+# named "out" — which would have shipped a time clock with no clock-out
+# endpoint. Any route segment legitimately named "out" must stay trackable.
+/out/
 .env
 .env.*
 !.env.example

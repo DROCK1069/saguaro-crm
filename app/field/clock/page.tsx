@@ -1,11 +1,23 @@
 'use client';
 /**
- * Saguaro Control Systems — Clock In / Clock Out
- * GPS-stamped time tracking with Foreman Crew Clock view.
+ * Saguaro Control Systems — Field Clock In / Out
+ *
+ * SERVER IS THE TRUTH. This screen owns no clock state of its own: on-clock
+ * status, elapsed shift, and hours all come from GET /api/timeclock/status,
+ * and punches go through POST /api/timeclock/in | /api/timeclock/out, which
+ * write the canonical `time_entries` row (plus the clock_punches audit trail).
+ *
+ * Deliberately absent:
+ *   - /api/clock/* (wrote timesheet_entries with the anon key; every insert was
+ *     rejected by RLS and clock-out returned a fake `demo:true` success).
+ *   - localStorage as the source of truth for on-clock state.
+ *   - client-computed hours posted to the server.
+ *   - offline queueing of punches — a queued punch cannot be reconciled against
+ *     server-side open-shift detection, and this screen never claims a success
+ *     the server did not give it.
  */
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { enqueue } from '@/lib/field-db';
 import { CSI_DIVISIONS } from '@/lib/construction-intelligence';
 import FieldPageHeader from '../FieldPageHeader';
 import { scopedFieldIcon } from '../field-icons';
@@ -14,576 +26,615 @@ import {
   hapticSuccess,
   hapticError,
   hapticMedium,
-  hapticLight,
   showToast,
+  onAppResume,
 } from '@/lib/native';
 
-const GOLD   = '#F59E0B';
-const RAISED = '#141416';
-const BORDER = 'rgba(255,255,255,0.12)';
-const TEXT   = '#FFFFFF';
-const DIM    = '#CBD5E1';
-const GREEN  = '#22C55E';
-const RED    = '#EF4444';
-const AMBER  = '#F59E0B';
+// ─── Canonical contract types (app/api/timeclock/*) ──────────────────────────
 
-// Canonical CSI-division cost codes — full taxonomy from lib/construction-intelligence.
-const COST_CODES = [...Object.entries(CSI_DIVISIONS).map(([code, d]) => `${code} — ${d.name}`), 'Other'];
-
-interface ClockState {
-  clockedIn: boolean;
-  clockInTime: string | null;
-  employeeName: string;
-  projectId: string;
-  projectName: string;
-  latitude: number | null;
-  longitude: number | null;
-  costCode: string;
-}
-
-interface CrewMember {
+interface Shift {
   id: string;
-  name: string;
-  status: 'clocked_in' | 'clocked_out' | 'on_break';
-  clock_in_time?: string;
-  total_hours?: number;
-  cost_code?: string;
+  projectId: string | null;
+  workDate: string;
+  clockIn: string;
+  clockOut: string | null;
+  status: string;
+  timezone: string | null;
+  costCodeId: string | null;
+  csiDivision: string | null;
+  hoursWorked: number | null;
+  mealBreakMins: number | null;
 }
 
-const CLOCK_KEY = 'saguaro_clock_state';
+interface StatusPayload {
+  onClock: boolean;
+  shift: Shift | null;
+  todayHours: number;
+  weekHours: number;
+  employee: { id: string; name: string } | null;
+  /** Optional — rendered only if the server actually sends it. */
+  recentShifts?: Shift[];
+}
 
-function getStoredClock(): ClockState {
+interface ClockOutPayload {
+  ok: true;
+  shift: Shift;
+  hours: { worked: number; regular: number; overtime: number; doubletime: number };
+}
+
+interface ProjectRow { id: string; name: string }
+interface CostCodeRow { id: string; code: string; name: string }
+
+type Banner = { tone: 'ok' | 'warn' | 'error'; text: string };
+type GpsState = 'idle' | 'getting' | 'ok' | 'unavailable';
+
+// ─── Cost-code select encoding ───────────────────────────────────────────────
+// One glove-friendly picker feeds two contract fields. Project cost codes are
+// sent as costCodeId; CSI divisions as csiDivision.
+const CC_PREFIX = 'cc:';
+const CSI_PREFIX = 'csi:';
+
+// ─── Formatting ──────────────────────────────────────────────────────────────
+
+const pad = (n: number) => n.toString().padStart(2, '0');
+
+/** HH:MM:SS — the big ticking shift clock. */
+function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+}
+
+function formatTime(iso: string | null): string {
+  if (!iso) return '--';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '--' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatDayLabel(workDate: string | null): string {
+  if (!workDate) return '';
+  const d = new Date(`${workDate}T12:00:00`);
+  return isNaN(d.getTime()) ? workDate : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+const hrs = (n: number | null | undefined) => `${(Number(n) || 0).toFixed(2)}h`;
+
+/** Pull the server's real message off a non-2xx response — never invent one. */
+async function readError(res: Response, fallback: string): Promise<string> {
   try {
-    const s = localStorage.getItem(CLOCK_KEY);
-    return s ? JSON.parse(s) : { clockedIn: false, clockInTime: null, employeeName: '', projectId: '', projectName: '', latitude: null, longitude: null, costCode: 'General Conditions' };
-  } catch { return { clockedIn: false, clockInTime: null, employeeName: '', projectId: '', projectName: '', latitude: null, longitude: null, costCode: 'General Conditions' }; }
+    const body = await res.json();
+    const msg = body && typeof body.error === 'string' ? body.error.trim() : '';
+    if (msg) return msg;
+  } catch {
+    /* body was not JSON — fall through to the status line */
+  }
+  return `${fallback} (HTTP ${res.status})`;
 }
-function saveClock(state: ClockState) {
-  try { localStorage.setItem(CLOCK_KEY, JSON.stringify(state)); } catch { /* ok */ }
+
+function netMessage(e: unknown): string {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return 'No connection. The punch was NOT recorded — reconnect and try again.';
+  }
+  return e instanceof Error && e.message ? e.message : 'Could not reach the server. The punch was NOT recorded.';
 }
-function formatDuration(ms: number): string {
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  return `${h}h ${m.toString().padStart(2, '0')}m`;
-}
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 function ClockPage() {
   const searchParams = useSearchParams();
-  const projectId = searchParams.get('projectId') || '';
+  const urlProjectId = searchParams.get('projectId') || '';
 
-  const [clock, setClock] = useState<ClockState>(getStoredClock);
-  const [elapsed, setElapsed] = useState(0);
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
-  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<StatusPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [banner, setBanner] = useState<Banner | null>(null);
+
+  const [pending, setPending] = useState<'in' | 'out' | null>(null);
+  const inFlight = useRef(false);
+
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [costCodes, setCostCodes] = useState<CostCodeRow[]>([]);
+  const [projectId, setProjectId] = useState(urlProjectId);
+  const [costSel, setCostSel] = useState('');
+  const [mealBreak, setMealBreak] = useState('0');
+
+  const [gps, setGps] = useState<GpsState>('idle');
   const [online, setOnline] = useState(true);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [gpsStatus, setGpsStatus] = useState<'idle' | 'getting' | 'ok' | 'denied'>('idle');
-  const [breakMinutes, setBreakMinutes] = useState('0');
-  const [todayEntries, setTodayEntries] = useState<Array<{ name: string; hours: number; time: string }>>([]);
+  const [tick, setTick] = useState(() => Date.now());
 
-  // Crew view state
-  const [viewMode, setViewMode] = useState<'my' | 'crew'>('my');
-  const [crewMembers, setCrewMembers] = useState<CrewMember[]>([]);
-  const [crewLoading, setCrewLoading] = useState(false);
-  const [crewClockName, setCrewClockName] = useState('');
-  const [crewClockCostCode, setCrewClockCostCode] = useState('General Conditions');
-  const [crewAction, setCrewAction] = useState<'clock_in' | null>(null);
-  const [crewSaving, setCrewSaving] = useState(false);
-  const [crewMsg, setCrewMsg] = useState('');
-  const [userRole, setUserRole] = useState('');
+  // ─── Server status — the single source of truth ────────────────────────────
 
-  useEffect(() => {
-    setOnline(navigator.onLine);
-    window.addEventListener('online', () => setOnline(true));
-    window.addEventListener('offline', () => setOnline(false));
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
+    try {
+      const res = await fetch('/api/timeclock/status', { cache: 'no-store' });
+      if (res.status === 401) {
+        setLoadError('Your session has expired. Sign in again to use the clock.');
+        return;
+      }
+      if (!res.ok) throw new Error(await readError(res, 'Could not load your clock status.'));
+      const data = (await res.json()) as StatusPayload;
+      setStatus(data);
+      setLoadError('');
+    } catch (e) {
+      // Keep the last known server truth on screen rather than blanking it —
+      // but say plainly that this view may be stale.
+      setLoadError(netMessage(e));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Elapsed timer
+  useEffect(() => { void load(); }, [load]);
+
+  // Re-sync whenever the screen comes back to the user.
   useEffect(() => {
-    if (!clock.clockedIn || !clock.clockInTime) return;
-    const update = () => setElapsed(Date.now() - new Date(clock.clockInTime!).getTime());
-    update();
-    const id = setInterval(update, 15000);
+    const refresh = () => { void load(true); };
+    const onVis = () => { if (document.visibilityState === 'visible') refresh(); };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVis);
+    const offResume = onAppResume(refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVis);
+      offResume();
+    };
+  }, [load]);
+
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+
+  const shift = status?.onClock ? status.shift : null;
+  const onClock = shift !== null;
+
+  // One-second tick, only while a shift is open. Keyed on the clock-in stamp so
+  // a background status refresh does not churn the interval.
+  const shiftStart = shift?.clockIn ?? null;
+  useEffect(() => {
+    if (!shiftStart) return;
+    setTick(Date.now());
+    const id = setInterval(() => setTick(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [clock.clockedIn, clock.clockInTime]);
+  }, [shiftStart]);
 
-  // Load projects
+  // ─── Pickers ───────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    fetch('/api/projects/list').then((r) => r.ok ? r.json() : null).then((d) => setProjects(d?.projects || [])).catch(() => {});
+    fetch('/api/projects/list')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const rows: ProjectRow[] = (d?.projects || [])
+          .filter((p: { id?: string; name?: string }) => p?.id)
+          .map((p: { id: string; name?: string }) => ({ id: p.id, name: p.name || 'Untitled project' }));
+        setProjects(rows);
+      })
+      .catch(() => setProjects([]));
   }, []);
 
-  // Pre-fill project from URL
   useEffect(() => {
-    if (projectId && projects.length > 0 && !clock.clockedIn) {
-      const p = projects.find((x) => x.id === projectId);
-      if (p) updateClock({ projectId: p.id, projectName: p.name });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, projects]);
+    if (!projectId) { setCostCodes([]); return; }
+    let cancelled = false;
+    fetch(`/api/cost-codes/list?projectId=${encodeURIComponent(projectId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        const rows: CostCodeRow[] = (d?.costCodes || [])
+          .filter((c: { id?: string; is_active?: boolean | null }) => c?.id && c.is_active !== false)
+          .map((c: { id: string; code?: string; name?: string }) => ({
+            id: c.id, code: c.code || '', name: c.name || 'Cost code',
+          }));
+        setCostCodes(rows);
+      })
+      .catch(() => { if (!cancelled) setCostCodes([]); });
+    return () => { cancelled = true; };
+  }, [projectId]);
 
-  // Load user role
-  useEffect(() => {
+  const projectName = useCallback(
+    (id: string | null) => (id ? projects.find((p) => p.id === id)?.name || 'Project' : ''),
+    [projects],
+  );
+
+  /** Human label for whatever cost code the OPEN shift actually carries. */
+  const shiftCostLabel = useMemo(() => {
+    if (!shift) return '';
+    if (shift.csiDivision) {
+      return `Div ${shift.csiDivision} — ${CSI_DIVISIONS[shift.csiDivision]?.name || 'cost coded'}`;
+    }
+    if (shift.costCodeId) {
+      const cc = costCodes.find((c) => c.id === shift.costCodeId);
+      return cc ? `${cc.code} — ${cc.name}` : 'Cost coded';
+    }
+    return '';
+  }, [shift, costCodes]);
+
+  // ─── GPS — best effort, never blocks the punch ─────────────────────────────
+
+  const captureGps = useCallback(async (): Promise<{ lat: number; lng: number } | null> => {
+    setGps('getting');
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const bail = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), 5000); });
     try {
-      const role = localStorage.getItem('saguaro_user_role') || '';
-      setUserRole(role);
-    } catch { /* ok */ }
-  }, []);
-
-  // Load crew data when switching to crew view
-  useEffect(() => {
-    if (viewMode !== 'crew') return;
-    const pid = clock.projectId || projectId;
-    if (!pid) return;
-    setCrewLoading(true);
-    const today = new Date().toISOString().split('T')[0];
-    fetch(`/api/projects/${pid}/timesheets?date=${today}`)
-      .then((r) => r.ok ? r.json() : { members: [] })
-      .then((d) => setCrewMembers(d.members || d.crew || d.timesheets || []))
-      .catch(() => {})
-      .finally(() => setCrewLoading(false));
-  }, [viewMode, clock.projectId, projectId]);
-
-  // Get GPS — uses Capacitor on native, Web Geolocation API on web
-  const getGPS = useCallback(async () => {
-    setGpsStatus('getting');
-    const pos = await getCurrentPosition(8000);
-    if (pos) {
-      setLocation({ lat: pos.lat, lng: pos.lng });
-      setGpsStatus('ok');
-    } else {
-      setGpsStatus('denied');
+      const pos = await Promise.race([getCurrentPosition(5000).catch(() => null), bail]);
+      if (pos) { setGps('ok'); return { lat: pos.lat, lng: pos.lng }; }
+      setGps('unavailable');
+      return null;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }, []);
 
-  const updateClock = (patch: Partial<ClockState>) => {
-    setClock((prev) => { const next = { ...prev, ...patch }; saveClock(next); return next; });
-  };
+  // ─── Punches ───────────────────────────────────────────────────────────────
 
-  const handleClockIn = async () => {
-    if (!clock.employeeName.trim()) { alert('Enter your name first.'); return; }
-    setSaving(true);
+  const clockIn = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setPending('in');
+    setBanner(null);
     hapticMedium().catch(() => {});
-    getGPS();
 
-    const clockInTime = new Date().toISOString();
-    const payload = {
-      employeeName: clock.employeeName,
-      projectId: clock.projectId,
-      latitude: location?.lat || null,
-      longitude: location?.lng || null,
-    };
-
-    updateClock({ clockedIn: true, clockInTime, latitude: location?.lat || null, longitude: location?.lng || null });
+    const coords = await captureGps();
+    const costCodeId = costSel.startsWith(CC_PREFIX) ? costSel.slice(CC_PREFIX.length) : undefined;
+    const csiDivision = costSel.startsWith(CSI_PREFIX) ? costSel.slice(CSI_PREFIX.length) : undefined;
 
     try {
-      if (!online) throw new Error('offline');
-      await fetch('/api/clock/in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      hapticSuccess().catch(() => {});
-      showToast('Clocked in').catch(() => {});
-    } catch {
-      await enqueue({ url: '/api/clock/in', method: 'POST', body: JSON.stringify(payload), contentType: 'application/json', isFormData: false });
-      hapticLight().catch(() => {});
-      showToast('Queued — will sync when online').catch(() => {});
-    }
-    setSaving(false);
-  };
+      const res = await fetch('/api/timeclock/in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: projectId || undefined,
+          costCodeId,
+          csiDivision,
+          lat: coords?.lat,
+          lng: coords?.lng,
+          clientTime: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error(await readError(res, 'Clock-in failed.'));
+      const data = (await res.json()) as { ok: true; shift: Shift; alreadyOpen: boolean };
 
-  const handleClockOut = async () => {
-    setSaving(true);
+      setStatus((prev) => (prev ? { ...prev, onClock: true, shift: data.shift } : prev));
+      if (data.alreadyOpen) {
+        setBanner({ tone: 'warn', text: `You were already on the clock since ${formatTime(data.shift.clockIn)} — no second shift was started.` });
+      } else {
+        setBanner({ tone: 'ok', text: `On the clock since ${formatTime(data.shift.clockIn)}${coords ? '' : ' — no GPS on this punch'}.` });
+        hapticSuccess().catch(() => {});
+        showToast('Clocked in').catch(() => {});
+      }
+      await load(true);
+    } catch (e) {
+      hapticError().catch(() => {});
+      setBanner({ tone: 'error', text: netMessage(e) });
+    } finally {
+      inFlight.current = false;
+      setPending(null);
+    }
+  }, [captureGps, costSel, projectId, load]);
+
+  const clockOut = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setPending('out');
+    setBanner(null);
     hapticMedium().catch(() => {});
-    const clockOutTime = new Date().toISOString();
-    const breakMins = parseInt(breakMinutes) || 0;
-    const rawMs = Date.now() - new Date(clock.clockInTime!).getTime();
-    const adjMs = rawMs - (breakMins * 60000);
-    const hoursWorked = Math.max(0, Math.round((adjMs / 3600000) * 100) / 100);
 
-    const payload = {
-      employeeName: clock.employeeName,
-      projectId: clock.projectId,
-      clockInTime: clock.clockInTime,
-      clockOutTime,
-      breakMinutes: breakMins,
-      costCode: clock.costCode,
-      latitude: location?.lat || null,
-      longitude: location?.lng || null,
-    };
-
-    // Add to today's log
-    setTodayEntries((prev) => [...prev, {
-      name: clock.employeeName,
-      hours: hoursWorked,
-      time: `${formatTime(clock.clockInTime!)} – ${formatTime(clockOutTime)}`,
-    }]);
-
-    updateClock({ clockedIn: false, clockInTime: null });
+    const coords = await captureGps();
+    const breakMinutes = Math.max(0, Math.floor(Number(mealBreak) || 0));
 
     try {
-      if (!online) throw new Error('offline');
-      await fetch('/api/clock/out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await fetch('/api/timeclock/out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shiftId: shift?.id,
+          breakMinutes,
+          lat: coords?.lat,
+          lng: coords?.lng,
+          clientTime: new Date().toISOString(),
+        }),
+      });
+
+      if (res.status === 409) {
+        const msg = await readError(res, 'You are not on the clock.');
+        hapticError().catch(() => {});
+        setBanner({ tone: 'error', text: `${msg} Your clock has been re-synced from the server.` });
+        await load(true);
+        return;
+      }
+      if (!res.ok) throw new Error(await readError(res, 'Clock-out failed.'));
+
+      const data = (await res.json()) as ClockOutPayload;
+      setStatus((prev) => (prev ? { ...prev, onClock: false, shift: null } : prev));
+      const ot = data.hours.overtime > 0 ? ` · ${hrs(data.hours.overtime)} OT` : '';
+      const dt = data.hours.doubletime > 0 ? ` · ${hrs(data.hours.doubletime)} DT` : '';
+      setBanner({ tone: 'ok', text: `Clocked out — ${hrs(data.hours.worked)} logged${ot}${dt}.` });
       hapticSuccess().catch(() => {});
-      showToast(`${formatDuration(Date.now() - new Date(clock.clockInTime!).getTime())} logged`).catch(() => {});
-    } catch {
-      await enqueue({ url: '/api/clock/out', method: 'POST', body: JSON.stringify(payload), contentType: 'application/json', isFormData: false });
-      hapticLight().catch(() => {});
-      showToast('Queued — will sync when online').catch(() => {});
+      showToast(`${hrs(data.hours.worked)} logged`).catch(() => {});
+      setMealBreak('0');
+      await load(true);
+    } catch (e) {
+      hapticError().catch(() => {});
+      setBanner({ tone: 'error', text: netMessage(e) });
+    } finally {
+      inFlight.current = false;
+      setPending(null);
     }
-    setSaving(false);
-  };
+  }, [captureGps, mealBreak, shift, load]);
 
-  // ─── Crew Functions ──────────────────────────────────────────
+  // ─── Render ────────────────────────────────────────────────────────────────
 
-  const handleCrewClockIn = async () => {
-    if (!crewClockName.trim()) { alert('Enter crew member name.'); return; }
-    setCrewSaving(true);
-    const pid = clock.projectId || projectId;
-    const payload = {
-      employeeName: crewClockName.trim(),
-      projectId: pid,
-      costCode: crewClockCostCode,
-      latitude: location?.lat || null,
-      longitude: location?.lng || null,
-    };
+  const gpsLine =
+    gps === 'ok' ? 'GPS captured on this punch'
+      : gps === 'getting' ? 'Getting location…'
+        : gps === 'unavailable' ? 'No GPS on this punch — location unavailable'
+          : 'GPS is captured when you punch';
 
-    // Optimistic update
-    const newMember: CrewMember = {
-      id: `temp-${Date.now()}`,
-      name: crewClockName.trim(),
-      status: 'clocked_in',
-      clock_in_time: new Date().toISOString(),
-      total_hours: 0,
-      cost_code: crewClockCostCode,
-    };
-    setCrewMembers((prev) => [...prev, newMember]);
-
-    try {
-      if (!online) throw new Error('offline');
-      await fetch('/api/clock/in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      setCrewMsg(`${crewClockName.trim()} clocked in`);
-      hapticSuccess().catch(() => {});
-    } catch {
-      await enqueue({ url: '/api/clock/in', method: 'POST', body: JSON.stringify(payload), contentType: 'application/json', isFormData: false });
-      setCrewMsg(`${crewClockName.trim()} clock-in queued`);
-      hapticLight().catch(() => {});
-    }
-
-    setCrewClockName('');
-    setCrewAction(null);
-    setCrewSaving(false);
-    setTimeout(() => setCrewMsg(''), 3500);
-  };
-
-  const handleCrewClockOut = async (member: CrewMember) => {
-    setCrewSaving(true);
-    const pid = clock.projectId || projectId;
-    const payload = {
-      employeeName: member.name,
-      projectId: pid,
-      clockInTime: member.clock_in_time,
-      clockOutTime: new Date().toISOString(),
-      costCode: member.cost_code || 'General Conditions',
-    };
-
-    // Optimistic update
-    setCrewMembers((prev) => prev.map((m) =>
-      m.id === member.id ? { ...m, status: 'clocked_out' as const } : m
-    ));
-
-    try {
-      if (!online) throw new Error('offline');
-      await fetch('/api/clock/out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      setCrewMsg(`${member.name} clocked out`);
-      hapticSuccess().catch(() => {});
-    } catch {
-      await enqueue({ url: '/api/clock/out', method: 'POST', body: JSON.stringify(payload), contentType: 'application/json', isFormData: false });
-      setCrewMsg(`${member.name} clock-out queued`);
-      hapticLight().catch(() => {});
-    }
-
-    setCrewSaving(false);
-    setTimeout(() => setCrewMsg(''), 3500);
-  };
-
-  const isForeman = userRole.toLowerCase() === 'foreman' || userRole.toLowerCase() === 'superintendent' || userRole.toLowerCase() === 'admin';
-
-  // Crew summary
-  const clockedInCount = crewMembers.filter((m) => m.status === 'clocked_in').length;
-  const onBreakCount = crewMembers.filter((m) => m.status === 'on_break').length;
-  const totalCrewHours = crewMembers.reduce((s, m) => s + (m.total_hours || 0), 0);
+  const recent = status?.recentShifts?.filter((s) => s && s.id) ?? [];
 
   return (
-    <div style={{ padding: '18px 16px' }}>
+    <div className="fc-wrap">
       <FieldPageHeader
         title="Clock In / Out"
-        subtitle="GPS-stamped time tracking"
+        subtitle="Server-verified time · GPS stamped"
         icon={scopedFieldIcon('clockIn', 'ph')}
       />
 
-      {/* View toggle: My Clock / Crew */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: '#1c1c1e', borderRadius: 10, padding: 4 }}>
-        <button
-          onClick={() => setViewMode('my')}
-          style={{
-            flex: 1, background: viewMode === 'my' ? RAISED : 'transparent',
-            border: `1px solid ${viewMode === 'my' ? BORDER : 'transparent'}`,
-            borderRadius: 8, padding: '10px 4px', color: viewMode === 'my' ? TEXT : DIM,
-            fontSize: 13, fontWeight: viewMode === 'my' ? 700 : 500, cursor: 'pointer',
-          }}
+      {!online && (
+        <div className="fc-note fc-note-error" role="status">
+          Offline — punches need a connection. Nothing is queued, so nothing can be lost or duplicated.
+        </div>
+      )}
+
+      {loadError && (
+        <div className="fc-note fc-note-error" role="alert">
+          <span>{loadError}</span>
+          <button className="fc-retry" onClick={() => { void load(); }}>Retry</button>
+        </div>
+      )}
+
+      {banner && (
+        <div
+          className={`fc-note ${banner.tone === 'ok' ? 'fc-note-ok' : banner.tone === 'warn' ? 'fc-note-warn' : 'fc-note-error'}`}
+          role={banner.tone === 'error' ? 'alert' : 'status'}
         >
-          My Clock
-        </button>
-        <button
-          onClick={() => setViewMode('crew')}
-          style={{
-            flex: 1, background: viewMode === 'crew' ? RAISED : 'transparent',
-            border: `1px solid ${viewMode === 'crew' ? BORDER : 'transparent'}`,
-            borderRadius: 8, padding: '10px 4px', color: viewMode === 'crew' ? TEXT : DIM,
-            fontSize: 13, fontWeight: viewMode === 'crew' ? 700 : 500, cursor: 'pointer',
-          }}
-        >
-          Crew
-        </button>
-      </div>
+          {banner.text}
+        </div>
+      )}
 
-      {!online && <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 13, color: RED, fontWeight: 600 }}>Offline — time will sync when reconnected</div>}
-
-      {/* ═══ MY CLOCK VIEW ═══ */}
-      {viewMode === 'my' && (
-        <>
-          {/* Main clock card */}
-          <div style={{ background: RAISED, border: `2px solid ${clock.clockedIn ? 'rgba(34,197,94,.4)' : BORDER}`, borderRadius: 18, padding: '24px 20px', marginBottom: 16, textAlign: 'center' }}>
-            {clock.clockedIn ? (
-              <>
-                {/* Clocked in state */}
-                <div style={{ width: 16, height: 16, borderRadius: '50%', background: GREEN, margin: '0 auto 12px', boxShadow: `0 0 12px ${GREEN}`, animation: 'pulse 2s infinite' }} />
-                <p style={{ margin: '0 0 4px', fontSize: 13, color: GREEN, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}>Clocked In</p>
-                <p style={{ margin: '0 0 4px', fontSize: 44, fontWeight: 900, color: TEXT, letterSpacing: -1 }}>{formatDuration(elapsed)}</p>
-                <p style={{ margin: '0 0 16px', fontSize: 13, color: DIM }}>Since {formatTime(clock.clockInTime!)}</p>
-                <p style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 700, color: TEXT }}>{clock.employeeName} · {clock.projectName || 'No project'}</p>
-
-                {/* Break minutes */}
-                <div style={{ background: '#1c1c1e', borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
-                  <span style={{ fontSize: 13, color: DIM }}>Break time:</span>
-                  <input type="number" inputMode="numeric" value={breakMinutes} onChange={(e) => setBreakMinutes(e.target.value)} min="0" style={{ width: 60, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 8px', color: TEXT, fontSize: 14, textAlign: 'center', outline: 'none' }} />
-                  <span style={{ fontSize: 13, color: DIM }}>min</span>
-                </div>
-
-                <button
-                  onClick={handleClockOut}
-                  disabled={saving}
-                  style={{ width: '100%', background: saving ? '#1c1c1e' : RED, border: 'none', borderRadius: 14, padding: '18px', color: '#fff', fontSize: 18, fontWeight: 900, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5 }}
-                >
-                  {saving ? 'Clocking Out...' : 'Clock Out'}
-                </button>
-              </>
-            ) : (
-              <>
-                {/* Ready to clock in */}
-                <div style={{ marginBottom: 8, color: GOLD, display: 'flex', justifyContent: 'center' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={56} height={56}><circle cx={12} cy={12} r={10}/><polyline points="12 6 12 12 16 14"/></svg></div>
-                <p style={{ margin: '0 0 20px', fontSize: 16, color: DIM }}>Ready to clock in</p>
-
-                <div style={{ textAlign: 'left', marginBottom: 16 }}>
-                  <label style={lbl}>Your Name</label>
-                  <input value={clock.employeeName} onChange={(e) => updateClock({ employeeName: e.target.value })} placeholder="Full name" style={{ ...inp, marginTop: 5, marginBottom: 12 }} />
-
-                  <label style={lbl}>Project</label>
-                  <select value={clock.projectId} onChange={(e) => { const p = projects.find((x) => x.id === e.target.value); updateClock({ projectId: e.target.value, projectName: p?.name || '' }); }} style={{ ...inp, marginTop: 5, marginBottom: 12 }}>
-                    <option value="" style={{ background: '#141416' }}>Select project...</option>
-                    {projects.map((p) => <option key={p.id} value={p.id} style={{ background: '#141416' }}>{p.name}</option>)}
-                  </select>
-
-                  <label style={lbl}>Cost Code</label>
-                  <select value={clock.costCode} onChange={(e) => updateClock({ costCode: e.target.value })} style={{ ...inp, marginTop: 5 }}>
-                    {clock.costCode && !COST_CODES.includes(clock.costCode) && <option value={clock.costCode} style={{ background: '#141416' }}>{clock.costCode}</option>}
-                    {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#141416' }}>{c}</option>)}
-                  </select>
-                </div>
-
-                {/* GPS indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, justifyContent: 'center' }}>
-                  <span style={{ fontSize: 11, color: gpsStatus === 'ok' ? GREEN : gpsStatus === 'denied' ? RED : DIM }}>
-                    {gpsStatus === 'ok' ? 'GPS captured' : gpsStatus === 'getting' ? 'Getting location...' : gpsStatus === 'denied' ? 'Location denied' : 'GPS will capture on clock-in'}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handleClockIn}
-                  disabled={saving}
-                  style={{ width: '100%', background: saving ? '#1c1c1e' : GREEN, border: 'none', borderRadius: 14, padding: '18px', color: '#000', fontSize: 18, fontWeight: 900, cursor: saving ? 'wait' : 'pointer', letterSpacing: 0.5 }}
-                >
-                  {saving ? 'Clocking In...' : 'Clock In'}
-                </button>
-              </>
-            )}
+      {loading && !status ? (
+        <div className="fc-card fc-center">
+          <p className="fc-muted">Checking your clock with the server…</p>
+        </div>
+      ) : !status ? (
+        <div className="fc-card fc-center">
+          <p className="fc-muted">Your clock status is unavailable right now. Nothing has been punched.</p>
+          <button className="fc-secondary" onClick={() => { void load(); }}>Try again</button>
+        </div>
+      ) : onClock && shift ? (
+        /* ═══ ON THE CLOCK ═══ */
+        <div className="fc-card fc-card-live">
+          <div className="fc-live-row">
+            <span className="fc-dot" />
+            <span className="fc-live-label">On the clock</span>
           </div>
 
-          {/* Today's entries */}
-          {todayEntries.length > 0 && (
-            <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px' }}>
-              <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 }}>Today's Entries</p>
-              {todayEntries.map((e, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: i > 0 ? `1px solid ${BORDER}` : 'none' }}>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: TEXT }}>{e.name}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 12, color: DIM }}>{e.time}</p>
-                  </div>
-                  <span style={{ fontSize: 16, fontWeight: 800, color: GOLD }}>{e.hours}h</span>
-                </div>
+          <p className="fc-timer" aria-live="off">{formatElapsed(tick - new Date(shift.clockIn).getTime())}</p>
+          <p className="fc-since">
+            Since {formatTime(shift.clockIn)}
+            {shift.workDate ? ` · ${formatDayLabel(shift.workDate)}` : ''}
+          </p>
+
+          <div className="fc-chips">
+            <span className="fc-chip">{shift.projectId ? projectName(shift.projectId) : 'No project on this shift'}</span>
+            {shiftCostLabel
+              ? <span className="fc-chip fc-chip-gold">{shiftCostLabel}</span>
+              : <span className="fc-chip">No cost code on this shift</span>}
+            {status.employee && <span className="fc-chip">{status.employee.name}</span>}
+          </div>
+
+          <div className="fc-break">
+            <span className="fc-break-label">Meal break</span>
+            <div className="fc-break-picks">
+              {['0', '30', '60'].map((m) => (
+                <button
+                  key={m}
+                  className={`fc-break-pick${mealBreak === m ? ' is-on' : ''}`}
+                  onClick={() => setMealBreak(m)}
+                  disabled={pending !== null}
+                >
+                  {m === '0' ? 'None' : `${m}m`}
+                </button>
               ))}
-              <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, color: DIM, fontWeight: 600 }}>Total Today</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: GOLD }}>{todayEntries.reduce((s, e) => s + e.hours, 0).toFixed(2)}h</span>
-              </div>
+              <input
+                className="fc-break-input"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={480}
+                value={mealBreak}
+                onChange={(e) => setMealBreak(e.target.value)}
+                disabled={pending !== null}
+                aria-label="Meal break minutes"
+              />
+              <span className="fc-break-unit">min</span>
             </div>
-          )}
-        </>
-      )}
-
-      {/* ═══ CREW VIEW ═══ */}
-      {viewMode === 'crew' && (
-        <>
-          {crewMsg && (
-            <div style={{
-              background: crewMsg.includes('queued') ? 'rgba(245,158,11,.1)' : 'rgba(34,197,94,.1)',
-              border: `1px solid ${crewMsg.includes('queued') ? 'rgba(245,158,11,.3)' : 'rgba(34,197,94,.3)'}`,
-              borderRadius: 10, padding: '12px 14px', marginBottom: 14,
-              color: crewMsg.includes('queued') ? AMBER : GREEN, fontSize: 14, fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><polyline points="20 6 9 17 4 12"/></svg>
-              {crewMsg}
-            </div>
-          )}
-
-          {/* Summary Bar */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-            <div style={{ background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.25)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: GREEN, fontWeight: 700 }}>
-              {clockedInCount} Clocked In
-            </div>
-            <div style={{ background: 'rgba(245, 158, 11,.1)', border: '1px solid rgba(245, 158, 11,.25)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: GOLD, fontWeight: 700 }}>
-              {totalCrewHours.toFixed(1)}h Total
-            </div>
-            {onBreakCount > 0 && (
-              <div style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: AMBER, fontWeight: 700 }}>
-                {onBreakCount} On Break
-              </div>
-            )}
           </div>
 
-          {/* Foreman: Clock in crew member */}
-          {isForeman && (
-            <div style={{ marginBottom: 14 }}>
-              {crewAction === null ? (
-                <button
-                  onClick={() => { setCrewAction('clock_in'); getGPS(); }}
-                  style={{
-                    width: '100%', background: 'rgba(34,197,94,.1)', border: `1px solid rgba(34,197,94,.3)`,
-                    borderRadius: 14, padding: '14px', color: GREEN, fontSize: 15, fontWeight: 700,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={20} height={20}>
-                    <line x1={12} y1={5} x2={12} y2={19}/><line x1={5} y1={12} x2={19} y2={12}/>
-                  </svg>
-                  Clock In Crew Member
-                </button>
-              ) : (
-                <div style={{ background: RAISED, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '14px' }}>
-                  <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: DIM, textTransform: 'uppercase', letterSpacing: 0.8 }}>Clock In Crew Member</p>
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={lbl}>Name</label>
-                    <input value={crewClockName} onChange={(e) => setCrewClockName(e.target.value)} placeholder="Full name" style={{ ...inp, marginTop: 4 }} />
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={lbl}>Cost Code</label>
-                    <select value={crewClockCostCode} onChange={(e) => setCrewClockCostCode(e.target.value)} style={{ ...inp, marginTop: 4 }}>
-                      {crewClockCostCode && !COST_CODES.includes(crewClockCostCode) && <option value={crewClockCostCode} style={{ background: '#141416' }}>{crewClockCostCode}</option>}
-                      {COST_CODES.map((c) => <option key={c} value={c} style={{ background: '#141416' }}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setCrewAction(null)} style={{ flex: 1, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '12px', color: DIM, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                      Cancel
-                    </button>
-                    <button onClick={handleCrewClockIn} disabled={crewSaving} style={{ flex: 2, background: crewSaving ? '#1c1c1e' : GREEN, border: 'none', borderRadius: 10, padding: '12px', color: '#000', fontSize: 14, fontWeight: 800, cursor: crewSaving ? 'wait' : 'pointer' }}>
-                      {crewSaving ? 'Saving...' : 'Clock In'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          <p className="fc-gps">{gpsLine}</p>
 
-          {/* Crew List */}
-          {crewLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: DIM }}>Loading crew data...</div>
-          ) : crewMembers.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
-              <div style={{ marginBottom: 8, color: GOLD, display: 'flex', justifyContent: 'center' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={40} height={40}>
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx={9} cy={7} r={4}/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </div>
-              <p style={{ margin: 0, fontSize: 14 }}>No crew members on the clock today.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {crewMembers.map((member) => {
-                const statusLabel = member.status === 'clocked_in' ? 'Clocked In' : member.status === 'on_break' ? 'On Break' : 'Clocked Out';
-                const statusClr = member.status === 'clocked_in' ? GREEN : member.status === 'on_break' ? AMBER : DIM;
-                const memberHours = member.total_hours ?? (member.clock_in_time && member.status === 'clocked_in'
-                  ? Math.round(((Date.now() - new Date(member.clock_in_time).getTime()) / 3600000) * 100) / 100
-                  : 0);
-                return (
-                  <div key={member.id} style={{ background: RAISED, border: `1px solid ${member.status === 'clocked_in' ? 'rgba(34,197,94,.25)' : BORDER}`, borderRadius: 14, padding: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          {/* Status dot */}
-                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: statusClr, flexShrink: 0, boxShadow: member.status === 'clocked_in' ? `0 0 6px ${GREEN}` : 'none' }} />
-                          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: TEXT }}>{member.name}</p>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 18 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: statusClr }}>{statusLabel}</span>
-                          {member.clock_in_time && <span style={{ fontSize: 12, color: DIM }}>In: {formatTime(member.clock_in_time)}</span>}
-                          {member.cost_code && <span style={{ fontSize: 11, color: DIM }}>{member.cost_code}</span>}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: GOLD }}>{memberHours.toFixed(1)}h</div>
-                        {isForeman && member.status === 'clocked_in' && (
-                          <button
-                            onClick={() => handleCrewClockOut(member)}
-                            disabled={crewSaving}
-                            style={{
-                              marginTop: 4, background: 'rgba(239,68,68,.15)', border: `1px solid rgba(239,68,68,.3)`,
-                              borderRadius: 6, padding: '4px 10px', color: RED, fontSize: 11, fontWeight: 700,
-                              cursor: crewSaving ? 'wait' : 'pointer',
-                            }}
-                          >
-                            Clock Out
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
+          <button
+            className="fc-big fc-big-out"
+            onClick={() => { void clockOut(); }}
+            disabled={pending !== null}
+          >
+            {pending === 'out' ? 'Clocking out…' : 'Clock Out'}
+          </button>
+        </div>
+      ) : (
+        /* ═══ OFF THE CLOCK ═══ */
+        <div className="fc-card">
+          <p className="fc-off-label">Off the clock</p>
+          <p className="fc-off-name">{status.employee ? status.employee.name : 'Signed in — your employee record will be linked on your first punch'}</p>
+
+          <label className="fc-label" htmlFor="fc-project">Project</label>
+          <select
+            id="fc-project"
+            className="fc-select"
+            value={projectId}
+            onChange={(e) => { setProjectId(e.target.value); setCostSel(''); }}
+            disabled={pending !== null}
+          >
+            <option value="">No project</option>
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+
+          <label className="fc-label" htmlFor="fc-cost">Cost code</label>
+          <select
+            id="fc-cost"
+            className="fc-select"
+            value={costSel}
+            onChange={(e) => setCostSel(e.target.value)}
+            disabled={pending !== null}
+          >
+            <option value="">No cost code</option>
+            {costCodes.length > 0 && (
+              <optgroup label="Project cost codes">
+                {costCodes.map((c) => (
+                  <option key={c.id} value={`${CC_PREFIX}${c.id}`}>{c.code ? `${c.code} — ${c.name}` : c.name}</option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="CSI divisions">
+              {Object.entries(CSI_DIVISIONS).map(([code, d]) => (
+                <option key={code} value={`${CSI_PREFIX}${code}`}>Div {code} — {d.name}</option>
+              ))}
+            </optgroup>
+          </select>
+
+          {!projectId && <p className="fc-warnline">No project selected — these hours will not land on a job budget.</p>}
+
+          <p className="fc-gps">{gpsLine}</p>
+
+          <button
+            className="fc-big fc-big-in"
+            onClick={() => { void clockIn(); }}
+            disabled={pending !== null}
+          >
+            {pending === 'in' ? 'Clocking in…' : 'Clock In'}
+          </button>
+        </div>
       )}
 
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
+      {status && (
+        <div className="fc-hours">
+          <div className="fc-hour-cell">
+            <span className="fc-hour-k">Today</span>
+            <span className="fc-hour-v">{hrs(status.todayHours)}</span>
+          </div>
+          <div className="fc-hour-cell">
+            <span className="fc-hour-k">This week</span>
+            <span className="fc-hour-v">{hrs(status.weekHours)}</span>
+          </div>
+        </div>
+      )}
+
+      {recent.length > 0 && (
+        <div className="fc-card fc-recent">
+          <p className="fc-recent-h">Recent shifts</p>
+          {recent.map((s) => (
+            <div key={s.id} className="fc-recent-row">
+              <div className="fc-recent-l">
+                <p className="fc-recent-d">{formatDayLabel(s.workDate)}</p>
+                <p className="fc-recent-t">
+                  {formatTime(s.clockIn)} – {s.clockOut ? formatTime(s.clockOut) : 'still open'}
+                  {s.projectId ? ` · ${projectName(s.projectId)}` : ''}
+                </p>
+              </div>
+              <span className="fc-recent-h2">{s.clockOut ? hrs(s.hoursWorked) : 'open'}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .fc-wrap { padding: 0 16px 28px; max-width: 640px; margin: 0 auto; }
+        .fc-card { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-xl); padding: 22px 18px; margin-bottom: 14px; box-shadow: var(--shadow-md); }
+        .fc-card-live { border: 2px solid var(--success); text-align: center; }
+        .fc-center { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+        .fc-muted { margin: 0; font-size: 14px; color: var(--text-secondary); }
+
+        .fc-note { border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 12px; font-size: 13.5px; font-weight: 600; line-height: 1.45; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .fc-note-ok    { background: rgba(34,197,94,0.10);  border: 1px solid rgba(34,197,94,0.30);  color: var(--success); }
+        .fc-note-warn  { background: var(--gold-soft);      border: 1px solid var(--gold-ring);      color: var(--gold-bright); }
+        .fc-note-error { background: rgba(239,68,68,0.10);  border: 1px solid rgba(239,68,68,0.30);  color: var(--danger); }
+        .fc-retry, .fc-secondary { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 8px 14px; color: var(--text-primary); font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; min-height: 40px; }
+
+        .fc-live-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+        .fc-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--success); box-shadow: 0 0 12px var(--success); animation: fcPulse 2s infinite; }
+        .fc-live-label { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--success); }
+        @keyframes fcPulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+        .fc-timer { margin: 0; font-size: 54px; line-height: 1.05; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+        .fc-since { margin: 6px 0 14px; font-size: 13px; color: var(--text-secondary); }
+
+        .fc-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 16px; }
+        .fc-chip { background: var(--bg-surface-2); border: 1px solid var(--border-default); border-radius: var(--radius-pill); padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+        .fc-chip-gold { background: var(--gold-soft); border-color: var(--gold-ring); color: var(--gold-bright); }
+
+        .fc-break { background: var(--bg-surface-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 12px; margin-bottom: 14px; }
+        .fc-break-label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+        .fc-break-picks { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+        .fc-break-pick { min-height: 44px; min-width: 60px; background: transparent; border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 14px; font-weight: 700; cursor: pointer; padding: 0 12px; }
+        .fc-break-pick.is-on { background: var(--gold-soft); border-color: var(--gold-ring); color: var(--gold-bright); }
+        .fc-break-pick:disabled { opacity: .5; cursor: not-allowed; }
+        .fc-break-input { width: 74px; min-height: 44px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-primary); font-size: 15px; text-align: center; outline: none; }
+        .fc-break-unit { font-size: 13px; color: var(--text-secondary); }
+
+        .fc-gps { margin: 0 0 16px; font-size: 12px; color: var(--text-tertiary); text-align: center; }
+
+        .fc-big { width: 100%; min-height: 84px; border: none; border-radius: var(--radius-xl); font-size: 21px; font-weight: 900; letter-spacing: 0.02em; cursor: pointer; transition: transform .08s ease, filter .12s ease; -webkit-tap-highlight-color: transparent; }
+        .fc-big:active:not(:disabled) { transform: scale(0.985); filter: brightness(0.92); }
+        .fc-big:disabled { opacity: .62; cursor: progress; }
+        .fc-big-in  { background: var(--success); color: #06210F; }
+        .fc-big-out { background: var(--danger);  color: #FFFFFF; }
+
+        .fc-off-label { margin: 0 0 4px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+        .fc-off-name { margin: 0 0 18px; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+        .fc-label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
+        .fc-select { width: 100%; min-height: 52px; background: var(--bg-surface-2); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px 14px; color: var(--text-primary); font-size: 16px; outline: none; margin-bottom: 14px; }
+        .fc-select:disabled { opacity: .6; }
+        .fc-warnline { margin: -4px 0 14px; font-size: 12.5px; font-weight: 600; color: var(--gold-bright); }
+
+        .fc-hours { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .fc-hour-cell { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 14px; text-align: center; }
+        .fc-hour-k { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; }
+        .fc-hour-v { display: block; font-size: 26px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+        .fc-recent { padding: 16px 18px; }
+        .fc-recent-h { margin: 0 0 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
+        .fc-recent-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border-subtle); }
+        .fc-recent-row:first-of-type { border-top: none; }
+        .fc-recent-l { min-width: 0; }
+        .fc-recent-d { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+        .fc-recent-t { margin: 2px 0 0; font-size: 12px; color: var(--text-secondary); }
+        .fc-recent-h2 { font-size: 16px; font-weight: 800; color: var(--gold); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+        @media (min-width: 1000px) { .fc-wrap { padding: 0 28px 32px; } }
+      ` }} />
     </div>
   );
 }
 
 export default function FieldClockPage() {
-  return <Suspense fallback={<div style={{ padding: 32, color: '#CBD5E1', textAlign: 'center' }}>Loading...</div>}><ClockPage /></Suspense>;
+  return (
+    <Suspense fallback={<div style={{ padding: 32, color: 'var(--text-secondary)', textAlign: 'center' }}>Loading…</div>}>
+      <ClockPage />
+    </Suspense>
+  );
 }
-
-const lbl: React.CSSProperties = { fontSize: 10.5, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' };
-const inp: React.CSSProperties = { width: '100%', background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '11px 14px', color: '#FFFFFF', fontSize: 15, outline: 'none' };

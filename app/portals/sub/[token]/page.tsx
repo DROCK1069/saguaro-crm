@@ -108,6 +108,7 @@ export default function SubPortal(){
 
   /* ── GPS Clock ── */
   const [gpsStatus,setGpsStatus]=useState<'idle'|'clocked_in'|'clocked_out'>('idle');
+  const [clockBusy,setClockBusy]=useState(false);
   const [clockInTime,setClockInTime]=useState('');
   const [clockOutTime,setClockOutTime]=useState('');
   const [gpsCoords,setGpsCoords]=useState<{lat:number;lng:number}|null>(null);
@@ -278,24 +279,53 @@ export default function SubPortal(){
   const complianceGateOpen=complianceMissing.length===0;
 
   /* ── Actions ── */
-  const handleClockIn=()=>{
-    if(!navigator.geolocation){showToast('Geolocation not supported');return;}
-    navigator.geolocation.getCurrentPosition(p=>{
-      const now=new Date().toISOString();
-      setGpsCoords({lat:p.coords.latitude,lng:p.coords.longitude});
-      setClockInTime(now);setGpsStatus('clocked_in');
-      showToast('Clocked in successfully');
-    },()=>showToast('Location access denied'),{enableHighAccuracy:true});
-  };
+  /* Punches are recorded SERVER-SIDE (clock_punches) — these buttons used to
+     only set React state and toast "successfully" while storing nothing.
+     Coordinates are best-effort: a denied or slow GPS never blocks the punch. */
+  const bestEffortCoords=():Promise<{lat:number|null;lng:number|null}>=>new Promise(resolve=>{
+    if(!navigator.geolocation){resolve({lat:null,lng:null});return;}
+    let settled=false;
+    const done=(v:{lat:number|null;lng:number|null})=>{if(!settled){settled=true;resolve(v);}};
+    const timer=setTimeout(()=>done({lat:null,lng:null}),5000);
+    navigator.geolocation.getCurrentPosition(
+      p=>{clearTimeout(timer);done({lat:p.coords.latitude,lng:p.coords.longitude});},
+      ()=>{clearTimeout(timer);done({lat:null,lng:null});},
+      {enableHighAccuracy:true,timeout:5000},
+    );
+  });
 
-  const handleClockOut=()=>{
-    if(!navigator.geolocation){showToast('Geolocation not supported');return;}
-    navigator.geolocation.getCurrentPosition(p=>{
-      const now=new Date().toISOString();
-      setClockOutTime(now);setGpsStatus('clocked_out');
-      showToast('Clocked out successfully');
-    },()=>showToast('Location access denied'),{enableHighAccuracy:true});
+  const punch=async(type:'in'|'out')=>{
+    if(clockBusy)return;
+    setClockBusy(true);
+    try{
+      const c=await bestEffortCoords();
+      const res=await fetch(`/api/portal/sub/clock?token=${token}`,{
+        method:'POST',headers,body:JSON.stringify({type,lat:c.lat,lng:c.lng}),
+      });
+      const json=await res.json().catch(()=>null);
+      if(!res.ok){
+        // The server owns the truth — re-sync to whatever it says.
+        if(typeof json?.onClock==='boolean')setGpsStatus(json.onClock?'clocked_in':'clocked_out');
+        showToast(json?.error||"Couldn't record the punch");
+        return;
+      }
+      const at=json?.punch?.punched_at||new Date().toISOString();
+      if(c.lat!=null&&c.lng!=null)setGpsCoords({lat:c.lat,lng:c.lng});
+      if(type==='in'){setClockInTime(at);setClockOutTime('');setGpsStatus('clocked_in');}
+      else{setClockOutTime(at);setGpsStatus('clocked_out');}
+      showToast(
+        type==='in'
+          ? (c.lat==null?'Clocked in — recorded (no location available)':'Clocked in — recorded')
+          : (c.lat==null?'Clocked out — recorded (no location available)':'Clocked out — recorded'),
+      );
+    }catch{
+      showToast('No connection — punch not recorded. Try again.');
+    }finally{
+      setClockBusy(false);
+    }
   };
+  const handleClockIn=()=>punch('in');
+  const handleClockOut=()=>punch('out');
 
   const submitDailyLog=async()=>{
     if(!dlForm.work_completed.trim()){showToast('Please describe work completed');return;}

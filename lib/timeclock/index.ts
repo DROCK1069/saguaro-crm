@@ -137,6 +137,49 @@ export function computeTimesheet(entries: TimeEntry[], opts: TimeclockOptions = 
   return { weeks: weekRows, totals, openEntries };
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * DAILY SHIFT SPLIT — the single source of truth for one shift's hour buckets.
+ *
+ * computeTimesheet() above answers "what does this WEEK owe" (weekly-40 OT,
+ * optional daily OT). This answers the narrower question the clock endpoints
+ * ask on every clock-out: "this one shift ran N hours — how does N divide?"
+ * Both web and iOS call it so a shift never splits two different ways.
+ *
+ *   regular    = first 8 hours
+ *   overtime   = hours 8 → 12 (capped at 4)
+ *   doubletime = everything past 12
+ *
+ * regular + overtime + doubletime === worked, always, to 2dp.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Hours 0–8 of a shift are straight time. */
+export const DAILY_REGULAR_CAP = 8;
+/** Hours 8–12 are time-and-a-half; past 12 rolls into doubletime. */
+export const DAILY_OVERTIME_CAP = 4;
+
+export interface HoursSplit { worked: number; regular: number; overtime: number; doubletime: number }
+
+/** Split one shift's worked hours into regular / overtime / doubletime. Pure. */
+export function splitDailyHours(worked: number): HoursSplit {
+  const w = r2(Math.max(0, Number(worked) || 0));
+  const regular = r2(Math.min(w, DAILY_REGULAR_CAP));
+  const overtime = r2(Math.min(Math.max(0, w - DAILY_REGULAR_CAP), DAILY_OVERTIME_CAP));
+  const doubletime = r2(Math.max(0, w - DAILY_REGULAR_CAP - DAILY_OVERTIME_CAP));
+  return { worked: w, regular, overtime, doubletime };
+}
+
+/**
+ * Worked hours for a closed shift — (clock_out − clock_in) − meal break, 2dp.
+ * Delegates to entryHours() so there is exactly ONE subtraction/rounding path
+ * in the codebase; never recompute this inline in a route.
+ */
+export function shiftWorkedHours(clockIn: string, clockOut: string, mealBreakMins = 0): number {
+  return entryHours({
+    id: '', employeeId: '', type: 'regular',
+    clockIn, clockOut, breakMinutes: Math.max(0, Number(mealBreakMins) || 0), timezone: 'UTC',
+  });
+}
+
 /** Elapsed hours for an OPEN entry, as of `nowIso` — for a live clock readout. */
 export function liveElapsed(clockIn: string, nowIso: string, breakMinutes = 0): number {
   const mins = (new Date(nowIso).getTime() - new Date(clockIn).getTime()) / 60000 - breakMinutes;

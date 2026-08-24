@@ -1,56 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 /**
- * Clock In — stores clock event as a timesheet entry with type='clock_in'.
- * The client also stores state in localStorage for offline support.
+ * GONE — /api/clock/in has been retired.
+ *
+ * It wrote clock events into `timesheet_entries` (a third clock table nobody
+ * else read) using the ANON key with no user session, so RLS rejected every
+ * insert and the server never learned anyone was on the clock. The canonical
+ * clock is /api/timeclock/in, which writes `time_entries` and mirrors an audit
+ * row into `clock_punches`.
+ *
+ * The file stays so any stale client gets a real answer instead of a silent
+ * 404. Nothing writes clock events to `timesheet_entries` ever again.
  */
-export async function POST(req: NextRequest) {
-  const user = await getUser(req);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const dynamic = 'force-dynamic';
 
-  try {
-    const body = await req.json().catch(() => ({}));
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+const gone = () =>
+  NextResponse.json(
+    { error: 'Moved to /api/timeclock/in' },
+    { status: 410, headers: { 'Cache-Control': 'no-store' } },
+  );
 
-    const clockIn = {
-      tenant_id:     user.tenantId,
-      project_id:    body.projectId || null,
-      employee_name: (body.employeeName as string) || user.email || 'Unknown',
-      work_date:     new Date().toISOString().split('T')[0],
-      hours:         0,
-      cost_code:     'Clock Event',
-      notes: JSON.stringify({
-        type:           'clock_in',
-        clock_in_time:  new Date().toISOString(),
-        latitude:       body.latitude  || null,
-        longitude:      body.longitude || null,
-      }),
-    };
-
-    const { data, error } = await supabase
-      .from('timesheet_entries')
-      .insert(clockIn)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return NextResponse.json({
-      success: true,
-      entry: data,
-      clockInTime: new Date().toISOString(),
-    });
-  } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[clock/in] error:', msg);
-    return NextResponse.json(
-      { error: `[clock/in] Database error: ${msg}` },
-      { status: 500 }
-    );
-  }
-}
+export async function POST() { return gone(); }
+export async function GET() { return gone(); }
