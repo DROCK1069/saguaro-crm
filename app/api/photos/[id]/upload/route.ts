@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, getUser } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,16 +30,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Photo not found' }, { status: 404 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
+    // Storage writes use the service-role client. storage.objects carries
+    // policies for `authenticated` only, so the bare anon client used here
+    // matched none and every upload was rejected by RLS.
     const filename = upload.name || `photo-${Date.now()}.jpg`;
     const buffer = Buffer.from(await upload.arrayBuffer());
     const storagePath = `projects/${existing.project_id || 'unassigned'}/photos/${Date.now()}-${filename}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await db.storage
       .from('project-files')
       .upload(storagePath, buffer, { contentType: upload.type || 'image/jpeg' });
 
@@ -49,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: uploadError?.message || 'Upload failed' }, { status: 500 });
     }
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = db.storage
       .from('project-files')
       .getPublicUrl(storagePath);
 

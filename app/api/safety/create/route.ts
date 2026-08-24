@@ -1,49 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
-import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/database.types';
 
+/**
+ * POST /api/safety/create
+ * Logs a safety incident for the caller's tenant.
+ *
+ * Writes go through the service-role client (from requirePermission). The
+ * previous bare anon client matched no RLS policy on safety_incidents — every
+ * policy targets `authenticated` or `service_role` — so every insert was
+ * rejected with 42501 and this endpoint returned 500 for every field report.
+ */
 export async function POST(req: NextRequest) {
-  const g = await requirePermission(req, 'Safety', 'Edit');
+  const body: Record<string, unknown> = await req.json().catch(() => ({}));
+  const projectId = (body.project_id || body.projectId || null) as string | null;
+
+  const g = await requirePermission(req, 'Safety', 'Edit', { projectId });
   if (!g.ok) return g.res;
-  const user = g.user;
 
-  let body: Record<string, unknown> = {};
-  try { body = await req.json(); } catch { /* empty body */ }
+  const { db, user } = g;
 
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+  const row = {
+    // tenant_id is taken from the authenticated session, never from the body.
+    tenant_id:     user.tenantId,
+    project_id:    projectId,
+    description:   body.description  || '',
+    severity:      body.severity     || 'Minor',
+    injury_type:   body.injury_type  || body.injuryType  || 'No Injury',
+    location:      body.location     || '',
+    reported_to:   body.reported_to  || body.reportedTo  || '',
+    incident_date: body.incident_date || body.incidentDate || new Date().toISOString().split('T')[0],
+    reported_by:   user.email        || 'Field User',
+    status:        'open',
+  };
 
-    const row = {
-      tenant_id:     user.tenantId,
-      project_id:    body.project_id   || body.projectId   || null,
-      description:   body.description  || '',
-      severity:      body.severity     || 'Minor',
-      injury_type:   body.injury_type  || body.injuryType  || 'No Injury',
-      location:      body.location     || '',
-      reported_to:   body.reported_to  || body.reportedTo  || '',
-      incident_date: body.incident_date || body.incidentDate || new Date().toISOString().split('T')[0],
-      reported_by:   user.email        || 'Field User',
-      status:        'open',
-    };
+  const { data, error } = await db
+    .from('safety_incidents')
+    .insert(row as Database['public']['Tables']['safety_incidents']['Insert'])
+    .select()
+    .single();
 
-    const { data, error } = await supabase
-      .from('safety_incidents')
-      .insert(row)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return NextResponse.json({ success: true, incident: data });
-  } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[safety/create] error:', msg);
+  if (error) {
+    console.error('[safety/create] insert failed:', error.message);
     return NextResponse.json(
-      { error: `[safety/create] Database error: ${msg}` },
-      { status: 500 }
+      { error: 'Failed to log safety incident', detail: error.message },
+      { status: 500 },
     );
   }
+
+  return NextResponse.json({ success: true, incident: data });
 }

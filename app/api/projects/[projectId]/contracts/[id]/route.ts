@@ -10,8 +10,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
     const supabase = createServerClient();
     const body = await req.json();
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    const allowed = ['title','contract_type','vendor_name','vendor_email','description','original_amount','approved_changes','retainage_pct','start_date','end_date','signed_date','status','scope_of_work','insurance_required','insurance_verified','bonding_required','bonding_verified','notes','invoiced_amount','paid_amount'];
+    const allowed = ['title','contract_type','vendor_name','vendor_email','original_amount','approved_changes','retainage_pct','start_date','end_date','status','scope_of_work','insurance_required','insurance_verified','bonding_verified','notes','invoiced_amount','paid_amount'];
     for (const k of allowed) if (body[k] !== undefined) updates[k] = body[k];
+    // Two UI names have different column names. Sending them raw made PostgREST
+    // reject the whole PATCH, which the page then queued for a doomed retry.
+    if (body.signed_date !== undefined) updates.executed_date = body.signed_date || null;
+    if (body.description !== undefined) updates.scope_summary = body.description;
+    // bonding_required is TEXT on this table, not the boolean the UI models.
+    if (body.bonding_required !== undefined) updates.bonding_required = String(body.bonding_required);
 
     // Revised/adjusted contract money is computed by the exact-cents engine.
     // Only APPROVED change orders move the contract; pending/rejected are excluded.
@@ -36,11 +42,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
 
     // Tenant-scope the write — service-role bypasses RLS; project_id from the URL
     // is attacker-controlled, so it alone does NOT prove tenant ownership.
-    const { data, error } = await supabase.from('contracts').update(updates).eq('id', params.id).eq('project_id', params.projectId).eq('tenant_id', g.user.tenantId).select().single();
+    const { data, error } = await supabase.from('contracts').update(updates).eq('id', params.id).eq('project_id', params.projectId).eq('tenant_id', g.user.tenantId).select().maybeSingle();
     if (error) throw error;
+    // No row matched — wrong id, wrong project, or another tenant. Failed write.
+    if (!data) return NextResponse.json({ error: 'Contract not found.' }, { status: 404 });
     return NextResponse.json({ contract: data });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Failed';
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[projects/contracts/PATCH]', e);
+    const msg = e instanceof Error ? e.message : 'Failed to update the contract.';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

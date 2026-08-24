@@ -1,40 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
-import { createClient } from '@supabase/supabase-js';
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+/**
+ * PATCH /api/punch-list/[id]/complete
+ * Updates a punch item's status within the caller's tenant.
+ *
+ * Writes go through the service-role client (from requirePermission). The
+ * previous bare anon client matched no RLS policy on punch_list — every policy
+ * targets `authenticated` or `service_role` — so every update was rejected with
+ * 42501 and this endpoint returned 500 for every status change.
+ */
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const g = await requirePermission(req, 'Projects', 'Edit');
   if (!g.ok) return g.res;
-  const user = g.user;
-  const { id } = await params;
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const body = await req.json().catch(() => ({}));
-    const newStatus = body.status || 'complete';
-    const updateData: Record<string, unknown> = { status: newStatus };
-    if (newStatus === 'complete' || newStatus === 'Complete') {
-      updateData.completed_at = new Date().toISOString();
-    }
-    const { error } = await supabase
-      .from('punch_list')
-      .update(updateData)
-      .eq('id', id)
-      .eq('tenant_id', user.tenantId);
-    if (error) throw error;
-    return NextResponse.json({ success: true });
-  } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[punch-list/complete] error:', msg);
+
+  const { db, user } = g;
+
+  const body: Record<string, unknown> = await req.json().catch(() => ({}));
+  const newStatus = (body.status as string) || 'complete';
+
+  const updateData: Record<string, unknown> = { status: newStatus };
+  if (newStatus.toLowerCase() === 'complete') {
+    updateData.completed_at = new Date().toISOString();
+  }
+
+  // .select() so we can tell an applied update from one that matched no row.
+  // Without it, updating a non-existent or other-tenant id returns no error and
+  // this route reported success for a write that never happened.
+  const { data, error } = await db
+    .from('punch_list')
+    .update(updateData)
+    .eq('id', id)
+    .eq('tenant_id', user.tenantId)
+    .select('id');
+
+  if (error) {
+    console.error('[punch-list/complete] update failed:', error.message);
     return NextResponse.json(
-      { error: `[punch-list/complete] Database error: ${msg}` },
-      { status: 500 }
+      { error: 'Failed to update punch item', detail: error.message },
+      { status: 500 },
     );
   }
+
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: 'Punch item not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true, id, status: newStatus });
 }

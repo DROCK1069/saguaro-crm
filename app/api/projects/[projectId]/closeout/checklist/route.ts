@@ -40,8 +40,12 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       .single();
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ items: readChecklist((project as { metadata: unknown }).metadata) });
-  } catch {
-    return NextResponse.json({ items: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/closeout/checklist] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load items', detail }, { status: 500 });
   }
 }
 

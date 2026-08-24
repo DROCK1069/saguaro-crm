@@ -34,8 +34,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     }));
 
     return NextResponse.json({ rfis, source: 'live' });
-  } catch {
-    return NextResponse.json({ rfis: [], source: 'error' });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/rfis] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load rfis', detail }, { status: 500 });
   }
 }
 

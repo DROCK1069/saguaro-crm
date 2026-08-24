@@ -109,6 +109,9 @@ function SafetyPage() {
 
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distinct from "no incidents": the read failed, so the safety record is
+  // unknown and must not be shown as clean.
+  const [loadError, setLoadError] = useState('');
   const [view, setView] = useState<View>('list');
   const [selected, setSelected] = useState<Incident | null>(null);
   const [online, setOnline] = useState(true);
@@ -330,11 +333,18 @@ function SafetyPage() {
 
   const loadIncidents = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const r = await fetch(`/api/projects/${projectId}/safety`);
-      const d = await r.json();
+      const d = await r.json().catch(() => ({}));
+      // fetch() does not reject on 4xx/5xx — without this check a failed read
+      // fell through to an empty array and rendered as "No incidents reported".
+      if (!r.ok) throw new Error(d.error || `Request failed (${r.status})`);
       setIncidents(d.incidents || d.items || d.data || []);
-    } catch { /* offline */ }
+    } catch (e) {
+      setIncidents([]);
+      setLoadError(e instanceof Error ? e.message : 'Could not load incidents');
+    }
     setLoading(false);
   };
 
@@ -889,6 +899,24 @@ function SafetyPage() {
         {/* List */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: DIM }}>Loading incidents...</div>
+        ) : loadError ? (
+          <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
+            <div style={{ marginBottom: 8, color: RED, display: 'flex', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={40} height={40}>
+                <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              </svg>
+            </div>
+            <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: TEXT }}>Could not load incidents</p>
+            <p style={{ margin: '0 0 12px', fontSize: 13 }}>
+              This is <strong>not</strong> a clean safety record — the read failed. {loadError}
+            </p>
+            <button
+              onClick={loadIncidents}
+              style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${GOLD}`, background: 'transparent', color: GOLD, fontSize: 14, fontWeight: 700 }}
+            >
+              Retry
+            </button>
+          </div>
         ) : incidents.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
             <div style={{ marginBottom: 8, color: GREEN, display: 'flex', justifyContent: 'center', opacity: 0.6 }}>

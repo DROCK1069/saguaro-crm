@@ -33,7 +33,11 @@ export async function GET(
 
     if (error) throw error;
     return NextResponse.json({ logs: data ?? [] });
-  } catch {
-    return NextResponse.json({ logs: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/daily-logs] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load logs', detail }, { status: 500 });
   }
 }

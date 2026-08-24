@@ -16,7 +16,13 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     const { data, error } = await q.order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json({ purchase_orders: data ?? [] });
-  } catch { return NextResponse.json({ purchase_orders: [] }); }
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/purchase-orders] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load purchase orders', detail }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {
@@ -29,8 +35,9 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const { data, error } = await supabase.from('purchase_orders').insert({
       tenant_id: user.tenantId, project_id: params.projectId,
       po_number: body.po_number || null, vendor_name: body.vendor_name,
-      vendor_email: body.vendor_email || null, total: body.amount || 0,
-      status: body.status || 'draft', delivery_date: body.required_date || body.issued_date || null,
+      vendor_email: body.vendor_email || null, total: Number(body.amount ?? body.total) || 0,
+      status: body.status || 'draft', delivery_date: body.required_date || null,
+      issued_date: body.issued_date || null,
       description: body.description || null,
       line_items: body.line_items || [], pdf_url: body.file_url || null,
     }).select().single();

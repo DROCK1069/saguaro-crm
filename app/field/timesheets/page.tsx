@@ -127,6 +127,9 @@ function TimesheetsInner() {
   const [actionModal, setActionModal] = useState<{ type: 'approve' | 'reject'; ids: string[] } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [toast, setToast] = useState('');
+  /** Failed list read — kept distinct from a genuinely empty week, because an
+   *  empty week is a payroll claim. */
+  const [loadError, setLoadError] = useState('');
 
   // Create form state
   const [formName, setFormName] = useState('');
@@ -152,12 +155,18 @@ function TimesheetsInner() {
     setLoading(true);
     try {
       const res = await fetch(base);
-      if (res.ok) {
-        const data = await res.json();
-        setEntries(Array.isArray(data) ? data : data.data ?? []);
-      }
-    } catch {
-      showToast('Offline — showing cached data');
+      const data = await res.json().catch(() => ({}));
+      // fetch() does not reject on 4xx/5xx, and the route answers
+      // { entries, timesheets } — the old `data.data` read matched nothing, so
+      // every server-loaded entry was dropped and the week rendered as empty.
+      if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+      setEntries(Array.isArray(data) ? data : (data.entries ?? data.timesheets ?? []));
+      setLoadError('');
+    } catch (e) {
+      // An empty timesheet week is a payroll statement. Never render one off a
+      // failed read — show the failure and a retry instead.
+      setEntries([]);
+      setLoadError(e instanceof Error ? e.message : 'Could not load timesheet entries.');
     } finally {
       setLoading(false);
     }
@@ -174,7 +183,15 @@ function TimesheetsInner() {
         body: body ? JSON.stringify(body) : undefined,
       });
       if (res.ok) return await res.json();
-      throw new Error(`${res.status}`);
+      const data = await res.json().catch(() => ({}));
+      // A 4xx is the server understanding the request and refusing it — a
+      // permission or validation problem. Queueing that just retries it into the
+      // dead-letter store while the user is told it will sync. Report it instead.
+      if (res.status >= 400 && res.status < 500) {
+        showToast(data?.error || (res.status === 403 ? 'Not permitted' : `Refused (${res.status})`));
+        return null;
+      }
+      throw new Error(data?.error || `${res.status}`);
     } catch {
       if (body) {
         await enqueue({
@@ -257,44 +274,55 @@ function TimesheetsInner() {
     if (result !== null) {
       showToast('Entry deleted');
       setEntries((prev) => prev.filter((e) => e.id !== id));
+    } else {
+      // The row is still there. Do NOT drop it from the list — apiCall has
+      // already toasted the reason.
+      showToast('Entry was not deleted.');
     }
     setDeleteConfirm(null);
   }
 
-  /* ── Status workflow ── */
-  async function handleSubmit(ids: string[]) {
+  /* ── Status workflow ──
+   * apiCall() returns null both when a write was refused AND when it was queued
+   * offline, and the old handlers ignored the return value entirely — so a batch
+   * where every PATCH 403-ed still toasted "3 entry(ies) approved". Count what
+   * actually came back, and say the real number. */
+  async function applyStatus(ids: string[], patch: Record<string, unknown>, verb: string) {
+    let ok = 0;
     for (const id of ids) {
-      await apiCall(`${base}/${id}`, 'PATCH', { status: 'submitted', submitted_at: new Date().toISOString() });
+      const r = await apiCall(`${base}/${id}`, 'PATCH', patch);
+      if (r) ok++;
     }
-    showToast(`${ids.length} entry(ies) submitted`);
-    setSelected(new Set());
+    if (ok === 0) {
+      showToast(`Nothing was ${verb} — no entry was saved.`);
+    } else if (ok < ids.length) {
+      showToast(`${ok} of ${ids.length} entry(ies) ${verb}; ${ids.length - ok} failed.`);
+    } else {
+      showToast(`${ok} entry(ies) ${verb}`);
+    }
     fetchEntries();
+    return ok;
+  }
+
+  async function handleSubmit(ids: string[]) {
+    await applyStatus(ids, { status: 'submitted', submitted_at: new Date().toISOString() }, 'submitted');
+    setSelected(new Set());
   }
 
   async function handleApprove(ids: string[]) {
-    for (const id of ids) {
-      await apiCall(`${base}/${id}`, 'PATCH', {
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        approved_by: 'Current User',
-      });
-    }
-    showToast(`${ids.length} entry(ies) approved`);
+    // approved_by / approved_at are stamped SERVER-SIDE from the authenticated
+    // session. The client used to send the literal text 'Current User', which is
+    // what payroll would have found on the approval record.
+    await applyStatus(ids, { status: 'approved' }, 'approved');
+    setSelected(new Set());
     setActionModal(null);
-    fetchEntries();
   }
 
   async function handleReject(ids: string[], reason: string) {
-    for (const id of ids) {
-      await apiCall(`${base}/${id}`, 'PATCH', {
-        status: 'rejected',
-        rejection_reason: reason,
-      });
-    }
-    showToast(`${ids.length} entry(ies) rejected`);
+    await applyStatus(ids, { status: 'rejected', rejection_reason: reason }, 'rejected');
+    setSelected(new Set());
     setRejectionReason('');
     setActionModal(null);
-    fetchEntries();
   }
 
   /* ── Copy previous week ── */
@@ -629,7 +657,24 @@ function TimesheetsInner() {
       {/* ═══════════════════ LIST VIEW ═══════════════════ */}
       {!loading && view === 'list' && (
         <div style={{ padding: '0 16px 100px' }}>
-          {filtered.length === 0 && (
+          {/* A failed read must never render as "no timesheet entries" — that is
+              a statement about someone's pay. Distinct state, with a retry. */}
+          {loadError && (
+            <div style={{
+              textAlign: 'center', padding: 40, margin: '16px 0',
+              border: `1px solid ${RED}`, borderRadius: 12, background: hexAlpha(RED, 0.08),
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: RED, marginBottom: 4 }}>Timesheets did not load</div>
+              <div style={{ fontSize: 13, color: DIM, marginBottom: 6 }}>{loadError}</div>
+              <div style={{ fontSize: 12, color: DIM, marginBottom: 16 }}>Hours may have been logged that are not shown here.</div>
+              <button onClick={fetchEntries} style={{
+                background: GOLD, color: '#241500', border: 'none', borderRadius: 8,
+                padding: '10px 20px', fontWeight: 800, cursor: 'pointer',
+              }}>Retry</button>
+            </div>
+          )}
+
+          {!loadError && filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: 60, color: DIM }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 4 }}>No timesheet entries</div>
               <div style={{ fontSize: 13 }}>Log hours with New Entry to get started</div>

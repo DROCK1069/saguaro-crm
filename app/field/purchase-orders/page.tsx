@@ -58,8 +58,39 @@ interface PurchaseOrder {
 
 type View = 'list' | 'create' | 'detail' | 'receive';
 
-function fmt(n: number): string {
-  return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/** Money we do not have is an em-dash, never "$NaN" and never a confident $0.00. */
+function fmt(n: unknown): string {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return '—';
+  return '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/** purchase_orders stores the money in `total` and the date in `delivery_date`;
+ *  the page has always read `amount` / `required_date`. Normalise once, here,
+ *  so no total downstream is ever computed over `undefined`. */
+function normalizePO(row: Record<string, unknown>): PurchaseOrder {
+  const lines = Array.isArray(row.line_items) ? (row.line_items as LineItem[]) : [];
+  const amount = Number(row.total ?? row.amount);
+  return {
+    id: String(row.id ?? ''),
+    po_number: (row.po_number as string) || '',
+    vendor_name: (row.vendor_name as string) || '',
+    vendor_email: (row.vendor_email as string) || '',
+    amount: Number.isFinite(amount) ? amount : 0,
+    status: (row.status as string) || 'draft',
+    issued_date: String(row.issued_date ?? row.created_at ?? '').slice(0, 10),
+    required_date: String(row.delivery_date ?? row.required_date ?? '').slice(0, 10),
+    description: (row.description as string) || '',
+    line_items: lines.map(l => ({
+      ...l,
+      qty: Number(l?.qty) || 0,
+      unit_price: Number(l?.unit_price) || 0,
+      total: Number(l?.total) || 0,
+      received_qty: Number(l?.received_qty) || 0,
+    })),
+    file_url: (row.pdf_url as string) || (row.file_url as string) || '',
+    created_at: row.created_at as string | undefined,
+  };
 }
 
 function uid(): string {
@@ -80,6 +111,10 @@ function PurchaseOrdersInner() {
   const [view, setView] = useState<View>('list');
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [error, setError] = useState('');
+  /** True when the list read failed. An empty list after a failed read is not
+   *  "no purchase orders" — the empty state must not claim otherwise. */
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   /* Filters */
   const [filterStatus, setFilterStatus] = useState('all');
@@ -119,18 +154,44 @@ function PurchaseOrdersInner() {
   }
   function closeActionSheet() { setActionSheet(null); setSheetMode('menu'); }
 
+  /** Write the new PO total. The column is `total`, not `amount` — sending
+   *  `amount` produced an empty patch that the API accepted and discarded.
+   *  Optimistic, but rolled back and reported if the write does not land. */
+  async function saveAmount(poId: string, prevAmount: number, newAmount: number) {
+    setOrders(prev => prev.map(o => o.id === poId ? { ...o, amount: newAmount } : o));
+    setSelected(prev => prev && prev.id === poId ? { ...prev, amount: newAmount } : prev);
+    closeActionSheet();
+    setError('');
+    try {
+      const res = await fetch(`/api/purchase-orders/${poId}/update`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total: newAmount }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || `Save failed (${res.status})`);
+      const saved = data?.purchase_order ? normalizePO(data.purchase_order) : null;
+      if (saved) {
+        setOrders(prev => prev.map(o => o.id === poId ? saved : o));
+        setSelected(prev => prev && prev.id === poId ? saved : prev);
+      }
+    } catch (e) {
+      // Roll the number back — leaving the new figure on screen would tell the
+      // PM a commitment changed when the ledger still holds the old one.
+      setOrders(prev => prev.map(o => o.id === poId ? { ...o, amount: prevAmount } : o));
+      setSelected(prev => prev && prev.id === poId ? { ...prev, amount: prevAmount } : prev);
+      setError(e instanceof Error ? `PO amount not saved — ${e.message}` : 'PO amount not saved.');
+    }
+  }
+
   async function handleEditPO(amount: number) {
     if (!actionSheet) return;
-    setOrders(prev => prev.map(o => o.id === actionSheet.poId ? { ...o, amount } : o));
-    closeActionSheet();
-    try { await fetch(`/api/purchase-orders/${actionSheet.poId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount }) }); } catch {}
+    await saveAmount(actionSheet.poId, actionSheet.amount, amount);
   }
   async function handleAdjustPO(pct: number) {
     if (!actionSheet) return;
     const newAmt = Math.round(actionSheet.amount * (1 + pct / 100) * 100) / 100;
-    setOrders(prev => prev.map(o => o.id === actionSheet.poId ? { ...o, amount: newAmt } : o));
-    closeActionSheet();
-    try { await fetch(`/api/purchase-orders/${actionSheet.poId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: newAmt }) }); } catch {}
+    await saveAmount(actionSheet.poId, actionSheet.amount, newAmt);
   }
   function handleCopyPO(amount: number, id: string) {
     navigator.clipboard.writeText(fmt(amount)).catch(() => {});
@@ -138,29 +199,50 @@ function PurchaseOrdersInner() {
     closeActionSheet();
   }
   async function handleDeletePO(id: string) {
+    const removed = orders.find(o => o.id === id);
     setOrders(prev => prev.filter(o => o.id !== id));
     setDeleteConfirm(null);
-    try { await fetch(`/api/purchase-orders/${id}/delete`, { method: 'DELETE' }); } catch {}
+    setError('');
+    try {
+      const res = await fetch(`/api/purchase-orders/${id}/delete`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || `Delete failed (${res.status})`);
+      }
+      if (selected?.id === id) { setSelected(null); setView('list'); }
+    } catch (e) {
+      // Put it back — a PO that vanished from the screen but not the ledger is
+      // worse than one that never disappeared.
+      if (removed) setOrders(prev => [removed, ...prev.filter(o => o.id !== id)]);
+      setError(e instanceof Error ? `PO not deleted — ${e.message}` : 'PO not deleted.');
+    }
   }
 
   /* ── Fetch ── */
   useEffect(() => {
     if (!projectId) { setLoading(false); return; }
     let cancelled = false;
+    setLoading(true); setLoadFailed(false);
     (async () => {
       try {
         const res = await fetch(`/api/projects/${projectId}/purchase-orders`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (!cancelled) setOrders(Array.isArray(data) ? data : data.data ?? []);
+        // The route answers { purchase_orders: [...] } — the old `data.data`
+        // read matched nothing, so every server-loaded PO fell on the floor.
+        const rows: Record<string, unknown>[] = Array.isArray(data)
+          ? data
+          : (data.purchase_orders ?? data.data ?? []);
+        if (!cancelled) setOrders(rows.map(normalizePO));
       } catch {
-        setError('Failed to load purchase orders. Working offline.');
+        setLoadFailed(true);
+        setError('Could not load purchase orders — this list is incomplete, not empty.');
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [projectId]);
+  }, [projectId, reloadKey]);
 
   /* ── Filtered & Sorted ── */
   const vendors = useMemo(() => {
@@ -262,25 +344,54 @@ function PurchaseOrdersInner() {
       file_url: formFileUrl.trim(),
     };
     const result = await persist('POST', po);
-    if (result) {
-      setOrders(prev => [{ ...po, id: result.id ?? uid(), created_at: new Date().toISOString() } as PurchaseOrder, ...prev]);
+    if (result?.purchase_order) {
+      // Use the row the DB actually wrote — its real id is what every later
+      // edit, receive, and delete on this PO is addressed to.
+      setOrders(prev => [normalizePO(result.purchase_order), ...prev]);
+      setError('');
     } else {
+      // persist() only returns null after it queued the request offline. Show the
+      // PO, but with a local id and an explicit note — it is not saved yet.
       setOrders(prev => [{ ...po, id: uid(), created_at: new Date().toISOString() } as PurchaseOrder, ...prev]);
+      setError('Saved offline — this PO will sync when the connection returns.');
     }
     resetForm();
     setSaving(false);
     setView('list');
   }
 
+  /** PATCH an existing PO. The old code POSTed to the collection endpoint with
+   *  a `_action: 'update'` flag the route never read — every status change and
+   *  every receipt inserted a DUPLICATE purchase order instead of updating one.
+   *  Returns the saved row, or throws with the reason. */
+  async function patchPO(id: string, patch: Record<string, unknown>): Promise<PurchaseOrder> {
+    const url = `/api/purchase-orders/${id}/update`;
+    const payload = JSON.stringify(patch);
+    const res = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: payload });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.purchase_order) throw new Error(data?.error || `Save failed (${res.status})`);
+    return normalizePO(data.purchase_order);
+  }
+
   /* ── Status transitions ── */
   async function advanceStatus(po: PurchaseOrder, newStatus: string) {
-    const updated = { ...po, status: newStatus };
+    const patch: Record<string, unknown> = { status: newStatus };
     if (newStatus === 'issued' && !po.issued_date) {
-      updated.issued_date = new Date().toISOString().slice(0, 10);
+      patch.issued_date = new Date().toISOString().slice(0, 10);
     }
-    await persist('POST', { ...updated, _action: 'update' });
-    setOrders(prev => prev.map(o => o.id === po.id ? updated : o));
-    setSelected(updated);
+    const optimistic = { ...po, status: newStatus, issued_date: (patch.issued_date as string) || po.issued_date };
+    setOrders(prev => prev.map(o => o.id === po.id ? optimistic : o));
+    setSelected(optimistic);
+    setError('');
+    try {
+      const saved = await patchPO(po.id, patch);
+      setOrders(prev => prev.map(o => o.id === po.id ? saved : o));
+      setSelected(saved);
+    } catch (e) {
+      setOrders(prev => prev.map(o => o.id === po.id ? po : o));
+      setSelected(po);
+      setError(e instanceof Error ? `Status not changed — ${e.message}` : 'Status not changed.');
+    }
   }
 
   /* ── Receiving ── */
@@ -303,11 +414,23 @@ function PurchaseOrdersInner() {
     let newStatus = selected.status;
     if (allReceived) newStatus = 'received';
     else if (someReceived) newStatus = 'partial';
+    const before = selected;
     const updated = { ...selected, line_items: updatedLines, status: newStatus };
-    await persist('POST', { ...updated, _action: 'update' });
     setOrders(prev => prev.map(o => o.id === selected.id ? updated : o));
     setSelected(updated);
     setView('detail');
+    setError('');
+    try {
+      const saved = await patchPO(selected.id, { line_items: updatedLines, status: newStatus });
+      setOrders(prev => prev.map(o => o.id === before.id ? saved : o));
+      setSelected(saved);
+    } catch (e) {
+      // Received quantities that were not written must not stay on screen —
+      // the warehouse would stop chasing a delivery the record never took in.
+      setOrders(prev => prev.map(o => o.id === before.id ? before : o));
+      setSelected(before);
+      setError(e instanceof Error ? `Receipt not recorded — ${e.message}` : 'Receipt not recorded.');
+    }
   }
 
   /* ── PDF export ── */
@@ -436,8 +559,15 @@ function PurchaseOrdersInner() {
         {loading && <p style={{ color: DIM, textAlign: 'center', padding: 40 }}>Loading purchase orders...</p>}
         {error && <p style={{ color: RED, fontSize: 13, marginBottom: 12 }}>{error}</p>}
 
-        {/* PO cards */}
-        {!loading && filtered.length === 0 && (
+        {/* PO cards. A failed read gets a retry, not the "none found" line. */}
+        {!loading && loadFailed && (
+          <div style={{ ...cardStyle, textAlign: 'center', padding: 40, borderColor: RED }}>
+            <p style={{ color: RED, margin: '0 0 6px', fontWeight: 700 }}>Purchase orders did not load</p>
+            <p style={{ color: DIM, margin: '0 0 16px', fontSize: 13 }}>This project may have open POs that are not shown.</p>
+            <button style={btnGold} onClick={() => { setLoadFailed(false); setError(''); setReloadKey(k => k + 1); }}>Retry</button>
+          </div>
+        )}
+        {!loading && !loadFailed && filtered.length === 0 && (
           <div style={{ ...cardStyle, textAlign: 'center', padding: 40 }}>
             <p style={{ color: DIM, margin: 0 }}>No purchase orders found.</p>
           </div>

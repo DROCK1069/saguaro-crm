@@ -87,9 +87,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     if (error) throw error;
     return NextResponse.json({ links: data || [] });
   } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[photos/link GET]', msg);
-    return NextResponse.json({ links: [] });
+    const detail = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[photos/link GET]', detail);
+    // A failed read must not render as "no linked photos" — surface it so the
+    // UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load photo links', detail }, { status: 500 });
   }
 }
 

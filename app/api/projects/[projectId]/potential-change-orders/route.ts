@@ -64,8 +64,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
 
     const potential_change_orders = (data || []).map((r: Row) => rowToPco(r));
     return NextResponse.json({ potential_change_orders, source: 'live' });
-  } catch {
-    return NextResponse.json({ potential_change_orders: [], source: 'error' });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/potential-change-orders] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load potential change orders', detail }, { status: 500 });
   }
 }
 

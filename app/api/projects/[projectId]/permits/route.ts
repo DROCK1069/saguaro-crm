@@ -24,7 +24,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       .order('created_at', { ascending: false });
     if (error) throw error;
     return NextResponse.json({ permits: data ?? [] });
-  } catch {
-    return NextResponse.json({ permits: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/permits] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load permits', detail }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, getUser } from '@/lib/supabase-server';
+import { createServerClient } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
+import { toUi, toDbPatch, PATCH_COLUMN, type WarrantyRow } from '@/lib/warranty-claims-shape';
 
 export async function PATCH(req: NextRequest, { params }: { params: { projectId: string; id: string } }) {
   const g = await requirePermission(req, 'Safety', 'Edit');
@@ -9,23 +10,35 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
   try {
     const supabase = createServerClient();
     const body = await req.json();
-    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    // Pass through real columns directly. communication_log (jsonb) is sent by the
-    // page as the full updated array, so this is a replace.
-    const direct = ['title','description','location','status','resolution','communication_log'];
-    for (const k of direct) if (body[k] !== undefined) updates[k] = body[k];
-    // Map UI field names to their warranty_claims columns; drop the rest
-    // (category/scheduled_date/cost/covered_under_warranty/notes have no column).
-    if (body.priority !== undefined) updates.severity = body.priority;
-    if (body.assigned_trade !== undefined) updates.trade = body.assigned_trade;
-    if (body.assigned_contractor !== undefined) updates.assigned_to = body.assigned_contractor;
-    if (body.completed_date !== undefined) updates.resolved_at = body.completed_date;
-    if (body.photos !== undefined) updates.photo_urls = body.photos;
-    const { data, error } = await supabase.from('warranty_claims').update(updates).eq('id', params.id).eq('project_id', params.projectId).eq('tenant_id', user.tenantId).select().single();
+
+    const patch = toDbPatch(body);
+    // Refuse an edit we cannot persist rather than 200-ing on a no-op. A client
+    // that sends a field with no column deserves to hear about it.
+    const unknownKeys = Object.keys(body).filter((k) => !(k in PATCH_COLUMN));
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json(
+        { error: unknownKeys.length ? `No savable fields in this update (${unknownKeys.join(', ')}).` : 'Nothing to update.' },
+        { status: 400 },
+      );
+    }
+    patch.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('warranty_claims')
+      .update(patch as never)
+      .eq('id', params.id)
+      .eq('project_id', params.projectId)
+      .eq('tenant_id', user.tenantId)
+      .select()
+      .maybeSingle();
     if (error) throw error;
-    return NextResponse.json({ claim: data });
+    // maybeSingle() returns null when the row matched nothing — that is a failed
+    // write, not a success, so say so instead of letting the page flash "saved".
+    if (!data) return NextResponse.json({ error: 'Warranty claim not found.' }, { status: 404 });
+    return NextResponse.json({ claim: toUi(data as WarrantyRow) });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Failed';
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[warranty-claims/PATCH]', e);
+    const msg = e instanceof Error ? e.message : 'Failed to update the warranty claim.';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

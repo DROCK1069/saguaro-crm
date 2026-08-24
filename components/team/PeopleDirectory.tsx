@@ -36,6 +36,7 @@ export function PeopleDirectory() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
   const [loggingInc, setLoggingInc] = useState(false);
   const [specInput, setSpecInput] = useState('');
   const [f, setF] = useState<any>({});
@@ -62,13 +63,25 @@ export function PeopleDirectory() {
   const projName = (pid: string) => projects.find((p) => p.id === pid)?.name ?? 'Project';
   const specialties: string[] = Array.isArray(detail?.specialties) ? detail.specialties : [];
 
+  // Both writes used to discard the { error } supabase-js returns (it does NOT
+  // throw), so "Add employee" closed the dialog on failure and every edit to a
+  // title, trade, phone or PAY RATE was silently dropped. Failures are surfaced
+  // now, and the dialog stays open so the work is not lost.
   const addEmp = async () => {
     if (!f.first_name?.trim() && !f.last_name?.trim()) return;
-    const { data } = await sb.from('employees').insert({ first_name: f.first_name || null, last_name: f.last_name || null, full_name: `${f.first_name ?? ''} ${f.last_name ?? ''}`.trim() || null, title: f.title || null, trade: f.trade || null, email: f.email || null, phone: f.phone || null, employment_type: f.employment_type || 'hourly', regular_rate: parseFloat(f.regular_rate) || 0, is_active: true }).select('id').maybeSingle();
+    setSaveErr(null);
+    const { data, error } = await sb.from('employees').insert({ first_name: f.first_name || null, last_name: f.last_name || null, full_name: `${f.first_name ?? ''} ${f.last_name ?? ''}`.trim() || null, title: f.title || null, trade: f.trade || null, email: f.email || null, phone: f.phone || null, employment_type: f.employment_type || 'hourly', regular_rate: parseFloat(f.regular_rate) || 0, is_active: true }).select('id').maybeSingle();
+    if (error) { setSaveErr(error.message || "Couldn't add this person — nothing was saved."); return; }
     setAdding(false); setF({}); await loadRoster(); if (data?.id) setSelId(data.id);
   };
-  const patch = async (payload: any) => { if (!selId) return; await sb.from('employees').update(payload).eq('id', selId); await loadDetail(selId); await loadRoster(); };
-  const saveEdit = async () => { await patch({ first_name: f.first_name || null, last_name: f.last_name || null, full_name: `${f.first_name ?? ''} ${f.last_name ?? ''}`.trim() || null, title: f.title || null, trade: f.trade || null, email: f.email || null, phone: f.phone || null, address: f.address || null, regular_rate: parseFloat(f.regular_rate) || 0, overtime_rate: parseFloat(f.overtime_rate) || 0, emergency_contact_name: f.emergency_contact_name || null, emergency_contact_phone: f.emergency_contact_phone || null }); setEditing(false); };
+  const patch = async (payload: any): Promise<boolean> => {
+    if (!selId) return false;
+    setSaveErr(null);
+    const { error } = await sb.from('employees').update(payload).eq('id', selId);
+    if (error) { setSaveErr(error.message || "Couldn't save that change — nothing was written."); return false; }
+    await loadDetail(selId); await loadRoster(); return true;
+  };
+  const saveEdit = async () => { const ok = await patch({ first_name: f.first_name || null, last_name: f.last_name || null, full_name: `${f.first_name ?? ''} ${f.last_name ?? ''}`.trim() || null, title: f.title || null, trade: f.trade || null, email: f.email || null, phone: f.phone || null, address: f.address || null, regular_rate: parseFloat(f.regular_rate) || 0, overtime_rate: parseFloat(f.overtime_rate) || 0, emergency_contact_name: f.emergency_contact_name || null, emergency_contact_phone: f.emergency_contact_phone || null }); if (ok) setEditing(false); };
   const addSpec = async () => { const s = specInput.trim(); if (!s) return; await patch({ specialties: [...specialties, s] }); setSpecInput(''); };
   const addAssign = async (pid: string) => { if (!selId) return; await sb.from('employee_project_assignments').insert({ employee_id: selId, project_id: pid, active: true }); loadDetail(selId); };
   const rmAssign = async (aid: string) => { await sb.from('employee_project_assignments').delete().eq('id', aid); if (selId) loadDetail(selId); };
@@ -177,6 +190,11 @@ export function PeopleDirectory() {
           {editing && <input value={f.address ?? ''} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="Address" style={{ ...inp, marginTop: 8 }} />}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input value={f.regular_rate ?? ''} onChange={(e) => setF({ ...f, regular_rate: e.target.value })} placeholder="Rate $/hr" style={inp} />{editing && <input value={f.overtime_rate ?? ''} onChange={(e) => setF({ ...f, overtime_rate: e.target.value })} placeholder="OT $/hr" style={inp} />}</div>
           {editing && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input value={f.emergency_contact_name ?? ''} onChange={(e) => setF({ ...f, emergency_contact_name: e.target.value })} placeholder="Emergency contact" style={inp} /><input value={f.emergency_contact_phone ?? ''} onChange={(e) => setF({ ...f, emergency_contact_phone: e.target.value })} placeholder="Emergency phone" style={inp} /></div>}
+          {saveErr && (
+            <div role="alert" style={{ marginTop: 12, padding: '9px 11px', borderRadius: 8, background: 'rgba(239,68,68,0.10)', border: `1px solid ${RED}55`, color: RED, fontSize: 13, lineHeight: 1.45 }}>
+              {saveErr}
+            </div>
+          )}
           <button onClick={adding ? addEmp : saveEdit} style={{ ...btn, marginTop: 14, width: '100%' }}>{adding ? 'Add employee' : 'Save'}</button>
         </Modal>
       )}

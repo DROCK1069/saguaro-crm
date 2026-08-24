@@ -14,10 +14,17 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(100);
-    if (error) return NextResponse.json({ notifications: [] });
+    if (error) {
+      console.error('[projects/[projectId]/notifications] read failed:', error.message);
+      return NextResponse.json({ error: 'Failed to load notifications', detail: error.message }, { status: 500 });
+    }
     return NextResponse.json({ notifications: data || [] });
-  } catch {
-    return NextResponse.json({ notifications: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/notifications] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load notifications', detail }, { status: 500 });
   }
 }
 

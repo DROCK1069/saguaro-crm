@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, getUser } from '@/lib/supabase-server';
 import { requirePermission } from '@/lib/permissions';
+import { sendCorrespondenceEmail } from '@/lib/email';
 import type { Database } from '@/lib/database.types';
+
+/** Pull addresses out of the composer's [{ name, email }] recipient rows. */
+function emails(list: unknown): string[] {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((r) => (typeof r === 'string' ? r : (r as { email?: string })?.email))
+    .map((e) => String(e || '').trim())
+    .filter(Boolean);
+}
 
 export async function GET(req: NextRequest, { params }: { params: { projectId: string } }) {
   const user = await getUser(req);
@@ -14,10 +24,17 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       .eq('project_id', params.projectId)
       .eq('tenant_id', user.tenantId)
       .order('created_at', { ascending: false });
-    if (error) return NextResponse.json({ items: [] });
+    if (error) {
+      console.error('[projects/[projectId]/correspondence] read failed:', error.message);
+      return NextResponse.json({ error: 'Failed to load items', detail: error.message }, { status: 500 });
+    }
     return NextResponse.json({ items: data || [] });
-  } catch {
-    return NextResponse.json({ items: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/correspondence] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load items', detail }, { status: 500 });
   }
 }
 
@@ -29,9 +46,8 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     const body = await req.json();
     const supabase = createServerClient();
     // correspondence real columns map: type->correspondence_type, to->to_names(jsonb),
-    // cc->cc_names(jsonb). The field page also sends priority/request_read_receipt/
-    // reference_links/direction which have no column and no appropriate jsonb bucket
-    // (to_names/cc_names/attachments are typed), so they are dropped to avoid a 500.
+    // cc->cc_names(jsonb). request_read_receipt/reference_links have no column and
+    // no appropriate jsonb bucket, so they are dropped to avoid a 500.
     const record: Record<string, unknown> = {
       project_id: params.projectId,
       tenant_id: user.tenantId,
@@ -42,6 +58,8 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
       cc_names: body.cc_names ?? body.cc ?? [],
       from_email: user.email,
       from_name: body.from_name ?? null,
+      priority: body.priority ?? null,
+      direction: body.direction ?? 'outbound',
       ...(body.sent_at ? { sent_at: body.sent_at } : {}),
       created_by: user.id,
       status: body.status || 'draft',
@@ -52,8 +70,49 @@ export async function POST(req: NextRequest, { params }: { params: { projectId: 
     // Never fabricate a fake `corr-…` id on failure — that reports a save that
     // never happened. Surface the real DB error instead.
     if (error) { console.error('[correspondence/POST]', error); return NextResponse.json({ error: error.message || 'Failed to create correspondence' }, { status: 500 }); }
-    return NextResponse.json({ item: data });
-  } catch {
+
+    // ── ACTUALLY SEND IT ──
+    // A draft is filed, not transmitted. Anything else is outbound mail, and the
+    // composer's "Correspondence sent." has to be backed by a real send. The row
+    // is already saved either way; `emailed` tells the client which words to use.
+    const isDraft = String(record.status).toLowerCase() === 'draft';
+    if (isDraft) {
+      return NextResponse.json({ item: data, emailed: false, draft: true });
+    }
+
+    const { data: project } = await supabase
+      .from('projects').select('name').eq('id', params.projectId).eq('tenant_id', user.tenantId).maybeSingle();
+
+    const result = await sendCorrespondenceEmail({
+      to: emails(body.to_names ?? body.to),
+      cc: emails(body.cc_names ?? body.cc),
+      subject: String(record.subject),
+      body: String(record.body ?? ''),
+      fromName: (body.from_name as string) || user.email,
+      replyTo: user.email,
+      correspondenceType: (record.correspondence_type as string) || null,
+      projectName: (project as { name?: string } | null)?.name ?? null,
+      referenceNumber: (body.reference_number as string) || null,
+    });
+
+    if (!result.sent) {
+      // Mark the row for what it is — logged, not transmitted — so the register
+      // never shows a "Sent" letter that no one received.
+      await supabase
+        .from('correspondence')
+        .update({ status: 'Logged', sent_at: null } as never)
+        .eq('id', (data as { id: string }).id)
+        .eq('tenant_id', user.tenantId);
+      return NextResponse.json({
+        item: { ...(data as Record<string, unknown>), status: 'Logged', sent_at: null },
+        emailed: false,
+        email_error: result.error || 'The correspondence was not emailed.',
+      });
+    }
+
+    return NextResponse.json({ item: data, emailed: true, recipients: result.recipients });
+  } catch (e) {
+    console.error('[correspondence/POST]', e);
     return NextResponse.json({ error: 'Failed to create correspondence' }, { status: 500 });
   }
 }

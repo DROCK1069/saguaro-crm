@@ -12,7 +12,13 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     const { data, error } = await supabase.from('specifications').select('*').eq('project_id', params.projectId).order('section_number', { ascending: true });
     if (error) throw error;
     return NextResponse.json({ specs: data ?? [] });
-  } catch { return NextResponse.json({ specs: [] }); }
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/specs] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load specs', detail }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {

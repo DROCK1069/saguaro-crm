@@ -42,9 +42,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
 
     return NextResponse.json({ actions: data || [] });
   } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[safety/corrective-actions] GET error:', msg);
-    return NextResponse.json({ actions: [] });
+    const detail = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[safety/corrective-actions] GET error:', detail);
+    // An empty list here reads as "no outstanding corrective actions" — a safety
+    // all-clear. A failed read must surface as an error the UI can retry.
+    return NextResponse.json({ error: 'Failed to load corrective actions', detail }, { status: 500 });
   }
 }
 

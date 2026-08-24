@@ -134,6 +134,9 @@ export default function SafetyPage() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  // Distinct from "no incidents": the read itself failed, so we know nothing
+  // about this project's safety record and must not imply a clean one.
+  const [loadError, setLoadError] = useState('');
 
   // Corrective Actions state
   const [actions, setActions] = useState<CorrectiveAction[]>([]);
@@ -158,12 +161,17 @@ export default function SafetyPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const res = await fetch(`/api/projects/${projectId}/safety`);
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
+      // fetch() does not reject on 4xx/5xx — without this check a failed read
+      // fell through to an empty array and rendered as a clean safety log.
+      if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
       setIncidents((json.incidents || []).map(normalizeIncident));
-    } catch {
+    } catch (e) {
       setIncidents([]);
+      setLoadError(e instanceof Error ? e.message : 'Could not load safety data');
     } finally {
       setLoading(false);
     }
@@ -596,6 +604,20 @@ export default function SafetyPage() {
         >
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center', color: T.muted }}>Loading...</div>
+          ) : loadError ? (
+            <div style={{ padding: 40, textAlign: 'center' }}>
+              <Warning size={30} weight="duotone" color={RED} />
+              <div style={{ marginTop: 12, color: T.white, fontSize: 15, fontWeight: 700 }}>
+                Could not load the incident log
+              </div>
+              <div style={{ marginTop: 6, color: T.muted, fontSize: 13, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>
+                This is <strong>not</strong> a clean safety record — the read failed, so this
+                project&apos;s incidents are unknown. {loadError}
+              </div>
+              <button onClick={fetchData} style={{ ...ghostButtonStyle, marginTop: 16 }} className="pmBtn">
+                Retry
+              </button>
+            </div>
           ) : incidents.length === 0 ? (
             <PremiumEmpty
               icon={<CheckCircle size={30} weight="duotone" color={GREEN} />}

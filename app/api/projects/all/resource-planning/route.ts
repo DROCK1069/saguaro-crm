@@ -87,8 +87,12 @@ export async function GET(req: NextRequest) {
 
     const mapped = (data || []).map((r) => toPage(r as DbRow));
     return NextResponse.json({ data: mapped, source: 'live' });
-  } catch {
-    return NextResponse.json({ data: [], source: 'error' });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/all/resource-planning] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load data', detail }, { status: 500 });
   }
 }
 

@@ -383,6 +383,8 @@ function PunchListPage() {
   const [selected, setSelected] = useState<PunchItem | null>(null);
   const [filter, setFilter]   = useState('all');
   const [loading, setLoading] = useState(true);
+  // Distinct from "no punch items": the read failed, so the list is unknown.
+  const [loadError, setLoadError] = useState('');
   const [saving, setSaving]   = useState(false);
   const [online, setOnline]   = useState(true);
   const [projectName, setProjectName] = useState('');
@@ -581,11 +583,18 @@ function PunchListPage() {
 
   const loadItems = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const r = await fetch(`/api/projects/${projectId}/punch-list`);
-      const d = await r.json();
+      const d = await r.json().catch(() => ({}));
+      // fetch() does not reject on 4xx/5xx — without this check a failed read
+      // fell through to an empty array and rendered as a finished punch list.
+      if (!r.ok) throw new Error(d.error || `Request failed (${r.status})`);
       setItems(d.items || d.data || []);
-    } catch { /* offline */ }
+    } catch (e) {
+      setItems([]);
+      setLoadError(e instanceof Error ? e.message : 'Could not load punch items');
+    }
     setLoading(false);
   };
 
@@ -681,43 +690,93 @@ function PunchListPage() {
   const selectAll = () => { setSelectedIds(new Set(filtered.map((i) => i.id))); };
   const deselectAll = () => { setSelectedIds(new Set()); };
 
+  /**
+   * Run one batch operation and report what ACTUALLY happened.
+   *
+   * The old code fired the request, never looked at the response, and toasted
+   * "N item(s) closed" regardless — so a user without Projects/Edit permission
+   * got a 403, nothing was written, nothing was queued, and the screen told them
+   * the work was done. Three outcomes are now distinguished:
+   *   • ok       → the server's own count, which can be lower than N
+   *   • refused  → a 4xx; surfaced, and the optimistic change rolled back.
+   *                Queueing a refusal would just retry it into the dead letter.
+   *   • offline  → queued, and labelled as pending rather than done.
+   */
+  type BatchOutcome = { kind: 'ok'; count: number } | { kind: 'refused'; reason: string } | { kind: 'queued' };
+
+  const runBatch = async (
+    method: 'PATCH' | 'DELETE',
+    body: Record<string, unknown>,
+  ): Promise<BatchOutcome> => {
+    const url = `/api/projects/${projectId}/punch-list/batch`;
+    const payload = JSON.stringify(body);
+    try {
+      if (!online) throw new Error('offline');
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const count = Number(data?.updated ?? data?.deleted);
+        return { kind: 'ok', count: Number.isFinite(count) ? count : 0 };
+      }
+      if (res.status >= 400 && res.status < 500) {
+        return { kind: 'refused', reason: data?.error || (res.status === 403 ? 'you do not have permission to change these items' : `refused (${res.status})`) };
+      }
+      throw new Error(data?.error || `HTTP ${res.status}`);
+    } catch {
+      await enqueue({ url, method, body: payload, contentType: 'application/json', isFormData: false });
+      return { kind: 'queued' };
+    }
+  };
+
   const batchClose = async () => {
     setBatchBusy(true);
     const ids = Array.from(selectedIds);
-    // Optimistic update
+    const before = items;
     setItems((prev) => prev.map((i) => ids.includes(i.id) ? { ...i, status: 'complete' } : i));
-    try {
-      if (!online) throw new Error('offline');
-      await fetch(`/api/projects/${projectId}/punch-list/batch`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids, update: { status: 'complete' } }),
-      });
-    } catch {
-      await enqueue({ url: `/api/projects/${projectId}/punch-list/batch`, method: 'PATCH', body: JSON.stringify({ ids, update: { status: 'complete' } }), contentType: 'application/json', isFormData: false });
+
+    const out = await runBatch('PATCH', { ids, update: { status: 'complete' } });
+    if (out.kind === 'refused') {
+      setItems(before);
+      setToast(`Nothing was closed — ${out.reason}`);
+    } else if (out.kind === 'queued') {
+      setToast(`${ids.length} item(s) queued — not closed yet`);
+    } else {
+      setToast(out.count === ids.length
+        ? `${out.count} item(s) closed`
+        : `${out.count} of ${ids.length} item(s) closed`);
+      if (out.count !== ids.length) loadItems();
     }
+
     setSelectedIds(new Set());
     setSelectMode(false);
     setBatchBusy(false);
-    setToast(`${ids.length} item(s) closed`);
   };
 
   const batchReassign = async (newAssignee: string) => {
     setBatchBusy(true);
     const ids = Array.from(selectedIds);
+    const before = items;
     setItems((prev) => prev.map((i) => ids.includes(i.id) ? { ...i, assignee: newAssignee } : i));
-    try {
-      if (!online) throw new Error('offline');
-      await fetch(`/api/projects/${projectId}/punch-list/batch`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids, update: { assignee: newAssignee } }),
-      });
-    } catch {
-      await enqueue({ url: `/api/projects/${projectId}/punch-list/batch`, method: 'PATCH', body: JSON.stringify({ ids, update: { assignee: newAssignee } }), contentType: 'application/json', isFormData: false });
+
+    const out = await runBatch('PATCH', { ids, update: { assignee: newAssignee } });
+    if (out.kind === 'refused') {
+      setItems(before);
+      setToast(`Nothing was reassigned — ${out.reason}`);
+    } else if (out.kind === 'queued') {
+      setToast(`${ids.length} item(s) queued — not reassigned yet`);
+    } else {
+      // Only tell the assignee about work that was actually handed to them.
+      if (out.count > 0) await sendNotification(newAssignee, `${out.count} punch item(s) have been reassigned to you.`);
+      setToast(out.count === ids.length
+        ? `${out.count} item(s) reassigned`
+        : `${out.count} of ${ids.length} item(s) reassigned`);
+      if (out.count !== ids.length) loadItems();
     }
-    // Send notification
-    await sendNotification(newAssignee, `${ids.length} punch item(s) have been reassigned to you.`);
+
     setSelectedIds(new Set());
     setSelectMode(false);
     setShowAssigneePicker(false);
@@ -727,42 +786,52 @@ function PunchListPage() {
   const batchChangePriority = async (newPriority: string) => {
     setBatchBusy(true);
     const ids = Array.from(selectedIds);
+    const before = items;
     setItems((prev) => prev.map((i) => ids.includes(i.id) ? { ...i, priority: newPriority } : i));
-    try {
-      if (!online) throw new Error('offline');
-      await fetch(`/api/projects/${projectId}/punch-list/batch`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids, update: { priority: newPriority } }),
-      });
-    } catch {
-      await enqueue({ url: `/api/projects/${projectId}/punch-list/batch`, method: 'PATCH', body: JSON.stringify({ ids, update: { priority: newPriority } }), contentType: 'application/json', isFormData: false });
+
+    const out = await runBatch('PATCH', { ids, update: { priority: newPriority } });
+    if (out.kind === 'refused') {
+      setItems(before);
+      setToast(`Priority unchanged — ${out.reason}`);
+    } else if (out.kind === 'queued') {
+      setToast(`${ids.length} item(s) queued — priority not changed yet`);
+    } else {
+      setToast(out.count === ids.length
+        ? `${out.count} item(s) updated to ${newPriority}`
+        : `${out.count} of ${ids.length} item(s) updated to ${newPriority}`);
+      if (out.count !== ids.length) loadItems();
     }
+
     setSelectedIds(new Set());
     setSelectMode(false);
     setShowPriorityPicker(false);
     setBatchBusy(false);
-    setToast(`${ids.length} item(s) updated to ${newPriority}`);
   };
 
   const batchDelete = async () => {
     setBatchBusy(true);
     const ids = Array.from(selectedIds);
+    const before = items;
     setItems((prev) => prev.filter((i) => !ids.includes(i.id)));
-    try {
-      if (!online) throw new Error('offline');
-      await fetch(`/api/projects/${projectId}/punch-list/batch`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids }),
-      });
-    } catch {
-      await enqueue({ url: `/api/projects/${projectId}/punch-list/batch`, method: 'DELETE', body: JSON.stringify({ ids }), contentType: 'application/json', isFormData: false });
+
+    const out = await runBatch('DELETE', { ids });
+    if (out.kind === 'refused') {
+      // Put them back — items that vanished from the list but not the database
+      // are how a punch item gets forgotten at closeout.
+      setItems(before);
+      setToast(`Nothing was deleted — ${out.reason}`);
+    } else if (out.kind === 'queued') {
+      setToast(`${ids.length} item(s) queued — not deleted yet`);
+    } else {
+      setToast(out.count === ids.length
+        ? `${out.count} item(s) deleted`
+        : `${out.count} of ${ids.length} item(s) deleted`);
+      if (out.count !== ids.length) loadItems();
     }
+
     setSelectedIds(new Set());
     setSelectMode(false);
     setBatchBusy(false);
-    setToast(`${ids.length} item(s) deleted`);
   };
 
   // Detail view reassign
@@ -898,6 +967,24 @@ function PunchListPage() {
       {view === 'list' && (
         loading ? (
           <div style={{ textAlign: 'center', padding: '32px 0', color: DIM }}>Loading...</div>
+        ) : loadError ? (
+          <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
+            <div style={{ display: 'flex', justifyContent: 'center', color: RED, marginBottom: 8 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={40} height={40}>
+                <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              </svg>
+            </div>
+            <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: TEXT }}>Could not load the punch list</p>
+            <p style={{ margin: '0 0 12px', fontSize: 13 }}>
+              This is <strong>not</strong> an empty punch list — the read failed. {loadError}
+            </p>
+            <button
+              onClick={loadItems}
+              style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${GOLD}`, background: 'transparent', color: GOLD, fontSize: 14, fontWeight: 700 }}
+            >
+              Retry
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: DIM }}>
             <div style={{ display: 'flex', justifyContent: 'center', color: GREEN, marginBottom: 8, opacity: 0.6 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" width={40} height={40}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>

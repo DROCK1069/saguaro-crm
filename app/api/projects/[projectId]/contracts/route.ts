@@ -22,7 +22,13 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     // client's "View PDF" resolves instead of 400-ing on a bare public URL.
     const contracts = await signFields((data ?? []) as Record<string, unknown>[], ['pdf_url', 'file_url']);
     return NextResponse.json({ contracts });
-  } catch { return NextResponse.json({ contracts: [] }); }
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/contracts] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load contracts', detail }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {

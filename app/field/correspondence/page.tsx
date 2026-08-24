@@ -24,7 +24,9 @@ const BLUE   = '#F59E0B';
 
 /* ─── Types ─── */
 type CorrespondenceType = 'Letter' | 'Transmittal' | 'Notice' | 'Memo' | 'Email Record';
-type CorrespondenceStatus = 'Draft' | 'Sent' | 'Read' | 'Replied';
+/** 'Logged' = filed on the project record but NOT emailed. It exists so the
+ *  register can never show a letter as 'Sent' that nobody received. */
+type CorrespondenceStatus = 'Draft' | 'Sent' | 'Logged' | 'Read' | 'Replied';
 type Priority = 'Normal' | 'Urgent';
 type Tab = 'Inbox' | 'Sent' | 'All';
 type View = 'list' | 'detail' | 'create';
@@ -101,7 +103,7 @@ interface SavedPreset {
 }
 
 const TYPES: CorrespondenceType[] = ['Letter', 'Transmittal', 'Notice', 'Memo', 'Email Record'];
-const STATUSES: CorrespondenceStatus[] = ['Draft', 'Sent', 'Read', 'Replied'];
+const STATUSES: CorrespondenceStatus[] = ['Draft', 'Sent', 'Logged', 'Read', 'Replied'];
 const PURPOSES: TransmittalPurpose[] = ['For Review', 'For Approval', 'For Record', 'As Requested'];
 
 const EMPTY_FILTERS: AdvancedFilters = {
@@ -153,6 +155,8 @@ function statusColor(s: CorrespondenceStatus): string {
   switch (s) {
     case 'Draft': return DIM;
     case 'Sent': return BLUE;
+    // Amber, not blue — logged-not-sent is a warning, not a delivery.
+    case 'Logged': return AMBER;
     case 'Read': return GREEN;
     case 'Replied': return AMBER;
     default: return DIM;
@@ -449,6 +453,7 @@ function CorrespondencePage() {
       payload.transmittal_remarks = formTransRemarks;
     }
 
+    let sendNote = '';
     try {
       if (online) {
         const res = await fetch(`/api/projects/${projectId}/correspondence`, {
@@ -456,16 +461,30 @@ function CorrespondencePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error('Failed to save');
+        const created = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(created?.error || 'Failed to save');
+
+        // The API now performs the actual email transmission and reports back
+        // whether it happened. "Sent" is only true when a message left the building.
+        if (asDraft) {
+          sendNote = 'Draft saved.';
+        } else if (created?.emailed) {
+          const n = Number(created.recipients) || 0;
+          sendNote = n ? `Correspondence sent to ${n} recipient${n === 1 ? '' : 's'}.` : 'Correspondence sent.';
+        } else {
+          sendNote = `Logged on the project record, but NOT emailed — ${created?.email_error || 'no message was transmitted.'}`;
+        }
+
         // Upload attachments if any
-        if (formAttachments.length > 0 && res.ok) {
-          const created = await res.json();
+        const createdId = created?.item?.id || created?.id || created?.data?.id;
+        if (formAttachments.length > 0 && createdId) {
           const fd = new FormData();
           formAttachments.forEach(f => fd.append('files', f));
-          await fetch(`/api/projects/${projectId}/correspondence/${created.id || created.data?.id}`, {
+          const ares = await fetch(`/api/projects/${projectId}/correspondence/${createdId}`, {
             method: 'PATCH',
             body: fd,
           });
+          if (!ares.ok) sendNote += ' Attachments failed to upload.';
         }
       } else {
         await enqueue({
@@ -475,10 +494,14 @@ function CorrespondencePage() {
           contentType: 'application/json',
           isFormData: false,
         });
+        // Offline: nothing has been transmitted and nothing is on the server yet.
+        sendNote = asDraft
+          ? 'Draft queued offline — it will save when the connection returns.'
+          : 'Queued offline — nothing has been emailed yet. It will send when the connection returns.';
       }
-      setSubmitMsg(asDraft ? 'Draft saved.' : 'Correspondence sent.');
+      setSubmitMsg(sendNote);
       resetForm();
-      setTimeout(() => { setView('list'); fetchItems(); }, 800);
+      setTimeout(() => { setView('list'); fetchItems(); }, 2200);
     } catch {
       setSubmitMsg('Failed. Queued for retry.');
       await enqueue({
@@ -520,13 +543,19 @@ function CorrespondencePage() {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error();
+        const created = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(created?.error || 'Failed to save');
+        // Same honesty as the composer: the reply is only "sent" if it was emailed.
+        setSubmitMsg(created?.emailed
+          ? `${isForward ? 'Forward' : 'Reply'} sent.`
+          : `${isForward ? 'Forward' : 'Reply'} logged on the record, but NOT emailed — ${created?.email_error || 'no message was transmitted.'}`);
       } else {
         await enqueue({
           url: `/api/projects/${projectId}/correspondence`,
           method: 'POST', body: JSON.stringify(payload),
           contentType: 'application/json', isFormData: false,
         });
+        setSubmitMsg(`${isForward ? 'Forward' : 'Reply'} queued offline — nothing has been emailed yet.`);
       }
       // Update original status
       if (!isForward) {
@@ -554,6 +583,7 @@ function CorrespondencePage() {
         method: 'POST', body: JSON.stringify(payload),
         contentType: 'application/json', isFormData: false,
       });
+      setSubmitMsg(`${isForward ? 'Forward' : 'Reply'} could not be sent — queued for retry. Nothing has been emailed.`);
     } finally {
       setSubmitting(false);
     }
@@ -1432,17 +1462,22 @@ function CorrespondencePage() {
         </label>
       </div>
 
-      {/* Submit message */}
-      {submitMsg && (
-        <div style={{
-          padding: '8px 14px', borderRadius: 8, marginBottom: 12,
-          background: submitMsg.includes('Failed') || submitMsg.includes('required') ? `${RED}20` : `${GREEN}20`,
-          color: submitMsg.includes('Failed') || submitMsg.includes('required') ? RED : GREEN,
-          fontSize: 13, fontWeight: 600,
-        }}>
-          {submitMsg}
-        </div>
-      )}
+      {/* Submit message. "Logged but NOT emailed" and "queued" are warnings, not
+          successes — colouring them green would restore the lie we just removed. */}
+      {submitMsg && (() => {
+        const bad = /Failed|required|NOT emailed|could not be sent/i.test(submitMsg);
+        const warn = !bad && /queued|not emailed/i.test(submitMsg);
+        const tone = bad ? RED : warn ? AMBER : GREEN;
+        return (
+          <div style={{
+            padding: '8px 14px', borderRadius: 8, marginBottom: 12,
+            background: `${tone}20`, color: tone,
+            fontSize: 13, fontWeight: 600,
+          }}>
+            {submitMsg}
+          </div>
+        );
+      })()}
 
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: 10 }}>

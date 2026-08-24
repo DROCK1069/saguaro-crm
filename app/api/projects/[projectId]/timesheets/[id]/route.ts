@@ -10,14 +10,31 @@ export async function PATCH(req: NextRequest, { params }: { params: { projectId:
     const supabase = createServerClient();
     const body = await req.json();
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    const allowed = ['employee_name','hours_regular','hours_overtime','hours_double','cost_code','location','description','status','notes','submitted_at','approved_by','approved_at','rejection_reason'];
+    const allowed = ['employee_name','hours_regular','hours_overtime','hours_double','cost_code','location','description','status','notes','submitted_at','rejection_reason'];
     for (const k of allowed) if (body[k] !== undefined) updates[k] = body[k];
-    const { data, error } = await supabase.from('timesheets').update(updates).eq('id', params.id).eq('project_id', params.projectId).eq('tenant_id', user.tenantId).select().single();
+
+    // The approver is whoever is holding this session — NEVER a name the client
+    // supplied. The page used to post the literal string 'Current User', which
+    // is what a payroll audit would have found stamped on every approval.
+    if (updates.status === 'approved') {
+      updates.approved_by = user.email || user.id;
+      updates.approved_at = new Date().toISOString();
+    } else if (updates.status !== undefined) {
+      // Leaving a stale approver on a row pushed back to draft/rejected would
+      // credit someone with approving hours that are no longer approved.
+      updates.approved_by = null;
+      updates.approved_at = null;
+    }
+
+    const { data, error } = await supabase.from('timesheets').update(updates).eq('id', params.id).eq('project_id', params.projectId).eq('tenant_id', user.tenantId).select().maybeSingle();
     if (error) throw error;
+    // No row matched — wrong id, wrong project, or another tenant. Failed write.
+    if (!data) return NextResponse.json({ error: 'Timesheet entry not found.' }, { status: 404 });
     return NextResponse.json({ timesheet: data });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Failed';
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[timesheets/PATCH]', e);
+    const msg = e instanceof Error ? e.message : 'Failed to update the timesheet entry.';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 

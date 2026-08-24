@@ -638,20 +638,11 @@ export async function POST(
     }
   }
 
-  // POST /api/internal/autopilot/run
-  if (seg0 === 'internal' && seg1 === 'autopilot' && seg2 === 'run') {
-    const body = await req.json().catch(() => ({}));
-    const { tenantId } = body;
-    try {
-      if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 });
-      const { data: projects } = await supabaseAdmin.from('projects').select('id, name').eq('tenant_id', tenantId).eq('status', 'active');
-      return NextResponse.json({ success: true, scanned: projects?.length || 0, message: `Autopilot scan complete. Analyzed ${projects?.length || 0} active projects.` });
-    } catch (err: unknown) {
-      const msg = 'Internal server error';
-      console.error('[api/catch-all] autopilot/run error:', msg);
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
-  }
+  // POST /api/internal/autopilot/run is served by the REAL handler at
+  // app/api/internal/autopilot/run/route.ts (a static segment always wins over
+  // this catch-all). The hollow branch that used to live here only SELECTed
+  // project names and then claimed "Autopilot scan complete" without running a
+  // single check — it is deleted so no code path can ever report that again.
 
   // POST /api/notices/preliminary
   if (seg0 === 'notices' && seg1 === 'preliminary') return generatePreliminaryNoticeHandler(req);
@@ -709,9 +700,26 @@ export async function POST(
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const alertId = String(body.alertId ?? '');
     if (!alertId) return NextResponse.json({ error: 'alertId required' }, { status: 400 });
+    // supabase-js does NOT throw on a failed write — this used to swallow the
+    // { error } and return success:true regardless, so an alert the user
+    // "dismissed" came straight back on the next load with no explanation.
+    // .select() also proves a row actually matched (id + tenant), turning a
+    // cross-tenant or stale id into an honest 404 instead of a silent no-op.
     try {
-      await supabaseAdmin.from('autopilot_alerts').update({ dismissed: true, dismissed_at: new Date().toISOString() }).eq('id', alertId).eq('tenant_id', user.tenantId);
-    } catch (err) { console.error('[api/autopilot/dismiss] failed:', err); }
+      const { data, error } = await supabaseAdmin
+        .from('autopilot_alerts')
+        .update({ dismissed: true, dismissed_at: new Date().toISOString() })
+        .eq('id', alertId)
+        .eq('tenant_id', user.tenantId)
+        .select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return NextResponse.json({ error: 'That alert was not found' }, { status: 404 });
+      }
+    } catch (err) {
+      console.error('[api/autopilot/dismiss] failed:', err);
+      return NextResponse.json({ error: "Couldn't dismiss that alert — try again" }, { status: 500 });
+    }
     return NextResponse.json({ success: true });
   }
 
@@ -734,28 +742,13 @@ export async function POST(
     return bidJacketPost(req, { params: { projectId: seg1, bidPackageId: seg3 } });
   }
 
-  // POST /api/reports/generate
-  if (seg0 === 'reports' && seg1 === 'generate') {
-    const body = await req.json().catch(() => ({}));
-    const { reportType, format = 'pdf', projectId, tenantId } = body;
-    if (!reportType) return NextResponse.json({ error: 'reportType required' }, { status: 400 });
-    const reportMeta: Record<string, { title: string; description: string }> = {
-      'job-cost': { title: 'Job Cost Report', description: 'Budget vs actuals by cost code' },
-      'bid-win-loss': { title: 'Bid Win/Loss Summary', description: 'Win rate by trade and margin analysis' },
-      'schedule-variance': { title: 'Schedule Variance Report', description: 'Critical path delays and milestone status' },
-      'pay-app-status': { title: 'Pay Application Status', description: 'All pay apps — billed, certified, paid, retainage' },
-      'lien-waiver-log': { title: 'Lien Waiver Log', description: 'All waivers by project and subcontractor' },
-      'insurance-compliance': { title: 'Insurance Compliance Report', description: 'COI status and expiry dates' },
-      'autopilot-alerts': { title: 'Autopilot Alert History', description: 'All AI alerts by project' },
-      'rfi-log': { title: 'RFI Log', description: 'All RFIs with status and response times' },
-    };
-    const meta = reportMeta[reportType] || { title: reportType, description: '' };
-    try {
-      const { error: insertErr } = await supabaseAdmin.from('report_runs').insert({ tenant_id: tenantId || null, project_id: projectId || null, report_type: reportType, format, status: 'completed' });
-      if (insertErr) console.error('[api/reports/generate] report_runs insert failed:', insertErr);
-    } catch (err) { console.error('[api/reports/generate] unexpected error:', err); }
-    return NextResponse.json({ success: true, reportType, format, title: meta.title, message: `${meta.title} generated successfully.`, downloadUrl: null });
-  }
+  // POST /api/reports/generate is served by the REAL handler at
+  // app/api/reports/generate/route.ts, which runs the report against live tenant
+  // data via lib/reports/generate.generateReportData and returns actual columns
+  // and rows. The hollow branch that used to live here generated nothing: it
+  // wrote a report_runs row hardcoded status:'completed' and returned
+  // "<Report> generated successfully." with downloadUrl:null. Deleted so no code
+  // path can record a completed run for work that never executed.
 
   // POST /api/rfis/create
   if (seg0 === 'rfis' && seg1 === 'create') {
@@ -775,23 +768,12 @@ export async function POST(
     }
   }
 
-  // POST /api/team/invite
-  if (seg0 === 'team' && seg1 === 'invite') {
-    const body = await req.json().catch(() => ({}));
-    const { tenantId, invites } = body as { tenantId?: string; invites?: Array<{ email: string; role: string }> };
-    if (!invites || !Array.isArray(invites) || invites.length === 0) return NextResponse.json({ error: 'invites array required' }, { status: 400 });
-    const results: Array<{ email: string; status: string }> = [];
-    for (const invite of invites) {
-      if (!invite.email) continue;
-      try {
-        const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(invite.email, { data: { role: invite.role || 'member', tenant_id: tenantId || '' } });
-        results.push({ email: invite.email, status: error ? 'failed' : 'sent' });
-      } catch {
-        results.push({ email: invite.email, status: 'queued' });
-      }
-    }
-    return NextResponse.json({ success: true, results });
-  }
+  // POST /api/team/invite is served by the REAL handler at
+  // app/api/team/invite/route.ts (static segment beats this catch-all), which
+  // persists a team_invites row with an accept token and sends the real email.
+  // The branch that used to live here pushed status:'queued' whenever the invite
+  // THREW, while no invite queue exists anywhere in this codebase — a thrown
+  // invite is a failure, not a deferred send. Deleted.
 
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }

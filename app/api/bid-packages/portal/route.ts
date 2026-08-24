@@ -51,8 +51,11 @@ export async function POST(req: NextRequest) {
     if (!invite) return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
     const inv = invite as any;
 
-    // Record submission
-    await db.from('bid_submissions').insert({
+    // Record submission — the bid row MUST land before we tell the sub it was
+    // received. supabase-js does not throw on a failed write; it returns { error }.
+    // Silently swallowing that error is how bid_submissions stayed empty while
+    // subs were shown "submitted".
+    const { data: submission, error: submitErr } = await db.from('bid_submissions').insert({
       bid_package_id: inv.bid_package_id,
       sub_id: inv.sub_id,
       tenant_id: inv.bid_packages?.tenant_id,
@@ -73,13 +76,35 @@ export async function POST(req: NextRequest) {
       insurance_meets: body.insuranceMeets,
       status: 'submitted',
       submitted_at: new Date().toISOString(),
-    });
+    }).select('id').single();
 
-    // Update invite status
-    await db.from('bid_package_invites').update({ status: 'submitted' }).eq('token', token);
+    if (submitErr || !submission) {
+      console.error('[api/bid-packages/portal] bid_submissions insert failed:', submitErr?.message, submitErr?.details);
+      return NextResponse.json(
+        { error: submitErr?.message || 'Your bid could not be saved. Nothing was recorded — please try again or contact the general contractor directly.' },
+        { status: 500 },
+      );
+    }
 
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    // Only now that the bid row is confirmed written may the invite be closed out.
+    const { error: inviteErr } = await db
+      .from('bid_package_invites')
+      .update({ status: 'submitted' })
+      .eq('token', token);
+    if (inviteErr) {
+      // The bid IS saved, so this is not a submission failure — but say so honestly
+      // rather than silently leaving the invite showing as still open.
+      console.error('[api/bid-packages/portal] invite status update failed:', inviteErr.message);
+      return NextResponse.json({
+        success: true,
+        submissionId: submission.id,
+        warning: 'Your bid was received and saved, but the invitation status could not be updated. No action is needed from you.',
+      });
+    }
+
+    return NextResponse.json({ success: true, submissionId: submission.id });
+  } catch (err) {
+    console.error('[api/bid-packages/portal] POST failed:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Your bid could not be saved. Nothing was recorded — please try again or contact the general contractor directly.' }, { status: 500 });
   }
 }

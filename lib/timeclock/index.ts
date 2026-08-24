@@ -44,18 +44,43 @@ export function dayKey(iso: string, tz: string): string {
   } catch { return iso.slice(0, 10); }
 }
 
-/** Raw worked/paid hours for one entry (before OT split). Open entries → 0. */
-export function entryHours(e: TimeEntry, roundMinutes = 0): number {
+/**
+ * Raw worked/paid hours for one entry (before OT split), or `null` when the value
+ * was never recorded.
+ *
+ * A leave entry (pto/sick/holiday/…) carries its hours EXPLICITLY. When that field
+ * is missing the hours are UNKNOWN — this used to silently return a full paid 8.00,
+ * indistinguishable from a real value on a payroll screen. It now returns null so
+ * callers can render "unknown" (see `fmtHoursOrUnknown`) instead of inventing a day.
+ * Open worked entries (no clock-out) are a different case: 0 hours accrued so far.
+ */
+export function entryHoursOrNull(e: TimeEntry, roundMinutes = 0): number | null {
   let mins: number;
   if (isWorked(e.type)) {
     if (!e.clockIn || !e.clockOut) return 0;
     mins = (new Date(e.clockOut).getTime() - new Date(e.clockIn).getTime()) / 60000 - (e.breakMinutes || 0);
     if (!(mins > 0)) return 0;
   } else {
-    mins = (typeof e.hours === 'number' ? e.hours : 8) * 60;
+    if (typeof e.hours !== 'number' || !Number.isFinite(e.hours)) return null; // never fabricate 8
+    mins = e.hours * 60;
   }
   if (roundMinutes > 0) mins = Math.round(mins / roundMinutes) * roundMinutes;
   return Math.round((mins / 60) * 100) / 100;
+}
+
+/** True when this entry's hours are actually recorded (vs. never entered). */
+export function hasRecordedHours(e: TimeEntry): boolean {
+  return entryHoursOrNull(e) !== null;
+}
+
+/**
+ * Raw worked/paid hours for one entry (before OT split). Open entries → 0.
+ * An UNRECORDED leave entry contributes 0 to totals — nobody is paid for hours
+ * that were never entered. Use `entryHoursOrNull` when you need to tell the
+ * difference between a recorded 0 and an unknown value.
+ */
+export function entryHours(e: TimeEntry, roundMinutes = 0): number {
+  return entryHoursOrNull(e, roundMinutes) ?? 0;
 }
 
 /** ISO week-start date key for grouping (in the entry's tz), honoring weekStartsOn. */
@@ -75,6 +100,8 @@ export interface Timesheet {
   weeks: WeekRow[];
   totals: { workedHours: number; regularHours: number; overtimeHours: number; paidHours: number; byType: Record<string, number>; byProject: Record<string, number> };
   openEntries: number;
+  /** Leave entries whose hours were never recorded — counted as 0, NOT as a paid 8. */
+  unrecordedEntries: number;
 }
 
 const r2 = (n: number) => Math.round((n || 0) * 100) / 100;
@@ -88,11 +115,14 @@ export function computeTimesheet(entries: TimeEntry[], opts: TimeclockOptions = 
   // bucket entries → week → day
   const weeks = new Map<string, Map<string, { hours: number; worked: number; ids: string[]; byType: Record<string, number>; byProject: Record<string, number> }>>();
   let openEntries = 0;
+  let unrecordedEntries = 0;
   for (const e of entries) {
     const anchor = e.clockIn || e.clockOut;
     if (isWorked(e.type) && (!e.clockIn || !e.clockOut)) { if (e.clockIn && !e.clockOut) openEntries++; if (!e.clockIn) continue; }
     if (!anchor) continue;
-    const h = entryHours(e, round);
+    const raw = entryHoursOrNull(e, round);
+    if (raw === null) unrecordedEntries++;      // hours never entered — surface it, don't invent 8
+    const h = raw ?? 0;
     const w = weekKey(anchor, e.timezone, wStart);
     const d = dayKey(anchor, e.timezone);
     if (!weeks.has(w)) weeks.set(w, new Map());
@@ -134,7 +164,7 @@ export function computeTimesheet(entries: TimeEntry[], opts: TimeclockOptions = 
     for (const [k, v] of Object.entries(byProject)) totals.byProject[k] = r2((totals.byProject[k] || 0) + v);
   }
 
-  return { weeks: weekRows, totals, openEntries };
+  return { weeks: weekRows, totals, openEntries, unrecordedEntries };
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -187,3 +217,11 @@ export function liveElapsed(clockIn: string, nowIso: string, breakMinutes = 0): 
 }
 
 export const fmtHours = (h: number) => `${Math.floor(h)}h ${Math.round((h - Math.floor(h)) * 60)}m`;
+
+/**
+ * Display hours where the value may never have been recorded. An unrecorded value
+ * reads "unknown" — never a fabricated 8h, never a misleading 0h.
+ * Pair with `entryHoursOrNull()` / `Timesheet.unrecordedEntries`.
+ */
+export const fmtHoursOrUnknown = (h: number | null | undefined) =>
+  (h == null || !Number.isFinite(h) ? 'unknown' : fmtHours(h));

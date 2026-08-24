@@ -328,6 +328,78 @@ export async function sendInvoiceEmail(opts: {
 }
 
 /**
+ * Project correspondence (letter / transmittal / notice / memo).
+ *
+ * The field correspondence composer used to say "Correspondence sent." while
+ * only writing a row to the database — no message ever left the building. This
+ * is the actual transmission, and like sendInvoiceEmail it reports HONESTLY:
+ * `sent: false` with a readable reason when email is unconfigured or rejected,
+ * so the composer can say "logged but not emailed" instead of "sent".
+ */
+export async function sendCorrespondenceEmail(opts: {
+  to: string[];
+  cc?: string[];
+  subject: string;
+  body: string;
+  fromName?: string | null;
+  replyTo?: string | null;
+  correspondenceType?: string | null;
+  projectName?: string | null;
+  referenceNumber?: string | null;
+}): Promise<{ sent: boolean; recipients: number; error?: string }> {
+  const to = (opts.to || []).map((e) => String(e || '').trim()).filter(Boolean);
+  const cc = (opts.cc || []).map((e) => String(e || '').trim()).filter(Boolean);
+  if (to.length === 0) {
+    return { sent: false, recipients: 0, error: 'No recipient email address on this correspondence.' };
+  }
+
+  const resend = getResend();
+  if (!resend) {
+    return {
+      sent: false,
+      recipients: 0,
+      error: 'Email delivery is not configured (RESEND_API_KEY is missing), so nothing was transmitted. The correspondence is on the project record.',
+    };
+  }
+
+  // The composer's body is plain text typed by a human — escape it, then keep
+  // the author's line breaks.
+  const escaped = String(opts.body || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br/>');
+
+  const meta =
+    (opts.correspondenceType ? row('Type', opts.correspondenceType) : '') +
+    (opts.projectName ? row('Project', opts.projectName) : '') +
+    (opts.referenceNumber ? row('Reference', opts.referenceNumber) : '');
+
+  const html = layout(`
+    ${h(opts.subject)}
+    ${meta ? table(meta) : ''}
+    ${p(escaped)}
+    ${p(`<small style="color:#9ca3af;">Sent by ${opts.fromName || 'the project team'} via Saguaro Control Systems.</small>`)}
+  `);
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      ...(cc.length ? { cc } : {}),
+      subject: opts.subject,
+      html,
+      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+    });
+    if (error) {
+      const msg = typeof error === 'string' ? error : (error as { message?: string }).message || 'Email provider rejected the send.';
+      return { sent: false, recipients: 0, error: msg };
+    }
+    return { sent: true, recipients: to.length + cc.length };
+  } catch (e) {
+    return { sent: false, recipients: 0, error: e instanceof Error ? e.message : 'Email send failed.' };
+  }
+}
+
+/**
  * Prequalification invitation.
  *
  * Sent to a subcontractor when a GC invites them to complete a prequal

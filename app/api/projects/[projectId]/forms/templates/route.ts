@@ -12,10 +12,17 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
       .select('*')
       .or(`project_id.eq.${params.projectId},is_global.eq.true`)
       .order('name');
-    if (error) return NextResponse.json({ templates: [] });
+    if (error) {
+      console.error('[projects/[projectId]/forms/templates] read failed:', error.message);
+      return NextResponse.json({ error: 'Failed to load templates', detail: error.message }, { status: 500 });
+    }
     return NextResponse.json({ templates: data || [] });
-  } catch {
-    return NextResponse.json({ templates: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/forms/templates] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load templates', detail }, { status: 500 });
   }
 }
 

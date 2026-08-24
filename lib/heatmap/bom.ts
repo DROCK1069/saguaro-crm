@@ -23,6 +23,44 @@ const SENSOR_PRICE: Partial<Record<DeviceTypeId, number>> = {
   smart_switch: 40, smart_plug: 25, thermostat: 130, door_lock: 180, ev_charger: 600, projector: 800, display: 500,
 };
 
+/* ── Copper rough-in assemblies (data / voice / combo / receptacle / field termination).
+   These are PLACED DEVICES and every one of them already draws install labor from
+   INSTALL_HOURS below. Pricing them at $0 charged the crew hour but never landed the
+   material, so every termination on a low-voltage bid came out under-priced. Real
+   per-device assembly cost: faceplate + mud ring or device box + the keystones /
+   receptacles actually specified on that device. `idf` is deliberately absent — the
+   rack, PDU and cable management are priced once by the head-end infra line below. ── */
+type CopperSpec = { base: number; per: number; countOf: 'ports' | 'gang' | null; defaultCount: number };
+const COPPER_PRICE: Partial<Record<DeviceTypeId, CopperSpec>> = {
+  data_jack:         { base: 8,  per: 6,   countOf: 'ports', defaultCount: 1 }, // plate + ring, Cat6 keystone per port
+  voice_jack:        { base: 8,  per: 4,   countOf: 'ports', defaultCount: 1 }, // plate + ring, RJ11 keystone per port
+  combo_plate:       { base: 16, per: 6,   countOf: 'ports', defaultCount: 1 }, // 2-gang combo plate + box + divider + receptacle, keystone per port
+  electrical_outlet: { base: 5,  per: 2.5, countOf: 'gang',  defaultCount: 2 }, // device box + plate + receptacle(s)
+  cable_term:        { base: 7,  per: 0,   countOf: null,    defaultCount: 0 }, // field-term connector (jack or plug)
+};
+/** Copper outlets that are a STATION CABLE home-run back to the rack — one run per port. */
+const COPPER_RUN_TYPES = new Set<DeviceTypeId>(['data_jack', 'voice_jack', 'combo_plate']);
+/** How many keystones / receptacles this device actually carries (never < 1 when it counts). */
+function copperCount(d: Device, spec: CopperSpec): number {
+  if (!spec.countOf) return 0;
+  const raw = spec.countOf === 'ports' ? d.ports : d.gang;
+  const n = Math.round(Number(raw));
+  return Number.isFinite(n) && n > 0 ? n : spec.defaultCount;
+}
+/** Port/gang count for a copper outlet — used for its station-cable home-runs. */
+function copperPorts(d: Device): number {
+  const spec = COPPER_PRICE[d.typeId];
+  return spec ? Math.max(1, copperCount(d, spec)) : 1;
+}
+/** Variant suffix so a 1-port jack never groups (and prices) as a 4-port jack. */
+function copperVariant(d: Device): string {
+  const spec = COPPER_PRICE[d.typeId];
+  if (!spec) return '';
+  if (!spec.countOf) return d.typeId === 'cable_term' ? (d.gender === 'M' ? ' — plug (M)' : ' — jack (F)') : '';
+  const n = copperCount(d, spec);
+  return spec.countOf === 'ports' ? ` — ${n}-port` : ` — ${n}-receptacle`;
+}
+
 const DEFAULT_CAMERA_PRICE = 249; // fallback for catalog cameras w/o an MSRP (G4/G5 lines)
 function priceFor(d: Device): number {
   const model = d.label || '';
@@ -32,6 +70,8 @@ function priceFor(d: Device): number {
   }
   const ap = UNIFI_APS.find((a) => a.model === model || a.model.replace('UniFi ', '') === model);
   if (d.typeId === 'wifi_ap') return AP_PRICE[ap?.model || ''] ?? 149;
+  const copper = COPPER_PRICE[d.typeId];
+  if (copper) return Math.round((copper.base + copper.per * copperCount(d, copper)) * 100) / 100;
   return SENSOR_PRICE[d.typeId] ?? 0;
 }
 
@@ -56,13 +96,29 @@ const INSTALL_HOURS: Record<string, number> = {
   combo_plate: 0.75, electrical_outlet: 0.5, cable_term: 1.0, idf: 0,
 };
 const DEFAULT_INSTALL_HR = 1.0;
+/** Material cost of one home-run of shielded Cat6: 150 ft avg × ~$0.30/ft, rounded. */
+const CAT6_RUN_USD = 45;
+/* Approximate MSRP (USD) for the PoE switches the catalog does not price. Only one entry in
+   UNIFI_SWITCHES carries priceUsd, so the head-end switch — the single most expensive line in a
+   low-voltage bid after the cameras — was landing at $0 on nearly every design while its labor
+   was still charged. Unpriced models fall back to a budget-scaled figure, never $0. */
+const SWITCH_PRICE: Record<string, number> = {
+  'UniFi Pro Max 16 PoE': 399, 'USW-Lite-8-PoE': 109, 'USW-Lite-16-PoE': 199,
+  'USW-Pro-24-PoE': 699, 'USW-Pro-48-PoE': 1099, 'USW-Enterprise-24-PoE': 1099,
+  'USW-Enterprise-48-PoE': 1799, 'USW-Flex': 99, 'USW-Flex-Mini': 29,
+  'USW-Aggregation': 279, 'USW-Pro-Aggregation': 999, 'USW-Industrial': 899,
+};
+/** Never $0: catalog MSRP → our table → ~$2/W of PoE budget (floor $149) for anything unlisted. */
+function switchPrice(sw: { model: string; poeBudgetW: number; priceUsd?: number }): number {
+  return sw.priceUsd ?? SWITCH_PRICE[sw.model] ?? Math.max(149, Math.round(sw.poeBudgetW * 2));
+}
 
 export function computeBom(devices: Device[], opts: TurnkeyOpts = {}): BomResult {
   const groups = new Map<string, BomRow>();
   let poe = 0;
   for (const d of devices) {
     const def = DEVICE_REGISTRY[d.typeId];
-    const model = d.label && d.label !== def.short ? d.label : def.label;
+    const model = (d.label && d.label !== def.short ? d.label : def.label) + copperVariant(d);
     const key = d.typeId + '|' + model;
     const unit = priceFor(d);
     const g = groups.get(key) || { item: model, typeId: d.typeId, qty: 0, unit, ext: 0 };
@@ -70,7 +126,12 @@ export function computeBom(devices: Device[], opts: TurnkeyOpts = {}): BomResult
     poe += POE_W[d.typeId] || 0;
   }
   const rows = [...groups.values()].sort((a, b) => b.ext - a.ext);
-  const cat6 = devices.filter((d) => (POE_W[d.typeId] || 0) > 0).length; // one home-run per PoE device
+  // Cable runs: one home-run per PoE device, PLUS one station cable per copper outlet PORT.
+  // Counting only PoE devices left every data/voice/combo drop out of the cable, termination,
+  // patch-panel and patch-cord lines below — the silent under-price on any low-voltage bid.
+  const poeRuns = devices.filter((d) => (POE_W[d.typeId] || 0) > 0).length;
+  const copperRuns = devices.reduce((n, d) => n + (COPPER_RUN_TYPES.has(d.typeId) ? copperPorts(d) : 0), 0);
+  const cat6 = poeRuns + copperRuns;
 
   // recommend switch(es): PoE budget sized to ≤70% utilization
   const needBudget = poe / 0.7;
@@ -82,10 +143,14 @@ export function computeBom(devices: Device[], opts: TurnkeyOpts = {}): BomResult
   const infra: BomRow[] = [];
   if (recSwitch) {
     const swCount = Math.max(1, Math.ceil(needBudget / recSwitch.poeBudgetW));
-    infra.push({ item: `${recSwitch.model} (PoE switch)`, typeId: 'infra', qty: swCount, unit: recSwitch.priceUsd ?? 0, ext: swCount * (recSwitch.priceUsd ?? 0) });
+    const swUnit = switchPrice(recSwitch); // never $0 — see SWITCH_PRICE
+    infra.push({ item: `${recSwitch.model} (PoE switch)`, typeId: 'infra', qty: swCount, unit: swUnit, ext: swCount * swUnit });
   }
   if (recNvr) infra.push({ item: `${recNvr.model} (recorder)`, typeId: 'infra', qty: 1, unit: recNvr.priceUsd, ext: recNvr.priceUsd });
-  if (cat6) infra.push({ item: 'Cat6 STP home-run (per device)', typeId: 'infra', qty: cat6, unit: 0, ext: 0 });
+  // The cable itself. This line used to carry unit $0 — a real quantity with a fake price,
+  // which is worse than omitting it. Priced off a documented assumption a GC can audit and
+  // override: 150 ft average run × ~$0.30/ft shielded Cat6 (1,000 ft box), rounded to $45.
+  if (cat6) infra.push({ item: 'Cat6 STP cable — home-run per drop (150 ft avg @ ~$0.30/ft)', typeId: 'infra', qty: cat6, unit: CAT6_RUN_USD, ext: cat6 * CAT6_RUN_USD });
   /* ── The REST of a real low-volt schedule (field truth, 20 Aug 2026: a bid
      package without terminations, pulls, head-end, or door hardware is not
      biddable — "it needs cat cable, ends, pulls, modem, fiber, router, switches,
@@ -133,5 +198,5 @@ export function computeBom(devices: Device[], opts: TurnkeyOpts = {}): BomResult
   const overhead = Math.round(base * overheadPct);
   const profit = Math.round((base + overhead) * profitPct);
   const turnkey = base + overhead + profit;
-  return { rows: allRows, deviceTotal, poeWatts: poe, cat6Runs: cat6, recSwitch: recSwitch ? { model: recSwitch.model, poeBudgetW: recSwitch.poeBudgetW, priceUsd: recSwitch.priceUsd } : null, recNvr, total, laborHours, laborCost, overhead, profit, turnkey };
+  return { rows: allRows, deviceTotal, poeWatts: poe, cat6Runs: cat6, recSwitch: recSwitch ? { model: recSwitch.model, poeBudgetW: recSwitch.poeBudgetW, priceUsd: switchPrice(recSwitch) } : null, recNvr, total, laborHours, laborCost, overhead, profit, turnkey };
 }

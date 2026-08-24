@@ -154,19 +154,29 @@ export default function WarrantyClaimsPage() {
   const { projects: liveProjects } = useProjects();
   useEffect(() => { setProjects(liveProjects as any); }, [liveProjects]);
 
-  /* fetch claims when project changes */
+  /* fetch claims when project changes.
+   * A failed read must never render as "no warranty claims" — that is an
+   * all-clear on a project that may have open defects. loadError is a distinct,
+   * retryable state. */
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
-    if (!selectedProject) { setClaims([]); return; }
+    if (!selectedProject) { setClaims([]); setLoadError(''); return; }
+    let cancelled = false;
     (async () => {
-      setLoading(true);
+      setLoading(true); setLoadError('');
       try {
         const r = await fetch(`/api/projects/${selectedProject}/warranty-claims`);
-        const j = await r.json();
-        setClaims(j.claims || j || []);
-      } catch { setClaims([]); }
-      finally { setLoading(false); }
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j?.error || `Request failed (${r.status})`);
+        if (!cancelled) setClaims(Array.isArray(j.claims) ? j.claims : []);
+      } catch (e) {
+        if (!cancelled) { setClaims([]); setLoadError(e instanceof Error ? e.message : 'Could not load warranty claims.'); }
+      }
+      finally { if (!cancelled) setLoading(false); }
     })();
-  }, [selectedProject]);
+    return () => { cancelled = true; };
+  }, [selectedProject, reloadKey]);
 
   /* helpers */
   const flash = (text: string, type: 'ok' | 'err' = 'ok') => { setMsg({ text, type }); setTimeout(() => setMsg(null), 3500); };
@@ -204,105 +214,118 @@ export default function WarrantyClaimsPage() {
       ? Math.round(resolved.reduce((s, c) => s + (new Date(c.completed_date).getTime() - new Date(c.reported_date).getTime()) / 86400000, 0) / resolved.length)
       : 0;
 
-    /* cost by category */
+    /* Buckets skip rows that carry no value for the dimension — a claim with no
+     * category must not become a bar labelled "undefined". */
     const costByCat: Record<string, number> = {};
-    claims.forEach(c => { costByCat[c.category] = (costByCat[c.category] || 0) + (Number(c.cost) || 0); });
+    claims.forEach(c => { if (c.category && Number(c.cost)) costByCat[c.category] = (costByCat[c.category] || 0) + Number(c.cost); });
 
-    /* claims by trade */
     const byTrade: Record<string, number> = {};
     claims.forEach(c => { if (c.assigned_trade) byTrade[c.assigned_trade] = (byTrade[c.assigned_trade] || 0) + 1; });
 
-    /* claims by status */
     const byStatus: Record<string, number> = {};
-    claims.forEach(c => { byStatus[c.status] = (byStatus[c.status] || 0) + 1; });
+    claims.forEach(c => { if (c.status) byStatus[c.status] = (byStatus[c.status] || 0) + 1; });
 
-    /* claims by category */
     const byCat: Record<string, number> = {};
-    claims.forEach(c => { byCat[c.category] = (byCat[c.category] || 0) + 1; });
+    claims.forEach(c => { if (c.category) byCat[c.category] = (byCat[c.category] || 0) + 1; });
 
-    return { total, open, closed, denied, totalCost, expiredCount, emergency, avgDays, costByCat, byTrade, byStatus, byCat };
+    /* How many rows actually back each headline number. A metric with no
+     * underlying rows renders an em-dash, not a confident zero. */
+    const costedCount = claims.filter(c => Number(c.cost) > 0).length;
+
+    return { total, open, closed, denied, totalCost, expiredCount, emergency, avgDays,
+      resolvedCount: resolved.length, costedCount, costByCat, byTrade, byStatus, byCat };
   }, [claims]);
 
-  /* create claim */
+  /* One place that turns a fetch into either the saved row or a thrown, readable
+   * error. supabase-js and fetch both fail quietly on their own — a PATCH that
+   * matched nothing still resolves — so every write goes through here. */
+  async function saveClaim(id: string, patch: Record<string, unknown>): Promise<WarrantyClaim> {
+    const res = await fetch(`/api/projects/${selectedProject}/warranty-claims/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j?.claim) throw new Error(j?.error || `Save failed (${res.status})`);
+    return j.claim as WarrantyClaim;
+  }
+
+  function applySaved(saved: WarrantyClaim) {
+    setClaims(prev => prev.map(c => c.id === saved.id ? saved : c));
+    setDetailClaim(prev => prev && prev.id === saved.id ? saved : prev);
+  }
+
+  /* create claim — claim_number is allocated by the server, never guessed here,
+   * and nothing lands in the list unless the DB actually returned a row. */
   async function handleCreate() {
     if (!form.title) { flash('Title is required.', 'err'); return; }
     if (!selectedProject) { flash('Select a project first.', 'err'); return; }
     setSaving(true);
-    const num = `WC-${String(claims.length + 1).padStart(4, '0')}`;
     try {
       const res = await fetch(`/api/projects/${selectedProject}/warranty-claims`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, claim_number: num, project_id: selectedProject }),
+        body: JSON.stringify({ ...form, project_id: selectedProject }),
       });
-      const j = await res.json();
-      const newClaim: WarrantyClaim = j.claim || { id: `wc-${Date.now()}`, ...form, claim_number: num };
-      setClaims(prev => [newClaim, ...prev]);
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j?.claim) throw new Error(j?.error || `Create failed (${res.status})`);
+      setClaims(prev => [j.claim as WarrantyClaim, ...prev]);
       setForm(EMPTY_FORM);
       setActiveTab('claims');
-      flash('Warranty claim created successfully.');
-    } catch { flash('Failed to create claim.', 'err'); }
+      flash(`Warranty claim ${(j.claim as WarrantyClaim).claim_number} created.`);
+    } catch (e) { flash(e instanceof Error ? e.message : 'Failed to create claim.', 'err'); }
     finally { setSaving(false); }
   }
 
   /* update status */
   async function updateStatus(claim: WarrantyClaim, newStatus: string) {
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims/${claim.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus, completed_date: newStatus === 'completed' ? today : claim.completed_date }),
+      const saved = await saveClaim(claim.id, {
+        status: newStatus,
+        completed_date: newStatus === 'completed' ? today : claim.completed_date,
       });
-      setClaims(prev => prev.map(c => c.id === claim.id ? { ...c, status: newStatus, completed_date: newStatus === 'completed' ? today : c.completed_date } : c));
-      if (detailClaim?.id === claim.id) setDetailClaim(prev => prev ? { ...prev, status: newStatus, completed_date: newStatus === 'completed' ? today : prev.completed_date } : prev);
+      applySaved(saved);
       flash(`Status updated to ${newStatus}.`);
-    } catch { flash('Failed to update status.', 'err'); }
+    } catch (e) { flash(e instanceof Error ? e.message : 'Failed to update status.', 'err'); }
   }
 
   /* dispatch contractor */
   async function handleDispatch() {
     if (!dispatchClaim) return;
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims/${dispatchClaim.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...dispatchForm, status: dispatchForm.scheduled_date ? 'scheduled' : dispatchClaim.status }),
+      const saved = await saveClaim(dispatchClaim.id, {
+        ...dispatchForm,
+        status: dispatchForm.scheduled_date ? 'scheduled' : dispatchClaim.status,
       });
-      setClaims(prev => prev.map(c => c.id === dispatchClaim.id ? { ...c, ...dispatchForm, status: dispatchForm.scheduled_date ? 'scheduled' : c.status } : c));
+      applySaved(saved);
       flash('Contractor dispatched.');
       setDispatchClaim(null);
-    } catch { flash('Dispatch failed.', 'err'); }
+    } catch (e) { flash(e instanceof Error ? e.message : 'Dispatch failed.', 'err'); }
   }
 
   /* add communication entry */
   async function addCommEntry() {
     if (!commMsg.trim() || !detailClaim) return;
     const entry: CommEntry = { id: `cm-${Date.now()}`, date: new Date().toISOString(), from: 'Staff', message: commMsg };
-    const updated = { ...detailClaim, communication_log: [...(detailClaim.communication_log || []), entry] };
+    const log = [...(detailClaim.communication_log || []), entry];
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims/${detailClaim.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ communication_log: updated.communication_log }),
-      });
-    } catch { /* optimistic */ }
-    setDetailClaim(updated);
-    setClaims(prev => prev.map(c => c.id === detailClaim.id ? updated : c));
-    setCommMsg('');
+      const saved = await saveClaim(detailClaim.id, { communication_log: log });
+      applySaved(saved);
+      setCommMsg('');
+    } catch (e) {
+      // The message is NOT added to the thread — showing it there would tell the
+      // homeowner's file a note exists that no one else will ever see.
+      flash(e instanceof Error ? e.message : 'Message not saved.', 'err');
+    }
   }
 
   /* update resolution + cost on detail */
   async function saveResolution(claim: WarrantyClaim, resolution: string, cost: number) {
     try {
-      await fetch(`/api/projects/${selectedProject}/warranty-claims/${claim.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resolution, cost }),
-      });
-      setClaims(prev => prev.map(c => c.id === claim.id ? { ...c, resolution, cost } : c));
-      setDetailClaim(prev => prev ? { ...prev, resolution, cost } : prev);
+      const saved = await saveClaim(claim.id, { resolution, cost });
+      applySaved(saved);
       flash('Resolution saved.');
-    } catch { flash('Save failed.', 'err'); }
+    } catch (e) { flash(e instanceof Error ? e.message : 'Save failed.', 'err'); }
   }
 
   /* PDF export */
@@ -332,11 +355,17 @@ export default function WarrantyClaimsPage() {
   }
 
   /* bar chart helper */
-  function MiniBar({ data, colorMap, money }: { data: Record<string, number>; colorMap?: Record<string, string>; money?: boolean }) {
-    const max = Math.max(...Object.values(data), 1);
+  function MiniBar({ data, colorMap, money, emptyNote }: { data: Record<string, number>; colorMap?: Record<string, string>; money?: boolean; emptyNote?: string }) {
+    const entries = Object.entries(data).filter(([k, v]) => k && k !== 'undefined' && k !== 'null' && Number.isFinite(v));
+    // No bars is not "all zeroes" — say which datum is missing instead of drawing
+    // an empty chart that reads like a measured result.
+    if (entries.length === 0) {
+      return <div style={{ fontSize: 12, color: DIM, padding: '10px 2px' }}>{emptyNote || 'Not recorded on any claim yet.'}</div>;
+    }
+    const max = Math.max(...entries.map(([, v]) => v), 1);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {Object.entries(data).map(([k, v]) => (
+        {entries.map(([k, v]) => (
           <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 90, fontSize: 11, color: DIM, textTransform: 'capitalize', textAlign: 'right', flexShrink: 0 }}>{k}</span>
             <div style={{ flex: 1, height: 16, background: BG, borderRadius: 4, overflow: 'hidden' }}>
@@ -387,7 +416,7 @@ export default function WarrantyClaimsPage() {
       </div>
 
       {/* Pipeline intelligence strip — the warranty program at a glance */}
-      {selectedProject && !loading && claims.length > 0 && (
+      {selectedProject && !loading && !loadError && claims.length > 0 && (
         <>
           <StatStrip items={[
             { label: 'Claims', value: stats.total, sub: `${stats.open} open · ${stats.closed} closed` },
@@ -419,8 +448,23 @@ export default function WarrantyClaimsPage() {
         <div style={{ textAlign: 'center', padding: 60, color: DIM }}>Loading warranty claims...</div>
       )}
 
+      {/* A failed read is its OWN state — visually distinct from a project that
+          genuinely has no claims, because "no claims" is an all-clear we have
+          not earned when the query never came back. */}
+      {selectedProject && !loading && loadError && (
+        <SectionCard>
+          <div style={{ padding: '28px 20px', textAlign: 'center' }}>
+            <ShieldSlash size={30} weight="duotone" color={RED} />
+            <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, margin: '12px 0 6px' }}>Could not load warranty claims</div>
+            <div style={{ fontSize: 13, color: DIM, marginBottom: 16 }}>{loadError}</div>
+            <div style={{ fontSize: 12, color: DIM, marginBottom: 16 }}>This is a read failure, not an empty list — open claims may exist on this project.</div>
+            <button style={goldButtonStyle} className="pmBtn" onClick={() => setReloadKey(k => k + 1)}>Retry</button>
+          </div>
+        </SectionCard>
+      )}
+
       {/* ═══ DASHBOARD TAB — teaching empty state when the program has no claims ═══ */}
-      {selectedProject && !loading && activeTab === 'dashboard' && claims.length === 0 && (
+      {selectedProject && !loading && !loadError && activeTab === 'dashboard' && claims.length === 0 && (
         <SectionCard>
           <PremiumEmpty
             icon={<ShieldWarning size={30} weight="duotone" color={GOLD} />}
@@ -432,7 +476,7 @@ export default function WarrantyClaimsPage() {
       )}
 
       {/* ═══ DASHBOARD TAB ═══ */}
-      {selectedProject && !loading && activeTab === 'dashboard' && claims.length > 0 && (
+      {selectedProject && !loading && !loadError && activeTab === 'dashboard' && claims.length > 0 && (
         <div>
           {/* stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
@@ -440,9 +484,11 @@ export default function WarrantyClaimsPage() {
             <StatCard icon={<FolderOpen size={19} weight="duotone" color={BLUE} />} label="Open" value={stats.open} accent={BLUE} delay={0.06} />
             <StatCard icon={<CheckCircle size={19} weight="duotone" color={GREEN} />} label="Closed" value={stats.closed} accent={GREEN} delay={0.10} />
             <StatCard icon={<XCircle size={19} weight="duotone" color={RED} />} label="Denied" value={stats.denied} accent={RED} delay={0.14} />
-            <StatCard icon={<Timer size={19} weight="duotone" color={AMBER} />} label="Avg Resolution" value={`${stats.avgDays}d`} accent={AMBER} delay={0.18} />
+            {/* An average over zero resolved claims is not "0 days" — it is unknown. */}
+            <StatCard icon={<Timer size={19} weight="duotone" color={AMBER} />} label="Avg Resolution" value={stats.resolvedCount > 0 ? `${stats.avgDays}d` : '—'} accent={AMBER} delay={0.18} />
             <StatCard icon={<Warning size={19} weight="duotone" color={RED} />} label="Emergency" value={stats.emergency} accent={RED} delay={0.22} />
-            <StatCard icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />} label="Total Cost" value={`$${stats.totalCost.toLocaleString()}`} accent={GOLD} delay={0.26} />
+            {/* $0 across claims that never had a cost entered is a fabrication. */}
+            <StatCard icon={<CurrencyDollar size={19} weight="duotone" color={GOLD} />} label="Total Cost" value={stats.costedCount > 0 ? `$${stats.totalCost.toLocaleString()}` : '—'} accent={GOLD} delay={0.26} />
             <StatCard icon={<ShieldSlash size={19} weight="duotone" color={RED} />} label="Expired Warranty" value={stats.expiredCount} accent={RED} delay={0.30} />
           </div>
 
@@ -452,20 +498,20 @@ export default function WarrantyClaimsPage() {
               <MiniBar data={stats.byStatus} colorMap={STATUS_COLORS} />
             </SectionCard>
             <SectionCard title="Claims by Category" icon={<Tag size={17} weight="duotone" color={GOLD} />}>
-              <MiniBar data={stats.byCat} />
+              <MiniBar data={stats.byCat} emptyNote="No claim has a category set yet." />
             </SectionCard>
             <SectionCard title="Cost by Category" icon={<CurrencyDollar size={17} weight="duotone" color={GOLD} />}>
-              <MiniBar data={stats.costByCat} money />
+              <MiniBar data={stats.costByCat} money emptyNote="No repair cost has been recorded yet." />
             </SectionCard>
             <SectionCard title="Claims by Trade" icon={<Wrench size={17} weight="duotone" color={GOLD} />}>
-              <MiniBar data={stats.byTrade} />
+              <MiniBar data={stats.byTrade} emptyNote="No claim has been dispatched to a trade yet." />
             </SectionCard>
           </div>
         </div>
       )}
 
       {/* ═══ CLAIMS LIST TAB ═══ */}
-      {selectedProject && !loading && activeTab === 'claims' && (
+      {selectedProject && !loading && !loadError && activeTab === 'claims' && (
         <div>
           {/* List toolbar — search + category/status/priority; date range rides in extra */}
           <ListToolbar
@@ -548,7 +594,7 @@ export default function WarrantyClaimsPage() {
       )}
 
       {/* ═══ CREATE CLAIM TAB ═══ */}
-      {selectedProject && !loading && activeTab === 'create' && (
+      {selectedProject && !loading && !loadError && activeTab === 'create' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 18, alignItems: 'start' }}>
         <SectionCard title="New Warranty Claim" subtitle={`${projects.find(p => p.id === selectedProject)?.name || 'This project'} — homeowner defect intake`} icon={<PlusCircle size={17} weight="duotone" color={GOLD} />}>
           <div style={css.row}>
@@ -821,7 +867,7 @@ export default function WarrantyClaimsPage() {
       )}
 
       {/* ═══ FOOTER SUMMARY ═══ */}
-      {selectedProject && !loading && activeTab === 'claims' && filtered.length > 0 && (
+      {selectedProject && !loading && !loadError && activeTab === 'claims' && filtered.length > 0 && (
         <SectionCard style={{ marginTop: 16 }} bodyStyle={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', gap: 24 }}>
             <div>
@@ -882,7 +928,7 @@ export default function WarrantyClaimsPage() {
       )}
 
       {/* ═══ DASHBOARD WARRANTY EXPIRY WATCHLIST ═══ */}
-      {selectedProject && !loading && activeTab === 'dashboard' && (() => {
+      {selectedProject && !loading && !loadError && activeTab === 'dashboard' && (() => {
         const expiring = claims.filter(c => {
           if (!c.warranty_expiry) return false;
           const exp = new Date(c.warranty_expiry);

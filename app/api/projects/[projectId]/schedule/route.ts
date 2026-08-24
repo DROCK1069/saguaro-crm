@@ -1,28 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/supabase-server';
-import { createClient } from '@supabase/supabase-js';
+import { requirePermission } from '@/lib/permissions';
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
-) {
-  const user = await getUser(req);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/projects/[projectId]/schedule
+ * Schedule tasks for one project, scoped to the caller's tenant.
+ *
+ * Uses the service-role client (from requirePermission): every RLS policy on
+ * schedule_tasks targets `authenticated` or `service_role`, so the previous bare
+ * anon client matched no policy and the SELECT returned zero rows with no error —
+ * an empty schedule that looked like "nothing planned" rather than a failed read.
+ */
+export async function GET(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
-  try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  const g = await requirePermission(req, 'Schedule', 'View', { projectId });
+  if (!g.ok) return g.res;
+
+  const { db, user } = g;
+
+  const { data, error } = await db
+    .from('schedule_tasks')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('tenant_id', user.tenantId)
+    .order('start_date', { ascending: true });
+
+  if (error) {
+    console.error('[projects/schedule] read failed:', error.message);
+    return NextResponse.json(
+      { error: 'Failed to load schedule', detail: error.message },
+      { status: 500 },
     );
-    const { data, error } = await supabase
-      .from('schedule_tasks')
-      .select('*')
-      .eq('project_id', projectId)
-      .eq('tenant_id', user.tenantId)
-      .order('start_date', { ascending: true });
-    if (error) throw error;
-    return NextResponse.json({ tasks: data || [] });
-  } catch {
-    return NextResponse.json({ tasks: [] });
   }
+
+  return NextResponse.json({ tasks: data ?? [] });
 }

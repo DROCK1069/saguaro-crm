@@ -53,11 +53,18 @@ export default function OnboardingStep4() {
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({invites: toSend}),
       });
-      if (res.ok) {
-        setSuccess(true);
+      const data = await res.json().catch(()=>null) as
+        | { error?: string; sent?: number; failed?: number; results?: Array<{email:string;status:string;error?:string}> }
+        | null;
+      if (!res.ok) {
+        setError(data?.error || 'Failed to send invites. You can add team members from Settings later.');
+      } else if (data?.failed) {
+        // Partial batch — name exactly who did NOT get an invite rather than
+        // showing a blanket success for work that only partly happened.
+        const bad = (data.results||[]).filter(r=>r.status!=='sent').map(r=>r.email).join(', ');
+        setError(`${data.sent} invite${data.sent===1?'':'s'} sent. ${data.failed} failed: ${bad}. You can retry those from Settings.`);
       } else {
-        const data = await res.json().catch(()=>null);
-        setError((data as any)?.error || 'Failed to send invites. You can add team members from Settings later.');
+        setSuccess(true);
       }
     } catch {
       setError('Failed to send invites. You can add team members from Settings later.');

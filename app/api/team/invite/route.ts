@@ -37,6 +37,18 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * POST /api/team/invite
+ *
+ * Accepts BOTH call shapes used in the app:
+ *   { email, name?, role?, projectId? }                  — single invite (project team page)
+ *   { invites: [{ email, name?, role? }], projectId? }   — batch (onboarding step 4)
+ *
+ * Every invite is a real team_invites row + a real email. Nothing is ever
+ * reported as sent unless the row was written; a failure comes back as
+ * status:'failed' with the actual reason. There is no invite queue in this
+ * codebase, so no invite is ever reported as 'queued'.
+ */
 export async function POST(req: NextRequest) {
   // Inviting a teammate expands who can access the tenant — access-control action.
   const g = await requirePermission(req, 'Admin', 'Full');
@@ -45,11 +57,67 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const { email, name, role = 'member', projectId } = body;
+    const batch = body?.invites;
 
+    // ── Batch shape ────────────────────────────────────────────────────────────
+    if (Array.isArray(batch)) {
+      const entries = batch.filter((i: { email?: string }) => i?.email?.trim());
+      if (entries.length === 0) {
+        return NextResponse.json({ error: 'At least one email address is required.' }, { status: 400 });
+      }
+      const results: Array<{ email: string; status: 'sent' | 'failed'; error?: string }> = [];
+      for (const entry of entries) {
+        const r = await createAndSendInvite(user, {
+          email: String(entry.email).trim(),
+          name: entry.name,
+          role: entry.role || 'member',
+          projectId,
+        });
+        results.push(r.ok
+          ? { email: r.email, status: 'sent' }
+          : { email: r.email, status: 'failed', error: r.error });
+      }
+      const sent = results.filter(r => r.status === 'sent').length;
+      const failed = results.length - sent;
+      if (sent === 0) {
+        return NextResponse.json(
+          { success: false, sent, failed, results, error: results[0]?.error || 'No invites could be sent.' },
+          { status: 500 },
+        );
+      }
+      return NextResponse.json({ success: failed === 0, sent, failed, results });
+    }
+
+    // ── Single shape ───────────────────────────────────────────────────────────
     if (!email) {
       return NextResponse.json({ error: 'email is required' }, { status: 400 });
     }
+    const single = await createAndSendInvite(user, { email, name, role, projectId });
+    if (!single.ok) {
+      return NextResponse.json({ error: single.error }, { status: 500 });
+    }
+    return NextResponse.json({ success: true, invite: single.invite, acceptUrl: single.acceptUrl });
+  } catch (err) {
+    console.error('[team/invite] POST failed:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
+type InviteInput = { email: string; name?: string; role?: string; projectId?: string };
+type InviteResult =
+  | { ok: true; email: string; invite: unknown; acceptUrl: string }
+  | { ok: false; email: string; error: string };
+
+/**
+ * Creates one team_invites row and sends its invitation email.
+ * Returns ok:false with the real DB/email reason rather than throwing, so a
+ * batch can report per-recipient truth instead of one blanket success.
+ */
+async function createAndSendInvite(
+  user: { id: string; email?: string | null; tenantId: string },
+  { email, name, role = 'member', projectId }: InviteInput,
+): Promise<InviteResult> {
+  try {
     const db = createServerClient();
     const tenantId = user.tenantId;
 
@@ -76,11 +144,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertErr || !invite) {
-      console.error('[team/invite] insert failed:', insertErr);
-      return NextResponse.json(
-        { error: insertErr?.message || 'Failed to create invite' },
-        { status: 500 },
-      );
+      console.error('[team/invite] insert failed for', email, '-', insertErr?.message);
+      return { ok: false, email, error: insertErr?.message || 'Failed to create invite' };
     }
 
     const acceptUrl = `${APP_URL}/accept-invite?token=${token}`;
@@ -115,8 +180,10 @@ export async function POST(req: NextRequest) {
         : `${APP_URL}/app`,
     );
 
-    return NextResponse.json({ success: true, invite, acceptUrl });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return { ok: true, email, invite, acceptUrl };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Invite failed';
+    console.error('[team/invite] invite threw for', email, '-', msg);
+    return { ok: false, email, error: msg };
   }
 }

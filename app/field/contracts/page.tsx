@@ -80,14 +80,49 @@ const WORKFLOW_ORDER: ContractStatus[] = ['draft', 'pending', 'executed', 'compl
 
 /* ── Helpers ───────────────────────────────────────────── */
 
-function formatUSD(val: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+/** Money we do not have is an em-dash. Never "$NaN", never a confident $0.00. */
+function formatUSD(val: unknown): string {
+  const v = Number(val);
+  if (!Number.isFinite(v)) return '—';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 }
 
-function formatUSDShort(val: number): string {
-  if (Math.abs(val) >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(val) >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
-  return formatUSD(val);
+function formatUSDShort(val: unknown): string {
+  const v = Number(val);
+  if (!Number.isFinite(v)) return '—';
+  if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(v) >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
+  return formatUSD(v);
+}
+
+/** The `contracts` table has no `revised_amount` column and stores
+ *  `original_amount` as TEXT, so the page's reduces used to run over `undefined`
+ *  and render $NaN. Normalise every row to real numbers exactly once, here. */
+function normalizeContract(row: Record<string, unknown>): Contract {
+  const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+  const original = num(row.original_amount ?? row.amount);
+  const changes = num(row.approved_changes);
+  // `amount` is the current (revised) commitment when the DB carries one;
+  // otherwise it is original + approved change orders.
+  const revised = row.amount != null && Number.isFinite(Number(row.amount))
+    ? num(row.amount)
+    : original + changes;
+  return {
+    ...(row as unknown as Contract),
+    id: String(row.id ?? ''),
+    contract_number: (row.contract_number as string) || '',
+    title: (row.title as string) || '',
+    vendor_name: (row.vendor_name as string) || (row.party_name as string) || '',
+    vendor_email: (row.vendor_email as string) || (row.party_email as string) || '',
+    original_amount: original,
+    approved_changes: changes,
+    revised_amount: revised,
+    invoiced_amount: num(row.invoiced_amount),
+    paid_amount: num(row.paid_amount),
+    retainage_pct: num(row.retainage_pct),
+    scope_of_work: (row.scope_of_work as string) || (row.scope_summary as string) || '',
+    signed_date: String(row.executed_date ?? '').slice(0, 10),
+  };
 }
 
 function formatDate(d: string | undefined): string {
@@ -124,6 +159,11 @@ function ContractsPage() {
   const [selected, setSelected] = useState<Contract | null>(null);
   const [online, setOnline] = useState(true);
   const [saving, setSaving] = useState(false);
+  /** Failed list read — a distinct, retryable state, never rendered as "empty". */
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  /** Last write failure, shown to the user instead of being swallowed. */
+  const [saveError, setSaveError] = useState('');
 
   /* Money Action States */
   const [actionSheet, setActionSheet] = useState<{ contractId: string; label: string; amount: number; field: string } | null>(null);
@@ -160,15 +200,21 @@ function ContractsPage() {
   useEffect(() => {
     if (!projectId) return;
     setLoading(true);
+    setLoadFailed(false);
     fetch(`/api/projects/${projectId}/contracts`)
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then((data: any) => {
         const list = Array.isArray(data) ? data : (data?.contracts ?? data?.data ?? []);
-        setContracts(Array.isArray(list) ? list : []);
+        setContracts(Array.isArray(list) ? list.map(normalizeContract) : []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
-  }, [projectId]);
+      .catch(() => {
+        // An empty list after a failed read is not "no contracts" — the summary
+        // tiles would otherwise report $0 committed on a project under contract.
+        setLoadFailed(true);
+        setLoading(false);
+      });
+  }, [projectId, reloadKey]);
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
@@ -252,29 +298,79 @@ function ContractsPage() {
     if (online) {
       try {
         const res = await fetch(`/api/projects/${projectId}/contracts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        if (res.ok) {
-          const json = await res.json();
-          const created = json?.contract ?? json;
-          setContracts(prev => [created, ...prev]);
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json?.contract) {
+          setContracts(prev => [normalizeContract(json.contract), ...prev]);
           resetForm();
           setView('list');
+          setSaving(false);
+          return;
         }
-      } catch { /* fall through to offline */ }
+        // The server answered and refused — say so instead of dropping through
+        // to the offline path and pretending nothing happened.
+        setSaveError(`Contract not created — ${json?.error || `refused (${res.status})`}`);
+        setSaving(false);
+        return;
+      } catch { /* network failure — fall through to the offline queue below */ }
     }
 
-    if (!online) {
-      await enqueue({ url: `/api/projects/${projectId}/contracts`, method: 'POST', body: JSON.stringify(body), contentType: 'application/json', isFormData: false });
-      const optimistic: Contract = {
-        id: `local-${Date.now()}`, ...body,
-        revised_amount: amount, invoiced_amount: 0, paid_amount: 0,
-        signed_date: '', start_date: body.start_date || '', end_date: body.end_date || '',
-        retainage_pct: body.retainage_pct, status: 'draft',
-      } as Contract;
-      setContracts(prev => [optimistic, ...prev]);
-      resetForm();
-      setView('list');
-    }
+    // Offline, or the request never reached the server: queue it and say so.
+    await enqueue({ url: `/api/projects/${projectId}/contracts`, method: 'POST', body: JSON.stringify(body), contentType: 'application/json', isFormData: false });
+    const optimistic: Contract = normalizeContract({
+      id: `local-${Date.now()}`, ...body,
+      revised_amount: amount, invoiced_amount: 0, paid_amount: 0,
+      signed_date: '', start_date: body.start_date || '', end_date: body.end_date || '',
+      retainage_pct: body.retainage_pct, status: 'draft',
+    } as Record<string, unknown>);
+    setContracts(prev => [optimistic, ...prev]);
+    resetForm();
+    setView('list');
+    setSaveError('Contract queued offline — it is not on the server yet.');
     setSaving(false);
+  }
+
+  /** PATCH a contract and apply the row the server actually wrote.
+   *  Two things were wrong here before: the response is `{ contract: {...} }`
+   *  and was being assigned whole (blanking every field on screen), and a 4xx —
+   *  a refusal, not a connectivity problem — was funnelled into the offline
+   *  queue where it retried until dead-letter while the UI showed success. */
+  async function patchContract(contract: Contract, patch: Record<string, unknown>, failNote: string) {
+    const url = `/api/projects/${projectId}/contracts/${contract.id}`;
+    const payload = JSON.stringify(patch);
+    setSaveError('');
+
+    if (online) {
+      try {
+        const res = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: payload });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.contract) {
+          const saved = normalizeContract(data.contract);
+          setContracts(prev => prev.map(c => c.id === contract.id ? saved : c));
+          setSelected(sel => sel && sel.id === contract.id ? saved : sel);
+          return;
+        }
+        if (res.status >= 400 && res.status < 500) {
+          // The server understood and refused. Queueing would hide it forever.
+          setSaveError(`${failNote} — ${data?.error || `refused (${res.status})`}`);
+          return;
+        }
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      } catch (e) {
+        // Network/5xx only: queue it and say plainly that it has not landed yet.
+        await enqueue({ url, method: 'PATCH', body: payload, contentType: 'application/json', isFormData: false });
+        const optimistic = normalizeContract({ ...contract, ...patch } as Record<string, unknown>);
+        setContracts(prev => prev.map(c => c.id === contract.id ? optimistic : c));
+        setSelected(sel => sel && sel.id === contract.id ? optimistic : sel);
+        setSaveError(`${failNote} yet — queued, will sync when the connection returns.`);
+        return;
+      }
+    }
+
+    await enqueue({ url, method: 'PATCH', body: payload, contentType: 'application/json', isFormData: false });
+    const optimistic = normalizeContract({ ...contract, ...patch } as Record<string, unknown>);
+    setContracts(prev => prev.map(c => c.id === contract.id ? optimistic : c));
+    setSelected(sel => sel && sel.id === contract.id ? optimistic : sel);
+    setSaveError(`${failNote} yet — queued offline, will sync when the connection returns.`);
   }
 
   async function handleStatusAdvance(contract: Contract) {
@@ -282,44 +378,12 @@ function ContractsPage() {
     if (idx < 0 || idx >= WORKFLOW_ORDER.length - 1) return;
     const nextStatus = WORKFLOW_ORDER[idx + 1];
     const patch = { status: nextStatus, ...(nextStatus === 'executed' ? { signed_date: new Date().toISOString().split('T')[0] } : {}) };
-
-    if (online) {
-      try {
-        const res = await fetch(`/api/projects/${projectId}/contracts/${contract.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) });
-        if (res.ok) {
-          const updated = await res.json();
-          setContracts(prev => prev.map(c => c.id === contract.id ? updated : c));
-          setSelected(updated);
-          return;
-        }
-      } catch { /* offline fallback */ }
-    }
-
-    await enqueue({ url: `/api/projects/${projectId}/contracts/${contract.id}`, method: 'PATCH', body: JSON.stringify(patch), contentType: 'application/json', isFormData: false });
-    const updated = { ...contract, ...patch } as Contract;
-    setContracts(prev => prev.map(c => c.id === contract.id ? updated : c));
-    setSelected(updated);
+    await patchContract(contract, patch, `Status not advanced to ${nextStatus}`);
   }
 
   async function handleComplianceToggle(contract: Contract, field: 'insurance_verified' | 'bonding_verified') {
     const patch = { [field]: !contract[field] };
-
-    if (online) {
-      try {
-        const res = await fetch(`/api/projects/${projectId}/contracts/${contract.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) });
-        if (res.ok) {
-          const updated = await res.json();
-          setContracts(prev => prev.map(c => c.id === contract.id ? updated : c));
-          setSelected(updated);
-          return;
-        }
-      } catch { /* offline */ }
-    }
-
-    await enqueue({ url: `/api/projects/${projectId}/contracts/${contract.id}`, method: 'PATCH', body: JSON.stringify(patch), contentType: 'application/json', isFormData: false });
-    const updated = { ...contract, ...patch } as Contract;
-    setContracts(prev => prev.map(c => c.id === contract.id ? updated : c));
-    setSelected(updated);
+    await patchContract(contract, patch, `${field === 'insurance_verified' ? 'Insurance' : 'Bonding'} verification not saved`);
   }
 
   function handlePrint() {
@@ -332,22 +396,58 @@ function ContractsPage() {
   }
   function closeActionSheet() { setActionSheet(null); setSheetMode('menu'); }
 
+  /** Persist one money field on a contract. Every one of these used to be a
+   *  fire-and-forget fetch with an empty catch — the number changed on screen,
+   *  the API dropped it (no such column in its field map), and nothing said so.
+   *  Now: optimistic, verified against the response, rolled back and reported
+   *  when the write does not land. */
+  async function saveMoneyField(contractId: string, field: string, prev: number, next: number) {
+    const applyLocal = (value: number) => {
+      setContracts(list => list.map(c => {
+        if (c.id !== contractId) return c;
+        const merged = { ...c, [field]: value } as Contract;
+        // Revised = original + approved changes; keep the derived tile truthful
+        // the moment either input moves.
+        if (field === 'original_amount' || field === 'approved_changes') {
+          merged.revised_amount = (Number(merged.original_amount) || 0) + (Number(merged.approved_changes) || 0);
+        }
+        return merged;
+      }));
+      setSelected(sel => {
+        if (!sel || sel.id !== contractId) return sel;
+        const merged = { ...sel, [field]: value } as Contract;
+        if (field === 'original_amount' || field === 'approved_changes') {
+          merged.revised_amount = (Number(merged.original_amount) || 0) + (Number(merged.approved_changes) || 0);
+        }
+        return merged;
+      });
+    };
+
+    applyLocal(next);
+    closeActionSheet();
+    setSaveError('');
+    try {
+      const res = await fetch(`/api/contracts/${contractId}/update`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.success !== true) throw new Error(data?.error || `Save failed (${res.status})`);
+    } catch (e) {
+      applyLocal(prev);
+      setSaveError(e instanceof Error ? `Amount not saved — ${e.message}` : 'Amount not saved.');
+    }
+  }
+
   async function handleEditContract(amount: number) {
     if (!actionSheet) return;
-    const field = actionSheet.field;
-    setContracts(prev => prev.map(c => c.id === actionSheet.contractId ? { ...c, [field]: amount } : c));
-    if (selected && selected.id === actionSheet.contractId) setSelected({ ...selected, [field]: amount });
-    closeActionSheet();
-    try { await fetch(`/api/contracts/${actionSheet.contractId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: amount }) }); } catch {}
+    await saveMoneyField(actionSheet.contractId, actionSheet.field, actionSheet.amount, amount);
   }
   async function handleAdjustContract(pct: number) {
     if (!actionSheet) return;
     const newAmt = Math.round(actionSheet.amount * (1 + pct / 100) * 100) / 100;
-    const field = actionSheet.field;
-    setContracts(prev => prev.map(c => c.id === actionSheet.contractId ? { ...c, [field]: newAmt } : c));
-    if (selected && selected.id === actionSheet.contractId) setSelected({ ...selected, [field]: newAmt });
-    closeActionSheet();
-    try { await fetch(`/api/contracts/${actionSheet.contractId}/update`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: newAmt }) }); } catch {}
+    await saveMoneyField(actionSheet.contractId, actionSheet.field, actionSheet.amount, newAmt);
   }
   function handleCopyContract(amount: number, id: string) {
     navigator.clipboard.writeText(formatUSD(amount)).catch(() => {});
@@ -369,7 +469,11 @@ function ContractsPage() {
         {cards.map(c => (
           <div key={c.label} style={{ ...card, padding: 14, textAlign: 'center' }}>
             <div style={{ color: DIM, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{c.label}</div>
-            <div style={{ color: c.color, fontSize: 18, fontWeight: 800 }}>{formatUSDShort(c.value)}</div>
+            {/* While the list is loading or after a failed read these totals are
+                not measurements — show an em-dash rather than a false $0.00. */}
+            <div style={{ color: c.color, fontSize: 18, fontWeight: 800 }}>
+              {loading || loadFailed ? '—' : formatUSDShort(c.value)}
+            </div>
           </div>
         ))}
       </div>
@@ -471,6 +575,15 @@ function ContractsPage() {
           </>}
         />
         <div style={{ padding: '16px 16px 120px' }}>
+          {/* A write that did not land says so, right here, instead of vanishing
+              into an empty catch. */}
+          {saveError && (
+            <div style={{ ...card, borderColor: RED, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ color: RED, fontSize: 13, fontWeight: 600, flex: 1 }}>{saveError}</span>
+              <button onClick={() => setSaveError('')} style={{ background: 'none', border: 'none', color: DIM, fontSize: 18, cursor: 'pointer' }}>&times;</button>
+            </div>
+          )}
+
           {/* Dashboard */}
           {renderDashboard()}
 
@@ -483,6 +596,17 @@ function ContractsPage() {
           {/* List */}
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: DIM }}>Loading contracts...</div>
+          ) : loadFailed ? (
+            /* Read failure — NOT "no contracts". The dashboard above would
+               otherwise report $0 committed on a fully-subcontracted project. */
+            <div style={{ ...card, textAlign: 'center', padding: 32, borderColor: RED }}>
+              <div style={{ color: RED, fontWeight: 700, marginBottom: 6 }}>Contracts did not load</div>
+              <div style={{ color: DIM, fontSize: 13, marginBottom: 16 }}>Committed, invoiced, and paid totals above are incomplete.</div>
+              <button onClick={() => { setLoading(true); setReloadKey(k => k + 1); }} style={{
+                background: 'linear-gradient(180deg, var(--brand-primary-strong), var(--brand-primary) 60%, var(--brand-primary-hover))',
+                color: '#241500', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 800, cursor: 'pointer',
+              }}>Retry</button>
+            </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: DIM }}>No contracts found</div>
           ) : (

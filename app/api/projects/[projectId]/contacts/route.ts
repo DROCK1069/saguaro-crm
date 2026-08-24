@@ -74,7 +74,11 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     }
 
     return NextResponse.json({ contacts: [] });
-  } catch {
-    return NextResponse.json({ contacts: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/contacts] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load contacts', detail }, { status: 500 });
   }
 }

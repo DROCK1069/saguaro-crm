@@ -10,7 +10,13 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     const { data: forms } = await supabase.from('prequalification_forms').select('*').eq('tenant_id', user.tenantId).order('created_at', { ascending: false });
     const { data: submissions } = await supabase.from('prequalification_submissions').select('*').eq('tenant_id', user.tenantId).order('created_at', { ascending: false });
     return NextResponse.json({ forms: forms ?? [], submissions: submissions ?? [] });
-  } catch { return NextResponse.json({ forms: [], submissions: [] }); }
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/prequalification] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load forms', detail }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {

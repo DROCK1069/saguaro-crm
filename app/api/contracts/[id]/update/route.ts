@@ -19,6 +19,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       contract_type: 'contract_type',
       value: 'amount',
       amount: 'amount',
+      // The field page's "Revised Amount" IS the current commitment — it lives in
+      // `amount`. These four used to have no entry here, so a money edit produced
+      // an empty patch that the route happily 200-ed on while writing nothing.
+      revised_amount: 'amount',
+      original_amount: 'original_amount',
+      approved_changes: 'approved_changes',
+      invoiced_amount: 'invoiced_amount',
+      paid_amount: 'paid_amount',
       start_date: 'start_date',
       end_date: 'end_date',
       description: 'scope_of_work',
@@ -34,14 +42,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     for (const k of Object.keys(fieldMap)) {
       if (body[k] !== undefined) fields[fieldMap[k]] = body[k];
     }
+    // `original_amount` is a TEXT column; hand it a string so PostgREST does not
+    // reject a numeric edit. Everything else money-shaped goes in as a number.
+    if (fields.original_amount !== undefined) fields.original_amount = String(fields.original_amount);
+    for (const k of ['amount', 'approved_changes', 'invoiced_amount', 'paid_amount', 'retainage_pct']) {
+      if (fields[k] !== undefined) fields[k] = Number(fields[k]) || 0;
+    }
+
+    // Refuse an update we cannot persist rather than reporting success on a
+    // no-op. A silently-dropped money edit is exactly the bug this guards.
+    if (Object.keys(fields).length === 0) {
+      const unknown = Object.keys(body).filter((k) => !(k in fieldMap));
+      return NextResponse.json(
+        { error: unknown.length ? `No savable fields in this update (${unknown.join(', ')}).` : 'Nothing to update.' },
+        { status: 400 },
+      );
+    }
+    fields.updated_at = new Date().toISOString();
+
     const { data: updated, error } = await db
       .from('contracts')
       .update(fields)
       .eq('id', id)
       .eq('tenant_id', user.tenantId)
       .select('id, project_id, bid_package_id, contract_type, amount, original_amount, status, executed_at')
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    // No row matched — wrong id, or another tenant's contract. Failed write.
+    if (!updated) return NextResponse.json({ error: 'Contract not found.' }, { status: 404 });
 
     // ── EXECUTION CASCADE: an executed subcontract is no longer a dead end —
     //    stamp executed_at, mark its bid package contracted, and make sure the
@@ -63,8 +91,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    return NextResponse.json({ success: true });
-  } catch {
+    return NextResponse.json({ success: true, contract: updated });
+  } catch (e) {
+    console.error('[contracts/update]', e);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

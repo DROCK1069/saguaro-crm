@@ -161,6 +161,12 @@ export async function onPayAppApproved(payAppId: string): Promise<void> {
         email: m.subcontractors?.email || m.subcontractors?.contact_email || null,
       }))
       .filter((s) => s.email);
+    // Count what ACTUALLY happened — the approval notification below reports these
+    // numbers verbatim. It never claims "waivers generated for all subs" on faith.
+    const allMembers = ((memberships as any[]) || []).length;
+    const noEmail = allMembers - activeSubs.length;
+    let waiversCreated = 0;
+    let waiversFailed = 0;
     if (activeSubs.length > 0) {
       // Period amount: current payment due split by each sub's share of total
       // contract value (falls back to an even split when amounts are zero).
@@ -183,21 +189,31 @@ export async function onPayAppApproved(payAppId: string): Promise<void> {
           through_date: pa.period_to,
           status: 'pending',
         } as never).select().single();
-        if (wErr) { console.error('[onPayAppApproved] waiver insert failed', wErr); continue; }
-        if (waiver) {
-          const w = waiver as any;
-          await sendLienWaiverRequest(
-            sub.email, sub.company, project.name, waiverAmount,
-            `${APP_URL}/portals/lien-waiver/${w.token}`
-          );
-        }
+        if (wErr || !waiver) { console.error('[onPayAppApproved] waiver insert failed', wErr); waiversFailed++; continue; }
+        waiversCreated++;
+        const w = waiver as any;
+        await sendLienWaiverRequest(
+          sub.email, sub.company, project.name, waiverAmount,
+          `${APP_URL}/portals/lien-waiver/${w.token}`
+        );
       }
     }
 
+    // Report the real outcome. A silent partial failure (or a project with no
+    // subs on file) must NOT read as "waivers generated for all subs".
+    const waiverLine = (() => {
+      const parts: string[] = [];
+      if (waiversCreated > 0) parts.push(`${waiversCreated} conditional lien waiver${waiversCreated === 1 ? '' : 's'} generated`);
+      if (waiversFailed > 0) parts.push(`${waiversFailed} failed to generate — generate ${waiversFailed === 1 ? 'it' : 'them'} manually`);
+      if (noEmail > 0) parts.push(`${noEmail} sub${noEmail === 1 ? '' : 's'} skipped (no email on file)`);
+      if (memErr) parts.push('subcontractor list could not be read — no waivers were generated');
+      if (!parts.length) parts.push(allMembers === 0 ? 'no subcontractors on this project — no waivers generated' : 'no waivers generated');
+      return parts.join('; ');
+    })();
     await createNotification(
       project.tenant_id, null, 'pay_app_approved',
       `Pay App #${pa.app_number} approved`,
-      `Lien waivers auto-generated for all subs on ${project.name}`,
+      `${project.name} — ${waiverLine}.`,
       `${APP_URL}/app/projects/${project.id}/lien-waivers`, project.id
     );
     await dispatchWebhookEvent(project.tenant_id, 'pay_app.approved', {

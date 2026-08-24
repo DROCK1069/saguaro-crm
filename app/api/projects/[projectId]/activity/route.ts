@@ -26,13 +26,20 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     if (actionUser) query = query.eq('user_email', actionUser);
 
     const { data, error } = await query;
-    if (error) return NextResponse.json({ activities: [], hasMore: false });
+    if (error) {
+      console.error('[projects/[projectId]/activity] read failed:', error.message);
+      return NextResponse.json({ error: 'Failed to load activities', detail: error.message }, { status: 500 });
+    }
     return NextResponse.json({
       activities: data || [],
       hasMore: (data || []).length === limit,
       page,
     });
-  } catch {
-    return NextResponse.json({ activities: [], hasMore: false });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/activity] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load activities', detail }, { status: 500 });
   }
 }

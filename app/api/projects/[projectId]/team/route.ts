@@ -20,7 +20,11 @@ export async function GET(
 
     if (error) throw error;
     return NextResponse.json({ team: team || [] });
-  } catch {
-    return NextResponse.json({ team: [] });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/team] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load team', detail }, { status: 500 });
   }
 }

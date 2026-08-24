@@ -281,13 +281,50 @@ function SelectionsInner() {
       selectedOptionId: null, selectedBy: null, selectedAt: null,
       dueDate: formDueDate, notes: formNotes, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
+    if (!projectId) { showToast('Pick a project first'); return; }
+
+    // Persist through /api/selections/create — the real create endpoint. This used
+    // to POST to /api/projects/<id>/selections, which has no POST handler, so every
+    // "Selection created" toast reported a save that never happened.
+    // The selections table has no columns for room / candidate options, so they are
+    // written into description and notes rather than being silently dropped.
+    const optionSummary = validOpts.map(o => o.name.trim()).filter(Boolean).join(', ');
+    const payload = {
+      projectId,
+      item: newItem.description,
+      category: newItem.category,
+      allowance: newItem.allowance,
+      status: 'pending',
+      due_date: newItem.dueDate || null,
+      description: newItem.room ? `Room: ${newItem.room}` : '',
+      notes: [newItem.notes, optionSummary ? `Options: ${optionSummary}` : ''].filter(Boolean).join('\n'),
+    };
+
     setItems(prev => [newItem, ...prev]);
-    if (projectId) {
-      await enqueue({ url: `/api/projects/${projectId}/selections`, method: 'POST', body: JSON.stringify(newItem), contentType: 'application/json', isFormData: false });
-    }
     resetForm();
     setView('list');
-    showToast('Selection created');
+
+    try {
+      const res = await fetch('/api/selections/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error(b.error || `HTTP ${res.status}`);
+      }
+      showToast('Selection created');
+    } catch {
+      // Offline or the write failed — queue it for replay and say so honestly
+      // rather than claiming the selection was created.
+      try {
+        await enqueue({ url: '/api/selections/create', method: 'POST', body: JSON.stringify(payload), contentType: 'application/json', isFormData: false });
+        showToast('Saved offline — will sync when you reconnect');
+      } catch {
+        showToast('Could not save this selection. Please try again.');
+      }
+    }
   };
 
   const resetForm = () => {

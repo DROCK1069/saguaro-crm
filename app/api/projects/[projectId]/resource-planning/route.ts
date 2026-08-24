@@ -13,7 +13,13 @@ export async function GET(req: NextRequest, { params }: { params: { projectId: s
     const { data, error } = await q.order('start_date', { ascending: true });
     if (error) throw error;
     return NextResponse.json({ assignments: data ?? [] });
-  } catch { return NextResponse.json({ assignments: [] }); }
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error('[projects/[projectId]/resource-planning] read failed:', detail);
+    // A failed read must not render as an empty result — return a real
+    // status so the UI can show an error state with a retry.
+    return NextResponse.json({ error: 'Failed to load assignments', detail }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { projectId: string } }) {

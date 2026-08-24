@@ -92,6 +92,11 @@ export default function InvoicingPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  /** True when the invoice list read failed — keeps "empty" from reading as an
+   *  all-clear (0 overdue, $0 outstanding) on a ledger we never managed to read. */
+  const [loadFailed, setLoadFailed] = useState(false);
+  /** Confirmed delivery message — only set after the send route reports emailed. */
+  const [sentNotice, setSentNotice] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
   // Create form state — matches API schema
@@ -157,8 +162,11 @@ export default function InvoicingPage() {
       if (!res.ok) throw new Error('Failed to load invoices');
       const data = await res.json();
       setInvoices(Array.isArray(data) ? data : data.invoices ?? []);
+      setLoadFailed(false);
     } catch (e: any) {
       console.error(e);
+      // An empty ledger and an unread ledger look identical unless we say so.
+      setLoadFailed(true);
       setError(humanError(e, "Couldn't load invoices. Please try again."));
     } finally {
       setLoading(false);
@@ -250,17 +258,44 @@ export default function InvoicingPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this invoice?')) return;
+    setError('');
     try {
-      await fetch(`/api/invoices/${id}/delete`, { method: 'DELETE' });
+      const res = await fetch(`/api/invoices/${id}/delete`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || `Delete failed (${res.status})`);
+      }
       await fetchInvoices();
-    } catch {}
+    } catch (e: any) {
+      console.error(e);
+      setError(humanError(e, "Couldn't delete the invoice. It is still on the ledger."));
+    }
   }
 
+  /**
+   * The send route is already honest — it refuses with a 400 when the invoice
+   * has no vendor_email and a 502 when email is not provisioned or Resend
+   * rejects the message, and it only flips the row to "sent" after delivery.
+   * This used to swallow both, so accounting saw the button click succeed and
+   * believed the vendor had been emailed. Now the refusal reaches the screen.
+   */
   async function handleSend(id: string) {
+    setError(''); setSentNotice('');
     try {
-      await fetch(`/api/invoices/${id}/send`, { method: 'POST' });
+      const res = await fetch(`/api/invoices/${id}/send`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.emailed) {
+        throw new Error(data?.error || `The invoice was not sent (${res.status}).`);
+      }
+      setSentNotice(`Invoice emailed to ${data.to}.`);
+      setTimeout(() => setSentNotice(''), 6000);
       await fetchInvoices();
-    } catch {}
+    } catch (e: any) {
+      console.error(e);
+      setError(humanError(e, 'The invoice was NOT emailed. Nothing was sent to the vendor.'));
+      // Re-read so the row still shows its true (un-sent) status.
+      await fetchInvoices();
+    }
   }
 
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
@@ -415,6 +450,13 @@ export default function InvoicingPage() {
         </div>
       )}
 
+      {/* A confirmed delivery — named recipient, so "sent" means something. */}
+      {sentNotice && (
+        <div style={{ padding: '12px 16px', background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.3)', borderRadius: radius.md, color: colors.green, fontSize: font.size.md, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {sentNotice}
+        </div>
+      )}
+
       {/* ── Inline Composer — SmartCreate anatomy, right above the ledger ── */}
       {showCreate && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 18, alignItems: 'start', marginBottom: 24 }}>
@@ -565,7 +607,9 @@ export default function InvoicingPage() {
           loading={loading}
           tableId="invoicing"
           searchPlaceholder="Search invoices..."
-          emptyMessage="No invoices yet. Create your first invoice to get started."
+          emptyMessage={loadFailed
+            ? 'Invoices could not be loaded — this is not an empty ledger. Reload to try again.'
+            : 'No invoices yet. Create your first invoice to get started.'}
           onRowClick={(row) => guard.requestLeave(`/app/invoicing/${row.id}`)}
         />
       </NudgeRing>
