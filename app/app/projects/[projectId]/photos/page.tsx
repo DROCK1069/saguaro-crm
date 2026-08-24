@@ -1,5 +1,19 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * Project Photos (web app shell).
+ *
+ * The project is taken from the ROUTE (`/app/projects/[projectId]/photos`), never from a
+ * global "active project" — so every read and every write on this screen is addressed to
+ * the project named in the URL bar. It cannot drift.
+ *
+ * WHAT WAS BROKEN: "Add Photo" had no way to add a photo. The panel offered a "Photo URL"
+ * text box and expected a GC to paste an `https://...` image link by hand; there was no
+ * file input, no camera, no upload call anywhere on the page. A record could be saved with
+ * a title and no image at all. That is the "nowhere to type / stubbed knock-off" complaint.
+ * The panel now takes a real file, uploads it to storage against this project's id via
+ * /api/photos/upload, then attaches the typed details to the row it created.
+ */
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useProjectContext } from '@/lib/hooks/useProjectContext';
 import SaguaroDatePicker from '@/components/SaguaroDatePicker';
 import { humanError } from '@/lib/errors';
@@ -76,9 +90,31 @@ export default function PhotosPage(){
   const [filterAlbum,setFilterAlbum]=useState('All');
   const [editingPhoto, setEditingPhoto] = useState<{id:string;url:string}|null>(null);
 
+  // Real file upload — the thing this panel was missing entirely.
+  const [uploadFile,setUploadFile]=useState<File|null>(null);
+  const [uploadPreview,setUploadPreview]=useState('');
+  const [formError,setFormError]=useState('');
+  const fileRef=useRef<HTMLInputElement>(null);
+
   const showToast=(msg:string,type:'success'|'error'='success')=>{
     setToast({msg,type}); setTimeout(()=>setToast(null),4000);
   };
+
+  const clearUpload=useCallback(()=>{
+    setUploadFile(null);setUploadPreview('');setFormError('');
+    if(fileRef.current) fileRef.current.value='';
+  },[]);
+
+  function onPickFile(e:React.ChangeEvent<HTMLInputElement>){
+    const file=e.target.files?.[0];
+    if(!file) return;
+    setFormError('');
+    setUploadFile(file);
+    const reader=new FileReader();
+    reader.onload=()=>setUploadPreview(String(reader.result||''));
+    reader.onerror=()=>{setUploadPreview('');setFormError("That file couldn't be read. Pick it again.");};
+    reader.readAsDataURL(file);
+  }
 
   const load=useCallback(async()=>{
     setLoading(true);
@@ -105,6 +141,7 @@ export default function PhotosPage(){
     const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     setForm({...EMPTY_FORM,taken_at:iso,album:filterAlbum!=='All'?filterAlbum:'General'});
     setAuto({date:true,album:filterAlbum!=='All'});
+    clearUpload();
     setMode('create');setSelected(null);
   }
   function openEdit(photo:any){
@@ -119,13 +156,26 @@ export default function PhotosPage(){
       taken_by:photo.taken_by||'',
       tags:tagsStr,
     });
+    clearUpload();
     setSelected(photo);setMode('edit');
   }
   function viewPhoto(photo:any){setSelected(photo);setMode('view');}
-  function closePanel(){setSelected(null);setMode(null);}
+  function closePanel(){setSelected(null);setMode(null);clearUpload();}
+
+  /** Read a route's error body without leaking raw JSON into the UI. */
+  async function errorFrom(r:Response,fallback:string):Promise<Error>{
+    const payload=await r.json().catch(()=>null);
+    return new Error(humanError(payload,fallback));
+  }
 
   async function save(){
-    if(!form.title.trim()){showToast('Title is required','error');return;}
+    setFormError('');
+    if(!form.title.trim()){setFormError('Give the photo a title first.');showToast('Title is required','error');return;}
+    if(mode==='create'&&!uploadFile&&!form.url.trim()){
+      setFormError('Choose a photo file to upload, or paste an image URL.');
+      showToast('No photo attached','error');
+      return;
+    }
     setSaving(true);
     try{
       const h=await getAuthHeaders();
@@ -135,25 +185,77 @@ export default function PhotosPage(){
         tags:tagsArray,
         taken_at:form.taken_at?new Date(form.taken_at+'T12:00:00').toISOString():new Date().toISOString(),
       };
+
       if(mode==='create'){
-        const r=await fetch('/api/photos/create',{
-          method:'POST',
-          headers:{...h,'Content-Type':'application/json'},
-          body:JSON.stringify({...payload,projectId}),
-        });
-        if(!r.ok) throw new Error(await r.text());
-        showToast('Photo added');
+        if(uploadFile){
+          // Multipart -> storage + row, addressed to THIS route's projectId. The
+          // JSON create route never touches storage; it only records a URL string.
+          const fd=new FormData();
+          fd.append('projectId',projectId);
+          fd.append('file',uploadFile,uploadFile.name||`photo-${Date.now()}.jpg`);
+          fd.append('category',form.album||'General');
+          if(form.title.trim()) fd.append('caption',form.title.trim());
+          // No Content-Type header — the browser must set the multipart boundary.
+          const up=await fetch('/api/photos/upload',{method:'POST',headers:h,body:fd});
+          if(!up.ok) throw await errorFrom(up,"The photo didn't upload. Try again.");
+          const upPayload=await up.json().catch(()=>null);
+          const newId=upPayload?.photo?.id;
+          if(newId){
+            // Attach the details the multipart route doesn't accept. `url` is
+            // deliberately omitted — the upload already set the real storage path.
+            const meta=await fetch(`/api/photos/${newId}`,{
+              method:'PUT',
+              headers:{...h,'Content-Type':'application/json'},
+              body:JSON.stringify({
+                title:payload.title,description:payload.description,album:payload.album,
+                location:payload.location,taken_at:payload.taken_at,taken_by:payload.taken_by,
+                tags:tagsArray,
+              }),
+            });
+            if(!meta.ok){
+              showToast('Photo uploaded, but the details did not save — reopen it to re-enter them','error');
+            }else{
+              showToast('Photo added');
+            }
+          }else{
+            showToast('Photo uploaded');
+          }
+        }else{
+          const r=await fetch('/api/photos/create',{
+            method:'POST',
+            headers:{...h,'Content-Type':'application/json'},
+            body:JSON.stringify({...payload,projectId}),
+          });
+          if(!r.ok) throw await errorFrom(r,'Save failed. Please try again.');
+          showToast('Photo added');
+        }
       }else if(mode==='edit'&&selected){
+        if(uploadFile){
+          // Replace the image in place. This endpoint re-uploads under the row's
+          // existing project_id, so swapping the file can never move the photo.
+          const fd=new FormData();
+          fd.append('file',uploadFile,uploadFile.name||`photo-${Date.now()}.jpg`);
+          const up=await fetch(`/api/photos/${selected.id}/upload`,{method:'POST',headers:h,body:fd});
+          if(!up.ok) throw await errorFrom(up,"The replacement photo didn't upload.");
+        }
+        // Don't clobber the freshly uploaded storage URL with the stale form value.
+        const {url:formUrl,...rest}=payload;
+        const body=uploadFile?rest:{...rest,url:formUrl};
         const r=await fetch(`/api/photos/${selected.id}`,{
           method:'PUT',
           headers:{...h,'Content-Type':'application/json'},
-          body:JSON.stringify(payload),
+          body:JSON.stringify(body),
         });
-        if(!r.ok) throw new Error(await r.text());
+        if(!r.ok) throw await errorFrom(r,'Save failed. Please try again.');
         showToast('Photo updated');
       }
       await load();closePanel();
-    }catch(e:any){console.error(e);showToast(humanError(e,'Save failed. Please try again.'),'error');}
+    }catch(e:any){
+      console.error(e);
+      const msg=humanError(e,'Save failed. Please try again.');
+      setFormError(msg);
+      showToast(msg,'error');
+    }
     finally{setSaving(false);}
   }
 
@@ -252,7 +354,9 @@ export default function PhotosPage(){
         <PremiumSurface maxWidth={1600}>
           {/* Header */}
           <ModuleHero
-            eyebrow={ctx?.project?.name||'Photos'}
+            /* Always name the job on screen — never a bare "Photos" that leaves a GC
+               guessing which project they are filing into. */
+            eyebrow={ctx?.project?.name||(loading?'Loading project…':'This project')}
             eyebrowIcon={<IconChip size={24} vivid={moduleAccent('photos').vivid ?? moduleAccent('photos').hex}><Camera size={13} weight="fill" color="#F8FAFC" /></IconChip>}
             accentColor={moduleAccent('photos').hex}
             title="Site"
@@ -435,6 +539,52 @@ export default function PhotosPage(){
           <div style={{flex:1,overflow:'auto',padding:20}}>
             {(mode==='create'||mode==='edit')?(
               <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                {/* ── The photo itself. A real file, not a URL a GC has to hand-type. ── */}
+                <div>
+                  <FieldLabel label={mode==='create'?'Photo *':'Replace Photo'}/>
+                  <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{display:'none'}}/>
+                  {uploadPreview?(
+                    <div style={{border:`1px solid ${BORDER}`,borderRadius:8,overflow:'hidden',background:RAISED}}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={uploadPreview} alt="Selected" style={{width:'100%',maxHeight:200,objectFit:'cover',display:'block'}}/>
+                      <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px'}}>
+                        <span style={{fontSize:11.5,color:DIM,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {uploadFile?.name||'Selected photo'}
+                        </span>
+                        <button onClick={()=>fileRef.current?.click()}
+                          style={{background:'transparent',border:'none',color:'#FBBF24',fontSize:11.5,fontWeight:700,cursor:'pointer',padding:0}}>
+                          Replace
+                        </button>
+                        <button onClick={clearUpload}
+                          style={{background:'transparent',border:'none',color:RED,fontSize:11.5,fontWeight:700,cursor:'pointer',padding:0}}>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ):(
+                    <button onClick={()=>fileRef.current?.click()}
+                      style={{width:'100%',padding:'16px 12px',background:RAISED,
+                        border:`1px dashed rgba(245,158,11,.45)`,borderRadius:8,color:'#FBBF24',
+                        fontSize:13,fontWeight:700,cursor:'pointer',
+                        display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                      <Camera size={17} weight="duotone" color={GOLD}/>
+                      {mode==='create'?'Choose a photo from this computer':'Upload a replacement image'}
+                    </button>
+                  )}
+                  <div style={{fontSize:11,color:'rgba(255,255,255,0.45)',marginTop:5,lineHeight:1.45}}>
+                    {mode==='create'
+                      ? 'Uploads straight into this project. No link to paste.'
+                      : 'Leave empty to keep the current image and just edit the details.'}
+                  </div>
+                </div>
+
+                {formError&&(
+                  <div style={{background:'rgba(192,48,48,.12)',border:`1px solid ${RED}55`,borderRadius:8,
+                    padding:'10px 12px',color:'#f3b8b8',fontSize:12.5,lineHeight:1.45}}>
+                    {formError}
+                  </div>
+                )}
+
                 <div>
                   <FieldLabel label="Title *"/>
                   <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}
@@ -473,11 +623,15 @@ export default function PhotosPage(){
                     )}
                   </div>
                 </div>
-                <div>
-                  <FieldLabel label="Photo URL"/>
-                  <input value={form.url} onChange={e=>setForm(f=>({...f,url:e.target.value}))}
-                    style={inp} placeholder="https://..."/>
-                </div>
+                {/* Pasting a link stays available for photos that already live somewhere
+                    else, but it is no longer the only way in. */}
+                {!uploadFile&&(
+                  <div>
+                    <FieldLabel label={mode==='create'?'…or paste an image URL':'Photo URL'}/>
+                    <input value={form.url} onChange={e=>setForm(f=>({...f,url:e.target.value}))}
+                      style={inp} placeholder="https://..."/>
+                  </div>
+                )}
                 <div>
                   <FieldLabel label="Taken By"/>
                   <input value={form.taken_by} onChange={e=>setForm(f=>({...f,taken_by:e.target.value}))}

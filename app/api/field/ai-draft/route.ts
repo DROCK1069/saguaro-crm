@@ -79,18 +79,19 @@ Respond ONLY with valid JSON in this exact format:
     return NextResponse.json({ success: true, draft });
 
   } catch (err: unknown) {
-    const msg = 'Internal server error';
-    console.error('[ai-draft]', msg);
-    // Return a placeholder so the field app doesn't break
-    return NextResponse.json({
-      success: false,
-      error: msg,
-      draft: {
-        workPerformed: '',
-        delays: '',
-        safetyNotes: 'All crew completed morning safety briefing. PPE in use.',
-        notes: '',
+    console.error('[ai-draft] failed:', err instanceof Error ? err.message : err);
+    // NEVER fabricate a safety attestation. This used to fall back to
+    // "All crew completed morning safety briefing. PPE in use." — which then
+    // sat in the daily log, a legal record, asserting a briefing that may never
+    // have happened. An empty draft and an honest error is the only acceptable
+    // failure: the superintendent writes what actually occurred.
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Couldn't generate a draft — write the log manually.",
+        draft: null,
       },
-    });
+      { status: 502 },
+    );
   }
 }

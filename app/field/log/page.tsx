@@ -848,14 +848,20 @@ function DailyLogForm() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ projectName, weather, tempHigh, crewCount, superintendent }),
                   });
-                  const d = await res.json();
-                  if (d.draft) {
+                  const d = await res.json().catch(() => null);
+                  // An AI draft that failed must never quietly leave text in a
+                  // legal record — say so instead of pretending it worked.
+                  if (!res.ok || !d?.draft) {
+                    alert(d?.error || "Couldn't generate a draft — write the log manually.");
+                  } else {
                     if (d.draft.workPerformed) setWorkPerformed(d.draft.workPerformed);
                     if (d.draft.delays) setDelays(d.draft.delays);
                     if (d.draft.safetyNotes) setSafetyNotes(d.draft.safetyNotes);
                     if (d.draft.notes) setNotes(d.draft.notes);
                   }
-                } catch { /* ai unavailable */ }
+                } catch {
+                  alert("Couldn't reach the drafting service — write the log manually.");
+                }
                 setAiLoading(false);
               }}
               style={{ flex: 1, background: aiLoading ? '#1c1c1e' : 'rgba(139,92,246,.15)', border: `1px solid rgba(139,92,246,.3)`, borderRadius: 10, padding: '10px', color: aiLoading ? DIM : PURPLE, fontSize: 13, fontWeight: 700, cursor: aiLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
